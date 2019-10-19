@@ -34,7 +34,7 @@ jobs:
           path: /tmp/test-results
 
       - persist_to_workspace:
-          root: workspace
+          root: zips
           paths:
             - zips
 
@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - attach_workspace:
-          at: /tmp/workspace
+          at: /tmp/zips
 
       - run: echo 'export VERSION="${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}"' >> $BASH_ENV
 
