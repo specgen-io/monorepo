@@ -13,13 +13,13 @@ jobs:
     steps:
       - checkout
 
-      - run: ./build.sh ${VERSION}
+      - run: ./build.sh ${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}
 
       - run: mkdir -p $TEST_RESULTS
 
       - run: go get -u github.com/jstemmer/go-junit-report
 
-      - run: go test ./... -v # 2>&1 | ../../bin/go-junit-report > ${TEST_RESULTS}/go-test-report.xml
+      - run: go test ./... -v 2>&1 | ../../bin/go-junit-report > ${TEST_RESULTS}/go-test-report.xml
 
       - store_artifacts:
           path: /tmp/test-results
