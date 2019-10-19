@@ -34,7 +34,7 @@ jobs:
           path: /tmp/test-results
 
       - persist_to_workspace:
-          root: zips
+          root: .
           paths:
             - zips
 
