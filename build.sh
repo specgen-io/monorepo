@@ -1,10 +1,9 @@
 #!/bin/bash
 
-BUILDNUM="0"
+VERSION="0.0"
 if [ -n "$1" ]; then
-    BUILDNUM=$1
+    VERSION=$1
 fi
-VERSION="0.$BUILDNUM"
 
 echo "Building version: $VERSION"
 
