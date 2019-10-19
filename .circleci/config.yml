@@ -16,20 +16,29 @@ jobs:
 
       - run: ./build.sh ${VERSION}
 
-#      - run: mkdir -p $TEST_RESULTS
-#
-#      - run: go get -u github.com/jstemmer/go-junit-report
-#
-#      - run: go test ./... -v 2>&1 | ../../bin/go-junit-report > ${TEST_RESULTS}/go-test-report.xml
-#
-#      - store_artifacts:
-#          path: /tmp/test-results
-#          destination: go-test-report
-#
-#      - store_test_results:
-#          path: /tmp/test-results
+      - run: mkdir -p $TEST_RESULTS
 
-  test:
+      - run: go get -u github.com/jstemmer/go-junit-report
+
+      - run: go test ./... -v 2>&1 | ../../bin/go-junit-report > ${TEST_RESULTS}/go-test-report.xml
+
+      - store_artifacts:
+          path: ./zips
+          destination: zips
+
+      - store_artifacts:
+          path: /tmp/test-results
+          destination: go-test-report
+
+      - store_test_results:
+          path: /tmp/test-results
+
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - zips
+
+  release:
     docker:
       - image: circleci/golang:1.12
     working_directory: /go/src/specgen
@@ -39,31 +48,19 @@ jobs:
       VERSION_MAJOR: 0
 
     steps:
-      - checkout
+      - attach_workspace:
+          at: /tmp/workspace
 
-#      - run: echo 'export VERSION="${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}"' >> $BASH_ENV
-#
-#      - run: ./build.sh ${VERSION}
+      - run: echo 'export VERSION="${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}"' >> $BASH_ENV
 
-      - run: mkdir -p $TEST_RESULTS
-
-      - run: go get -u github.com/jstemmer/go-junit-report
-
-      - run: go test ./... -v 2>&1 | ../../bin/go-junit-report > ${TEST_RESULTS}/go-test-report.xml
-
-      - store_artifacts:
-          path: /tmp/test-results
-          destination: go-test-report
-
-      - store_test_results:
-          path: /tmp/test-results
-
+      - run: ./release.sh ${VERSION} &{GITHUB_TOKEN}
 
 workflows:
   version: 2
-  build_and_test:
+  build_and_release:
     jobs:
       - build
-      - test:
+      - release:
           requires:
             - build
+          context: github-release
