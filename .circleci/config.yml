@@ -44,10 +44,11 @@ jobs:
     working_directory: /go/src/specgen
 
     environment:
-      TEST_RESULTS: /tmp/test-results
       VERSION_MAJOR: 0
 
     steps:
+      - checkout
+
       - attach_workspace:
           at: /tmp/zips
 
