@@ -50,7 +50,7 @@ jobs:
       - checkout
 
       - attach_workspace:
-          at: /tmp/zips
+          at: ./zips
 
       - run: echo 'export VERSION="${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}"' >> $BASH_ENV
 
