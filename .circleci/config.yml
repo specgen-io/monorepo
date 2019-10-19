@@ -8,12 +8,13 @@ jobs:
     environment:
       TEST_RESULTS: /tmp/test-results
       VERSION_MAJOR: 0
-      VERSION: ${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}
 
     steps:
       - checkout
 
-      - run: ./build.sh ${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}
+      - run: echo 'export VERSION="${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}"' >> $BASH_ENV
+
+      - run: ./build.sh ${VERSION}
 
       - run: mkdir -p $TEST_RESULTS
 

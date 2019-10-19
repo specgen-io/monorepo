@@ -14,6 +14,8 @@ mkdir -p ./zips
 platforms=("windows/amd64" "darwin/amd64" "linux/amd64")
 for platform in "${platforms[@]}"
 do
+    echo "Building platform: $platform"
+
     # parse platforms
     platform_split=(${platform//\// })
     GOOS=${platform_split[0]}
@@ -37,3 +39,5 @@ do
 
     rm -rf ./output $exec_name "$output_name.zip"
 done
+
+echo "Done building version: $VERSION"
