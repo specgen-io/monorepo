@@ -54,7 +54,7 @@ jobs:
 
       - run: echo 'export VERSION="${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}"' >> $BASH_ENV
 
-      - run: ./release.sh ${VERSION} &{GITHUB_TOKEN}
+      - run: ./release.sh ${VERSION} ${GITHUB_TOKEN}
 
 workflows:
   version: 2
