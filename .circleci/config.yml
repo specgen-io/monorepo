@@ -7,12 +7,15 @@ jobs:
 
     environment:
       TEST_RESULTS: /tmp/test-results
+      VERSION_MAJOR: 0
+      VERSION: ${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}
 
     steps:
       - checkout
-      - run: mkdir -p $TEST_RESULTS
 
-      - run: dep ensure
+      - run: ./build.sh ${VERSION}
+
+      - run: mkdir -p $TEST_RESULTS
 
       - run: go get -u github.com/jstemmer/go-junit-report
 
