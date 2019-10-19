@@ -16,6 +16,35 @@ jobs:
 
       - run: ./build.sh ${VERSION}
 
+#      - run: mkdir -p $TEST_RESULTS
+#
+#      - run: go get -u github.com/jstemmer/go-junit-report
+#
+#      - run: go test ./... -v 2>&1 | ../../bin/go-junit-report > ${TEST_RESULTS}/go-test-report.xml
+#
+#      - store_artifacts:
+#          path: /tmp/test-results
+#          destination: go-test-report
+#
+#      - store_test_results:
+#          path: /tmp/test-results
+
+  test:
+    docker:
+      - image: circleci/golang:1.12
+    working_directory: /go/src/specgen
+
+    environment:
+      TEST_RESULTS: /tmp/test-results
+      VERSION_MAJOR: 0
+
+    steps:
+      - checkout
+
+#      - run: echo 'export VERSION="${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}"' >> $BASH_ENV
+#
+#      - run: ./build.sh ${VERSION}
+
       - run: mkdir -p $TEST_RESULTS
 
       - run: go get -u github.com/jstemmer/go-junit-report
@@ -28,3 +57,13 @@ jobs:
 
       - store_test_results:
           path: /tmp/test-results
+
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
