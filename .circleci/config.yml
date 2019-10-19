@@ -52,7 +52,7 @@ jobs:
       - checkout
 
       - attach_workspace:
-          at: ./zips
+          at: .
 
       - run: ls -la
 
