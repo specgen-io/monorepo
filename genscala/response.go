@@ -2,7 +2,7 @@ package genscala
 
 import (
 	"github.com/ModaOperandi/spec"
-	"gopoetry/scala"
+	"github.com/vsapronov/gopoetry/scala"
 )
 
 func responseType(operation spec.NamedOperation) string {
