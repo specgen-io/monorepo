@@ -58,6 +58,8 @@ jobs:
 
       - run: ls -la ./zips
 
+      - run: ls -la ./zips/zips
+
       - run: echo 'export VERSION="${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}"' >> $BASH_ENV
 
       - run: ./release.sh ${VERSION} ${GITHUB_TOKEN}
