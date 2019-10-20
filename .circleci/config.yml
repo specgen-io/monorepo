@@ -7,11 +7,12 @@ jobs:
 
     environment:
       TEST_RESULTS: /tmp/test-results
+      VERSION_MAJOR: 0
       VERSION_FILE: version.circleci
 
     steps:
       - checkout
-      - run: echo "${CIRCLE_BUILD_NUM}" >> ${VERSION_FILE}
+      - run: echo "${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}" >> ${VERSION_FILE}
       - run: echo 'export VERSION="$(cat ${VERSION_FILE})"' >> $BASH_ENV
       - run: echo "Version ${VERSION}"
       - run: ./build.sh ${VERSION}
