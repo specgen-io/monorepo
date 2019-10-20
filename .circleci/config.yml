@@ -29,9 +29,8 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - *
-#            - version.circleci
-#            - zips/*
+            - version.circleci
+            - zips/*
 
   release:
     docker:
@@ -42,9 +41,8 @@ jobs:
       VERSION_FILE: version.circleci
 
     steps:
-#      - checkout
+      - checkout
       - attach_workspace: { at: . }
-#          at: .
       - run: echo 'export VERSION="$(cat ${VERSION_FILE})"' >> $BASH_ENV
       - run: echo "Version ${VERSION}"
       - run: ./release.sh ${VERSION} ${GITHUB_TOKEN}
