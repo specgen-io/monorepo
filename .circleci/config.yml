@@ -7,35 +7,29 @@ jobs:
 
     environment:
       TEST_RESULTS: /tmp/test-results
-      VERSION_MAJOR: 0
+      VERSION_FILE: version
 
     steps:
       - checkout
-
-      - run: echo 'export VERSION="${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}"' >> $BASH_ENV
-
+      - run: echo "${CIRCLE_BUILD_NUM}" >> ${VERSION_FILE}
+      - run: echo 'export VERSION="$(cat ${VERSION_FILE})"' >> $BASH_ENV
+      - run: echo "Version ${VERSION}"
       - run: ./build.sh ${VERSION}
-
       - run: mkdir -p $TEST_RESULTS
-
       - run: go get -u github.com/jstemmer/go-junit-report
-
       - run: go test ./... -v 2>&1 | ../../bin/go-junit-report > ${TEST_RESULTS}/go-test-report.xml
-
       - store_artifacts:
           path: ./zips
           destination: zips
-
       - store_artifacts:
           path: /tmp/test-results
           destination: go-test-report
-
       - store_test_results:
           path: /tmp/test-results
-
       - persist_to_workspace:
           root: .
           paths:
+            - version
             - zips/*
 
   release:
@@ -48,12 +42,10 @@ jobs:
 
     steps:
       - checkout
-
       - attach_workspace:
           at: .
-
-      - run: echo 'export VERSION="${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}"' >> $BASH_ENV
-
+      - run: echo 'export VERSION="$(cat ${VERSION_FILE})"' >> $BASH_ENV
+      - run: echo "Version ${VERSION}"
       - run: ./release.sh ${VERSION} ${GITHUB_TOKEN}
 
 workflows:
