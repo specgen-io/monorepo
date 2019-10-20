@@ -22,8 +22,6 @@ jobs:
 
       - run: go test ./... -v 2>&1 | ../../bin/go-junit-report > ${TEST_RESULTS}/go-test-report.xml
 
-      - run: ls -la ./zips
-
       - store_artifacts:
           path: ./zips
           destination: zips
@@ -53,12 +51,6 @@ jobs:
 
       - attach_workspace:
           at: .
-
-      - run: ls -la
-
-      - run: ls -la ./zips
-
-      - run: ls -la ./zips/zips
 
       - run: echo 'export VERSION="${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}"' >> $BASH_ENV
 
