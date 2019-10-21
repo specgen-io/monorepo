@@ -21,7 +21,7 @@ RELEASE_NAME=$VERSION
 
 go get github.com/aktau/github-release
 
-echo "Creating release in Github: $VERSION"
+echo "Creating release in Github: $RELEASE_NAME"
 $GOPATH/bin/github-release release --security-token $GITHUB_TOKEN --user ModaOperandi --repo specgen --tag $RELEASE_NAME
 
 echo "Releasing zips/specgen_darwin_amd64.zip"
