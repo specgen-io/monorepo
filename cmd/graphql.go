@@ -6,11 +6,9 @@ import (
 	"specgen/gengql"
 )
 
-const OutputPath = "output-path"
-
 func init() {
 	cmdGraphql.Flags().String(SpecFile, "", SpecFileDescription)
-	cmdGraphql.Flags().String(OutputPath, "", "Path to generated files")
+	cmdGraphql.Flags().String(OutputPath, "", OutputPathDescription)
 
 	cmdGraphql.MarkFlagRequired(SpecFile)
 	cmdGraphql.MarkFlagRequired(OutputPath)
