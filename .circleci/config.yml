@@ -57,6 +57,6 @@ workflows:
           requires:
             - build
           context: github-release
-          filter:
+          filters:
             branches:
               only: master
