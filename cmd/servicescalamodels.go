@@ -8,7 +8,7 @@ import (
 
 func init() {
 	cmdServiceScalaModels.Flags().String(SpecFile, "", SpecFileDescription)
-	cmdServiceScalaModels.Flags().String(SourceManagedPath, "", "Path to managed source code files")
+	cmdServiceScalaModels.Flags().String(SourceManagedPath, "", SourceManagedPathDescription)
 
 	cmdServiceScalaModels.MarkFlagRequired(SpecFile)
 	cmdServiceScalaModels.MarkFlagRequired(SourceManagedPath)

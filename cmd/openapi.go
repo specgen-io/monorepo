@@ -6,9 +6,6 @@ import (
 	"specgen/genopenapi"
 )
 
-const OutFile = "out-file"
-const OutFileDescription = "Path to output file"
-
 func init() {
 	cmdOpenapi.Flags().String(SpecFile, "", SpecFileDescription)
 	cmdOpenapi.Flags().String(OutFile, "", OutFileDescription)
