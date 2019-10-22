@@ -169,9 +169,13 @@ func generateObjectModel(model spec.Model) *YamlMap {
 func generateEnumModel(model spec.Model) *YamlMap {
 	schema := Map().Set("type", "string")
 
+	if model.Enum.Description != nil {
+		schema.Set("description", model.Enum.Description)
+	}
+
 	openApiItems := Array()
 	for _, item := range model.Enum.Items {
-		openApiItems.Add(item.Source)
+		openApiItems.Add(item.Name.Source)
 	}
 	schema.Set("enum", openApiItems.Yaml)
 

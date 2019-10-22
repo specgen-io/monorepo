@@ -49,8 +49,8 @@ func generateEnumModel(model spec.NamedModel, unit *scala.UnitDeclaration) {
 	enumObject := scala.Object(model.Name.PascalCase())
 	enumObject_ := enumObject.Define(true)
 	for _, item := range model.Enum.Items {
-		itemObject := scala.Object(item.PascalCase()).Case().Extends(model.Name.PascalCase())
-		itemObject.Define(false).Def("toString").NoParams().Override().Define().Add("\"" + item.Source + "\"")
+		itemObject := scala.Object(item.Name.PascalCase()).Case().Extends(model.Name.PascalCase())
+		itemObject.Define(false).Def("toString").NoParams().Override().Define().Add("\"" + item.Name.Source + "\"")
 		enumObject_.AddCode(itemObject)
 	}
 
