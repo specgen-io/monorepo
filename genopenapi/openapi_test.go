@@ -8,10 +8,19 @@ import (
 )
 
 func TestEnumModel(t *testing.T) {
-	model := spec.Model{Enum: &spec.Enum{Items: []spec.Name{spec.Name{"first"}, spec.Name{"second"}, spec.Name{"third"}}}}
+	description := "The description"
+	model := spec.Model{Enum: &spec.Enum{
+		Description: &description,
+		Items: []spec.NamedEnumItem{
+			{Name: spec.Name{"first"}, EnumItem: spec.EnumItem{}},
+			{Name: spec.Name{"second"}, EnumItem: spec.EnumItem{}},
+			{Name: spec.Name{"third"}, EnumItem: spec.EnumItem{}},
+		},
+	}}
 	openapiYaml := generateModel(model)
 	expected := `
 type: string
+description: The description
 enum:
 - first
 - second
