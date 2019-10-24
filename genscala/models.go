@@ -5,13 +5,13 @@ import (
 	"specgen/gen"
 )
 
-func GenerateServiceModels(serviceFile string, sourceManagedPath string) (err error) {
+func GenerateServiceModels(serviceFile string, generatePath string) (err error) {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil {
 		return
 	}
 
-	modelsFile := GenerateCirceModels(specification, "models", sourceManagedPath)
+	modelsFile := GenerateCirceModels(specification, "models", generatePath)
 
 	sourceManaged := []gen.TextFile{*modelsFile}
 

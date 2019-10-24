@@ -9,13 +9,13 @@ import (
 	"strings"
 )
 
-func GeneratePlayService(serviceFile string, swaggerPath string, sourceManagedPath string, sourcePath string, resourcePath string) (err error) {
+func GeneratePlayService(serviceFile string, swaggerPath string, generatePath string, servicesPath string, routesPath string) (err error) {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil {
 		return
 	}
 
-	modelsFile := GenerateCirceModels(specification, modelsPackage(specification), sourceManagedPath)
+	modelsFile := GenerateCirceModels(specification, modelsPackage(specification), generatePath)
 
 	source := []gen.TextFile{}
 	sourceManaged := []gen.TextFile{*modelsFile}
@@ -23,10 +23,10 @@ func GeneratePlayService(serviceFile string, swaggerPath string, sourceManagedPa
 	apis := specification.Apis
 
 	for _, api := range apis {
-		apiTraitFile := generateApiInterface(api, servicesPackage(specification), sourceManagedPath)
-		apiControllerFile := generateApiController(api, controllersPackage(specification), sourceManagedPath)
+		apiTraitFile := generateApiInterface(api, servicesPackage(specification), generatePath)
+		apiControllerFile := generateApiController(api, controllersPackage(specification), generatePath)
 		sourceManaged = append(sourceManaged, *apiTraitFile, *apiControllerFile)
-		apiClassFile := generateApiClass(api, servicesPackage(specification), sourcePath)
+		apiClassFile := generateApiClass(api, servicesPackage(specification), servicesPath)
 		source = append(source, *apiClassFile)
 	}
 
@@ -35,7 +35,7 @@ func GeneratePlayService(serviceFile string, swaggerPath string, sourceManagedPa
 
 	routesFile :=
 		&gen.TextFile{
-			Path:    filepath.Join(resourcePath, "routes"),
+			Path:    filepath.Join(routesPath, "routes"),
 			Content: openApiRoutes + controllersRoutes,
 		}
 

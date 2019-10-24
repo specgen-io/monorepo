@@ -8,16 +8,16 @@ import (
 	"strings"
 )
 
-func GenerateSttpClient(serviceFile string, sourceManagedPath string) error {
+func GenerateSttpClient(serviceFile string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil {
 		return err
 	}
 
 	clientPackage := clientPackageName(specification.ServiceName)
-	modelsFile := GenerateCirceModels(specification, clientPackage, sourceManagedPath)
-	interfacesFile := generateClientApisInterfaces(specification.Apis, clientPackage, sourceManagedPath)
-	implsFile := generateClientApiImplementations(specification, clientPackage, sourceManagedPath)
+	modelsFile := GenerateCirceModels(specification, clientPackage, generatePath)
+	interfacesFile := generateClientApisInterfaces(specification.Apis, clientPackage, generatePath)
+	implsFile := generateClientApiImplementations(specification, clientPackage, generatePath)
 
 	sourceManaged := []gen.TextFile{*modelsFile, *interfacesFile, *implsFile}
 
