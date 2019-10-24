@@ -15,7 +15,7 @@ func GeneratePlayService(serviceFile string, swaggerPath string, sourceManagedPa
 		return
 	}
 
-	modelsFile := GenerateModels(specification, modelsPackage(specification), sourceManagedPath)
+	modelsFile := GenerateCirceModels(specification, modelsPackage(specification), sourceManagedPath)
 
 	source := []gen.TextFile{}
 	sourceManaged := []gen.TextFile{*modelsFile}
@@ -109,7 +109,6 @@ func generateApiInterface(api spec.Api, packageName string, outPath string) *gen
 	unit.
 		Import("com.google.inject.ImplementedBy").
 		Import("scala.concurrent.Future").
-		Import("spec.jackson._").
 		Import("spec.http._").
 		Import("models._")
 
@@ -194,7 +193,7 @@ func generateApiController(api spec.Api, packageName string, outPath string) *ge
 		Import("scala.util._").
 		Import("scala.concurrent._").
 		Import("play.api.mvc._").
-		Import("spec.jackson._").
+		Import("spec.circe.json._").
 		Import("spec.http._").
 		Import("spec.play.ResponseHelpers._").
 		Import("models._").
@@ -205,11 +204,12 @@ func generateApiController(api spec.Api, packageName string, outPath string) *ge
 	ctor.Attribute("Inject()")
 	ctor.Param("api", apiTraitType(api.Name))
 	ctor.Param("cc", "ControllerComponents")
-	ctor.ImplicitParam("json", "JsonMapper")
 	ctor.ImplicitParam("ec", "ExecutionContext")
 
 	class.Extends("AbstractController(cc)")
 	class_ := class.Define(true)
+
+	class_.AddLn("implicit val jsonConfig = Json.config")
 
 	for _, operation := range api.Operations {
 		method := class_.Def(operation.Name.CamelCase())
@@ -231,7 +231,7 @@ func generateApiController(api spec.Api, packageName string, outPath string) *ge
 			addParamsParsing(tryBlock, operation.HeaderParams, "header", "request.headers.get")
 			addParamsParsing(tryBlock, operation.QueryParams, "query", "request.getQueryString")
 			if operation.Body != nil {
-				tryBlock.AddLn("val body = json.readValue(request.body.utf8String, classOf[" + ScalaType(&operation.Body.Type) + "])")
+				tryBlock.AddLn("val body = Json.read[" + ScalaType(&operation.Body.Type) + "](request.body.utf8String)")
 			}
 			tryBlock.AddLn("(" + strings.Join(parseParams, ", ") + ")")
 		}

@@ -9,13 +9,9 @@ func responseType(operation spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Response"
 }
 
-func generateResponse(responseTypeName string, responses spec.Responses) (*scala.ClassDeclaration, *scala.ClassDeclaration) {
-	class := scala.Class(responseTypeName).Sealed()
-	ctor := class.Contructor().Private()
-	ctor.Param("status", "Int")
-	ctor.Param("body", "Option[Any]")
-	class_ := class.Define(true)
-	class_.AddLn("def toResult()(implicit json: JsonMapper) = OperationResult(status, body.map(json.writeValueAsString(_)))")
+func generateResponse(responseTypeName string, responses spec.Responses) (*scala.TraitDeclaration, *scala.ClassDeclaration) {
+	trait := scala.Trait(responseTypeName).Sealed()
+	trait.Define(false).Add("def toResult(): OperationResult")
 
 	object := scala.Object(responseTypeName)
 	object_ := object.Define(true)
@@ -26,34 +22,36 @@ func generateResponse(responseTypeName string, responses spec.Responses) (*scala
 		bodyValue := "None"
 		if !response.Type.IsEmpty() {
 			responseClassCtor.Param("body", ScalaType(&response.Type))
-			bodyValue = "Some(body)"
+			bodyValue = "Some(Json.write(body))"
 		}
-		responseClass.Extends(responseTypeName + "(" + statusValue + ", " + bodyValue + ")")
+		responseClass.Extends(responseTypeName + ` { def toResult = OperationResult(` + statusValue + `, ` + bodyValue + `)}`)
 		object_.AddCode(responseClass)
 	}
 
 	create := object_.Def("fromResult")
 	create.Param("result", "OperationResult")
-	create.ImplicitParam("json", "JsonMapper")
 	match := create.Define().Add("result.status match ").Block(true)
 	for _, response := range responses {
 		responseParam := ""
 		if !response.Type.IsEmpty() {
-			responseParam = "json.readValue(result.body.get, classOf[" + ScalaType(&response.Type) + "])"
+			responseParam = `Json.read[` + ScalaType(&response.Type) + `](result.body.get)`
 		}
 		match.AddLn("case " + spec.HttpStatusCode(response.Name) + " => " + response.Name.PascalCase() + "(" + responseParam + ")")
 	}
-	return class, object
+	return trait, object
 }
 
 func generateApiInterfaceResponse(api spec.Api, apiTraitName string) *scala.ClassDeclaration {
 	apiObject := scala.Object(apiTraitName)
 	apiObject_ := apiObject.Define(true)
 
+	apiObject_.AddLn("import spec.circe.json._")
+	apiObject_.AddLn("implicit val jsonConfig = Json.config")
+
 	for _, operation := range api.Operations {
 		responseTypeName := responseType(operation)
-		class, object := generateResponse(responseTypeName, operation.Responses)
-		apiObject_.AddCode(class)
+		trait, object := generateResponse(responseTypeName, operation.Responses)
+		apiObject_.AddCode(trait)
 		apiObject_.AddCode(object)
 	}
 	return apiObject

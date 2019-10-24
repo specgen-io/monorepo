@@ -15,7 +15,7 @@ func GenerateSttpClient(serviceFile string, sourceManagedPath string) error {
 	}
 
 	clientPackage := clientPackageName(specification.ServiceName)
-	modelsFile := GenerateModels(specification, clientPackage, sourceManagedPath)
+	modelsFile := GenerateCirceModels(specification, clientPackage, sourceManagedPath)
 	interfacesFile := generateClientApisInterfaces(specification.Apis, clientPackage, sourceManagedPath)
 	implsFile := generateClientApiImplementations(specification, clientPackage, sourceManagedPath)
 
@@ -41,11 +41,12 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 		Import("akka.stream.scaladsl.Source").
 		Import("akka.util.ByteString").
 		Import("com.softwaremill.sttp._").
-		Import("com.softwaremill.sttp.akkahttp._").
-		Import("spec.jackson._").
+		Import("spec.circe.json._").
 		Import("spec.http._")
 
-	unit.AddDeclarations(generateClientClass(specification))
+	if len(specification.Apis) > 1 {
+		unit.AddDeclarations(generateClientSuperClass(specification))
+	}
 	for _, api := range specification.Apis {
 		apiTrait := generateClientApiClass(api)
 		unit.AddDeclarations(apiTrait)
@@ -62,7 +63,6 @@ func generateClientApisInterfaces(apis spec.Apis, packageName string, outPath st
 
 	unit.
 		Import("scala.concurrent._").
-		Import("spec.jackson._").
 		Import("spec.http._")
 
 	for _, api := range apis {
@@ -127,6 +127,8 @@ func generateClientOperationImplementation(operation spec.NamedOperation, method
 
 	method_ := method.Define().Block(true)
 
+	method_.AddLn("implicit val jsonConfig = Json.config")
+
 	if len(operation.QueryParams) > 0 {
 		method_.AddLn("val query = new StringParamsWriter()")
 		for _, p := range operation.QueryParams {
@@ -151,7 +153,7 @@ func generateClientOperationImplementation(operation spec.NamedOperation, method
 		httpCall.AddLn(`.headers(headers.params)`)
 	}
 	if operation.Body != nil {
-		httpCall.AddLn(`.body(json.writeValueAsString(body))`)
+		httpCall.AddLn(`.body(Json.write(body))`)
 	}
 	httpCall.AddLn(`.parseResponseIf { status => status < 500 }`) // TODO: Allowed statuses from spec
 	httpCall.AddLn(`.send()`)
@@ -172,7 +174,6 @@ func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 	apiClass := scala.Class(apiClassName).Extends(apiTraitName)
 	apiClassCtor := apiClass.Contructor()
 	apiClassCtor.Param("baseUrl", "String")
-	apiClassCtor.ImplicitParam("json", "JsonMapper")
 	apiClassCtor.ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]")
 	apiClass_ := apiClass.Define(true)
 	apiClass_.AddCode(scala.Import(apiTraitName + "._"))
@@ -185,15 +186,14 @@ func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 	return apiClass
 }
 
-func generateClientClass(specification *spec.Spec) *scala.ClassDeclaration {
+func generateClientSuperClass(specification *spec.Spec) *scala.ClassDeclaration {
 	clientClass := scala.Class(specification.ServiceName.PascalCase() + "Client")
 	clientClassCtor := clientClass.Contructor()
 	clientClassCtor.Param("baseUrl", "String")
-	clientClassCtor.ImplicitParam("json", "JsonMapper")
 	clientClassCtor.ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]")
 	clientClass_ := clientClass.Define(true)
 	for _, api := range specification.Apis {
-		clientClass_.Val(api.Name.CamelCase(), clientTraitName(api.Name)).Val().Init(scala.Code("new " + clientClassName(api.Name) + "(baseUrl)"))
+		clientClass_.Val(api.Name.CamelCase(), clientTraitName(api.Name)).Init(scala.Code("new " + clientClassName(api.Name) + "(baseUrl)"))
 		clientClass_.AddLn("")
 	}
 	return clientClass
