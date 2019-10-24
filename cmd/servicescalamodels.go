@@ -8,10 +8,10 @@ import (
 
 func init() {
 	cmdServiceScalaModels.Flags().String(SpecFile, "", SpecFileDescription)
-	cmdServiceScalaModels.Flags().String(SourceManagedPath, "", SourceManagedPathDescription)
+	cmdServiceScalaModels.Flags().String(GeneratePath, "", GeneratePathDescription)
 
 	cmdServiceScalaModels.MarkFlagRequired(SpecFile)
-	cmdServiceScalaModels.MarkFlagRequired(SourceManagedPath)
+	cmdServiceScalaModels.MarkFlagRequired(GeneratePath)
 
 	rootCmd.AddCommand(cmdServiceScalaModels)
 }
@@ -23,10 +23,10 @@ var cmdServiceScalaModels = &cobra.Command{
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)
 
-		sourceManagedPath, err := cmd.Flags().GetString(SourceManagedPath)
+		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		err = genscala.GenerateServiceModels(specFile, sourceManagedPath)
+		err = genscala.GenerateServiceModels(specFile, generatePath)
 		fail.IfErrorF(err, "Failed to generate models code")
 	},
 }

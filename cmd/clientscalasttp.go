@@ -8,10 +8,10 @@ import (
 
 func init() {
 	cmdClientScalaHttps.Flags().String(SpecFile, "", SpecFileDescription)
-	cmdClientScalaHttps.Flags().String(SourceManagedPath, "", SourceManagedPathDescription)
+	cmdClientScalaHttps.Flags().String(GeneratePath, "", GeneratePathDescription)
 
 	cmdClientScalaHttps.MarkFlagRequired(SpecFile)
-	cmdClientScalaHttps.MarkFlagRequired(SourceManagedPath)
+	cmdClientScalaHttps.MarkFlagRequired(GeneratePath)
 
 	rootCmd.AddCommand(cmdClientScalaHttps)
 }
@@ -23,10 +23,10 @@ var cmdClientScalaHttps = &cobra.Command{
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)
 
-		sourceManagedPath, err := cmd.Flags().GetString(SourceManagedPath)
+		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		err = genscala.GenerateSttpClient(specFile, sourceManagedPath)
+		err = genscala.GenerateSttpClient(specFile, generatePath)
 		fail.IfErrorF(err, "Failed to generate client code")
 	},
 }

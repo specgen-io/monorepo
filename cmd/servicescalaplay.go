@@ -10,16 +10,16 @@ func init() {
 	cmdServiceScalaPlay.Flags().String(SpecFile, "", SpecFileDescription)
 
 	cmdServiceScalaPlay.Flags().String(SwaggerPath, "", SwaggerPathDescription)
-	cmdServiceScalaPlay.Flags().String(SourceManagedPath, "", SourceManagedPathDescription)
-	cmdServiceScalaPlay.Flags().String(SourcePath, "", SourcePathDescription)
-	cmdServiceScalaPlay.Flags().String(ResourcePath, "", ResourcePathDescription)
+	cmdServiceScalaPlay.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdServiceScalaPlay.Flags().String(ServicesPath, "", ServicesPathDescription)
+	cmdServiceScalaPlay.Flags().String(RoutesPath, "", RoutesPathDescription)
 
 	cmdServiceScalaPlay.MarkFlagRequired(SpecFile)
 
 	cmdServiceScalaPlay.MarkFlagRequired(SwaggerPath)
-	cmdServiceScalaPlay.MarkFlagRequired(SourceManagedPath)
-	cmdServiceScalaPlay.MarkFlagRequired(SourcePath)
-	cmdServiceScalaPlay.MarkFlagRequired(ResourcePath)
+	cmdServiceScalaPlay.MarkFlagRequired(GeneratePath)
+	cmdServiceScalaPlay.MarkFlagRequired(ServicesPath)
+	cmdServiceScalaPlay.MarkFlagRequired(RoutesPath)
 
 	rootCmd.AddCommand(cmdServiceScalaPlay)
 }
@@ -34,16 +34,18 @@ var cmdServiceScalaPlay = &cobra.Command{
 		swaggerPath, err := cmd.Flags().GetString(SwaggerPath)
 		fail.IfError(err)
 
-		sourceManagedPath, err := cmd.Flags().GetString(SourceManagedPath)
+		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		sourcePath, err := cmd.Flags().GetString(SourcePath)
+		servicesPath, err := cmd.Flags().GetString(ServicesPath)
 		fail.IfError(err)
 
-		resourcePath, err := cmd.Flags().GetString(ResourcePath)
+		routesPath, err := cmd.Flags().GetString(RoutesPath)
 		fail.IfError(err)
 
-		err = genscala.GeneratePlayService(specFile, swaggerPath, sourceManagedPath, sourcePath, resourcePath)
+		err = genscala.GeneratePlayService(specFile, swaggerPath, generatePath, servicesPath, routesPath)
 		fail.IfErrorF(err, "Failed to generate service code")
 	},
 }
+
+//serviceFile string, swaggerPath string, generatePath string, ServicesPath string, routesPath string
