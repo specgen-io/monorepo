@@ -3,11 +3,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:dbe892dfe8366814f3582f431147aff4a3135960be4312bdd44951943b2dbccd"
+  digest = "1:7da3fe0683f76dca5603e44a550e1f79e92ed1d30dbf0527a414b48f4fa8eb99"
   name = "github.com/ModaOperandi/spec"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a916c131b81ba1df490986fedd43eb9b29f912b6"
+  revision = "299f9750fb6199c693f466699ff9d6aeab3ea018"
 
 [[projects]]
   branch = "master"
@@ -80,14 +80,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:001758e310266e84d14eb0e931ca041031a6a7bf8c08cfa1551790e037493acb"
+  digest = "1:68c8590d99913c0f0cec39e2067b57bd7ba578317834ea3c2452e2a6de2e1813"
   name = "github.com/vsapronov/gopoetry"
   packages = [
     "graphql",
     "scala",
   ]
   pruneopts = "UT"
-  revision = "2cbdb5bb03bdb009d2565f0db86e4e525dceb79c"
+  revision = "0a8ce893f9b2404cb94726c6840c8d3f30ef0964"
 
 [[projects]]
   digest = "1:59f10c1537d2199d9115d946927fe31165959a95190849c82ff11e05803528b0"

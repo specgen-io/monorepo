@@ -11,7 +11,7 @@ func GenerateServiceModels(serviceFile string, sourceManagedPath string) (err er
 		return
 	}
 
-	modelsFile := GenerateModels(specification, "models", sourceManagedPath)
+	modelsFile := GenerateCirceModels(specification, "models", sourceManagedPath)
 
 	sourceManaged := []gen.TextFile{*modelsFile}
 
