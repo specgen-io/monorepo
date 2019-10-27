@@ -22,9 +22,11 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 
 	apis := specification.Apis
 
+	modelsMap := buildModelsMap(specification.Models)
+
 	for _, api := range apis {
 		apiTraitFile := generateApiInterface(api, servicesPackage(specification), generatePath)
-		apiControllerFile := generateApiController(api, controllersPackage(specification), generatePath)
+		apiControllerFile := generateApiController(api, modelsMap, controllersPackage(specification), generatePath)
 		sourceManaged = append(sourceManaged, *apiTraitFile, *apiControllerFile)
 		apiClassFile := generateApiClass(api, servicesPackage(specification), servicesPath)
 		source = append(source, *apiClassFile)
@@ -60,6 +62,16 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 	}
 
 	return
+}
+
+type ModelsMap map[string]spec.NamedModel
+
+func buildModelsMap(models spec.Models) ModelsMap {
+	result := make(map[string]spec.NamedModel)
+	for _, m := range models {
+		result[m.Name.Source] = m
+	}
+	return result
 }
 
 func controllerType(apiName spec.Name) string {
@@ -167,15 +179,21 @@ func generateApiClass(api spec.Api, packageName string, outPath string) *gen.Tex
 	}
 }
 
-func addParamsParsing(code *scala.StatementsDeclaration, params []spec.NamedParam, paramsName string, readingFun string) {
+func addParamsParsing(code *scala.StatementsDeclaration, params []spec.NamedParam, models map[string]spec.NamedModel, paramsName string, readingFun string) {
 	if params != nil {
 		code.AddLn(`val ` + paramsName + ` = new StringParamsReader(` + readingFun + `)`)
 		for _, param := range params {
-			typ := &param.Type
-			if typ.IsNullable() {
-				typ = typ.Child
+			paramBaseType := &param.Type
+			if paramBaseType.IsNullable() {
+				paramBaseType = paramBaseType.Child
 			}
-			code.Add(`val ` + param.Name.CamelCase() + ` = ` + paramsName + `.read[` + ScalaType(typ) + `]("` + param.Name.Source + `")`)
+			if model, ok := models[paramBaseType.PlainType]; ok {
+				if model.IsEnum() {
+					code.Add(`val ` + param.Name.CamelCase() + ` = ` + paramsName + `.read[String]("` + param.Name.Source + `").map(` + ScalaType(paramBaseType) + `.withValue)`)
+				}
+			} else {
+				code.Add(`val ` + param.Name.CamelCase() + ` = ` + paramsName + `.read[` + ScalaType(paramBaseType) + `]("` + param.Name.Source + `")`)
+			}
 			if !param.Type.IsNullable() {
 				code.Add(".get")
 			}
@@ -185,7 +203,7 @@ func addParamsParsing(code *scala.StatementsDeclaration, params []spec.NamedPara
 
 }
 
-func generateApiController(api spec.Api, packageName string, outPath string) *gen.TextFile {
+func generateApiController(api spec.Api, modelsMap ModelsMap, packageName string, outPath string) *gen.TextFile {
 	unit := scala.Unit(packageName)
 
 	unit.
@@ -228,8 +246,8 @@ func generateApiController(api spec.Api, packageName string, outPath string) *ge
 
 		if len(parseParams) > 0 {
 			tryBlock := lambda.Add("val params = Try ").Block(true)
-			addParamsParsing(tryBlock, operation.HeaderParams, "header", "request.headers.get")
-			addParamsParsing(tryBlock, operation.QueryParams, "query", "request.getQueryString")
+			addParamsParsing(tryBlock, operation.HeaderParams, modelsMap, "header", "request.headers.get")
+			addParamsParsing(tryBlock, operation.QueryParams, modelsMap, "query", "request.getQueryString")
 			if operation.Body != nil {
 				tryBlock.AddLn("val body = Json.read[" + ScalaType(&operation.Body.Type) + "](request.body.utf8String)")
 			}
