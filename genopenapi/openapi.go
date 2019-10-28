@@ -112,6 +112,9 @@ func addParameters(parameters *YamlArray, in string, params []spec.NamedParam) {
 				Set("name", p.Name.Source).
 				Set("required", !p.Type.IsNullable()).
 				Set("schema", OpenApiType(&p.Type).Yaml)
+		if p.Description != nil {
+			param.Set("description", *p.Description)
+		}
 		parameters.Add(param.Yaml)
 	}
 }

@@ -77,8 +77,8 @@ func TestApis(t *testing.T) {
 		Endpoint:     "POST /create/{id:uuid}",
 		Description:  &description,
 		Body:         spec.NewBody(*myModel, &description),
-		HeaderParams: spec.HeaderParams{spec.NamedParam{Name: spec.Name{"Authorization"}, Param: *spec.NewParam(*spec.Plain(spec.TypeString), nil)}},
-		QueryParams:  spec.QueryParams{spec.NamedParam{Name: spec.Name{"id"}, Param: *spec.NewParam(*spec.Plain(spec.TypeUuid), nil)}},
+		HeaderParams: spec.HeaderParams{spec.NamedParam{Name: spec.Name{"Authorization"}, Param: *spec.NewParam(*spec.Plain(spec.TypeString), &description)}},
+		QueryParams:  spec.QueryParams{spec.NamedParam{Name: spec.Name{"id"}, Param: *spec.NewParam(*spec.Plain(spec.TypeUuid), &description)}},
 		Responses:    spec.Responses{spec.NamedResponse{Name: spec.Name{"ok"}, Response: *response}},
 	}
 	operation.Init()
@@ -119,12 +119,14 @@ func TestApis(t *testing.T) {
       required: true
       schema:
         type: string
+      description: the description
     - in: query
       name: id
       required: true
       schema:
         type: string
         format: uuid
+      description: the description
     responses:
       "200":
         content:
