@@ -8,7 +8,7 @@ import (
 )
 
 func checkType(t *testing.T, typ *spec.Type, expected string) {
-	openApiType := OpenApiType(typ)
+	openApiType := OpenApiType(typ, nil)
 	assert.Equal(t, strings.TrimSpace(openApiType.String()), strings.TrimSpace(expected))
 }
 
