@@ -82,7 +82,7 @@ func generateOperation(o Operation) *YamlMap {
 			request.Set("description", body.Description)
 		}
 		request.Set("required", !body.Type.IsNullable())
-		request.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&body.Type).Yaml).Yaml).Yaml)
+		request.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&body.Type, nil).Yaml).Yaml).Yaml)
 		operation.Set("requestBody", request.Yaml)
 	}
 
@@ -111,7 +111,7 @@ func addParameters(parameters *YamlArray, in string, params []spec.NamedParam) {
 				Set("in", in).
 				Set("name", p.Name.Source).
 				Set("required", !p.Type.IsNullable()).
-				Set("schema", OpenApiType(&p.Type).Yaml)
+				Set("schema", OpenApiType(&p.Type, p.Default).Yaml)
 		if p.Description != nil {
 			param.Set("description", *p.Description)
 		}
@@ -125,7 +125,7 @@ func generateResponse(r spec.Response) *YamlMap {
 		response.Set("description", r.Description)
 	}
 	if !r.Type.IsEmpty() {
-		response.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&r.Type).Yaml).Yaml).Yaml)
+		response.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&r.Type, nil).Yaml).Yaml).Yaml)
 	}
 	return response
 }
@@ -158,7 +158,7 @@ func generateObjectModel(model spec.Model) *YamlMap {
 
 	properties := Map()
 	for _, field := range model.Object.Fields {
-		property := OpenApiType(&field.Type)
+		property := OpenApiType(&field.Type, field.Default)
 		if field.Description != nil {
 			property.Set("description", field.Description)
 		}

@@ -5,19 +5,23 @@ import (
 	"github.com/ModaOperandi/spec"
 )
 
-func OpenApiType(typ *spec.Type) *YamlMap {
+func OpenApiType(typ *spec.Type, defaultValue *string) *YamlMap {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainOpenApiType(typ.PlainType)
+		result := PlainOpenApiType(typ.PlainType)
+		if defaultValue != nil {
+			result.Set("default", defaultValue)
+		}
+		return result
 	case spec.NullableType:
-		child := OpenApiType(typ.Child)
+		child := OpenApiType(typ.Child, defaultValue)
 		return child
 	case spec.ArrayType:
-		child := OpenApiType(typ.Child)
+		child := OpenApiType(typ.Child, nil)
 		result := Map().Set("type", "array").Set("items", child.Yaml)
 		return result
 	case spec.MapType:
-		child := OpenApiType(typ.Child)
+		child := OpenApiType(typ.Child, nil)
 		result := Map().Set("type", "object").Set("additionalProperties", child.Yaml)
 		return result
 	default:
