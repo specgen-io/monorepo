@@ -179,7 +179,7 @@ func generateApiClass(api spec.Api, packageName string, outPath string) *gen.Tex
 	}
 }
 
-func addParamsParsing(code *scala.StatementsDeclaration, params []spec.NamedParam, models map[string]spec.NamedModel, paramsName string, readingFun string) {
+func addParamsParsing(modelsMap ModelsMap, code *scala.StatementsDeclaration, params []spec.NamedParam, models map[string]spec.NamedModel, paramsName string, readingFun string) {
 	if params != nil {
 		code.AddLn(`val ` + paramsName + ` = new StringParamsReader(` + readingFun + `)`)
 		for _, param := range params {
@@ -195,7 +195,11 @@ func addParamsParsing(code *scala.StatementsDeclaration, params []spec.NamedPara
 				code.Add(`val ` + param.Name.CamelCase() + ` = ` + paramsName + `.read[` + ScalaType(paramBaseType) + `]("` + param.Name.Source + `")`)
 			}
 			if !param.Type.IsNullable() {
-				code.Add(".get")
+				if param.Default != nil {
+					code.Add(`.getOrElse(` + DefaultValue(&param.Type, *param.Default, modelsMap) + `)`)
+				} else {
+					code.Add(".get")
+				}
 			}
 			code.AddLn("")
 		}
@@ -246,8 +250,8 @@ func generateApiController(api spec.Api, modelsMap ModelsMap, packageName string
 
 		if len(parseParams) > 0 {
 			tryBlock := lambda.Add("val params = Try ").Block(true)
-			addParamsParsing(tryBlock, operation.HeaderParams, modelsMap, "header", "request.headers.get")
-			addParamsParsing(tryBlock, operation.QueryParams, modelsMap, "query", "request.getQueryString")
+			addParamsParsing(modelsMap, tryBlock, operation.HeaderParams, modelsMap, "header", "request.headers.get")
+			addParamsParsing(modelsMap, tryBlock, operation.QueryParams, modelsMap, "query", "request.getQueryString")
 			if operation.Body != nil {
 				tryBlock.AddLn("val body = Json.read[" + ScalaType(&operation.Body.Type) + "](request.body.utf8String)")
 			}
