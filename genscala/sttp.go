@@ -16,7 +16,7 @@ func GenerateSttpClient(serviceFile string, generatePath string) error {
 
 	clientPackage := clientPackageName(specification.ServiceName)
 	modelsFile := GenerateCirceModels(specification, clientPackage, generatePath)
-	interfacesFile := generateClientApisInterfaces(specification.Apis, clientPackage, generatePath)
+	interfacesFile := generateClientApisInterfaces(specification, clientPackage, generatePath)
 	implsFile := generateClientApiImplementations(specification, clientPackage, generatePath)
 
 	sourceManaged := []gen.TextFile{*modelsFile, *interfacesFile, *implsFile}
@@ -60,19 +60,21 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 	}
 }
 
-func generateClientApisInterfaces(apis spec.Apis, packageName string, outPath string) *gen.TextFile {
+func generateClientApisInterfaces(specification *spec.Spec, packageName string, outPath string) *gen.TextFile {
+	modelsMap := buildModelsMap(specification.Models)
+
 	unit := scala.Unit(packageName)
 
 	unit.
 		Import("scala.concurrent._").
 		Import("spec.http._")
 
-	for _, api := range apis {
-		apiTrait := generateClientApiTrait(api)
+	for _, api := range specification.Apis {
+		apiTrait := generateClientApiTrait(modelsMap, api)
 		unit.AddDeclarations(apiTrait)
 	}
 
-	for _, api := range apis {
+	for _, api := range specification.Apis {
 		apiObject := generateApiInterfaceResponse(api, clientTraitName(api.Name))
 		unit.AddDeclarations(apiObject)
 	}
@@ -83,31 +85,40 @@ func generateClientApisInterfaces(apis spec.Apis, packageName string, outPath st
 	}
 }
 
-func generateClientOperationSignature(operation spec.NamedOperation) *scala.MethodDeclaration {
+func addParams(modelsMap ModelsMap, method *scala.MethodDeclaration, params []spec.NamedParam, defaulted bool) {
+	for _, param := range params {
+		if !defaulted && param.Default == nil {
+			method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
+		}
+		if defaulted && param.Default != nil {
+			method.Param(param.Name.CamelCase(), ScalaType(&param.Type)).Init(scala.Code(DefaultValue(&param.Type, *param.Default, modelsMap)))
+		}
+	}
+}
+
+func generateClientOperationSignature(modelsMap ModelsMap, operation spec.NamedOperation) *scala.MethodDeclaration {
 	returnType := "Future[" + responseType(operation) + "]"
 	method := scala.Method(operation.Name.CamelCase()).Returns(returnType)
-	for _, param := range operation.HeaderParams {
-		method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
-	}
+	addParams(modelsMap, method, operation.HeaderParams, false)
 	if operation.Body != nil {
 		method.Param("body", ScalaType(&operation.Body.Type))
 	}
 	for _, param := range operation.UrlParams {
 		method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
 	}
-	for _, param := range operation.QueryParams {
-		method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
-	}
+	addParams(modelsMap, method, operation.QueryParams, false)
+	addParams(modelsMap, method, operation.HeaderParams, true)
+	addParams(modelsMap, method, operation.QueryParams, true)
 	return method
 }
 
-func generateClientApiTrait(api spec.Api) *scala.TraitDeclaration {
+func generateClientApiTrait(modelsMap ModelsMap, api spec.Api) *scala.TraitDeclaration {
 	apiTraitName := clientTraitName(api.Name)
 	apiTrait := scala.Trait(apiTraitName)
 	apiTrait_ := apiTrait.Define(true)
 	apiTrait_.AddCode(scala.Import(apiTraitName + "._"))
 	for _, operation := range api.Operations {
-		apiTrait_.AddCode(generateClientOperationSignature(operation))
+		apiTrait_.AddCode(generateClientOperationSignature(modelsMap, operation))
 	}
 	return apiTrait
 }
@@ -190,7 +201,7 @@ func generateClientApiClass(api spec.Api, modelsMap ModelsMap) *scala.ClassDecla
 	apiClass_.AddCode(scala.Import(apiTraitName + "._"))
 	apiClass_.AddCode(scala.Import("ExecutionContext.Implicits.global"))
 	for _, operation := range api.Operations {
-		method := generateClientOperationSignature(operation)
+		method := generateClientOperationSignature(modelsMap, operation)
 		generateClientOperationImplementation(modelsMap, operation, method)
 		apiClass_.AddCode(method)
 	}
