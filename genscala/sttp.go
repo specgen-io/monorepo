@@ -120,8 +120,20 @@ func clientClassName(apiName spec.Name) string {
 	return apiName.PascalCase() + "Client"
 }
 
-func addParamsWriting() {
-
+func addParamsWriting(modelsMap ModelsMap, code *scala.StatementsDeclaration, params []spec.NamedParam, paramsName string) {
+	if params != nil && len(params) > 0 {
+		code.AddLn("val " + paramsName + " = new StringParamsWriter()")
+		for _, p := range params {
+			paramBaseType := p.Type.BaseType()
+			if model, ok := modelsMap[paramBaseType.PlainType]; ok {
+				if model.IsEnum() {
+					code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `.value)`)
+				}
+			} else {
+				code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `)`)
+			}
+		}
+	}
 }
 
 func generateClientOperationImplementation(modelsMap ModelsMap, operation spec.NamedOperation, method *scala.MethodDeclaration) {
@@ -135,37 +147,20 @@ func generateClientOperationImplementation(modelsMap ModelsMap, operation spec.N
 
 	method_.AddLn("implicit val jsonConfig = Json.config")
 
-	if len(operation.QueryParams) > 0 {
-		method_.AddLn("val query = new StringParamsWriter()")
-		for _, p := range operation.QueryParams {
-			paramBaseType := p.Type.BaseType()
-			if model, ok := modelsMap[paramBaseType.PlainType]; ok {
-				if model.IsEnum() {
-					method_.AddLn(`query.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `.value)`)
-				}
-			} else {
-				method_.AddLn(`query.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `)`)
-			}
-		}
-	}
+	addParamsWriting(modelsMap, method_, operation.QueryParams, "query")
 
-	if len(operation.QueryParams) > 0 {
+	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		method_.AddLn(`val url = Uri.parse(baseUrl+s"` + url + `").get.params(query.params)`)
 	} else {
 		method_.AddLn(`val url = Uri.parse(baseUrl+s"` + url + `").get`)
 	}
 
-	if len(operation.HeaderParams) > 0 {
-		method_.AddLn("val headers = new StringParamsWriter()")
-		for _, p := range operation.HeaderParams {
-			method_.AddLn(`headers.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `)`)
-		}
-	}
+	addParamsWriting(modelsMap, method_, operation.HeaderParams, "headers")
 
 	method_.AddLn("val response: Future[Response[String]] =")
 	httpCall := method_.Block(false).AddLn("sttp").Block(false)
 	httpCall.AddLn(`.` + httpMethod + `(url)`)
-	if len(operation.HeaderParams) > 0 {
+	if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
 		httpCall.AddLn(`.headers(headers.params)`)
 	}
 	if operation.Body != nil {
