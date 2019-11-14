@@ -47,8 +47,10 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 	if len(specification.Apis) > 1 {
 		unit.AddDeclarations(generateClientSuperClass(specification))
 	}
+
+	modelsMap := buildModelsMap(specification.Models)
 	for _, api := range specification.Apis {
-		apiTrait := generateClientApiClass(api)
+		apiTrait := generateClientApiClass(api, modelsMap)
 		unit.AddDeclarations(apiTrait)
 	}
 
@@ -118,7 +120,11 @@ func clientClassName(apiName spec.Name) string {
 	return apiName.PascalCase() + "Client"
 }
 
-func generateClientOperationImplementation(operation spec.NamedOperation, method *scala.MethodDeclaration) {
+func addParamsWriting() {
+
+}
+
+func generateClientOperationImplementation(modelsMap ModelsMap, operation spec.NamedOperation, method *scala.MethodDeclaration) {
 	httpMethod := strings.ToLower(operation.Method)
 	url := operation.Url
 	for _, param := range operation.UrlParams {
@@ -132,8 +138,18 @@ func generateClientOperationImplementation(operation spec.NamedOperation, method
 	if len(operation.QueryParams) > 0 {
 		method_.AddLn("val query = new StringParamsWriter()")
 		for _, p := range operation.QueryParams {
-			method_.AddLn(`query.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `)`)
+			paramBaseType := p.Type.BaseType()
+			if model, ok := modelsMap[paramBaseType.PlainType]; ok {
+				if model.IsEnum() {
+					method_.AddLn(`query.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `.value)`)
+				}
+			} else {
+				method_.AddLn(`query.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `)`)
+			}
 		}
+	}
+
+	if len(operation.QueryParams) > 0 {
 		method_.AddLn(`val url = Uri.parse(baseUrl+s"` + url + `").get.params(query.params)`)
 	} else {
 		method_.AddLn(`val url = Uri.parse(baseUrl+s"` + url + `").get`)
@@ -141,7 +157,7 @@ func generateClientOperationImplementation(operation spec.NamedOperation, method
 
 	if len(operation.HeaderParams) > 0 {
 		method_.AddLn("val headers = new StringParamsWriter()")
-		for _, p := range operation.QueryParams {
+		for _, p := range operation.HeaderParams {
 			method_.AddLn(`headers.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `)`)
 		}
 	}
@@ -168,7 +184,7 @@ func generateClientOperationImplementation(operation spec.NamedOperation, method
 		AddLn(`case Left(errorData) => throw new RuntimeException("Request failed")`)
 }
 
-func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
+func generateClientApiClass(api spec.Api, modelsMap ModelsMap) *scala.ClassDeclaration {
 	apiClassName := clientClassName(api.Name)
 	apiTraitName := clientTraitName(api.Name)
 	apiClass := scala.Class(apiClassName).Extends(apiTraitName)
@@ -180,7 +196,7 @@ func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 	apiClass_.AddCode(scala.Import("ExecutionContext.Implicits.global"))
 	for _, operation := range api.Operations {
 		method := generateClientOperationSignature(operation)
-		generateClientOperationImplementation(operation, method)
+		generateClientOperationImplementation(modelsMap, operation, method)
 		apiClass_.AddCode(method)
 	}
 	return apiClass
