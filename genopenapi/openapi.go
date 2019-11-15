@@ -121,9 +121,11 @@ func addParameters(parameters *YamlArray, in string, params []spec.NamedParam) {
 
 func generateResponse(r spec.Response) *YamlMap {
 	response := Map()
+	description := ""
 	if r.Description != nil {
-		response.Set("description", r.Description)
+		description = *r.Description
 	}
+	response.Set("description", description)
 	if !r.Type.IsEmpty() {
 		response.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&r.Type, nil).Yaml).Yaml).Yaml)
 	}

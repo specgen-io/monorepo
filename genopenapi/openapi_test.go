@@ -61,6 +61,7 @@ func TestResponse(t *testing.T) {
 	response := spec.NewResponse(*spec.Plain("SomeModel"), nil)
 	openapiYaml := generateResponse(*response)
 	expected := `
+description: ""
 content:
   application/json:
     schema:
@@ -129,6 +130,7 @@ func TestApis(t *testing.T) {
       description: the description
     responses:
       "200":
+        description: ""
         content:
           application/json:
             schema:
