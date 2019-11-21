@@ -103,7 +103,7 @@ func generateClientOperationSignature(modelsMap ModelsMap, operation spec.NamedO
 	if operation.Body != nil {
 		method.Param("body", ScalaType(&operation.Body.Type))
 	}
-	for _, param := range operation.UrlParams {
+	for _, param := range operation.Endpoint.UrlParams {
 		method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
 	}
 	addParams(modelsMap, method, operation.QueryParams, false)
@@ -148,9 +148,9 @@ func addParamsWriting(modelsMap ModelsMap, code *scala.StatementsDeclaration, pa
 }
 
 func generateClientOperationImplementation(modelsMap ModelsMap, operation spec.NamedOperation, method *scala.MethodDeclaration) {
-	httpMethod := strings.ToLower(operation.Method)
-	url := operation.Url
-	for _, param := range operation.UrlParams {
+	httpMethod := strings.ToLower(operation.Endpoint.Method)
+	url := operation.Endpoint.Url
+	for _, param := range operation.Endpoint.UrlParams {
 		url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), "$"+param.Name.CamelCase(), -1)
 	}
 

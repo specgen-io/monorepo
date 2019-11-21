@@ -107,7 +107,7 @@ func operationSignature(operation spec.NamedOperation) *scala.MethodDeclaration 
 	if operation.Body != nil {
 		method.Param("body", ScalaType(&operation.Body.Type))
 	}
-	for _, param := range operation.UrlParams {
+	for _, param := range operation.Endpoint.UrlParams {
 		method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
 	}
 	for _, param := range operation.QueryParams {
@@ -232,7 +232,7 @@ func generateApiController(api spec.Api, modelsMap ModelsMap, packageName string
 
 	for _, operation := range api.Operations {
 		method := class_.Def(operation.Name.CamelCase())
-		for _, param := range operation.UrlParams {
+		for _, param := range operation.Endpoint.UrlParams {
 			method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
 		}
 		definition := method.Define()
@@ -291,7 +291,7 @@ func getOperationParams(operation spec.NamedOperation, includeUrl bool) []string
 		params = append(params, "body")
 	}
 	if includeUrl {
-		for _, param := range operation.UrlParams {
+		for _, param := range operation.Endpoint.UrlParams {
 			params = append(params, param.Name.CamelCase())
 		}
 	}
@@ -334,10 +334,10 @@ func generateControllersRoutes(specification *spec.Spec) string {
 		for _, operation := range api.Operations {
 			controllerEndpoint := controllersPackage(specification) + "." + controllerType(api.Name) + "." + operation.Name.CamelCase()
 			params := []string{}
-			for _, param := range operation.UrlParams {
+			for _, param := range operation.Endpoint.UrlParams {
 				params = append(params, param.Name.CamelCase()+": "+ScalaType(&param.Type))
 			}
-			route := tail(operation.Method, 8) + " " + tail(routeUrl(operation), routeLength) + "   " + controllerEndpoint + "(" + strings.Join(params, ", ") + ")\n"
+			route := tail(operation.Endpoint.Method, 8) + " " + tail(routeUrl(operation), routeLength) + "   " + controllerEndpoint + "(" + strings.Join(params, ", ") + ")\n"
 			builder.WriteString(route)
 		}
 	}
@@ -346,8 +346,8 @@ func generateControllersRoutes(specification *spec.Spec) string {
 }
 
 func routeUrl(operation spec.NamedOperation) string {
-	routeUrl := operation.Url
-	for _, param := range operation.UrlParams {
+	routeUrl := operation.Endpoint.Url
+	for _, param := range operation.Endpoint.UrlParams {
 		routeUrl = strings.Replace(routeUrl, spec.UrlParamStr(param.Name.Source), ":"+param.Name.Source, 1)
 	}
 	return routeUrl
