@@ -60,7 +60,7 @@ func generateApis(apis spec.Apis) *YamlMap {
 	for _, group := range groups {
 		path := Map()
 		for _, o := range group.Operations {
-			path.Set(strings.ToLower(o.Operation.Method), generateOperation(o).Yaml)
+			path.Set(strings.ToLower(o.Operation.Endpoint.Method), generateOperation(o).Yaml)
 		}
 		paths.Set(group.Url, path.Yaml)
 	}
@@ -88,7 +88,7 @@ func generateOperation(o Operation) *YamlMap {
 
 	parameters := Array()
 
-	addParameters(parameters, "path", o.Operation.UrlParams)
+	addParameters(parameters, "path", o.Operation.Endpoint.UrlParams)
 	addParameters(parameters, "header", o.Operation.HeaderParams)
 	addParameters(parameters, "query", o.Operation.QueryParams)
 
@@ -98,7 +98,7 @@ func generateOperation(o Operation) *YamlMap {
 
 	responses := Map()
 	for _, r := range o.Operation.Responses {
-		responses.Set(spec.HttpStatusCode(r.Name), generateResponse(r.Response).Yaml)
+		responses.Set(spec.HttpStatusCode(r.Name), generateResponse(r.Definition).Yaml)
 	}
 	operation.Set("responses", responses.Yaml)
 	return operation
@@ -119,7 +119,7 @@ func addParameters(parameters *YamlArray, in string, params []spec.NamedParam) {
 	}
 }
 
-func generateResponse(r spec.Response) *YamlMap {
+func generateResponse(r spec.Definition) *YamlMap {
 	response := Map()
 	description := ""
 	if r.Description != nil {

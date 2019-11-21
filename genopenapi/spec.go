@@ -18,7 +18,7 @@ func Groups(apis spec.Apis) []*Group {
 
 	for _, api := range apis {
 		for _, operation := range api.Operations {
-			url := operation.Url
+			url := operation.Endpoint.Url
 			if _, contains := groupsMap[url]; !contains {
 				group := Group{Url: url, Operations: make([]Operation, 0)}
 				groups = append(groups, &group)

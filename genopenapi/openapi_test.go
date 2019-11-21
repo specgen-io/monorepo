@@ -32,9 +32,9 @@ enum:
 func TestObjectModel(t *testing.T) {
 	description := "the description"
 	fields := []spec.NamedField{
-		{Name: spec.Name{"field1"}, Field: *spec.NewField(*spec.Plain(spec.TypeString), nil)},
-		{Name: spec.Name{"field2"}, Field: *spec.NewField(*spec.Nullable(spec.Plain(spec.TypeString)), &description)},
-		{Name: spec.Name{"field3"}, Field: *spec.NewField(*spec.Array(spec.Plain(spec.TypeString)), nil)},
+		*spec.NewField("field1", *spec.Plain(spec.TypeString), nil, nil),
+		*spec.NewField("field2", *spec.Nullable(spec.Plain(spec.TypeString)), nil, &description),
+		*spec.NewField("field3", *spec.Array(spec.Plain(spec.TypeString)), nil, nil),
 	}
 	model := spec.Model{Object: spec.NewObject(fields, nil)}
 	openapiYaml := generateModel(model)
@@ -58,7 +58,7 @@ properties:
 }
 
 func TestResponse(t *testing.T) {
-	response := spec.NewResponse(*spec.Plain("SomeModel"), nil)
+	response := spec.NewDefinition(*spec.Plain("SomeModel"), nil)
 	openapiYaml := generateResponse(*response)
 	expected := `
 description: ""
@@ -72,23 +72,21 @@ content:
 
 func TestApis(t *testing.T) {
 	myModel := spec.Plain("MyModel")
-	response := spec.NewResponse(*myModel, nil)
 	description := "the description"
-	operation := spec.Operation{
-		Endpoint:     "POST /create/{id:uuid}",
-		Description:  &description,
-		Body:         spec.NewBody(*myModel, &description),
-		HeaderParams: spec.HeaderParams{spec.NamedParam{Name: spec.Name{"Authorization"}, Param: *spec.NewParam(*spec.Plain(spec.TypeString), &description)}},
-		QueryParams:  spec.QueryParams{spec.NamedParam{Name: spec.Name{"id"}, Param: *spec.NewParam(*spec.Plain(spec.TypeUuid), &description)}},
-		Responses:    spec.Responses{spec.NamedResponse{Name: spec.Name{"ok"}, Response: *response}},
-	}
-	operation.Init()
+	operation := spec.NewOperation(
+		spec.NewEndpoint("POST /create/{id:uuid}"),
+		&description,
+		spec.NewDefinition(*myModel, &description),
+		spec.HeaderParams{*spec.NewParam("Authorization", *spec.Plain(spec.TypeString), nil, &description)},
+		spec.QueryParams{*spec.NewParam("id", *spec.Plain(spec.TypeUuid), nil, &description)},
+		spec.Responses{spec.NamedResponse{Name: spec.Name{"ok"}, Definition: *spec.NewDefinition(*myModel, nil)}},
+	)
 	api := spec.Api{
 		Name: spec.Name{"mine"},
 		Operations: spec.Operations{
 			spec.NamedOperation{
 				Name:      spec.Name{"create"},
-				Operation: operation,
+				Operation: *operation,
 			},
 		},
 	}
