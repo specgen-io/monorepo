@@ -179,6 +179,7 @@ func generateClientOperationImplementation(modelsMap ModelsMap, operation spec.N
 		httpCall.AddLn(`.headers(headers.params)`)
 	}
 	if operation.Body != nil {
+		httpCall.AddLn(`.header("Content-Type", "application/json")`)
 		httpCall.AddLn(`.body(bodyJson)`)
 	}
 	httpCall.AddLn(`.parseResponseIf { status => status < 500 }`) // TODO: Allowed statuses from spec
