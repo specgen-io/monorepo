@@ -138,7 +138,11 @@ func addParamsWriting(modelsMap ModelsMap, code *scala.StatementsDeclaration, pa
 			paramBaseType := p.Type.BaseType()
 			if model, ok := modelsMap[paramBaseType.PlainType]; ok {
 				if model.IsEnum() {
-					code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `.value)`)
+					if p.Type.IsNullable() {
+						code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `.map(_.value))`)
+					} else {
+						code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `.value)`)
+					}
 				}
 			} else {
 				code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `)`)
