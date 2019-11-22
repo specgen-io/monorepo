@@ -168,6 +168,10 @@ func generateClientOperationImplementation(modelsMap ModelsMap, operation spec.N
 
 	addParamsWriting(modelsMap, method_, operation.HeaderParams, "headers")
 
+	if operation.Body != nil {
+		method_.AddLn("val bodyJson = Json.write(body)")
+	}
+
 	method_.AddLn("val response: Future[Response[String]] =")
 	httpCall := method_.Block(false).AddLn("sttp").Block(false)
 	httpCall.AddLn(`.` + httpMethod + `(url)`)
@@ -175,7 +179,7 @@ func generateClientOperationImplementation(modelsMap ModelsMap, operation spec.N
 		httpCall.AddLn(`.headers(headers.params)`)
 	}
 	if operation.Body != nil {
-		httpCall.AddLn(`.body(Json.write(body))`)
+		httpCall.AddLn(`.body(bodyJson)`)
 	}
 	httpCall.AddLn(`.parseResponseIf { status => status < 500 }`) // TODO: Allowed statuses from spec
 	httpCall.AddLn(`.send()`)
