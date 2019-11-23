@@ -8,7 +8,7 @@ import (
 func ScalaType(typ *spec.Type) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainScalaType(typ.PlainType)
+		return PlainScalaType(typ.Plain)
 	case spec.NullableType:
 		child := ScalaType(typ.Child)
 		result := "Option[" + child + "]"
