@@ -184,7 +184,7 @@ func addParamsParsing(modelsMap ModelsMap, code *scala.StatementsDeclaration, pa
 		code.AddLn(`val ` + paramsName + ` = new StringParamsReader(` + readingFun + `)`)
 		for _, param := range params {
 			paramBaseType := param.Type.BaseType()
-			if model, ok := modelsMap[paramBaseType.PlainType]; ok {
+			if model, ok := modelsMap[paramBaseType.Plain]; ok {
 				if model.IsEnum() {
 					code.Add(`val ` + param.Name.CamelCase() + ` = ` + paramsName + `.read[String]("` + param.Name.Source + `").map(` + ScalaType(paramBaseType) + `.withValue)`)
 				}

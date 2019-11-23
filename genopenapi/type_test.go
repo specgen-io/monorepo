@@ -131,7 +131,7 @@ type: array
 items:
   type: string
 `
-	typ := spec.Type{Node: spec.ArrayType, Child: &spec.Type{Node: spec.PlainType, PlainType: spec.TypeString}}
+	typ := spec.Type{Node: spec.ArrayType, Child: &spec.Type{Node: spec.PlainType, Plain: spec.TypeString}}
 	checkType(t, &typ, expected)
 }
 
@@ -141,6 +141,6 @@ type: object
 additionalProperties:
   $ref: '#/components/schemas/Model'
 `
-	typ := spec.Type{Node: spec.MapType, Child: &spec.Type{Node: spec.PlainType, PlainType: "Model"}}
+	typ := spec.Type{Node: spec.MapType, Child: &spec.Type{Node: spec.PlainType, Plain: "Model"}}
 	checkType(t, &typ, expected)
 }

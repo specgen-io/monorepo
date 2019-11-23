@@ -3,11 +3,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8b32797347d824114aa4e9dd0bcdd32ace455e815d56fd5ea81c26752ca02ab4"
+  digest = "1:d354a01e9a2722e253d5a99be19db98cd823ff421e18fe54b5d5787747a20e20"
   name = "github.com/ModaOperandi/spec"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c7d2e273c05cbe48a33154accfe124bc5bf81528"
+  revision = "bf50c68144c8b6973254ae9b52721388ebed6a83"
 
 [[projects]]
   branch = "master"

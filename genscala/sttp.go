@@ -136,7 +136,7 @@ func addParamsWriting(modelsMap ModelsMap, code *scala.StatementsDeclaration, pa
 		code.AddLn("val " + paramsName + " = new StringParamsWriter()")
 		for _, p := range params {
 			paramBaseType := p.Type.BaseType()
-			if model, ok := modelsMap[paramBaseType.PlainType]; ok {
+			if model, ok := modelsMap[paramBaseType.Plain]; ok {
 				if model.IsEnum() {
 					if p.Type.IsNullable() {
 						code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `.map(_.value))`)

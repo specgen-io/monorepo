@@ -8,7 +8,7 @@ import (
 func OpenApiType(typ *spec.Type, defaultValue *string) *YamlMap {
 	switch typ.Node {
 	case spec.PlainType:
-		result := PlainOpenApiType(typ.PlainType)
+		result := PlainOpenApiType(typ.Plain)
 		if defaultValue != nil {
 			result.Set("default", defaultValue)
 		}

@@ -8,7 +8,7 @@ import (
 func GraphqlType(typ *spec.Type) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainGraphqlType(typ.PlainType)
+		return PlainGraphqlType(typ.Plain)
 	case spec.NullableType:
 		child := GraphqlType(typ.Child)
 		result := "Option[" + child + "]"
