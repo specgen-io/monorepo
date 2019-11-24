@@ -7,8 +7,8 @@ import (
 )
 
 func CheckPlainType(t *testing.T, plainType string, expected string) {
-	typ := spec.Type{Node: spec.PlainType, Plain: plainType}
-	scalaType := ScalaType(&typ)
+	typ := spec.Plain(plainType)
+	scalaType := ScalaType(typ)
 	assert.Equal(t, scalaType, expected)
 }
 
@@ -74,19 +74,19 @@ func TestPlainTypeString(t *testing.T) {
 }
 
 func TestNullableType(t *testing.T) {
-	typ := spec.Type{Node: spec.NullableType, Child: &spec.Type{Node: spec.PlainType, Plain: spec.TypeString}}
-	scalaType := ScalaType(&typ)
+	typ := spec.Nullable(spec.Plain(spec.TypeString))
+	scalaType := ScalaType(typ)
 	assert.Equal(t, scalaType, "Option[String]")
 }
 
 func TestArrayType(t *testing.T) {
-	typ := spec.Type{Node: spec.ArrayType, Child: &spec.Type{Node: spec.PlainType, Plain: spec.TypeString}}
-	scalaType := ScalaType(&typ)
+	typ := spec.Array(spec.Plain(spec.TypeString))
+	scalaType := ScalaType(typ)
 	assert.Equal(t, scalaType, "List[String]")
 }
 
 func TestMapType(t *testing.T) {
-	typ := spec.Type{Node: spec.MapType, Child: &spec.Type{Node: spec.PlainType, Plain: "Model"}}
-	scalaType := ScalaType(&typ)
+	typ := spec.Map(spec.Plain("Model"))
+	scalaType := ScalaType(typ)
 	assert.Equal(t, scalaType, "Map[String, Model]")
 }
