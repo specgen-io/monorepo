@@ -131,8 +131,8 @@ type: array
 items:
   type: string
 `
-	typ := spec.Type{Node: spec.ArrayType, Child: &spec.Type{Node: spec.PlainType, Plain: spec.TypeString}}
-	checkType(t, &typ, expected)
+	typ := spec.Array(spec.Plain(spec.TypeString))
+	checkType(t, typ, expected)
 }
 
 func TestMapType(t *testing.T) {
@@ -141,6 +141,6 @@ type: object
 additionalProperties:
   $ref: '#/components/schemas/Model'
 `
-	typ := spec.Type{Node: spec.MapType, Child: &spec.Type{Node: spec.PlainType, Plain: "Model"}}
-	checkType(t, &typ, expected)
+	typ := spec.Map(spec.Plain("Model"))
+	checkType(t, typ, expected)
 }
