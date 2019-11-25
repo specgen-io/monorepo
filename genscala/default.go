@@ -1,6 +1,7 @@
 package genscala
 
 import (
+	"casee"
 	"fmt"
 	"github.com/ModaOperandi/spec"
 )
@@ -50,7 +51,7 @@ func PlainScalaValue(typ string, model *spec.NamedModel, value string) string {
 		return `LocalTime.parse("` + value + `", DateTimeFormatter.ISO_LOCAL_TIME)`
 	default:
 		if model != nil && model.IsEnum() {
-			return model.Name.PascalCase() + `.` + spec.Name{value}.PascalCase()
+			return model.Name.PascalCase() + `.` + casee.ToPascalCase(value)
 		} else {
 			panic(fmt.Sprintf("Type: %v does not support default value", typ))
 		}

@@ -35,7 +35,7 @@ func generateSchema(spec *spec.Spec, outPath string) *gen.TextFile {
 func generateModelSchema(model spec.NamedModel, unit *graphql.UnitDeclaration) {
 	typ := graphql.Type(model.Name.PascalCase())
 	for _, field := range model.Object.Fields {
-		typ.Field(field.Name.CamelCase(), GraphqlType(&field.Type))
+		typ.Field(field.Name.CamelCase(), GraphqlType(&field.Type.Definition))
 	}
 	unit.AddDeclarations(typ)
 }

@@ -81,8 +81,8 @@ func generateOperation(o Operation) *YamlMap {
 		if body.Description != nil {
 			request.Set("description", body.Description)
 		}
-		request.Set("required", !body.Type.IsNullable())
-		request.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&body.Type, nil).Yaml).Yaml).Yaml)
+		request.Set("required", !body.Type.Definition.IsNullable())
+		request.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&body.Type.Definition, nil).Yaml).Yaml).Yaml)
 		operation.Set("requestBody", request.Yaml)
 	}
 
@@ -110,8 +110,8 @@ func addParameters(parameters *YamlArray, in string, params []spec.NamedParam) {
 			Map().
 				Set("in", in).
 				Set("name", p.Name.Source).
-				Set("required", !p.Type.IsNullable()).
-				Set("schema", OpenApiType(&p.Type, p.Default).Yaml)
+				Set("required", !p.Type.Definition.IsNullable()).
+				Set("schema", OpenApiType(&p.Type.Definition, p.Default).Yaml)
 		if p.Description != nil {
 			param.Set("description", *p.Description)
 		}
@@ -126,8 +126,8 @@ func generateResponse(r spec.Definition) *YamlMap {
 		description = *r.Description
 	}
 	response.Set("description", description)
-	if !r.Type.IsEmpty() {
-		response.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&r.Type, nil).Yaml).Yaml).Yaml)
+	if !r.Type.Definition.IsEmpty() {
+		response.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&r.Type.Definition, nil).Yaml).Yaml).Yaml)
 	}
 	return response
 }
@@ -149,7 +149,7 @@ func generateObjectModel(model spec.Model) *YamlMap {
 
 	required := Array()
 	for _, field := range model.Object.Fields {
-		if !field.Type.IsNullable() {
+		if !field.Type.Definition.IsNullable() {
 			required.Add(field.Name.Source)
 		}
 	}
@@ -160,7 +160,7 @@ func generateObjectModel(model spec.Model) *YamlMap {
 
 	properties := Map()
 	for _, field := range model.Object.Fields {
-		property := OpenApiType(&field.Type, field.Default)
+		property := OpenApiType(&field.Type.Definition, field.Default)
 		if field.Description != nil {
 			property.Set("description", field.Description)
 		}

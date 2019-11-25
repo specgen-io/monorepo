@@ -12,9 +12,9 @@ func TestEnumModel(t *testing.T) {
 	model := spec.Model{Enum: &spec.Enum{
 		Description: &description,
 		Items: []spec.NamedEnumItem{
-			{Name: spec.Name{"first"}, EnumItem: spec.EnumItem{}},
-			{Name: spec.Name{"second"}, EnumItem: spec.EnumItem{}},
-			{Name: spec.Name{"third"}, EnumItem: spec.EnumItem{}},
+			{Name: spec.NewName("first"), EnumItem: spec.EnumItem{}},
+			{Name: spec.NewName("second"), EnumItem: spec.EnumItem{}},
+			{Name: spec.NewName("third"), EnumItem: spec.EnumItem{}},
 		},
 	}}
 	openapiYaml := generateModel(model)
@@ -74,18 +74,18 @@ func TestApis(t *testing.T) {
 	myModel := spec.Plain("MyModel")
 	description := "the description"
 	operation := spec.NewOperation(
-		spec.NewEndpoint("POST /create/{id:uuid}"),
+		spec.ParseEndpoint("POST /create/{id:uuid}"),
 		&description,
 		spec.NewDefinition(*myModel, &description),
 		spec.HeaderParams{*spec.NewParam("Authorization", *spec.Plain(spec.TypeString), nil, &description)},
 		spec.QueryParams{*spec.NewParam("id", *spec.Plain(spec.TypeUuid), nil, &description)},
-		spec.Responses{spec.NamedResponse{Name: spec.Name{"ok"}, Definition: *spec.NewDefinition(*myModel, nil)}},
+		spec.Responses{spec.NamedResponse{Name: spec.NewName("ok"), Definition: *spec.NewDefinition(*myModel, nil)}},
 	)
 	api := spec.Api{
-		Name: spec.Name{"mine"},
+		Name: spec.NewName("mine"),
 		Operations: spec.Operations{
 			spec.NamedOperation{
-				Name:      spec.Name{"create"},
+				Name:      spec.NewName("create"),
 				Operation: *operation,
 			},
 		},
@@ -143,7 +143,7 @@ func TestSpecification(t *testing.T) {
 	description := "The service with description"
 	spec := spec.Spec{
 		IdlVersion:  &idlVersion,
-		ServiceName: spec.Name{"the-service"},
+		ServiceName: spec.NewName("the-service"),
 		Title:       &title,
 		Description: &description,
 		Version:     "0",
