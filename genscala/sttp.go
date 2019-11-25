@@ -48,9 +48,8 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 		unit.AddDeclarations(generateClientSuperClass(specification))
 	}
 
-	modelsMap := buildModelsMap(specification.Models)
 	for _, api := range specification.Apis {
-		apiTrait := generateClientApiClass(api, modelsMap)
+		apiTrait := generateClientApiClass(api)
 		unit.AddDeclarations(apiTrait)
 	}
 
@@ -61,8 +60,6 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 }
 
 func generateClientApisInterfaces(specification *spec.Spec, packageName string, outPath string) *gen.TextFile {
-	modelsMap := buildModelsMap(specification.Models)
-
 	unit := scala.Unit(packageName)
 
 	unit.
@@ -70,7 +67,7 @@ func generateClientApisInterfaces(specification *spec.Spec, packageName string, 
 		Import("spec.http._")
 
 	for _, api := range specification.Apis {
-		apiTrait := generateClientApiTrait(modelsMap, api)
+		apiTrait := generateClientApiTrait(api)
 		unit.AddDeclarations(apiTrait)
 	}
 
@@ -85,40 +82,41 @@ func generateClientApisInterfaces(specification *spec.Spec, packageName string, 
 	}
 }
 
-func addParams(modelsMap ModelsMap, method *scala.MethodDeclaration, params []spec.NamedParam, defaulted bool) {
+func addParams(method *scala.MethodDeclaration, params []spec.NamedParam, defaulted bool) {
 	for _, param := range params {
 		if !defaulted && param.Default == nil {
 			method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
 		}
 		if defaulted && param.Default != nil {
-			method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition)).Init(scala.Code(DefaultValue(&param.Type.Definition, *param.Default, modelsMap)))
+			defaultValue := DefaultValue(&param.Type.Definition, *param.Default)
+			method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition)).Init(scala.Code(defaultValue))
 		}
 	}
 }
 
-func generateClientOperationSignature(modelsMap ModelsMap, operation spec.NamedOperation) *scala.MethodDeclaration {
+func generateClientOperationSignature(operation spec.NamedOperation) *scala.MethodDeclaration {
 	returnType := "Future[" + responseType(operation) + "]"
 	method := scala.Method(operation.Name.CamelCase()).Returns(returnType)
-	addParams(modelsMap, method, operation.HeaderParams, false)
+	addParams(method, operation.HeaderParams, false)
 	if operation.Body != nil {
 		method.Param("body", ScalaType(&operation.Body.Type.Definition))
 	}
 	for _, param := range operation.Endpoint.UrlParams {
 		method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
 	}
-	addParams(modelsMap, method, operation.QueryParams, false)
-	addParams(modelsMap, method, operation.HeaderParams, true)
-	addParams(modelsMap, method, operation.QueryParams, true)
+	addParams(method, operation.QueryParams, false)
+	addParams(method, operation.HeaderParams, true)
+	addParams(method, operation.QueryParams, true)
 	return method
 }
 
-func generateClientApiTrait(modelsMap ModelsMap, api spec.Api) *scala.TraitDeclaration {
+func generateClientApiTrait(api spec.Api) *scala.TraitDeclaration {
 	apiTraitName := clientTraitName(api.Name)
 	apiTrait := scala.Trait(apiTraitName)
 	apiTrait_ := apiTrait.Define(true)
 	apiTrait_.AddCode(scala.Import(apiTraitName + "._"))
 	for _, operation := range api.Operations {
-		apiTrait_.AddCode(generateClientOperationSignature(modelsMap, operation))
+		apiTrait_.AddCode(generateClientOperationSignature(operation))
 	}
 	return apiTrait
 }
@@ -131,13 +129,13 @@ func clientClassName(apiName spec.Name) string {
 	return apiName.PascalCase() + "Client"
 }
 
-func addParamsWriting(modelsMap ModelsMap, code *scala.StatementsDeclaration, params []spec.NamedParam, paramsName string) {
+func addParamsWriting(code *scala.StatementsDeclaration, params []spec.NamedParam, paramsName string) {
 	if params != nil && len(params) > 0 {
 		code.AddLn("val " + paramsName + " = new StringParamsWriter()")
 		for _, p := range params {
 			paramBaseType := p.Type.Definition.BaseType()
-			if model, ok := modelsMap[paramBaseType.Plain]; ok {
-				if model.IsEnum() {
+			if paramBaseType.Info.Model != nil {
+				if paramBaseType.Info.Model.IsEnum() {
 					if p.Type.Definition.IsNullable() {
 						code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `.map(_.value))`)
 					} else {
@@ -151,7 +149,7 @@ func addParamsWriting(modelsMap ModelsMap, code *scala.StatementsDeclaration, pa
 	}
 }
 
-func generateClientOperationImplementation(modelsMap ModelsMap, operation spec.NamedOperation, method *scala.MethodDeclaration) {
+func generateClientOperationImplementation(method *scala.MethodDeclaration, operation spec.NamedOperation) {
 	httpMethod := strings.ToLower(operation.Endpoint.Method)
 	url := operation.Endpoint.Url
 	for _, param := range operation.Endpoint.UrlParams {
@@ -162,7 +160,7 @@ func generateClientOperationImplementation(modelsMap ModelsMap, operation spec.N
 
 	method_.AddLn("implicit val jsonConfig = Json.config")
 
-	addParamsWriting(modelsMap, method_, operation.QueryParams, "query")
+	addParamsWriting(method_, operation.QueryParams, "query")
 
 	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		method_.AddLn(`val url = Uri.parse(baseUrl+s"` + url + `").get.params(query.params)`)
@@ -170,7 +168,7 @@ func generateClientOperationImplementation(modelsMap ModelsMap, operation spec.N
 		method_.AddLn(`val url = Uri.parse(baseUrl+s"` + url + `").get`)
 	}
 
-	addParamsWriting(modelsMap, method_, operation.HeaderParams, "headers")
+	addParamsWriting(method_, operation.HeaderParams, "headers")
 
 	if operation.Body != nil {
 		method_.AddLn("val bodyJson = Json.write(body)")
@@ -199,7 +197,7 @@ func generateClientOperationImplementation(modelsMap ModelsMap, operation spec.N
 		AddLn(`case Left(errorData) => throw new RuntimeException("Request failed")`)
 }
 
-func generateClientApiClass(api spec.Api, modelsMap ModelsMap) *scala.ClassDeclaration {
+func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 	apiClassName := clientClassName(api.Name)
 	apiTraitName := clientTraitName(api.Name)
 	apiClass := scala.Class(apiClassName).Extends(apiTraitName)
@@ -210,8 +208,8 @@ func generateClientApiClass(api spec.Api, modelsMap ModelsMap) *scala.ClassDecla
 	apiClass_.AddCode(scala.Import(apiTraitName + "._"))
 	apiClass_.AddCode(scala.Import("ExecutionContext.Implicits.global"))
 	for _, operation := range api.Operations {
-		method := generateClientOperationSignature(modelsMap, operation)
-		generateClientOperationImplementation(modelsMap, operation, method)
+		method := generateClientOperationSignature(operation)
+		generateClientOperationImplementation(method, operation)
 		apiClass_.AddCode(method)
 	}
 	return apiClass

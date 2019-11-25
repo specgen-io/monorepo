@@ -6,14 +6,10 @@ import (
 	"github.com/vsapronov/casee"
 )
 
-func DefaultValue(typ *spec.Type, value string, modelsMap ModelsMap) string {
+func DefaultValue(typ *spec.Type, value string) string {
 	switch typ.Node {
 	case spec.PlainType:
-		var typeModel *spec.NamedModel = nil
-		if model, ok := modelsMap[typ.Plain]; ok {
-			typeModel = &model
-		}
-		return PlainScalaValue(typ.Plain, typeModel, value)
+		return PlainScalaValue(typ.Plain, typ.Info.Model, value)
 	default:
 		panic(fmt.Sprintf("Type: %v does not support default value", typ))
 	}
