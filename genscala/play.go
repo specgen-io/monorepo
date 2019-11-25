@@ -102,16 +102,16 @@ func operationSignature(operation spec.NamedOperation) *scala.MethodDeclaration 
 	returnType := "Future[" + responseType(operation) + "]"
 	method := scala.Method(operation.Name.CamelCase()).Returns(returnType)
 	for _, param := range operation.HeaderParams {
-		method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
+		method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
 	}
 	if operation.Body != nil {
-		method.Param("body", ScalaType(&operation.Body.Type))
+		method.Param("body", ScalaType(&operation.Body.Type.Definition))
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
+		method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
 	}
 	for _, param := range operation.QueryParams {
-		method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
+		method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
 	}
 	return method
 }
@@ -183,7 +183,7 @@ func addParamsParsing(modelsMap ModelsMap, code *scala.StatementsDeclaration, pa
 	if params != nil && len(params) > 0 {
 		code.AddLn(`val ` + paramsName + ` = new StringParamsReader(` + readingFun + `)`)
 		for _, param := range params {
-			paramBaseType := param.Type.BaseType()
+			paramBaseType := param.Type.Definition.BaseType()
 			if model, ok := modelsMap[paramBaseType.Plain]; ok {
 				if model.IsEnum() {
 					code.Add(`val ` + param.Name.CamelCase() + ` = ` + paramsName + `.read[String]("` + param.Name.Source + `").map(` + ScalaType(paramBaseType) + `.withValue)`)
@@ -191,9 +191,9 @@ func addParamsParsing(modelsMap ModelsMap, code *scala.StatementsDeclaration, pa
 			} else {
 				code.Add(`val ` + param.Name.CamelCase() + ` = ` + paramsName + `.read[` + ScalaType(paramBaseType) + `]("` + param.Name.Source + `")`)
 			}
-			if !param.Type.IsNullable() {
+			if !param.Type.Definition.IsNullable() {
 				if param.Default != nil {
-					code.Add(`.getOrElse(` + DefaultValue(&param.Type, *param.Default, modelsMap) + `)`)
+					code.Add(`.getOrElse(` + DefaultValue(&param.Type.Definition, *param.Default, modelsMap) + `)`)
 				} else {
 					code.Add(".get")
 				}
@@ -233,7 +233,7 @@ func generateApiController(api spec.Api, modelsMap ModelsMap, packageName string
 	for _, operation := range api.Operations {
 		method := class_.Def(operation.Name.CamelCase())
 		for _, param := range operation.Endpoint.UrlParams {
-			method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
+			method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
 		}
 		definition := method.Define()
 		if operation.Body != nil {
@@ -250,7 +250,7 @@ func generateApiController(api spec.Api, modelsMap ModelsMap, packageName string
 			addParamsParsing(modelsMap, tryBlock, operation.HeaderParams, "header", "request.headers.get")
 			addParamsParsing(modelsMap, tryBlock, operation.QueryParams, "query", "request.getQueryString")
 			if operation.Body != nil {
-				tryBlock.AddLn("val body = Json.read[" + ScalaType(&operation.Body.Type) + "](request.body.utf8String)")
+				tryBlock.AddLn("val body = Json.read[" + ScalaType(&operation.Body.Type.Definition) + "](request.body.utf8String)")
 			}
 			tryBlock.AddLn("(" + strings.Join(parseParams, ", ") + ")")
 		}
@@ -335,7 +335,7 @@ func generateControllersRoutes(specification *spec.Spec) string {
 			controllerEndpoint := controllersPackage(specification) + "." + controllerType(api.Name) + "." + operation.Name.CamelCase()
 			params := []string{}
 			for _, param := range operation.Endpoint.UrlParams {
-				params = append(params, param.Name.CamelCase()+": "+ScalaType(&param.Type))
+				params = append(params, param.Name.CamelCase()+": "+ScalaType(&param.Type.Definition))
 			}
 			route := tail(operation.Endpoint.Method, 8) + " " + tail(routeUrl(operation), routeLength) + "   " + controllerEndpoint + "(" + strings.Join(params, ", ") + ")\n"
 			builder.WriteString(route)

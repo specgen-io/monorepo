@@ -88,10 +88,10 @@ func generateClientApisInterfaces(specification *spec.Spec, packageName string, 
 func addParams(modelsMap ModelsMap, method *scala.MethodDeclaration, params []spec.NamedParam, defaulted bool) {
 	for _, param := range params {
 		if !defaulted && param.Default == nil {
-			method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
+			method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
 		}
 		if defaulted && param.Default != nil {
-			method.Param(param.Name.CamelCase(), ScalaType(&param.Type)).Init(scala.Code(DefaultValue(&param.Type, *param.Default, modelsMap)))
+			method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition)).Init(scala.Code(DefaultValue(&param.Type.Definition, *param.Default, modelsMap)))
 		}
 	}
 }
@@ -101,10 +101,10 @@ func generateClientOperationSignature(modelsMap ModelsMap, operation spec.NamedO
 	method := scala.Method(operation.Name.CamelCase()).Returns(returnType)
 	addParams(modelsMap, method, operation.HeaderParams, false)
 	if operation.Body != nil {
-		method.Param("body", ScalaType(&operation.Body.Type))
+		method.Param("body", ScalaType(&operation.Body.Type.Definition))
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		method.Param(param.Name.CamelCase(), ScalaType(&param.Type))
+		method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
 	}
 	addParams(modelsMap, method, operation.QueryParams, false)
 	addParams(modelsMap, method, operation.HeaderParams, true)
@@ -135,10 +135,10 @@ func addParamsWriting(modelsMap ModelsMap, code *scala.StatementsDeclaration, pa
 	if params != nil && len(params) > 0 {
 		code.AddLn("val " + paramsName + " = new StringParamsWriter()")
 		for _, p := range params {
-			paramBaseType := p.Type.BaseType()
+			paramBaseType := p.Type.Definition.BaseType()
 			if model, ok := modelsMap[paramBaseType.Plain]; ok {
 				if model.IsEnum() {
-					if p.Type.IsNullable() {
+					if p.Type.Definition.IsNullable() {
 						code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `.map(_.value))`)
 					} else {
 						code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `.value)`)

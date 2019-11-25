@@ -20,8 +20,8 @@ func generateResponse(responseTypeName string, responses spec.Responses) (*scala
 		responseClassCtor := responseClass.Contructor()
 		statusValue := spec.HttpStatusCode(response.Name)
 		bodyValue := "None"
-		if !response.Type.IsEmpty() {
-			responseClassCtor.Param("body", ScalaType(&response.Type))
+		if !response.Type.Definition.IsEmpty() {
+			responseClassCtor.Param("body", ScalaType(&response.Type.Definition))
 			bodyValue = "Some(Json.write(body))"
 		}
 		responseClass.Extends(responseTypeName + ` { def toResult = OperationResult(` + statusValue + `, ` + bodyValue + `)}`)
@@ -33,8 +33,8 @@ func generateResponse(responseTypeName string, responses spec.Responses) (*scala
 	match := create.Define().Add("result.status match ").Block(true)
 	for _, response := range responses {
 		responseParam := ""
-		if !response.Type.IsEmpty() {
-			responseParam = `Json.read[` + ScalaType(&response.Type) + `](result.body.get)`
+		if !response.Type.Definition.IsEmpty() {
+			responseParam = `Json.read[` + ScalaType(&response.Type.Definition) + `](result.body.get)`
 		}
 		match.AddLn("case " + spec.HttpStatusCode(response.Name) + " => " + response.Name.PascalCase() + "(" + responseParam + ")")
 	}
