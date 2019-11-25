@@ -126,6 +126,7 @@
     "github.com/ModaOperandi/spec",
     "github.com/dollarshaveclub/line",
     "github.com/spf13/cobra",
+    "github.com/vsapronov/casee",
     "github.com/vsapronov/gopoetry/graphql",
     "github.com/vsapronov/gopoetry/scala",
     "gopkg.in/yaml.v2",
