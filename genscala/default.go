@@ -1,9 +1,9 @@
 package genscala
 
 import (
-	"casee"
 	"fmt"
 	"github.com/ModaOperandi/spec"
+	"github.com/vsapronov/casee"
 )
 
 func DefaultValue(typ *spec.Type, value string, modelsMap ModelsMap) string {
