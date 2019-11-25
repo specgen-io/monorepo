@@ -47,5 +47,3 @@ var cmdServiceScalaPlay = &cobra.Command{
 		fail.IfErrorF(err, "Failed to generate service code")
 	},
 }
-
-//serviceFile string, swaggerPath string, generatePath string, ServicesPath string, routesPath string

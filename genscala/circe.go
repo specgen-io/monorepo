@@ -8,8 +8,6 @@ import (
 )
 
 func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *gen.TextFile {
-	modelsMap := buildModelsMap(spec.Models)
-
 	unit := scala.Unit(packageName)
 	unit.
 		Import("enumeratum.values._").
@@ -19,7 +17,7 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *g
 
 	for _, model := range spec.Models {
 		if model.IsObject() {
-			generateCirceObjectModel(model, modelsMap, unit)
+			generateCirceObjectModel(model, unit)
 		} else {
 			generateCirceEnumModel(model, unit)
 		}
@@ -31,13 +29,13 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *g
 	}
 }
 
-func generateCirceObjectModel(model spec.NamedModel, modelsMap ModelsMap, unit *scala.UnitDeclaration) {
+func generateCirceObjectModel(model spec.NamedModel, unit *scala.UnitDeclaration) {
 	class := scala.Class(model.Name.PascalCase()).Case()
 	ctor := class.Contructor().ParamPerLine()
 	for _, field := range model.Object.Fields {
 		param := ctor.Param(field.Name.CamelCase(), ScalaType(&field.Type.Definition))
 		if field.Default != nil {
-			param.Init(scala.Code(DefaultValue(&field.Type.Definition, *field.Default, modelsMap)))
+			param.Init(scala.Code(DefaultValue(&field.Type.Definition, *field.Default)))
 		}
 	}
 	unit.AddDeclarations(class)
