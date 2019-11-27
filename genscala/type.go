@@ -30,11 +30,11 @@ func PlainScalaType(typ string) string {
 	switch typ {
 	case spec.TypeByte:
 		return "Byte"
-	case spec.TypeShort, spec.TypeInt16:
+	case spec.TypeInt16:
 		return "Short"
-	case spec.TypeInt, spec.TypeInt32:
+	case spec.TypeInt32:
 		return "Int"
-	case spec.TypeLong, spec.TypeInt64:
+	case spec.TypeInt64:
 		return "Long"
 	case spec.TypeFloat:
 		return "Float"
@@ -42,11 +42,11 @@ func PlainScalaType(typ string) string {
 		return "Double"
 	case spec.TypeDecimal:
 		return "BigDecimal"
-	case spec.TypeBool, spec.TypeBoolean:
+	case spec.TypeBoolean:
 		return "Boolean"
 	case spec.TypeChar:
 		return "Char"
-	case spec.TypeString, spec.TypeStr:
+	case spec.TypeString:
 		return "String"
 	case spec.TypeUuid:
 		return "java.util.UUID"
