@@ -17,17 +17,14 @@ func TestPlainTypeByte(t *testing.T) {
 }
 
 func TestPlainTypeShort(t *testing.T) {
-	CheckPlainType(t, spec.TypeShort, "Short")
 	CheckPlainType(t, spec.TypeInt16, "Short")
 }
 
 func TestPlainTypeInt(t *testing.T) {
-	CheckPlainType(t, spec.TypeInt, "Int")
 	CheckPlainType(t, spec.TypeInt32, "Int")
 }
 
 func TestPlainTypeLong(t *testing.T) {
-	CheckPlainType(t, spec.TypeLong, "Long")
 	CheckPlainType(t, spec.TypeInt64, "Long")
 }
 
@@ -45,7 +42,6 @@ func TestPlainTypeDecimal(t *testing.T) {
 
 func TestPlainTypeBoolean(t *testing.T) {
 	CheckPlainType(t, spec.TypeBoolean, "Boolean")
-	CheckPlainType(t, spec.TypeBool, "Boolean")
 }
 
 func TestPlainTypeDate(t *testing.T) {
@@ -70,7 +66,6 @@ func TestPlainTypeChar(t *testing.T) {
 
 func TestPlainTypeString(t *testing.T) {
 	CheckPlainType(t, spec.TypeString, "String")
-	CheckPlainType(t, spec.TypeStr, "String")
 }
 
 func TestNullableType(t *testing.T) {

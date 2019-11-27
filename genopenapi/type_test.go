@@ -25,7 +25,6 @@ func TestPlainTypeShort(t *testing.T) {
 type: integer
 format: int16
 `
-	checkType(t, spec.Plain(spec.TypeShort), expected)
 	checkType(t, spec.Plain(spec.TypeInt16), expected)
 }
 
@@ -34,7 +33,6 @@ func TestPlainTypeInt(t *testing.T) {
 type: integer
 format: int32
 `
-	checkType(t, spec.Plain(spec.TypeInt), expected)
 	checkType(t, spec.Plain(spec.TypeInt32), expected)
 }
 
@@ -43,7 +41,6 @@ func TestPlainTypeLong(t *testing.T) {
 type: integer
 format: int64
 `
-	checkType(t, spec.Plain(spec.TypeLong), expected)
 	checkType(t, spec.Plain(spec.TypeInt64), expected)
 }
 
@@ -74,7 +71,6 @@ format: decimal
 func TestPlainTypeBoolean(t *testing.T) {
 	expected := `type: boolean`
 	checkType(t, spec.Plain(spec.TypeBoolean), expected)
-	checkType(t, spec.Plain(spec.TypeBool), expected)
 }
 
 func TestPlainTypeDate(t *testing.T) {
@@ -117,7 +113,6 @@ format: char
 func TestPlainTypeString(t *testing.T) {
 	expected := `type: string`
 	checkType(t, spec.Plain(spec.TypeString), expected)
-	checkType(t, spec.Plain(spec.TypeStr), expected)
 }
 
 func TestCustomType(t *testing.T) {
