@@ -19,11 +19,8 @@ func PlainScalaValue(typ string, model *spec.NamedModel, value string) string {
 	switch typ {
 	case
 		spec.TypeByte,
-		spec.TypeShort,
 		spec.TypeInt16,
-		spec.TypeInt,
 		spec.TypeInt32,
-		spec.TypeLong,
 		spec.TypeInt64,
 		spec.TypeDouble:
 		return value
@@ -31,11 +28,11 @@ func PlainScalaValue(typ string, model *spec.NamedModel, value string) string {
 		return value + "f"
 	case spec.TypeDecimal:
 		return `BigDecimal("` + value + `")`
-	case spec.TypeBool, spec.TypeBoolean:
+	case spec.TypeBoolean:
 		return value
 	case spec.TypeChar:
 		return "'" + value + "'"
-	case spec.TypeString, spec.TypeStr:
+	case spec.TypeString:
 		return `"` + value + `"`
 	case spec.TypeUuid:
 		return `UUID.fromString("` + value + `")`

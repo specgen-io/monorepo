@@ -33,11 +33,11 @@ func PlainOpenApiType(typ string) *YamlMap {
 	switch typ {
 	case spec.TypeByte:
 		return Map().Set("type", "integer").Set("format", "int8")
-	case spec.TypeShort, spec.TypeInt16:
+	case spec.TypeInt16:
 		return Map().Set("type", "integer").Set("format", "int16")
-	case spec.TypeInt, spec.TypeInt32:
+	case spec.TypeInt32:
 		return Map().Set("type", "integer").Set("format", "int32")
-	case spec.TypeLong, spec.TypeInt64:
+	case spec.TypeInt64:
 		return Map().Set("type", "integer").Set("format", "int64")
 	case spec.TypeFloat:
 		return Map().Set("type", "number").Set("format", "float")
@@ -45,11 +45,11 @@ func PlainOpenApiType(typ string) *YamlMap {
 		return Map().Set("type", "number").Set("format", "double")
 	case spec.TypeDecimal:
 		return Map().Set("type", "number").Set("format", "decimal")
-	case spec.TypeBool, spec.TypeBoolean:
+	case spec.TypeBoolean:
 		return Map().Set("type", "boolean")
 	case spec.TypeChar:
 		return Map().Set("type", "string").Set("format", "char")
-	case spec.TypeString, spec.TypeStr:
+	case spec.TypeString:
 		return Map().Set("type", "string")
 	case spec.TypeUuid:
 		return Map().Set("type", "string").Set("format", "uuid")
