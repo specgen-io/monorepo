@@ -8,17 +8,18 @@ jobs:
     environment:
       TEST_RESULTS: /tmp/test-results
       VERSION_MAJOR: 0
-      VERSION_FILE: version.circleci
 
     steps:
       - checkout
-      - run: echo "${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}" >> ${VERSION_FILE}
-      - run: echo 'export VERSION="$(cat ${VERSION_FILE})"' >> $BASH_ENV
-      - run: echo "Version ${VERSION}"
-      - run: ./build.sh ${VERSION}
-      - run: mkdir -p $TEST_RESULTS
-      - run: go get -u github.com/jstemmer/go-junit-report
-      - run: go test ./... -v 2>&1 | ../../bin/go-junit-report > ${TEST_RESULTS}/go-test-report.xml
+      - run:
+          name: Build
+          command: ./build.sh ${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}
+      - run:
+          name: Unit tests
+          command: |
+            mkdir -p $TEST_RESULTS
+            go get -u github.com/jstemmer/go-junit-report
+            go test ./... -v 2>&1 | ../../bin/go-junit-report > ${TEST_RESULTS}/go-test-report.xml
       - store_artifacts:
           path: ./zips
           destination: zips
@@ -27,36 +28,18 @@ jobs:
           destination: go-test-report
       - store_test_results:
           path: /tmp/test-results
-      - persist_to_workspace:
-          root: .
-          paths:
-            - version.circleci
-            - zips/*
-
-  release:
-    docker:
-      - image: circleci/golang:1.12
-    working_directory: /go/src/specgen
-
-    environment:
-      VERSION_FILE: version.circleci
-
-    steps:
-      - checkout
-      - attach_workspace: { at: . }
-      - run: echo 'export VERSION="$(cat ${VERSION_FILE})"' >> $BASH_ENV
-      - run: echo "Version ${VERSION}"
-      - run: ./release.sh ${VERSION} ${GITHUB_TOKEN}
+      - run:
+          name: Release
+          command: |
+            if [ $CIRCLE_BRANCH = "master" ]; then
+              ./release.sh ${VERSION_MAJOR}.${CIRCLE_BUILD_NUM} ${GITHUB_TOKEN}
+            else
+              echo "Will not release - not running on master branch
+            fi
 
 workflows:
   version: 2
   build_and_release:
     jobs:
       - build
-      - release:
-          requires:
-            - build
           context: github-release
-          filters:
-            branches:
-              only: master
