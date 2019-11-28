@@ -34,7 +34,7 @@ jobs:
             if [ $CIRCLE_BRANCH = "master" ]; then
               ./release.sh ${VERSION_MAJOR}.${CIRCLE_BUILD_NUM} ${GITHUB_TOKEN}
             else
-              echo "Will not release - not running on master branch
+              echo "Will not release - not running on master branch"
             fi
 
 workflows:
