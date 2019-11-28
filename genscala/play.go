@@ -172,11 +172,11 @@ func addParamsParsing(code *scala.StatementsDeclaration, params []spec.NamedPara
 		code.AddLn(`val ` + paramsName + ` = new StringParamsReader(` + readingFun + `)`)
 		for _, param := range params {
 			paramBaseType := param.Type.Definition.BaseType()
+			method := "read"
 			if paramBaseType.Info.Model != nil && paramBaseType.Info.Model.IsEnum() {
-				code.Add(`val ` + param.Name.CamelCase() + ` = ` + paramsName + `.read[String]("` + param.Name.Source + `").map(` + ScalaType(paramBaseType) + `.withValue)`)
-			} else {
-				code.Add(`val ` + param.Name.CamelCase() + ` = ` + paramsName + `.read[` + ScalaType(paramBaseType) + `]("` + param.Name.Source + `")`)
+				method = "readEnum"
 			}
+			code.Add(`val ` + param.Name.CamelCase() + ` = ` + paramsName + `.` + method + `[` + ScalaType(paramBaseType) + `]("` + param.Name.Source + `")`)
 			if !param.Type.Definition.IsNullable() {
 				if param.Default != nil {
 					code.Add(`.getOrElse(` + DefaultValue(&param.Type.Definition, *param.Default) + `)`)

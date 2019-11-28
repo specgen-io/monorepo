@@ -133,18 +133,7 @@ func addParamsWriting(code *scala.StatementsDeclaration, params []spec.NamedPara
 	if params != nil && len(params) > 0 {
 		code.AddLn("val " + paramsName + " = new StringParamsWriter()")
 		for _, p := range params {
-			paramBaseType := p.Type.Definition.BaseType()
-			if paramBaseType.Info.Model != nil {
-				if paramBaseType.Info.Model.IsEnum() {
-					if p.Type.Definition.IsNullable() {
-						code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `.map(_.value))`)
-					} else {
-						code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `.value)`)
-					}
-				}
-			} else {
-				code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `)`)
-			}
+			code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `)`)
 		}
 	}
 }
