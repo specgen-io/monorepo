@@ -5,7 +5,7 @@ import (
 	"github.com/ModaOperandi/spec"
 )
 
-func ScalaType(typ *spec.Type) string {
+func ScalaType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
 		return PlainScalaType(typ.Plain)

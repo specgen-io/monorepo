@@ -5,7 +5,7 @@ import (
 	"github.com/ModaOperandi/spec"
 )
 
-func GraphqlType(typ *spec.Type) string {
+func GraphqlType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
 		return PlainGraphqlType(typ.Plain)

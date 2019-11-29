@@ -5,7 +5,7 @@ import (
 	"github.com/ModaOperandi/spec"
 )
 
-func OpenApiType(typ *spec.Type, defaultValue *string) *YamlMap {
+func OpenApiType(typ *spec.TypeDef, defaultValue *string) *YamlMap {
 	switch typ.Node {
 	case spec.PlainType:
 		result := PlainOpenApiType(typ.Plain)
