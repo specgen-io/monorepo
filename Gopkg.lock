@@ -3,11 +3,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:07103bcf1a729794725f6c3c2a6c06a8ea9f2126d416abe8ea3ab83403fc4efa"
+  digest = "1:179cf7999280bc124e86362b9273cc6d01fd3b870f0df592bb8f4e5dbd4b61b6"
   name = "github.com/ModaOperandi/spec"
   packages = ["."]
   pruneopts = "UT"
-  revision = "34d118cc66b3e16a1b7b0021dc0071049c7303e8"
+  revision = "592854e48620ee1df80c96c1fdc4239240093f7d"
 
 [[projects]]
   branch = "master"
@@ -90,20 +90,20 @@
   revision = "7fcbb363d3ffd9de9f89c7ae52fb2136c5386d05"
 
 [[projects]]
+  branch = "v3"
+  digest = "1:c2b0d84b07f399ccb5a1e88a32bbe23d0a6c4f82dbc1f6e5984f2b5dbc22f013"
+  name = "github.com/vsapronov/yaml"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "84e45af4937baff96b228b1402480c44f02b34c8"
+
+[[projects]]
   digest = "1:b75b3deb2bce8bc079e16bb2aecfe01eb80098f5650f9e93e5643ca8b7b73737"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   pruneopts = "UT"
   revision = "1f64d6156d11335c3f22d9330b0ad14fc1e789ce"
   version = "v2.2.7"
-
-[[projects]]
-  branch = "v3"
-  digest = "1:3f3455f22627a44aab35023af8336ffc40df4d6180ef56bfceb7f51ecada3ef2"
-  name = "gopkg.in/yaml.v3"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "4206685974f28e3178b35fa198a59899aa4dee3a"
 
 [[projects]]
   digest = "1:a5cc901b8e54c4b73a62f97dc7c8f6c46e347c148a7a38e09b2e942c2587ba03"
