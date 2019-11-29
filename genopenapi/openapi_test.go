@@ -12,9 +12,9 @@ func TestEnumModel(t *testing.T) {
 	model := spec.Model{Enum: &spec.Enum{
 		Description: &description,
 		Items: []spec.NamedEnumItem{
-			{Name: spec.NewName("first"), EnumItem: spec.EnumItem{}},
-			{Name: spec.NewName("second"), EnumItem: spec.EnumItem{}},
-			{Name: spec.NewName("third"), EnumItem: spec.EnumItem{}},
+			*NewEnumItem("first", nil),
+			*NewEnumItem("second", nil),
+			*NewEnumItem("third", nil),
 		},
 	}}
 	openapiYaml := generateModel(model)
@@ -32,11 +32,11 @@ enum:
 func TestObjectModel(t *testing.T) {
 	description := "the description"
 	fields := []spec.NamedField{
-		*spec.NewField("field1", *spec.Plain(spec.TypeString), nil, nil),
-		*spec.NewField("field2", *spec.Nullable(spec.Plain(spec.TypeString)), nil, &description),
-		*spec.NewField("field3", *spec.Array(spec.Plain(spec.TypeString)), nil, nil),
+		*NewField("field1", *spec.Plain(spec.TypeString), nil, nil),
+		*NewField("field2", *spec.Nullable(spec.Plain(spec.TypeString)), nil, &description),
+		*NewField("field3", *spec.Array(spec.Plain(spec.TypeString)), nil, nil),
 	}
-	model := spec.Model{Object: spec.NewObject(fields, nil)}
+	model := spec.Model{Object: NewObject(fields, nil)}
 	openapiYaml := generateModel(model)
 	expected := `
 type: object
@@ -58,8 +58,8 @@ properties:
 }
 
 func TestResponse(t *testing.T) {
-	response := spec.NewDefinition(*spec.Plain("SomeModel"), nil)
-	openapiYaml := generateResponse(*response)
+	response := spec.Definition{spec.TypeLocated{nil, *spec.Plain("SomeModel")}, nil, nil}
+	openapiYaml := generateResponse(response)
 	expected := `
 description: ""
 content:
@@ -73,20 +73,20 @@ content:
 func TestApis(t *testing.T) {
 	myModel := spec.Plain("MyModel")
 	description := "the description"
-	operation := spec.NewOperation(
-		spec.ParseEndpoint("POST /create/{id:uuid}"),
+	operation := spec.Operation{
+		*spec.ParseEndpoint("POST /create/{id:uuid}"),
 		&description,
-		spec.NewDefinition(*myModel, &description),
-		spec.HeaderParams{*spec.NewParam("Authorization", *spec.Plain(spec.TypeString), nil, &description)},
-		spec.QueryParams{*spec.NewParam("id", *spec.Plain(spec.TypeUuid), nil, &description)},
-		spec.Responses{spec.NamedResponse{Name: spec.NewName("ok"), Definition: *spec.NewDefinition(*myModel, nil)}},
-	)
+		&spec.Definition{spec.TypeLocated{nil, *myModel}, &description, nil},
+		spec.HeaderParams{*NewParam("Authorization", *spec.Plain(spec.TypeString), nil, &description)},
+		spec.QueryParams{*NewParam("id", *spec.Plain(spec.TypeUuid), nil, &description)},
+		spec.Responses{*NewResponse("ok", *myModel, nil)},
+	}
 	api := spec.Api{
-		Name: spec.NewName("mine"),
+		Name: NewName("mine"),
 		Operations: spec.Operations{
 			spec.NamedOperation{
-				Name:      spec.NewName("create"),
-				Operation: *operation,
+				Name:      NewName("create"),
+				Operation: operation,
 			},
 		},
 	}
@@ -143,7 +143,7 @@ func TestSpecification(t *testing.T) {
 	description := "The service with description"
 	spec := spec.Spec{
 		IdlVersion:  &idlVersion,
-		ServiceName: spec.NewName("the-service"),
+		ServiceName: NewName("the-service"),
 		Title:       &title,
 		Description: &description,
 		Version:     "0",
