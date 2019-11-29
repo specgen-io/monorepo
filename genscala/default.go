@@ -6,7 +6,7 @@ import (
 	"github.com/vsapronov/casee"
 )
 
-func DefaultValue(typ *spec.Type, value string) string {
+func DefaultValue(typ *spec.TypeDef, value string) string {
 	switch typ.Node {
 	case spec.PlainType:
 		return PlainScalaValue(typ.Plain, typ.Info.Model, value)

@@ -58,7 +58,7 @@ properties:
 }
 
 func TestResponse(t *testing.T) {
-	response := spec.Definition{spec.TypeLocated{nil, *spec.Plain("SomeModel")}, nil, nil}
+	response := spec.Definition{spec.Type{*spec.Plain("SomeModel"), nil}, nil, nil}
 	openapiYaml := generateResponse(response)
 	expected := `
 description: ""
@@ -76,7 +76,7 @@ func TestApis(t *testing.T) {
 	operation := spec.Operation{
 		*spec.ParseEndpoint("POST /create/{id:uuid}"),
 		&description,
-		&spec.Definition{spec.TypeLocated{nil, *myModel}, &description, nil},
+		&spec.Definition{spec.Type{*myModel, nil}, &description, nil},
 		spec.HeaderParams{*NewParam("Authorization", *spec.Plain(spec.TypeString), nil, &description)},
 		spec.QueryParams{*NewParam("id", *spec.Plain(spec.TypeUuid), nil, &description)},
 		spec.Responses{*NewResponse("ok", *myModel, nil)},
