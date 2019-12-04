@@ -57,7 +57,7 @@ func TestPlainTypeTime(t *testing.T) {
 }
 
 func TestPlainTypeJson(t *testing.T) {
-	CheckPlainType(t, spec.TypeJson, "JsonNode")
+	CheckPlainType(t, spec.TypeJson, "io.circe.Json")
 }
 
 func TestPlainTypeChar(t *testing.T) {
