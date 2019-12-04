@@ -147,7 +147,7 @@ func generateClientOperationImplementation(method *scala.MethodDeclaration, oper
 
 	method_ := method.Define().Block(true)
 
-	method_.AddLn("implicit val jsonConfig = Json.config")
+	method_.AddLn("implicit val jsonerConfig = Jsoner.config")
 
 	addParamsWriting(method_, operation.QueryParams, "query")
 
@@ -160,7 +160,7 @@ func generateClientOperationImplementation(method *scala.MethodDeclaration, oper
 	addParamsWriting(method_, operation.HeaderParams, "headers")
 
 	if operation.Body != nil {
-		method_.AddLn("val bodyJson = Json.write(body)")
+		method_.AddLn("val bodyJson = Jsoner.write(body)")
 	}
 
 	method_.AddLn("val response: Future[Response[String]] =")
