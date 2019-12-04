@@ -22,7 +22,7 @@ func generateResponse(responseTypeName string, responses spec.Responses) (*scala
 		bodyValue := "None"
 		if !response.Type.Definition.IsEmpty() {
 			responseClassCtor.Param("body", ScalaType(&response.Type.Definition))
-			bodyValue = "Some(Json.write(body))"
+			bodyValue = "Some(Jsoner.write(body))"
 		}
 		responseClass.Extends(responseTypeName + ` { def toResult = OperationResult(` + statusValue + `, ` + bodyValue + `)}`)
 		object_.AddCode(responseClass)
@@ -34,7 +34,7 @@ func generateResponse(responseTypeName string, responses spec.Responses) (*scala
 	for _, response := range responses {
 		responseParam := ""
 		if !response.Type.Definition.IsEmpty() {
-			responseParam = `Json.read[` + ScalaType(&response.Type.Definition) + `](result.body.get)`
+			responseParam = `Jsoner.read[` + ScalaType(&response.Type.Definition) + `](result.body.get)`
 		}
 		match.AddLn("case " + spec.HttpStatusCode(response.Name) + " => " + response.Name.PascalCase() + "(" + responseParam + ")")
 	}
@@ -46,7 +46,7 @@ func generateApiInterfaceResponse(api spec.Api, apiTraitName string) *scala.Clas
 	apiObject_ := apiObject.Define(true)
 
 	apiObject_.AddLn("import spec.circe.json._")
-	apiObject_.AddLn("implicit val jsonConfig = Json.config")
+	apiObject_.AddLn("implicit val jsonerConfig = Jsoner.config")
 
 	for _, operation := range api.Operations {
 		responseTypeName := responseType(operation)

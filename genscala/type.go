@@ -57,7 +57,7 @@ func PlainScalaType(typ string) string {
 	case spec.TypeTime:
 		return "java.time.LocalTime"
 	case spec.TypeJson:
-		return "JsonNode"
+		return "io.circe.Json"
 	default:
 		return typ
 	}

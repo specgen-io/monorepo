@@ -214,7 +214,7 @@ func generateApiController(api spec.Api, packageName string, outPath string) *ge
 	class.Extends("AbstractController(cc)")
 	class_ := class.Define(true)
 
-	class_.AddLn("implicit val jsonConfig = Json.config")
+	class_.AddLn("implicit val jsonerConfig = Jsoner.config")
 
 	for _, operation := range api.Operations {
 		method := class_.Def(operation.Name.CamelCase())
@@ -236,7 +236,7 @@ func generateApiController(api spec.Api, packageName string, outPath string) *ge
 			addParamsParsing(tryBlock, operation.HeaderParams, "header", "request.headers.get")
 			addParamsParsing(tryBlock, operation.QueryParams, "query", "request.getQueryString")
 			if operation.Body != nil {
-				tryBlock.AddLn("val body = Json.read[" + ScalaType(&operation.Body.Type.Definition) + "](request.body.utf8String)")
+				tryBlock.AddLn("val body = Jsoner.read[" + ScalaType(&operation.Body.Type.Definition) + "](request.body.utf8String)")
 			}
 			tryBlock.AddLn("(" + strings.Join(parseParams, ", ") + ")")
 		}
