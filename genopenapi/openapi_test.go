@@ -30,10 +30,11 @@ enum:
 }
 
 func TestObjectModel(t *testing.T) {
+	defaultValue := "the default value"
 	description := "the description"
 	fields := []spec.NamedField{
 		*NewField("field1", *spec.Plain(spec.TypeString), nil, nil),
-		*NewField("field2", *spec.Nullable(spec.Plain(spec.TypeString)), nil, &description),
+		*NewField("field2", *spec.Nullable(spec.Plain(spec.TypeString)), &defaultValue, &description),
 		*NewField("field3", *spec.Array(spec.Plain(spec.TypeString)), nil, nil),
 	}
 	model := spec.Model{Object: NewObject(fields, nil)}
@@ -48,6 +49,7 @@ properties:
     type: string
   field2:
     type: string
+    default: the default value
     description: the description
   field3:
     type: array
@@ -73,12 +75,16 @@ content:
 func TestApis(t *testing.T) {
 	myModel := spec.Plain("MyModel")
 	description := "the description"
+	defaultValue := "the default value"
 	operation := spec.Operation{
 		*spec.ParseEndpoint("POST /create/{id:uuid}"),
 		&description,
 		&spec.Definition{spec.Type{*myModel, nil}, &description, nil},
 		spec.HeaderParams{*NewParam("Authorization", *spec.Plain(spec.TypeString), nil, &description)},
-		spec.QueryParams{*NewParam("id", *spec.Plain(spec.TypeUuid), nil, &description)},
+		spec.QueryParams{
+			*NewParam("id", *spec.Plain(spec.TypeUuid), nil, &description),
+			*NewParam("str_param", *spec.Plain(spec.TypeString), &defaultValue, &description),
+		},
 		spec.Responses{*NewResponse("ok", *myModel, nil)},
 	}
 	api := spec.Api{
@@ -125,6 +131,13 @@ func TestApis(t *testing.T) {
       schema:
         type: string
         format: uuid
+      description: the description
+    - in: query
+      name: str_param
+      required: true
+      schema:
+        type: string
+        default: the default value
       description: the description
     responses:
       "200":

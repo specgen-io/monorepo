@@ -3,6 +3,7 @@ package genopenapi
 import (
 	"fmt"
 	"github.com/ModaOperandi/spec"
+	"strconv"
 )
 
 func OpenApiType(typ *spec.TypeDef, defaultValue *string) *YamlMap {
@@ -10,7 +11,7 @@ func OpenApiType(typ *spec.TypeDef, defaultValue *string) *YamlMap {
 	case spec.PlainType:
 		result := PlainOpenApiType(typ.Plain)
 		if defaultValue != nil {
-			result.Set("default", defaultValue)
+			result.Set("default", DefaultValue(typ.Plain, *defaultValue))
 		}
 		return result
 	case spec.NullableType:
@@ -27,6 +28,60 @@ func OpenApiType(typ *spec.TypeDef, defaultValue *string) *YamlMap {
 	default:
 		panic(fmt.Sprintf("Unknown type: %v", typ))
 	}
+}
+
+// TODO: Default values provided in spec are actually exactly what should appear in Swagger in the string form.
+//       This value translation string -> go type -> string is only needed because of how OpenAPI spec if formed.
+//       It's possible that after move to yaml.v3 this value translation can be avoided.
+func DefaultValue(typ string, defaultValue string) interface{} {
+	switch typ {
+	case spec.TypeByte:
+		value, err := strconv.ParseInt(defaultValue, 10, 8)
+		if err != nil { failDefaultParse(typ, defaultValue, err) }
+		return byte(value)
+	case spec.TypeInt16:
+		value, err := strconv.ParseInt(defaultValue, 10, 16)
+		if err != nil { failDefaultParse(typ, defaultValue, err) }
+		return int16(value)
+	case spec.TypeInt32:
+		value, err := strconv.ParseInt(defaultValue, 10, 32)
+		if err != nil { failDefaultParse(typ, defaultValue, err) }
+		return int32(value)
+	case spec.TypeInt64:
+		value, err := strconv.ParseInt(defaultValue, 10, 64)
+		if err != nil { failDefaultParse(typ, defaultValue, err) }
+		return value
+	case spec.TypeFloat:
+		value, err := strconv.ParseFloat(defaultValue, 32)
+		if err != nil { failDefaultParse(typ, defaultValue, err) }
+		return float32(value)
+	case spec.TypeDouble:
+		value, err := strconv.ParseFloat(defaultValue, 64)
+		if err != nil { failDefaultParse(typ, defaultValue, err) }
+		return value
+	case spec.TypeDecimal:
+		value, err := strconv.ParseFloat(defaultValue, 64)
+		if err != nil { failDefaultParse(typ, defaultValue, err) }
+		return value
+	case spec.TypeBoolean:
+		value, err := strconv.ParseBool(defaultValue)
+		if err != nil { failDefaultParse(typ, defaultValue, err) }
+		return value
+	case
+		spec.TypeChar,
+		spec.TypeString,
+		spec.TypeUuid,
+		spec.TypeDate,
+		spec.TypeDateTime,
+		spec.TypeTime:
+		return defaultValue
+	default:
+		panic(fmt.Sprintf("type: %s does not support default value", typ))
+	}
+}
+
+func failDefaultParse(typ string, defaultValue string, err error) {
+	panic(fmt.Sprintf("Parsing default value %s for type %s failed, message: %s", defaultValue, typ, err.Error()))
 }
 
 func PlainOpenApiType(typ string) *YamlMap {
