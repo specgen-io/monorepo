@@ -16,11 +16,12 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 	}
 
 	packageName := modelsPackage(specification)
+	controllersPackage := controllersPackage(specification)
 
-	jsonFile := GenerateJsonObject(packageName, generatePath)
-	operationResultFile := GenerateOperationResult(packageName, generatePath)
-	resultHelpersFile := GeneratePlayResultHelpers(packageName, generatePath)
-	stringParamsFile := GenerateStringParams(packageName, generatePath)
+	jsonFile := GenerateJsonObject(controllersPackage, generatePath)
+	operationResultFile := GenerateOperationResult(controllersPackage, generatePath)
+	resultHelpersFile := GeneratePlayResultHelpers(controllersPackage, generatePath)
+	stringParamsFile := GenerateStringParams(controllersPackage, generatePath)
 
 	modelsFile := GenerateCirceModels(specification, packageName, generatePath)
 
@@ -37,7 +38,7 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 
 	for _, api := range apis {
 		apiTraitFile := generateApiInterface(api, servicesPackage(specification), generatePath)
-		apiControllerFile := generateApiController(api, controllersPackage(specification), generatePath)
+		apiControllerFile := generateApiController(api, controllersPackage, generatePath)
 		sourceManaged = append(sourceManaged, *apiTraitFile, *apiControllerFile)
 		apiClassFile := generateApiClass(api, servicesPackage(specification), servicesPath)
 		source = append(source, *apiClassFile)

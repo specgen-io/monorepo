@@ -170,7 +170,6 @@ func GeneratePlayResultHelpers(packageName string, outPath string) *gen.TextFile
 	code := fmt.Sprintf(`
 package %s
 
-import spec.http.OperationResult
 import play.api.mvc.Result
 import play.api.mvc.Results._
 
