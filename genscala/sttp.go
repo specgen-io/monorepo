@@ -15,11 +15,25 @@ func GenerateSttpClient(serviceFile string, generatePath string) error {
 	}
 
 	clientPackage := clientPackageName(specification.ServiceName)
+
+	jsonFile := GenerateJsonObject(clientPackage, generatePath)
+	operationResultFile := GenerateOperationResult(clientPackage, generatePath)
+	stringParamsFile := GenerateStringParams(clientPackage, generatePath)
+	backendFile := GenerateSttpBackend(clientPackage, generatePath)
+
 	modelsFile := GenerateCirceModels(specification, clientPackage, generatePath)
 	interfacesFile := generateClientApisInterfaces(specification, clientPackage, generatePath)
 	implsFile := generateClientApiImplementations(specification, clientPackage, generatePath)
 
-	sourceManaged := []gen.TextFile{*modelsFile, *interfacesFile, *implsFile}
+	sourceManaged := []gen.TextFile{
+		*jsonFile,
+		*operationResultFile,
+		*stringParamsFile,
+		*backendFile,
+		*modelsFile,
+		*interfacesFile,
+		*implsFile,
+	}
 
 	err = gen.WriteFiles(sourceManaged, true)
 	if err != nil {
@@ -41,8 +55,7 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 		Import("akka.stream.scaladsl.Source").
 		Import("akka.util.ByteString").
 		Import("com.softwaremill.sttp._").
-		Import("spec.circe.json._").
-		Import("spec.http._")
+		Import("json._")
 
 	if len(specification.Apis) > 1 {
 		unit.AddDeclarations(generateClientSuperClass(specification))
@@ -63,8 +76,7 @@ func generateClientApisInterfaces(specification *spec.Spec, packageName string, 
 	unit := scala.Unit(packageName)
 
 	unit.
-		Import("scala.concurrent._").
-		Import("spec.http._")
+		Import("scala.concurrent._")
 
 	for _, api := range specification.Apis {
 		apiTrait := generateClientApiTrait(api)

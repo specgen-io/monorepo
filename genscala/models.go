@@ -11,9 +11,11 @@ func GenerateServiceModels(serviceFile string, generatePath string) (err error) 
 		return
 	}
 
+	jsonFile := GenerateJsonObject("models", generatePath)
+
 	modelsFile := GenerateCirceModels(specification, "models", generatePath)
 
-	sourceManaged := []gen.TextFile{*modelsFile}
+	sourceManaged := []gen.TextFile{*modelsFile, *jsonFile}
 
 	err = gen.WriteFiles(sourceManaged, true)
 	if err != nil {
