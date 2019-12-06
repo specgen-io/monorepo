@@ -15,10 +15,23 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 		return
 	}
 
-	modelsFile := GenerateCirceModels(specification, modelsPackage(specification), generatePath)
+	packageName := modelsPackage(specification)
+
+	jsonFile := GenerateJsonObject(packageName, generatePath)
+	operationResultFile := GenerateOperationResult(packageName, generatePath)
+	resultHelpersFile := GeneratePlayResultHelpers(packageName, generatePath)
+	stringParamsFile := GenerateStringParams(packageName, generatePath)
+
+	modelsFile := GenerateCirceModels(specification, packageName, generatePath)
 
 	source := []gen.TextFile{}
-	sourceManaged := []gen.TextFile{*modelsFile}
+	sourceManaged := []gen.TextFile{
+		*jsonFile,
+		*operationResultFile,
+		*resultHelpersFile,
+		*stringParamsFile,
+		*modelsFile,
+	}
 
 	apis := specification.Apis
 
@@ -109,7 +122,6 @@ func generateApiInterface(api spec.Api, packageName string, outPath string) *gen
 	unit.
 		Import("com.google.inject.ImplementedBy").
 		Import("scala.concurrent.Future").
-		Import("spec.http._").
 		Import("models._")
 
 	apiTraitName := apiTraitType(api.Name)
@@ -198,9 +210,8 @@ func generateApiController(api spec.Api, packageName string, outPath string) *ge
 		Import("scala.util._").
 		Import("scala.concurrent._").
 		Import("play.api.mvc._").
-		Import("spec.circe.json._").
-		Import("spec.http._").
-		Import("spec.play.ResponseHelpers._").
+		Import("ResultHelpers._").
+		Import("json._").
 		Import("models._").
 		Import("services._")
 
