@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+func staticPackageName(packageName string) string {
+	if packageName == "" {
+		return "spec"
+	}
+	return packageName+".spec"
+}
+
 func GenerateJsonObject(packageName string, outPath string) *gen.TextFile {
 	code := fmt.Sprintf(`
 package %s
@@ -46,7 +53,7 @@ object json extends AutoDerivation {
   }
 
 }
-`, packageName)
+`, staticPackageName(packageName))
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, "Json.scala"),
@@ -59,7 +66,7 @@ func GenerateOperationResult(packageName string, outPath string) *gen.TextFile {
 package %s
 
 case class OperationResult(status: Int, body: Option[String])
-`, packageName)
+`, staticPackageName(packageName))
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, "OperationResult.scala"),
@@ -142,7 +149,7 @@ object StringParams {
   }
 
 }
-`, packageName)
+`, staticPackageName(packageName))
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, "StringParams.scala"),
@@ -156,12 +163,12 @@ package %s
 
 import com.softwaremill.sttp.akkahttp.AkkaHttpBackend
 
-object Backend {
+object ClientBackend {
   def akka = AkkaHttpBackend()
-}`, packageName)
+}`, staticPackageName(packageName))
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, "Backend.scala"),
+		Path:    filepath.Join(outPath, "ClientBackend.scala"),
 		Content: strings.TrimSpace(code),
 	}
 }
@@ -173,7 +180,7 @@ package %s
 import play.api.mvc.Result
 import play.api.mvc.Results._
 
-object ResultHelpers {
+object PlayResultHelpers {
   implicit class ResponsePlay(response: OperationResult) {
     def toPlay(): Result = {
       val status = new Status(response.status)
@@ -183,10 +190,10 @@ object ResultHelpers {
       }
     }
   }
-}`, packageName)
+}`, staticPackageName(packageName))
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, "ResultHelpers.scala"),
+		Path:    filepath.Join(outPath, "PlayResultHelpers.scala"),
 		Content: strings.TrimSpace(code),
 	}
 }
