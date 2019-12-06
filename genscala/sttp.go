@@ -55,7 +55,8 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 		Import("akka.stream.scaladsl.Source").
 		Import("akka.util.ByteString").
 		Import("com.softwaremill.sttp._").
-		Import("json._")
+		Import("spec.json._").
+		Import("spec._")
 
 	if len(specification.Apis) > 1 {
 		unit.AddDeclarations(generateClientSuperClass(specification))
@@ -76,7 +77,8 @@ func generateClientApisInterfaces(specification *spec.Spec, packageName string, 
 	unit := scala.Unit(packageName)
 
 	unit.
-		Import("scala.concurrent._")
+		Import("scala.concurrent._").
+		Import("spec._")
 
 	for _, api := range specification.Apis {
 		apiTrait := generateClientApiTrait(api)

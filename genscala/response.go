@@ -45,7 +45,7 @@ func generateApiInterfaceResponse(api spec.Api, apiTraitName string) *scala.Clas
 	apiObject := scala.Object(apiTraitName)
 	apiObject_ := apiObject.Define(true)
 
-	apiObject_.AddLn("import spec.circe.json._")
+	apiObject_.AddCode(scala.Import("spec.json._"))
 	apiObject_.AddLn("implicit val jsonerConfig = Jsoner.config")
 
 	for _, operation := range api.Operations {
