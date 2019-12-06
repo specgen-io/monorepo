@@ -45,9 +45,9 @@ object json extends AutoDerivation {
 
     def write[T](value: T, formatted: Boolean = false)(implicit encoder: Encoder[T]): String = {
       if (formatted) {
-        value.asJson.spaces2
+        Printer.spaces2.copy(dropNullValues = true).print(value.asJson)
       } else {
-        value.asJson.noSpaces
+        Printer.noSpaces.copy(dropNullValues = true).print(value.asJson)
       }
     }
   }
