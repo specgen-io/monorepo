@@ -145,7 +145,7 @@ object StringParams {
 `, packageName)
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, "OperationResult.scala"),
+		Path:    filepath.Join(outPath, "StringParams.scala"),
 		Content: strings.TrimSpace(code),
 	}
 }
