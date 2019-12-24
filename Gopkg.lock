@@ -3,11 +3,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7fac2904bbb094f1486b7a9f013f11859a12bfac421a6dfa316b1a529daf024c"
+  digest = "1:77386203a7fe8fd94312691b4fdcccff774f147295e142a8e78a6c09eb3792a6"
   name = "github.com/ModaOperandi/spec"
   packages = ["."]
   pruneopts = "UT"
-  revision = "4cf6334437c7cd899ba21c95b297eae7c489f254"
+  revision = "0247a83caaea6a9782b1fade1c1e2b2bebeb7f40"
 
 [[projects]]
   branch = "master"
@@ -80,14 +80,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:68c8590d99913c0f0cec39e2067b57bd7ba578317834ea3c2452e2a6de2e1813"
+  digest = "1:42b397958402fa2bc0e711403564701947187a11ed74430700803d1fcfc10275"
   name = "github.com/vsapronov/gopoetry"
-  packages = [
-    "graphql",
-    "scala",
-  ]
+  packages = ["scala"]
   pruneopts = "UT"
-  revision = "7fcbb363d3ffd9de9f89c7ae52fb2136c5386d05"
+  revision = "c4782ace6b0903e3956cbe6effba92841d5c685a"
 
 [[projects]]
   branch = "v3"
@@ -127,7 +124,6 @@
     "github.com/dollarshaveclub/line",
     "github.com/spf13/cobra",
     "github.com/vsapronov/casee",
-    "github.com/vsapronov/gopoetry/graphql",
     "github.com/vsapronov/gopoetry/scala",
     "gopkg.in/yaml.v2",
     "gotest.tools/assert",
