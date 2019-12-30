@@ -6,6 +6,7 @@ import (
 	"gopoetry/ruby"
 	"path/filepath"
 	"specgen/gen"
+	"specgen/static"
 	"strings"
 )
 
@@ -16,6 +17,10 @@ func GenerateClient(serviceFile string, generatePath string) error {
 	unit := ruby.Unit().
 		Require("json").
 		Require("bigdecimal")
+
+	typecheck, err := static.StaticCode("genruby/typecheck.rb")
+	if err != nil { return err }
+	unit.AddDeclarations(ruby.Code(typecheck))
 
 	generateModels(specification, unit)
 

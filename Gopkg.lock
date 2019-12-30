@@ -2,12 +2,31 @@
 
 
 [[projects]]
+  digest = "1:07f7314344b2771963ada0b2a4a426c59d782dac227dcfff2499188a186446c0"
+  name = "github.com/GeertJohan/go.rice"
+  packages = [
+    ".",
+    "embedded",
+  ]
+  pruneopts = "UT"
+  revision = "cd53cd147dd5288bc2fb990fb983e58e301abb5e"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   digest = "1:77386203a7fe8fd94312691b4fdcccff774f147295e142a8e78a6c09eb3792a6"
   name = "github.com/ModaOperandi/spec"
   packages = ["."]
   pruneopts = "UT"
   revision = "0247a83caaea6a9782b1fade1c1e2b2bebeb7f40"
+
+[[projects]]
+  digest = "1:8e8da6cc8cca12851d4e089d970a0f7387b3a6bcc8c459ff432213b03076a66d"
+  name = "github.com/daaku/go.zipexe"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "74d766ac1dde7458348221869a7d1e7e5fa0597e"
+  version = "v1.0.1"
 
 [[projects]]
   branch = "master"
@@ -84,7 +103,7 @@
   name = "github.com/vsapronov/gopoetry"
   packages = ["scala"]
   pruneopts = "UT"
-  revision = "c4782ace6b0903e3956cbe6effba92841d5c685a"
+  revision = "6a299397a35a8ea6e68888bd2177a6c5e19ea663"
 
 [[projects]]
   branch = "v3"
@@ -120,6 +139,8 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/GeertJohan/go.rice",
+    "github.com/GeertJohan/go.rice/embedded",
     "github.com/ModaOperandi/spec",
     "github.com/dollarshaveclub/line",
     "github.com/spf13/cobra",
