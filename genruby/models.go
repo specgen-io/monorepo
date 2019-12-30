@@ -1,9 +1,9 @@
 package genruby
 
 import (
-	"github.com/ModaOperandi/spec"
 	"fmt"
-	"gopoetry/ruby"
+	"github.com/ModaOperandi/spec"
+	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"
 	"specgen/gen"
 	"specgen/static"

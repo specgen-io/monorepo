@@ -99,9 +99,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:42b397958402fa2bc0e711403564701947187a11ed74430700803d1fcfc10275"
+  digest = "1:079f8fe7a27db8731fea28189e470b84710d59f88b46f813d386c3e010486cfb"
   name = "github.com/vsapronov/gopoetry"
-  packages = ["scala"]
+  packages = [
+    "ruby",
+    "scala",
+  ]
   pruneopts = "UT"
   revision = "6a299397a35a8ea6e68888bd2177a6c5e19ea663"
 
@@ -145,6 +148,7 @@
     "github.com/dollarshaveclub/line",
     "github.com/spf13/cobra",
     "github.com/vsapronov/casee",
+    "github.com/vsapronov/gopoetry/ruby",
     "github.com/vsapronov/gopoetry/scala",
     "gopkg.in/yaml.v2",
     "gotest.tools/assert",
