@@ -31,4 +31,25 @@ $GOPATH/bin/github-release upload  --security-token $GITHUB_TOKEN --user ModaOpe
 echo "Releasing zips/specgen_windows_amd64.zip"
 $GOPATH/bin/github-release upload  --security-token $GITHUB_TOKEN --user ModaOperandi --repo specgen --tag $RELEASE_NAME --name specgen_windows_amd64.zip --file zips/specgen_windows_amd64.zip
 
+
+BINTRAY_URL="https://api.bintray.com/content/moda/binaries/specgen"
+
+echo "Releasing to Bintray: $BINTRAY_URL/latest"
+
+curl -H 'X-JFrog-Art-Api:$BINTRAY_PASS' -T zips/specgen_darwin_amd64.zip "$BINTRAY_URL/latest/specgen_darwin_amd64.zip"
+echo
+curl -H 'X-JFrog-Art-Api:$BINTRAY_PASS' -T zips/specgen_linux_amd64.zip "$BINTRAY_URL/latest/specgen_linux_amd64.zip"
+echo
+curl -H 'X-JFrog-Art-Api:$BINTRAY_PASS' -T zips/specgen_windows_amd64.zip "$BINTRAY_URL/latest/specgen_windows_amd64.zip"
+echo
+
+echo "Releasing to Bintray: $BINTRAY_URL/$RELEASE_NAME"
+
+curl -H 'X-JFrog-Art-Api:$BINTRAY_PASS' -T zips/specgen_darwin_amd64.zip "$BINTRAY_URL/$RELEASE_NAME/specgen_darwin_amd64.zip"
+echo
+curl -H 'X-JFrog-Art-Api:$BINTRAY_PASS' -T zips/specgen_linux_amd64.zip "$BINTRAY_URL/$RELEASE_NAME/specgen_linux_amd64.zip"
+echo
+curl -H 'X-JFrog-Art-Api:$BINTRAY_PASS' -T zips/specgen_windows_amd64.zip "$BINTRAY_URL/$RELEASE_NAME/specgen_windows_amd64.zip"
+echo
+
 echo "Done releasing $VERSION"
