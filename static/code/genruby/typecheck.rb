@@ -4,7 +4,12 @@ end
 class Any
 end
 
+class UUID
+end
+
 module Type
+  UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
   class TypeMismatchException < StandardError
     attr_reader :message
     def initialize(message)
@@ -33,6 +38,10 @@ module Type
         if @plain_type == Boolean
           if !value.is_a?(TrueClass) and !value.is_a?(FalseClass)
             raise TypeMismatchException.new("Value type[#{value.class}] - class[TrueClass or FalseClass] is required. value[#{value.inspect.to_s}]")
+          end
+        elsif @plain_type == UUID
+          if !UUID_REGEX.match?(value)
+            raise TypeMismatchException.new("Value is not in UUID format. value[#{value.inspect.to_s}]")
           end
         elsif @plain_type.included_modules.include?(Ruby::Enum)
           if !@plain_type.value?(value)
