@@ -67,6 +67,18 @@ func generateObjectModel(model spec.NamedModel) ruby.Writable {
 		initializeBody.AddLn(fmt.Sprintf("@%s = Type.check_field('%s', %s, %s)", fieldName, fieldName, typ, fieldName))
 	}
 
+	toHash := class.Def("to_hash").NoParams().Body()
+	toHash.AddLn("{")
+	hash := toHash.Scope()
+	for _, field := range model.Object.Fields {
+		fieldName := field.Name.SnakeCase()
+		hash.AddLn(fmt.Sprintf(":%s => %s,", fieldName, fieldName))
+	}
+	toHash.AddLn("}")
+
+	toJson := class.Def("to_json").NoParams().Body()
+	toJson.AddLn("JSON.dump(to_hash)")
+
 	return class
 }
 
