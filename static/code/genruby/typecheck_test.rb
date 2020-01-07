@@ -54,8 +54,34 @@ class TypeCheckTest < Test::Unit::TestCase
   def test_hash_plain
     assert_equal({"key" => "the value"}, Type.check(Type.hash(String, String), {"key" => "the value"}), "Hash of String -> String should allow String -> String value")
   end
+
+  def test_plain_enum_success
+    assert_equal Enum::FIRST, Type.check(Enum, Enum::FIRST), "Plain enum type should pass type check"
+  end
+
+  def test_plain_enum_fail
+    assert_raise Type::TypeMismatchException do
+      Type.check(Enum, "non existing")
+    end
+  end
+
+  def test_any
+    assert_equal "bla", Type.check(Any, "bla"), "Any type should accept strings"
+  end
+
+  def test_any_nil
+    assert_raise Type::TypeMismatchException do
+      Type.check(Any, nil)
+    end
+  end
 end
 
+class Enum
+  include Ruby::Enum
+
+  define :FIRST, "first"
+  define :SECOND, "second"
+end
 
 class TypeStringTest < Test::Unit::TestCase
   def test_plain_string
