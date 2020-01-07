@@ -1,4 +1,5 @@
 require "test/unit"
+require "date"
 
 require_relative './typecheck'
 
@@ -21,6 +22,28 @@ class TypePlainTest < Test::Unit::TestCase
 
   def test_plain_boolean
     assert_equal true, Type.check(Boolean, true), "Artificial Boolean type should allow true value"
+  end
+
+  def test_plain_date
+    assert_equal Date.new(2020, 5, 24), Type.check(Date, Date.new(2020, 5, 24)), "Date type should pass validation"
+  end
+
+  def test_plain_datetime
+    assert_equal DateTime.new(2020, 5, 24, 14, 30, 30), Type.check(Date, DateTime.new(2020, 5, 24, 14, 30, 30)), "DateTime type should pass validation"
+  end
+
+  def test_plain_time
+    assert_equal Time.new(2007,11,5,13,45,0, "-05:00"), Type.check(Time, Time.new(2007,11,5,13,45,0, "-05:00")), "Time type should pass validation"
+  end
+
+  def test_plain_uuid
+    assert_equal "123e4567-e89b-12d3-a456-426655440000", Type.check(UUID, "123e4567-e89b-12d3-a456-426655440000"), "UUID type should pass validation on correctly formatted string"
+  end
+
+  def test_plain_uuid_fail
+    assert_raise Type::TypeMismatchException do
+      Type.check(UUID, "really not the uuid")
+    end
   end
 
   def test_plain_enum_success
@@ -80,6 +103,10 @@ class TypeHashTest < Test::Unit::TestCase
   def test_hash_success
     assert_equal({"key" => "the value"}, Type.check(Type.hash(String, String), {"key" => "the value"}), "Hash of String -> String should allow String -> String value")
   end
+
+  def test_hash_string_any
+    assert_equal({"key" => "the value"}, Type.check(Type.hash(String, Any), {"key" => "the value"}), "Hash of String -> Any should allow String -> String value")
+  end
 end
 
 class TypeStringTest < Test::Unit::TestCase
@@ -103,6 +130,6 @@ end
 class Enum
   include Ruby::Enum
 
-  define :FIRST, "first"
-  define :SECOND, "second"
+  define :FIRST, 'first'
+  define :SECOND, 'second'
 end
