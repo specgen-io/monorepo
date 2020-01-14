@@ -16,6 +16,7 @@ func GenerateClient(serviceFile string, generatePath string) error {
 
 	unit := ruby.Unit().
 		Require("json").
+		Require("date").
 		Require("bigdecimal")
 
 	typecheck, err := static.StaticCode("genruby/typecheck.rb")
