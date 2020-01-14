@@ -41,7 +41,7 @@ func PlainRubyType(typ string) string {
 	case spec.TypeDouble:
 		return "Float"
 	case spec.TypeDecimal:
-		return "BigDecimal"
+		return "Float"
 	case spec.TypeBoolean:
 		return "Boolean"
 	case spec.TypeChar:
@@ -49,13 +49,13 @@ func PlainRubyType(typ string) string {
 	case spec.TypeString:
 		return "String"
 	case spec.TypeUuid:
-		return "String"
+		return "UUID"
 	case spec.TypeDate:
-		return "String"
+		return "Date"
 	case spec.TypeDateTime:
-		return "String"
+		return "DateTime"
 	case spec.TypeTime:
-		return "String"
+		return "Time"
 	case spec.TypeJson:
 		return "Type.hash(String, Any)"
 	default:
