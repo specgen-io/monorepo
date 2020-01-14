@@ -203,7 +203,8 @@ func generateClientOperationImplementation(method *scala.MethodDeclaration, oper
 func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 	apiClassName := clientClassName(api.Name)
 	apiTraitName := clientTraitName(api.Name)
-	apiClass := scala.Class(apiClassName).Extends(apiTraitName)
+	apiClass := scala.Class(apiClassName)
+	apiClass.Extends(apiTraitName)
 	apiClassCtor := apiClass.Contructor()
 	apiClassCtor.Param("baseUrl", "String")
 	apiClassCtor.ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]")

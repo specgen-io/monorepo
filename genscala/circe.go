@@ -42,11 +42,13 @@ func generateCirceObjectModel(model spec.NamedModel, unit *scala.UnitDeclaration
 }
 
 func generateCirceEnumModel(model spec.NamedModel, unit *scala.UnitDeclaration) {
-	enumBase := scala.Class(model.Name.PascalCase()).Sealed().Abstract().Extends("StringEnumEntry")
+	enumBase := scala.Class(model.Name.PascalCase()).Sealed().Abstract()
+	enumBase.Extends("StringEnumEntry")
 	enumBaseCtor := enumBase.Contructor()
 	enumBaseCtor.Param("value", "String").Val()
 
-	enumObject := scala.Object(model.Name.PascalCase()).Case().Extends("StringEnum["+model.Name.PascalCase()+"]", "StringCirceEnum["+model.Name.PascalCase()+"]")
+	enumObject := scala.Object(model.Name.PascalCase()).Case()
+	enumObject.Extends("StringEnum["+model.Name.PascalCase()+"]").With("StringCirceEnum["+model.Name.PascalCase()+"]")
 	enumObject_ := enumObject.Define(true)
 	for _, item := range model.Enum.Items {
 		itemObject := scala.Object(item.Name.PascalCase()).Case().Extends(model.Name.PascalCase() + `("` + item.Name.Source + `")`)
