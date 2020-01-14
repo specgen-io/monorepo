@@ -14,11 +14,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:77386203a7fe8fd94312691b4fdcccff774f147295e142a8e78a6c09eb3792a6"
+  digest = "1:05f1b6d3a385578e0bf2692e44317101a07b830dd1e6d7fafef3792ecc1c365f"
   name = "github.com/ModaOperandi/spec"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0247a83caaea6a9782b1fade1c1e2b2bebeb7f40"
+  revision = "a2041701fad255f96118ada61924a2ea606a06cf"
 
 [[projects]]
   digest = "1:8e8da6cc8cca12851d4e089d970a0f7387b3a6bcc8c459ff432213b03076a66d"
@@ -91,22 +91,22 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0f0ce19b33c5b3d7aabb00eddad36f4b54cf6b322361af172eb1f1b774360db8"
+  digest = "1:97ce0806c13c89499c5f7c2880b006e6c117d799c738b5b7b3fdd601614c529c"
   name = "github.com/vsapronov/casee"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d0fd05854322120f0e4147a1f0a6f14156e72986"
+  revision = "9efa1dde4657d0fc3b40c2ad45bf110318ed518a"
 
 [[projects]]
   branch = "master"
-  digest = "1:3d4a323d0d6ec20589f92dfd02366cbd7dff3a9aa4602a3d9b98146caa2c59b1"
+  digest = "1:f972fb9e5a5663443cfe4269f118f778637577c87c7e8b3e52a6a86a46dc41df"
   name = "github.com/vsapronov/gopoetry"
   packages = [
     "ruby",
     "scala",
   ]
   pruneopts = "UT"
-  revision = "14ca8c435a0bfc712476620522b841a4c8abd502"
+  revision = "d210347bbd25fc13ba1aa038d78379660c32774e"
 
 [[projects]]
   branch = "v3"

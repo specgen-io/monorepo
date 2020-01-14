@@ -161,7 +161,8 @@ func generateApiClass(api spec.Api, packageName string, outPath string) *gen.Tex
 
 	apiClassName := apiClassType(api.Name)
 	apiTraitName := apiTraitType(api.Name)
-	class := scala.Class(apiClassName).Extends(apiTraitName).Attribute("Singleton")
+	class := scala.Class(apiClassName).Attribute("Singleton")
+	class.Extends(apiTraitName)
 	ctor := class.Contructor()
 	ctor.ImplicitParam("ec", "ExecutionContext")
 	ctor.Attribute("Inject()")
