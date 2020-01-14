@@ -41,7 +41,8 @@ func generateModels(spec *spec.Spec, unit *ruby.UnitDeclaration) {
 			model := generateObjectModel(model)
 			unit.AddDeclarations(model)
 		} else {
-//			generateCirceEnumModel(model, unit)
+			model := generateEnumModel(model)
+			unit.AddDeclarations(model)
 		}
 	}
 }
@@ -82,19 +83,13 @@ func generateObjectModel(model spec.NamedModel) ruby.Writable {
 	return class
 }
 
-//func generateEnumModel(model spec.NamedModel) ruby.Writable {
-//	enumBase := scala.Class(model.Name.PascalCase()).Sealed().Abstract().Extends("StringEnumEntry")
-//	enumBaseCtor := enumBase.Contructor()
-//	enumBaseCtor.Param("value", "String").Val()
-//
-//	enumObject := scala.Object(model.Name.PascalCase()).Case().Extends("StringEnum["+model.Name.PascalCase()+"]", "StringCirceEnum["+model.Name.PascalCase()+"]")
-//	enumObject_ := enumObject.Define(true)
-//	for _, item := range model.Enum.Items {
-//		itemObject := scala.Object(item.Name.PascalCase()).Case().Extends(model.Name.PascalCase() + `("` + item.Name.Source + `")`)
-//		enumObject_.AddCode(itemObject)
-//	}
-//	enumObject_.AddLn("val values = findValues")
-//
-//	unit.AddDeclarations(enumBase)
-//	unit.AddDeclarations(enumObject)
-//}
+func generateEnumModel(model spec.NamedModel) ruby.Writable {
+	class := ruby.Class(model.Name.PascalCase())
+
+	class.AddCode("include Ruby::Enum")
+	for _, enumItem := range model.Enum.Items {
+		class.AddCode(fmt.Sprintf("define :%s, '%s'", enumItem.Name.SnakeCase(), enumItem.Name.Source))
+	}
+
+	return class
+}
