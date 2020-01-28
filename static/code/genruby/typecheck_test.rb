@@ -99,11 +99,11 @@ class TypeCheckTest < Test::Unit::TestCase
   end
 
   def test_hash_string_string
-    assert_equal({"key" => "the value"}, T.check(T.hashmap(String, String), {"key" => "the value"}), "Hash of String -> String should allow String -> String value")
+    assert_equal({"key" => "the value"}, T.check(T.hash(String, String), {"key" => "the value"}), "Hash of String -> String should allow String -> String value")
   end
 
   def test_hash_string_untyped
-    assert_equal({"key" => "the value"}, T.check(T.hashmap(String, Untyped), {"key" => "the value"}), "Hash of String -> Untyped should allow String -> String value")
+    assert_equal({"key" => "the value"}, T.check(T.hash(String, Untyped), {"key" => "the value"}), "Hash of String -> Untyped should allow String -> String value")
   end
 
   def test_any_string_integer

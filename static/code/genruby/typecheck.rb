@@ -1,5 +1,5 @@
 module T
-  
+
   def T.check_not_nil(type, value)
     if value == nil
       raise TypeError.new("Type #{type.to_s} does not allow nil value")
@@ -128,7 +128,7 @@ module T
     ArrayType.new(item_type)
   end
 
-  def T.hashmap(key_type, value_type)
+  def T.hash(key_type, value_type)
     HashType.new(key_type, value_type)
   end
 
