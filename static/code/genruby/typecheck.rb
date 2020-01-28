@@ -1,340 +1,152 @@
-class Boolean
-end
-
-class Any
-end
-
-class UUID
-end
-
-module Type
-  UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-
-  class TypeMismatchException < StandardError
-    attr_reader :message
-    def initialize(message)
-      super(message)
-      @message = message
-    end
-  end
-
-  def Type.check_not_nil(value)
+module T
+  
+  def T.check_not_nil(type, value)
     if value == nil
-      raise TypeMismatchException.new("Value is nil - class[#{value}] does not allow nil value")
+      raise TypeError.new("Type #{type.to_s} does not allow nil value")
     end
   end
 
-  class TypeDef
-  end
-
-  class PlainTypeDef < TypeDef
-    attr_reader :value_typedef
-    def initialize(plain_type)
-      @plain_type = plain_type
+  class UntypedType
+    def to_s
+      "Untyped"
     end
     def check(value)
-      Type.check_not_nil(value)
-      if @plain_type != Any
-        if @plain_type == Boolean
-          if !value.is_a?(TrueClass) and !value.is_a?(FalseClass)
-            raise TypeMismatchException.new("Value type[#{value.class}] - class[TrueClass or FalseClass] is required. value[#{value.inspect.to_s}]")
-          end
-        elsif @plain_type == UUID
-          if !UUID_REGEX.match?(value)
-            raise TypeMismatchException.new("Value is not in UUID format. value[#{value.inspect.to_s}]")
-          end
-        elsif @plain_type.included_modules.include?(Ruby::Enum)
-          if !@plain_type.value?(value)
-            raise TypeMismatchException.new("Value is not member of enum #{@plain_type}. value[#{value.inspect.to_s}]")
-          end
-        elsif
-          if !value.is_a?(@plain_type)
-            raise TypeMismatchException.new("Value type[#{value.class}] - class[#{@plain_type}] is required. value[#{value.inspect.to_s}]")
-          end
-        end
-      end
-      value
-    end
-    def to_s
-      @plain_type.to_s
+      T.check_not_nil(self, value)
     end
   end
 
-  class EnumTypeDef < TypeDef
-    attr_reader :enum_class
-    def initialize(enum_class)
-      @enum_class = enum_class
+  class Nilable
+    attr_reader :type
+    def initialize(type)
+      @type = type
+    end
+    def to_s
+      "Nilable[#{type.to_s}]"
     end
     def check(value)
       if value != nil
-        @value_typedef.check(value)
+        T.check(type, value)
       end
-      value
-    end
-    def to_s
-      enum_class.to_s
     end
   end
 
-  class NillableTypeDef < TypeDef
-    attr_reader :value_typedef
-    def initialize(value_typedef)
-      @value_typedef = value_typedef
+  class AnyType
+    attr_reader :types
+    def initialize(*types)
+      @types = types
+    end
+    def to_s
+      "Any[#{types.map { |t| t.to_s}.join(', ')}]"
     end
     def check(value)
-      if value != nil
-        @value_typedef.check(value)
-      end
-      value
-    end
-    def to_s
-      "Nillable[#{@value_typedef.to_s}]"
-    end
-  end
-
-  class ArrayTypeDef < TypeDef
-    attr_reader :item_typedef
-    def initialize(item_typedef)
-      @item_typedef = item_typedef
-    end
-    def check(values)
-      Type.check_not_nil(values)
-      if !values.is_a?(Array)
-        raise TypeMismatchException.new("Value type[#{values.class}] - class[Array] is required. value[#{values.inspect.to_s}]")
-      end
-      values.each { |value| @item_typedef.check(value) }
-      values
-    end
-    def to_s
-      "Array[#{@item_typedef.to_s}]"
-    end
-  end
-
-  class HashTypeDef < TypeDef
-    attr_reader :key_typedef
-    attr_reader :value_typedef
-    def initialize(key_typedef, value_typedef)
-      @key_typedef = key_typedef
-      @value_typedef = value_typedef
-    end
-    def check(values)
-      Type.check_not_nil(values)
-      if !values.is_a?(Hash)
-        raise TypeMismatchException.new("Value type[#{values.class}] - class[Hash] is required. value[#{values.inspect.to_s}]")
-      end
-      values.each do |key, value|
-        @key_typedef.check(key)
-        @value_typedef.check(value)
-      end
-      values
-    end
-    def to_s
-      "Hash[#{@key_typedef.to_s}, #{@value_typedef.to_s}]"
-    end
-
-    class ClassTypeDef < TypeDef
-      attr_reader :klass
-      def initialize(klass)
-        @klass = klass
-      end
-      def check(value)
-        if value != @klass
-          raise TypeMismatchException.new("Expected type[#{values.class}] - class[Hash] is required. value[#{values.inspect.to_s}]")
+      types.each do |type|
+        begin
+          T.check(type, value)
+          return
+        rescue TypeError
         end
       end
-      def to_s
-        "Class[#{@klass.to_s}]"
-      end
+      raise TypeError.new("Value '#{value.inspect.to_s}' type is #{value.class} - any of #{@types.map { |t| t.to_s}.join(', ')} required")
     end
-
   end
 
-  def Type.wrap_plain(typedef)
-    if typedef.is_a?(TypeDef)
-      return typedef
+  class ArrayType
+    attr_reader :item_type
+    def initialize(item_type)
+      @item_type = item_type
+    end
+    def to_s
+      "Array[#{item_type.to_s}]"
+    end
+    def check(value)
+      T.check_not_nil(self, value)
+      if !value.is_a? Array
+        raise TypeError.new("Value '#{value.inspect.to_s}' type is #{value.class} - Array is required")
+      end
+      value.each { |item_value| T.check(item_type, item_value) }
+    end
+  end
+
+  class HashType
+    attr_reader :key_type
+    attr_reader :value_type
+    def initialize(key_type, value_type)
+      @key_type = key_type
+      @value_type = value_type
+    end
+    def to_s
+      "Hash[#{@key_type.to_s}, #{@value_type.to_s}]"
+    end
+    def check(value)
+      T.check_not_nil(self, value)
+      if !value.is_a? Hash
+        raise TypeError.new("Value '#{value.inspect.to_s}' type is #{value.class} - Hash is required")
+      end
+      value.each do |item_key, item_value|
+        T.check(@key_type, item_key)
+        T.check(@value_type, item_value)
+      end
+    end
+  end
+
+  class StringFormatted
+    attr_reader :regex
+    def initialize(regex)
+      @regex = regex
+    end
+    def to_s
+      "String<#@regex>"
+    end
+    def check(value)
+      T.check_not_nil(self, value)
+      if !value.is_a? String
+        raise TypeError.new("Value '#{value.inspect.to_s}' type is #{value.class} - String is required for StringFormatted")
+      end
+      if !@regex.match?(value)
+        raise TypeError.new("Value '#{value.inspect.to_s}' is not in required format '#{@regex}'")
+      end
+    end
+  end
+
+  def T.check(type, value)
+    if type.methods.include? :check
+      type.check(value)
     else
-      return Type.plain(typedef)
+      T.check_not_nil(type, value)
+      if !value.is_a? type
+        raise TypeError.new("Value '#{value.inspect.to_s}' type is #{value.class} - #{type} is required")
+      end
     end
+    return value
   end
 
-  def Type.plain(the_type)
-    PlainTypeDef.new(the_type)
+  def T.nilable(value_type)
+    Nilable.new(value_type)
   end
 
-  def Type.nillable(value_type)
-    NillableTypeDef.new(wrap_plain(value_type))
+  def T.array(item_type)
+    ArrayType.new(item_type)
   end
 
-  def Type.array(item_type)
-    ArrayTypeDef.new(wrap_plain(item_type))
+  def T.hashmap(key_type, value_type)
+    HashType.new(key_type, value_type)
   end
 
-  def Type.hash(key_type, value_type)
-    HashTypeDef.new(wrap_plain(key_type), wrap_plain(value_type))
+  def T.any(*typdefs)
+    AnyType.new(*typdefs)
   end
 
-  def Type.check(typedef, value)
+  def T.check_field(field_name, type, value)
     begin
-      Type.wrap_plain(typedef).check(value)
-    rescue TypeMismatchException => e
-      raise TypeMismatchException.new("Type check failed, expected type: #{typedef.to_s}, value: #{value}")
-    end
-  end
-
-  def Type.check_field(field_name, typedef, value)
-    begin
-      Type.wrap_plain(typedef).check(value)
-    rescue TypeMismatchException => e
-      raise TypeMismatchException.new("Field #{field_name} type check failed, expected type: #{typedef.to_s}, value: #{value}")
-    end
-  end
-
-end
-
-module Ruby
-  module Enum
-    attr_reader :key, :value
-
-    def initialize(key, value)
-      @key = key
-      @value = value
-    end
-
-    def self.included(base)
-      base.extend Enumerable
-      base.extend ClassMethods
-
-      base.private_class_method(:new)
-    end
-
-    module ClassMethods
-      # Define an enumerated value.
-      #
-      # === Parameters
-      # [key] Enumerator key.
-      # [value] Enumerator value.
-      def define(key, value)
-        @_enum_hash ||= {}
-        @_enums_by_value ||= {}
-
-        validate_key!(key)
-        validate_value!(value)
-
-        store_new_instance(key, value)
-
-        if upper?(key.to_s)
-          const_set key, value
-        else
-          define_singleton_method(key) { value }
-        end
-      end
-
-      def store_new_instance(key, value)
-        new_instance = new(key, value)
-        @_enum_hash[key] = new_instance
-        @_enums_by_value[value] = new_instance
-      end
-
-      def const_missing(key)
-        raise Ruby::Enum::Errors::UninitializedConstantError, name: name, key: key
-      end
-
-      # Iterate over all enumerated values.
-      # Required for Enumerable mixin
-      def each(&block)
-        @_enum_hash.each(&block)
-      end
-
-      # Attempt to parse an enum key and return the
-      # corresponding value.
-      #
-      # === Parameters
-      # [k] The key string to parse.
-      #
-      # Returns the corresponding value or nil.
-      def parse(k)
-        k = k.to_s.upcase
-        each do |key, enum|
-          return enum.value if key.to_s.upcase == k
-        end
-        nil
-      end
-
-      # Whether the specified key exists in this enum.
-      #
-      # === Parameters
-      # [k] The string key to check.
-      #
-      # Returns true if the key exists, false otherwise.
-      def key?(k)
-        @_enum_hash.key?(k)
-      end
-
-      # Gets the string value for the specified key.
-      #
-      # === Parameters
-      # [k] The key symbol to get the value for.
-      #
-      # Returns the corresponding enum instance or nil.
-      def value(k)
-        enum = @_enum_hash[k]
-        enum.value if enum
-      end
-
-      # Whether the specified value exists in this enum.
-      #
-      # === Parameters
-      # [k] The string value to check.
-      #
-      # Returns true if the value exists, false otherwise.
-      def value?(v)
-        @_enums_by_value.key?(v)
-      end
-
-      # Gets the key symbol for the specified value.
-      #
-      # === Parameters
-      # [v] The string value to parse.
-      #
-      # Returns the corresponding key symbol or nil.
-      def key(v)
-        enum = @_enums_by_value[v]
-        enum.key if enum
-      end
-
-      # Returns all enum keys.
-      def keys
-        @_enum_hash.values.map(&:key)
-      end
-
-      # Returns all enum values.
-      def values
-        @_enum_hash.values.map(&:value)
-      end
-
-      def to_h
-        Hash[@_enum_hash.map do |key, enum|
-          [key, enum.value]
-        end]
-      end
-
-      private
-
-      def upper?(s)
-        !/[[:upper:]]/.match(s).nil?
-      end
-
-      def validate_key!(key)
-        return unless @_enum_hash.key?(key)
-
-        raise Ruby::Enum::Errors::DuplicateKeyError, name: name, key: key
-      end
-
-      def validate_value!(value)
-        return unless @_enums_by_value.key?(value)
-
-        raise Ruby::Enum::Errors::DuplicateValueError, name: name, value: value
-      end
+      check(type, value)
+      return value
+    rescue TypeError => e
+      raise TypeError.new("Field #{field_name} type check failed, expected type: #{type.to_s}, value: #{value}")
     end
   end
 end
+
+Boolean = T.any(TrueClass, FalseClass)
+Untyped = T::UntypedType.new
+NilableUntyped = T.nilable(Untyped)
+UUID = T::StringFormatted.new(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
