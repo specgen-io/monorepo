@@ -83,11 +83,15 @@ class DataClassSerialization < Test::Unit::TestCase
   end
 end
 
-class TheClass < DataClass
+class TheClass
+  include DataClass
+
   val :string, String
   var :int, Integer
 end
 
-class TheClassWithNested < DataClass
+class TheClassWithNested
+  include DataClass
+
   val :nested, TheClass
 end
