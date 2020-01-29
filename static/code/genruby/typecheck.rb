@@ -1,5 +1,4 @@
 module T
-
   def T.check_not_nil(type, value)
     if value == nil
       raise TypeError.new("Type #{type.to_s} does not allow nil value")
@@ -28,6 +27,9 @@ module T
         T.check(type, value)
       end
     end
+    def ==(other)
+      T.instance_of?(Nilable, other) and self.type == other.type
+    end
   end
 
   class AnyType
@@ -48,6 +50,9 @@ module T
       end
       raise TypeError.new("Value '#{value.inspect.to_s}' type is #{value.class} - any of #{@types.map { |t| t.to_s}.join(', ')} required")
     end
+    def ==(other)
+      T.instance_of?(AnyType, other) and (self.types - other.types).empty?
+    end
   end
 
   class ArrayType
@@ -64,6 +69,9 @@ module T
         raise TypeError.new("Value '#{value.inspect.to_s}' type is #{value.class} - Array is required")
       end
       value.each { |item_value| T.check(item_type, item_value) }
+    end
+    def ==(other)
+      T.instance_of?(ArrayType, other) and self.item_type == other.item_type
     end
   end
 
@@ -86,6 +94,9 @@ module T
         T.check(@key_type, item_key)
         T.check(@value_type, item_value)
       end
+    end
+    def ==(other)
+      T.instance_of?(HashType, other) and self.key_type == other.key_type and self.value_type == other.value_type
     end
   end
 
@@ -112,12 +123,23 @@ module T
     if type.methods.include? :check
       type.check(value)
     else
-      T.check_not_nil(type, value)
+      if type != NilClass
+        T.check_not_nil(type, value)
+      end
       if !value.is_a? type
         raise TypeError.new("Value '#{value.inspect.to_s}' type is #{value.class} - #{type} is required")
       end
     end
     return value
+  end
+
+  def T.instance_of?(type, value)
+    begin
+      T.check(type, value)
+      true
+    rescue TypeError
+      false
+    end
   end
 
   def T.nilable(value_type)

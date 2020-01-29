@@ -4,8 +4,78 @@ require "date"
 require_relative './typecheck'
 require_relative './enum'
 
-class TypeCheckTest < Test::Unit::TestCase
+class TypeEquality < Test::Unit::TestCase
+  def test_plain_equals
+    assert_true Integer == Integer
+  end
+
+  def test_plain_not_equals
+    assert_false Integer == String
+  end
+
+  def test_uuid_equals
+    assert_true UUID == UUID
+  end
+
+  def test_boolean_equals
+    assert_true Boolean == Boolean
+  end
+
+  def test_untyped_equals
+    assert_true Untyped == Untyped
+  end
+
+  def test_nilable_equals
+    assert_true T.nilable(Integer) == T.nilable(Integer)
+  end
+
+  def test_nilable_not_equals
+    assert_false T.nilable(Integer) == T.nilable(String)
+  end
+
+  def test_array_equals
+    assert_true T.array(Integer) == T.array(Integer)
+  end
+
+  def test_array_not_equals
+    assert_false T.array(Integer) == Integer
+  end
+
+  def test_array_other_item_type
+    assert_false T.array(Integer) == T.array(String)
+  end
+
+  def test_hash_equals
+    assert_true T.hash(String, Integer) == T.hash(String, Integer)
+  end
+
+  def test_hash_not_equals
+    assert_false T.hash(String, Integer) == String
+  end
+
+  def test_hash_other_value_type
+    assert_false T.hash(String, Integer) == T.hash(String, String)
+  end
+
+  def test_any_equals
+    assert_true T.any(String, Integer) == T.any(String, Integer)
+  end
+
+  def test_any_equals_other_order
+    assert_true T.any(String, Integer) == T.any(Integer, String)
+  end
+
+  def test_any_of_other_type
+    assert_false T.any(String, Integer) == T.any(Integer, Float)
+  end
+end
+
+class TypeCheck < Test::Unit::TestCase
   def test_nil
+    assert_equal nil, T.check(NilClass, nil)
+  end
+
+  def test_nil_string
     assert_raise TypeError do
       T.check(String, nil)
     end
@@ -54,16 +124,6 @@ class TypeCheckTest < Test::Unit::TestCase
     end
   end
 
-  def test_enum_success
-    assert_equal TheEnum::FIRST, T.check(TheEnum, TheEnum::FIRST), "Plain enum type should pass type check"
-  end
-
-  def test_enum_fail
-    assert_raise TypeError do
-      T.check(TheEnum, "non existing")
-    end
-  end
-
   def test_untyped_success
     assert_equal "bla", T.check(Untyped, "bla"), "Untyped should accept strings"
   end
@@ -81,7 +141,9 @@ class TypeCheckTest < Test::Unit::TestCase
   def test_nilable
     assert_equal "the string", T.check(T.nilable(String), "the string"), "Nilable String type should allow String value"
   end
+end
 
+class TypeCheckArray < Test::Unit::TestCase
   def test_array_string
     assert_equal ["the string"], T.check(T.array(String), ["the string"]), "Array of String should allow String value"
   end
@@ -97,29 +159,26 @@ class TypeCheckTest < Test::Unit::TestCase
       T.check(T.array(String), ["the string", 123])
     end
   end
+end
 
-  def test_hash_string_string
+class TypeCheckHash < Test::Unit::TestCase
+  def test_hash_string_to_string
     assert_equal({"key" => "the value"}, T.check(T.hash(String, String), {"key" => "the value"}), "Hash of String -> String should allow String -> String value")
   end
 
-  def test_hash_string_untyped
+  def test_hash_string_to_untyped
     assert_equal({"key" => "the value"}, T.check(T.hash(String, Untyped), {"key" => "the value"}), "Hash of String -> Untyped should allow String -> String value")
   end
+end
 
-  def test_any_string_integer
+class TypeCheckAny < Test::Unit::TestCase
+  def test_success
     assert_equal(123, T.check(T.any(String, Integer), 123), "Any of String, Integer should allow Integer value")
   end
 
-  def test_any_string_integer_fail
+  def test_fail
     assert_raise TypeError do
       T.check(T.any(String, Integer), true)
     end
   end
-end
-
-class TheEnum
-  include Enum
-
-  define :FIRST, 'first'
-  define :SECOND, 'second'
 end
