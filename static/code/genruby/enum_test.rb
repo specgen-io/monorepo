@@ -1,6 +1,6 @@
 require "test/unit"
 
-require_relative './typecheck'
+require_relative './type'
 require_relative './enum'
 require_relative './jsoner'
 
