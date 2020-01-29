@@ -38,7 +38,7 @@ module Enum
 
       store_new_instance(key, value)
 
-      if upper?(key.to_s)
+      if key.to_s == key.to_s.upcase
         const_set key, value
       else
         define_singleton_method(key) { value }
@@ -100,10 +100,6 @@ module Enum
     end
 
     private
-
-    def upper?(s)
-      !/[[:upper:]]/.match(s).nil?
-    end
 
     def validate_key!(key)
       return unless @_enum_hash.key?(key)
