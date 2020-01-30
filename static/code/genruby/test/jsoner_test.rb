@@ -1,7 +1,7 @@
 require "test/unit"
 
-require_relative './dataclass'
-require_relative './jsoner'
+require 'dataclass'
+require 'jsoner'
 
 class PlainTypesDeserialization < Test::Unit::TestCase
   def test_deserialize_integer

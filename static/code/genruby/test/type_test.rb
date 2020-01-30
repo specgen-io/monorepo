@@ -1,8 +1,8 @@
 require "test/unit"
 require "date"
 
-require_relative './type'
-require_relative './enum'
+require 'type'
+require 'enum'
 
 class TypeEquality < Test::Unit::TestCase
   def test_plain_equals
