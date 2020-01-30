@@ -1,7 +1,7 @@
 require "test/unit"
 
-require_relative './dataclass'
-require_relative './jsoner'
+require 'dataclass'
+require 'jsoner'
 
 class DataClassTypeEquality < Test::Unit::TestCase
   def test_equals

@@ -1,8 +1,8 @@
 require "test/unit"
 
-require_relative './type'
-require_relative './enum'
-require_relative './jsoner'
+require 'type'
+require 'enum'
+require 'jsoner'
 
 class TypeCheckEnum < Test::Unit::TestCase
   def test_success
