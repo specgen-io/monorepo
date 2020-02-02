@@ -7,79 +7,64 @@ import (
 	"path/filepath"
 	"specgen/gen"
 	"specgen/static"
-	"strings"
 )
 
 func GenerateClient(serviceFile string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil { return err }
 
-	unit := ruby.Unit().
-		Require("json").
-		Require("date").
-		Require("bigdecimal")
+	gemName := specification.ServiceName.SnakeCase()+"_client"
+	moduleName := specification.ServiceName.PascalCase()+"Client"
+	models := generateModels(specification, moduleName, filepath.Join(generatePath, "lib", gemName))
 
-	typecheck, err := static.StaticCode("genruby/typecheck.rb")
-	if err != nil { return err }
-	unit.AddDeclarations(ruby.Code(typecheck))
-
-	generateModels(specification, unit)
-
-	source := &gen.TextFile{
-		Path:    filepath.Join(generatePath, "client.rb"),
-		Content: unit.Code(),
-	}
-
-	err = gen.WriteFile(source, true)
+	data := static.RubyGem{GemName: gemName, ModuleName: moduleName}
+	sources, err := static.RenderTemplate("genruby", generatePath, data)
 	if err != nil { return err }
 
-	return nil
+	sources = append(sources, *models)
+	err = gen.WriteFiles(sources, true)
+	return err
 }
 
-func generateModels(spec *spec.Spec, unit *ruby.UnitDeclaration) {
+func generateModels(spec *spec.Spec, moduleName string, generatePath string) *gen.TextFile {
+	module := ruby.Module(moduleName)
 	for _, model := range spec.Models {
 		if model.IsObject() {
 			model := generateObjectModel(model)
-			unit.AddDeclarations(model)
+			module.AddDeclarations(model)
 		} else {
 			model := generateEnumModel(model)
-			unit.AddDeclarations(model)
+			module.AddDeclarations(model)
 		}
+	}
+	unit := ruby.Unit()
+	unit.AddDeclarations(module)
+	return &gen.TextFile{
+		Path:    filepath.Join(generatePath, "models.rb"),
+		Content: unit.Code(),
 	}
 }
 
 func generateObjectModel(model spec.NamedModel) ruby.Writable {
 	class := ruby.Class(model.Name.PascalCase())
+	class.AddCode("include DataClass")
 
-	fields := make([]string, 0)
 	for _, field := range model.Object.Fields {
-		fields = append(fields, ":" + field.Name.SnakeCase())
-	}
-	class.AddMembers(ruby.Code(fmt.Sprintf("attr_reader %s", strings.Join(fields, ", "))))
-
-	initialize := class.Initialize()
-	for _, field := range model.Object.Fields {
-		initialize.KeywordArg(field.Name.SnakeCase())
-	}
-
-	initializeBody := initialize.Body()
-	for _, field := range model.Object.Fields {
-		fieldName := field.Name.SnakeCase()
 		typ := RubyType(&field.Type.Definition)
-		initializeBody.AddLn(fmt.Sprintf("@%s = Type.check_field('%s', %s, %s)", fieldName, fieldName, typ, fieldName))
+		class.AddCode(fmt.Sprintf("val :%s, %s", field.Name.SnakeCase(), typ))
 	}
 
-	toHash := class.Def("to_hash").NoParams().Body()
-	toHash.AddLn("{")
-	hash := toHash.Scope()
-	for _, field := range model.Object.Fields {
-		fieldName := field.Name.SnakeCase()
-		hash.AddLn(fmt.Sprintf(":%s => %s,", fieldName, fieldName))
-	}
-	toHash.AddLn("}")
-
-	toJson := class.Def("to_json").NoParams().Body()
-	toJson.AddLn("JSON.dump(to_hash)")
+	//initialize := class.Initialize()
+	//for _, field := range model.Object.Fields {
+	//	initialize.KeywordArg(field.Name.SnakeCase())
+	//}
+	//
+	//initializeBody := initialize.Body()
+	//for _, field := range model.Object.Fields {
+	//	fieldName := field.Name.SnakeCase()
+	//	typ := RubyType(&field.Type.Definition)
+	//	initializeBody.AddLn(fmt.Sprintf("@%s = Type.check_field('%s', %s, %s)", fieldName, fieldName, typ, fieldName))
+	//}
 
 	return class
 }
@@ -87,7 +72,7 @@ func generateObjectModel(model spec.NamedModel) ruby.Writable {
 func generateEnumModel(model spec.NamedModel) ruby.Writable {
 	class := ruby.Class(model.Name.PascalCase())
 
-	class.AddCode("include Ruby::Enum")
+	class.AddCode("include Enum")
 	for _, enumItem := range model.Enum.Items {
 		class.AddCode(fmt.Sprintf("define :%s, '%s'", enumItem.Name.SnakeCase(), enumItem.Name.Source))
 	}
