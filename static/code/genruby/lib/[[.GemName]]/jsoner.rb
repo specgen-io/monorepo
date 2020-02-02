@@ -157,7 +157,7 @@ module [[.ModuleName]]
           end
           return T.check(type, json_value)
         end
-      rescue TypeError => error
+      rescue StandardError => error
         raise JsonerError.new(error.message)
       end
     end
@@ -178,7 +178,7 @@ module [[.ModuleName]]
           end
           return T.check(type, value)
         end
-      rescue TypeError => error
+      rescue StandardError => error
         raise JsonerError.new(error.message)
       end
     end
