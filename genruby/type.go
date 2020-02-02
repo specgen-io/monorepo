@@ -11,15 +11,15 @@ func RubyType(typ *spec.TypeDef) string {
 		return PlainRubyType(typ.Plain)
 	case spec.NullableType:
 		child := RubyType(typ.Child)
-		result := "Type.nillable(" + child + ")"
+		result := "T.nilable(" + child + ")"
 		return result
 	case spec.ArrayType:
 		child := RubyType(typ.Child)
-		result := "Type.array(" + child + ")"
+		result := "T.array(" + child + ")"
 		return result
 	case spec.MapType:
 		child := RubyType(typ.Child)
-		result := "Type.hash(String, " + child + ")"
+		result := "T.hash(String, " + child + ")"
 		return result
 	default:
 		panic(fmt.Sprintf("Unknown type: %v", typ))
@@ -55,9 +55,9 @@ func PlainRubyType(typ string) string {
 	case spec.TypeDateTime:
 		return "DateTime"
 	case spec.TypeTime:
-		return "Time"
+		return "TimeOfDay"
 	case spec.TypeJson:
-		return "Type.hash(String, Any)"
+		return "T.hash(String, Untyped)"
 	default:
 		return typ
 	}
