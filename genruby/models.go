@@ -15,7 +15,7 @@ func GenerateClient(serviceFile string, generatePath string) error {
 
 	gemName := specification.ServiceName.SnakeCase()+"_client"
 	moduleName := specification.ServiceName.PascalCase()+"Client"
-	models := generateModels(specification, moduleName, filepath.Join(generatePath, "lib", gemName))
+	models := generateModels(specification, filepath.Join(generatePath, "lib", gemName))
 
 	data := static.RubyGem{GemName: gemName, ModuleName: moduleName}
 	sources, err := static.RenderTemplate("genruby", generatePath, data)
@@ -26,9 +26,11 @@ func GenerateClient(serviceFile string, generatePath string) error {
 	return err
 }
 
-func generateModels(spec *spec.Spec, moduleName string, generatePath string) *gen.TextFile {
+func generateModels(specification *spec.Spec, generatePath string) *gen.TextFile {
+	gemName := specification.ServiceName.SnakeCase()+"_client"
+	moduleName := specification.ServiceName.PascalCase()+"Client"
 	module := ruby.Module(moduleName)
-	for _, model := range spec.Models {
+	for _, model := range specification.Models {
 		if model.IsObject() {
 			model := generateObjectModel(model)
 			module.AddDeclarations(model)
@@ -38,6 +40,8 @@ func generateModels(spec *spec.Spec, moduleName string, generatePath string) *ge
 		}
 	}
 	unit := ruby.Unit()
+	unit.Require(gemName+"/enum")
+	unit.Require(gemName+"/dataclass")
 	unit.AddDeclarations(module)
 	return &gen.TextFile{
 		Path:    filepath.Join(generatePath, "models.rb"),
