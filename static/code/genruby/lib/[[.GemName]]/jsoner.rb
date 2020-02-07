@@ -1,6 +1,8 @@
 require "json"
 require "date"
 
+require "[[.GemName]]/type"
+
 module [[.ModuleName]]
   class JsonerError < StandardError
   end
