@@ -2,7 +2,6 @@ require "test/unit/runner/junitxml"
 require "date"
 
 require '[[.GemName]]/type'
-require '[[.GemName]]/enum'
 
 module [[.ModuleName]]
   class TypeEquality < Test::Unit::TestCase
