@@ -159,12 +159,12 @@ module [[.ModuleName]]
       AnyType.new(*typdefs)
     end
 
-    def T.check_field(field_name, type, value)
+    def T.check_var(var_name, type, value)
       begin
         check(type, value)
         return value
       rescue TypeError => e
-        raise TypeError.new("Field #{field_name} type check failed, expected type: #{type.to_s}, value: #{value}")
+        raise TypeError.new("Variable #{var_name} type check failed, expected type: #{type.to_s}, value: #{value}")
       end
     end
   end

@@ -1,6 +1,6 @@
 require "test/unit/runner/junitxml"
 
-require '[[.GemName]]/dataclass'
+require '[[.GemName]]/type'
 require '[[.GemName]]/jsoner'
 
 module [[.ModuleName]]
