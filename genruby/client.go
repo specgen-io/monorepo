@@ -1,10 +1,10 @@
 package genruby
 
 import (
-	"casee"
 	"fmt"
 	"github.com/ModaOperandi/spec"
-	"gopoetry/ruby"
+	"github.com/vsapronov/casee"
+	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"
 	"specgen/gen"
 	"specgen/static"
