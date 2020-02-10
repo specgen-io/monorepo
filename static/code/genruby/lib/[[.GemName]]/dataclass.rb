@@ -3,7 +3,7 @@ module [[.ModuleName]]
     def initialize(params)
       self.class.json_attributes.each do |attr, attr_type|
         attr_value = params[attr]
-        self.instance_variable_set("@#{attr}", T.check(attr_type, attr_value))
+        self.instance_variable_set("@#{attr}", T.check_var(attr, attr_type, attr_value))
       end
     end
 
