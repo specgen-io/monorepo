@@ -1,6 +1,7 @@
 require 'net/http'
 require 'net/https'
 require 'uri'
+require 'cgi'
 
 require 'echo_client/type'
 
@@ -18,6 +19,33 @@ module [[.ModuleName]]
         @client.cert_store = OpenSSL::X509::Store.new
         @client.cert_store.set_default_paths
       end
+    end
+  end
+
+  class StringParams
+    attr_reader :params
+
+    def initialize
+      @params = {}
+    end
+
+    def value_to_s(value)
+      if T.instance_of?(DateTime, value)
+        value.strftime('%Y-%m-%dT%H:%M:%S')
+      else
+        value.to_s
+      end
+    end
+
+    def []= (param_name, value)
+      if value != nil
+        @params[param_name] = value_to_s(value)
+      end
+    end
+
+    def query_str
+      parts = (@params || {}).map { |k,v| "%s=%s" % [k, CGI.escape(v)] }
+      parts.empty? ? "" : "?"+parts.join("&")
     end
   end
 end
