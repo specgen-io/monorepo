@@ -66,16 +66,14 @@ func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
 		method := apiClass.Def(operation.Name.SnakeCase())
 		methodBody := method.Body()
 
-		addParams(method, operation.HeaderParams, false)
+		addParams(method, operation.HeaderParams)
 		if operation.Body != nil {
 			method.KeywordArg("body")
 		}
 		for _, param := range operation.Endpoint.UrlParams {
 			method.KeywordArg(param.Name.SnakeCase())
 		}
-		addParams(method, operation.QueryParams, false)
-		addParams(method, operation.HeaderParams, true)
-		addParams(method, operation.QueryParams, true)
+		addParams(method, operation.QueryParams)
 
 		addParamsTypeCheck(methodBody, operation.HeaderParams)
 		addParamsTypeCheck(methodBody, operation.Endpoint.UrlParams)
@@ -123,14 +121,11 @@ func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
 	return apiClass
 }
 
-func addParams(method *ruby.MethodDeclaration, params []spec.NamedParam, defaulted bool) {
+func addParams(method *ruby.MethodDeclaration, params []spec.NamedParam) {
 	for _, param := range params {
-		if !defaulted && param.Default == nil {
-			method.KeywordArg(param.Name.SnakeCase())
-		}
-		if defaulted && param.Default != nil {
-			//defaultValue := DefaultValue(&param.Type.Definition, *param.Default)
-			method.KeywordArg(param.Name.SnakeCase())
+		arg := method.KeywordArg(param.Name.SnakeCase())
+		if param.Default != nil {
+			arg.Default(ruby.Code(DefaultValue(&param.Type.Definition, *param.Default)))
 		}
 	}
 }
