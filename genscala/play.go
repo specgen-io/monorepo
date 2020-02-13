@@ -350,7 +350,7 @@ func generateControllersRoutes(specification *spec.Spec) string {
 func routeUrl(operation spec.NamedOperation) string {
 	routeUrl := operation.Endpoint.Url
 	for _, param := range operation.Endpoint.UrlParams {
-		routeUrl = strings.Replace(routeUrl, spec.UrlParamStr(param.Name.Source), ":"+param.Name.Source, 1)
+		routeUrl = strings.Replace(routeUrl, spec.UrlParamStr(param.Name.Source), ":"+param.Name.CamelCase(), 1)
 	}
 	return routeUrl
 }
