@@ -85,7 +85,21 @@ func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
 		}
 
 		httpMethod := casee.ToPascalCase(operation.Endpoint.Method)
-		methodBody.AddLn(fmt.Sprintf("request = Net::HTTP::%s.new(@base_uri + '%s')", httpMethod, operation.Endpoint.Url))
+
+		if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
+			methodBody.AddLn("query = StringParams.new")
+			for _, p := range operation.QueryParams {
+				methodBody.AddLn(fmt.Sprintf("query['%s'] = %s", p.Name.SnakeCase(), p.Name.SnakeCase()))
+			}
+		}
+
+		if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
+			methodBody.AddLn(fmt.Sprintf("url = @base_uri + '%s' + query.query_str", operation.Endpoint.Url))
+		} else {
+			methodBody.AddLn(fmt.Sprintf("url = @base_uri + '%s'", operation.Endpoint.Url))
+		}
+
+		methodBody.AddLn(fmt.Sprintf("request = Net::HTTP::%s.new(url)", httpMethod))
 		if operation.Body != nil {
 			methodBody.AddLn("body_json = Jsoner.to_json(Message, body)")
 			methodBody.AddLn("request.body = body_json")
