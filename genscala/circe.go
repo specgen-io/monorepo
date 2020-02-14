@@ -51,7 +51,8 @@ func generateCirceEnumModel(model spec.NamedModel, unit *scala.UnitDeclaration) 
 	enumObject.Extends("StringEnum["+model.Name.PascalCase()+"]").With("StringCirceEnum["+model.Name.PascalCase()+"]")
 	enumObject_ := enumObject.Define(true)
 	for _, item := range model.Enum.Items {
-		itemObject := scala.Object(item.Name.PascalCase()).Case().Extends(model.Name.PascalCase() + `("` + item.Name.Source + `")`)
+		itemObject := scala.Object(item.Name.PascalCase()).Case()
+		itemObject.Extends(model.Name.PascalCase() + `("` + item.Name.Source + `")`)
 		enumObject_.AddCode(itemObject)
 	}
 	enumObject_.AddLn("val values = findValues")
