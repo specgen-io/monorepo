@@ -46,8 +46,15 @@ module [[.ModuleName]]
     end
 
     def query_str
-      parts = (@params || {}).map { |k,v| "%s=%s" % [k, CGI.escape(v)] }
+      parts = (@params || {}).map { |param_name, value| "%s=%s" % [param_name, CGI.escape(value)] }
       parts.empty? ? "" : "?"+parts.join("&")
+    end
+
+    def set_to_url(url)
+      @params.each do |param_name, value|
+        url = url.gsub("{#{param_name}}", CGI.escape(value))
+      end
+      url
     end
   end
 end

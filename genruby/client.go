@@ -70,9 +70,7 @@ func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
 		if operation.Body != nil {
 			method.KeywordArg("body")
 		}
-		for _, param := range operation.Endpoint.UrlParams {
-			method.KeywordArg(param.Name.SnakeCase())
-		}
+		addParams(method, operation.Endpoint.UrlParams)
 		addParams(method, operation.QueryParams)
 
 		addParamsTypeCheck(methodBody, operation.HeaderParams)
@@ -84,13 +82,20 @@ func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
 
 		httpMethod := casee.ToPascalCase(operation.Endpoint.Method)
 
+		addParamsWriting(methodBody, operation.Endpoint.UrlParams, "url_params")
+
 		addParamsWriting(methodBody, operation.QueryParams, "query")
 
-		if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
-			methodBody.AddLn(fmt.Sprintf("url = @base_uri + '%s' + query.query_str", operation.Endpoint.Url))
+		url_compose := "url = @base_uri"
+		if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
+			url_compose = url_compose + fmt.Sprintf(" + url_params.set_to_url('%s')", operation.Endpoint.Url)
 		} else {
-			methodBody.AddLn(fmt.Sprintf("url = @base_uri + '%s'", operation.Endpoint.Url))
+			url_compose = url_compose + fmt.Sprintf(" + '%s'", operation.Endpoint.Url)
 		}
+		if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
+			url_compose = url_compose + " + query.query_str"
+		}
+		methodBody.AddLn(url_compose)
 
 		methodBody.AddLn(fmt.Sprintf("request = Net::HTTP::%s.new(url)", httpMethod))
 
@@ -117,7 +122,7 @@ func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
 		}
 
 		methodBody.AddLn("else")
-		methodBody.Scope().Add("raise StandardError.new('Unexpected HTTP response code')")
+		methodBody.Scope().Add("raise StandardError.new(\"Unexpected HTTP response code #{response.code}\")")
 		methodBody.AddLn("end")
 	}
 	return apiClass
