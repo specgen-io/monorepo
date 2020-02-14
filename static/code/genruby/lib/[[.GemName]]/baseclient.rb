@@ -22,6 +22,16 @@ module [[.ModuleName]]
     end
   end
 
+  module Stringify
+    def Stringify.to_string(value)
+      if T.instance_of?(DateTime, value)
+        value.strftime('%Y-%m-%dT%H:%M:%S')
+      else
+        value.to_s
+      end
+    end
+  end
+
   class StringParams
     attr_reader :params
 
@@ -29,17 +39,9 @@ module [[.ModuleName]]
       @params = {}
     end
 
-    def value_to_s(value)
-      if T.instance_of?(DateTime, value)
-        value.strftime('%Y-%m-%dT%H:%M:%S')
-      else
-        value.to_s
-      end
-    end
-
     def []= (param_name, value)
       if value != nil
-        @params[param_name] = value_to_s(value)
+        @params[param_name] = Stringify::to_string(value)
       end
     end
 
