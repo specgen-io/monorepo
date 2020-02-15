@@ -73,18 +73,11 @@ func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
 		addParams(method, operation.Endpoint.UrlParams)
 		addParams(method, operation.QueryParams)
 
-		addParamsTypeCheck(methodBody, operation.HeaderParams)
-		addParamsTypeCheck(methodBody, operation.Endpoint.UrlParams)
-		addParamsTypeCheck(methodBody, operation.QueryParams)
-		if operation.Body != nil {
-			methodBody.AddLn(fmt.Sprintf("T.check_var('body', %s, body)", RubyType(&operation.Body.Type.Definition)))
-		}
-
 		httpMethod := casee.ToPascalCase(operation.Endpoint.Method)
 
 		addParamsWriting(methodBody, operation.Endpoint.UrlParams, "url_params")
-
 		addParamsWriting(methodBody, operation.QueryParams, "query")
+		addParamsWriting(methodBody, operation.HeaderParams, "header")
 
 		url_compose := "url = @base_uri"
 		if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
@@ -99,14 +92,12 @@ func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
 
 		methodBody.AddLn(fmt.Sprintf("request = Net::HTTP::%s.new(url)", httpMethod))
 
-		addParamsWriting(methodBody, operation.HeaderParams, "header")
-
 		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
 			methodBody.AddLn("header.params.each { |name, value| request.add_field(name, value) }")
 		}
 
 		if operation.Body != nil {
-			methodBody.AddLn("body_json = Jsoner.to_json(Message, body)")
+			methodBody.AddLn(fmt.Sprintf("body_json = Jsoner.to_json(Message, T.check_var('body', %s, body))", RubyType(&operation.Body.Type.Definition)))
 			methodBody.AddLn("request.body = body_json")
 		}
 		methodBody.AddLn("response = @client.request(request)")
@@ -137,17 +128,11 @@ func addParams(method *ruby.MethodDeclaration, params []spec.NamedParam) {
 	}
 }
 
-func addParamsTypeCheck(methodBody *ruby.StatementsDeclaration, params []spec.NamedParam) {
-	for _, param := range params {
-		methodBody.AddLn(fmt.Sprintf("T.check_var('%s', %s, %s)", param.Name.SnakeCase(), RubyType(&param.Type.Definition), param.Name.SnakeCase()))
-	}
-}
-
 func addParamsWriting(code *ruby.StatementsDeclaration, params []spec.NamedParam, paramsName string) {
 	if params != nil && len(params) > 0 {
 		code.AddLn(paramsName + " = StringParams.new")
 		for _, p := range params {
-			code.AddLn(fmt.Sprintf("%s['%s'] = %s", paramsName, p.Name.Source, p.Name.SnakeCase()))
+			code.AddLn(fmt.Sprintf("%s.set('%s', %s, %s)", paramsName, p.Name.Source, RubyType(&p.Type.Definition), p.Name.SnakeCase()))
 		}
 	}
 }

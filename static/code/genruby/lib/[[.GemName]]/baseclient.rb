@@ -45,6 +45,10 @@ module [[.ModuleName]]
       end
     end
 
+    def set(param_name, typedef, value)
+      self[param_name] = T.check_var(param_name, typedef, value)
+    end
+
     def query_str
       parts = (@params || {}).map { |param_name, value| "%s=%s" % [param_name, CGI.escape(value)] }
       parts.empty? ? "" : "?"+parts.join("&")
