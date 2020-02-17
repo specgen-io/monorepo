@@ -11,16 +11,20 @@ import (
 func GenerateModels(specification *spec.Spec, generatePath string) *gen.TextFile {
 	gemName := specification.ServiceName.SnakeCase()+"_client"
 	moduleName := specification.ServiceName.PascalCase()
-	module := ruby.Module(moduleName)
+	clientModule := ruby.Module("Client")
+
 	for _, model := range specification.Models {
 		if model.IsObject() {
 			model := generateObjectModel(model)
-			module.AddDeclarations(model)
+			clientModule.AddDeclarations(model)
 		} else {
 			model := generateEnumModel(model)
-			module.AddDeclarations(model)
+			clientModule.AddDeclarations(model)
 		}
 	}
+
+	module := ruby.Module(moduleName).AddDeclarations(clientModule)
+
 	unit := ruby.Unit()
 	unit.Require("date")
 	unit.Require(gemName+"/tod")
