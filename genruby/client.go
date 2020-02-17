@@ -15,7 +15,7 @@ func GenerateClient(serviceFile string, generatePath string) error {
 	if err != nil { return err }
 
 	gemName := specification.ServiceName.SnakeCase()+"_client"
-	moduleName := specification.ServiceName.PascalCase()
+	moduleName := clientModuleName(specification.ServiceName)
 	libGemPath := filepath.Join(generatePath, "lib", gemName)
 	models := GenerateModels(specification, libGemPath)
 	clients := generateClientApisClasses(specification, libGemPath)
@@ -33,15 +33,21 @@ func clientClassName(apiName spec.Name) string {
 	return apiName.PascalCase() + "Client"
 }
 
+func clientModuleName(serviceName spec.Name) string {
+	return serviceName.PascalCase()
+}
+
 func generateClientApisClasses(specification *spec.Spec, generatePath string) *gen.TextFile {
 	gemName := specification.ServiceName.SnakeCase()+"_client"
-	moduleName := specification.ServiceName.PascalCase()
+	clientModule := ruby.Module("Client")
 
-	module := ruby.Module(moduleName)
 	for _, api := range specification.Apis {
 		apiClass := generateClientApiClass(api)
-		module.AddDeclarations(apiClass)
+		clientModule.AddDeclarations(apiClass)
 	}
+
+	moduleName := clientModuleName(specification.ServiceName)
+	module := ruby.Module(moduleName).AddDeclarations(clientModule)
 
 	unit := ruby.Unit()
 	unit.Require("net/http")
