@@ -46,6 +46,10 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 		clientModule.AddDeclarations(apiClass)
 	}
 
+	if len(specification.Apis) > 1 {
+		clientModule.AddDeclarations(generateClientSuperClass(specification))
+	}
+
 	moduleName := clientModuleName(specification.ServiceName)
 	module := ruby.Module(moduleName).AddDeclarations(clientModule)
 
@@ -65,64 +69,84 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 	}
 }
 
+func generateClientOperation(operation spec.NamedOperation) *ruby.MethodDeclaration {
+	method := ruby.Method(operation.Name.SnakeCase())
+	methodBody := method.Body()
+
+	addParams(method, operation.HeaderParams)
+	if operation.Body != nil {
+		method.KeywordArg("body")
+	}
+	addParams(method, operation.Endpoint.UrlParams)
+	addParams(method, operation.QueryParams)
+
+	httpMethod := casee.ToPascalCase(operation.Endpoint.Method)
+
+	addParamsWriting(methodBody, operation.Endpoint.UrlParams, "url_params")
+	addParamsWriting(methodBody, operation.QueryParams, "query")
+	addParamsWriting(methodBody, operation.HeaderParams, "header")
+
+	url_compose := "url = @base_uri"
+	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
+		url_compose = url_compose + fmt.Sprintf(" + url_params.set_to_url('%s')", operation.Endpoint.Url)
+	} else {
+		url_compose = url_compose + fmt.Sprintf(" + '%s'", operation.Endpoint.Url)
+	}
+	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
+		url_compose = url_compose + " + query.query_str"
+	}
+	methodBody.AddLn(url_compose)
+
+	methodBody.AddLn(fmt.Sprintf("request = Net::HTTP::%s.new(url)", httpMethod))
+
+	if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
+		methodBody.AddLn("header.params.each { |name, value| request.add_field(name, value) }")
+	}
+
+	if operation.Body != nil {
+		methodBody.AddLn(fmt.Sprintf("body_json = Jsoner.to_json(Message, T.check_var('body', %s, body))", RubyType(&operation.Body.Type.Definition)))
+		methodBody.AddLn("request.body = body_json")
+	}
+	methodBody.AddLn("response = @client.request(request)")
+	methodBody.AddLn("case response.code")
+
+	for _, response := range operation.Responses {
+		methodBody.AddLn(fmt.Sprintf("when '%s'", spec.HttpStatusCode(response.Name)))
+		if response.Type.Definition.IsEmpty() {
+			methodBody.Scope().Add("nil")
+		} else {
+			methodBody.Scope().Add(fmt.Sprintf("Jsoner.from_json(%s, response.body)", RubyType(&response.Type.Definition)))
+		}
+	}
+
+	methodBody.AddLn("else")
+	methodBody.Scope().Add("raise StandardError.new(\"Unexpected HTTP response code #{response.code}\")")
+	methodBody.AddLn("end")
+	return method
+}
+
 func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
 	apiClassName := clientClassName(api.Name)
 	apiClass := ruby.Class(apiClassName).Inherits("BaseClient")
 	for _, operation := range api.Operations {
-		method := apiClass.Def(operation.Name.SnakeCase())
-		methodBody := method.Body()
-
-		addParams(method, operation.HeaderParams)
-		if operation.Body != nil {
-			method.KeywordArg("body")
-		}
-		addParams(method, operation.Endpoint.UrlParams)
-		addParams(method, operation.QueryParams)
-
-		httpMethod := casee.ToPascalCase(operation.Endpoint.Method)
-
-		addParamsWriting(methodBody, operation.Endpoint.UrlParams, "url_params")
-		addParamsWriting(methodBody, operation.QueryParams, "query")
-		addParamsWriting(methodBody, operation.HeaderParams, "header")
-
-		url_compose := "url = @base_uri"
-		if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-			url_compose = url_compose + fmt.Sprintf(" + url_params.set_to_url('%s')", operation.Endpoint.Url)
-		} else {
-			url_compose = url_compose + fmt.Sprintf(" + '%s'", operation.Endpoint.Url)
-		}
-		if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
-			url_compose = url_compose + " + query.query_str"
-		}
-		methodBody.AddLn(url_compose)
-
-		methodBody.AddLn(fmt.Sprintf("request = Net::HTTP::%s.new(url)", httpMethod))
-
-		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
-			methodBody.AddLn("header.params.each { |name, value| request.add_field(name, value) }")
-		}
-
-		if operation.Body != nil {
-			methodBody.AddLn(fmt.Sprintf("body_json = Jsoner.to_json(Message, T.check_var('body', %s, body))", RubyType(&operation.Body.Type.Definition)))
-			methodBody.AddLn("request.body = body_json")
-		}
-		methodBody.AddLn("response = @client.request(request)")
-		methodBody.AddLn("case response.code")
-
-		for _, response := range operation.Responses {
-			methodBody.AddLn(fmt.Sprintf("when '%s'", spec.HttpStatusCode(response.Name)))
-			if response.Type.Definition.IsEmpty() {
-				methodBody.Scope().Add("nil")
-			} else {
-				methodBody.Scope().Add(fmt.Sprintf("Jsoner.from_json(%s, response.body)", RubyType(&response.Type.Definition)))
-			}
-		}
-
-		methodBody.AddLn("else")
-		methodBody.Scope().Add("raise StandardError.new(\"Unexpected HTTP response code #{response.code}\")")
-		methodBody.AddLn("end")
+		method := generateClientOperation(operation)
+		apiClass.AddMembers(method)
 	}
 	return apiClass
+}
+
+func generateClientSuperClass(specification *spec.Spec) *ruby.ClassDeclaration {
+	class := ruby.Class(specification.ServiceName.PascalCase() + "Client")
+	for _, api := range specification.Apis {
+		class.AddMembers(ruby.Code(fmt.Sprintf("attr_reader :%s_client", api.Name.SnakeCase())))
+	}
+	init := class.Initialize()
+	init.Arg("base_url")
+	initBody := init.Body()
+	for _, api := range specification.Apis {
+		initBody.AddLn(fmt.Sprintf("@%s_client = %s.new(base_url)", api.Name.SnakeCase(), clientClassName(api.Name)))
+	}
+	return class
 }
 
 func addParams(method *ruby.MethodDeclaration, params []spec.NamedParam) {
