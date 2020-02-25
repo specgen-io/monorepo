@@ -78,6 +78,7 @@ commands:
             ---
             :rubygems_api_key: $RUBYGEMS_API_KEY
             END
+            cat ~/.gem/credentials
             chmod 600 ~/.gem/credentials
 
 workflows:
