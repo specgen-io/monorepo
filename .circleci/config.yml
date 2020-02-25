@@ -24,6 +24,9 @@ jobs:
           path: ./zips
           destination: zips
       - store_artifacts:
+          path: ./dist
+          destination: specgen
+      - store_artifacts:
           path: /tmp/test-results
           destination: go-test-report
       - store_test_results:
