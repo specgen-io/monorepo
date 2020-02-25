@@ -81,7 +81,7 @@ jobs:
       - run:
           name: Build aand publish SBT plugin
           command: |
-            cd ./plugins/sbt-specgen
+            cd ./plugins/sbt-spec
             export VERSION=0.<< pipeline.number >>.0
             sbt -Dversion=$VERSION clean test publish bintrayRelease
       - save_cache:
