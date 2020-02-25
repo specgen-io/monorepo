@@ -69,6 +69,27 @@ jobs:
             export VERSION=0.<< pipeline.number >>.0
             gem push --key rubygems specgen-$VERSION.gem
 
+  build-sbt-specgen:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/sbt-spec/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "build.sbt" }}
+      - run:
+          name: Build aand publish SBT plugin
+          command: |
+            export VERSION=0.<< pipeline.number >>.0
+            sbt -Dversion=$VERSION clean test publish bintrayRelease
+      - save_cache:
+          key: cache-{{ checksum "build.sbt" }}
+          paths:
+            - ~/.sbt
+            - ~/.ivy2
+            - ~/.m2
+
 commands:
   setup-rubygems_key:
     steps:
@@ -89,5 +110,9 @@ workflows:
           context: github-release
       - build-gem-specgen:
           context: specgen
+          requires:
+            - build-specgen
+      - build-sbt-specgen:
+          context: bintray
           requires:
             - build-specgen
