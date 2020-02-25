@@ -52,7 +52,7 @@ jobs:
           at: ./plugins/gem-specgen/lib
       - run:
           name: Check Base64
-          command: base64 --encode $JFROG_PASS
+          command: echo -n '$JFROG_PASS' | base64
       - run:
           name: Check dist
           command: find .
