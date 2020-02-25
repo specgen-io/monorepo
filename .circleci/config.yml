@@ -1,4 +1,5 @@
-version: 2
+version: 2.1
+
 jobs:
   build-specgen:
     docker:
@@ -54,13 +55,30 @@ jobs:
           name: Check Base64
           command: echo -n '$RUBYGEMS_API_KEY' | base64
       - run:
-          name: Check dist
-          command: find .
-      - run:
           name: Build gem
           command: |
             cd ./plugins/gem-specgen
+            export VERSION=0.<< pipeline.number >>.0
             gem build specgen.gemspec
+      - setup-rubygems_key
+      - run:
+          name: Push gem
+          command: |
+            cd ./plugins/gem-specgen
+            export VERSION=0.<< pipeline.number >>.0
+            gem push --key rubygems specgen-$VERSION.gem
+
+commands:
+  setup-rubygems_key:
+    steps:
+      - run:
+          name: Setup Artifactory for RubyGems
+          command: |
+            tee > ~/.gem/credentials \<<END
+            ---
+            :rubygems_api_key: $RUBYGEMS_API_KEY
+            END
+            chmod 600 ~/.gem/credentials
 
 workflows:
   version: 2
