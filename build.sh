@@ -15,6 +15,7 @@ rm -f specgen/static/rice-box.go
 $GOPATH/bin/rice embed-go --import-path specgen/static
 
 mkdir -p ./zips
+mkdir -p ./dist
 
 platforms=("windows/amd64" "darwin/amd64" "linux/amd64")
 for platform in "${platforms[@]}"
@@ -39,6 +40,9 @@ do
         echo 'An error has occurred! Aborting the script execution...'
         exit 1
     fi
+
+    mkdir -p ./dist/${GOOS}_${GOARCH}
+    cp $exec_name ./dist/${GOOS}_${GOARCH}/$exec_name
 
     zip "./zips/$output_name.zip" $exec_name -q
 
