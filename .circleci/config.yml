@@ -72,14 +72,18 @@ commands:
   setup-rubygems_key:
     steps:
       - run:
-          name: Setup Artifactory for RubyGems
+          name: Write key
           command: |
             tee > ~/.gem/credentials \<<END
             ---
             :rubygems_api_key: $RUBYGEMS_API_KEY
             END
-            cat ~/.gem/credentials
-            chmod 600 ~/.gem/credentials
+      - run:
+          name: Debug key
+          command: cat ~/.gem/credentials
+      - run:
+          name: Key permissions
+          command: chmod 600 ~/.gem/credentials
 
 workflows:
   version: 2
