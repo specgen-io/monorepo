@@ -74,6 +74,7 @@ commands:
       - run:
           name: Write key
           command: |
+            mkdir ~/.gem
             tee > ~/.gem/credentials \<<END
             ---
             :rubygems_api_key: $RUBYGEMS_API_KEY
