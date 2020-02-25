@@ -31,6 +31,10 @@ jobs:
           destination: go-test-report
       - store_test_results:
           path: /tmp/test-results
+      - persist_to_workspace:
+          root: .
+          paths:
+            - dist
       - run:
           name: Release
           command: |
