@@ -5,22 +5,19 @@ jobs:
     docker:
       - image: circleci/golang:1.12
     working_directory: /go/src/specgen
-
-    environment:
-      TEST_RESULTS: /tmp/test-results
-      VERSION_MAJOR: 0
-
     steps:
       - checkout
       - run:
           name: Build
-          command: ./build.sh ${VERSION_MAJOR}.${CIRCLE_BUILD_NUM}
+          command: |
+            export VERSION=0.<< pipeline.number >>.0
+            ./build.sh $VERSION
       - run:
           name: Unit tests
           command: |
             mkdir -p $TEST_RESULTS
             go get -u github.com/jstemmer/go-junit-report
-            go test ./... -v 2>&1 | ../../bin/go-junit-report > ${TEST_RESULTS}/go-test-report.xml
+            go test ./... -v 2>&1 | ../../bin/go-junit-report > /tmp/test-results/go-test-report.xml
       - store_artifacts:
           path: ./zips
           destination: zips
@@ -40,7 +37,8 @@ jobs:
           name: Release
           command: |
             if [ $CIRCLE_BRANCH = "master" ]; then
-              ./release.sh ${VERSION_MAJOR}.${CIRCLE_BUILD_NUM} ${GITHUB_TOKEN}
+              export VERSION=0.<< pipeline.number >>.0
+              ./release.sh $VERSION ${GITHUB_TOKEN}
             else
               echo "Will not release - not running on master branch"
             fi
@@ -65,9 +63,13 @@ jobs:
       - run:
           name: Push gem
           command: |
-            cd ./plugins/gem-specgen
-            export VERSION=0.<< pipeline.number >>.0
-            gem push --key rubygems specgen-$VERSION.gem
+            if [ $CIRCLE_BRANCH = "master" ]; then
+              cd ./plugins/gem-specgen
+              export VERSION=0.<< pipeline.number >>.0
+              gem push --key rubygems specgen-$VERSION.gem
+            else
+              echo "Will not release - not running on master branch"
+            fi
 
   build-sbt-specgen:
     docker:
@@ -77,15 +79,19 @@ jobs:
       - attach_workspace:
           at: ./plugins/sbt-spec/src/main/resources
       - restore_cache:
-          key: cache-{{ checksum "build.sbt" }}
+          key: cache-{{ checksum "./plugins/sbt-spec/build.sbt" }}
       - run:
           name: Build aand publish SBT plugin
           command: |
-            cd ./plugins/sbt-spec
-            export VERSION=0.<< pipeline.number >>.0
-            sbt -Dversion=$VERSION clean test publish bintrayRelease
+            if [ $CIRCLE_BRANCH = "master" ]; then
+              cd ./plugins/sbt-spec
+              export VERSION=0.<< pipeline.number >>.0
+              sbt -Dversion=$VERSION clean test publish bintrayRelease
+            else
+              echo "Will not release - not running on master branch"
+            fi
       - save_cache:
-          key: cache-{{ checksum "build.sbt" }}
+          key: cache-{{ checksum "./plugins/sbt-spec/build.sbt" }}
           paths:
             - ~/.sbt
             - ~/.ivy2
