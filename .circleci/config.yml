@@ -49,7 +49,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: .
+          at: ./plugins/gem-specgen/lib
       - run:
           name: Check dist
           command: find .
