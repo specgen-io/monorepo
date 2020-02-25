@@ -44,6 +44,7 @@ jobs:
             else
               echo "Will not release - not running on master branch"
             fi
+
   build-gem-specgen:
     docker:
       - image: circleci/ruby:2.4.9
@@ -79,15 +80,9 @@ commands:
             ---
             :rubygems_api_key: $RUBYGEMS_API_KEY
             END
-      - run:
-          name: Debug key
-          command: cat ~/.gem/credentials
-      - run:
-          name: Key permissions
-          command: chmod 600 ~/.gem/credentials
+            chmod 600 ~/.gem/credentials
 
 workflows:
-  version: 2
   build-release:
     jobs:
       - build-specgen:
