@@ -51,8 +51,16 @@ jobs:
       - attach_workspace:
           at: ./plugins/gem-specgen/lib
       - run:
+          name: Check Base64
+          command: base64 --encode $JFROG_PASS
+      - run:
           name: Check dist
           command: find .
+      - run:
+          name: Build gem
+          command: |
+            cd ./plugins/gem-specgen
+            gem build specgen.gemspec
 
 workflows:
   version: 2
