@@ -154,6 +154,7 @@ workflows:
             - build-specgen
       - trigger-tests:
           context: specgen
+          <<: *common-params
           requires:
             - build-gem-specgen
             - build-sbt-specgen
