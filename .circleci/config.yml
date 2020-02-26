@@ -1,7 +1,13 @@
 version: 2.1
 
+common-params: &common-params
+  version: 0.<< pipeline.number >>.0
+
 jobs:
   build-specgen:
+    parameters:
+      version:
+        type: string
     docker:
       - image: circleci/golang:1.12
     working_directory: /go/src/specgen
@@ -44,6 +50,9 @@ jobs:
             fi
 
   build-gem-specgen:
+    parameters:
+      version:
+        type: string
     docker:
       - image: circleci/ruby:2.4.9
     steps:
@@ -72,6 +81,9 @@ jobs:
             fi
 
   build-sbt-specgen:
+    parameters:
+      version:
+        type: string
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
@@ -115,11 +127,14 @@ workflows:
     jobs:
       - build-specgen:
           context: specgen
+          <<: *common-params
       - build-gem-specgen:
           context: specgen
+          <<: *common-params
           requires:
             - build-specgen
       - build-sbt-specgen:
           context: specgen
+          <<: *common-params
           requires:
             - build-specgen
