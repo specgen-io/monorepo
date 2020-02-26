@@ -121,7 +121,7 @@ jobs:
           command: |
             curl -u ${CIRCLECI_TOKEN}: -X POST --header "Content-Type: application/json" \
             -d '{"parameters": {"specgen-version": "<< parameters.version >>"}}' \
-            https://circleci.com/api/v2/project/ModaOperandi/specgen-tests/pipeline
+            https://circleci.com/api/v2/project/github/ModaOperandi/specgen-tests/pipeline
 
 commands:
   setup-rubygems_key:
