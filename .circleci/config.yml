@@ -114,12 +114,12 @@ workflows:
   build-release:
     jobs:
       - build-specgen:
-          context: github-release
+          context: specgen
       - build-gem-specgen:
           context: specgen
           requires:
             - build-specgen
       - build-sbt-specgen:
-          context: bintray
+          context: specgen
           requires:
             - build-specgen
