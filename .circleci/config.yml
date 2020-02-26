@@ -16,7 +16,7 @@ jobs:
       - run:
           name: Build
           command: |
-            export VERSION=0.<< pipeline.number >>.0
+            export VERSION=<< parameters.version >>
             ./build.sh $VERSION
       - run:
           name: Unit tests
@@ -43,7 +43,7 @@ jobs:
           name: Release
           command: |
             if [ $CIRCLE_BRANCH = "master" ]; then
-              export VERSION=0.<< pipeline.number >>.0
+              export VERSION=<< parameters.version >>
               ./release.sh $VERSION ${GITHUB_TOKEN}
             else
               echo "Will not release - not running on master branch"
@@ -66,7 +66,7 @@ jobs:
           name: Build gem
           command: |
             cd ./plugins/gem-specgen
-            export VERSION=0.<< pipeline.number >>.0
+            export VERSION=<< parameters.version >>
             gem build specgen.gemspec
       - setup-rubygems_key
       - run:
@@ -74,7 +74,7 @@ jobs:
           command: |
             if [ $CIRCLE_BRANCH = "master" ]; then
               cd ./plugins/gem-specgen
-              export VERSION=0.<< pipeline.number >>.0
+              export VERSION=<< parameters.version >>
               gem push --key rubygems specgen-$VERSION.gem
             else
               echo "Will not release - not running on master branch"
@@ -97,7 +97,7 @@ jobs:
           command: |
             if [ $CIRCLE_BRANCH = "master" ]; then
               cd ./plugins/sbt-spec
-              export VERSION=0.<< pipeline.number >>.0
+              export VERSION=<< parameters.version >>
               sbt -Dversion=$VERSION clean test publish bintrayRelease
             else
               echo "Will not release - not running on master branch"
