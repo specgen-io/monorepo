@@ -109,6 +109,20 @@ jobs:
             - ~/.ivy2
             - ~/.m2
 
+  trigger-tests:
+    parameters:
+      version:
+        type: string
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - run:
+          name: Trigger specgen-tests pipeline
+          command: |
+            curl -u ${CIRCLECI_TOKEN}: -X POST --header "Content-Type: application/json" \
+            -d '{"parameters": {"specgen-version": "<< parameters.version >>"}}' \
+            https://circleci.com/api/v2/project/ModaOperandi/specgen-tests/pipeline
+
 commands:
   setup-rubygems_key:
     steps:
@@ -138,3 +152,8 @@ workflows:
           <<: *common-params
           requires:
             - build-specgen
+      - trigger-tests:
+          context: specgen
+          requires:
+            - build-gem-specgen
+            - build-sbt-specgen
