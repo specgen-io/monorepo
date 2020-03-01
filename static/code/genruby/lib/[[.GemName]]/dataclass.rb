@@ -22,9 +22,27 @@ module [[.ModuleName]]
         end
       end
 
+      def copy(params)
+        params.each do |attr, attr_value|
+          if !self.class.json_attributes.key?(attr)
+            raise TypeError.new("Non existing attribute #{attr}")
+          end
+        end
+        new_params =
+          self.class.json_attributes.map do |attr, attr_type|
+            attr_value =
+              if params.key?(attr)
+                params[attr]
+              else
+                self.instance_variable_get("@#{attr}")
+              end
+            [attr, attr_value]
+          end.to_h
+        return self.class.new(new_params)
+      end
+
       def self.included(base)
         base.extend ClassMethods
-        #base.private_class_method(:new)
       end
 
       module ClassMethods
