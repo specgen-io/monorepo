@@ -85,6 +85,22 @@ module [[.ModuleName]]
       end
     end
 
+    class DataClassCopy < Test::Unit::TestCase
+      def test_copy
+        a = TheClass.new(string: "the string", int: 123)
+        b = a.copy(string: "the other string")
+        assert_equal "the string", a.string
+        assert_equal "the other string", b.string
+      end
+
+      def test_copy_non_existing_field
+        assert_raise TypeError do
+          a = TheClass.new(string: "the string", int: 123)
+          a.copy(non_existing: "the other string")
+        end
+      end
+    end
+
     class TheClass
       include DataClass
 
