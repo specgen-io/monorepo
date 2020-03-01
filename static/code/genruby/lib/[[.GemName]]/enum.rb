@@ -35,26 +35,23 @@ module [[.ModuleName]]
           @_enum_hash ||= {}
           @_enums_by_value ||= {}
 
-          validate_key!(key)
-          validate_value!(value)
+          if @_enum_hash.key?(key) then
+            raise TypeError.new("Duplicate key: #{key}")
+          end
 
-          store_new_instance(key, value)
+          if @_enums_by_value.key?(value) then
+            raise TypeError.new("Duplicate value: #{value}")
+          end
+
+          new_instance = new(key, value)
+          @_enum_hash[key] = new_instance
+          @_enums_by_value[value] = new_instance
 
           if key.to_s == key.to_s.upcase
             const_set key, value
           else
             define_singleton_method(key) { value }
           end
-        end
-
-        def store_new_instance(key, value)
-          new_instance = new(key, value)
-          @_enum_hash[key] = new_instance
-          @_enums_by_value[value] = new_instance
-        end
-
-        def const_missing(key)
-          raise Enum::Errors::UninitializedConstantError, name: name, key: key
         end
 
         def each(&block)
@@ -99,20 +96,6 @@ module [[.ModuleName]]
           Hash[@_enum_hash.map do |key, enum|
             [key, enum.value]
           end]
-        end
-
-        private
-
-        def validate_key!(key)
-          return unless @_enum_hash.key?(key)
-
-          raise Enum::Errors::DuplicateKeyError, name: name, key: key
-        end
-
-        def validate_value!(value)
-          return unless @_enums_by_value.key?(value)
-
-          raise Enum::Errors::DuplicateValueError, name: name, value: value
         end
       end
     end
