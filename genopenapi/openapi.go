@@ -160,7 +160,7 @@ func generateObjectModel(model spec.Model) *YamlMap {
 
 	properties := Map()
 	for _, field := range model.Object.Fields {
-		property := OpenApiType(&field.Type.Definition, field.Default)
+		property := OpenApiType(&field.Type.Definition, nil)
 		if field.Description != nil {
 			property.Set("description", field.Description)
 		}

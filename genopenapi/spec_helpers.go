@@ -6,10 +6,10 @@ func NewName(source string) spec.Name {
 	return spec.Name{Source: source, Location: nil}
 }
 
-func NewField(name string, typ spec.TypeDef, defaultValue *string, description *string) *spec.NamedField {
+func NewField(name string, typ spec.TypeDef, description *string) *spec.NamedField {
 	return &spec.NamedField{
-		Name:              NewName(name),
-		DefinitionDefault: spec.DefinitionDefault{spec.Type{Definition: typ}, defaultValue, description, nil},
+		Name:       NewName(name),
+		Definition: spec.Definition{spec.Type{Definition: typ}, description, nil},
 	}
 }
 

@@ -30,12 +30,11 @@ enum:
 }
 
 func TestObjectModel(t *testing.T) {
-	defaultValue := "the default value"
 	description := "the description"
 	fields := []spec.NamedField{
-		*NewField("field1", *spec.Plain(spec.TypeString), nil, nil),
-		*NewField("field2", *spec.Nullable(spec.Plain(spec.TypeString)), &defaultValue, &description),
-		*NewField("field3", *spec.Array(spec.Plain(spec.TypeString)), nil, nil),
+		*NewField("field1", *spec.Plain(spec.TypeString), nil),
+		*NewField("field2", *spec.Nullable(spec.Plain(spec.TypeString)), &description),
+		*NewField("field3", *spec.Array(spec.Plain(spec.TypeString)), nil),
 	}
 	model := spec.Model{Object: NewObject(fields, nil)}
 	openapiYaml := generateModel(model)
@@ -49,7 +48,6 @@ properties:
     type: string
   field2:
     type: string
-    default: the default value
     description: the description
   field3:
     type: array
