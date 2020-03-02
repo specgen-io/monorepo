@@ -21,15 +21,15 @@ RELEASE_NAME=$VERSION
 
 go get github.com/aktau/github-release
 
-echo "Creating release in Github: $RELEASE_NAME"
-$GOPATH/bin/github-release release --security-token $GITHUB_TOKEN --user ModaOperandi --repo specgen --tag $RELEASE_NAME
-
-echo "Releasing zips/specgen_darwin_amd64.zip"
-$GOPATH/bin/github-release upload  --security-token $GITHUB_TOKEN --user ModaOperandi --repo specgen --tag $RELEASE_NAME --name specgen_darwin_amd64.zip  --file zips/specgen_darwin_amd64.zip
-echo "Releasing zips/specgen_linux_amd64.zip"
-$GOPATH/bin/github-release upload  --security-token $GITHUB_TOKEN --user ModaOperandi --repo specgen --tag $RELEASE_NAME --name specgen_linux_amd64.zip   --file zips/specgen_linux_amd64.zip
-echo "Releasing zips/specgen_windows_amd64.zip"
-$GOPATH/bin/github-release upload  --security-token $GITHUB_TOKEN --user ModaOperandi --repo specgen --tag $RELEASE_NAME --name specgen_windows_amd64.zip --file zips/specgen_windows_amd64.zip
+#echo "Creating release in Github: $RELEASE_NAME"
+#$GOPATH/bin/github-release release --security-token $GITHUB_TOKEN --user ModaOperandi --repo specgen --tag $RELEASE_NAME
+#
+#echo "Releasing zips/specgen_darwin_amd64.zip"
+#$GOPATH/bin/github-release upload  --security-token $GITHUB_TOKEN --user ModaOperandi --repo specgen --tag $RELEASE_NAME --name specgen_darwin_amd64.zip  --file zips/specgen_darwin_amd64.zip
+#echo "Releasing zips/specgen_linux_amd64.zip"
+#$GOPATH/bin/github-release upload  --security-token $GITHUB_TOKEN --user ModaOperandi --repo specgen --tag $RELEASE_NAME --name specgen_linux_amd64.zip   --file zips/specgen_linux_amd64.zip
+#echo "Releasing zips/specgen_windows_amd64.zip"
+#$GOPATH/bin/github-release upload  --security-token $GITHUB_TOKEN --user ModaOperandi --repo specgen --tag $RELEASE_NAME --name specgen_windows_amd64.zip --file zips/specgen_windows_amd64.zip
 
 
 BINTRAY_URL="https://api.bintray.com/content/moda/binaries"
