@@ -33,10 +33,7 @@ func generateCirceObjectModel(model spec.NamedModel, unit *scala.UnitDeclaration
 	class := scala.Class(model.Name.PascalCase()).Case()
 	ctor := class.Contructor().ParamPerLine()
 	for _, field := range model.Object.Fields {
-		param := ctor.Param(field.Name.CamelCase(), ScalaType(&field.Type.Definition))
-		if field.Default != nil {
-			param.Init(scala.Code(DefaultValue(&field.Type.Definition, *field.Default)))
-		}
+		ctor.Param(field.Name.CamelCase(), ScalaType(&field.Type.Definition))
 	}
 	unit.AddDeclarations(class)
 }
