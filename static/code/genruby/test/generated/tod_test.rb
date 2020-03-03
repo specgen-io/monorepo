@@ -1,8 +1,8 @@
 require "test/unit/runner/junitxml"
 
-require 'echo_client/type'
-require 'echo_client/tod'
-require 'echo_client/jsoner'
+require '[[.GemName]]/type'
+require '[[.GemName]]/tod'
+require '[[.GemName]]/jsoner'
 
 
 module [[.ModuleName]]

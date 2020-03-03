@@ -3,7 +3,7 @@ require 'net/https'
 require 'uri'
 require 'cgi'
 
-require 'echo_client/type'
+require '[[.GemName]]/type'
 
 module [[.ModuleName]]
   module Client
