@@ -47,17 +47,13 @@ func generateObjectModel(model spec.NamedModel) ruby.Writable {
 		class.AddCode(fmt.Sprintf("val :%s, %s", field.Name.SnakeCase(), typ))
 	}
 
-	//initialize := class.Initialize()
-	//for _, field := range model.Object.Fields {
-	//	initialize.KeywordArg(field.Name.SnakeCase())
-	//}
-	//
-	//initializeBody := initialize.Body()
-	//for _, field := range model.Object.Fields {
-	//	fieldName := field.Name.SnakeCase()
-	//	typ := RubyType(&field.Type.Definition)
-	//	initializeBody.AddLn(fmt.Sprintf("@%s = Type.check_field('%s', %s, %s)", fieldName, fieldName, typ, fieldName))
-	//}
+	initialize := class.Initialize()
+	for _, field := range model.Object.Fields {
+		initialize.KeywordArg(field.Name.SnakeCase())
+	}
+
+	initializeBody := initialize.Body()
+	initializeBody.AddLn("super method(__method__).parameters.map { |parts| [parts[1], eval(parts[1].to_s)] }.to_h")
 
 	return class
 }
