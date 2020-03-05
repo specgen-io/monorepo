@@ -13,7 +13,7 @@ func GenerateModels(specification *spec.Spec, generatePath string) *gen.TextFile
 	moduleName := specification.ServiceName.PascalCase()
 	clientModule := ruby.Module("Client")
 
-	for _, model := range specification.Models {
+	for _, model := range specification.ResolvedModels {
 		if model.IsObject() {
 			model := generateObjectModel(model)
 			clientModule.AddDeclarations(model)
