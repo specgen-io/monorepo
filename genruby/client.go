@@ -104,7 +104,8 @@ func generateClientOperation(operation spec.NamedOperation) *ruby.MethodDeclarat
 	}
 
 	if operation.Body != nil {
-		methodBody.AddLn(fmt.Sprintf("body_json = Jsoner.to_json(Message, T.check_var('body', %s, body))", RubyType(&operation.Body.Type.Definition)))
+		boydRubyType := RubyType(&operation.Body.Type.Definition)
+		methodBody.AddLn(fmt.Sprintf("body_json = Jsoner.to_json(%s, T.check_var('body', %s, body))", boydRubyType, boydRubyType))
 		methodBody.AddLn("request.body = body_json")
 	}
 	methodBody.AddLn("response = @client.request(request)")
