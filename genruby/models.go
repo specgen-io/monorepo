@@ -17,7 +17,7 @@ func GenerateModels(specification *spec.Spec, generatePath string) *gen.TextFile
 		if model.IsObject() {
 			model := generateObjectModel(model)
 			clientModule.AddDeclarations(model)
-		} else {
+		} else if model.IsEnum() {
 			model := generateEnumModel(model)
 			clientModule.AddDeclarations(model)
 		}
