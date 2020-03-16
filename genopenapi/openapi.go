@@ -135,9 +135,22 @@ func generateResponse(r spec.Definition) *YamlMap {
 func generateModel(model spec.Model) *YamlMap {
 	if model.IsObject() {
 		return generateObjectModel(model)
-	} else {
+	} else if model.IsEnum() {
 		return generateEnumModel(model)
+	} else {
+		return generateUnionModel(model)
 	}
+}
+
+func generateUnionModel(model spec.Model) *YamlMap {
+	itemTypes := Array()
+
+	for _, item := range model.Union.Items {
+		itemTypes.Add(OpenApiType(&item.Definition, nil).Yaml)
+	}
+
+	schema := Map().Set("anyOf", itemTypes.Yaml)
+	return schema
 }
 
 func generateObjectModel(model spec.Model) *YamlMap {

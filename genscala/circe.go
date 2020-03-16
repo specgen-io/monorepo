@@ -18,7 +18,7 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *g
 	for _, model := range spec.Models {
 		if model.IsObject() {
 			generateCirceObjectModel(model, unit)
-		} else {
+		} else if model.IsEnum() {
 			generateCirceEnumModel(model, unit)
 		}
 	}

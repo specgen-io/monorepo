@@ -57,6 +57,23 @@ properties:
 	assert.Equal(t, strings.TrimSpace(openapiYaml.String()), strings.TrimSpace(expected))
 }
 
+func TestUnionModel(t *testing.T) {
+	items := []spec.Type{
+		spec.Type{*spec.Plain("Model1"), nil},
+		spec.Type{*spec.Plain("Model2"), nil},
+		spec.Type{*spec.Plain("Model3"), nil},
+	}
+	model := spec.Model{Union: NewUnion(items, nil)}
+	openapiYaml := generateModel(model)
+	expected := `
+anyOf:
+- $ref: '#/components/schemas/Model1'
+- $ref: '#/components/schemas/Model2'
+- $ref: '#/components/schemas/Model3'
+`
+	assert.Equal(t, strings.TrimSpace(openapiYaml.String()), strings.TrimSpace(expected))
+}
+
 func TestResponse(t *testing.T) {
 	response := spec.Definition{spec.Type{*spec.Plain("SomeModel"), nil}, nil, nil}
 	openapiYaml := generateResponse(response)
