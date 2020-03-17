@@ -7,6 +7,21 @@ import (
 	"specgen/gen"
 )
 
+func buildReversedUnionMap(specification *spec.Spec) map[spec.Name][]spec.Name {
+	result := map[spec.Name][]spec.Name {}
+	for _, model := range specification.Models {
+		if model.IsUnion() {
+			for _, unionItem := range model.Union.Items {
+				if _, ok := result[unionItem.Definition.Info.Model.Name]; !ok {
+					result[unionItem.Definition.Info.Model.Name] = []spec.Name{}
+				}
+				result[unionItem.Definition.Info.Model.Name] = append(result[unionItem.Definition.Info.Model.Name], model.Name)
+			}
+		}
+	}
+	return result
+}
+
 func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *gen.TextFile {
 	unit := scala.Unit(packageName)
 	unit.
@@ -15,11 +30,15 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *g
 		Import("java.time.format._").
 		Import("java.util.UUID")
 
+	unionsMap := buildReversedUnionMap(spec)
+
 	for _, model := range spec.Models {
 		if model.IsObject() {
-			generateCirceObjectModel(model, unit)
+			generateCirceObjectModel(model, unionsMap, unit)
 		} else if model.IsEnum() {
 			generateCirceEnumModel(model, unit)
+		} else if model.IsUnion() {
+			generateCirceUnionModel(model, unit)
 		}
 	}
 
@@ -29,8 +48,16 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *g
 	}
 }
 
-func generateCirceObjectModel(model spec.NamedModel, unit *scala.UnitDeclaration) {
+func generateCirceObjectModel(model spec.NamedModel, unionMap map[spec.Name][]spec.Name, unit *scala.UnitDeclaration) {
 	class := scala.Class(model.Name.PascalCase()).Case()
+
+	if unions, ok := unionMap[model.Name]; ok {
+		extends := class.Extends(unions[0].Source)
+		for index := 1; index < len(unions); index ++ {
+			extends.With(unions[index].Source)
+		}
+	}
+
 	ctor := class.Contructor().ParamPerLine()
 	for _, field := range model.Object.Fields {
 		ctor.Param(field.Name.CamelCase(), ScalaType(&field.Type.Definition))
@@ -56,4 +83,9 @@ func generateCirceEnumModel(model spec.NamedModel, unit *scala.UnitDeclaration) 
 
 	unit.AddDeclarations(enumBase)
 	unit.AddDeclarations(enumObject)
+}
+
+func generateCirceUnionModel(model spec.NamedModel, unit *scala.UnitDeclaration) {
+	trait := scala.Trait(model.Name.PascalCase()).Sealed()
+	unit.AddDeclarations(trait)
 }

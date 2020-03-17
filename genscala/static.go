@@ -29,7 +29,7 @@ object json extends AutoDerivation {
     import io.circe.parser._
     import io.circe.generic.extras.Configuration
 
-    val config: Configuration = Configuration.default.withDefaults.withSnakeCaseMemberNames
+    val config: Configuration = Configuration.default.withSnakeCaseMemberNames.withSnakeCaseConstructorNames.withDefaults
 
     def read[T](jsonStr: String)(implicit decoder: Decoder[T]): T = {
       parse(jsonStr) match {
