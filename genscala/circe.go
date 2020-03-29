@@ -3,24 +3,10 @@ package genscala
 import (
 	"github.com/ModaOperandi/spec"
 	"github.com/vsapronov/gopoetry/scala"
+	"fmt"
 	"path/filepath"
 	"specgen/gen"
 )
-
-func buildReversedUnionMap(specification *spec.Spec) map[spec.Name][]spec.Name {
-	result := map[spec.Name][]spec.Name {}
-	for _, model := range specification.Models {
-		if model.IsUnion() {
-			for _, unionItem := range model.Union.Items {
-				if _, ok := result[unionItem.Definition.Info.Model.Name]; !ok {
-					result[unionItem.Definition.Info.Model.Name] = []spec.Name{}
-				}
-				result[unionItem.Definition.Info.Model.Name] = append(result[unionItem.Definition.Info.Model.Name], model.Name)
-			}
-		}
-	}
-	return result
-}
 
 func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *gen.TextFile {
 	unit := scala.Unit(packageName)
@@ -30,17 +16,17 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *g
 		Import("java.time.format._").
 		Import("java.util.UUID")
 
-	unionsMap := buildReversedUnionMap(spec)
-
 	for _, model := range spec.Models {
 		if model.IsObject() {
-			generateCirceObjectModel(model, unionsMap, unit)
+			generateCirceObjectModel(model, unit)
 		} else if model.IsEnum() {
 			generateCirceEnumModel(model, unit)
 		} else if model.IsUnion() {
-			generateCirceUnionModel(model, unit)
+			generateCirceUnionModel(model, unit, packageName)
 		}
 	}
+
+	generateCirceUnionItemsCodecs(unit, spec.Models, )
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, "Models.scala"),
@@ -48,15 +34,8 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *g
 	}
 }
 
-func generateCirceObjectModel(model spec.NamedModel, unionMap map[spec.Name][]spec.Name, unit *scala.UnitDeclaration) {
+func generateCirceObjectModel(model spec.NamedModel, unit *scala.UnitDeclaration) {
 	class := scala.Class(model.Name.PascalCase()).Case()
-
-	if unions, ok := unionMap[model.Name]; ok {
-		extends := class.Extends(unions[0].Source)
-		for index := 1; index < len(unions); index ++ {
-			extends.With(unions[index].Source)
-		}
-	}
 
 	ctor := class.Contructor().ParamPerLine()
 	for _, field := range model.Object.Fields {
@@ -85,7 +64,40 @@ func generateCirceEnumModel(model spec.NamedModel, unit *scala.UnitDeclaration) 
 	unit.AddDeclarations(enumObject)
 }
 
-func generateCirceUnionModel(model spec.NamedModel, unit *scala.UnitDeclaration) {
+func generateCirceUnionModel(model spec.NamedModel, unit *scala.UnitDeclaration, packageName string) {
 	trait := scala.Trait(model.Name.PascalCase()).Sealed()
+
+	object := scala.Object(model.Name.PascalCase())
+	objectDefinition := object.Define(true)
+	for _, item := range model.Union.Items {
+		itemClass := scala.Class(item.Name.PascalCase()).Case()
+		itemClass.Extends(model.Name.PascalCase())
+		itemClass.Contructor().Param("data", packageName+"."+ScalaType(&item.Type.Definition))
+		objectDefinition.AddCode(itemClass)
+	}
 	unit.AddDeclarations(trait)
+	unit.AddDeclarations(object)
+}
+
+func generateCirceUnionItemsCodecs(unit *scala.UnitDeclaration, models spec.Models) {
+	unit.
+		Import("io.circe.generic.extras.{AutoDerivation, Configuration}").
+		Import("io.circe.{Decoder, Encoder}").
+		Import("io.circe.generic.extras.semiauto.{deriveUnwrappedDecoder, deriveUnwrappedEncoder}")
+
+	object := scala.Object("json")
+	object.Extends("AutoDerivation")
+	objectDefinition := object.Define(true)
+	objectDefinition.AddLn("implicit val auto = Configuration.default.withSnakeCaseMemberNames.withSnakeCaseConstructorNames.withDefaults")
+	for _, model := range models {
+		if model.IsUnion() {
+			for _, item := range model.Union.Items {
+				itemTypeName := model.Name.PascalCase()+"."+item.Name.PascalCase()
+				itemCodecName := model.Name.PascalCase()+item.Name.PascalCase()
+				objectDefinition.AddLn(fmt.Sprintf("implicit val encoder%s: Encoder[%s] = deriveUnwrappedEncoder", itemCodecName, itemTypeName))
+				objectDefinition.AddLn(fmt.Sprintf("implicit val encoder%s: Decoder[%s] = deriveUnwrappedDecoder", itemCodecName, itemTypeName))
+			}
+		}
+	}
+	unit.AddDeclarations(object)
 }

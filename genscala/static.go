@@ -18,40 +18,31 @@ func GenerateJsonObject(packageName string, outPath string) *gen.TextFile {
 	code := fmt.Sprintf(`
 package %s
 
-import io.circe.generic.extras.AutoDerivation
+object Jsoner {
 
-object json extends AutoDerivation {
+  import io.circe._
+  import io.circe.syntax._
+  import io.circe.parser._
 
-  object Jsoner {
-
-    import io.circe._
-    import io.circe.syntax._
-    import io.circe.parser._
-    import io.circe.generic.extras.Configuration
-
-    val config: Configuration = Configuration.default.withSnakeCaseMemberNames.withSnakeCaseConstructorNames.withDefaults
-
-    def read[T](jsonStr: String)(implicit decoder: Decoder[T]): T = {
-      parse(jsonStr) match {
-        case Right(parsed) => {
-          parsed.as[T] match {
-            case Right(decoded) => decoded
-            case Left(failure) => throw failure
-          }
+  def read[T](jsonStr: String)(implicit decoder: Decoder[T]): T = {
+    parse(jsonStr) match {
+      case Right(parsed) => {
+        parsed.as[T] match {
+          case Right(decoded) => decoded
+          case Left(failure) => throw failure
         }
-        case Left(failure) => throw failure
       }
-    }
-
-    def write[T](value: T, formatted: Boolean = false)(implicit encoder: Encoder[T]): String = {
-      if (formatted) {
-        Printer.spaces2.copy(dropNullValues = true).print(value.asJson)
-      } else {
-        Printer.noSpaces.copy(dropNullValues = true).print(value.asJson)
-      }
+      case Left(failure) => throw failure
     }
   }
 
+  def write[T](value: T, formatted: Boolean = false)(implicit encoder: Encoder[T]): String = {
+    if (formatted) {
+      Printer.spaces2.copy(dropNullValues = true).print(value.asJson)
+    } else {
+      Printer.noSpaces.copy(dropNullValues = true).print(value.asJson)
+    }
+  }
 }
 `, staticPackageName(packageName))
 

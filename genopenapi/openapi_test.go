@@ -31,7 +31,7 @@ enum:
 
 func TestObjectModel(t *testing.T) {
 	description := "the description"
-	fields := []spec.NamedField{
+	fields := []spec.NamedDefinition{
 		*NewField("field1", *spec.Plain(spec.TypeString), nil),
 		*NewField("field2", *spec.Nullable(spec.Plain(spec.TypeString)), &description),
 		*NewField("field3", *spec.Array(spec.Plain(spec.TypeString)), nil),
@@ -58,18 +58,22 @@ properties:
 }
 
 func TestUnionModel(t *testing.T) {
-	items := []spec.Type{
-		spec.Type{*spec.Plain("Model1"), nil},
-		spec.Type{*spec.Plain("Model2"), nil},
-		spec.Type{*spec.Plain("Model3"), nil},
+	items := []spec.NamedDefinition{
+		*NewField("field1", *spec.Plain("Model1"), nil),
+		*NewField("field2", *spec.Plain("Model2"), nil),
+		*NewField("field3", *spec.Plain("Model3"), nil),
 	}
 	model := spec.Model{Union: NewUnion(items, nil)}
 	openapiYaml := generateModel(model)
 	expected := `
-anyOf:
-- $ref: '#/components/schemas/Model1'
-- $ref: '#/components/schemas/Model2'
-- $ref: '#/components/schemas/Model3'
+type: object
+properties:
+  field1:
+    $ref: '#/components/schemas/Model1'
+  field2:
+    $ref: '#/components/schemas/Model2'
+  field3:
+    $ref: '#/components/schemas/Model3'
 `
 	assert.Equal(t, strings.TrimSpace(openapiYaml.String()), strings.TrimSpace(expected))
 }

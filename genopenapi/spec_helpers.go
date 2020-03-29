@@ -6,18 +6,18 @@ func NewName(source string) spec.Name {
 	return spec.Name{Source: source, Location: nil}
 }
 
-func NewField(name string, typ spec.TypeDef, description *string) *spec.NamedField {
-	return &spec.NamedField{
+func NewField(name string, typ spec.TypeDef, description *string) *spec.NamedDefinition {
+	return &spec.NamedDefinition{
 		Name:       NewName(name),
 		Definition: spec.Definition{spec.Type{Definition: typ}, description, nil},
 	}
 }
 
-func NewObject(fields spec.Fields, description *string) *spec.Object {
+func NewObject(fields spec.NamedDefinitions, description *string) *spec.Object {
 	return &spec.Object{fields, description}
 }
 
-func NewUnion(items spec.UnionItems, description *string) *spec.Union {
+func NewUnion(items spec.NamedDefinitions, description *string) *spec.Union {
 	return &spec.Union{items, description}
 }
 
