@@ -21,7 +21,7 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *g
 			generateCirceObjectModel(model, unit)
 		} else if model.IsEnum() {
 			generateCirceEnumModel(model, unit)
-		} else if model.IsUnion() {
+		} else if model.IsOneOf() {
 			generateCirceUnionModel(model, unit, packageName)
 		}
 	}
@@ -69,7 +69,7 @@ func generateCirceUnionModel(model spec.NamedModel, unit *scala.UnitDeclaration,
 
 	object := scala.Object(model.Name.PascalCase())
 	objectDefinition := object.Define(true)
-	for _, item := range model.Union.Items {
+	for _, item := range model.OneOf.Items {
 		itemClass := scala.Class(item.Name.PascalCase()).Case()
 		itemClass.Extends(model.Name.PascalCase())
 		itemClass.Contructor().Param("data", packageName+"."+ScalaType(&item.Type.Definition))
@@ -90,8 +90,8 @@ func generateCirceUnionItemsCodecs(unit *scala.UnitDeclaration, models spec.Mode
 	objectDefinition := object.Define(true)
 	objectDefinition.AddLn("implicit val auto = Configuration.default.withSnakeCaseMemberNames.withSnakeCaseConstructorNames.withDefaults")
 	for _, model := range models {
-		if model.IsUnion() {
-			for _, item := range model.Union.Items {
+		if model.IsOneOf() {
+			for _, item := range model.OneOf.Items {
 				itemTypeName := model.Name.PascalCase()+"."+item.Name.PascalCase()
 				itemCodecName := model.Name.PascalCase()+item.Name.PascalCase()
 				objectDefinition.AddLn(fmt.Sprintf("implicit val encoder%s: Encoder[%s] = deriveUnwrappedEncoder", itemCodecName, itemTypeName))

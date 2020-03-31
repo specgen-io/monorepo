@@ -145,12 +145,12 @@ func generateModel(model spec.Model) *YamlMap {
 func generateUnionModel(model spec.Model) *YamlMap {
 	schema := Map().Set("type", "object")
 
-	if model.Union.Description != nil {
-		schema.Set("description", model.Union.Description)
+	if model.OneOf.Description != nil {
+		schema.Set("description", model.OneOf.Description)
 	}
 
 	properties := Map()
-	for _, item := range model.Union.Items {
+	for _, item := range model.OneOf.Items {
 		property := OpenApiType(&item.Type.Definition, nil)
 		if item.Description != nil {
 			property.Set("description", item.Description)
