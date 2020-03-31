@@ -17,8 +17,8 @@ func NewObject(fields spec.NamedDefinitions, description *string) *spec.Object {
 	return &spec.Object{fields, description}
 }
 
-func NewUnion(items spec.NamedDefinitions, description *string) *spec.Union {
-	return &spec.Union{items, description}
+func NewOneOf(items spec.NamedDefinitions, description *string) *spec.OneOf {
+	return &spec.OneOf{items, description}
 }
 
 func NewParam(name string, typ spec.TypeDef, defaultValue *string, description *string) *spec.NamedParam {

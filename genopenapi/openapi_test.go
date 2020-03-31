@@ -63,7 +63,7 @@ func TestUnionModel(t *testing.T) {
 		*NewField("field2", *spec.Plain("Model2"), nil),
 		*NewField("field3", *spec.Plain("Model3"), nil),
 	}
-	model := spec.Model{Union: NewUnion(items, nil)}
+	model := spec.Model{OneOf: NewOneOf(items, nil)}
 	openapiYaml := generateModel(model)
 	expected := `
 type: object
