@@ -95,7 +95,7 @@ func generateCirceUnionItemsCodecs(unit *scala.UnitDeclaration, models spec.Mode
 				itemTypeName := model.Name.PascalCase()+"."+item.Name.PascalCase()
 				itemCodecName := model.Name.PascalCase()+item.Name.PascalCase()
 				objectDefinition.AddLn(fmt.Sprintf("implicit val encoder%s: Encoder[%s] = deriveUnwrappedEncoder", itemCodecName, itemTypeName))
-				objectDefinition.AddLn(fmt.Sprintf("implicit val encoder%s: Decoder[%s] = deriveUnwrappedDecoder", itemCodecName, itemTypeName))
+				objectDefinition.AddLn(fmt.Sprintf("implicit val decoder%s: Decoder[%s] = deriveUnwrappedDecoder", itemCodecName, itemTypeName))
 			}
 		}
 	}

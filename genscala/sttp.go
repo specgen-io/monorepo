@@ -55,8 +55,7 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 		Import("akka.stream.scaladsl.Source").
 		Import("akka.util.ByteString").
 		Import("com.softwaremill.sttp._").
-		Import("spec.json._").
-		Import("spec._")
+		Import("json._")
 
 	if len(specification.Apis) > 1 {
 		unit.AddDeclarations(generateClientSuperClass(specification))
@@ -78,7 +77,7 @@ func generateClientApisInterfaces(specification *spec.Spec, packageName string, 
 
 	unit.
 		Import("scala.concurrent._").
-		Import("spec._")
+		Import("json._")
 
 	for _, api := range specification.Apis {
 		apiTrait := generateClientApiTrait(api)
@@ -160,8 +159,6 @@ func generateClientOperationImplementation(method *scala.MethodDeclaration, oper
 	}
 
 	method_ := method.Define().Block(true)
-
-	method_.AddLn("implicit val jsonerConfig = Jsoner.config")
 
 	addParamsWriting(method_, operation.QueryParams, "query")
 
