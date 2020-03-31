@@ -45,9 +45,6 @@ func generateApiInterfaceResponse(api spec.Api, apiTraitName string) *scala.Clas
 	apiObject := scala.Object(apiTraitName)
 	apiObject_ := apiObject.Define(true)
 
-	apiObject_.AddCode(scala.Import("spec.json._"))
-	apiObject_.AddLn("implicit val jsonerConfig = Jsoner.config")
-
 	for _, operation := range api.Operations {
 		responseTypeName := responseType(operation)
 		trait, object := generateResponse(responseTypeName, operation.Responses)
