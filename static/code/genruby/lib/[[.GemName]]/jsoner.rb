@@ -77,6 +77,31 @@ module [[.ModuleName]]
         end
       end
 
+      T::UnionType.class_eval do
+        def jsoner_deserialize(json_value)
+          if !json_value.is_a?(Hash)
+            raise JsonerError.new("JSON value type #{json_value.class} is not Hash")
+          end
+          if json_value.keys.length != 1
+            raise JsonerError.new("JSON value #{json_value} should have only one key to represent union type, found #{json_value.keys.length}")
+          end
+          case_key = json_value.keys[0]
+          if not cases.key? case_key.to_sym
+            raise JsonerError.new("JSON key '#{case_key}' does not match any case in union type #{self}")
+          end
+          type = cases[case_key.to_sym]
+          case_json_value = json_value[case_key]
+          return Jsoner.deserialize(type, case_json_value)
+        end
+        def jsoner_serialize(value)
+          T.check(self, value)
+          type = types.find {|t| T.instance_of?(t, value) }
+          case_key = cases.key(type)
+          result = { case_key => Jsoner.serialize(type, value) }
+          result
+        end
+      end
+
       T::Nilable.class_eval do
         def jsoner_deserialize(json_value)
           if json_value != nil
