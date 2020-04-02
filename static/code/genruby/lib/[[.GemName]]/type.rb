@@ -43,17 +43,24 @@ module [[.ModuleName]]
           "Any[#{types.map { |t| t.to_s}.join(', ')}]"
         end
         def check(value)
-          types.each do |type|
-            begin
-              T.check(type, value)
-              return
-            rescue TypeError
-            end
+          type = types.find {|t| T.instance_of?(t, value) }
+          if type == nil
+            raise TypeError.new("Value '#{value.inspect.to_s}' type is #{value.class} - any of #{@types.map { |t| t.to_s}.join(', ')} required")
           end
-          raise TypeError.new("Value '#{value.inspect.to_s}' type is #{value.class} - any of #{@types.map { |t| t.to_s}.join(', ')} required")
         end
         def ==(other)
           T.instance_of?(AnyType, other) and (self.types - other.types).empty?
+        end
+      end
+
+      class UnionType < AnyType
+        attr_reader :cases
+        def initialize(cases)
+          @cases = cases
+          super(*cases.values)
+        end
+        def to_s
+          "Union[#{cases.map { |k, t| "#{k}: #{t}"}.join(', ')}]"
         end
       end
 
@@ -158,6 +165,10 @@ module [[.ModuleName]]
 
       def T.any(*typdefs)
         AnyType.new(*typdefs)
+      end
+
+      def T.union(*cases)
+        UnionType.new(*cases)
       end
 
       def T.check_var(var_name, type, value)

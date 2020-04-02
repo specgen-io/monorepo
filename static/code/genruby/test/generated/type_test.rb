@@ -71,6 +71,28 @@ module [[.ModuleName]]
       end
     end
 
+    class TypeToString < Test::Unit::TestCase
+      def test_nilable
+        assert_equal "Nilable[Integer]", T.nilable(Integer).to_s
+      end
+
+      def test_array
+        assert_equal "Array[Integer]", T.array(Integer).to_s
+      end
+
+      def test_hash
+        assert_equal "Hash[String, Integer]", T.hash(String, Integer).to_s
+      end
+
+      def test_any
+        assert_equal "Any[String, Integer]", T.any(String, Integer).to_s
+      end
+
+      def test_union
+        assert_equal "Union[str: String, int: Integer]", T.union(str: String, int: Integer).to_s
+      end
+    end
+
     class TypeCheck < Test::Unit::TestCase
       def test_nil
         assert_equal nil, T.check(NilClass, nil)
@@ -150,9 +172,10 @@ module [[.ModuleName]]
       end
 
       def test_array_fail
-        assert_raise TypeError do
+        ex = assert_raise TypeError do
           T.check(T.array(String), "the string")
         end
+        puts ex
       end
 
       def test_array_wrong_item_type
@@ -180,6 +203,18 @@ module [[.ModuleName]]
       def test_fail
         assert_raise TypeError do
           T.check(T.any(String, Integer), true)
+        end
+      end
+    end
+
+    class TypeCheckUnion < Test::Unit::TestCase
+      def test_success
+        assert_equal(123, T.check(T.union(str: String, int: Integer), 123))
+      end
+
+      def test_fail
+        assert_raise TypeError do
+          T.check(T.union(str: String, int: Integer), true)
         end
       end
     end
