@@ -6,6 +6,7 @@ import (
 	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"
 	"specgen/gen"
+	"strings"
 )
 
 func GenerateModels(specification *spec.Spec, generatePath string) *gen.TextFile {
@@ -15,11 +16,11 @@ func GenerateModels(specification *spec.Spec, generatePath string) *gen.TextFile
 
 	for _, model := range specification.ResolvedModels {
 		if model.IsObject() {
-			model := generateObjectModel(model)
-			clientModule.AddDeclarations(model)
+			clientModule.AddDeclarations(generateObjectModel(model))
+		} else if model.IsOneOf() {
+			clientModule.AddDeclarations(generateOneOfModel(model))
 		} else if model.IsEnum() {
-			model := generateEnumModel(model)
-			clientModule.AddDeclarations(model)
+			clientModule.AddDeclarations(generateEnumModel(model))
 		}
 	}
 
@@ -67,4 +68,13 @@ func generateEnumModel(model spec.NamedModel) ruby.Writable {
 	}
 
 	return class
+}
+
+func generateOneOfModel(model spec.NamedModel) ruby.Writable {
+	params := []string{}
+	for _, item := range model.OneOf.Items {
+		params = append(params, fmt.Sprintf("%s: %s", item.Name.SnakeCase(), RubyType(&item.Type.Definition)))
+	}
+	typedefinition := fmt.Sprintf("%s = T.union(%s)", model.Name.PascalCase(), strings.Join(params, ", "))
+	return ruby.Statements().AddLn(typedefinition)
 }
