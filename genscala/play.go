@@ -45,7 +45,7 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 		source = append(source, *apiClassFile)
 	}
 
-	openApiRoutes := generateDocsRoutes()
+	openApiRoutes := generateCommonRoutes()
 	controllersRoutes := generateControllersRoutes(specification)
 
 	routesFile :=
@@ -306,11 +306,14 @@ func tail(s string, length int) string {
 	return s + strings.Repeat(" ", length-len(s))
 }
 
-func generateDocsRoutes() string {
+func generateCommonRoutes() string {
 	return `#  documentation
 GET      /docs                controllers.Default.redirect(to="/docs/index.html?url=swagger.yaml")
 GET      /docs/swagger.yaml   controllers.Assets.at(path="/public", file="swagger.yaml")
 GET      /docs/*file          controllers.Assets.at(path="/public/lib/swagger-ui", file)
+
+#  static files
+GET      /*file   controllers.Assets.at(path="/public", file)
 `
 }
 
