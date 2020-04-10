@@ -51,7 +51,7 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 	routesFile :=
 		&gen.TextFile{
 			Path:    filepath.Join(routesPath, "routes"),
-			Content: openApiRoutes + controllersRoutes,
+			Content: controllersRoutes + openApiRoutes,
 		}
 
 	resource := []gen.TextFile{*routesFile}
