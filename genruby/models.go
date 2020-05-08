@@ -64,7 +64,7 @@ func generateEnumModel(model spec.NamedModel) ruby.Writable {
 
 	class.AddCode("include Enum")
 	for _, enumItem := range model.Enum.Items {
-		class.AddCode(fmt.Sprintf("define :%s, '%s'", enumItem.Name.SnakeCase(), enumItem.Name.Source))
+		class.AddCode(fmt.Sprintf("define :%s, '%s'", enumItem.Name.SnakeCase(), enumItem.Value))
 	}
 
 	return class

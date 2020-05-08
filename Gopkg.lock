@@ -14,11 +14,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:462937ee6926eccccb45c97805fdd07af1594dca521fac2c3796140e014221db"
+  digest = "1:83f6e06753f8fad440982e551f42eed777158b04c296bb82ec173238b6059c51"
   name = "github.com/ModaOperandi/spec"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d1a56bad6a11321e5ebb660330c1b730804b6016"
+  revision = "a305e856041389072b1d03e1d0fa8e05d5238ed9"
 
 [[projects]]
   digest = "1:8e8da6cc8cca12851d4e089d970a0f7387b3a6bcc8c459ff432213b03076a66d"
@@ -74,12 +74,12 @@
   version = "v0.8.1"
 
 [[projects]]
-  digest = "1:6a13467c76490975b05609344b3d882a9185fd11a44a04ede7427d684e0819b9"
+  digest = "1:1e80255eea46af2e2db7da90f95e4b5cfe84f3b58d9a8598ec35b0f2a75c60e4"
   name = "github.com/spf13/cobra"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0da06874266c88228b8f14615396a1f6bfc90ed7"
-  version = "v0.0.6"
+  revision = "6607e6b8603f56adb027298ee6695e06ffb3a819"
+  version = "0.0.7"
 
 [[projects]]
   digest = "1:524b71991fc7d9246cc7dc2d9e0886ccb97648091c63e30eef619e6862c955dd"
