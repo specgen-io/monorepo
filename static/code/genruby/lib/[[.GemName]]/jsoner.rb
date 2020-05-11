@@ -18,6 +18,15 @@ module [[.ModuleName]]
         end
       end
 
+      T::UntypedType.class_eval do
+        def jsoner_deserialize(json_value)
+          json_value
+        end
+        def jsoner_serialize(value)
+          value
+        end
+      end
+
       T::ArrayType.class_eval do
         def jsoner_deserialize(json_value)
           T.check_not_nil(self, json_value)
