@@ -30,7 +30,7 @@ object SpecKeys {
     "com.beachape" %% "enumeratum" % "1.5.13",
     "com.beachape" %% "enumeratum-circe" % "1.5.22",
 
-    "org.scala-lang" % "scala-reflect" % "2.12.9",
+    "org.scala-lang" % "scala-reflect" % "2.13.2",
     "com.typesafe.play" %% "play" % "2.8.1",
     "org.webjars" % "swagger-ui" % "3.22.2",
   )
@@ -42,7 +42,7 @@ object SpecKeys {
     "com.beachape" %% "enumeratum" % "1.5.13",
     "com.beachape" %% "enumeratum-circe" % "1.5.22",
 
-    "org.scala-lang" % "scala-reflect" % "2.13.2",
+    "org.scala-lang" % "scala-reflect" % "2.12.9",
     "com.softwaremill.sttp" %% "core" % "1.7.1",
     "com.softwaremill.sttp" %% "akka-http-backend" % "1.7.1",
     "com.typesafe.akka" %% "akka-stream" % "2.5.23",
