@@ -25,7 +25,7 @@ func init() {
 }
 
 var cmdServiceScalaPlay = &cobra.Command{
-	Use:   "service-scala-play",
+	Use:   "service-play",
 	Short: "Generate Scala Play service source code",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
