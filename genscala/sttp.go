@@ -194,7 +194,7 @@ func generateClientOperationImplementation(method *scala.MethodDeclaration, oper
 		Add(`response.body match `).Block(true).
 		AddLn(`case Right("") => ` + responseName + `.fromResult(OperationResult(response.code, None))`).
 		AddLn(`case Right(bodyStr) => ` + responseName + `.fromResult(OperationResult(response.code, Some(bodyStr)))`).
-		AddLn(`case Left(errorData) => throw new RuntimeException("Request failed")`)
+		AddLn(`case Left(errorData) => throw new RuntimeException(s"Request failed, status code: ${response.code}, body: ${new String(errorData)}")`)
 }
 
 func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
