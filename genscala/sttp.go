@@ -52,7 +52,7 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 
 	unit.
 		Import("scala.concurrent._").
-		Import("com.sun.org.slf4j.internal._").
+		Import("org.slf4j._").
 		Import("akka.stream.scaladsl.Source").
 		Import("akka.util.ByteString").
 		Import("com.softwaremill.sttp._").
