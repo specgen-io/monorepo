@@ -52,6 +52,7 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 
 	unit.
 		Import("scala.concurrent._").
+		Import("com.sun.org.slf4j.internal._").
 		Import("akka.stream.scaladsl.Source").
 		Import("akka.util.ByteString").
 		Import("com.softwaremill.sttp._").
@@ -174,6 +175,12 @@ func generateClientOperationImplementation(method *scala.MethodDeclaration, oper
 		method_.AddLn("val bodyJson = Jsoner.write(body)")
 	}
 
+	if operation.Body != nil {
+		method_.AddLn(`logger.debug(s"Request to url: ${url}, body: ${bodyJson}")`)
+	} else {
+		method_.AddLn(`logger.debug(s"Request to url: ${url}")`)
+	}
+
 	method_.AddLn("val response: Future[Response[String]] =")
 	httpCall := method_.Block(false).AddLn("sttp").Block(false)
 	httpCall.AddLn(`.` + httpMethod + `(url)`)
@@ -188,13 +195,21 @@ func generateClientOperationImplementation(method *scala.MethodDeclaration, oper
 	httpCall.AddLn(`.send()`)
 
 	responseName := responseType(operation)
+
 	method_.
 		Add(`response.map `).Block(true).
 		AddLn(`response: Response[String] =>`).Block(false).
 		Add(`response.body match `).Block(true).
-		AddLn(`case Right("") => ` + responseName + `.fromResult(OperationResult(response.code, None))`).
-		AddLn(`case Right(bodyStr) => ` + responseName + `.fromResult(OperationResult(response.code, Some(bodyStr)))`).
-		AddLn(`case Left(errorData) => throw new RuntimeException(s"Request failed, status code: ${response.code}, body: ${new String(errorData)}")`)
+		Add(`case Right(bodyStr) => `).
+			AddCode(scala.Block(true).
+				AddLn(`logger.debug(s"Response status: ${response.code}, body: ${bodyStr}")`).
+				AddLn(`val body = Option(bodyStr).collect { case x if x.nonEmpty => x }`).
+				AddLn(responseName + `.fromResult(OperationResult(response.code, body))`)).
+		Add(`case Left(errorData) =>`).
+			AddCode(scala.Block(true).
+				AddLn(`val errorMessage = s"Request failed, status code: ${response.code}, body: ${new String(errorData)}"`).
+				AddLn(`logger.error(errorMessage)`).
+				AddLn(`throw new RuntimeException(errorMessage)`))
 }
 
 func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
@@ -208,6 +223,7 @@ func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 	apiClass_ := apiClass.Define(true)
 	apiClass_.AddCode(scala.Import(apiTraitName + "._"))
 	apiClass_.AddCode(scala.Import("ExecutionContext.Implicits.global"))
+	apiClass_.AddLn("private val logger: Logger = LoggerFactory.getLogger(this.getClass)")
 	for _, operation := range api.Operations {
 		method := generateClientOperationSignature(operation)
 		generateClientOperationImplementation(method, operation)
