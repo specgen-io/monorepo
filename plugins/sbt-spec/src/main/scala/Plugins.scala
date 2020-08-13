@@ -42,6 +42,7 @@ object SpecKeys {
     "com.beachape" %% "enumeratum" % "1.5.13",
     "com.beachape" %% "enumeratum-circe" % "1.5.22",
 
+    "org.slf4j" % "slf4j-api" % "1.7.28",
     "org.scala-lang" % "scala-reflect" % "2.12.9",
     "com.softwaremill.sttp" %% "core" % "1.7.1",
     "com.softwaremill.sttp" %% "akka-http-backend" % "1.7.1",
