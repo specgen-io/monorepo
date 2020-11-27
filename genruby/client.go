@@ -20,8 +20,8 @@ func GenerateClient(serviceFile string, generatePath string) error {
 	models := GenerateModels(specification, libGemPath)
 	clients := generateClientApisClasses(specification, libGemPath)
 
-	data := static.RubyGem{GemName: gemName, ModuleName: moduleName}
-	sources, err := static.RenderTemplate("genruby", generatePath, data)
+	data := static.RubyClient{GemName: gemName, ModuleName: moduleName}
+	sources, err := static.RenderTemplate("ruby-client", generatePath, data)
 	if err != nil { return err }
 
 	sources = append(sources, *models, *clients)

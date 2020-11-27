@@ -1,6 +1,6 @@
 package static
 
-type RubyGem struct {
+type RubyClient struct {
 	GemName    string
 	ModuleName string
 }
