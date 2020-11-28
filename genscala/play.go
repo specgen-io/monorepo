@@ -20,17 +20,19 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 	controllersPackage := controllersPackage(specification)
 	servicesPackage := servicesPackage(specification)
 
-	scalaStaticCode := static.ScalaStaticCode{ PackageName: controllersPackage }
-
-	scalaCirceFiles, err := static.RenderTemplate("scala-circe", generatePath, scalaStaticCode)
+	scalaCirceFiles, err := static.RenderTemplate("scala-circe", generatePath, static.ScalaStaticCode{ PackageName: modelsPackage })
 	if err != nil {
 		return
 	}
-	scalaPlayStaticFiles, err := static.RenderTemplate("scala-play", generatePath, scalaStaticCode)
+	scalaResponseFiles, err := static.RenderTemplate("scala-response", generatePath, static.ScalaStaticCode{ PackageName: servicesPackage })
 	if err != nil {
 		return
 	}
-	scalaHttpStaticFiles, err := static.RenderTemplate("scala-http", generatePath, scalaStaticCode)
+	scalaPlayStaticFiles, err := static.RenderTemplate("scala-play", generatePath, static.ScalaStaticCode{ PackageName: controllersPackage })
+	if err != nil {
+		return
+	}
+	scalaHttpStaticFiles, err := static.RenderTemplate("scala-http", generatePath, static.ScalaStaticCode{ PackageName: controllersPackage })
 	if err != nil {
 		return
 	}
@@ -40,6 +42,7 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 	sourceManaged := []gen.TextFile{ *modelsFile }
 	sourceManaged = append(sourceManaged, scalaPlayStaticFiles...)
 	sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
+	sourceManaged = append(sourceManaged, scalaResponseFiles...)
 	sourceManaged = append(sourceManaged, scalaCirceFiles...)
 
 	apis := specification.Apis
