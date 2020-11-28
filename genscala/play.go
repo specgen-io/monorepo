@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"specgen/gen"
 	"specgen/genopenapi"
+	"specgen/static"
 	"strings"
 )
 
@@ -17,23 +18,29 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 
 	modelsPackage := modelsPackage(specification)
 	controllersPackage := controllersPackage(specification)
-	jsonFile := GenerateJsonObject(modelsPackage, generatePath)
 	servicesPackage := servicesPackage(specification)
 
-	operationResultFile := GenerateOperationResult(servicesPackage, generatePath)
-	resultHelpersFile := GeneratePlayResultHelpers(controllersPackage, generatePath)
-	stringParamsFile := GenerateStringParams(controllersPackage, generatePath)
+	scalaStaticCode := static.ScalaStaticCode{ PackageName: controllersPackage }
+
+	scalaCirceFiles, err := static.RenderTemplate("scala-circe", generatePath, scalaStaticCode)
+	if err != nil {
+		return
+	}
+	scalaPlayStaticFiles, err := static.RenderTemplate("scala-play", generatePath, scalaStaticCode)
+	if err != nil {
+		return
+	}
+	scalaHttpStaticFiles, err := static.RenderTemplate("scala-http", generatePath, scalaStaticCode)
+	if err != nil {
+		return
+	}
 
 	modelsFile := GenerateCirceModels(specification, modelsPackage, generatePath)
 
-	source := []gen.TextFile{}
-	sourceManaged := []gen.TextFile{
-		*jsonFile,
-		*operationResultFile,
-		*resultHelpersFile,
-		*stringParamsFile,
-		*modelsFile,
-	}
+	sourceManaged := []gen.TextFile{ *modelsFile }
+	sourceManaged = append(sourceManaged, scalaPlayStaticFiles...)
+	sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
+	sourceManaged = append(sourceManaged, scalaCirceFiles...)
 
 	apis := specification.Apis
 
@@ -41,6 +48,10 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 		apiTraitFile := generateApiInterface(api, servicesPackage, generatePath)
 		apiControllerFile := generateApiController(api, controllersPackage, generatePath)
 		sourceManaged = append(sourceManaged, *apiTraitFile, *apiControllerFile)
+	}
+
+	source := []gen.TextFile{}
+	for _, api := range apis {
 		apiClassFile := generateApiClass(api, servicesPackage, servicesPath)
 		source = append(source, *apiClassFile)
 	}

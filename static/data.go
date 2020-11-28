@@ -5,3 +5,6 @@ type RubyClient struct {
 	ModuleName string
 }
 
+type ScalaStaticCode struct {
+	PackageName string
+}
