@@ -5,6 +5,7 @@ import (
 	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
 	"specgen/gen"
+	"specgen/static"
 	"strings"
 )
 
@@ -16,24 +17,24 @@ func GenerateSttpClient(serviceFile string, generatePath string) error {
 
 	clientPackage := clientPackageName(specification.ServiceName)
 
-	jsonFile := GenerateJsonObject(clientPackage, generatePath)
-	operationResultFile := GenerateOperationResult(clientPackage, generatePath)
-	stringParamsFile := GenerateStringParams(clientPackage, generatePath)
-	backendFile := GenerateSttpBackend(clientPackage, generatePath)
+	scalaStaticCode := static.ScalaStaticCode{ PackageName: clientPackage }
+
+	scalaCirceFiles, err := static.RenderTemplate("scala-circe", generatePath, scalaStaticCode)
+	if err != nil {
+		return err
+	}
+	scalaHttpStaticFiles, err := static.RenderTemplate("scala-http", generatePath, scalaStaticCode)
+	if err != nil {
+		return err
+	}
 
 	modelsFile := GenerateCirceModels(specification, clientPackage, generatePath)
 	interfacesFile := generateClientApisInterfaces(specification, clientPackage, generatePath)
 	implsFile := generateClientApiImplementations(specification, clientPackage, generatePath)
 
-	sourceManaged := []gen.TextFile{
-		*jsonFile,
-		*operationResultFile,
-		*stringParamsFile,
-		*backendFile,
-		*modelsFile,
-		*interfacesFile,
-		*implsFile,
-	}
+	sourceManaged := scalaCirceFiles
+	sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
+	sourceManaged = append(sourceManaged, *modelsFile, *interfacesFile, *implsFile)
 
 	err = gen.WriteFiles(sourceManaged, true)
 	if err != nil {
