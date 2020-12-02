@@ -59,19 +59,10 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 		source = append(source, *apiClassFile)
 	}
 
-	openApiRoutes := generateCommonRoutes()
-	controllersRoutes := generateControllersRoutes(specification)
-
-	routesFile :=
-		&gen.TextFile{
-			Path:    filepath.Join(routesPath, "routes"),
-			Content: controllersRoutes + openApiRoutes,
-		}
-
+	routesFile := generateRoutesFile(specification, filepath.Join(routesPath, "routes"))
 	resource := []gen.TextFile{*routesFile}
 
-	swaggerFile := filepath.Join(swaggerPath, "swagger.yaml")
-	genopenapi.GenerateSpecification(serviceFile, swaggerFile)
+	genopenapi.GenerateSpecification(serviceFile, filepath.Join(swaggerPath, "swagger.yaml"))
 
 	err = gen.WriteFiles(source, false)
 	if err != nil {
@@ -89,6 +80,14 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 	}
 
 	return
+}
+
+func generateRoutesFile(specification *spec.Spec, routesPath string) *gen.TextFile {
+	openApiRoutes := generateCommonRoutes()
+	controllersRoutes := generateControllersRoutes(specification)
+	routes := controllersRoutes + openApiRoutes
+	routesFile := &gen.TextFile{ Path:    routesPath, Content: routes }
+	return routesFile
 }
 
 func controllerType(apiName spec.Name) string {
@@ -244,39 +243,7 @@ func generateApiController(api spec.Api, packageName string, outPath string) *ge
 	class_ := class.Define(true)
 
 	for _, operation := range api.Operations {
-		method := class_.Def(operation.Name.CamelCase())
-		for _, param := range operation.Endpoint.UrlParams {
-			method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
-		}
-		definition := method.Define()
-		if operation.Body != nil {
-			definition.Add("Action(parse.byteString).async ")
-		} else {
-			definition.Add("Action.async ")
-		}
-		lambda := definition.Block(true).AddLn("implicit request =>").Block(false)
-
-		parseParams := getOperationParams(operation, false)
-
-		if len(parseParams) > 0 {
-			tryBlock := lambda.Add("val params = Try ").Block(true)
-			addParamsParsing(tryBlock, operation.HeaderParams, "header", "request.headers.get")
-			addParamsParsing(tryBlock, operation.QueryParams, "query", "request.getQueryString")
-			if operation.Body != nil {
-				tryBlock.AddLn("val body = Jsoner.read[" + ScalaType(&operation.Body.Type.Definition) + "](request.body.utf8String)")
-			}
-			tryBlock.AddLn("(" + strings.Join(parseParams, ", ") + ")")
-		}
-
-		if len(parseParams) > 0 {
-			match := lambda.Add("params match ").Block(true)
-			match.AddLn("case Failure(ex) => Future { BadRequest }")
-			success := match.AddLn("case Success(params) => ").Block(false)
-			success.AddLn("val " + "(" + strings.Join(parseParams, ", ") + ") = params")
-			callApi(success, operation)
-		} else {
-			callApi(lambda, operation)
-		}
+		generateControllerMethod(class_, operation)
 	}
 
 	unit.AddDeclarations(class)
@@ -287,13 +254,51 @@ func generateApiController(api spec.Api, packageName string, outPath string) *ge
 	}
 }
 
+func generateControllerMethod(class_ *scala.StatementsDeclaration, operation spec.NamedOperation) {
+	method := class_.Def(operation.Name.CamelCase())
+	for _, param := range operation.Endpoint.UrlParams {
+		method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
+	}
+	for _, param := range operation.QueryParams {
+		method.Param(param.Name.Source, ScalaType(&param.Type.Definition))
+	}
+	definition := method.Define()
+	if operation.Body != nil {
+		definition.Add("Action(parse.byteString).async ")
+	} else {
+		definition.Add("Action.async ")
+	}
+	lambda := definition.Block(true).AddLn("implicit request =>").Block(false)
+
+	parseParams := getParsedOperationParams(operation)
+
+	if len(parseParams) > 0 {
+		tryBlock := lambda.Add("val params = Try ").Block(true)
+		addParamsParsing(tryBlock, operation.HeaderParams, "header", "request.headers.get")
+		if operation.Body != nil {
+			tryBlock.AddLn("val body = Jsoner.read[" + ScalaType(&operation.Body.Type.Definition) + "](request.body.utf8String)")
+		}
+		tryBlock.AddLn("(" + strings.Join(parseParams, ", ") + ")")
+	}
+
+	if len(parseParams) > 0 {
+		match := lambda.Add("params match ").Block(true)
+		match.AddLn("case Failure(ex) => Future { BadRequest }")
+		success := match.AddLn("case Success(params) => ").Block(false)
+		success.AddLn("val " + "(" + strings.Join(parseParams, ", ") + ") = params")
+		callApi(success, operation)
+	} else {
+		callApi(lambda, operation)
+	}
+}
+
 func callApi(lambda *scala.StatementsDeclaration, operation spec.NamedOperation) {
-	allParams := getOperationParams(operation, true)
+	allParams := getOperationCallParams(operation)
 	lambda.AddLn("val result = api." + operation.Name.CamelCase() + "(" + strings.Join(allParams, ", ") + ")")
 	lambda.AddLn("result.map(_.toResult.toPlay).recover { case _: Exception => InternalServerError }")
 }
 
-func getOperationParams(operation spec.NamedOperation, includeUrl bool) []string {
+func getOperationCallParams(operation spec.NamedOperation) []string {
 	params := []string{}
 	if operation.HeaderParams != nil {
 		for _, param := range operation.HeaderParams {
@@ -303,15 +308,26 @@ func getOperationParams(operation spec.NamedOperation, includeUrl bool) []string
 	if operation.Body != nil {
 		params = append(params, "body")
 	}
-	if includeUrl {
-		for _, param := range operation.Endpoint.UrlParams {
-			params = append(params, param.Name.CamelCase())
-		}
+	for _, param := range operation.Endpoint.UrlParams {
+		params = append(params, param.Name.CamelCase())
 	}
 	if operation.QueryParams != nil {
 		for _, param := range operation.QueryParams {
+			params = append(params, param.Name.Source)
+		}
+	}
+	return params
+}
+
+func getParsedOperationParams(operation spec.NamedOperation) []string {
+	params := []string{}
+	if operation.HeaderParams != nil {
+		for _, param := range operation.HeaderParams {
 			params = append(params, param.Name.CamelCase())
 		}
+	}
+	if operation.Body != nil {
+		params = append(params, "body")
 	}
 	return params
 }
@@ -352,6 +368,13 @@ func generateControllersRoutes(specification *spec.Spec) string {
 			params := []string{}
 			for _, param := range operation.Endpoint.UrlParams {
 				params = append(params, param.Name.CamelCase()+": "+ScalaType(&param.Type.Definition))
+			}
+			for _, param := range operation.QueryParams {
+				paramDefinition := param.Name.Source+": "+ScalaType(&param.Type.Definition)
+				if param.Default != nil {
+					paramDefinition += " ?= " + DefaultValue(&param.Type.Definition, *param.Default)
+				}
+				params = append(params, paramDefinition)
 			}
 			route := tail(operation.Endpoint.Method, 8) + " " + tail(routeUrl(operation), routeLength) + "   " + controllerEndpoint + "(" + strings.Join(params, ", ") + ")\n"
 			builder.WriteString(route)
