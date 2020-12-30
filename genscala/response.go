@@ -1,6 +1,7 @@
 package genscala
 
 import (
+	"fmt"
 	"github.com/ModaOperandi/spec"
 	"github.com/vsapronov/gopoetry/scala"
 )
@@ -9,47 +10,58 @@ func responseType(operation spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Response"
 }
 
+func generateResponseCases(responses spec.Responses) *scala.StatementsDeclaration {
+	cases := scala.Statements()
+	for _, response := range responses {
+		responseParam := ``
+		if !response.Type.Definition.IsEmpty() {
+			responseParam = fmt.Sprintf(`Jsoner.read[%s](result.body.get)`, ScalaType(&response.Type.Definition))
+		}
+		cases.Add(Line(`case %s => %s(%s)`, spec.HttpStatusCode(response.Name), response.Name.PascalCase(), responseParam))
+	}
+	return cases
+}
+
 func generateResponse(responseTypeName string, responses spec.Responses) (*scala.TraitDeclaration, *scala.ClassDeclaration) {
-	trait := scala.Trait(responseTypeName).Sealed()
-	trait.Define(false).Add("def toResult(): OperationResult")
+	trait := scala.Trait(responseTypeName).Sealed().MembersInline(scala.Code("def toResult(): OperationResult"))
 
 	object := scala.Object(responseTypeName)
-	object_ := object.Define(true)
+
 	for _, response := range responses {
-		responseClass := scala.Class(response.Name.PascalCase()).Case()
-		responseClassCtor := responseClass.Contructor()
 		statusValue := spec.HttpStatusCode(response.Name)
-		bodyValue := "None"
+		bodyValue := `None`
 		if !response.Type.Definition.IsEmpty() {
-			responseClassCtor.Param("body", ScalaType(&response.Type.Definition))
-			bodyValue = "Some(Jsoner.write(body))"
+			bodyValue = `Some(Jsoner.write(body))`
 		}
-		responseClass.Extends(responseTypeName + ` { def toResult = OperationResult(` + statusValue + `, ` + bodyValue + `)}`)
-		object_.AddCode(responseClass)
+		baseType := fmt.Sprintf(`%s { def toResult = OperationResult(%s, %s)}`, responseTypeName, statusValue, bodyValue)
+
+		var bodyParam scala.Writable = nil
+		if !response.Type.Definition.IsEmpty() {
+			bodyParam = Param(`body`, ScalaType(&response.Type.Definition))
+		}
+		responseClass :=
+			scala.Class(response.Name.PascalCase()).Case().Extends(baseType).Constructor(Constructor().AddParams(bodyParam))
+
+		object.Add(responseClass)
 	}
 
-	create := object_.Def("fromResult")
-	create.Param("result", "OperationResult")
-	match := create.Define().Add("result.status match ").Block(true)
-	for _, response := range responses {
-		responseParam := ""
-		if !response.Type.Definition.IsEmpty() {
-			responseParam = `Jsoner.read[` + ScalaType(&response.Type.Definition) + `](result.body.get)`
-		}
-		match.AddLn("case " + spec.HttpStatusCode(response.Name) + " => " + response.Name.PascalCase() + "(" + responseParam + ")")
-	}
+	create :=
+		scala.Def(`fromResult`).Param(`result`, `OperationResult`).
+			BodyInline(
+				Code(`result.status match `),
+				Scope(generateResponseCases(responses)),
+			)
+
+	object.Add(create)
 	return trait, object
 }
 
 func generateApiInterfaceResponse(api spec.Api, apiTraitName string) *scala.ClassDeclaration {
-	apiObject := scala.Object(apiTraitName)
-	apiObject_ := apiObject.Define(true)
-
+	apiObject := Object(apiTraitName)
 	for _, operation := range api.Operations {
 		responseTypeName := responseType(operation)
 		trait, object := generateResponse(responseTypeName, operation.Responses)
-		apiObject_.AddCode(trait)
-		apiObject_.AddCode(object)
+		apiObject.Add(trait, object)
 	}
 	return apiObject
 }
