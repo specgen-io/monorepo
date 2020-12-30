@@ -45,26 +45,25 @@ func generateCirceObjectModel(model spec.NamedModel) *scala.ClassDeclaration {
 	for _, field := range model.Object.Fields {
 		ctor.Param(field.Name.CamelCase(), ScalaType(&field.Type.Definition))
 	}
-	modelClass := Class(model.Name.PascalCase()).Case().Constructor(ctor)
+	modelClass := CaseClass(model.Name.PascalCase()).Constructor(ctor)
 	return modelClass
 }
 
 func generateCirceEnumModel(model spec.NamedModel) (scala.Writable, scala.Writable) {
 	className := model.Name.PascalCase()
 
-	enumClass := Class(className).Sealed().Abstract().Extends("StringEnumEntry").
-		Constructor(Constructor().AddParams(
-			Val("value", "String"),
-		),
-	)
+	enumClass :=
+		Class(className).Sealed().Abstract().Extends("StringEnumEntry").
+			Constructor(Constructor().
+				Val("value", "String"),
+			)
 
 	enumObject :=
-		Object(className).Case().
-			Extends("StringEnum["+className+"]").With("StringCirceEnum["+className+"]")
+		CaseObject(className).Extends("StringEnum["+className+"]").With("StringCirceEnum["+className+"]")
 
 	for _, item := range model.Enum.Items {
 		enumObject.Add(
-			Object(item.Name.PascalCase()).Case().Extends(className + `("` + item.Value + `")`),
+			CaseObject(item.Name.PascalCase()).Extends(className + `("` + item.Value + `")`),
 		)
 	}
 	enumObject.Add(Line("val values = findValues"))
@@ -78,9 +77,9 @@ func generateCirceUnionModel(model spec.NamedModel, packageName string) (scala.W
 	object := Object(model.Name.PascalCase())
 	for _, item := range model.OneOf.Items {
 		itemClass :=
-			Class(item.Name.PascalCase()).Case().Extends(model.Name.PascalCase()).
-				Constructor(
-					Constructor().Param("data", packageName+"."+ScalaType(&item.Type.Definition)),
+			CaseClass(item.Name.PascalCase()).Extends(model.Name.PascalCase()).
+				Constructor(Constructor().
+					Param("data", packageName+"."+ScalaType(&item.Type.Definition)),
 				)
 		object.Add(itemClass)
 	}

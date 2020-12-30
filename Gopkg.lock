@@ -99,14 +99,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7a8315102de005f0cbeb427a3cab3f54ac40edb2b932371372d04425997b1118"
+  digest = "1:958fbcf30d1064324f1afa8b7e63455c0ffab044e4e8aaf5ab1c19808431a9c7"
   name = "github.com/vsapronov/gopoetry"
   packages = [
     "ruby",
     "scala",
   ]
   pruneopts = "UT"
-  revision = "5accc9ce042f5e7925ad5bd1244eddb49a73add2"
+  revision = "b1995442c68b8ce5ba658f47100d1f89fa19aa41"
 
 [[projects]]
   branch = "v3"
