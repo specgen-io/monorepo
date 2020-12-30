@@ -242,10 +242,9 @@ func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 	apiTraitName := clientTraitName(api.Name)
 	apiClass :=
 		Class(apiClassName).Extends(apiTraitName).
-			Constructor(
-				Constructor().
-					Param("baseUrl", "String").
-					ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]"),
+			Constructor(Constructor().
+				Param("baseUrl", "String").
+				ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]"),
 			).
 			Add(Import(apiTraitName + "._")).
 			Add(Import("ExecutionContext.Implicits.global")).
@@ -258,12 +257,12 @@ func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 }
 
 func generateClientSuperClass(specification *spec.Spec) *scala.ClassDeclaration {
-	clientClass := Class(specification.ServiceName.PascalCase() + "Client")
-	clientClassCtor :=
-		Constructor().
-			Param("baseUrl", "String").
-			ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]")
-	clientClass.Constructor(clientClassCtor)
+	clientClass :=
+		Class(specification.ServiceName.PascalCase() + "Client").
+			Constructor(Constructor().
+				Param("baseUrl", "String").
+				ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]"),
+			)
 	for _, api := range specification.Apis {
 		clientClass.Add(
 			Line(`val %s: %s = new %s(baseUrl)`, api.Name.CamelCase(), clientTraitName(api.Name), clientClassName(api.Name)),

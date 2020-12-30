@@ -40,7 +40,7 @@ func generateResponse(responseTypeName string, responses spec.Responses) (*scala
 			bodyParam = Param(`body`, ScalaType(&response.Type.Definition))
 		}
 		responseClass :=
-			scala.Class(response.Name.PascalCase()).Case().Extends(baseType).Constructor(Constructor().AddParams(bodyParam))
+			CaseClass(response.Name.PascalCase()).Extends(baseType).Constructor(Constructor().AddParams(bodyParam))
 
 		object.Add(responseClass)
 	}

@@ -174,8 +174,9 @@ func generateApiClass(api spec.Api, packageName string, outPath string) *gen.Tex
     apiTraitName := apiTraitType(api.Name)
     class :=
         Class(apiClassName).Attribute("Singleton").Extends(apiTraitName).
-            Constructor(
-                Constructor().ImplicitParam("ec", "ExecutionContext").Attribute("Inject()"),
+            Constructor(Constructor().
+                Attribute("Inject()").
+                ImplicitParam("ec", "ExecutionContext"),
             ).
             Add(Import(apiTraitName + "._"))
 
@@ -228,14 +229,14 @@ func generateApiController(api spec.Api, packageName string, outPath string) *ge
         Import("json._").
         Import("services._")
 
-    class := Class(controllerType(api.Name)).Attribute("Singleton").Extends("AbstractController(cc)")
-    ctor :=
-        Constructor().Attribute("Inject()").
-            Param("api", apiTraitType(api.Name)).
-            Param("cc", "ControllerComponents").
-            ImplicitParam("ec", "ExecutionContext")
-
-    class.Constructor(ctor)
+    class :=
+        Class(controllerType(api.Name)).Attribute("Singleton").Extends("AbstractController(cc)").
+            Constructor(Constructor().
+                Attribute("Inject()").
+                Param("api", apiTraitType(api.Name)).
+                Param("cc", "ControllerComponents").
+                ImplicitParam("ec", "ExecutionContext"),
+            )
 
     for _, operation := range api.Operations {
         class.Add(generateControllerMethod(operation))
