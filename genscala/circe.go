@@ -3,30 +3,36 @@ package genscala
 import (
 	"github.com/ModaOperandi/spec"
 	"github.com/vsapronov/gopoetry/scala"
-	"fmt"
 	"path/filepath"
 	"specgen/gen"
 )
 
 func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *gen.TextFile {
-	unit := scala.Unit(packageName)
+	unit := Unit(packageName)
 	unit.
 		Import("enumeratum.values._").
 		Import("java.time._").
 		Import("java.time.format._").
-		Import("java.util.UUID")
+		Import("java.util.UUID").
+		Import("io.circe.generic.extras.{AutoDerivation, Configuration}").
+		Import("io.circe.{Decoder, Encoder}").
+		Import("io.circe.generic.extras.semiauto.{deriveUnwrappedDecoder, deriveUnwrappedEncoder}")
 
 	for _, model := range spec.Models {
 		if model.IsObject() {
-			generateCirceObjectModel(model, unit)
+			class := generateCirceObjectModel(model)
+			unit.AddDeclarations(class)
 		} else if model.IsEnum() {
-			generateCirceEnumModel(model, unit)
+			enumClass, enumObject := generateCirceEnumModel(model)
+			unit.AddDeclarations(enumClass, enumObject)
 		} else if model.IsOneOf() {
-			generateCirceUnionModel(model, unit, packageName)
+			trait, object := generateCirceUnionModel(model, packageName)
+			unit.AddDeclarations(trait)
+			unit.AddDeclarations(object)
 		}
 	}
 
-	generateCirceUnionItemsCodecs(unit, spec.Models, )
+	unit.AddDeclarations(generateCirceUnionItemsCodecs(spec.Models))
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, "Models.scala"),
@@ -34,70 +40,69 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *g
 	}
 }
 
-func generateCirceObjectModel(model spec.NamedModel, unit *scala.UnitDeclaration) {
-	class := scala.Class(model.Name.PascalCase()).Case()
-
-	ctor := class.Contructor().ParamPerLine()
+func generateCirceObjectModel(model spec.NamedModel) *scala.ClassDeclaration {
+	ctor := Constructor().ParamPerLine()
 	for _, field := range model.Object.Fields {
 		ctor.Param(field.Name.CamelCase(), ScalaType(&field.Type.Definition))
 	}
-	unit.AddDeclarations(class)
+	modelClass := Class(model.Name.PascalCase()).Case().Constructor(ctor)
+	return modelClass
 }
 
-func generateCirceEnumModel(model spec.NamedModel, unit *scala.UnitDeclaration) {
-	enumBase := scala.Class(model.Name.PascalCase()).Sealed().Abstract()
-	enumBase.Extends("StringEnumEntry")
-	enumBaseCtor := enumBase.Contructor()
-	enumBaseCtor.Param("value", "String").Val()
+func generateCirceEnumModel(model spec.NamedModel) (scala.Writable, scala.Writable) {
+	className := model.Name.PascalCase()
 
-	enumObject := scala.Object(model.Name.PascalCase()).Case()
-	enumObject.Extends("StringEnum["+model.Name.PascalCase()+"]").With("StringCirceEnum["+model.Name.PascalCase()+"]")
-	enumObject_ := enumObject.Define(true)
+	enumClass := Class(className).Sealed().Abstract().Extends("StringEnumEntry").
+		Constructor(Constructor().AddParams(
+			Val("value", "String"),
+		),
+	)
+
+	enumObject :=
+		Object(className).Case().
+			Extends("StringEnum["+className+"]").With("StringCirceEnum["+className+"]")
+
 	for _, item := range model.Enum.Items {
-		itemObject := scala.Object(item.Name.PascalCase()).Case()
-		itemObject.Extends(model.Name.PascalCase() + `("` + item.Value + `")`)
-		enumObject_.AddCode(itemObject)
+		enumObject.Add(
+			Object(item.Name.PascalCase()).Case().Extends(className + `("` + item.Value + `")`),
+		)
 	}
-	enumObject_.AddLn("val values = findValues")
+	enumObject.Add(Line("val values = findValues"))
 
-	unit.AddDeclarations(enumBase)
-	unit.AddDeclarations(enumObject)
+	return enumClass, enumObject
 }
 
-func generateCirceUnionModel(model spec.NamedModel, unit *scala.UnitDeclaration, packageName string) {
-	trait := scala.Trait(model.Name.PascalCase()).Sealed()
+func generateCirceUnionModel(model spec.NamedModel, packageName string) (scala.Writable, scala.Writable) {
+	trait := Trait(model.Name.PascalCase()).Sealed()
 
-	object := scala.Object(model.Name.PascalCase())
-	objectDefinition := object.Define(true)
+	object := Object(model.Name.PascalCase())
 	for _, item := range model.OneOf.Items {
-		itemClass := scala.Class(item.Name.PascalCase()).Case()
-		itemClass.Extends(model.Name.PascalCase())
-		itemClass.Contructor().Param("data", packageName+"."+ScalaType(&item.Type.Definition))
-		objectDefinition.AddCode(itemClass)
+		itemClass :=
+			Class(item.Name.PascalCase()).Case().Extends(model.Name.PascalCase()).
+				Constructor(
+					Constructor().Param("data", packageName+"."+ScalaType(&item.Type.Definition)),
+				)
+		object.Add(itemClass)
 	}
-	unit.AddDeclarations(trait)
-	unit.AddDeclarations(object)
+
+	return trait, object
 }
 
-func generateCirceUnionItemsCodecs(unit *scala.UnitDeclaration, models spec.Models) {
-	unit.
-		Import("io.circe.generic.extras.{AutoDerivation, Configuration}").
-		Import("io.circe.{Decoder, Encoder}").
-		Import("io.circe.generic.extras.semiauto.{deriveUnwrappedDecoder, deriveUnwrappedEncoder}")
-
-	object := scala.Object("json")
-	object.Extends("AutoDerivation")
-	objectDefinition := object.Define(true)
-	objectDefinition.AddLn("implicit val auto = Configuration.default.withSnakeCaseMemberNames.withSnakeCaseConstructorNames.withDefaults")
+func generateCirceUnionItemsCodecs(models spec.Models) *scala.ClassDeclaration {
+	object :=
+		Object("json").Extends("AutoDerivation").
+			Add(Line("implicit val auto = Configuration.default.withSnakeCaseMemberNames.withSnakeCaseConstructorNames.withDefaults"))
 	for _, model := range models {
 		if model.IsOneOf() {
 			for _, item := range model.OneOf.Items {
 				itemTypeName := model.Name.PascalCase()+"."+item.Name.PascalCase()
 				itemCodecName := model.Name.PascalCase()+item.Name.PascalCase()
-				objectDefinition.AddLn(fmt.Sprintf("implicit val encoder%s: Encoder[%s] = deriveUnwrappedEncoder", itemCodecName, itemTypeName))
-				objectDefinition.AddLn(fmt.Sprintf("implicit val decoder%s: Decoder[%s] = deriveUnwrappedDecoder", itemCodecName, itemTypeName))
+				object.Add(
+					Line("implicit val encoder%s: Encoder[%s] = deriveUnwrappedEncoder", itemCodecName, itemTypeName),
+					Line("implicit val decoder%s: Decoder[%s] = deriveUnwrappedDecoder", itemCodecName, itemTypeName),
+				)
 			}
 		}
 	}
-	unit.AddDeclarations(object)
+	return object
 }

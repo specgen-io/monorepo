@@ -55,7 +55,7 @@ func clientPackageName(name spec.Name) string {
 }
 
 func generateClientApiImplementations(specification *spec.Spec, packageName string, outPath string) *gen.TextFile {
-	unit := scala.Unit(packageName)
+	unit := Unit(packageName)
 
 	unit.
 		Import("scala.concurrent._").
@@ -81,7 +81,7 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 }
 
 func generateClientApisInterfaces(specification *spec.Spec, packageName string, outPath string) *gen.TextFile {
-	unit := scala.Unit(packageName)
+	unit := Unit(packageName)
 
 	unit.
 		Import("scala.concurrent._").
@@ -103,41 +103,53 @@ func generateClientApisInterfaces(specification *spec.Spec, packageName string, 
 	}
 }
 
-func addParams(method *scala.MethodDeclaration, params []spec.NamedParam, defaulted bool) {
+func createParams(params []spec.NamedParam, defaulted bool) []scala.Writable {
+	methodParams := []scala.Writable{}
 	for _, param := range params {
 		if !defaulted && param.Default == nil {
-			method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
+			methodParams = append(methodParams, Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
 		}
 		if defaulted && param.Default != nil {
 			defaultValue := DefaultValue(&param.Type.Definition, *param.Default)
-			method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition)).Init(scala.Code(defaultValue))
+			methodParams = append(methodParams, Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition)).Init(Code(defaultValue)))
 		}
 	}
+	return methodParams
+}
+
+func createBodyParam(operation spec.NamedOperation) scala.Writable {
+	if operation.Body == nil {
+		return nil
+	}
+	return Param("body", ScalaType(&operation.Body.Type.Definition))
+}
+
+func createUrlParams(urlParams []spec.NamedParam) []scala.Writable {
+	methodParams := []scala.Writable{}
+	for _, param := range urlParams {
+		methodParams = append(methodParams, Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
+	}
+	return methodParams
 }
 
 func generateClientOperationSignature(operation spec.NamedOperation) *scala.MethodDeclaration {
 	returnType := "Future[" + responseType(operation) + "]"
-	method := scala.Method(operation.Name.CamelCase()).Returns(returnType)
-	addParams(method, operation.HeaderParams, false)
-	if operation.Body != nil {
-		method.Param("body", ScalaType(&operation.Body.Type.Definition))
-	}
-	for _, param := range operation.Endpoint.UrlParams {
-		method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
-	}
-	addParams(method, operation.QueryParams, false)
-	addParams(method, operation.HeaderParams, true)
-	addParams(method, operation.QueryParams, true)
+	method :=
+		Def(operation.Name.CamelCase()).Returns(returnType).
+			AddParams(createParams(operation.HeaderParams, false)...).
+			AddParams(createBodyParam(operation)).
+			AddParams(createUrlParams(operation.Endpoint.UrlParams)...).
+			AddParams(createParams(operation.QueryParams, false)...).
+			AddParams(createParams(operation.HeaderParams, true)...).
+			AddParams(createParams(operation.QueryParams, true)...)
 	return method
 }
 
 func generateClientApiTrait(api spec.Api) *scala.TraitDeclaration {
 	apiTraitName := clientTraitName(api.Name)
-	apiTrait := scala.Trait(apiTraitName)
-	apiTrait_ := apiTrait.Define(true)
-	apiTrait_.AddCode(scala.Import(apiTraitName + "._"))
+	apiTrait := Trait(apiTraitName).Add(Import(apiTraitName + "._"))
 	for _, operation := range api.Operations {
-		apiTrait_.AddCode(generateClientOperationSignature(operation))
+		apiTrait.Add(generateClientOperationSignature(operation))
 	}
 	return apiTrait
 }
@@ -150,104 +162,112 @@ func clientClassName(apiName spec.Name) string {
 	return apiName.PascalCase() + "Client"
 }
 
-func addParamsWriting(code *scala.StatementsDeclaration, params []spec.NamedParam, paramsName string) {
+func addParamsWriting(params []spec.NamedParam, paramsName string) *scala.StatementsDeclaration {
+	code := Statements()
 	if params != nil && len(params) > 0 {
-		code.AddLn("val " + paramsName + " = new StringParamsWriter()")
+		code.Add(Line("val %s = new StringParamsWriter()", paramsName))
 		for _, p := range params {
-			code.AddLn(paramsName + `.write("` + p.Name.Source + `", ` + p.Name.CamelCase() + `)`)
+			code.Add(Line(`%s.write("%s", %s)`, paramsName, p.Name.Source, p.Name.CamelCase()))
 		}
 	}
+	return code
 }
 
-func generateClientOperationImplementation(method *scala.MethodDeclaration, operation spec.NamedOperation) {
+func generateClientOperationImplementation(operation spec.NamedOperation) *scala.StatementsDeclaration {
 	httpMethod := strings.ToLower(operation.Endpoint.Method)
 	url := operation.Endpoint.Url
 	for _, param := range operation.Endpoint.UrlParams {
 		url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), "$"+param.Name.CamelCase(), -1)
 	}
 
-	method_ := method.Define().Block(true)
-
-	addParamsWriting(method_, operation.QueryParams, "query")
-
-	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
-		method_.AddLn(`val url = Uri.parse(baseUrl+s"` + url + `").get.params(query.params)`)
-	} else {
-		method_.AddLn(`val url = Uri.parse(baseUrl+s"` + url + `").get`)
-	}
-
-	addParamsWriting(method_, operation.HeaderParams, "headers")
-
-	if operation.Body != nil {
-		method_.AddLn("val bodyJson = Jsoner.write(body)")
-	}
-
-	if operation.Body != nil {
-		method_.AddLn(`logger.debug(s"Request to url: ${url}, body: ${bodyJson}")`)
-	} else {
-		method_.AddLn(`logger.debug(s"Request to url: ${url}")`)
-	}
-
-	method_.AddLn("val response: Future[Response[String]] =")
-	httpCall := method_.Block(false).AddLn("sttp").Block(false)
-	httpCall.AddLn(`.` + httpMethod + `(url)`)
-	if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
-		httpCall.AddLn(`.headers(headers.params)`)
-	}
-	if operation.Body != nil {
-		httpCall.AddLn(`.header("Content-Type", "application/json")`)
-		httpCall.AddLn(`.body(bodyJson)`)
-	}
-	httpCall.AddLn(`.parseResponseIf { status => status < 500 }`) // TODO: Allowed statuses from spec
-	httpCall.AddLn(`.send()`)
-
-	responseName := responseType(operation)
-
-	method_.
-		Add(`response.map `).Block(true).
-		AddLn(`response: Response[String] =>`).Block(false).
-		Add(`response.body match `).Block(true).
-		Add(`case Right(bodyStr) => `).
-			AddCode(scala.Block(true).
-				AddLn(`logger.debug(s"Response status: ${response.code}, body: ${bodyStr}")`).
-				AddLn(`val body = Option(bodyStr).collect { case x if x.nonEmpty => x }`).
-				AddLn(responseName + `.fromResult(OperationResult(response.code, body))`)).
-		Add(`case Left(errorData) =>`).
-			AddCode(scala.Block(true).
-				AddLn(`val errorMessage = s"Request failed, status code: ${response.code}, body: ${new String(errorData)}"`).
-				AddLn(`logger.error(errorMessage)`).
-				AddLn(`throw new RuntimeException(errorMessage)`))
+	code := Statements(
+		addParamsWriting(operation.QueryParams, "query"),
+		If(operation.QueryParams != nil && len(operation.QueryParams) > 0).
+			Then(Line(`val url = Uri.parse(baseUrl+s"%s").get.params(query.params)`, url)).
+			Else(Line(`val url = Uri.parse(baseUrl+s"%s").get`, url)),
+		addParamsWriting(operation.HeaderParams, "headers"),
+		If(operation.Body != nil).
+			Then(
+				Line(`val bodyJson = Jsoner.write(body)`),
+				Line(`logger.debug(s"Request to url: ${url}, body: ${bodyJson}")`),
+			).
+			Else(
+				Line(`logger.debug(s"Request to url: ${url}")`),
+			),
+		Line("val response: Future[Response[String]] ="),
+		Block(
+			Line("sttp"),
+			Block(
+				Line(`.%s(url)`, httpMethod),
+				If(operation.HeaderParams != nil && len(operation.HeaderParams) > 0).
+					Then(
+						Line(`.headers(headers.params)`),
+					),
+				If(operation.Body != nil).
+					Then(
+						Line(`.header("Content-Type", "application/json")`),
+						Line(`.body(bodyJson)`),
+					),
+				Line(`.parseResponseIf { status => status < 500 }`),
+				Line(`.send()`),
+			),
+		),
+		Code(`response.map `),
+		Scope(
+			Line(`response: Response[String] =>`),
+			Block(
+				Code(`response.body match `),
+				Scope(
+					Code(`case Right(bodyStr) => `),
+					Scope(
+						Line(`logger.debug(s"Response status: ${response.code}, body: ${bodyStr}")`),
+						Line(`val body = Option(bodyStr).collect { case x if x.nonEmpty => x }`),
+						Line(`%s.fromResult(OperationResult(response.code, body))`, responseType(operation)),
+					),
+					Code(`case Left(errorData) =>`),
+					Scope(
+						Line(`val errorMessage = s"Request failed, status code: ${response.code}, body: ${new String(errorData)}"`),
+						Line(`logger.error(errorMessage)`),
+						Line(`throw new RuntimeException(errorMessage)`),
+					),
+				),
+			),
+		),
+	)
+	return code
 }
 
 func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 	apiClassName := clientClassName(api.Name)
 	apiTraitName := clientTraitName(api.Name)
-	apiClass := scala.Class(apiClassName)
-	apiClass.Extends(apiTraitName)
-	apiClassCtor := apiClass.Contructor()
-	apiClassCtor.Param("baseUrl", "String")
-	apiClassCtor.ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]")
-	apiClass_ := apiClass.Define(true)
-	apiClass_.AddCode(scala.Import(apiTraitName + "._"))
-	apiClass_.AddCode(scala.Import("ExecutionContext.Implicits.global"))
-	apiClass_.AddLn("private val logger: Logger = LoggerFactory.getLogger(this.getClass)")
+	apiClass :=
+		Class(apiClassName).Extends(apiTraitName).
+			Constructor(
+				Constructor().
+					Param("baseUrl", "String").
+					ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]"),
+			).
+			Add(Import(apiTraitName + "._")).
+			Add(Import("ExecutionContext.Implicits.global")).
+			Add(Line("private val logger: Logger = LoggerFactory.getLogger(this.getClass)"))
 	for _, operation := range api.Operations {
-		method := generateClientOperationSignature(operation)
-		generateClientOperationImplementation(method, operation)
-		apiClass_.AddCode(method)
+		method := generateClientOperationSignature(operation).Body(generateClientOperationImplementation(operation))
+		apiClass.Add(method)
 	}
 	return apiClass
 }
 
 func generateClientSuperClass(specification *spec.Spec) *scala.ClassDeclaration {
-	clientClass := scala.Class(specification.ServiceName.PascalCase() + "Client")
-	clientClassCtor := clientClass.Contructor()
-	clientClassCtor.Param("baseUrl", "String")
-	clientClassCtor.ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]")
-	clientClass_ := clientClass.Define(true)
+	clientClass := Class(specification.ServiceName.PascalCase() + "Client")
+	clientClassCtor :=
+		Constructor().
+			Param("baseUrl", "String").
+			ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]")
+	clientClass.Constructor(clientClassCtor)
 	for _, api := range specification.Apis {
-		clientClass_.Val(api.Name.CamelCase(), clientTraitName(api.Name)).Init(scala.Code("new " + clientClassName(api.Name) + "(baseUrl)"))
-		clientClass_.AddLn("")
+		clientClass.Add(
+			Line(`val %s: %s = new %s(baseUrl)`, api.Name.CamelCase(), clientTraitName(api.Name), clientClassName(api.Name)),
+		)
 	}
 	return clientClass
 }
