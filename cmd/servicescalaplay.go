@@ -12,14 +12,12 @@ func init() {
 	cmdServiceScalaPlay.Flags().String(SwaggerPath, "", SwaggerPathDescription)
 	cmdServiceScalaPlay.Flags().String(GeneratePath, "", GeneratePathDescription)
 	cmdServiceScalaPlay.Flags().String(ServicesPath, "", ServicesPathDescription)
-	cmdServiceScalaPlay.Flags().String(RoutesPath, "", RoutesPathDescription)
 
 	cmdServiceScalaPlay.MarkFlagRequired(SpecFile)
 
 	cmdServiceScalaPlay.MarkFlagRequired(SwaggerPath)
 	cmdServiceScalaPlay.MarkFlagRequired(GeneratePath)
 	cmdServiceScalaPlay.MarkFlagRequired(ServicesPath)
-	cmdServiceScalaPlay.MarkFlagRequired(RoutesPath)
 
 	rootCmd.AddCommand(cmdServiceScalaPlay)
 }
@@ -40,10 +38,7 @@ var cmdServiceScalaPlay = &cobra.Command{
 		servicesPath, err := cmd.Flags().GetString(ServicesPath)
 		fail.IfError(err)
 
-		routesPath, err := cmd.Flags().GetString(RoutesPath)
-		fail.IfError(err)
-
-		err = genscala.GeneratePlayService(specFile, swaggerPath, generatePath, servicesPath, routesPath)
+		err = genscala.GeneratePlayService(specFile, swaggerPath, generatePath, servicesPath)
 		fail.IfErrorF(err, "Failed to generate service code")
 	},
 }

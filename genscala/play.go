@@ -1,6 +1,7 @@
 package genscala
 
 import (
+    "fmt"
     "github.com/ModaOperandi/spec"
     "github.com/vsapronov/gopoetry/scala"
     "path/filepath"
@@ -10,7 +11,7 @@ import (
     "strings"
 )
 
-func GeneratePlayService(serviceFile string, swaggerPath string, generatePath string, servicesPath string, routesPath string) (err error) {
+func GeneratePlayService(serviceFile string, swaggerPath string, generatePath string, servicesPath string) (err error) {
     specification, err := spec.ReadSpec(serviceFile)
     if err != nil {
         return
@@ -53,14 +54,14 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
         sourceManaged = append(sourceManaged, *apiTraitFile, *apiControllerFile)
     }
 
+    routesFile := generateSpecRouter(specification, "app", generatePath)
+    sourceManaged = append(sourceManaged, *routesFile)
+
     source := []gen.TextFile{}
     for _, api := range apis {
         apiClassFile := generateApiClass(api, servicesPackage, servicesPath)
         source = append(source, *apiClassFile)
     }
-
-    routesFile := generateRoutesFile(specification, filepath.Join(routesPath, "routes"))
-    resource := []gen.TextFile{*routesFile}
 
     genopenapi.GenerateSpecification(serviceFile, filepath.Join(swaggerPath, "swagger.yaml"))
 
@@ -74,20 +75,7 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
         return
     }
 
-    err = gen.WriteFiles(resource, true)
-    if err != nil {
-        return
-    }
-
     return
-}
-
-func generateRoutesFile(specification *spec.Spec, routesPath string) *gen.TextFile {
-    openApiRoutes := generateCommonRoutes()
-    controllersRoutes := generateControllersRoutes(specification)
-    routes := controllersRoutes + openApiRoutes
-    routesFile := &gen.TextFile{ Path:    routesPath, Content: routes }
-    return routesFile
 }
 
 func controllerType(apiName spec.Name) string {
@@ -114,9 +102,13 @@ func modelsPackage(specification *spec.Spec) string {
     return "models"
 }
 
+func controllerMethodName(operation spec.NamedOperation) string {
+    return operation.Name.CamelCase()
+}
+
 func operationSignature(operation spec.NamedOperation) *scala.MethodDeclaration {
     returnType := "Future[" + responseType(operation) + "]"
-    method := Def(operation.Name.CamelCase()).Returns(returnType)
+    method := Def(controllerMethodName(operation)).Returns(returnType)
     for _, param := range operation.HeaderParams {
         method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
     }
@@ -264,21 +256,26 @@ func generateControllerMethod(operation spec.NamedOperation) *scala.MethodDeclar
     }
 
     method.BodyInline(
-        If(operation.Body != nil).
-            Then(Code("Action(parse.byteString).async ")).
-            Else(Code("Action.async ")),
+        Statements(Dynamic(func (code *scala.WritableList) {
+            if operation.Body != nil {
+                code.Add(Code("Action(parse.byteString).async "))
+            } else {
+                code.Add(Code("Action.async "))
+            }
+        })...),
         Scope(
             Line("implicit request =>"),
-            Block(
-                If(len(parseParams) > 0).
-                    Then(
+            Block(Dynamic(func (code *scala.WritableList) {
+                if len(parseParams) > 0 {
+                    code.Add(
                         Code("val params = Try "),
                         Scope(
                             addParamsParsing(operation.HeaderParams, "header", "request.headers.get"),
-                            If(operation.Body != nil).
-                                Then(Lazy(func() scala.Writable {
-                                    return Line( "val body = Jsoner.read[%s](request.body.utf8String)", ScalaType(&operation.Body.Type.Definition))
-                                })),
+                            Statements(Dynamic(func (code *scala.WritableList) {
+                                if operation.Body != nil {
+                                    code.Add(Line( "val body = Jsoner.read[%s](request.body.utf8String)", ScalaType(&operation.Body.Type.Definition)))
+                                }
+                            })...),
                             Line("(%s)", JoinParams(parseParams)),
                         ),
                         Code("params match "),
@@ -291,12 +288,14 @@ func generateControllerMethod(operation spec.NamedOperation) *scala.MethodDeclar
                                 Line("result.map(_.toResult.toPlay).recover { case _: Exception => InternalServerError }"),
                             ),
                         ),
-                    ).
-                    Else(
+                    )
+                } else {
+                    code.Add(
                         Line("val result = api.%s(%s)", operation.Name.CamelCase(), JoinParams(allParams)),
                         Line("result.map(_.toResult.toPlay).recover { case _: Exception => InternalServerError }"),
-                    ),
-            ),
+                    )
+                }
+            })...),
         ),
     )
     return method
@@ -336,62 +335,142 @@ func getParsedOperationParams(operation spec.NamedOperation) []string {
     return params
 }
 
-func tail(s string, length int) string {
-    return s + strings.Repeat(" ", length-len(s))
-}
+func generateSpecRouter(specification *spec.Spec, packageName string, outPath string) *gen.TextFile {
+    unit :=
+        Unit(packageName).
+            Import("javax.inject._").
+            Import("play.api.mvc._").
+            Import("play.api.routing._").
+            Import("play.core.routing._").
+            Import("controllers._").
+            Import("models._").
+            Import("controllers.QueryParamsBindings._")
 
-func generateCommonRoutes() string {
-    return `#  documentation
-GET      /docs                controllers.Default.redirect(to="/docs/index.html?url=swagger.yaml")
-GET      /docs/swagger.yaml   controllers.Assets.at(path="/public", file="swagger.yaml")
-GET      /docs/*file          controllers.Assets.at(path="/public/lib/swagger-ui", file)
-
-#  static files
-GET      /*file   controllers.Assets.at(path="/public", file)
-`
-}
-
-func generateControllersRoutes(specification *spec.Spec) string {
-    builder := strings.Builder{}
-
-    routeLength := 0
     for _, api := range specification.Apis {
-        for _, operation := range api.Operations {
-            thisRouteLength := len(routeUrl(operation))
-            if thisRouteLength > routeLength {
-                routeLength = thisRouteLength
-            }
-        }
+        unit.AddDeclarations(generateApiRouter(api))
     }
+    unit.AddDeclarations(generateSpecRouterMainClass(specification))
 
-    for _, api := range specification.Apis {
-        builder.WriteString("\n")
-        builder.WriteString("#  " + api.Name.Source + "\n")
-        for _, operation := range api.Operations {
-            controllerEndpoint := controllersPackage(specification) + "." + controllerType(api.Name) + "." + operation.Name.CamelCase()
-            params := []string{}
-            for _, param := range operation.Endpoint.UrlParams {
-                params = append(params, param.Name.CamelCase()+": "+ScalaType(&param.Type.Definition))
-            }
-            for _, param := range operation.QueryParams {
-                paramDefinition := param.Name.Source+": "+ScalaType(&param.Type.Definition)
-                if param.Default != nil {
-                    paramDefinition += " ?= " + DefaultValue(&param.Type.Definition, *param.Default)
+    return &gen.TextFile{
+        Path:    filepath.Join(outPath, "SpecRouter.scala"),
+        Content: unit.Code(),
+    }
+}
+
+func generateSpecRouterMainClass(specification *spec.Spec) *scala.ClassDeclaration {
+    class :=
+        Class(`SpecRouter`).Extends(`SimpleRouter`).
+            Constructor(
+                Constructor().
+                    Attribute(`Inject()`).
+                    AddParams(Dynamic(func (code *scala.WritableList) {
+                        for _, api := range specification.Apis { code.Add(
+                            Param(api.Name.CamelCase(), routerType(api.Name)),
+                        )}
+                    })...),
+            ).
+            Add(
+                Line(`def routes: Router.Routes =`),
+                Block(
+                    Line(`Seq(`),
+                    Block(Dynamic(func (code *scala.WritableList) {
+                        for _, api := range specification.Apis { code.Add(
+                            Line(`%s.routes,`, api.Name.CamelCase()),
+                        )}
+                    })...),
+                    Line(`).reduce { (r1, r2) => r1.orElse(r2) }`),
+                ),
+            )
+    return class
+}
+
+func routerType(apiName spec.Name) string {
+    return fmt.Sprintf("%sRouter", apiName.PascalCase())
+}
+
+func routeName(operationName spec.Name) string {
+    return fmt.Sprintf("route%s", operationName.PascalCase())
+}
+
+func generateApiRouter(api spec.Api) *scala.ClassDeclaration {
+    class :=
+        Class(routerType(api.Name)).Extends(`SimpleRouter`).
+            Constructor(Constructor().
+                Attribute(`Inject()`).
+                Param(`Action`, `DefaultActionBuilder`).
+                Param(`controller`, controllerType(api.Name)),
+            )
+
+    for _, operation := range api.Operations {
+        class.Add(
+            Line(`lazy val %s = Route("%s", PathPattern(List(`, routeName(operation.Name), operation.Endpoint.Method),
+            Block(Dynamic(func (code *scala.WritableList) {
+                reminder := operation.Endpoint.Url
+                for _, param := range operation.Endpoint.UrlParams {
+                    parts := strings.Split(reminder, spec.UrlParamStr(param.Name.Source))
+                    code.Add(Line(`StaticPart("%s"),`, parts[0]))
+                    code.Add(Line(`DynamicPart("%s", """[^/]+""", true),`, param.Name.Source))
+                    reminder = parts[1]
                 }
-                params = append(params, paramDefinition)
-            }
-            route := tail(operation.Endpoint.Method, 8) + " " + tail(routeUrl(operation), routeLength) + "   " + controllerEndpoint + "(" + JoinParams(params) + ")\n"
-            builder.WriteString(route)
-        }
+                if reminder != `` {
+                    code.Add(Line(`StaticPart("%s"),`, reminder))
+                }
+            })...),
+            Line(`)))`),
+        )
     }
 
-    return builder.String()
+    class.Add(Code(`def routes: Router.Routes = `))
+
+    cases := Scope()
+    for _, operation := range api.Operations {
+        arguments := JoinParams(getControllerParams(operation))
+        cases.Add(
+            Line(`case %s(params@_) =>`, routeName(operation.Name)),
+            Block(Dynamic(func (code *scala.WritableList) {
+                if len(arguments) > 0 {code.Add(
+                    Line(`val arguments =`),
+                    Block(
+                        Code(`for `),
+                        Scope(Dynamic(func (code *scala.WritableList) {
+                            for _, p := range operation.Endpoint.UrlParams {code.Add(
+                                Line(`%s <- params.fromPath[%s]("%s").value`, p.Name.CamelCase(), ScalaType(&p.Type.Definition), p.Name.Source),
+                            )}
+                            for _, p := range operation.QueryParams {
+                                defaultValue := `None`
+                                if p.Default != nil {
+                                    defaultValue = fmt.Sprintf(`Some(%s)`, DefaultValue(&p.Type.Definition, *p.Default))
+                                }
+                                code.Add(Line(`%s <- params.fromQuery[%s]("%s", %s).value`, p.Name.CamelCase(), ScalaType(&p.Type.Definition), p.Name.Source, defaultValue))
+                            }
+                        })...),
+                        Line(`yield (%s)`, arguments),
+                    ),
+                    Code(`arguments match`),
+                    Scope(
+                        Line(`case Left(_) => Action { Results.BadRequest }`),
+                        Line(`case Right((%s)) => controller.%s(%s)`, arguments, controllerMethodName(operation), arguments),
+                    ),
+                )} else {code.Add(
+                    Line(`controller.%s(%s)`, controllerMethodName(operation), arguments),
+                )}
+            })...),
+        )
+    }
+    class.Add(cases)
+
+    return class
 }
 
-func routeUrl(operation spec.NamedOperation) string {
-    routeUrl := operation.Endpoint.Url
+func getControllerParams(operation spec.NamedOperation) []string {
+    params := []string{}
     for _, param := range operation.Endpoint.UrlParams {
-        routeUrl = strings.Replace(routeUrl, spec.UrlParamStr(param.Name.Source), ":"+param.Name.CamelCase(), 1)
+        params = append(params, param.Name.CamelCase())
     }
-    return routeUrl
+    if operation.QueryParams != nil {
+        for _, param := range operation.QueryParams {
+            params = append(params, param.Name.CamelCase())
+        }
+    }
+    return params
 }

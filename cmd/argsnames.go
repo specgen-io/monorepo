@@ -12,9 +12,6 @@ const GeneratePathDescription = "Path to generate source code into"
 const ServicesPath = "services-path"
 const ServicesPathDescription = "Path to scaffold services code"
 
-const RoutesPath = "routes-path"
-const RoutesPathDescription = "Path to folder routes file should be generated into"
-
 const OutFile = "out-file"
 const OutFileDescription = "Path to output file"
 

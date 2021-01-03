@@ -9,7 +9,6 @@ object SpecKeys {
   lazy val specSwagger = settingKey[File]("Path to folder where swagger specification should be generated")
   lazy val specGeneratePath = settingKey[File]("Path to generate source code into")
   lazy val specServicesPath = settingKey[File]("Path to scaffold services code")
-  lazy val specRoutesPath = settingKey[File]("Path to folder routes file should be generated into")
 
   lazy val specgenServicePlay = taskKey[Seq[File]]("Run service Play code generation for spec")
   lazy val specgenModels = taskKey[Seq[File]]("Run service models code generation for spec")
@@ -65,7 +64,6 @@ object SpecPlay extends AutoPlugin {
       specSwagger.value,
       specGeneratePath.value,
       specServicesPath.value,
-      specRoutesPath.value,
     )
   }
 
@@ -74,7 +72,6 @@ object SpecPlay extends AutoPlugin {
     specSwagger := baseDirectory.value / "public",
     specGeneratePath := (sourceManaged in Compile).value / "spec",
     specServicesPath := (scalaSource in Compile).value / "services",
-    specRoutesPath := (resourceDirectory in Compile).value,
     specgenServicePlay := specgenTask.value,
     sourceGenerators in Compile += specgenServicePlay,
     mappings in (Compile, packageSrc) ++= {(specgenServicePlay in Compile) map { sourceFiles =>
