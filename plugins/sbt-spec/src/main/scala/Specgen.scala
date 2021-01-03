@@ -12,8 +12,7 @@ object Specgen {
     specPath: File,
     swaggerPath: File,
     generatePath: File,
-    servicesPath: File,
-    routesPath: File
+    servicesPath: File
   ): Seq[File] = {
 
     log.info(s"Running sbt-spec code generation plugin")
@@ -26,8 +25,7 @@ object Specgen {
       "--spec-file", specPath.getPath,
       "--swagger-path", swaggerPath.getPath,
       "--generate-path", generatePath.getPath,
-      "--services-path", servicesPath.getPath,
-      "--routes-path", routesPath.getPath
+      "--services-path", servicesPath.getPath
     )
 
     runSpecgen(log, specCommand)

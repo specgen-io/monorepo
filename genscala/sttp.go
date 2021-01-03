@@ -182,32 +182,44 @@ func generateClientOperationImplementation(operation spec.NamedOperation) *scala
 
 	code := Statements(
 		addParamsWriting(operation.QueryParams, "query"),
-		If(operation.QueryParams != nil && len(operation.QueryParams) > 0).
-			Then(Line(`val url = Uri.parse(baseUrl+s"%s").get.params(query.params)`, url)).
-			Else(Line(`val url = Uri.parse(baseUrl+s"%s").get`, url)),
+		Statements(Dynamic(func (code *scala.WritableList) {
+			if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
+				code.Add(Line(`val url = Uri.parse(baseUrl+s"%s").get.params(query.params)`, url))
+			} else {
+				code.Add(Line(`val url = Uri.parse(baseUrl+s"%s").get`, url))
+			}
+		})...),
 		addParamsWriting(operation.HeaderParams, "headers"),
-		If(operation.Body != nil).
-			Then(
-				Line(`val bodyJson = Jsoner.write(body)`),
-				Line(`logger.debug(s"Request to url: ${url}, body: ${bodyJson}")`),
-			).
-			Else(
-				Line(`logger.debug(s"Request to url: ${url}")`),
-			),
+		Statements(Dynamic(func (code *scala.WritableList) {
+			if operation.Body != nil {
+				code.Add(
+					Line(`val bodyJson = Jsoner.write(body)`),
+					Line(`logger.debug(s"Request to url: ${url}, body: ${bodyJson}")`),
+				)
+			} else {
+				code.Add(
+					Line(`logger.debug(s"Request to url: ${url}")`),
+				)
+			}
+		})...),
 		Line("val response: Future[Response[String]] ="),
 		Block(
 			Line("sttp"),
 			Block(
 				Line(`.%s(url)`, httpMethod),
-				If(operation.HeaderParams != nil && len(operation.HeaderParams) > 0).
-					Then(
-						Line(`.headers(headers.params)`),
-					),
-				If(operation.Body != nil).
-					Then(
-						Line(`.header("Content-Type", "application/json")`),
-						Line(`.body(bodyJson)`),
-					),
+				Statements(Dynamic(func (code *scala.WritableList) {
+					if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
+						code.Add(
+							Line(`.headers(headers.params)`),
+						)
+					}
+					if operation.Body != nil {
+						code.Add(
+							Line(`.header("Content-Type", "application/json")`),
+							Line(`.body(bodyJson)`),
+						)
+					}
+				})...),
 				Line(`.parseResponseIf { status => status < 500 }`),
 				Line(`.send()`),
 			),
