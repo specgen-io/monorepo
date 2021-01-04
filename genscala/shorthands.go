@@ -24,6 +24,7 @@ var Constructor = scala.Constructor
 var Unit = scala.Unit
 var Val = scala.Val
 var NoCode = scala.NoCode
+var Eol = scala.Eol
 var Attribute = scala.Attribute
 
 func JoinParams(params []string) string {
