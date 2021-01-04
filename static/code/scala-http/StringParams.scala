@@ -6,7 +6,7 @@ import java.util.UUID
 
 import enumeratum.values.{StringEnum, StringEnumEntry}
 
-import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 trait Codec[T] {
   def decode(s: String): T
@@ -95,18 +95,23 @@ object ParamsTypesBindings {
   }
 
   class StringParamsWriter {
-    private val paramsMap = new mutable.HashMap[String, String]()
-    def params(): Map[String, String] = paramsMap.toMap
+    val paramsList = ListBuffer[(String, String)]()
 
-    def write[T](name: String, value: Option[T])(implicit codec: Codec[T]) = {
+    def params = paramsList.toSeq
+
+    def write[T](name: String, value: Option[T])(implicit codec: Codec[T]): Unit = {
       value match {
-        case Some(value) => paramsMap(name) = codec.encode(value)
+        case Some(value) => write(name, value)
         case None => ()
       }
     }
 
-    def write[T](name: String, value: T)(implicit codec: Codec[T]) = {
-      paramsMap(name) = codec.encode(value)
+    def write[T](name: String, values: Seq[T])(implicit codec: Codec[T]): Unit = {
+      values.foreach { value => write(name, value) }
+    }
+
+    def write[T](name: String, value: T)(implicit codec: Codec[T]): Unit = {
+      paramsList.addOne((name, codec.encode(value)))
     }
   }
 }
