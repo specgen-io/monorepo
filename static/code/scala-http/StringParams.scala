@@ -6,68 +6,107 @@ import java.util.UUID
 
 import enumeratum.values.{StringEnum, StringEnumEntry}
 
-import scala.reflect.runtime.universe._
 import scala.collection.mutable
 
-class StringParamsReader(val reader: String => Option[String]) {
-
-  def read[T](name: String)(implicit tag: TypeTag[T]): Option[T] =
-    reader(name).map(StringParams.readValue[T])
-
-  def readEnum[T <: StringEnumEntry: StringEnum](name: String)(implicit tag: TypeTag[T]): Option[T] =
-    reader(name).map(StringParams.readEnumValue[T])
+trait Codec[T] {
+  def decode(s: String): T
+  def encode(v: T): String
 }
 
-class StringParamsWriter {
-  private val paramsMap = new mutable.HashMap[String, String]()
-  def params(): Map[String, String] = paramsMap.toMap
+object ParamsTypesBindings {
+  implicit val StringCodec: Codec[String] = new Codec[String] {
+    def decode(s: String): String = s
+    def encode(v: String): String = v
+  }
 
-  def write[T](name: String, value: Option[T])(implicit tag: TypeTag[T]) = {
-    value match {
-      case Some(value) => paramsMap(name) = StringParams.writeValue(value)
-      case None => ()
+  implicit val ByteCodec: Codec[Byte] = new Codec[Byte] {
+    def decode(s: String): Byte = s.toByte
+    def encode(v: Byte): String = v.toString
+  }
+
+  implicit val ShortCodec: Codec[Short] = new Codec[Short] {
+    def decode(s: String): Short = s.toShort
+    def encode(v: Short): String = v.toString
+  }
+
+  implicit val IntCodec: Codec[Int] = new Codec[Int] {
+    def decode(s: String): Int = s.toInt
+    def encode(v: Int): String = v.toString
+  }
+
+  implicit val LongCodec: Codec[Long] = new Codec[Long] {
+    def decode(s: String): Long = s.toShort
+    def encode(v: Long): String = v.toString
+  }
+
+  implicit val FloatCodec: Codec[Float] = new Codec[Float] {
+    def decode(s: String): Float = s.toFloat
+    def encode(v: Float): String = v.toString
+  }
+
+  implicit val DoubleCodec: Codec[Double] = new Codec[Double] {
+    def decode(s: String): Double = s.toDouble
+    def encode(v: Double): String = v.toString
+  }
+
+  implicit val BigDecimalCodec: Codec[BigDecimal] = new Codec[BigDecimal] {
+    def decode(s: String): BigDecimal = BigDecimal(s)
+    def encode(v: BigDecimal): String = v.toString
+  }
+
+  implicit val BooleanCodec: Codec[Boolean] = new Codec[Boolean] {
+    def decode(s: String): Boolean = s.toBoolean
+    def encode(v: Boolean): String = v.toString
+  }
+
+  implicit val CharCodec: Codec[Char] = new Codec[Char] {
+    def decode(s: String): Char = if (s.length == 1) { s.charAt(0) } else { throw new Exception("Char query parameter supposed to have one symbol") }
+    def encode(v: Char): String = v.toString
+  }
+
+  implicit val DateCodec: Codec[LocalDate] = new Codec[LocalDate] {
+    def decode(s: String): LocalDate = LocalDate.parse(s, DateTimeFormatter.ISO_LOCAL_DATE)
+    def encode(v: LocalDate): String = DateTimeFormatter.ISO_LOCAL_DATE.format(v)
+  }
+
+  implicit val DateTimeCodec: Codec[LocalDateTime] = new Codec[LocalDateTime] {
+    def decode(s: String): LocalDateTime = LocalDateTime.parse(s, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+    def encode(v: LocalDateTime): String = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(v)
+  }
+
+  implicit val TimeCodec: Codec[LocalTime] = new Codec[LocalTime] {
+    def decode(s: String): LocalTime = LocalTime.parse(s, DateTimeFormatter.ISO_LOCAL_TIME)
+    def encode(v: LocalTime): String = DateTimeFormatter.ISO_LOCAL_TIME.format(v)
+  }
+
+  implicit val UuidCodec: Codec[UUID] = new Codec[UUID] {
+    def decode(s: String): UUID = UUID.fromString(s)
+    def encode(v: UUID): String = v.toString
+  }
+
+  implicit def enumCodec[T <: StringEnumEntry](implicit E: StringEnum[T]): Codec[T] = new Codec[T] {
+    def decode(s: String): T = E.withValue(s)
+    def encode(v: T): String = v.value
+  }
+
+  class StringParamsReader(val reader: String => Option[String]) {
+    def read[T](name: String)(implicit codec: Codec[T]): Option[T] =
+      reader(name).map(codec.decode)
+  }
+
+  class StringParamsWriter {
+    private val paramsMap = new mutable.HashMap[String, String]()
+    def params(): Map[String, String] = paramsMap.toMap
+
+    def write[T](name: String, value: Option[T])(implicit codec: Codec[T]) = {
+      value match {
+        case Some(value) => paramsMap(name) = codec.encode(value)
+        case None => ()
+      }
+    }
+
+    def write[T](name: String, value: T)(implicit codec: Codec[T]) = {
+      paramsMap(name) = codec.encode(value)
     }
   }
-
-  def write[T](name: String, value: T)(implicit tag: TypeTag[T]) = {
-    paramsMap(name) = StringParams.writeValue(value)
-  }
-}
-
-object StringParams {
-  def readEnumValue[T <: StringEnumEntry: StringEnum](value: String)(implicit tag: TypeTag[T]): T = {
-    implicitly[StringEnum[T]].withValue(value)
-  }
-
-  def readValue[T](value: String)(implicit tag: TypeTag[T]): T = {
-    val typeName = tag.tpe.toString
-    (typeName match {
-      case "Byte" => value.toByte
-      case "Short" => value.toShort
-      case "Int" => value.toInt
-      case "Long" => value.toLong
-      case "Float" => value.toFloat
-      case "Double" => value.toDouble
-      case "BigDecimal" => BigDecimal(value)
-      case "Boolean" => value.toBoolean
-      case "Char" => value.charAt(0)
-      case "String" => value
-      case "java.time.LocalDate" => LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE)
-      case "java.time.LocalDateTime" => LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-      case "java.time.LocalTime" => LocalTime.parse(value, DateTimeFormatter.ISO_LOCAL_TIME)
-      case "java.util.UUID" => UUID.fromString(value)
-      case _ => throw new Exception(s"Unsupported query parameter type: $typeName")
-    }).asInstanceOf[T]
-  }
-
-  def writeValue[T](value: T)(implicit tag: TypeTag[T]): String = {
-    value match {
-      case value: StringEnumEntry => value.value
-      case value: LocalDate => DateTimeFormatter.ISO_LOCAL_DATE.format(value)
-      case value: LocalDateTime => DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(value)
-      case value: LocalTime => DateTimeFormatter.ISO_LOCAL_TIME.format(value)
-      case value => value.toString
-    }
-  }
-
 }

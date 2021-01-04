@@ -219,7 +219,8 @@ func generateApiController(api spec.Api, packageName string, outPath string) *ge
         Import("controllers.PlayResultHelpers._").
         Import("models._").
         Import("json._").
-        Import("services._")
+        Import("services._").
+        Import("ParamsTypesBindings._")
 
     class :=
         Class(controllerType(api.Name)).Attribute("Singleton").Extends("AbstractController(cc)").
@@ -344,7 +345,8 @@ func generateSpecRouter(specification *spec.Spec, packageName string, outPath st
             Import("play.core.routing._").
             Import("controllers._").
             Import("models._").
-            Import("controllers.QueryParamsBindings._")
+            Import("ParamsTypesBindings._").
+            Import("PlayParamsTypesBindings._")
 
     for _, api := range specification.Apis {
         unit.AddDeclarations(generateApiRouter(api))

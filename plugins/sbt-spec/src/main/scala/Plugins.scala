@@ -29,7 +29,6 @@ object SpecKeys {
     "com.beachape" %% "enumeratum" % "1.5.13",
     "com.beachape" %% "enumeratum-circe" % "1.5.22",
 
-    "org.scala-lang" % "scala-reflect" % "2.13.2",
     "com.typesafe.play" %% "play" % "2.8.1",
     "org.webjars" % "swagger-ui" % "3.22.2",
   )
