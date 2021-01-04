@@ -173,7 +173,7 @@ func generateApiClass(api spec.Api, packageName string, outPath string) *gen.Tex
             Add(Import(apiTraitName + "._"))
 
     for _, operation := range api.Operations {
-        method := operationSignature(operation).Override().BodyInline(Code("Future { ??? }"))
+        method := operationSignature(operation).Override().BodyInline(Code("Future { ??? }"), Eol())
         class.Add(method)
     }
 
