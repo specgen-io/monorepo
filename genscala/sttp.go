@@ -63,6 +63,7 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 		Import("akka.stream.scaladsl.Source").
 		Import("akka.util.ByteString").
 		Import("com.softwaremill.sttp._").
+		Import("ParamsTypesBindings._").
 		Import("json._")
 
 	if len(specification.Apis) > 1 {
