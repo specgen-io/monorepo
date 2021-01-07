@@ -60,8 +60,6 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 	unit.
 		Import("scala.concurrent._").
 		Import("org.slf4j._").
-		Import("akka.stream.scaladsl.Source").
-		Import("akka.util.ByteString").
 		Import("com.softwaremill.sttp._").
 		Import("ParamsTypesBindings._").
 		Import("json._")
@@ -232,13 +230,13 @@ func generateClientOperationImplementation(operation spec.NamedOperation) *scala
 				Code(`response.body match `),
 				Scope(
 					Code(`case Right(bodyStr) => `),
-					Scope(
+					Block(
 						Line(`logger.debug(s"Response status: ${response.code}, body: ${bodyStr}")`),
 						Line(`val body = Option(bodyStr).collect { case x if x.nonEmpty => x }`),
 						Line(`%s.fromResult(OperationResult(response.code, body))`, responseType(operation)),
 					),
-					Code(`case Left(errorData) =>`),
-					Scope(
+					Code(`case Left(errorData) => `),
+					Block(
 						Line(`val errorMessage = s"Request failed, status code: ${response.code}, body: ${new String(errorData)}"`),
 						Line(`logger.error(errorMessage)`),
 						Line(`throw new RuntimeException(errorMessage)`),
@@ -257,7 +255,7 @@ func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 		Class(apiClassName).Extends(apiTraitName).
 			Constructor(Constructor().
 				Param("baseUrl", "String").
-				ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]"),
+				ImplicitParam("backend", "SttpBackend[Future, Nothing]"),
 			).
 			Add(Import(apiTraitName + "._")).
 			Add(Import("ExecutionContext.Implicits.global")).
@@ -274,7 +272,7 @@ func generateClientSuperClass(specification *spec.Spec) *scala.ClassDeclaration 
 		Class(specification.ServiceName.PascalCase() + "Client").
 			Constructor(Constructor().
 				Param("baseUrl", "String").
-				ImplicitParam("backend", "SttpBackend[Future, Source[ByteString, Any]]"),
+				ImplicitParam("backend", "SttpBackend[Future, Nothing]"),
 			)
 	for _, api := range specification.Apis {
 		clientClass.Add(
