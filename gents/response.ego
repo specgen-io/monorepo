@@ -1,0 +1,15 @@
+<#    package gents
+<#
+<#    import (
+<#        "io"
+<#        "github.com/ModaOperandi/spec"
+<#    )
+<#
+<#
+<#    func generateIoTsResponse(operation *spec.NamedOperation, w io.Writer) {
+
+export type <%== responseTypeName(operation) %> =
+<#    	  for _, response := range operation.Responses {
+    | { status: "<%== response.Name.Source %>"<% if !response.Type.Definition.IsEmpty() { %>, data: <%== TsType(&response.Type.Definition) %><% } %> }
+<#    	  }
+<#    }
