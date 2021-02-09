@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 VERSION="0.0"
 if [ -n "$1" ]; then
@@ -13,6 +13,8 @@ dep ensure
 
 rm -f specgen/static/rice-box.go
 $GOPATH/bin/rice embed-go --import-path specgen/static
+
+$GOPATH/bin/ego gents
 
 mkdir -p ./zips
 mkdir -p ./dist
