@@ -1,0 +1,12 @@
+{
+  "name": "specgen.io",
+  "version": "0.0.4",
+  "description": "Spec code generation tool",
+  "bin": {
+    "specgen": "specgen.js"
+  },
+  "scripts": {
+    "start": "node specgen.js"
+  },
+  "license": "MIT"
+}

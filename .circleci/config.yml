@@ -109,6 +109,24 @@ jobs:
             - ~/.ivy2
             - ~/.m2
 
+  build-npm-specgen:
+    parameters:
+      version:
+        type: string
+    docker:
+      - image: cimg/node:14.15.1
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/npm-specgen
+      - run:
+          name: npm publish package
+          command: |
+            cd ./plugins/npm-specgen
+            npm version << parameters.version >>
+            npm install
+            npm publish
+
   trigger-tests:
     parameters:
       version:
@@ -148,6 +166,11 @@ workflows:
           requires:
             - build-specgen
       - build-sbt-specgen:
+          context: specgen
+          <<: *common-params
+          requires:
+            - build-specgen
+      - build-npm-specgen:
           context: specgen
           <<: *common-params
           requires:
