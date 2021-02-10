@@ -8,6 +8,7 @@ fi
 echo "Building version: $VERSION"
 
 go get github.com/GeertJohan/go.rice/rice
+go get github.com/vsapronov/ego/...
 
 dep ensure
 
