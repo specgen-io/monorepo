@@ -46,14 +46,13 @@ const runSpecgen = (specgenCommand) => {
 
     exec(specgenCommandLine, (error, stdout, stderr) => {
         if (error) {
-            console.log(error.message);
-            return;
+            console.error(error.message);
+            return
         }
-        if (stderr) {
-            console.log(stderr);
-            return;
-        }
+        console.error(stderr);
         console.log(stdout);
+    }).on(`exit`, code => {
+        if (code !== 0) { process.exit(code) }
     });
 }
 
