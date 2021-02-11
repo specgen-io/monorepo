@@ -2,7 +2,10 @@
 
 const path = require('path');
 const fs = require('fs');
-const { exec } = require("child_process");
+const child_process = require("child_process");
+const util = require('util');
+//const exec = util.promisify(child_process.exec);
+const exec = child_process.exec
 
 const getOsName = () => {
     switch(process.platform) {
@@ -45,15 +48,14 @@ const runSpecgen = (specgenCommand) => {
     console.log(`Running specgen tool: ${specgenCommandLine}`)
 
     exec(specgenCommandLine, (error, stdout, stderr) => {
-        if (error) {
-            console.error(error.message);
-            return
-        }
         console.error(stderr);
         console.log(stdout);
-    }).on(`exit`, code => {
-        if (code !== 0) { process.exit(code) }
-    });
+        if (error) {
+            console.error(`Specgen tool raised error, exit code: ${error.code}`);
+            console.error(error.message);
+            if (error.code !== 0) { process.exit(error.code) }
+        }
+    })
 }
 
 var args = process.argv.slice(2);
