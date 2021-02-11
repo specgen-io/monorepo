@@ -2,6 +2,7 @@ package gents
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"github.com/ModaOperandi/spec"
 	"path/filepath"
@@ -14,16 +15,24 @@ func GenerateAxiosClient(serviceFile string, generatePath string) error {
 		return err
 	}
 
+	iots := generateTextFile(generateIoTs, filepath.Join(generatePath, "iots.ts"))
+	codec := generateTextFile(generateCodec, filepath.Join(generatePath, "codec.ts"))
 	models := GenerateIoTsModels(spec, filepath.Join(generatePath, "models.ts"))
 	client := generateAxiosClient(spec, filepath.Join(generatePath, "client.ts"))
 
-	files := []gen.TextFile{*models, *client}
+	files := []gen.TextFile{*models, *client, *iots, *codec}
 	err = gen.WriteFiles(files, true)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func generateTextFile(generate func (io.Writer), path string) *gen.TextFile {
+	w := new(bytes.Buffer)
+	generate(w)
+	return &gen.TextFile{Path: path, Content: w.String()}
 }
 
 func generateAxiosClient(spec *spec.Spec, outPath string) *gen.TextFile {
