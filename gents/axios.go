@@ -18,7 +18,7 @@ func GenerateAxiosClient(serviceFile string, generatePath string) error {
 	iots := generateTextFile(generateIoTs, filepath.Join(generatePath, "io-ts.ts"))
 	codec := generateTextFile(generateCodec, filepath.Join(generatePath, "codec.ts"))
 	models := GenerateIoTsModels(spec, filepath.Join(generatePath, "models.ts"))
-	client := generateAxiosClient(spec, filepath.Join(generatePath, "client.ts"))
+	client := generateAxiosClient(spec, filepath.Join(generatePath, "index.ts"))
 
 	files := []gen.TextFile{*models, *client, *iots, *codec}
 	err = gen.WriteFiles(files, true)

@@ -9,18 +9,9 @@
 <#
 <#    func generateClientApiClass(api spec.Api, w io.Writer) {
 
-export const <%== api.Name.CamelCase() %>Client = (rootUrl: string) => {
-    const api = axios.create({
-        baseURL: rootUrl,
-        timeout: 20000,
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json',
-        }
-    });
-
+export const <%== api.Name.CamelCase() %>Client = (axiosInstance: AxiosInstance) => {
     return {
-        api,
+        axiosInstance,
 <#        for _, operation := range api.Operations {
 <#            generateOperation(&operation, w)
 <#        }
@@ -53,11 +44,11 @@ export const <%== api.Name.CamelCase() %>Client = (rootUrl: string) => {
 <#              if body != nil {
             const bodyJson = encode(<%== IoTsType(&body.Type.Definition) %>, body)
 <#              }
-            const response = await api.<%== strings.ToLower(operation.Endpoint.Method) %>(`<%== getUrl(operation.Endpoint) %>`,<% if body != nil { %> bodyJson,<% } %> config)
+            const response = await axiosInstance.<%== strings.ToLower(operation.Endpoint.Method) %>(`<%== getUrl(operation.Endpoint) %>`,<% if body != nil { %> bodyJson,<% } %> config)
             switch (response.status) {
 <#              for _, response := range operation.Responses {
                 case <%= spec.HttpStatusCode(response.Name) %>:
-                    return { status: "<%== response.Name.Source %>"<% if !response.Type.Definition.IsEmpty() { %>, data: decode(<%== IoTsType(&response.Type.Definition) %>, response.data)<% } %> }
+                    return Promise.resolve({ status: "<%== response.Name.Source %>"<% if !response.Type.Definition.IsEmpty() { %>, data: decode(<%== IoTsType(&response.Type.Definition) %>, response.data)<% } %> })
 <#              }
                 default:
                     throw new Error(`Unexpected status code ${ response.status }`)
@@ -67,8 +58,7 @@ export const <%== api.Name.CamelCase() %>Client = (rootUrl: string) => {
 <#
 <#
 <#    func generateClients(spec *spec.Spec, w io.Writer) {
-import axios from 'axios';
-import { AxiosRequestConfig } from 'axios';
+import { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { decode, encode } from './codec'
 import {
 <#        for _, model := range spec.Models {
