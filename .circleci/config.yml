@@ -180,4 +180,5 @@ workflows:
           <<: *common-params
           requires:
             - build-gem-specgen
+            - build-npm-specgen
             - build-sbt-specgen
