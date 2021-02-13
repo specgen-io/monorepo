@@ -31,18 +31,4 @@ $GOPATH/bin/github-release upload  --security-token $GITHUB_TOKEN --user ModaOpe
 echo "Releasing zips/specgen_windows_amd64.zip"
 $GOPATH/bin/github-release upload  --security-token $GITHUB_TOKEN --user ModaOperandi --repo specgen --tag $RELEASE_NAME --name specgen_windows_amd64.zip --file zips/specgen_windows_amd64.zip
 
-
-BINTRAY_URL="https://api.bintray.com/content/moda/binaries"
-
-echo "Releasing to Bintray: $BINTRAY_URL/specgen/$RELEASE_NAME"
-
-curl -u$BINTRAY_USER:$BINTRAY_PASS -T zips/specgen_darwin_amd64.zip "$BINTRAY_URL/specgen/$RELEASE_NAME/specgen/$RELEASE_NAME/specgen_darwin_amd64.zip"
-echo
-curl -u$BINTRAY_USER:$BINTRAY_PASS -T zips/specgen_linux_amd64.zip "$BINTRAY_URL/specgen/$RELEASE_NAME/specgen/$RELEASE_NAME/specgen_linux_amd64.zip"
-echo
-curl -u$BINTRAY_USER:$BINTRAY_PASS -T zips/specgen_windows_amd64.zip "$BINTRAY_URL/specgen/$RELEASE_NAME/specgen/$RELEASE_NAME/specgen_windows_amd64.zip"
-echo
-
-curl -X POST -u$BINTRAY_USER:$BINTRAY_PASS "$BINTRAY_URL/specgen/$RELEASE_NAME/publish"
-
 echo "Done releasing $VERSION"
