@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  tools: moda/tools@0.15.0
+
 common-params: &common-params
   version: 0.<< pipeline.number >>.0
 
@@ -92,13 +95,20 @@ jobs:
           at: ./plugins/sbt-spec/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/sbt-spec/build.sbt" }}
+      - setup-artifactory-sbt
       - run:
-          name: Build aand publish SBT plugin
+          name: Build SBT plugin
+          command: |
+            cd ./plugins/sbt-spec
+            export VERSION=<< parameters.version >>
+            sbt -Dversion=$VERSION clean test
+      - run:
+          name: Publish SBT plugin
           command: |
             if [ $CIRCLE_BRANCH = "master" ]; then
               cd ./plugins/sbt-spec
               export VERSION=<< parameters.version >>
-              sbt -Dversion=$VERSION clean test publish bintrayRelease
+              sbt -Dversion=$VERSION publish
             else
               echo "Will not release - not running on master branch"
             fi
@@ -108,6 +118,27 @@ jobs:
             - ~/.sbt
             - ~/.ivy2
             - ~/.m2
+
+  build-sbt-specgen-sonatype:
+    parameters:
+      version:
+        type: string
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/sbt-spec/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/sbt-spec/build.sbt" }}
+      - setup-sonatype-sbt
+      - run:
+          name: Publish SBT plugin
+          command: |
+            cd ./plugins/sbt-spec
+            export VERSION=<< parameters.version >>
+            sbt -Dversion=$VERSION publishSigned sonatypeRelease
+
 
   build-npm-specgen:
     parameters:
@@ -142,6 +173,44 @@ jobs:
             https://circleci.com/api/v2/project/github/ModaOperandi/specgen-tests/pipeline
 
 commands:
+  setup-artifactory-sbt:
+    steps:
+      - run:
+          name: Setup Artifactory for SBT
+          command: |
+            mkdir -p ~/.sbt/1.0
+            tee > ~/.sbt/1.0/artifactory.sbt \<<END
+            credentials += Credentials("Artifactory Realm", "specgen.jfrog.io", "$JFROG_USER", "$JFROG_PASS")
+            val artifactory = "Artifactory Realm" at "https://specgen.jfrog.io/artifactory/sbt"
+            resolvers += artifactory
+            publishTo := Some(artifactory)
+            END
+  setup-sonatype-sbt:
+    steps:
+      - run:
+          name: Setup Sonatype for SBT
+          command: |
+            mkdir -p ~/.sbt/1.0
+            tee > ~/.sbt/1.0/sonatype.sbt \<<END
+            credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", "$SONATYPE_USER", "$SONATYPE_PASSWORD")
+            publishTo := Some(Opts.resolver.sonatypeStaging)
+            pgpPassphrase := Some("$SONATYPE_GPG_PASSPHRASE".toArray)
+            END
+      - run:
+          name: Add sontype plugins
+          command: | 
+            mkdir -p ~/.sbt/1.0/plugins
+            tee > ~/.sbt/1.0/plugins/sonatype.sbt \<<END
+            addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.3")
+            addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.1")
+            END
+      - run:
+          name: Write PGP secret key
+          command: | 
+            mkdir -p ~/.sbt/gpg
+            tee > ~/.sbt/gpg/secring.asc \<<END
+            $SONATYPE_GPG_SECRET_KEY
+            END
   setup-rubygems_key:
     steps:
       - run:
@@ -175,10 +244,22 @@ workflows:
           <<: *common-params
           requires:
             - build-specgen
-      - trigger-tests:
+      - tools/run-pipeline-workflow:
+          name: tests
+          repository: ModaOperandi/specgen-tests
+          workflow-name: test
+          pipeline-attempts: 30
           context: specgen
-          <<: *common-params
+          pipeline-parameters: '{"specgen-version": "0.<< pipeline.number >>.0"}'
           requires:
             - build-gem-specgen
             - build-npm-specgen
             - build-sbt-specgen
+          filters:
+            branches:
+              only: master
+      - build-sbt-specgen-sonatype:
+          context: specgen
+          <<: *common-params
+          requires:
+            - tests
