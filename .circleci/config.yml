@@ -206,11 +206,10 @@ commands:
             END
       - run:
           name: Write PGP secret key
-          command: | 
+          command: |
             mkdir -p ~/.sbt/gpg
-            tee > ~/.sbt/gpg/secring.asc \<<END
-            $SONATYPE_GPG_SECRET_KEY
-            END
+            (echo "$SONATYPE_GPG_SECRET_KEY" | base64 -d) > ~/.sbt/gpg/secring.asc
+            cat ~/.sbt/gpg/secring.asc
   setup-rubygems_key:
     steps:
       - run:
