@@ -92,28 +92,28 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: ./plugins/sbt-spec/src/main/resources
+          at: ./plugins/sbt-specgen/src/main/resources
       - restore_cache:
-          key: cache-{{ checksum "./plugins/sbt-spec/build.sbt" }}
+          key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
       - setup-artifactory-sbt
       - run:
           name: Build SBT plugin
           command: |
-            cd ./plugins/sbt-spec
+            cd ./plugins/sbt-specgen
             export VERSION=<< parameters.version >>
             sbt -Dversion=$VERSION clean test
       - run:
           name: Publish SBT plugin
           command: |
             if [ $CIRCLE_BRANCH = "master" ]; then
-              cd ./plugins/sbt-spec
+              cd ./plugins/sbt-specgen
               export VERSION=<< parameters.version >>
               sbt -Dversion=$VERSION publish
             else
               echo "Will not release - not running on master branch"
             fi
       - save_cache:
-          key: cache-{{ checksum "./plugins/sbt-spec/build.sbt" }}
+          key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
           paths:
             - ~/.sbt
             - ~/.ivy2
@@ -128,17 +128,16 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: ./plugins/sbt-spec/src/main/resources
+          at: ./plugins/sbt-specgen/src/main/resources
       - restore_cache:
-          key: cache-{{ checksum "./plugins/sbt-spec/build.sbt" }}
+          key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
       - setup-sonatype-sbt
       - run:
           name: Publish SBT plugin
           command: |
-            cd ./plugins/sbt-spec
+            cd ./plugins/sbt-specgen
             export VERSION=<< parameters.version >>
             sbt -Dversion=$VERSION publishSigned sonatypeRelease
-
 
   build-npm-specgen:
     parameters:
@@ -209,7 +208,6 @@ commands:
           command: |
             mkdir -p ~/.sbt/gpg
             (echo "$SONATYPE_GPG_SECRET_KEY" | base64 -d) > ~/.sbt/gpg/secring.asc
-            cat ~/.sbt/gpg/secring.asc
   setup-rubygems_key:
     steps:
       - run:
