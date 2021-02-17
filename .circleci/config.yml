@@ -1,7 +1,8 @@
 version: 2.1
 
 orbs:
-  tools: moda/tools@0.15.0
+  circleci: moda/circleci@0.1.0
+  artifactory: moda/artifactory@0.2.0
 
 common-params: &common-params
   version: 0.<< pipeline.number >>.0
@@ -71,7 +72,7 @@ jobs:
             cd ./plugins/gem-specgen
             export VERSION=<< parameters.version >>
             gem build specgen.gemspec
-      - setup-rubygems_key
+      - setup-rubygems
       - run:
           name: Push gem
           command: |
@@ -95,7 +96,9 @@ jobs:
           at: ./plugins/sbt-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
-      - setup-artifactory-sbt
+      - artifactory/setup-sbt:
+          jfrog-server-url: moda.jfrog.io
+          repo-name: sbt
       - run:
           name: Build SBT plugin
           command: |
@@ -172,18 +175,6 @@ jobs:
             https://circleci.com/api/v2/project/github/ModaOperandi/specgen-tests/pipeline
 
 commands:
-  setup-artifactory-sbt:
-    steps:
-      - run:
-          name: Setup Artifactory for SBT
-          command: |
-            mkdir -p ~/.sbt/1.0
-            tee > ~/.sbt/1.0/artifactory.sbt \<<END
-            credentials += Credentials("Artifactory Realm", "specgen.jfrog.io", "$JFROG_USER", "$JFROG_PASS")
-            val artifactory = "Artifactory Realm" at "https://specgen.jfrog.io/artifactory/sbt"
-            resolvers += artifactory
-            publishTo := Some(artifactory)
-            END
   setup-sonatype-sbt:
     steps:
       - run:
@@ -208,7 +199,7 @@ commands:
           command: |
             mkdir -p ~/.sbt/gpg
             (echo "$SONATYPE_GPG_SECRET_KEY" | base64 -d) > ~/.sbt/gpg/secring.asc
-  setup-rubygems_key:
+  setup-rubygems:
     steps:
       - run:
           name: Write key
@@ -241,7 +232,7 @@ workflows:
           <<: *common-params
           requires:
             - build-specgen
-      - tools/run-pipeline-workflow:
+      - circleci/run-pipeline-workflow:
           name: tests
           repository: ModaOperandi/specgen-tests
           workflow-name: test
