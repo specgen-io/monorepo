@@ -1,7 +1,7 @@
 package genscala
 
 import (
-	"github.com/ModaOperandi/spec"
+	"github.com/specgen-io/spec"
 	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
 	"specgen/gen"

@@ -2,7 +2,7 @@ package genruby
 
 import (
 	"fmt"
-	"github.com/ModaOperandi/spec"
+	"github.com/specgen-io/spec"
 	"github.com/vsapronov/casee"
 	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"

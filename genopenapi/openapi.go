@@ -1,7 +1,7 @@
 package genopenapi
 
 import (
-	"github.com/ModaOperandi/spec"
+	"github.com/specgen-io/spec"
 	"gopkg.in/yaml.v2"
 	"specgen/gen"
 	"strings"

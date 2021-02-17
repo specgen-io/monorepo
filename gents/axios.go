@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 	"strings"
-	"github.com/ModaOperandi/spec"
+	"github.com/specgen-io/spec"
 	"path/filepath"
 	"specgen/gen"
 )

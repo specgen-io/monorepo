@@ -2,7 +2,7 @@ package gents
 
 import (
 	"fmt"
-	"github.com/ModaOperandi/spec"
+	"github.com/specgen-io/spec"
 )
 
 func TsType(typ *spec.TypeDef) string {
