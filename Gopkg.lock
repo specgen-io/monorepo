@@ -2,23 +2,15 @@
 
 
 [[projects]]
-  digest = "1:07f7314344b2771963ada0b2a4a426c59d782dac227dcfff2499188a186446c0"
+  digest = "1:8c7de09c8aff775fa05b632d56aabf05522c1eafc164ba45e30653d499e963d7"
   name = "github.com/GeertJohan/go.rice"
   packages = [
     ".",
     "embedded",
   ]
   pruneopts = "UT"
-  revision = "cd53cd147dd5288bc2fb990fb983e58e301abb5e"
-  version = "v1.0.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:bec6d2d2c840ff6527c805784a154014fd905984214dfea941d0f289c5974e74"
-  name = "github.com/ModaOperandi/spec"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "b5cc16850cae602375c5e1cc8f538f00f355ce42"
+  revision = "0634379bb7b1af96fb16686afc301ae7ae9ee8b9"
+  version = "v1.0.2"
 
 [[projects]]
   digest = "1:8e8da6cc8cca12851d4e089d970a0f7387b3a6bcc8c459ff432213b03076a66d"
@@ -74,6 +66,14 @@
   version = "v0.8.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:bec6d2d2c840ff6527c805784a154014fd905984214dfea941d0f289c5974e74"
+  name = "github.com/specgen-io/spec"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "b5cc16850cae602375c5e1cc8f538f00f355ce42"
+
+[[projects]]
   digest = "1:1e80255eea46af2e2db7da90f95e4b5cfe84f3b58d9a8598ec35b0f2a75c60e4"
   name = "github.com/spf13/cobra"
   packages = ["."]
@@ -117,12 +117,12 @@
   revision = "8436b0197393d641b1601efef7fb017cef94f5b7"
 
 [[projects]]
-  digest = "1:d7f1bd887dc650737a421b872ca883059580e9f8314d601f88025df4f4802dce"
+  digest = "1:5054a1f394226de9e6ddc47b0ba77e35092a4112f4a1cd9cb94aba1f5bdc3ec6"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0b1645d91e851e735d3e23330303ce81f70adbe3"
-  version = "v2.3.0"
+  revision = "7649d4548cb53a614db133b2a8ac1f31859dda8c"
+  version = "v2.4.0"
 
 [[projects]]
   digest = "1:a5cc901b8e54c4b73a62f97dc7c8f6c46e347c148a7a38e09b2e942c2587ba03"
@@ -144,8 +144,8 @@
   input-imports = [
     "github.com/GeertJohan/go.rice",
     "github.com/GeertJohan/go.rice/embedded",
-    "github.com/ModaOperandi/spec",
     "github.com/dollarshaveclub/line",
+    "github.com/specgen-io/spec",
     "github.com/spf13/cobra",
     "github.com/vsapronov/casee",
     "github.com/vsapronov/gopoetry/ruby",

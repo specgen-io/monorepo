@@ -1,6 +1,6 @@
 package genopenapi
 
-import "github.com/ModaOperandi/spec"
+import "github.com/specgen-io/spec"
 
 func NewName(source string) spec.Name {
 	return spec.Name{Source: source, Location: nil}

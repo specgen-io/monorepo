@@ -3,7 +3,7 @@
 <#    import (
 <#        "io"
 <#        "strings"
-<#        "github.com/ModaOperandi/spec"
+<#        "github.com/specgen-io/spec"
 <#    )
 <#
 <#

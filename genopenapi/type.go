@@ -2,7 +2,7 @@ package genopenapi
 
 import (
 	"fmt"
-	"github.com/ModaOperandi/spec"
+	"github.com/specgen-io/spec"
 	"strconv"
 )
 

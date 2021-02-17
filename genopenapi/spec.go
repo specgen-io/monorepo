@@ -1,6 +1,6 @@
 package genopenapi
 
-import "github.com/ModaOperandi/spec"
+import "github.com/specgen-io/spec"
 
 type Operation struct {
 	Api       spec.Api

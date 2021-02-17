@@ -2,7 +2,7 @@ package gents
 
 import (
 	"bytes"
-	"github.com/ModaOperandi/spec"
+	"github.com/specgen-io/spec"
 	"specgen/gen"
 )
 

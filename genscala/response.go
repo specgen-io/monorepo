@@ -2,7 +2,7 @@ package genscala
 
 import (
 	"fmt"
-	"github.com/ModaOperandi/spec"
+	"github.com/specgen-io/spec"
 	"github.com/vsapronov/gopoetry/scala"
 )
 

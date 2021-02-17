@@ -2,7 +2,7 @@ package gents
 
 import (
 "fmt"
-"github.com/ModaOperandi/spec"
+"github.com/specgen-io/spec"
 )
 
 func IoTsType(typ *spec.TypeDef) string {
