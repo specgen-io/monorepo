@@ -224,7 +224,7 @@ workflows:
           workflow-name: test
           pipeline-attempts: 30
           context: specgen
-          pipeline-parameters: '{"specgen-version": "0.<< pipeline.number >>.0"}'
+          pipeline-parameters: '{"specgen-version": "1.<< pipeline.number >>.0"}'
           requires:
             - build-gem-specgen
             - build-npm-specgen
