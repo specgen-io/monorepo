@@ -97,7 +97,7 @@ jobs:
       - restore_cache:
           key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
       - artifactory/setup-sbt:
-          jfrog-server-url: moda.jfrog.io
+          jfrog-server-url: specgen.jfrog.io
           repo-name: sbt
       - run:
           name: Build SBT plugin
@@ -159,20 +159,6 @@ jobs:
             npm version << parameters.version >>
             npm install
             npm publish
-
-  trigger-tests:
-    parameters:
-      version:
-        type: string
-    docker:
-      - image: circleci/openjdk:8-jdk
-    steps:
-      - run:
-          name: Trigger specgen-tests pipeline
-          command: |
-            curl -u ${CIRCLECI_TOKEN}: -X POST --header "Content-Type: application/json" \
-            -d '{"parameters": {"specgen-version": "<< parameters.version >>"}}' \
-            https://circleci.com/api/v2/project/github/ModaOperandi/specgen-tests/pipeline
 
 commands:
   setup-sonatype-sbt:
