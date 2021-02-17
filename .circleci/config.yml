@@ -5,7 +5,7 @@ orbs:
   artifactory: moda/artifactory@0.2.0
 
 common-params: &common-params
-  version: 0.<< pipeline.number >>.0
+  version: 1.<< pipeline.number >>.0
 
 jobs:
   build-specgen:
