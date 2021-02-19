@@ -7,7 +7,7 @@ orbs:
 parameters:
   specgen-version:
     type: string
-    default: 1.4.<< pipeline.number >>
+    default: 1.10.<< pipeline.number >>
 
 jobs:
   build-specgen:
