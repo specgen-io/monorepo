@@ -140,7 +140,7 @@ jobs:
           command: |
             cd ./plugins/sbt-specgen
             export VERSION=<< parameters.version >>
-            sbt -Dversion=$VERSION publishSigned sonatypeBundleRelease
+            sbt -Dversion=$VERSION publishSigned sonatypeRelease
 
   build-npm-specgen:
     parameters:
@@ -169,8 +169,7 @@ commands:
             mkdir -p ~/.sbt/1.0
             tee > ~/.sbt/1.0/sonatype.sbt \<<END
             credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", "$SONATYPE_USER", "$SONATYPE_PASSWORD")
-            publishTo := sonatypePublishToBundle.value
-            useGpg := false
+            publishTo := Some(Opts.resolver.sonatypeStaging)
             pgpPassphrase := Some("$SONATYPE_GPG_PASSPHRASE".toArray)
             END
       - run:
@@ -178,8 +177,8 @@ commands:
           command: | 
             mkdir -p ~/.sbt/1.0/plugins
             tee > ~/.sbt/1.0/plugins/sonatype.sbt \<<END
-            addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % 3.4")
-            addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.1.2")
+            addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.3")
+            addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.1")
             END
       - run:
           name: Write PGP secret key
