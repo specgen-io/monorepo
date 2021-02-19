@@ -220,7 +220,7 @@ workflows:
             - build-specgen
       - circleci/run-pipeline-workflow:
           name: tests
-          repository: ModaOperandi/specgen-tests
+          repository: specgen-io/specgen-tests
           workflow-name: test
           pipeline-attempts: 30
           context: specgen
