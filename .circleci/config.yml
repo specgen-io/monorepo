@@ -4,14 +4,13 @@ orbs:
   circleci: moda/circleci@0.1.0
   artifactory: moda/artifactory@0.2.0
 
-common-params: &common-params
-  version: 1.<< pipeline.number >>.0
+parameters:
+  specgen-version:
+    type: string
+    default: 1.4.<< pipeline.number >>
 
 jobs:
   build-specgen:
-    parameters:
-      version:
-        type: string
     docker:
       - image: circleci/golang:1.12
     working_directory: /go/src/specgen
@@ -19,9 +18,7 @@ jobs:
       - checkout
       - run:
           name: Build
-          command: |
-            export VERSION=<< parameters.version >>
-            ./build.sh $VERSION
+          command: ./build.sh << pipeline.parameters.specgen-version >>
       - run:
           name: Unit tests
           command: |
@@ -47,16 +44,12 @@ jobs:
           name: Release
           command: |
             if [ $CIRCLE_BRANCH = "master" ]; then
-              export VERSION=<< parameters.version >>
-              ./release.sh $VERSION ${GITHUB_TOKEN}
+              ./release.sh << pipeline.parameters.specgen-version >> ${GITHUB_TOKEN}
             else
               echo "Will not release - not running on master branch"
             fi
 
   build-gem-specgen:
-    parameters:
-      version:
-        type: string
     docker:
       - image: circleci/ruby:2.4.9
     steps:
@@ -70,7 +63,7 @@ jobs:
           name: Build gem
           command: |
             cd ./plugins/gem-specgen
-            export VERSION=<< parameters.version >>
+            export VERSION=<< pipeline.parameters.specgen-version >>
             gem build specgen.gemspec
       - setup-rubygems
       - run:
@@ -78,16 +71,13 @@ jobs:
           command: |
             if [ $CIRCLE_BRANCH = "master" ]; then
               cd ./plugins/gem-specgen
-              export VERSION=<< parameters.version >>
+              export VERSION=<< pipeline.parameters.specgen-version >>
               gem push --key rubygems specgen-$VERSION.gem
             else
               echo "Will not release - not running on master branch"
             fi
 
   build-sbt-specgen:
-    parameters:
-      version:
-        type: string
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
@@ -103,15 +93,13 @@ jobs:
           name: Build SBT plugin
           command: |
             cd ./plugins/sbt-specgen
-            export VERSION=<< parameters.version >>
-            sbt -Dversion=$VERSION clean test
+            sbt -Dversion=<< pipeline.parameters.specgen-version >> clean test
       - run:
           name: Publish SBT plugin
           command: |
             if [ $CIRCLE_BRANCH = "master" ]; then
               cd ./plugins/sbt-specgen
-              export VERSION=<< parameters.version >>
-              sbt -Dversion=$VERSION publish
+              sbt -Dversion=<< pipeline.parameters.specgen-version >> publish
             else
               echo "Will not release - not running on master branch"
             fi
@@ -123,9 +111,6 @@ jobs:
             - ~/.m2
 
   build-sbt-specgen-sonatype:
-    parameters:
-      version:
-        type: string
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
@@ -139,13 +124,9 @@ jobs:
           name: Publish SBT plugin
           command: |
             cd ./plugins/sbt-specgen
-            export VERSION=<< parameters.version >>
-            sbt -Dversion=$VERSION publishSigned sonatypeRelease
+            sbt -Dversion=<< pipeline.parameters.specgen-version >> publishSigned sonatypeRelease
 
   build-npm-specgen:
-    parameters:
-      version:
-        type: string
     docker:
       - image: cimg/node:14.15.1
     steps:
@@ -156,7 +137,7 @@ jobs:
           name: npm publish package
           command: |
             cd ./plugins/npm-specgen
-            npm version << parameters.version >>
+            npm version << pipeline.parameters.specgen-version >>
             npm install
             npm publish
 
@@ -202,20 +183,16 @@ workflows:
     jobs:
       - build-specgen:
           context: specgen
-          <<: *common-params
       - build-gem-specgen:
           context: specgen
-          <<: *common-params
           requires:
             - build-specgen
       - build-sbt-specgen:
           context: specgen
-          <<: *common-params
           requires:
             - build-specgen
       - build-npm-specgen:
           context: specgen
-          <<: *common-params
           requires:
             - build-specgen
       - circleci/run-pipeline-workflow:
@@ -224,7 +201,7 @@ workflows:
           workflow-name: test
           pipeline-attempts: 30
           context: specgen
-          pipeline-parameters: '{"specgen-version": "1.<< pipeline.number >>.0"}'
+          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           requires:
             - build-gem-specgen
             - build-npm-specgen
@@ -234,6 +211,5 @@ workflows:
               only: master
       - build-sbt-specgen-sonatype:
           context: specgen
-          <<: *common-params
           requires:
             - tests
