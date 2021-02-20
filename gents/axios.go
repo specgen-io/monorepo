@@ -2,6 +2,7 @@ package gents
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 	"github.com/specgen-io/spec"
@@ -44,7 +45,7 @@ func generateAxiosClient(spec *spec.Spec, outPath string) *gen.TextFile {
 func getUrl(endpoint spec.Endpoint) string {
 	url := endpoint.Url
 	for _, param := range endpoint.UrlParams {
-		url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), "${"+param.Name.CamelCase()+"}", -1)
+		url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), "${parameters."+param.Name.CamelCase()+"}", -1)
 	}
 	return url
 }
@@ -62,7 +63,11 @@ func createParams(params []spec.NamedParam, required bool) []string {
 			if !isRequired {
 				requiredSign = "?"
 			}
-			tsParams = append(tsParams, param.Name.CamelCase()+requiredSign+": "+TsType(&param.Type.Definition))
+			paramType := &param.Type.Definition
+			if !isRequired && !paramType.IsNullable() {
+				paramType = spec.Nullable(paramType)
+			}
+			tsParams = append(tsParams, param.Name.CamelCase()+requiredSign+": "+TsType(paramType))
 		}
 	}
 	return tsParams
@@ -78,5 +83,8 @@ func createOperationParams(operation *spec.NamedOperation) string {
 	operationParams = append(operationParams, createParams(operation.QueryParams, true)...)
 	operationParams = append(operationParams, createParams(operation.HeaderParams, false)...)
 	operationParams = append(operationParams, createParams(operation.QueryParams, false)...)
-	return strings.Join(operationParams, ", ")
+	if len(operationParams) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("parameters: {%s}", strings.Join(operationParams, ", "))
 }

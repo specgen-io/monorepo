@@ -5,6 +5,12 @@ import (
 	"github.com/specgen-io/spec"
 )
 
+func TsWrapNullable(typ *spec.TypeDef) {
+	if !typ.IsNullable() {
+
+	}
+}
+
 func TsType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:

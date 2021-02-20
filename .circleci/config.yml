@@ -209,7 +209,11 @@ workflows:
           filters:
             branches:
               only: main
+      - approve-sonatype:
+          type: approval
+          requires:
+            - tests
       - build-sbt-specgen-sonatype:
           context: specgen
           requires:
-            - tests
+            - approve-sonatype
