@@ -66,7 +66,7 @@
   version = "v0.8.1"
 
 [[projects]]
-  branch = "master"
+  branch = "main"
   digest = "1:bec6d2d2c840ff6527c805784a154014fd905984214dfea941d0f289c5974e74"
   name = "github.com/specgen-io/spec"
   packages = ["."]
@@ -143,7 +143,6 @@
   analyzer-version = 1
   input-imports = [
     "github.com/GeertJohan/go.rice",
-    "github.com/GeertJohan/go.rice/embedded",
     "github.com/dollarshaveclub/line",
     "github.com/specgen-io/spec",
     "github.com/spf13/cobra",
