@@ -43,10 +43,10 @@ jobs:
       - run:
           name: Release
           command: |
-            if [ $CIRCLE_BRANCH = "master" ]; then
+            if [ $CIRCLE_BRANCH = "main" ]; then
               ./release.sh << pipeline.parameters.specgen-version >> ${GITHUB_TOKEN}
             else
-              echo "Will not release - not running on master branch"
+              echo "Will not release - not running on main branch"
             fi
 
   build-gem-specgen:
@@ -69,12 +69,12 @@ jobs:
       - run:
           name: Push gem
           command: |
-            if [ $CIRCLE_BRANCH = "master" ]; then
+            if [ $CIRCLE_BRANCH = "main" ]; then
               cd ./plugins/gem-specgen
               export VERSION=<< pipeline.parameters.specgen-version >>
               gem push --key rubygems specgen-$VERSION.gem
             else
-              echo "Will not release - not running on master branch"
+              echo "Will not release - not running on main branch"
             fi
 
   build-sbt-specgen:
@@ -97,11 +97,11 @@ jobs:
       - run:
           name: Publish SBT plugin
           command: |
-            if [ $CIRCLE_BRANCH = "master" ]; then
+            if [ $CIRCLE_BRANCH = "main" ]; then
               cd ./plugins/sbt-specgen
               sbt -Dversion=<< pipeline.parameters.specgen-version >> publish
             else
-              echo "Will not release - not running on master branch"
+              echo "Will not release - not running on main branch"
             fi
       - save_cache:
           key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
@@ -208,7 +208,7 @@ workflows:
             - build-sbt-specgen
           filters:
             branches:
-              only: master
+              only: main
       - build-sbt-specgen-sonatype:
           context: specgen
           requires:
