@@ -29,20 +29,20 @@ export const <%== api.Name.CamelCase() %>Client = (axiosInstance: AxiosInstance)
 <#          if hasQueryParams {
             const params = {
 <#              for _, p := range operation.QueryParams {
-                "<%== p.Name.Source %>": <%== p.Name.CamelCase() %>,
+                "<%== p.Name.Source %>": parameters.<%== p.Name.CamelCase() %>,
 <#              }
             }
 <#          }
 <#          if hasHeaderParams {
             const headers = {
 <#              for _, p := range operation.HeaderParams {
-                "<%== p.Name.Source %>": <%== p.Name.CamelCase() %>,
+                "<%== p.Name.Source %>": parameters.<%== p.Name.CamelCase() %>,
 <#              }
             }
 <#          }
             const config: AxiosRequestConfig = {<% if hasQueryParams { %>params: params,<% } %><% if hasHeaderParams { %>headers: headers,<% } %>}
 <#              if body != nil {
-            const bodyJson = encode(<%== IoTsType(&body.Type.Definition) %>, body)
+            const bodyJson = encode(<%== IoTsType(&body.Type.Definition) %>, parameters.body)
 <#              }
             const response = await axiosInstance.<%== strings.ToLower(operation.Endpoint.Method) %>(`<%== getUrl(operation.Endpoint) %>`,<% if body != nil { %> bodyJson,<% } %> config)
             switch (response.status) {
