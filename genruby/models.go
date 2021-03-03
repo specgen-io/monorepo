@@ -6,32 +6,47 @@ import (
 	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"
 	"specgen/gen"
+	"specgen/static"
 	"strings"
 )
 
-func GenerateModels(specification *spec.Spec, generatePath string) *gen.TextFile {
-	gemName := specification.ServiceName.SnakeCase()+"_client"
-	moduleName := specification.ServiceName.PascalCase()
-	clientModule := ruby.Module("Client")
+func GenerateModels(serviceFile string, generatePath string) error {
+	specification, err := spec.ReadSpec(serviceFile)
+	if err != nil { return err }
 
-	for _, model := range specification.ResolvedModels {
+	folderName := specification.ServiceName.SnakeCase()
+	moduleName := specification.ServiceName.PascalCase()
+	modelsPath := filepath.Join(generatePath, folderName)
+	models := generateModels(specification.ResolvedModels, folderName, moduleName, modelsPath)
+
+	data := static.RubyClient{GemName: folderName, ModuleName: moduleName}
+	sources, err := static.RenderTemplate("ruby-models", generatePath, data)
+	if err != nil { return err }
+
+	sources = append(sources, *models)
+	err = gen.WriteFiles(sources, true)
+	return err
+}
+
+func generateModels(models spec.Models, folderName string, moduleName string, generatePath string) *gen.TextFile {
+	module := ruby.Module(moduleName)
+
+	for _, model := range models {
 		if model.IsObject() {
-			clientModule.AddDeclarations(generateObjectModel(model))
+			module.AddDeclarations(generateObjectModel(model))
 		} else if model.IsOneOf() {
-			clientModule.AddDeclarations(generateOneOfModel(model))
+			module.AddDeclarations(generateOneOfModel(model))
 		} else if model.IsEnum() {
-			clientModule.AddDeclarations(generateEnumModel(model))
+			module.AddDeclarations(generateEnumModel(model))
 		}
 	}
 
-	module := ruby.Module(moduleName).AddDeclarations(clientModule)
-
 	unit := ruby.Unit()
 	unit.Require("date")
-	unit.Require(gemName+"/tod")
-	unit.Require(gemName+"/type")
-	unit.Require(gemName+"/enum")
-	unit.Require(gemName+"/dataclass")
+	unit.Require(folderName+"/tod")
+	unit.Require(folderName+"/type")
+	unit.Require(folderName+"/enum")
+	unit.Require(folderName+"/dataclass")
 	unit.AddDeclarations(module)
 	return &gen.TextFile{
 		Path:    filepath.Join(generatePath, "models.rb"),

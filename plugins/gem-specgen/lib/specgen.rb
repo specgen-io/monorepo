@@ -30,3 +30,10 @@ def specgen_client_ruby(spec_file: "./spec.yaml", generate_path: ".")
   puts "Executing specgen:"
   sh command
 end
+
+def specgen_models_ruby(spec_file: "./spec.yaml", generate_path: ".")
+  specgen_path = get_specgen_path
+  command = "#{specgen_path} models-ruby --spec-file #{spec_file} --generate-path #{generate_path}"
+  puts "Executing specgen:"
+  sh command
+end

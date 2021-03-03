@@ -143,6 +143,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/GeertJohan/go.rice",
+    "github.com/GeertJohan/go.rice/embedded",
     "github.com/dollarshaveclub/line",
     "github.com/specgen-io/spec",
     "github.com/spf13/cobra",

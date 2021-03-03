@@ -16,8 +16,8 @@ func GenerateClient(serviceFile string, generatePath string) error {
 
 	gemName := specification.ServiceName.SnakeCase()+"_client"
 	moduleName := clientModuleName(specification.ServiceName)
-	libGemPath := filepath.Join(generatePath, "lib", gemName)
-	models := GenerateModels(specification, libGemPath)
+	libGemPath := filepath.Join(generatePath, gemName)
+	models := generateModels(specification.ResolvedModels, gemName, moduleName, libGemPath)
 	clients := generateClientApisClasses(specification, libGemPath)
 
 	data := static.RubyClient{GemName: gemName, ModuleName: moduleName}
