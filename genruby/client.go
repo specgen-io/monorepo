@@ -39,19 +39,17 @@ func clientModuleName(serviceName spec.Name) string {
 
 func generateClientApisClasses(specification *spec.Spec, generatePath string) *gen.TextFile {
 	gemName := specification.ServiceName.SnakeCase()+"_client"
-	clientModule := ruby.Module("Client")
+	moduleName := clientModuleName(specification.ServiceName)
+	module := ruby.Module(moduleName)
 
 	for _, api := range specification.Apis {
 		apiClass := generateClientApiClass(api)
-		clientModule.AddDeclarations(apiClass)
+		module.AddDeclarations(apiClass)
 	}
 
 	if len(specification.Apis) > 1 {
-		clientModule.AddDeclarations(generateClientSuperClass(specification))
+		module.AddDeclarations(generateClientSuperClass(specification))
 	}
-
-	moduleName := clientModuleName(specification.ServiceName)
-	module := ruby.Module(moduleName).AddDeclarations(clientModule)
 
 	unit := ruby.Unit()
 	unit.Require("net/http")
