@@ -23,8 +23,6 @@ func DefaultValue(typ *spec.TypeDef, value string) string {
 	case spec.PlainType:
 		switch typ.Plain {
 		case
-			spec.TypeByte,
-			spec.TypeInt16,
 			spec.TypeInt32,
 			spec.TypeInt64,
 			spec.TypeDouble:
@@ -35,8 +33,6 @@ func DefaultValue(typ *spec.TypeDef, value string) string {
 			return `BigDecimal("` + value + `")`
 		case spec.TypeBoolean:
 			return value
-		case spec.TypeChar:
-			return "'" + value + "'"
 		case spec.TypeString:
 			return `"` + value + `"`
 		case spec.TypeUuid:
@@ -45,8 +41,6 @@ func DefaultValue(typ *spec.TypeDef, value string) string {
 			return `LocalDate.parse("` + value + `", DateTimeFormatter.ISO_LOCAL_DATE)`
 		case spec.TypeDateTime:
 			return `LocalDateTime.parse("` + value + `", DateTimeFormatter.ISO_LOCAL_DATE_TIME)`
-		case spec.TypeTime:
-			return `LocalTime.parse("` + value + `", DateTimeFormatter.ISO_LOCAL_TIME)`
 		default:
 			if typ.Info.Model != nil && typ.Info.Model.IsEnum() {
 				return typ.Info.Model.Name.PascalCase() + `.` + casee.ToPascalCase(value)

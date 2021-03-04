@@ -34,10 +34,6 @@ func TsType(typ *spec.TypeDef) string {
 
 func PlainTsType(typ string) string {
 	switch typ {
-	case spec.TypeByte:
-		return "number"
-	case spec.TypeInt16:
-		return "number"
 	case spec.TypeInt32:
 		return "number"
 	case spec.TypeInt64:
@@ -50,8 +46,6 @@ func PlainTsType(typ string) string {
 		return "number"
 	case spec.TypeBoolean:
 		return "boolean"
-	case spec.TypeChar:
-		return "string"
 	case spec.TypeString:
 		return "string"
 	case spec.TypeUuid:
@@ -59,8 +53,6 @@ func PlainTsType(typ string) string {
 	case spec.TypeDate:
 		return "string"
 	case spec.TypeDateTime:
-		return "string"
-	case spec.TypeTime:
 		return "string"
 	case spec.TypeJson:
 		return "unknown"

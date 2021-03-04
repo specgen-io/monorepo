@@ -28,10 +28,6 @@ func RubyType(typ *spec.TypeDef) string {
 
 func PlainRubyType(typ string) string {
 	switch typ {
-	case spec.TypeByte:
-		return "Integer"
-	case spec.TypeInt16:
-		return "Integer"
 	case spec.TypeInt32:
 		return "Integer"
 	case spec.TypeInt64:
@@ -44,8 +40,6 @@ func PlainRubyType(typ string) string {
 		return "Float"
 	case spec.TypeBoolean:
 		return "Boolean"
-	case spec.TypeChar:
-		return "String"
 	case spec.TypeString:
 		return "String"
 	case spec.TypeUuid:
@@ -54,8 +48,6 @@ func PlainRubyType(typ string) string {
 		return "Date"
 	case spec.TypeDateTime:
 		return "DateTime"
-	case spec.TypeTime:
-		return "TimeOfDay"
 	case spec.TypeJson:
 		return "T.hash(String, Untyped)"
 	default:

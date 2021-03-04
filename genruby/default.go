@@ -23,8 +23,6 @@ func DefaultValue(typ *spec.TypeDef, value string) string {
 	case spec.PlainType:
 		switch typ.Plain {
 		case
-			spec.TypeByte,
-			spec.TypeInt16,
 			spec.TypeInt32,
 			spec.TypeInt64:
 			return value
@@ -36,7 +34,6 @@ func DefaultValue(typ *spec.TypeDef, value string) string {
 		case spec.TypeBoolean:
 			return value
 		case
-			spec.TypeChar,
 			spec.TypeString,
 			spec.TypeUuid:
 			return `'` + value + `'`
@@ -44,8 +41,6 @@ func DefaultValue(typ *spec.TypeDef, value string) string {
 			return `Date.strptime('`+value+`', '%Y-%m-%d')`
 		case spec.TypeDateTime:
 			return `DateTime.strptime('`+value+`', '%Y-%m-%dT%H:%M:%S')`
-		case spec.TypeTime:
-			return `TimeOfDay.parse('`+value+`')`
 		default:
 			if typ.Info.Model != nil && typ.Info.Model.IsEnum() {
 				return typ.Info.Model.Name.PascalCase() + `::` + casee.ToSnakeCase(value)

@@ -28,10 +28,6 @@ func ScalaType(typ *spec.TypeDef) string {
 
 func PlainScalaType(typ string) string {
 	switch typ {
-	case spec.TypeByte:
-		return "Byte"
-	case spec.TypeInt16:
-		return "Short"
 	case spec.TypeInt32:
 		return "Int"
 	case spec.TypeInt64:
@@ -44,8 +40,6 @@ func PlainScalaType(typ string) string {
 		return "BigDecimal"
 	case spec.TypeBoolean:
 		return "Boolean"
-	case spec.TypeChar:
-		return "Char"
 	case spec.TypeString:
 		return "String"
 	case spec.TypeUuid:
@@ -54,8 +48,6 @@ func PlainScalaType(typ string) string {
 		return "java.time.LocalDate"
 	case spec.TypeDateTime:
 		return "java.time.LocalDateTime"
-	case spec.TypeTime:
-		return "java.time.LocalTime"
 	case spec.TypeJson:
 		return "io.circe.Json"
 	default:
