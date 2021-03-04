@@ -12,14 +12,6 @@ func CheckPlainType(t *testing.T, plainType string, expected string) {
 	assert.Equal(t, scalaType, expected)
 }
 
-func TestPlainTypeByte(t *testing.T) {
-	CheckPlainType(t, spec.TypeByte, "Byte")
-}
-
-func TestPlainTypeShort(t *testing.T) {
-	CheckPlainType(t, spec.TypeInt16, "Short")
-}
-
 func TestPlainTypeInt(t *testing.T) {
 	CheckPlainType(t, spec.TypeInt32, "Int")
 }
@@ -52,16 +44,8 @@ func TestPlainTypeDateTime(t *testing.T) {
 	CheckPlainType(t, spec.TypeDateTime, "java.time.LocalDateTime")
 }
 
-func TestPlainTypeTime(t *testing.T) {
-	CheckPlainType(t, spec.TypeTime, "java.time.LocalTime")
-}
-
 func TestPlainTypeJson(t *testing.T) {
 	CheckPlainType(t, spec.TypeJson, "io.circe.Json")
-}
-
-func TestPlainTypeChar(t *testing.T) {
-	CheckPlainType(t, spec.TypeChar, "Char")
 }
 
 func TestPlainTypeString(t *testing.T) {

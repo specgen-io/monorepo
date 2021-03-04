@@ -12,22 +12,6 @@ func checkType(t *testing.T, typ *spec.TypeDef, expected string) {
 	assert.Equal(t, strings.TrimSpace(openApiType.String()), strings.TrimSpace(expected))
 }
 
-func TestPlainTypeByte(t *testing.T) {
-	expected := `
-type: integer
-format: int8
-`
-	checkType(t, spec.Plain(spec.TypeByte), expected)
-}
-
-func TestPlainTypeShort(t *testing.T) {
-	expected := `
-type: integer
-format: int16
-`
-	checkType(t, spec.Plain(spec.TypeInt16), expected)
-}
-
 func TestPlainTypeInt(t *testing.T) {
 	expected := `
 type: integer
@@ -89,25 +73,9 @@ format: datetime
 	checkType(t, spec.Plain(spec.TypeDateTime), expected)
 }
 
-func TestPlainTypeTime(t *testing.T) {
-	expected := `
-type: string
-format: time
-`
-	checkType(t, spec.Plain(spec.TypeTime), expected)
-}
-
 func TestPlainTypeJson(t *testing.T) {
 	expected := `type: object`
 	checkType(t, spec.Plain(spec.TypeJson), expected)
-}
-
-func TestPlainTypeChar(t *testing.T) {
-	expected := `
-type: string
-format: char
-`
-	checkType(t, spec.Plain(spec.TypeChar), expected)
 }
 
 func TestPlainTypeString(t *testing.T) {

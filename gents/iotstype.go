@@ -28,10 +28,6 @@ func IoTsType(typ *spec.TypeDef) string {
 
 func PlainIoTsType(typ string) string {
 	switch typ {
-	case spec.TypeByte:
-		return "t.number"
-	case spec.TypeInt16:
-		return "t.number"
 	case spec.TypeInt32:
 		return "t.number"
 	case spec.TypeInt64:
@@ -44,8 +40,6 @@ func PlainIoTsType(typ string) string {
 		return "t.number"
 	case spec.TypeBoolean:
 		return "t.boolean"
-	case spec.TypeChar:
-		return "t.string"
 	case spec.TypeString:
 		return "t.string"
 	case spec.TypeUuid:
@@ -53,8 +47,6 @@ func PlainIoTsType(typ string) string {
 	case spec.TypeDate:
 		return "t.string"
 	case spec.TypeDateTime:
-		return "t.string"
-	case spec.TypeTime:
 		return "t.string"
 	case spec.TypeJson:
 		return "t.unknown"
