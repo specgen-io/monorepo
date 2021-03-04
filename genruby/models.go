@@ -43,7 +43,6 @@ func generateModels(models spec.Models, folderName string, moduleName string, ge
 
 	unit := ruby.Unit()
 	unit.Require("date")
-	unit.Require(folderName+"/tod")
 	unit.Require(folderName+"/type")
 	unit.Require(folderName+"/enum")
 	unit.Require(folderName+"/dataclass")
