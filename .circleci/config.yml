@@ -212,7 +212,7 @@ workflows:
       - approve-sonatype:
           type: approval
           requires:
-            - tests
+            - build-sbt-specgen
       - build-sbt-specgen-sonatype:
           context: specgen
           requires:
