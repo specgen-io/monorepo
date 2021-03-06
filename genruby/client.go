@@ -17,7 +17,7 @@ func GenerateClient(serviceFile string, generatePath string) error {
 	gemName := specification.ServiceName.SnakeCase()+"_client"
 	moduleName := clientModuleName(specification.ServiceName)
 	libGemPath := filepath.Join(generatePath, gemName)
-	models := generateModels(specification.ResolvedModels, gemName, moduleName, libGemPath)
+	models := generateModels(specification.ResolvedModels, moduleName, filepath.Join(libGemPath, "models.rb"))
 	clients := generateClientApisClasses(specification, libGemPath)
 
 	data := static.RubyClient{GemName: gemName, ModuleName: moduleName}
@@ -38,7 +38,6 @@ func clientModuleName(serviceName spec.Name) string {
 }
 
 func generateClientApisClasses(specification *spec.Spec, generatePath string) *gen.TextFile {
-	gemName := specification.ServiceName.SnakeCase()+"_client"
 	moduleName := clientModuleName(specification.ServiceName)
 	module := ruby.Module(moduleName)
 
@@ -55,10 +54,7 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 	unit.Require("net/http")
 	unit.Require("net/https")
 	unit.Require("uri")
-	unit.Require(gemName+"/type")
-	unit.Require(gemName+"/jsoner")
-	unit.Require(gemName+"/models")
-	unit.Require(gemName+"/baseclient")
+	unit.Require("emery")
 	unit.AddDeclarations(module)
 
 	return &gen.TextFile{

@@ -6,7 +6,6 @@ import (
 	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"
 	"specgen/gen"
-	"specgen/static"
 	"strings"
 )
 
@@ -14,21 +13,16 @@ func GenerateModels(serviceFile string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil { return err }
 
-	folderName := specification.ServiceName.SnakeCase()
+	fileName := specification.ServiceName.SnakeCase()+"_models.rb"
 	moduleName := specification.ServiceName.PascalCase()
-	modelsPath := filepath.Join(generatePath, folderName)
-	models := generateModels(specification.ResolvedModels, folderName, moduleName, modelsPath)
+	modelsPath := filepath.Join(generatePath, fileName)
+	models := generateModels(specification.ResolvedModels, moduleName, modelsPath)
 
-	data := static.RubyClient{GemName: folderName, ModuleName: moduleName}
-	sources, err := static.RenderTemplate("ruby-models", generatePath, data)
-	if err != nil { return err }
-
-	sources = append(sources, *models)
-	err = gen.WriteFiles(sources, true)
+	err = gen.WriteFile(models, true)
 	return err
 }
 
-func generateModels(models spec.Models, folderName string, moduleName string, generatePath string) *gen.TextFile {
+func generateModels(models spec.Models, moduleName string, generatePath string) *gen.TextFile {
 	module := ruby.Module(moduleName)
 
 	for _, model := range models {
@@ -43,12 +37,10 @@ func generateModels(models spec.Models, folderName string, moduleName string, ge
 
 	unit := ruby.Unit()
 	unit.Require("date")
-	unit.Require(folderName+"/type")
-	unit.Require(folderName+"/enum")
-	unit.Require(folderName+"/dataclass")
+	unit.Require("emery")
 	unit.AddDeclarations(module)
 	return &gen.TextFile{
-		Path:    filepath.Join(generatePath, "models.rb"),
+		Path:    generatePath,
 		Content: unit.Code(),
 	}
 }

@@ -1,6 +1,3 @@
-require '[[.GemName]]/type'
-require '[[.GemName]]/jsoner'
-require '[[.GemName]]/enum'
-require '[[.GemName]]/dataclass'
-require '[[.GemName]]/models'
-require '[[.GemName]]/client'
+require "[[.GemName]]/models"
+require "[[.GemName]]/baseclient"
+require "[[.GemName]]/client"

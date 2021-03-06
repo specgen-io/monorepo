@@ -1,9 +1,9 @@
-require 'net/http'
-require 'net/https'
-require 'uri'
-require 'cgi'
+require "net/http"
+require "net/https"
+require "uri"
+require "cgi"
 
-require '[[.GemName]]/type'
+require "emery"
 
 module [[.ModuleName]]
   class BaseClient
