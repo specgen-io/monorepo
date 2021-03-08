@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  circleci: moda/circleci@0.1.0
+  circleci: moda/circleci@0.4.0
   artifactory: moda/artifactory@0.2.0
 
 parameters:
@@ -196,16 +196,46 @@ workflows:
           requires:
             - build-specgen
       - circleci/run-pipeline-workflow:
-          name: tests
-          repository: specgen-io/specgen-tests
-          workflow-name: test
+          name: test-service-go
+          repository: specgen-io/test-service-go
+          workflow-name: service-go
           pipeline-attempts: 30
           context: specgen
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           requires:
-            - build-gem-specgen
-            - build-npm-specgen
+            - build-specgen
+          filters:
+            branches:
+              only: main
+      - circleci/start-pipeline:
+          name: test-service-play
+          repository: specgen-io/test-service-play
+          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          context: specgen
+          requires:
             - build-sbt-specgen
+          filters:
+            branches:
+              only: main
+      - circleci/start-pipeline:
+          name: test-client-ruby
+          repository: specgen-io/test-client-ruby
+          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          context: specgen
+          requires:
+            - build-gem-specgen
+            - test-service-go
+          filters:
+            branches:
+              only: main
+      - circleci/start-pipeline:
+          name: test-client-axios
+          repository: specgen-io/test-client-axios
+          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          context: specgen
+          requires:
+            - build-npm-specgen
+            - test-service-go
           filters:
             branches:
               only: main
