@@ -240,6 +240,16 @@ workflows:
           filters:
             branches:
               only: main
+      - circleci/start-pipeline:
+          name: test-client-sttp
+          repository: specgen-io/test-client-sttp
+          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          context: specgen
+          requires:
+            - test-service-go
+          filters:
+            branches:
+              only: main
       - approve-sonatype:
           type: approval
           requires:
