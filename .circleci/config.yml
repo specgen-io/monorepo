@@ -199,11 +199,14 @@ workflows:
           name: test-service-go
           repository: specgen-io/test-service-go
           workflow-name: service-go
+          branch: main
           pipeline-attempts: 30
           context: specgen
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           requires:
-            - build-specgen
+            - build-sbt-specgen
+            - build-gem-specgen
+            - build-npm-specgen
           filters:
             branches:
               only: main
@@ -213,7 +216,7 @@ workflows:
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
           requires:
-            - build-sbt-specgen
+            - test-service-go
           filters:
             branches:
               only: main
@@ -223,7 +226,6 @@ workflows:
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
           requires:
-            - build-gem-specgen
             - test-service-go
           filters:
             branches:
@@ -234,7 +236,6 @@ workflows:
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
           requires:
-            - build-npm-specgen
             - test-service-go
           filters:
             branches:
