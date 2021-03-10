@@ -34,7 +34,7 @@ object Specgen {
     generatedFiles.toSeq
   }
 
-  def serviceScalaModels(
+  def modelsScalaCirce(
     log: Logger,
     specPath: File,
     generatePath: File,
@@ -46,7 +46,7 @@ object Specgen {
 
     val specCommand: Seq[String] = Seq(
       specToolPath,
-      "service-scala-models",
+      "models-scala-circe",
       "--spec-file", specPath.getPath,
       "--generate-path", generatePath.getPath,
     )
