@@ -79,7 +79,7 @@ object SpecModels extends AutoPlugin {
   import SpecKeys._
 
   private def specgenTask = Def.task {
-    serviceScalaModels(
+    modelsScalaCirce(
       sLog.value,
       specFile.value,
       specGeneratePath.value,

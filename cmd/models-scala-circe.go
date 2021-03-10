@@ -17,7 +17,7 @@ func init() {
 }
 
 var cmdServiceScalaModels = &cobra.Command{
-	Use:   "service-scala-models",
+	Use:   "models-scala-circe",
 	Short: "Generate Scala models source code",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
