@@ -12,7 +12,9 @@ func GenerateServiceModels(serviceFile string, generatePath string) error {
 		return err
 	}
 
-	scalaStaticCode := static.ScalaStaticCode{ PackageName: "models" }
+	modelsPackage := modelsPackageName(specification.ServiceName)
+
+	scalaStaticCode := static.ScalaStaticCode{ PackageName: modelsPackage }
 
 	scalaCirceFiles, err := static.RenderTemplate("scala-circe", generatePath, scalaStaticCode)
 	if err != nil {
@@ -20,7 +22,7 @@ func GenerateServiceModels(serviceFile string, generatePath string) error {
 	}
 
 
-	modelsFile := GenerateCirceModels(specification, "models", generatePath)
+	modelsFile := GenerateCirceModels(specification, modelsPackage, generatePath)
 
 	sourceManaged := append(scalaCirceFiles, *modelsFile)
 
@@ -30,4 +32,8 @@ func GenerateServiceModels(serviceFile string, generatePath string) error {
 	}
 
 	return nil
+}
+
+func modelsPackageName(name spec.Name) string {
+	return name.FlatCase() + ".models"
 }

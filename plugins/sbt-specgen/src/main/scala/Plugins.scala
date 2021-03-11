@@ -75,7 +75,7 @@ object SpecPlay extends AutoPlugin {
   )
 }
 
-object SpecModels extends AutoPlugin {
+object SpecCirce extends AutoPlugin {
   import SpecKeys._
 
   private def specgenTask = Def.task {
