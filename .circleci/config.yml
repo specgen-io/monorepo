@@ -231,12 +231,32 @@ workflows:
             branches:
               only: main
       - circleci/start-pipeline:
+          name: test-models-ruby
+          repository: specgen-io/test-models-ruby
+          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          context: specgen
+          requires:
+            - build-gem-specgen
+          filters:
+            branches:
+              only: main
+      - circleci/start-pipeline:
           name: test-client-axios
           repository: specgen-io/test-client-axios
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
           requires:
             - test-service-go
+          filters:
+            branches:
+              only: main
+      - circleci/start-pipeline:
+          name: test-models-circe
+          repository: specgen-io/test-models-circe
+          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          context: specgen
+          requires:
+            - build-sbt-specgen
           filters:
             branches:
               only: main
