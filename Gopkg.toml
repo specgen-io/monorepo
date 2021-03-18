@@ -1,5 +1,5 @@
 [[constraint]]
-  branch = "main"
+  branch = "v0"
   name = "github.com/specgen-io/spec"
 
 [[constraint]]
