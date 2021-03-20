@@ -209,7 +209,9 @@ workflows:
             - build-npm-specgen
           filters:
             branches:
-              only: main
+              only:
+                - main
+                - /v.*/
       - circleci/start-pipeline:
           name: test-service-play
           repository: specgen-io/test-service-play
@@ -219,7 +221,9 @@ workflows:
             - test-service-go
           filters:
             branches:
-              only: main
+              only:
+                - main
+                - /v.*/
       - circleci/start-pipeline:
           name: test-client-ruby
           repository: specgen-io/test-client-ruby
@@ -229,7 +233,9 @@ workflows:
             - test-service-go
           filters:
             branches:
-              only: main
+              only:
+                - main
+                - /v.*/
       - circleci/start-pipeline:
           name: test-models-ruby
           repository: specgen-io/test-models-ruby
@@ -239,7 +245,9 @@ workflows:
             - build-gem-specgen
           filters:
             branches:
-              only: main
+              only:
+                - main
+                - /v.*/
       - circleci/start-pipeline:
           name: test-client-axios
           repository: specgen-io/test-client-axios
@@ -249,7 +257,9 @@ workflows:
             - test-service-go
           filters:
             branches:
-              only: main
+              only:
+                - main
+                - /v.*/
       - circleci/start-pipeline:
           name: test-models-circe
           repository: specgen-io/test-models-circe
@@ -259,7 +269,9 @@ workflows:
             - build-sbt-specgen
           filters:
             branches:
-              only: main
+              only:
+                - main
+                - /v.*/
       - circleci/start-pipeline:
           name: test-client-sttp
           repository: specgen-io/test-client-sttp
@@ -269,7 +281,9 @@ workflows:
             - test-service-go
           filters:
             branches:
-              only: main
+              only:
+                - main
+                - /v.*/
       - approve-sonatype:
           type: approval
           requires:
