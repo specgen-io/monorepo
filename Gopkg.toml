@@ -1,4 +1,9 @@
 [[constraint]]
+  branch = "main"
+  name = "github.com/specgen-io/spec_v2"
+  source = "https://github.com/specgen-io/spec.git"
+
+[[constraint]]
   branch = "v0"
   name = "github.com/specgen-io/spec"
 
