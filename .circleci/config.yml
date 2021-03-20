@@ -69,7 +69,7 @@ jobs:
       - run:
           name: Push gem
           command: |
-            if [ $CIRCLE_BRANCH = "main" ]; then
+            if [ $CIRCLE_BRANCH == main ] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/gem-specgen
               export VERSION=<< pipeline.parameters.specgen-version >>
               gem push --key rubygems specgen-$VERSION.gem
@@ -97,7 +97,7 @@ jobs:
       - run:
           name: Publish SBT plugin
           command: |
-            if [ $CIRCLE_BRANCH = "main" ]; then
+            if [ $CIRCLE_BRANCH == main ] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/sbt-specgen
               sbt -Dversion=<< pipeline.parameters.specgen-version >> publish
             else
@@ -136,10 +136,14 @@ jobs:
       - run:
           name: npm publish package
           command: |
-            cd ./plugins/npm-specgen
-            npm version << pipeline.parameters.specgen-version >>
-            npm install
-            npm publish
+            if [ $CIRCLE_BRANCH == main ] || [[ $CIRCLE_BRANCH == v* ]]; then
+              cd ./plugins/npm-specgen
+              npm version << pipeline.parameters.specgen-version >>
+              npm install
+              npm publish
+            else
+              echo "Will not release - not running on main branch"
+            fi
 
 commands:
   setup-sonatype-sbt:
