@@ -74,6 +74,15 @@
   revision = "35c7fd5842d91e37364e1f25aa0eea94842627c0"
 
 [[projects]]
+  branch = "main"
+  digest = "1:286699a71cd6ae35cc7a3e6b7e39d6281ca25212d6cd3263b845079e0769febd"
+  name = "github.com/specgen-io/spec_v2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "4f7847cd55488ff298a5a589d53cdf43646bead6"
+  source = "https://github.com/specgen-io/spec.git"
+
+[[projects]]
   digest = "1:1e80255eea46af2e2db7da90f95e4b5cfe84f3b58d9a8598ec35b0f2a75c60e4"
   name = "github.com/spf13/cobra"
   packages = ["."]
@@ -146,6 +155,7 @@
     "github.com/GeertJohan/go.rice/embedded",
     "github.com/dollarshaveclub/line",
     "github.com/specgen-io/spec",
+    "github.com/specgen-io/spec_v2",
     "github.com/spf13/cobra",
     "github.com/vsapronov/casee",
     "github.com/vsapronov/gopoetry/ruby",
