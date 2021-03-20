@@ -2,7 +2,7 @@ package genruby
 
 import (
 	"fmt"
-	"github.com/specgen-io/spec"
+	spec "github.com/specgen-io/spec_v2"
 	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"
 	"specgen/gen"
@@ -13,8 +13,8 @@ func GenerateModels(serviceFile string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil { return err }
 
-	fileName := specification.ServiceName.SnakeCase()+"_models.rb"
-	moduleName := specification.ServiceName.PascalCase()
+	fileName := specification.Name.SnakeCase()+"_models.rb"
+	moduleName := specification.Name.PascalCase()
 	modelsPath := filepath.Join(generatePath, fileName)
 	models := generateModels(specification.ResolvedModels, moduleName, modelsPath)
 
@@ -22,23 +22,39 @@ func GenerateModels(serviceFile string, generatePath string) error {
 	return err
 }
 
-func generateModels(models spec.Models, moduleName string, generatePath string) *gen.TextFile {
-	module := ruby.Module(moduleName)
-
-	for _, model := range models {
-		if model.IsObject() {
-			module.AddDeclarations(generateObjectModel(model))
-		} else if model.IsOneOf() {
-			module.AddDeclarations(generateOneOfModel(model))
-		} else if model.IsEnum() {
-			module.AddDeclarations(generateEnumModel(model))
-		}
+func fullModuleName(moduleName string, version string) string {
+	if version == "" {
+		return moduleName
+	} else {
+		return fmt.Sprintf("%s::%s", moduleName, version)
 	}
+}
 
+func generateModels(versionedModels spec.VersionedModels, moduleName string, generatePath string) *gen.TextFile {
 	unit := ruby.Unit()
 	unit.Require("date")
 	unit.Require("emery")
-	unit.AddDeclarations(module)
+
+	rootModule := ruby.Module(moduleName)
+
+	for _, models := range versionedModels {
+		module := rootModule
+		if models.Version.Source != "" {
+			module = ruby.Module(models.Version.PascalCase())
+			rootModule.AddDeclarations(module)
+		}
+		for _, model := range models.Models {
+			if model.IsObject() {
+				module.AddDeclarations(generateObjectModel(model))
+			} else if model.IsOneOf() {
+				module.AddDeclarations(generateOneOfModel(model))
+			} else if model.IsEnum() {
+				module.AddDeclarations(generateEnumModel(model))
+			}
+		}
+	}
+	unit.AddDeclarations(rootModule)
+
 	return &gen.TextFile{
 		Path:    generatePath,
 		Content: unit.Code(),
