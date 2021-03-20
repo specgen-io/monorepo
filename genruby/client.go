@@ -5,17 +5,17 @@ import (
 	"github.com/specgen-io/spec"
 	"github.com/vsapronov/casee"
 	"github.com/vsapronov/gopoetry/ruby"
-	"io"
 	"path/filepath"
 	"specgen/gen"
+	"specgen/static"
 )
 
 func GenerateClient(serviceFile string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil { return err }
 
-	gemName := specification.ServiceName.SnakeCase()+"_client"
-	moduleName := clientModuleName(specification.ServiceName)
+	gemName := specification.Name.SnakeCase()+"_client"
+	moduleName := clientModuleName(specification.Name)
 	libGemPath := filepath.Join(generatePath, gemName)
 	models := generateModels(specification.ResolvedModels, moduleName, filepath.Join(libGemPath, "models.rb"))
 	clients := generateClientApisClasses(specification, libGemPath)
