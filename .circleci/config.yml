@@ -43,7 +43,7 @@ jobs:
       - run:
           name: Release
           command: |
-            if [ $CIRCLE_BRANCH = "main" ]; then
+            if [ $CIRCLE_BRANCH == main ] || [[ $CIRCLE_BRANCH == v* ]]; then
               ./release.sh << pipeline.parameters.specgen-version >> ${GITHUB_TOKEN}
             else
               echo "Will not release - not running on main branch"

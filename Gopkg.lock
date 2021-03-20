@@ -66,12 +66,12 @@
   version = "v0.8.1"
 
 [[projects]]
-  branch = "v0"
-  digest = "1:b9bd2564218e9ad740021755771af5c79b4c9f4860c69aae1e89331b8fde6617"
+  branch = "v1"
+  digest = "1:0c222da5319235f1397ed99c80125aad24eb99344ba6d72500c28022aa14a461"
   name = "github.com/specgen-io/spec"
   packages = ["."]
   pruneopts = "UT"
-  revision = "35c7fd5842d91e37364e1f25aa0eea94842627c0"
+  revision = "d834e96050c6fee248d6cdaa89b9aac44321b0a6"
 
 [[projects]]
   digest = "1:1e80255eea46af2e2db7da90f95e4b5cfe84f3b58d9a8598ec35b0f2a75c60e4"
