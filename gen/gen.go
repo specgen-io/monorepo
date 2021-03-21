@@ -1,6 +1,8 @@
 package gen
 
 import (
+	"bytes"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -49,4 +51,10 @@ func FileExists(name string) bool {
 		}
 	}
 	return false
+}
+
+func GenTextFile(generate func (io.Writer), path string) *TextFile {
+	w := new(bytes.Buffer)
+	generate(w)
+	return &TextFile{Path: path, Content: w.String()}
 }

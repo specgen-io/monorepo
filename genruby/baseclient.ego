@@ -1,3 +1,11 @@
+<#    package genruby
+<#
+<#    import (
+<#        "io"
+<#    )
+<#
+<#
+<#    func generateBaseClient(w io.Writer, moduleName string) {
 require "net/http"
 require "net/https"
 require "uri"
@@ -5,7 +13,7 @@ require "cgi"
 
 require "emery"
 
-module [[.ModuleName]]
+module <%== moduleName %>
   class BaseClient
     attr_reader :uri
     attr_reader :client
@@ -62,3 +70,12 @@ module [[.ModuleName]]
     end
   end
 end
+<#    }
+<#
+<#
+<#    func generateClientRoot(w io.Writer, gemName string) {
+require "emery"
+require "<%== gemName %>/models"
+require "<%== gemName %>/baseclient"
+require "<%== gemName %>/client"
+<#    }

@@ -3,11 +3,10 @@ package gents
 import (
 	"bytes"
 	"fmt"
-	"io"
-	"strings"
 	"github.com/specgen-io/spec"
 	"path/filepath"
 	"specgen/gen"
+	"strings"
 )
 
 func GenerateAxiosClient(serviceFile string, generatePath string) error {
@@ -16,8 +15,8 @@ func GenerateAxiosClient(serviceFile string, generatePath string) error {
 		return err
 	}
 
-	iots := generateTextFile(generateIoTs, filepath.Join(generatePath, "io-ts.ts"))
-	codec := generateTextFile(generateCodec, filepath.Join(generatePath, "codec.ts"))
+	iots := gen.GenTextFile(generateIoTs, filepath.Join(generatePath, "io-ts.ts"))
+	codec := gen.GenTextFile(generateCodec, filepath.Join(generatePath, "codec.ts"))
 	models := GenerateIoTsModels(spec, filepath.Join(generatePath, "models.ts"))
 	client := generateAxiosClient(spec, filepath.Join(generatePath, "index.ts"))
 
@@ -28,12 +27,6 @@ func GenerateAxiosClient(serviceFile string, generatePath string) error {
 	}
 
 	return nil
-}
-
-func generateTextFile(generate func (io.Writer), path string) *gen.TextFile {
-	w := new(bytes.Buffer)
-	generate(w)
-	return &gen.TextFile{Path: path, Content: w.String()}
 }
 
 func generateAxiosClient(spec *spec.Spec, outPath string) *gen.TextFile {
