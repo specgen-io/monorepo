@@ -5,9 +5,9 @@ import (
 	"github.com/specgen-io/spec"
 	"github.com/vsapronov/casee"
 	"github.com/vsapronov/gopoetry/ruby"
+	"io"
 	"path/filepath"
 	"specgen/gen"
-	"specgen/static"
 )
 
 func GenerateClient(serviceFile string, generatePath string) error {
@@ -19,12 +19,10 @@ func GenerateClient(serviceFile string, generatePath string) error {
 	libGemPath := filepath.Join(generatePath, gemName)
 	models := generateModels(specification.ResolvedModels, moduleName, filepath.Join(libGemPath, "models.rb"))
 	clients := generateClientApisClasses(specification, libGemPath)
+	baseclient := gen.GenTextFile(func (w io.Writer) { generateBaseClient(w, moduleName) }, filepath.Join(libGemPath, "baseclient.rb"))
+	clientroot := gen.GenTextFile(func (w io.Writer) { generateClientRoot(w, gemName) }, filepath.Join(generatePath, gemName+".rb"))
 
-	data := static.RubyClient{GemName: gemName, ModuleName: moduleName}
-	sources, err := static.RenderTemplate("ruby-client", generatePath, data)
-	if err != nil { return err }
-
-	sources = append(sources, *models, *clients)
+	sources := []gen.TextFile{*clientroot, *baseclient, *models, *clients}
 	err = gen.WriteFiles(sources, true)
 	return err
 }
