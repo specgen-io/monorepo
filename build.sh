@@ -16,6 +16,7 @@ rm -f specgen/static/rice-box.go
 $GOPATH/bin/rice embed-go --import-path specgen/static
 
 $GOPATH/bin/ego gents
+$GOPATH/bin/ego genruby
 
 mkdir -p ./zips
 mkdir -p ./dist
