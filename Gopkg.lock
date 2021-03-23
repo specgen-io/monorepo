@@ -72,23 +72,15 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "d834e96050c6fee248d6cdaa89b9aac44321b0a6"
-
-[[projects]]
-  branch = "main"
-  digest = "1:286699a71cd6ae35cc7a3e6b7e39d6281ca25212d6cd3263b845079e0769febd"
-  name = "github.com/specgen-io/spec_v2"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "4f7847cd55488ff298a5a589d53cdf43646bead6"
   source = "https://github.com/specgen-io/spec.git"
 
 [[projects]]
   branch = "main"
-  digest = "1:286699a71cd6ae35cc7a3e6b7e39d6281ca25212d6cd3263b845079e0769febd"
+  digest = "1:df41740fb0ac70613535cc1428e58d90f4d400331cafed7c221ce2c4525ab042"
   name = "github.com/specgen-io/spec_v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "4f7847cd55488ff298a5a589d53cdf43646bead6"
+  revision = "b0b2fdfa6afe231c676919b08e9e8a4f5fc758a4"
   source = "https://github.com/specgen-io/spec.git"
 
 [[projects]]
