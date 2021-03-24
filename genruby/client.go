@@ -2,7 +2,7 @@ package genruby
 
 import (
 	"fmt"
-	"github.com/specgen-io/spec"
+	spec "github.com/specgen-io/spec_v2"
 	"github.com/vsapronov/casee"
 	"github.com/vsapronov/gopoetry/ruby"
 	"io"
@@ -14,8 +14,8 @@ func GenerateClient(serviceFile string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil { return err }
 
-	gemName := specification.ServiceName.SnakeCase()+"_client"
-	moduleName := clientModuleName(specification.ServiceName)
+	gemName := specification.Name.SnakeCase()+"_client"
+	moduleName := clientModuleName(specification.Name)
 	libGemPath := filepath.Join(generatePath, gemName)
 	models := generateModels(specification.ResolvedModels, moduleName, filepath.Join(libGemPath, "models.rb"))
 	clients := generateClientApisClasses(specification, libGemPath)
@@ -36,16 +36,19 @@ func clientModuleName(serviceName spec.Name) string {
 }
 
 func generateClientApisClasses(specification *spec.Spec, generatePath string) *gen.TextFile {
-	moduleName := clientModuleName(specification.ServiceName)
-	module := ruby.Module(moduleName)
+	moduleName := clientModuleName(specification.Name)
+	rootModule := ruby.Module(moduleName)
 
-	for _, api := range specification.Apis {
-		apiClass := generateClientApiClass(api)
-		module.AddDeclarations(apiClass)
-	}
-
-	if len(specification.Apis) > 1 {
-		module.AddDeclarations(generateClientSuperClass(specification))
+	for _, group := range specification.Http.Groups {
+		module := rootModule
+		if group.Version.Source != "" {
+			module = ruby.Module(group.Version.PascalCase())
+			rootModule.AddDeclarations(module)
+		}
+		for _, api := range group.Apis {
+			apiClass := generateClientApiClass(api)
+			module.AddDeclarations(apiClass)
+		}
 	}
 
 	unit := ruby.Unit()
@@ -53,7 +56,7 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 	unit.Require("net/https")
 	unit.Require("uri")
 	unit.Require("emery")
-	unit.AddDeclarations(module)
+	unit.AddDeclarations(rootModule)
 
 	return &gen.TextFile{
 		Path:    filepath.Join(generatePath, "client.rb"),
@@ -138,20 +141,6 @@ func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
 		apiClass.AddMembers(method)
 	}
 	return apiClass
-}
-
-func generateClientSuperClass(specification *spec.Spec) *ruby.ClassDeclaration {
-	class := ruby.Class(specification.ServiceName.PascalCase() + "Client")
-	for _, api := range specification.Apis {
-		class.AddMembers(ruby.Code(fmt.Sprintf("attr_reader :%s_client", api.Name.SnakeCase())))
-	}
-	init := class.Initialize()
-	init.Arg("base_url")
-	initBody := init.Body()
-	for _, api := range specification.Apis {
-		initBody.AddLn(fmt.Sprintf("@%s_client = %s.new(base_url)", api.Name.SnakeCase(), clientClassName(api.Name)))
-	}
-	return class
 }
 
 func addParams(method *ruby.MethodDeclaration, params []spec.NamedParam) {
