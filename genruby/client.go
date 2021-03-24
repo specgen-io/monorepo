@@ -61,6 +61,22 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 	}
 }
 
+func operationResult(operation *spec.NamedOperation, response *spec.NamedResponse) *ruby.WritableCode {
+	body := "nil"
+	if !response.Type.Definition.IsEmpty() {
+		body = fmt.Sprintf("Jsoner.from_json(%s, response.body)", RubyType(&response.Type.Definition))
+	}
+	flags := ""
+	for _, r := range operation.Responses {
+		if r.Name.Source == response.Name.Source {
+			flags += fmt.Sprintf(", :%s? => true", r.Name.Source)
+		} else {
+			flags += fmt.Sprintf(", :%s? => false", r.Name.Source)
+		}
+	}
+	return ruby.Code(fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags))
+}
+
 func generateClientOperation(operation spec.NamedOperation) *ruby.MethodDeclaration {
 	method := ruby.Method(operation.Name.SnakeCase())
 	methodBody := method.Body()
@@ -105,11 +121,7 @@ func generateClientOperation(operation spec.NamedOperation) *ruby.MethodDeclarat
 
 	for _, response := range operation.Responses {
 		methodBody.AddLn(fmt.Sprintf("when '%s'", spec.HttpStatusCode(response.Name)))
-		if response.Type.Definition.IsEmpty() {
-			methodBody.Scope().Add("nil")
-		} else {
-			methodBody.Scope().Add(fmt.Sprintf("Jsoner.from_json(%s, response.body)", RubyType(&response.Type.Definition)))
-		}
+		methodBody.Scope().AddCode(operationResult(&operation, &response))
 	}
 
 	methodBody.AddLn("else")
