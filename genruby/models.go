@@ -22,14 +22,6 @@ func GenerateModels(serviceFile string, generatePath string) error {
 	return err
 }
 
-func fullModuleName(moduleName string, version string) string {
-	if version == "" {
-		return moduleName
-	} else {
-		return fmt.Sprintf("%s::%s", moduleName, version)
-	}
-}
-
 func generateModels(versionedModels spec.VersionedModels, moduleName string, generatePath string) *gen.TextFile {
 	unit := ruby.Unit()
 	unit.Require("date")
