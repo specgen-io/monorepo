@@ -1,7 +1,7 @@
 package genopenapi
 
 import (
-	"github.com/specgen-io/spec"
+	spec "github.com/specgen-io/spec.v1"
 	"gotest.tools/assert"
 	"strings"
 	"testing"

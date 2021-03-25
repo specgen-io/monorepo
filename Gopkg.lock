@@ -68,7 +68,7 @@
 [[projects]]
   branch = "v1"
   digest = "1:0c222da5319235f1397ed99c80125aad24eb99344ba6d72500c28022aa14a461"
-  name = "github.com/specgen-io/spec"
+  name = "github.com/specgen-io/spec.v1"
   packages = ["."]
   pruneopts = "UT"
   revision = "d834e96050c6fee248d6cdaa89b9aac44321b0a6"
@@ -77,7 +77,7 @@
 [[projects]]
   branch = "main"
   digest = "1:dadf63147f8a4e654a0273ff69d533d269e9b34f49898f7793732fc83cba4b71"
-  name = "github.com/specgen-io/spec_v2"
+  name = "github.com/specgen-io/spec.v2"
   packages = ["."]
   pruneopts = "UT"
   revision = "663753a3e524a08f177c757b134ec2edd8e082cc"
@@ -155,8 +155,8 @@
     "github.com/GeertJohan/go.rice",
     "github.com/GeertJohan/go.rice/embedded",
     "github.com/dollarshaveclub/line",
-    "github.com/specgen-io/spec",
-    "github.com/specgen-io/spec_v2",
+    "github.com/specgen-io/spec.v1",
+    "github.com/specgen-io/spec.v2",
     "github.com/spf13/cobra",
     "github.com/vsapronov/casee",
     "github.com/vsapronov/gopoetry/ruby",

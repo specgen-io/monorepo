@@ -2,7 +2,7 @@ package genruby
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec_v2"
+	spec "github.com/specgen-io/spec.v2"
 	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"
 	"specgen/gen"

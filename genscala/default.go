@@ -2,7 +2,7 @@ package genscala
 
 import (
 	"fmt"
-	"github.com/specgen-io/spec"
+	spec "github.com/specgen-io/spec.v1"
 	"github.com/vsapronov/casee"
 )
 

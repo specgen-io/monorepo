@@ -17,7 +17,7 @@ import (
 //line gents/response.ego:4
 
 //line gents/response.ego:5
-	"github.com/specgen-io/spec"
+	spec "github.com/specgen-io/spec.v1"
 
 //line gents/response.ego:6
 )

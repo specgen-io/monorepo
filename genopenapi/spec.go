@@ -1,6 +1,6 @@
 package genopenapi
 
-import "github.com/specgen-io/spec"
+import spec "github.com/specgen-io/spec.v1"
 
 type Operation struct {
 	Api       spec.Api
