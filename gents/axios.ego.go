@@ -17,7 +17,7 @@ import (
 //line gents/axios.ego:4
 
 //line gents/axios.ego:5
-	"github.com/specgen-io/spec"
+	spec "github.com/specgen-io/spec.v1"
 
 	"strings" //line gents/axios.ego:6
 //line gents/axios.ego:7

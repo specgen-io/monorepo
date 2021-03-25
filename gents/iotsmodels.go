@@ -2,7 +2,7 @@ package gents
 
 import (
 	"bytes"
-	"github.com/specgen-io/spec"
+	spec "github.com/specgen-io/spec.v1"
 	"specgen/gen"
 )
 

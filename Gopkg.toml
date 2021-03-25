@@ -1,12 +1,12 @@
 [[constraint]]
-  branch = "main"
-  name = "github.com/specgen-io/spec_v2"
+  name = "github.com/specgen-io/spec.v2"
   source = "https://github.com/specgen-io/spec.git"
+  branch = "main"
 
 [[constraint]]
-  branch = "v1"
-  name = "github.com/specgen-io/spec"
+  name = "github.com/specgen-io/spec.v1"
   source = "https://github.com/specgen-io/spec.git"
+  branch = "v1"
 
 [[constraint]]
   branch = "master"
