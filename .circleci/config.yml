@@ -8,6 +8,9 @@ parameters:
   specgen-version:
     type: string
     default: 1.10.<< pipeline.number >>
+  test-branch:
+    type: string
+    default: v1
 
 jobs:
   build-specgen:
@@ -202,8 +205,8 @@ workflows:
       - circleci/run-pipeline-workflow:
           name: test-service-go
           repository: specgen-io/test-service-go
+          branch: << pipeline.parameters.test-branch >>
           workflow-name: service-go
-          branch: v1
           pipeline-attempts: 30
           context: specgen
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
@@ -219,7 +222,7 @@ workflows:
       - circleci/start-pipeline:
           name: test-service-play
           repository: specgen-io/test-service-play
-          branch: v1
+          branch: << pipeline.parameters.test-branch >>
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
           requires:
@@ -232,7 +235,7 @@ workflows:
       - circleci/start-pipeline:
           name: test-client-ruby
           repository: specgen-io/test-client-ruby
-          branch: v1
+          branch: << pipeline.parameters.test-branch >>
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
           requires:
@@ -245,7 +248,7 @@ workflows:
       - circleci/start-pipeline:
           name: test-models-ruby
           repository: specgen-io/test-models-ruby
-          branch: v1
+          branch: << pipeline.parameters.test-branch >>
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
           requires:
@@ -258,7 +261,7 @@ workflows:
       - circleci/start-pipeline:
           name: test-client-axios
           repository: specgen-io/test-client-axios
-          branch: v1
+          branch: << pipeline.parameters.test-branch >>
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
           requires:
@@ -271,7 +274,7 @@ workflows:
       - circleci/start-pipeline:
           name: test-models-circe
           repository: specgen-io/test-models-circe
-          branch: v1
+          branch: << pipeline.parameters.test-branch >>
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
           requires:
@@ -284,7 +287,7 @@ workflows:
       - circleci/start-pipeline:
           name: test-client-sttp
           repository: specgen-io/test-client-sttp
-          branch: v1
+          branch: << pipeline.parameters.test-branch >>
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
           requires:
