@@ -71,7 +71,7 @@
   name = "github.com/specgen-io/spec"
   packages = ["."]
   pruneopts = "UT"
-  revision = "f2e0d43eeef88ba343d807ccf670589a558fd177"
+  revision = "985b556d6dcf1ae3ec803a3c316000b1526ee12b"
 
 [[projects]]
   digest = "1:1e80255eea46af2e2db7da90f95e4b5cfe84f3b58d9a8598ec35b0f2a75c60e4"
