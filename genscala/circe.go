@@ -43,7 +43,7 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *g
 func generateCirceObjectModel(model spec.NamedModel) *scala.ClassDeclaration {
 	ctor := Constructor().ParamPerLine()
 	for _, field := range model.Object.Fields {
-		ctor.Param(field.Name.CamelCase(), ScalaType(&field.Type.Definition))
+		ctor.Param(scalaCamelCase(field.Name), ScalaType(&field.Type.Definition))
 	}
 	modelClass := CaseClass(model.Name.PascalCase()).Constructor(ctor)
 	return modelClass
