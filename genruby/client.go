@@ -46,7 +46,7 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 			rootModule.AddDeclarations(module)
 		}
 		for _, api := range group.Apis {
-			apiClass := generateClientApiClass(api)
+			apiClass := generateClientApiClass(group.GetUrl(), api)
 			module.AddDeclarations(apiClass)
 		}
 	}
@@ -80,7 +80,7 @@ func operationResult(operation *spec.NamedOperation, response *spec.NamedRespons
 	return ruby.Code(fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags))
 }
 
-func generateClientOperation(operation spec.NamedOperation) *ruby.MethodDeclaration {
+func generateClientOperation(url string, operation spec.NamedOperation) *ruby.MethodDeclaration {
 	method := ruby.Method(operation.Name.SnakeCase())
 	methodBody := method.Body()
 
@@ -99,9 +99,9 @@ func generateClientOperation(operation spec.NamedOperation) *ruby.MethodDeclarat
 
 	url_compose := "url = @base_uri"
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		url_compose = url_compose + fmt.Sprintf(" + url_params.set_to_url('%s')", operation.Endpoint.Url)
+		url_compose = url_compose + fmt.Sprintf(" + url_params.set_to_url('%s%s')", url, operation.Endpoint.Url)
 	} else {
-		url_compose = url_compose + fmt.Sprintf(" + '%s'", operation.Endpoint.Url)
+		url_compose = url_compose + fmt.Sprintf(" + '%s%s'", url, operation.Endpoint.Url)
 	}
 	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		url_compose = url_compose + " + query.query_str"
@@ -133,11 +133,11 @@ func generateClientOperation(operation spec.NamedOperation) *ruby.MethodDeclarat
 	return method
 }
 
-func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
+func generateClientApiClass(url string, api spec.Api) *ruby.ClassDeclaration {
 	apiClassName := clientClassName(api.Name)
 	apiClass := ruby.Class(apiClassName).Inherits("BaseClient")
 	for _, operation := range api.Operations {
-		method := generateClientOperation(operation)
+		method := generateClientOperation(url, operation)
 		apiClass.AddMembers(method)
 	}
 	return apiClass
