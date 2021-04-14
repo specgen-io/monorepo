@@ -17,16 +17,17 @@ func TestEnumModel(t *testing.T) {
 			*NewEnumItem("third", nil),
 		},
 	}}
-	openapiYaml := generateModel(model)
+	openapiYaml, err := ToYamlString(generateModel(model))
+	assert.NilError(t, err)
 	expected := `
 type: string
 description: The description
 enum:
-- first
-- second
-- third
+  - first
+  - second
+  - third
 `
-	assert.Equal(t, strings.TrimSpace(openapiYaml.String()), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(openapiYaml), strings.TrimSpace(expected))
 }
 
 func TestObjectModel(t *testing.T) {
@@ -37,12 +38,13 @@ func TestObjectModel(t *testing.T) {
 		*NewField("field3", *spec.Array(spec.Plain(spec.TypeString)), nil),
 	}
 	model := spec.Model{Object: NewObject(fields, nil)}
-	openapiYaml := generateModel(model)
+	openapiYaml, err := ToYamlString(generateModel(model))
+	assert.NilError(t, err)
 	expected := `
 type: object
 required:
-- field1
-- field3
+  - field1
+  - field3
 properties:
   field1:
     type: string
@@ -54,7 +56,7 @@ properties:
     items:
       type: string
 `
-	assert.Equal(t, strings.TrimSpace(openapiYaml.String()), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(openapiYaml), strings.TrimSpace(expected))
 }
 
 func TestUnionModel(t *testing.T) {
@@ -64,7 +66,8 @@ func TestUnionModel(t *testing.T) {
 		*NewField("field3", *spec.Plain("Model3"), nil),
 	}
 	model := spec.Model{OneOf: NewOneOf(items, nil)}
-	openapiYaml := generateModel(model)
+	openapiYaml, err := ToYamlString(generateModel(model))
+	assert.NilError(t, err)
 	expected := `
 type: object
 properties:
@@ -75,12 +78,13 @@ properties:
   field3:
     $ref: '#/components/schemas/Model3'
 `
-	assert.Equal(t, strings.TrimSpace(openapiYaml.String()), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(openapiYaml), strings.TrimSpace(expected))
 }
 
 func TestResponse(t *testing.T) {
 	response := spec.Definition{spec.Type{*spec.Plain("SomeModel"), nil}, nil, nil}
-	openapiYaml := generateResponse(response)
+	openapiYaml, err := ToYamlString(generateResponse(response))
+	assert.NilError(t, err)
 	expected := `
 description: ""
 content:
@@ -88,7 +92,7 @@ content:
     schema:
       $ref: '#/components/schemas/SomeModel'
 `
-	assert.Equal(t, strings.TrimSpace(openapiYaml.String()), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(openapiYaml), strings.TrimSpace(expected))
 }
 
 func TestApis(t *testing.T) {
@@ -116,13 +120,14 @@ func TestApis(t *testing.T) {
 		},
 	}
 	apis := spec.Apis{api}
-	openapiYaml := generateApis(apis)
+	openapiYaml, err := ToYamlString(generateApis(apis))
+	assert.NilError(t, err)
 	expected := `
 /create/{id}:
   post:
     operationId: mineCreate
     tags:
-    - mine
+      - mine
     description: the description
     requestBody:
       description: the description
@@ -132,32 +137,32 @@ func TestApis(t *testing.T) {
           schema:
             $ref: '#/components/schemas/MyModel'
     parameters:
-    - in: path
-      name: id
-      required: true
-      schema:
-        type: string
-        format: uuid
-    - in: header
-      name: Authorization
-      required: true
-      schema:
-        type: string
-      description: the description
-    - in: query
-      name: id
-      required: true
-      schema:
-        type: string
-        format: uuid
-      description: the description
-    - in: query
-      name: str_param
-      required: true
-      schema:
-        type: string
-        default: the default value
-      description: the description
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: header
+        name: Authorization
+        required: true
+        schema:
+          type: string
+        description: the description
+      - in: query
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: the description
+      - in: query
+        name: str_param
+        required: true
+        schema:
+          type: string
+          default: the default value
+        description: the description
     responses:
       "200":
         description: ""
@@ -166,7 +171,7 @@ func TestApis(t *testing.T) {
             schema:
               $ref: '#/components/schemas/MyModel'
 `
-	assert.Equal(t, strings.TrimSpace(openapiYaml.String()), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(openapiYaml), strings.TrimSpace(expected))
 }
 
 func TestSpecification(t *testing.T) {
@@ -181,7 +186,8 @@ func TestSpecification(t *testing.T) {
 		Version:     "0",
 	}
 
-	openapi := generateOpenapi(&spec)
+	openapiYaml, err := ToYamlString(generateOpenapi(&spec))
+	assert.NilError(t, err)
 
 	expected := `
 openapi: 3.0.0
@@ -193,5 +199,5 @@ paths: {}
 components:
   schemas: {}
 `
-	assert.Equal(t, strings.TrimSpace(openapi.String()), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(openapiYaml), strings.TrimSpace(expected))
 }

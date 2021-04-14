@@ -39,7 +39,7 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 	moduleName := clientModuleName(specification.Name)
 	rootModule := ruby.Module(moduleName)
 
-	for _, group := range specification.Http.Groups {
+	for _, group := range specification.Http.Versions {
 		module := rootModule
 		if group.Version.Source != "" {
 			module = ruby.Module(group.Version.PascalCase())
