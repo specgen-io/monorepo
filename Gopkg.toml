@@ -18,10 +18,6 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/vsapronov/casee"
-
-[[constraint]]
-  branch = "master"
   name = "github.com/vsapronov/gopoetry"
 
 [[constraint]]
