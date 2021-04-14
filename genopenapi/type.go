@@ -19,11 +19,11 @@ func OpenApiType(typ *spec.TypeDef, defaultValue *string) *YamlMap {
 		return child
 	case spec.ArrayType:
 		child := OpenApiType(typ.Child, nil)
-		result := Map().Set("type", "array").Set("items", child.Yaml)
+		result := Map().Set("type", "array").Set("items", child)
 		return result
 	case spec.MapType:
 		child := OpenApiType(typ.Child, nil)
-		result := Map().Set("type", "object").Set("additionalProperties", child.Yaml)
+		result := Map().Set("type", "object").Set("additionalProperties", child)
 		return result
 	default:
 		panic(fmt.Sprintf("Unknown type: %v", typ))

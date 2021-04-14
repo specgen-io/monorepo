@@ -2,7 +2,6 @@ package genopenapi
 
 import (
 	spec "github.com/specgen-io/spec.v1"
-	"gopkg.in/yaml.v2"
 	"specgen/gen"
 	"strings"
 )
@@ -15,12 +14,12 @@ func GenerateSpecification(serviceFile string, outFile string) (err error) {
 
 	openapi := generateOpenapi(spec)
 
-	data, err := yaml.Marshal(openapi.Yaml)
+	data, err := ToYamlString(openapi)
 	if err != nil {
 		return
 	}
 
-	openApiFile := gen.TextFile{outFile, string(data)}
+	openApiFile := gen.TextFile{outFile, data}
 
 	err = gen.WriteFile(&openApiFile, true)
 
@@ -40,16 +39,16 @@ func generateOpenapi(spec *spec.Spec) *YamlMap {
 	openapi :=
 		Map().
 			Set("openapi", "3.0.0").
-			Set("info", info.Yaml)
+			Set("info", info)
 
 	paths := generateApis(spec.Apis)
-	openapi.Set("paths", paths.Yaml)
+	openapi.Set("paths", paths)
 
 	schemas := Map()
 	for _, model := range spec.Models {
-		schemas.Set(model.Name.Source, generateModel(model.Model).Yaml)
+		schemas.Set(model.Name.Source, generateModel(model.Model))
 	}
-	openapi.Set("components", Map().Set("schemas", schemas.Yaml).Yaml)
+	openapi.Set("components", Map().Set("schemas", schemas))
 
 	return openapi
 }
@@ -60,9 +59,9 @@ func generateApis(apis spec.Apis) *YamlMap {
 	for _, group := range groups {
 		path := Map()
 		for _, o := range group.Operations {
-			path.Set(strings.ToLower(o.Operation.Endpoint.Method), generateOperation(o).Yaml)
+			path.Set(strings.ToLower(o.Operation.Endpoint.Method), generateOperation(o))
 		}
-		paths.Set(group.Url, path.Yaml)
+		paths.Set(group.Url, path)
 	}
 	return paths
 }
@@ -71,7 +70,7 @@ func generateOperation(o Operation) *YamlMap {
 	operationId := o.Api.Name.Source + o.Operation.Name.PascalCase()
 	operation := Map()
 	operation.Set("operationId", operationId)
-	operation.Set("tags", Array().Add(o.Api.Name.Source).Yaml)
+	operation.Set("tags", Array().Add(o.Api.Name.Source))
 	if o.Operation.Description != nil {
 		operation.Set("description", o.Operation.Description)
 	}
@@ -82,8 +81,8 @@ func generateOperation(o Operation) *YamlMap {
 			request.Set("description", body.Description)
 		}
 		request.Set("required", !body.Type.Definition.IsNullable())
-		request.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&body.Type.Definition, nil).Yaml).Yaml).Yaml)
-		operation.Set("requestBody", request.Yaml)
+		request.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&body.Type.Definition, nil))))
+		operation.Set("requestBody", request)
 	}
 
 	parameters := Array()
@@ -93,14 +92,14 @@ func generateOperation(o Operation) *YamlMap {
 	addParameters(parameters, "query", o.Operation.QueryParams)
 
 	if parameters.Length() > 0 {
-		operation.Set("parameters", parameters.Yaml)
+		operation.Set("parameters", parameters)
 	}
 
 	responses := Map()
 	for _, r := range o.Operation.Responses {
-		responses.Set(spec.HttpStatusCode(r.Name), generateResponse(r.Definition).Yaml)
+		responses.Set(spec.HttpStatusCode(r.Name), generateResponse(r.Definition))
 	}
-	operation.Set("responses", responses.Yaml)
+	operation.Set("responses", responses)
 	return operation
 }
 
@@ -111,11 +110,11 @@ func addParameters(parameters *YamlArray, in string, params []spec.NamedParam) {
 				Set("in", in).
 				Set("name", p.Name.Source).
 				Set("required", !p.Type.Definition.IsNullable()).
-				Set("schema", OpenApiType(&p.Type.Definition, p.Default).Yaml)
+				Set("schema", OpenApiType(&p.Type.Definition, p.Default))
 		if p.Description != nil {
 			param.Set("description", *p.Description)
 		}
-		parameters.Add(param.Yaml)
+		parameters.Add(param)
 	}
 }
 
@@ -127,7 +126,7 @@ func generateResponse(r spec.Definition) *YamlMap {
 	}
 	response.Set("description", description)
 	if !r.Type.Definition.IsEmpty() {
-		response.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&r.Type.Definition, nil).Yaml).Yaml).Yaml)
+		response.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&r.Type.Definition, nil))))
 	}
 	return response
 }
@@ -155,9 +154,9 @@ func generateUnionModel(model spec.Model) *YamlMap {
 		if item.Description != nil {
 			property.Set("description", item.Description)
 		}
-		properties.Set(item.Name.Source, property.Yaml)
+		properties.Set(item.Name.Source, property)
 	}
-	schema.Set("properties", properties.Yaml)
+	schema.Set("properties", properties)
 
 	return schema
 }
@@ -177,7 +176,7 @@ func generateObjectModel(model spec.Model) *YamlMap {
 	}
 
 	if required.Length() > 0 {
-		schema.Set("required", required.Yaml)
+		schema.Set("required", required)
 	}
 
 	properties := Map()
@@ -186,9 +185,9 @@ func generateObjectModel(model spec.Model) *YamlMap {
 		if field.Description != nil {
 			property.Set("description", field.Description)
 		}
-		properties.Set(field.Name.Source, property.Yaml)
+		properties.Set(field.Name.Source, property)
 	}
-	schema.Set("properties", properties.Yaml)
+	schema.Set("properties", properties)
 
 	return schema
 }
@@ -204,7 +203,7 @@ func generateEnumModel(model spec.Model) *YamlMap {
 	for _, item := range model.Enum.Items {
 		openApiItems.Add(item.Name.Source)
 	}
-	schema.Set("enum", openApiItems.Yaml)
+	schema.Set("enum", openApiItems)
 
 	return schema
 }

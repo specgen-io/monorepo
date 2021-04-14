@@ -9,7 +9,9 @@ import (
 
 func checkType(t *testing.T, typ *spec.TypeDef, expected string) {
 	openApiType := OpenApiType(typ, nil)
-	assert.Equal(t, strings.TrimSpace(openApiType.String()), strings.TrimSpace(expected))
+	openApiTypeYaml, err := ToYamlString(openApiType)
+	assert.NilError(t, err)
+	assert.Equal(t, strings.TrimSpace(openApiTypeYaml), strings.TrimSpace(expected))
 }
 
 func TestPlainTypeInt(t *testing.T) {

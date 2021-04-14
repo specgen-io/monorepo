@@ -67,20 +67,20 @@
 
 [[projects]]
   branch = "v1"
-  digest = "1:223257191c7901e5982aebbdaf81db18b8c08c6568216d664a8a6d744b8ac23d"
+  digest = "1:fb6af943fd203c41ea2777f426243600614ac9e468c0da192c8fccebee9d6513"
   name = "github.com/specgen-io/spec.v1"
   packages = ["."]
   pruneopts = "UT"
-  revision = "985b556d6dcf1ae3ec803a3c316000b1526ee12b"
+  revision = "358ce176c13d90a76253c2f9d032a3b287041309"
   source = "https://github.com/specgen-io/spec.git"
 
 [[projects]]
   branch = "main"
-  digest = "1:7906f4618337d8fabbddd690dbe42c9ce6cd9033dcc012f5595886030825ca14"
+  digest = "1:faf35e563804a2636aba7c5803ba6c0cbb1087e0a422ba1c9d93cc4563a061d6"
   name = "github.com/specgen-io/spec.v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "53e5e11da87436222f1f685036f1b0b483f66091"
+  revision = "f266943b3e8ea2d1177312844c7af47c8abfdab6"
   source = "https://github.com/specgen-io/spec.git"
 
 [[projects]]
@@ -120,19 +120,12 @@
 
 [[projects]]
   branch = "v3"
-  digest = "1:fdf8804c446b4369045965d8af38935a8cffc4cdbb209c2f2ee46bbe2f790fe4"
+  digest = "1:c6b443bdc78adde0f766f17796debc1d4f324fd43e382f96765e5f416db0a067"
   name = "github.com/vsapronov/yaml"
   packages = ["."]
   pruneopts = "UT"
-  revision = "8436b0197393d641b1601efef7fb017cef94f5b7"
-
-[[projects]]
-  digest = "1:5054a1f394226de9e6ddc47b0ba77e35092a4112f4a1cd9cb94aba1f5bdc3ec6"
-  name = "gopkg.in/yaml.v2"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "7649d4548cb53a614db133b2a8ac1f31859dda8c"
-  version = "v2.4.0"
+  revision = "386722861e7a855cfd7dde9c234134b75c7c10ac"
+  source = "https://github.com/vsapronov/yaml.git"
 
 [[projects]]
   digest = "1:a5cc901b8e54c4b73a62f97dc7c8f6c46e347c148a7a38e09b2e942c2587ba03"
@@ -161,7 +154,7 @@
     "github.com/vsapronov/casee",
     "github.com/vsapronov/gopoetry/ruby",
     "github.com/vsapronov/gopoetry/scala",
-    "gopkg.in/yaml.v2",
+    "github.com/vsapronov/yaml",
     "gotest.tools/assert",
   ]
   solver-name = "gps-cdcl"
