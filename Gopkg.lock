@@ -84,11 +84,11 @@
 
 [[projects]]
   branch = "main"
-  digest = "1:bff8fd5ea9d57d4b945e34750749b46e258525839f9916523c6a4c49620e901f"
+  digest = "1:7d1e4725936eb7d2401f33fc30728ee76c5d413feda02ee72aaaaba767ad04a9"
   name = "github.com/specgen-io/spec.v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "df126dabfc894788f74a8fb8901f4f0aafb0c5a6"
+  revision = "1bbd7e8f1f41d3c5d66a6ec6d660b3c8b1eccbd0"
   source = "https://github.com/specgen-io/spec.git"
 
 [[projects]]
