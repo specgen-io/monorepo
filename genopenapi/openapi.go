@@ -1,7 +1,7 @@
 package genopenapi
 
 import (
-	spec "github.com/specgen-io/spec.v1"
+	spec "github.com/specgen-io/spec.v2"
 	"specgen/gen"
 	"strings"
 )
@@ -41,19 +41,21 @@ func generateOpenapi(spec *spec.Spec) *YamlMap {
 			Set("openapi", "3.0.0").
 			Set("info", info)
 
-	paths := generateApis(spec.Apis)
+	paths := generateApis(spec.Http.Versions)
 	openapi.Set("paths", paths)
 
 	schemas := Map()
-	for _, model := range spec.Models {
-		schemas.Set(model.Name.Source, generateModel(model.Model))
+	for _, version := range spec.Models {
+		for _, model := range version.Models {
+			schemas.Set(model.Name.Source, generateModel(model.Model))
+		}
 	}
 	openapi.Set("components", Map().Set("schemas", schemas))
 
 	return openapi
 }
 
-func generateApis(apis spec.Apis) *YamlMap {
+func generateApis(apis []spec.VersionedApis) *YamlMap {
 	paths := Map()
 	groups := Groups(apis)
 	for _, group := range groups {
@@ -67,10 +69,10 @@ func generateApis(apis spec.Apis) *YamlMap {
 }
 
 func generateOperation(o Operation) *YamlMap {
+//	operationId := o.Version.PascalCase() + o.Api.Name.PascalCase() + o.Operation.Name.PascalCase()
 	operationId := o.Api.Name.Source + o.Operation.Name.PascalCase()
-	operation := Map()
-	operation.Set("operationId", operationId)
-	operation.Set("tags", Array().Add(o.Api.Name.Source))
+	operation := Map().Set("operationId", operationId).Set("tags", Array().Add(o.Api.Name.Source))
+
 	if o.Operation.Description != nil {
 		operation.Set("description", o.Operation.Description)
 	}

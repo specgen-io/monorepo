@@ -17,9 +17,9 @@ import (
 //line gents/axios.ego:4
 
 //line gents/axios.ego:5
+	"strings"
+//line gents/axios.ego:6
 	spec "github.com/specgen-io/spec.v1"
-
-	"strings" //line gents/axios.ego:6
 //line gents/axios.ego:7
 )
 

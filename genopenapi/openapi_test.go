@@ -1,7 +1,7 @@
 package genopenapi
 
 import (
-	spec "github.com/specgen-io/spec.v1"
+	spec "github.com/specgen-io/spec.v2"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
@@ -27,7 +27,7 @@ enum:
   - second
   - third
 `
-	assert.Equal(t, strings.TrimSpace(openapiYaml), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
 }
 
 func TestObjectModel(t *testing.T) {
@@ -56,7 +56,7 @@ properties:
     items:
       type: string
 `
-	assert.Equal(t, strings.TrimSpace(openapiYaml), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
 }
 
 func TestUnionModel(t *testing.T) {
@@ -78,7 +78,7 @@ properties:
   field3:
     $ref: '#/components/schemas/Model3'
 `
-	assert.Equal(t, strings.TrimSpace(openapiYaml), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
 }
 
 func TestResponse(t *testing.T) {
@@ -92,7 +92,7 @@ content:
     schema:
       $ref: '#/components/schemas/SomeModel'
 `
-	assert.Equal(t, strings.TrimSpace(openapiYaml), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
 }
 
 func TestApis(t *testing.T) {
@@ -110,6 +110,7 @@ func TestApis(t *testing.T) {
 		},
 		spec.Responses{*NewResponse("ok", *myModel, nil)},
 	}
+
 	api := spec.Api{
 		Name: NewName("mine"),
 		Operations: spec.Operations{
@@ -119,8 +120,11 @@ func TestApis(t *testing.T) {
 			},
 		},
 	}
-	apis := spec.Apis{api}
-	openapiYaml, err := ToYamlString(generateApis(apis))
+	apis := []spec.Api{api}
+	versionedApi := spec.VersionedApis{Version: NewName("v2"), Apis: apis}
+	versionedApis := []spec.VersionedApis{versionedApi}
+
+	openapiYaml, err := ToYamlString(generateApis(versionedApis))
 	assert.NilError(t, err)
 	expected := `
 /create/{id}:
@@ -171,16 +175,15 @@ func TestApis(t *testing.T) {
             schema:
               $ref: '#/components/schemas/MyModel'
 `
-	assert.Equal(t, strings.TrimSpace(openapiYaml), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
 }
 
 func TestSpecification(t *testing.T) {
-	idlVersion := "0"
 	title := "The Service"
 	description := "The service with description"
 	spec := spec.Spec{
-		IdlVersion:  &idlVersion,
-		ServiceName: NewName("the-service"),
+		IdlVersion:  "0",
+		Name:        NewName("the-service"),
 		Title:       &title,
 		Description: &description,
 		Version:     "0",
@@ -199,5 +202,160 @@ paths: {}
 components:
   schemas: {}
 `
-	assert.Equal(t, strings.TrimSpace(openapiYaml), strings.TrimSpace(expected))
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
 }
+
+func TestFullSpecificationNoVersions(t *testing.T) {
+	specYaml := `
+idl_version: 2
+name: bla-api
+title: Bla API
+description: Some Bla API service
+version: 0
+
+http:
+    test:
+        some_url:
+            endpoint: GET /some/url
+            response:
+                ok: Model1
+        ping:
+            endpoint: GET /ping
+            query:
+                message: string?
+            response:
+                ok: empty
+
+models:
+  Model1:
+    prop1: string
+  Model2:
+    prop1: string
+    prop2: int32
+`
+
+	expectedOpenApiYaml := `
+openapi: 3.0.0
+info:
+  title: Bla API
+  description: Some Bla API service
+  version: "0"
+paths:
+  /some/url:
+    get:
+      operationId: testSomeUrl
+      tags:
+        - test
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Model1'
+  /ping:
+    get:
+      operationId: testPing
+      tags:
+        - test
+      parameters:
+        - in: query
+          name: message
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+components:
+  schemas:
+    Model1:
+      type: object
+      required:
+        - prop1
+      properties:
+        prop1:
+          type: string
+    Model2:
+      type: object
+      required:
+        - prop1
+        - prop2
+      properties:
+        prop1:
+          type: string
+        prop2:
+          type: integer
+          format: int32
+`
+
+	spec, err := spec.ParseSpec([]byte(specYaml))
+	assert.Equal(t, err, nil)
+
+	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	assert.NilError(t, err)
+
+	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
+}
+
+func TestFullSpecificationWithVersions(t *testing.T) {
+	specYaml := `
+idl_version: 2
+name: bla-api
+title: Bla API
+description: Some Bla API service
+version: 0
+
+http:
+    v2:
+        test:
+            some_url:
+                endpoint: GET /some/url
+                response:
+                    ok: Message
+
+models:
+  v2:
+    Message:
+      prop1: string
+`
+
+	expectedOpenApiYaml := `
+openapi: 3.0.0
+info:
+  title: Bla API
+  description: Some Bla API service
+  version: "0"
+paths:
+  /v2/some/url:
+    get:
+      operationId: V2TestSomeUrl
+      tags:
+        - test
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v2.Message'
+components:
+  schemas:
+    v2.Message:
+      type: object
+      required:
+        - prop1
+      properties:
+        prop1:
+          type: string
+`
+
+	spec, err := spec.ParseSpec([]byte(specYaml))
+	assert.Equal(t, err, nil)
+
+	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	assert.NilError(t, err)
+
+	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
+}
+
