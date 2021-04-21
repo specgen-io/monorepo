@@ -1,13 +1,22 @@
 package genscala
 
 import (
-	spec "github.com/specgen-io/spec.v1"
+	spec "github.com/specgen-io/spec.v2"
 	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
 	"specgen/gen"
 )
 
-func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *gen.TextFile {
+func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) []gen.TextFile {
+	files := []gen.TextFile{}
+	for _, versionedModels := range spec.Models {
+		versionFile := generateCirceModels(&versionedModels, packageName, outPath)
+		files = append(files, *versionFile)
+	}
+	return files
+}
+
+func generateCirceModels(models *spec.Models, packageName string, outPath string) *gen.TextFile {
 	unit := Unit(packageName)
 	unit.
 		Import("enumeratum.values._").
@@ -18,7 +27,7 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *g
 		Import("io.circe.{Decoder, Encoder}").
 		Import("io.circe.generic.extras.semiauto.{deriveUnwrappedDecoder, deriveUnwrappedEncoder}")
 
-	for _, model := range spec.Models {
+	for _, model := range models.Models {
 		if model.IsObject() {
 			class := generateCirceObjectModel(model)
 			unit.AddDeclarations(class)
@@ -32,7 +41,7 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) *g
 		}
 	}
 
-	unit.AddDeclarations(generateCirceUnionItemsCodecs(spec.Models))
+	unit.AddDeclarations(generateCirceUnionItemsCodecs(models))
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, "Models.scala"),
@@ -87,11 +96,11 @@ func generateCirceUnionModel(model spec.NamedModel, packageName string) (scala.W
 	return trait, object
 }
 
-func generateCirceUnionItemsCodecs(models spec.Models) *scala.ClassDeclaration {
+func generateCirceUnionItemsCodecs(models *spec.Models) *scala.ClassDeclaration {
 	object :=
 		Object("json").Extends("AutoDerivation").
 			Add(Line("implicit val auto = Configuration.default.withSnakeCaseMemberNames.withSnakeCaseConstructorNames.withDefaults"))
-	for _, model := range models {
+	for _, model := range models.Models {
 		if model.IsOneOf() {
 			for _, item := range model.OneOf.Items {
 				itemTypeName := model.Name.PascalCase()+"."+item.Name.PascalCase()

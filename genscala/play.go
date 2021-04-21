@@ -2,7 +2,7 @@ package genscala
 
 import (
     "fmt"
-    spec "github.com/specgen-io/spec.v1"
+    spec "github.com/specgen-io/spec.v2"
     "github.com/vsapronov/gopoetry/scala"
     "path/filepath"
     "specgen/gen"
@@ -38,30 +38,25 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
         return
     }
 
-    modelsFile := GenerateCirceModels(specification, modelsPackage, generatePath)
+    modelsFiles := GenerateCirceModels(specification, modelsPackage, generatePath)
 
-    sourceManaged := []gen.TextFile{ *modelsFile }
+    sourceManaged := modelsFiles
     sourceManaged = append(sourceManaged, scalaPlayStaticFiles...)
     sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
     sourceManaged = append(sourceManaged, scalaResponseFiles...)
     sourceManaged = append(sourceManaged, scalaCirceFiles...)
 
-    apis := specification.Apis
+    source := []gen.TextFile{}
 
-    for _, api := range apis {
-        apiTraitFile := generateApiInterface(api, servicesPackage, generatePath)
-        apiControllerFile := generateApiController(api, controllersPackage, generatePath)
-        sourceManaged = append(sourceManaged, *apiTraitFile, *apiControllerFile)
+    for _, versionedApis := range specification.Http.Versions {
+        apisSourceManaged := generateApis(versionedApis, servicesPackage, controllersPackage, generatePath)
+        sourceManaged = append(sourceManaged, apisSourceManaged...)
+        servicesSource := generateApisServices(versionedApis, servicesPackage, servicesPath)
+        source = append(source, servicesSource...)
     }
 
     routesFile := generateSpecRouter(specification, "app", generatePath)
     sourceManaged = append(sourceManaged, *routesFile)
-
-    source := []gen.TextFile{}
-    for _, api := range apis {
-        apiClassFile := generateApiClass(api, servicesPackage, servicesPath)
-        source = append(source, *apiClassFile)
-    }
 
     genopenapi.GenerateSpecification(serviceFile, filepath.Join(swaggerPath, "swagger.yaml"))
 
@@ -76,6 +71,25 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
     }
 
     return
+}
+
+func generateApis(versionedApis spec.VersionedApis, servicesPackage string, controllersPackage string, generatePath string) []gen.TextFile {
+    sourceManaged := []gen.TextFile{}
+    for _, api := range versionedApis.Apis {
+        apiTraitFile := generateApiInterface(api, servicesPackage, generatePath)
+        apiControllerFile := generateApiController(api, controllersPackage, generatePath)
+        sourceManaged = append(sourceManaged, *apiTraitFile, *apiControllerFile)
+    }
+    return sourceManaged
+}
+
+func generateApisServices(versionedApis spec.VersionedApis, servicesPackage string, servicesPath string) []gen.TextFile {
+    source := []gen.TextFile{}
+    for _, api := range versionedApis.Apis {
+        apiClassFile := generateApiClass(api, servicesPackage, servicesPath)
+        source = append(source, *apiClassFile)
+    }
+    return source
 }
 
 func controllerType(apiName spec.Name) string {
@@ -348,8 +362,10 @@ func generateSpecRouter(specification *spec.Spec, packageName string, outPath st
             Import("ParamsTypesBindings._").
             Import("PlayParamsTypesBindings._")
 
-    for _, api := range specification.Apis {
-        unit.AddDeclarations(generateApiRouter(api))
+    for _, versionedApis := range specification.Http.Versions {
+        for _, api := range versionedApis.Apis {
+            unit.AddDeclarations(generateApiRouter(api))
+        }
     }
     unit.AddDeclarations(generateSpecRouterMainClass(specification))
 
@@ -366,9 +382,11 @@ func generateSpecRouterMainClass(specification *spec.Spec) *scala.ClassDeclarati
                 Constructor().
                     Attribute(`Inject()`).
                     AddParams(Dynamic(func (code *scala.WritableList) {
-                        for _, api := range specification.Apis { code.Add(
-                            Param(api.Name.CamelCase(), routerType(api.Name)),
-                        )}
+                        for _, versionedApis := range specification.Http.Versions {
+                            for _, api := range versionedApis.Apis {
+                                code.Add(Param(api.Name.CamelCase(), routerType(api.Name)))
+                            }
+                        }
                     })...),
             ).
             Add(
@@ -376,9 +394,11 @@ func generateSpecRouterMainClass(specification *spec.Spec) *scala.ClassDeclarati
                 Block(
                     Line(`Seq(`),
                     Block(Dynamic(func (code *scala.WritableList) {
-                        for _, api := range specification.Apis { code.Add(
-                            Line(`%s.routes,`, api.Name.CamelCase()),
-                        )}
+                        for _, versionedApis := range specification.Http.Versions {
+                            for _, api := range versionedApis.Apis {
+                                code.Add(Line(`%s.routes,`, api.Name.CamelCase()))
+                            }
+                        }
                     })...),
                     Line(`).reduce { (r1, r2) => r1.orElse(r2) }`),
                 ),

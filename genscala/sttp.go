@@ -1,7 +1,7 @@
 package genscala
 
 import (
-	spec "github.com/specgen-io/spec.v1"
+	spec "github.com/specgen-io/spec.v2"
 	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
 	"specgen/gen"
@@ -15,7 +15,7 @@ func GenerateSttpClient(serviceFile string, generatePath string) error {
 		return err
 	}
 
-	clientPackage := clientPackageName(specification.ServiceName)
+	clientPackage := clientPackageName(specification.Name)
 
 	scalaStaticCode := static.ScalaStaticCode{ PackageName: clientPackage }
 
@@ -33,14 +33,16 @@ func GenerateSttpClient(serviceFile string, generatePath string) error {
 		return err
 	}
 
-	modelsFile := GenerateCirceModels(specification, clientPackage, generatePath)
-	interfacesFile := generateClientApisInterfaces(specification, clientPackage, generatePath)
-	implsFile := generateClientApiImplementations(specification, clientPackage, generatePath)
+	modelsFiles := GenerateCirceModels(specification, clientPackage, generatePath)
+	interfacesFiles := generateClientInterfaces(specification, clientPackage, generatePath)
+	implsFiles := generateClientImplementations(specification, clientPackage, generatePath)
 
 	sourceManaged := scalaCirceFiles
 	sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
 	sourceManaged = append(sourceManaged, scalaResponseFiles...)
-	sourceManaged = append(sourceManaged, *modelsFile, *interfacesFile, *implsFile)
+	sourceManaged = append(sourceManaged, modelsFiles...)
+	sourceManaged = append(sourceManaged, interfacesFiles...)
+	sourceManaged = append(sourceManaged, implsFiles...)
 
 	err = gen.WriteFiles(sourceManaged, true)
 	if err != nil {
@@ -54,7 +56,16 @@ func clientPackageName(name spec.Name) string {
 	return name.FlatCase() + ".client"
 }
 
-func generateClientApiImplementations(specification *spec.Spec, packageName string, outPath string) *gen.TextFile {
+func generateClientImplementations(specification *spec.Spec, packageName string, outPath string) []gen.TextFile {
+	files := []gen.TextFile{}
+	for _, versionedApis := range specification.Http.Versions {
+		versionFile := generateClientApiImplementations(&versionedApis, packageName, outPath)
+		files = append(files, *versionFile)
+	}
+	return files
+}
+
+func generateClientApiImplementations(versionedApis *spec.VersionedApis, packageName string, outPath string) *gen.TextFile {
 	unit := Unit(packageName)
 
 	unit.
@@ -64,11 +75,7 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 		Import("ParamsTypesBindings._").
 		Import("json._")
 
-	if len(specification.Apis) > 1 {
-		unit.AddDeclarations(generateClientSuperClass(specification))
-	}
-
-	for _, api := range specification.Apis {
+	for _, api := range versionedApis.Apis {
 		apiTrait := generateClientApiClass(api)
 		unit.AddDeclarations(apiTrait)
 	}
@@ -79,19 +86,28 @@ func generateClientApiImplementations(specification *spec.Spec, packageName stri
 	}
 }
 
-func generateClientApisInterfaces(specification *spec.Spec, packageName string, outPath string) *gen.TextFile {
+func generateClientInterfaces(specification *spec.Spec, packageName string, outPath string) []gen.TextFile {
+	files := []gen.TextFile{}
+	for _, versionedApis := range specification.Http.Versions {
+		versionFile := generateClientApisInterfaces(&versionedApis, packageName, outPath)
+		files = append(files, *versionFile)
+	}
+	return files
+}
+
+func generateClientApisInterfaces(versionedApis *spec.VersionedApis, packageName string, outPath string) *gen.TextFile {
 	unit := Unit(packageName)
 
 	unit.
 		Import("scala.concurrent._").
 		Import("json._")
 
-	for _, api := range specification.Apis {
+	for _, api := range versionedApis.Apis {
 		apiTrait := generateClientApiTrait(api)
 		unit.AddDeclarations(apiTrait)
 	}
 
-	for _, api := range specification.Apis {
+	for _, api := range versionedApis.Apis {
 		apiObject := generateApiInterfaceResponse(api, clientTraitName(api.Name))
 		unit.AddDeclarations(apiObject)
 	}
@@ -265,19 +281,4 @@ func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 		apiClass.Add(method)
 	}
 	return apiClass
-}
-
-func generateClientSuperClass(specification *spec.Spec) *scala.ClassDeclaration {
-	clientClass :=
-		Class(specification.ServiceName.PascalCase() + "Client").
-			Constructor(Constructor().
-				Param("baseUrl", "String").
-				ImplicitParam("backend", "SttpBackend[Future, Nothing]"),
-			)
-	for _, api := range specification.Apis {
-		clientClass.Add(
-			Line(`val %s: %s = new %s(baseUrl)`, api.Name.CamelCase(), clientTraitName(api.Name), clientClassName(api.Name)),
-		)
-	}
-	return clientClass
 }
