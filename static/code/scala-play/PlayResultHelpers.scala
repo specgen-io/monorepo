@@ -2,7 +2,7 @@ package [[.PackageName]]
 
 import play.api.mvc.Result
 import play.api.mvc.Results._
-import services._
+import spec.services.OperationResult
 
 object PlayResultHelpers {
   implicit class ResponsePlay(response: OperationResult) {

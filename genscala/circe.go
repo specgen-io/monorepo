@@ -1,6 +1,7 @@
 package genscala
 
 import (
+	"fmt"
 	spec "github.com/specgen-io/spec.v2"
 	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
@@ -16,7 +17,10 @@ func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) []
 	return files
 }
 
-func generateCirceModels(models *spec.Models, packageName string, outPath string) *gen.TextFile {
+func generateCirceModels(versionedModels *spec.Models, packageName string, outPath string) *gen.TextFile {
+	if versionedModels.Version.Source != "" {
+		packageName = fmt.Sprintf("%s.%s", packageName, versionedModels.Version.FlatCase())
+	}
 	unit := Unit(packageName)
 	unit.
 		Import("enumeratum.values._").
@@ -27,7 +31,7 @@ func generateCirceModels(models *spec.Models, packageName string, outPath string
 		Import("io.circe.{Decoder, Encoder}").
 		Import("io.circe.generic.extras.semiauto.{deriveUnwrappedDecoder, deriveUnwrappedEncoder}")
 
-	for _, model := range models.Models {
+	for _, model := range versionedModels.Models {
 		if model.IsObject() {
 			class := generateCirceObjectModel(model)
 			unit.AddDeclarations(class)
@@ -41,10 +45,10 @@ func generateCirceModels(models *spec.Models, packageName string, outPath string
 		}
 	}
 
-	unit.AddDeclarations(generateCirceUnionItemsCodecs(models))
+	unit.AddDeclarations(generateCirceUnionItemsCodecs(versionedModels))
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, "Models.scala"),
+		Path:    filepath.Join(outPath, fmt.Sprintf("%sModels.scala", versionedModels.Version.PascalCase())),
 		Content: unit.Code(),
 	}
 }
@@ -68,7 +72,7 @@ func generateCirceEnumModel(model spec.NamedModel) (scala.Writable, scala.Writab
 			)
 
 	enumObject :=
-		CaseObject(className).Extends("StringEnum["+className+"]").With("StringCirceEnum["+className+"]")
+		CaseObject(className).Extends("StringEnum[" + className + "]").With("StringCirceEnum[" + className + "]")
 
 	for _, item := range model.Enum.Items {
 		enumObject.Add(
@@ -103,8 +107,8 @@ func generateCirceUnionItemsCodecs(models *spec.Models) *scala.ClassDeclaration 
 	for _, model := range models.Models {
 		if model.IsOneOf() {
 			for _, item := range model.OneOf.Items {
-				itemTypeName := model.Name.PascalCase()+"."+item.Name.PascalCase()
-				itemCodecName := model.Name.PascalCase()+item.Name.PascalCase()
+				itemTypeName := model.Name.PascalCase() + "." + item.Name.PascalCase()
+				itemCodecName := model.Name.PascalCase() + item.Name.PascalCase()
 				object.Add(
 					Line("implicit val encoder%s: Encoder[%s] = deriveUnwrappedEncoder", itemCodecName, itemTypeName),
 					Line("implicit val decoder%s: Decoder[%s] = deriveUnwrappedDecoder", itemCodecName, itemTypeName),
