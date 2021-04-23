@@ -1,7 +1,7 @@
 package genscala
 
 import (
-	spec "github.com/specgen-io/spec.v1"
+	spec "github.com/specgen-io/spec.v2"
 	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
 	"specgen/gen"
@@ -15,9 +15,9 @@ func GenerateSttpClient(serviceFile string, generatePath string) error {
 		return err
 	}
 
-	clientPackage := clientPackageName(specification.ServiceName)
+	clientPackage := clientPackageName(specification.Name)
 
-	scalaStaticCode := static.ScalaStaticCode{ PackageName: clientPackage }
+	scalaStaticCode := static.ScalaStaticCode{PackageName: "spec"}
 
 	scalaCirceFiles, err := static.RenderTemplate("scala-circe", generatePath, scalaStaticCode)
 	if err != nil {
@@ -33,14 +33,16 @@ func GenerateSttpClient(serviceFile string, generatePath string) error {
 		return err
 	}
 
-	modelsFile := GenerateCirceModels(specification, clientPackage, generatePath)
-	interfacesFile := generateClientApisInterfaces(specification, clientPackage, generatePath)
-	implsFile := generateClientApiImplementations(specification, clientPackage, generatePath)
+	modelsFiles := GenerateCirceModels(specification, clientPackage, generatePath)
+	interfacesFiles := generateClientInterfaces(specification, clientPackage, generatePath)
+	implsFiles := generateClientImplementations(specification, clientPackage, generatePath)
 
 	sourceManaged := scalaCirceFiles
 	sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
 	sourceManaged = append(sourceManaged, scalaResponseFiles...)
-	sourceManaged = append(sourceManaged, *modelsFile, *interfacesFile, *implsFile)
+	sourceManaged = append(sourceManaged, modelsFiles...)
+	sourceManaged = append(sourceManaged, interfacesFiles...)
+	sourceManaged = append(sourceManaged, implsFiles...)
 
 	err = gen.WriteFiles(sourceManaged, true)
 	if err != nil {
@@ -54,50 +56,68 @@ func clientPackageName(name spec.Name) string {
 	return name.FlatCase() + ".client"
 }
 
-func generateClientApiImplementations(specification *spec.Spec, packageName string, outPath string) *gen.TextFile {
-	unit := Unit(packageName)
+func generateClientImplementations(specification *spec.Spec, packageName string, outPath string) []gen.TextFile {
+	files := []gen.TextFile{}
+	for _, versionedApis := range specification.Http.Versions {
+		versionFile := generateClientApiImplementations(&versionedApis, packageName, outPath)
+		files = append(files, *versionFile)
+	}
+	return files
+}
+
+func generateClientApiImplementations(versionedApis *spec.VersionedApis, packageName string, outPath string) *gen.TextFile {
+	unit := Unit(versionedPackage(versionedApis.Version, packageName))
 
 	unit.
 		Import("scala.concurrent._").
 		Import("org.slf4j._").
 		Import("com.softwaremill.sttp._").
-		Import("ParamsTypesBindings._").
+		Import("spec.Jsoner").
+		Import("spec.OperationResult").
+		Import("spec.ParamsTypesBindings._").
 		Import("json._")
 
-	if len(specification.Apis) > 1 {
-		unit.AddDeclarations(generateClientSuperClass(specification))
-	}
-
-	for _, api := range specification.Apis {
-		apiTrait := generateClientApiClass(api)
+	for _, api := range versionedApis.Apis {
+		apiTrait := generateClientApiClass(versionedApis, api)
 		unit.AddDeclarations(apiTrait)
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, "Client.scala"),
+		Path:    filepath.Join(outPath, versionedApis.Version.PascalCase()+"Client.scala"),
 		Content: unit.Code(),
 	}
 }
 
-func generateClientApisInterfaces(specification *spec.Spec, packageName string, outPath string) *gen.TextFile {
-	unit := Unit(packageName)
+func generateClientInterfaces(specification *spec.Spec, packageName string, outPath string) []gen.TextFile {
+	files := []gen.TextFile{}
+	for _, versionedApis := range specification.Http.Versions {
+		versionFile := generateClientApisInterfaces(&versionedApis, packageName, outPath)
+		files = append(files, *versionFile)
+	}
+	return files
+}
+
+func generateClientApisInterfaces(versionedApis *spec.VersionedApis, packageName string, outPath string) *gen.TextFile {
+	unit := Unit(versionedPackage(versionedApis.Version, packageName))
 
 	unit.
 		Import("scala.concurrent._").
+		Import("spec.Jsoner").
+		Import("spec.OperationResult").
 		Import("json._")
 
-	for _, api := range specification.Apis {
+	for _, api := range versionedApis.Apis {
 		apiTrait := generateClientApiTrait(api)
 		unit.AddDeclarations(apiTrait)
 	}
 
-	for _, api := range specification.Apis {
+	for _, api := range versionedApis.Apis {
 		apiObject := generateApiInterfaceResponse(api, clientTraitName(api.Name))
 		unit.AddDeclarations(apiObject)
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, "Interfaces.scala"),
+		Path:    filepath.Join(outPath, versionedApis.Version.PascalCase()+"Interfaces.scala"),
 		Content: unit.Code(),
 	}
 }
@@ -172,16 +192,16 @@ func addParamsWriting(params []spec.NamedParam, paramsName string) *scala.Statem
 	return code
 }
 
-func generateClientOperationImplementation(operation spec.NamedOperation) *scala.StatementsDeclaration {
+func generateClientOperationImplementation(versionedApis *spec.VersionedApis, operation spec.NamedOperation) *scala.StatementsDeclaration {
 	httpMethod := strings.ToLower(operation.Endpoint.Method)
-	url := operation.Endpoint.Url
+	url := versionedApis.GetUrl() + operation.Endpoint.Url
 	for _, param := range operation.Endpoint.UrlParams {
 		url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), "$"+param.Name.CamelCase(), -1)
 	}
 
 	code := Statements(
 		addParamsWriting(operation.QueryParams, "query"),
-		Statements(Dynamic(func (code *scala.WritableList) {
+		Statements(Dynamic(func(code *scala.WritableList) {
 			if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 				code.Add(Line(`val url = Uri.parse(baseUrl+s"%s").get.params(query.params:_*)`, url))
 			} else {
@@ -189,7 +209,7 @@ func generateClientOperationImplementation(operation spec.NamedOperation) *scala
 			}
 		})...),
 		addParamsWriting(operation.HeaderParams, "headers"),
-		Statements(Dynamic(func (code *scala.WritableList) {
+		Statements(Dynamic(func(code *scala.WritableList) {
 			if operation.Body != nil {
 				code.Add(
 					Line(`val bodyJson = Jsoner.write(body)`),
@@ -206,7 +226,7 @@ func generateClientOperationImplementation(operation spec.NamedOperation) *scala
 			Line("sttp"),
 			Block(
 				Line(`.%s(url)`, httpMethod),
-				Statements(Dynamic(func (code *scala.WritableList) {
+				Statements(Dynamic(func(code *scala.WritableList) {
 					if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
 						code.Add(
 							Line(`.headers(headers.params:_*)`),
@@ -248,7 +268,7 @@ func generateClientOperationImplementation(operation spec.NamedOperation) *scala
 	return code
 }
 
-func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
+func generateClientApiClass(versionedApis *spec.VersionedApis, api spec.Api) *scala.ClassDeclaration {
 	apiClassName := clientClassName(api.Name)
 	apiTraitName := clientTraitName(api.Name)
 	apiClass :=
@@ -261,23 +281,8 @@ func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 			Add(Import("ExecutionContext.Implicits.global")).
 			Add(Line("private val logger: Logger = LoggerFactory.getLogger(this.getClass)"))
 	for _, operation := range api.Operations {
-		method := generateClientOperationSignature(operation).Body(generateClientOperationImplementation(operation))
+		method := generateClientOperationSignature(operation).Body(generateClientOperationImplementation(versionedApis, operation))
 		apiClass.Add(method)
 	}
 	return apiClass
-}
-
-func generateClientSuperClass(specification *spec.Spec) *scala.ClassDeclaration {
-	clientClass :=
-		Class(specification.ServiceName.PascalCase() + "Client").
-			Constructor(Constructor().
-				Param("baseUrl", "String").
-				ImplicitParam("backend", "SttpBackend[Future, Nothing]"),
-			)
-	for _, api := range specification.Apis {
-		clientClass.Add(
-			Line(`val %s: %s = new %s(baseUrl)`, api.Name.CamelCase(), clientTraitName(api.Name), clientClassName(api.Name)),
-		)
-	}
-	return clientClass
 }

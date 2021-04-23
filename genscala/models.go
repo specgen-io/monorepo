@@ -1,7 +1,7 @@
 package genscala
 
 import (
-	spec "github.com/specgen-io/spec.v1"
+	spec "github.com/specgen-io/spec.v2"
 	"specgen/gen"
 	"specgen/static"
 )
@@ -12,7 +12,7 @@ func GenerateServiceModels(serviceFile string, generatePath string) error {
 		return err
 	}
 
-	modelsPackage := modelsPackageName(specification.ServiceName)
+	modelsPackage := modelsPackageName(specification.Name)
 
 	scalaStaticCode := static.ScalaStaticCode{ PackageName: modelsPackage }
 
@@ -22,9 +22,9 @@ func GenerateServiceModels(serviceFile string, generatePath string) error {
 	}
 
 
-	modelsFile := GenerateCirceModels(specification, modelsPackage, generatePath)
+	modelsFiles := GenerateCirceModels(specification, modelsPackage, generatePath)
 
-	sourceManaged := append(scalaCirceFiles, *modelsFile)
+	sourceManaged := append(scalaCirceFiles, modelsFiles...)
 
 	err = gen.WriteFiles(sourceManaged, true)
 	if err != nil {
