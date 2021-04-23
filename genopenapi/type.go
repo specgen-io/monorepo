@@ -80,7 +80,8 @@ func DefaultValue(typ *spec.TypeDef, valueStr string) interface{} {
 			spec.TypeDateTime:
 			return valueStr
 		default:
-			if typ.Info.Model != nil && typ.Info.Model.IsEnum() {
+			modelInfo := typ.Info.ModelInfo
+			if modelInfo != nil && modelInfo.Model.IsEnum() {
 				return valueStr
 			} else {
 				panic(fmt.Sprintf("Type: %s does not support default value", typ.Name))
