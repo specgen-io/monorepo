@@ -1,6 +1,7 @@
 package genopenapi
 
 import (
+	"github.com/pinzolo/casee"
 	spec "github.com/specgen-io/spec.v2"
 	"specgen/gen"
 	"strings"
@@ -69,8 +70,7 @@ func generateApis(apis []spec.VersionedApis) *YamlMap {
 }
 
 func generateOperation(o Operation) *YamlMap {
-//	operationId := o.Version.PascalCase() + o.Api.Name.PascalCase() + o.Operation.Name.PascalCase()
-	operationId := o.Api.Name.Source + o.Operation.Name.PascalCase()
+	operationId := casee.ToCamelCase(o.Version.PascalCase() + o.Api.Name.PascalCase() + o.Operation.Name.PascalCase())
 	operation := Map().Set("operationId", operationId).Set("tags", Array().Add(o.Api.Name.Source))
 
 	if o.Operation.Description != nil {
