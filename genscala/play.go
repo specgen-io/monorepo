@@ -142,9 +142,9 @@ func operationSignature(operation spec.NamedOperation) *scala.MethodDeclaration 
 }
 
 func generateApiInterface(version spec.Name, api spec.Api, packageName string, outPath string) *gen.TextFile {
-	unit := Unit(versionPackage(packageName, version))
+	unit := Unit(versionedPackage(version, packageName))
 
-	modelsPackage := versionPackage("models", version)
+	modelsPackage := versionedPackage(version, "models")
 
 	unit.
 		Import("com.google.inject.ImplementedBy").
@@ -178,9 +178,9 @@ func generateApiInterfaceTrait(api spec.Api, apiTraitName string) *scala.TraitDe
 }
 
 func generateApiClass(version spec.Name, api spec.Api, packageName string, outPath string) *gen.TextFile {
-	unit := Unit(versionPackage(packageName, version))
+	unit := Unit(versionedPackage(version, packageName))
 
-	modelsPackage := versionPackage("models", version)
+	modelsPackage := versionedPackage(version, "models")
 
 	unit.
 		Import("javax.inject._").
@@ -233,19 +233,11 @@ func addParamsParsing(params []spec.NamedParam, paramsName string, readingFun st
 	return code
 }
 
-func versionPackage(packageName string, version spec.Name) string {
-	if version.Source != "" {
-		return fmt.Sprintf("%s.%s", packageName, version.FlatCase())
-	} else {
-		return packageName
-	}
-}
-
 func generateApiControllers(versionedApis spec.VersionedApis, packageName string, outPath string) *gen.TextFile {
-	unit := Unit(versionPackage(packageName, versionedApis.Version))
+	unit := Unit(versionedPackage(versionedApis.Version, packageName))
 
-	modelsPackage := versionPackage("models", versionedApis.Version)
-	servicePackage := versionPackage("services", versionedApis.Version)
+	modelsPackage := versionedPackage(versionedApis.Version, "models")
+	servicePackage := versionedPackage(versionedApis.Version, "services")
 	unit.
 		Import("javax.inject._").
 		Import("scala.util._").
@@ -374,9 +366,9 @@ func getParsedOperationParams(operation spec.NamedOperation) []string {
 }
 
 func generateRouter(versionedApis *spec.VersionedApis, packageName string, outPath string) *gen.TextFile {
-	packageName = versionPackage(packageName, versionedApis.Version)
-	controllersPackage := versionPackage("controllers", versionedApis.Version)
-	modelsPackage := versionPackage("models", versionedApis.Version)
+	packageName = versionedPackage(versionedApis.Version, packageName)
+	controllersPackage := versionedPackage(versionedApis.Version, "controllers")
+	modelsPackage := versionedPackage(versionedApis.Version, "models")
 
 	unit :=
 		Unit(packageName).
@@ -410,14 +402,6 @@ func generateMainRouter(versions []spec.VersionedApis, packageName string, outPa
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, "SpecRouter.scala"),
 		Content: unit.Code(),
-	}
-}
-
-func versionedTypeName(version spec.Name, typeName string) string {
-	if version.Source != "" {
-		return fmt.Sprintf("%s.%s", version.FlatCase(), typeName)
-	} else {
-		return typeName
 	}
 }
 
@@ -550,4 +534,20 @@ func getControllerParams(operation spec.NamedOperation) []string {
 		}
 	}
 	return params
+}
+
+func versionedPackage(version spec.Name, packageName string) string {
+	if version.Source != "" {
+		return fmt.Sprintf("%s.%s", packageName, version.FlatCase())
+	} else {
+		return packageName
+	}
+}
+
+func versionedTypeName(version spec.Name, typeName string) string {
+	if version.Source != "" {
+		return fmt.Sprintf("%s.%s", version.FlatCase(), typeName)
+	} else {
+		return typeName
+	}
 }
