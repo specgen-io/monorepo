@@ -2,8 +2,8 @@ package genscala
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec.v1"
 	"github.com/pinzolo/casee"
+	spec "github.com/specgen-io/spec.v2"
 )
 
 func DefaultValue(typ *spec.TypeDef, value string) string {
