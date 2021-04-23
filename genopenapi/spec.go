@@ -2,8 +2,10 @@ package genopenapi
 
 import spec "github.com/specgen-io/spec.v2"
 
+type Version string
+
 type Operation struct {
-	// add version here
+	Version   spec.Name
 	Api       spec.Api
 	Operation spec.NamedOperation
 }
@@ -19,14 +21,14 @@ func Groups(versions []spec.VersionedApis) []*Group {
 	for _, version := range versions {
 		for _, api := range version.Apis {
 			for _, operation := range api.Operations {
-				url := operation.Endpoint.Url
+				url := version.GetUrl() + operation.Endpoint.Url
 				if _, contains := groupsMap[url]; !contains {
 					group := Group{Url: url, Operations: make([]Operation, 0)}
 					groups = append(groups, &group)
 					groupsMap[url] = &group
 				}
 				group, _ := groupsMap[url]
-				group.Operations = append(group.Operations, Operation{api, operation})
+				group.Operations = append(group.Operations, Operation{version.Version, api, operation})
 			}
 		}
 	}

@@ -121,7 +121,7 @@ func TestApis(t *testing.T) {
 		},
 	}
 	apis := []spec.Api{api}
-	versionedApi := spec.VersionedApis{Version: NewName("v2"), Apis: apis}
+	versionedApi := spec.VersionedApis{Version: NewName(""), Apis: apis}
 	versionedApis := []spec.VersionedApis{versionedApi}
 
 	openapiYaml, err := ToYamlString(generateApis(versionedApis))
@@ -329,7 +329,7 @@ info:
 paths:
   /v2/some/url:
     get:
-      operationId: V2TestSomeUrl
+      operationId: v2TestSomeUrl
       tags:
         - test
       responses:
