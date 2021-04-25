@@ -28,18 +28,12 @@ func GenerateSttpClient(serviceFile string, generatePath string) error {
 		return err
 	}
 
-	scalaResponseFiles, err := static.RenderTemplate("scala-response", generatePath, scalaStaticCode)
-	if err != nil {
-		return err
-	}
-
 	modelsFiles := GenerateCirceModels(specification, clientPackage, generatePath)
 	interfacesFiles := generateClientInterfaces(specification, clientPackage, generatePath)
 	implsFiles := generateClientImplementations(specification, clientPackage, generatePath)
 
 	sourceManaged := scalaCirceFiles
 	sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
-	sourceManaged = append(sourceManaged, scalaResponseFiles...)
 	sourceManaged = append(sourceManaged, modelsFiles...)
 	sourceManaged = append(sourceManaged, interfacesFiles...)
 	sourceManaged = append(sourceManaged, implsFiles...)
