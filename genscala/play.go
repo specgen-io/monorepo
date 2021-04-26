@@ -25,10 +25,6 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 	if err != nil {
 		return
 	}
-	scalaResponseFiles, err := static.RenderTemplate("scala-response", generatePath, static.ScalaStaticCode{PackageName: "spec.services"})
-	if err != nil {
-		return
-	}
 	scalaPlayStaticFiles, err := static.RenderTemplate("scala-play", generatePath, static.ScalaStaticCode{PackageName: "spec.controllers"})
 	if err != nil {
 		return
@@ -43,7 +39,6 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 	sourceManaged := modelsFiles
 	sourceManaged = append(sourceManaged, scalaPlayStaticFiles...)
 	sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
-	sourceManaged = append(sourceManaged, scalaResponseFiles...)
 	sourceManaged = append(sourceManaged, scalaCirceFiles...)
 
 	source := []gen.TextFile{}
@@ -149,10 +144,7 @@ func generateApiInterface(version spec.Name, api spec.Api, packageName string, o
 	unit.
 		Import("com.google.inject.ImplementedBy").
 		Import("scala.concurrent.Future").
-		Import("spec.services.OperationResult").
-		Import("spec.models.Jsoner").
-		Import(modelsPackage + "._").
-		Import(modelsPackage + ".json._")
+		Import(modelsPackage + "._")
 
 	apiTraitName := apiTraitType(api.Name)
 
@@ -244,7 +236,6 @@ func generateApiControllers(versionedApis spec.VersionedApis, packageName string
 		Import("scala.concurrent._").
 		Import("play.api.mvc._").
 		Import("spec.controllers.ParamsTypesBindings._").
-		Import("spec.controllers.PlayResultHelpers._").
 		Import("spec.models.Jsoner").
 		Import(servicePackage + "._").
 		Import(modelsPackage + "._").
@@ -259,6 +250,8 @@ func generateApiControllers(versionedApis spec.VersionedApis, packageName string
 					Param("cc", "ControllerComponents").
 					ImplicitParam("ec", "ExecutionContext"),
 				)
+
+		class.Add(Import(apiTraitType(api.Name) + "._"))
 
 		for _, operation := range api.Operations {
 			class.Add(generateControllerMethod(operation))
@@ -315,20 +308,38 @@ func generateControllerMethod(operation spec.NamedOperation) *scala.MethodDeclar
 							Block(
 								Line("val (%s) = params", JoinParams(parseParams)),
 								Line("val result = api.%s(%s)", operation.Name.CamelCase(), JoinParams(allParams)),
-								Line("result.map(_.toResult.toPlay).recover { case _: Exception => InternalServerError }"),
+								Code("val response = result.map "),
+								Scope(
+									Dynamic(func(code *scala.WritableList) { genResponseCases(code, operation)})...,
+								),
+								Line("response.recover { case _: Exception => InternalServerError }"),
 							),
 						),
 					)
 				} else {
 					code.Add(
 						Line("val result = api.%s(%s)", operation.Name.CamelCase(), JoinParams(allParams)),
-						Line("result.map(_.toResult.toPlay).recover { case _: Exception => InternalServerError }"),
+						Code("val response = result.map "),
+						Scope(
+							Dynamic(func(code *scala.WritableList) { genResponseCases(code, operation)})...,
+						),
+						Line("response.recover { case _: Exception => InternalServerError }"),
 					)
 				}
 			})...),
 		),
 	)
 	return method
+}
+
+func genResponseCases(code *scala.WritableList, operation spec.NamedOperation) {
+	for _, r := range operation.Responses {
+		if !r.Type.Definition.IsEmpty() {
+			code.Add(Line("case %s.%s(body) => new Status(%s)(Jsoner.write(body))", responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name)))
+		} else {
+			code.Add(Line("case %s.%s() => new Status(%s)", responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name)))
+		}
+	}
 }
 
 func getOperationCallParams(operation spec.NamedOperation) []string {
