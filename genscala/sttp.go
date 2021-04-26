@@ -1,6 +1,7 @@
 package genscala
 
 import (
+	"fmt"
 	spec "github.com/specgen-io/spec.v2"
 	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
@@ -28,18 +29,12 @@ func GenerateSttpClient(serviceFile string, generatePath string) error {
 		return err
 	}
 
-	scalaResponseFiles, err := static.RenderTemplate("scala-response", generatePath, scalaStaticCode)
-	if err != nil {
-		return err
-	}
-
 	modelsFiles := GenerateCirceModels(specification, clientPackage, generatePath)
 	interfacesFiles := generateClientInterfaces(specification, clientPackage, generatePath)
 	implsFiles := generateClientImplementations(specification, clientPackage, generatePath)
 
 	sourceManaged := scalaCirceFiles
 	sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
-	sourceManaged = append(sourceManaged, scalaResponseFiles...)
 	sourceManaged = append(sourceManaged, modelsFiles...)
 	sourceManaged = append(sourceManaged, interfacesFiles...)
 	sourceManaged = append(sourceManaged, implsFiles...)
@@ -73,7 +68,6 @@ func generateClientApiImplementations(versionedApis *spec.VersionedApis, package
 		Import("org.slf4j._").
 		Import("com.softwaremill.sttp._").
 		Import("spec.Jsoner").
-		Import("spec.OperationResult").
 		Import("spec.ParamsTypesBindings._").
 		Import("json._")
 
@@ -101,10 +95,7 @@ func generateClientApisInterfaces(versionedApis *spec.VersionedApis, packageName
 	unit := Unit(versionedPackage(versionedApis.Version, packageName))
 
 	unit.
-		Import("scala.concurrent._").
-		Import("spec.Jsoner").
-		Import("spec.OperationResult").
-		Import("json._")
+		Import("scala.concurrent._")
 
 	for _, api := range versionedApis.Apis {
 		apiTrait := generateClientApiTrait(api)
@@ -192,6 +183,18 @@ func addParamsWriting(params []spec.NamedParam, paramsName string) *scala.Statem
 	return code
 }
 
+func generateResponseCases(operation spec.NamedOperation) *scala.StatementsDeclaration {
+	cases := scala.Statements()
+	for _, response := range operation.Responses {
+		responseParam := ``
+		if !response.Type.Definition.IsEmpty() {
+			responseParam = fmt.Sprintf(`Jsoner.read[%s](body)`, ScalaType(&response.Type.Definition))
+		}
+		cases.Add(Line(`case %s => %s.%s(%s)`, spec.HttpStatusCode(response.Name), responseType(operation), response.Name.PascalCase(), responseParam))
+	}
+	return cases
+}
+
 func generateClientOperationImplementation(versionedApis *spec.VersionedApis, operation spec.NamedOperation) *scala.StatementsDeclaration {
 	httpMethod := strings.ToLower(operation.Endpoint.Method)
 	url := versionedApis.GetUrl() + operation.Endpoint.Url
@@ -249,11 +252,11 @@ func generateClientOperationImplementation(versionedApis *spec.VersionedApis, op
 			Block(
 				Code(`response.body match `),
 				Scope(
-					Code(`case Right(bodyStr) => `),
+					Code(`case Right(body) => `),
 					Block(
-						Line(`logger.debug(s"Response status: ${response.code}, body: ${bodyStr}")`),
-						Line(`val body = Option(bodyStr).collect { case x if x.nonEmpty => x }`),
-						Line(`%s.fromResult(OperationResult(response.code, body))`, responseType(operation)),
+						Line(`logger.debug(s"Response status: ${response.code}, body: ${body}")`),
+						Code(`response.code match `),
+						Scope(generateResponseCases(operation)),
 					),
 					Code(`case Left(errorData) => `),
 					Block(
