@@ -100,7 +100,6 @@ jobs:
       - run:
           name: Publish SBT plugin
           command: |
-            export SBT_PGP_USE_GPG=0
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/sbt-specgen
               sbt -Dversion=<< pipeline.parameters.specgen-version >> publish
@@ -128,6 +127,7 @@ jobs:
           name: Publish SBT plugin
           command: |
             cd ./plugins/sbt-specgen
+            export SBT_PGP_USE_GPG=0
             sbt -Dversion=<< pipeline.parameters.specgen-version >> publishSigned sonatypeRelease
 
   build-npm-specgen:
