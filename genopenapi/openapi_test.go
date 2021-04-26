@@ -8,55 +8,97 @@ import (
 )
 
 func TestEnumModel(t *testing.T) {
-	description := "The description"
-	model := spec.Model{Enum: &spec.Enum{
-		Description: &description,
-		Items: []spec.NamedEnumItem{
-			*NewEnumItem("first", nil),
-			*NewEnumItem("second", nil),
-			*NewEnumItem("third", nil),
-		},
-	}}
-	openapiYaml, err := ToYamlString(generateModel(model))
-	assert.NilError(t, err)
-	expected := `
-type: string
-description: The description
-enum:
-  - first
-  - second
-  - third
+	specYaml := `
+idl_version: 2
+name: bla-api
+models:
+  Model:
+    description: The description
+    enum:
+      first:
+        value: FIRST
+        description: First option
+      second:
+        value: SECOND
+        description: Second option
+      third:
+        value: THIRD
+        description: Third option
 `
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
+
+	expectedOpenApiYaml := `
+openapi: 3.0.0
+info:
+  version: ""
+paths: {}
+components:
+  schemas:
+    Model:
+      type: string
+      description: The description
+      enum:
+        - first
+        - second
+        - third
+`
+
+	spec, err := spec.ParseSpec([]byte(specYaml))
+	assert.Equal(t, err, nil)
+
+	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	assert.NilError(t, err)
+
+	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
 }
 
 func TestObjectModel(t *testing.T) {
-	description := "the description"
-	fields := []spec.NamedDefinition{
-		*NewField("field1", *spec.Plain(spec.TypeString), nil),
-		*NewField("field2", *spec.Nullable(spec.Plain(spec.TypeString)), &description),
-		*NewField("field3", *spec.Array(spec.Plain(spec.TypeString)), nil),
-	}
-	model := spec.Model{Object: NewObject(fields, nil)}
-	openapiYaml, err := ToYamlString(generateModel(model))
-	assert.NilError(t, err)
-	expected := `
-type: object
-required:
-  - field1
-  - field3
-properties:
-  field1:
-    type: string
-  field2:
-    type: string
-    description: the description
-  field3:
-    type: array
-    items:
-      type: string
+	specYaml := `
+idl_version: 2
+name: bla-api
+models:
+  Model:
+    fields:
+      field1: 
+        type: string
+      field2:
+        type: string
+        description: the description
+      field3:
+        type: string[]
 `
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
+
+	expectedOpenApiYaml := `
+openapi: 3.0.0
+info:
+  version: ""
+paths: {}
+components:
+  schemas:
+    Model:
+      type: object
+      required:
+        - field1
+        - field2
+        - field3
+      properties:
+        field1:
+          type: string
+        field2:
+          type: string
+          description: the description
+        field3:
+          type: array
+          items:
+            type: string
+`
+
+	spec, err := spec.ParseSpec([]byte(specYaml))
+	assert.Equal(t, err, nil)
+
+	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	assert.NilError(t, err)
+
+	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
 }
 
 func TestUnionModel(t *testing.T) {
@@ -68,15 +110,16 @@ func TestUnionModel(t *testing.T) {
 	model := spec.Model{OneOf: NewOneOf(items, nil)}
 	openapiYaml, err := ToYamlString(generateModel(model))
 	assert.NilError(t, err)
+
 	expected := `
 type: object
 properties:
-  field1:
-    $ref: '#/components/schemas/Model1'
-  field2:
-    $ref: '#/components/schemas/Model2'
-  field3:
-    $ref: '#/components/schemas/Model3'
+ field1:
+   $ref: '#/components/schemas/Model1'
+ field2:
+   $ref: '#/components/schemas/Model2'
+ field3:
+   $ref: '#/components/schemas/Model3'
 `
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
 }
@@ -88,9 +131,9 @@ func TestResponse(t *testing.T) {
 	expected := `
 description: ""
 content:
-  application/json:
-    schema:
-      $ref: '#/components/schemas/SomeModel'
+application/json:
+  schema:
+    $ref: '#/components/schemas/SomeModel'
 `
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
 }
