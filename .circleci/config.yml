@@ -100,6 +100,7 @@ jobs:
       - run:
           name: Publish SBT plugin
           command: |
+            export SBT_PGP_USE_GPG=0
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/sbt-specgen
               sbt -Dversion=<< pipeline.parameters.specgen-version >> publish
@@ -166,7 +167,7 @@ commands:
             mkdir -p ~/.sbt/1.0/plugins
             tee > ~/.sbt/1.0/plugins/sonatype.sbt \<<END
             addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.3")
-            addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.1")
+            addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.1.2")
             END
       - run:
           name: Write PGP secret key
