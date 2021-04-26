@@ -49,7 +49,7 @@ func generateOpenapi(spec *spec.Spec) *YamlMap {
 
 	for _, version := range spec.Models {
 		for _, model := range version.Models {
-			schemas.Set(versionedModelName(version.Version.Source) + model.Name.Source, generateModel(model.Model))
+			schemas.Set(versionedModelName(version.Version.Source, model.Name.Source), generateModel(model.Model))
 		}
 	}
 	openapi.Set("components", Map().Set("schemas", schemas))
@@ -57,11 +57,11 @@ func generateOpenapi(spec *spec.Spec) *YamlMap {
 	return openapi
 }
 
-func versionedModelName(version string) string {
+func versionedModelName(version string, modelName string) string {
 	if version != "" {
-		version = version + "."
+		return version + "." + modelName
 	}
-	return version
+	return modelName
 }
 
 func generateApis(apis []spec.VersionedApis) *YamlMap {
