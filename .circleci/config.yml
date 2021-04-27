@@ -127,7 +127,6 @@ jobs:
           name: Publish SBT plugin
           command: |
             cd ./plugins/sbt-specgen
-            export SBT_PGP_USE_GPG=0
             sbt -Dversion=<< pipeline.parameters.specgen-version >> publishSigned sonatypeRelease
 
   build-npm-specgen:
@@ -163,11 +162,15 @@ commands:
             END
       - run:
           name: Add sontype plugins
-          command: | 
+          command: |
+            tee > ~/.sbt/1.0/scala_jfrog.sbt \<<END
+            val scala_jfrog = "Scala JFrog" at "https://scala.jfrog.io/artifactory/sbt-plugin-releases"
+            resolvers += scala_jfrog
+            END
             mkdir -p ~/.sbt/1.0/plugins
             tee > ~/.sbt/1.0/plugins/sonatype.sbt \<<END
             addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.3")
-            addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.1.2")
+            addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.1")
             END
       - run:
           name: Write PGP secret key
