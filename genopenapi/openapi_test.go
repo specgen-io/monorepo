@@ -102,140 +102,169 @@ components:
 }
 
 func TestUnionModel(t *testing.T) {
-	items := []spec.NamedDefinition{
-		*NewField("field1", *spec.Plain("Model1"), nil),
-		*NewField("field2", *spec.Plain("Model2"), nil),
-		*NewField("field3", *spec.Plain("Model3"), nil),
-	}
-	model := spec.Model{OneOf: NewOneOf(items, nil)}
-	openapiYaml, err := ToYamlString(generateModel(model))
+	specYaml := `
+idl_version: 2
+name: bla-api
+models:
+  Model:
+    oneOf:
+      one: Model1
+      two: Model2
+  Model1:
+    field1: string
+  Model2:
+    field1: string
+`
+
+	expectedOpenApiYaml := `
+openapi: 3.0.0
+info:
+  version: ""
+paths: {}
+components:
+  schemas:
+    Model:
+      type: object
+      properties:
+        one:
+          $ref: '#/components/schemas/Model1'
+        two:
+          $ref: '#/components/schemas/Model2'
+    Model1:
+      type: object
+      required:
+        - field1
+      properties:
+        field1:
+          type: string
+    Model2:
+      type: object
+      required:
+        - field1
+      properties:
+        field1:
+          type: string
+`
+
+	spec, err := spec.ParseSpec([]byte(specYaml))
+	assert.Equal(t, err, nil)
+
+	openapiYaml, err := ToYamlString(generateOpenapi(spec))
 	assert.NilError(t, err)
 
-	expected := `
-type: object
-properties:
- field1:
-   $ref: '#/components/schemas/Model1'
- field2:
-   $ref: '#/components/schemas/Model2'
- field3:
-   $ref: '#/components/schemas/Model3'
-`
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
-}
-
-func TestResponse(t *testing.T) {
-	response := spec.Definition{spec.Type{*spec.Plain("SomeModel"), nil}, nil, nil}
-	openapiYaml, err := ToYamlString(generateResponse(response))
-	assert.NilError(t, err)
-	expected := `
-description: ""
-content:
-application/json:
-  schema:
-    $ref: '#/components/schemas/SomeModel'
-`
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
+	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
 }
 
 func TestApis(t *testing.T) {
-	myModel := spec.Plain("MyModel")
-	description := "the description"
-	defaultValue := "the default value"
-	operation := spec.Operation{
-		*spec.ParseEndpoint("POST /create/{id:uuid}"),
-		&description,
-		&spec.Definition{spec.Type{*myModel, nil}, &description, nil},
-		spec.HeaderParams{*NewParam("Authorization", *spec.Plain(spec.TypeString), nil, &description)},
-		spec.QueryParams{
-			*NewParam("id", *spec.Plain(spec.TypeUuid), nil, &description),
-			*NewParam("str_param", *spec.Plain(spec.TypeString), &defaultValue, &description),
-		},
-		spec.Responses{*NewResponse("ok", *myModel, nil)},
-	}
+	specYaml := `
+idl_version: 2
+name: bla-api
+http:
+    mine:
+        create:
+            endpoint: POST /create/{id:uuid}
+            description: the description
+            body:
+                description: the description
+                type: MyModel
+            header:
+                Authorization: string
+            query:
+                uuid_param:
+                    type: uuid
+                    description: the description
+                str_param:
+                    type: string
+                    default: the default value
+                    description: the description
+            response:
+                ok: MyModel
+models:
+    MyModel:
+        field1: string
+`
 
-	api := spec.Api{
-		Name: NewName("mine"),
-		Operations: spec.Operations{
-			spec.NamedOperation{
-				Name:      NewName("create"),
-				Operation: operation,
-			},
-		},
-	}
-	apis := []spec.Api{api}
-	versionedApi := spec.VersionedApis{Version: NewName(""), Apis: apis}
-	versionedApis := []spec.VersionedApis{versionedApi}
-
-	openapiYaml, err := ToYamlString(generateApis(versionedApis))
-	assert.NilError(t, err)
-	expected := `
-/create/{id}:
-  post:
-    operationId: mineCreate
-    tags:
-      - mine
-    description: the description
-    requestBody:
+	expectedOpenApiYaml := `
+openapi: 3.0.0
+info:
+  version: ""
+paths:
+  /create/{id}:
+    post:
+      operationId: mineCreate
+      tags:
+        - mine
       description: the description
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/MyModel'
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - in: header
-        name: Authorization
-        required: true
-        schema:
-          type: string
+      requestBody:
         description: the description
-      - in: query
-        name: id
         required: true
-        schema:
-          type: string
-          format: uuid
-        description: the description
-      - in: query
-        name: str_param
-        required: true
-        schema:
-          type: string
-          default: the default value
-        description: the description
-    responses:
-      "200":
-        description: ""
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/MyModel'
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: uuid_param
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: the description
+        - in: query
+          name: str_param
+          required: true
+          schema:
+            type: string
+            default: the default value
+          description: the description
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyModel'
+components:
+  schemas:
+    MyModel:
+      type: object
+      required:
+        - field1
+      properties:
+        field1:
+          type: string
 `
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
+	//assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
+	spec, err := spec.ParseSpec([]byte(specYaml))
+	assert.Equal(t, err, nil)
+
+	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	assert.NilError(t, err)
+
+	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
 }
 
 func TestSpecification(t *testing.T) {
-	title := "The Service"
-	description := "The service with description"
-	spec := spec.Spec{
-		IdlVersion:  "0",
-		Name:        NewName("the-service"),
-		Title:       &title,
-		Description: &description,
-		Version:     "0",
-	}
+	specYaml := `
+idl_version: 2
+name: bla-api
+title: The Service
+description: The service with description
+version: 0
+`
 
-	openapiYaml, err := ToYamlString(generateOpenapi(&spec))
-	assert.NilError(t, err)
-
-	expected := `
+	expectedOpenApiYaml := `
 openapi: 3.0.0
 info:
   title: The Service
@@ -245,7 +274,14 @@ paths: {}
 components:
   schemas: {}
 `
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
+
+	spec, err := spec.ParseSpec([]byte(specYaml))
+	assert.Equal(t, err, nil)
+
+	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	assert.NilError(t, err)
+
+	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
 }
 
 func TestFullSpecificationNoVersions(t *testing.T) {
