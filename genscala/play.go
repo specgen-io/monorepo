@@ -209,7 +209,7 @@ func addParamsParsing(params []spec.NamedParam, paramsName string, readingFun st
 		for _, param := range params {
 			paramBaseType := param.Type.Definition.BaseType()
 			method := "read"
-			if paramBaseType.Info.Model != nil && paramBaseType.Info.Model.IsEnum() {
+			if paramBaseType.Info.ModelInfo != nil && paramBaseType.Info.ModelInfo.Model.IsEnum() {
 				method = "readEnum"
 			}
 			code.Add(Code(`val %s = %s.%s[%s]("%s")`, param.Name.CamelCase(), paramsName, method, ScalaType(paramBaseType), param.Name.Source))
