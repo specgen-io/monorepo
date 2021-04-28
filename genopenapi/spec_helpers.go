@@ -1,6 +1,6 @@
 package genopenapi
 
-import spec "github.com/specgen-io/spec.v1"
+import spec "github.com/specgen-io/spec.v2"
 
 func NewName(source string) spec.Name {
 	return spec.Name{Source: source, Location: nil}
@@ -30,11 +30,17 @@ func NewParam(name string, typ spec.TypeDef, defaultValue *string, description *
 
 func NewResponse(name string, typ spec.TypeDef, description *string) *spec.NamedResponse {
 	return &spec.NamedResponse{
-		Name:            NewName(name),
+		Name:       NewName(name),
 		Definition: spec.Definition{spec.Type{Definition: typ}, description, nil},
 	}
 }
 
 func NewEnumItem(name string, description *string) *spec.NamedEnumItem {
 	return &spec.NamedEnumItem{NewName(name), spec.EnumItem{Description: description}}
+}
+
+func VersionedPlain(version string, typ string) *spec.TypeDef {
+	typeDef := spec.Plain(typ)
+	typeDef.Info = &spec.TypeInfo{ModelInfo: &spec.ModelInfo{Version: &spec.Name{version, nil}}}
+	return typeDef
 }

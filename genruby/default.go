@@ -2,8 +2,8 @@ package genruby
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec.v2"
 	"github.com/pinzolo/casee"
+	spec "github.com/specgen-io/spec.v2"
 )
 
 func DefaultValue(typ *spec.TypeDef, value string) string {
@@ -42,8 +42,9 @@ func DefaultValue(typ *spec.TypeDef, value string) string {
 		case spec.TypeDateTime:
 			return `DateTime.strptime('`+value+`', '%Y-%m-%dT%H:%M:%S')`
 		default:
-			if typ.Info.Model != nil && typ.Info.Model.IsEnum() {
-				return typ.Info.Model.Name.PascalCase() + `::` + casee.ToSnakeCase(value)
+			modelInfo := typ.Info.ModelInfo
+			if modelInfo != nil && modelInfo.Model.IsEnum() {
+				return modelInfo.Model.Name.PascalCase() + `::` + casee.ToSnakeCase(value)
 			} else {
 				panic(fmt.Sprintf("Type: %s does not support default value", typ.Name))
 			}
