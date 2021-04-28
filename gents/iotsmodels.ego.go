@@ -18,7 +18,6 @@ import (
 
 //line gents/iotsmodels.ego:5
 	spec "github.com/specgen-io/spec.v1"
-
 //line gents/iotsmodels.ego:6
 )
 
