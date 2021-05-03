@@ -54,18 +54,18 @@ func TestPlainTypeString(t *testing.T) {
 
 func TestNullableType(t *testing.T) {
 	typ := spec.Nullable(spec.Plain(spec.TypeString))
-	scalaType := GoType(typ)
-	assert.Equal(t, scalaType, "*string")
+	goType := GoType(typ)
+	assert.Equal(t, goType, "*string")
 }
 
 func TestArrayType(t *testing.T) {
 	typ := spec.Array(spec.Plain(spec.TypeString))
-	scalaType := GoType(typ)
-	assert.Equal(t, scalaType, "[]string")
+	goType := GoType(typ)
+	assert.Equal(t, goType, "[]string")
 }
 
 func TestMapType(t *testing.T) {
 	typ := spec.Map(spec.Plain("Model"))
-	scalaType := GoType(typ)
-	assert.Equal(t, scalaType, "map[string]Model")
+	goType := GoType(typ)
+	assert.Equal(t, goType, "map[string]Model")
 }
