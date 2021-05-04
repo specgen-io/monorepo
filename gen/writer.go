@@ -42,12 +42,42 @@ func (writer *Writer) Line(format string, args ...interface{}) {
 	io.WriteString(writer.buffer, line)
 }
 
+func (writer *Writer) EmptyLine() {
+	io.WriteString(writer.buffer, "\n")
+}
+
 func (writer *Writer) Indent() {
 	writer.indentation = writer.indentation + 1
 }
 
 func (writer *Writer) Unindent() {
 	writer.indentation = writer.indentation - 1
+}
+
+func (writer *Writer) IndentWith(size int) {
+	writer.indentation = writer.indentation + size
+}
+
+func (writer *Writer) UnindentWith(size int) {
+	writer.indentation = writer.indentation - size
+}
+
+func (writer *Writer) Indented() *Writer {
+	return &Writer{
+		writer.buffer,
+		writer.indentationStr,
+		writer.leadSpacesIndentationSize,
+		writer.indentation + 1,
+	}
+}
+
+func (writer *Writer) IndentedWith(size int) *Writer {
+	return &Writer{
+		writer.buffer,
+		writer.indentationStr,
+		writer.leadSpacesIndentationSize,
+		writer.indentation + size,
+	}
 }
 
 func (writer *Writer) String() string {
