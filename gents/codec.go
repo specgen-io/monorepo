@@ -1,12 +1,12 @@
-<#    package gents
-<#
-<#    import (
-<#        "io"
-<#    )
-<#
-<#
-<#    func generateCodec(w io.Writer) {
-<#
+package gents
+
+import (
+	"specgen/gen"
+	"strings"
+)
+
+func generateCodec(path string) *gen.TextFile {
+	code := `
 import { Errors, Type } from 'io-ts';
 import { pipe } from 'fp-ts/lib/pipeable';
 import { fold } from 'fp-ts/lib/Either';
@@ -33,5 +33,7 @@ export const decode = <A, O, I>(codec: Type<A, O, I>, value: I): A => {
 export const encode = <A, O, I>(codec: Type<A, O, I>, value: A): O => {
     return codec.encode(value);
 };
-<#
-<# }
+`
+
+	return &gen.TextFile{path, strings.TrimSpace(code)}
+}

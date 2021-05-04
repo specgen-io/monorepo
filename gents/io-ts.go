@@ -1,12 +1,12 @@
-<#    package gents
-<#
-<#    import (
-<#        "io"
-<#    )
-<#
-<#
-<#    func generateIoTs(w io.Writer) {
-<#
+package gents
+
+import (
+	"specgen/gen"
+	"strings"
+)
+
+func generateIoTs(path string) *gen.TextFile {
+	code := `
 export * from 'io-ts';
 
 import * as t from 'io-ts';
@@ -47,5 +47,6 @@ export class EnumType<E extends typeof Enum> extends t.Type<E[keyof E]> {
 const enumType = <E extends typeof Enum>(e: E, name?: string) => new EnumType<E>(e, name);
 
 export { enumType as enum }
-<#
-<# }
+`
+	return &gen.TextFile{path, strings.TrimSpace(code)}
+}
