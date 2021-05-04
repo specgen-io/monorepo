@@ -1,7 +1,6 @@
 package gents
 
 import (
-	"bytes"
 	"fmt"
 	spec "github.com/specgen-io/spec.v1"
 	"path/filepath"
@@ -15,8 +14,8 @@ func GenerateAxiosClient(serviceFile string, generatePath string) error {
 		return err
 	}
 
-	iots := gen.GenTextFile(generateIoTs, filepath.Join(generatePath, "io-ts.ts"))
-	codec := gen.GenTextFile(generateCodec, filepath.Join(generatePath, "codec.ts"))
+	iots := generateIoTs(filepath.Join(generatePath, "io-ts.ts"))
+	codec := generateCodec(filepath.Join(generatePath, "codec.ts"))
 	models := GenerateIoTsModels(spec, filepath.Join(generatePath, "models.ts"))
 	client := generateAxiosClient(spec, filepath.Join(generatePath, "index.ts"))
 
@@ -27,12 +26,6 @@ func GenerateAxiosClient(serviceFile string, generatePath string) error {
 	}
 
 	return nil
-}
-
-func generateAxiosClient(spec *spec.Spec, outPath string) *gen.TextFile {
-	w := new(bytes.Buffer)
-	generateClients(spec, w)
-	return &gen.TextFile{Path: outPath, Content: w.String()}
 }
 
 func getUrl(endpoint spec.Endpoint) string {
@@ -80,4 +73,89 @@ func createOperationParams(operation *spec.NamedOperation) string {
 		return ""
 	}
 	return fmt.Sprintf("parameters: {%s}", strings.Join(operationParams, ", "))
+}
+
+func generateClientApiClass(w *gen.Writer, api spec.Api) {
+	w.EmptyLine()
+	w.Line(`export const %sClient = (axiosInstance: AxiosInstance) => {`, api.Name.CamelCase())
+	w.Line(`  return {`)
+	w.Line(`    axiosInstance,`)
+	for _, operation := range api.Operations {
+		generateOperation(w.IndentedWith(2), &operation)
+	}
+	w.Line(`  }`)
+	w.Line(`}`)
+}
+
+func generateOperation(w *gen.Writer, operation *spec.NamedOperation) {
+	body := operation.Body
+	hasQueryParams := len(operation.QueryParams) > 0
+	hasHeaderParams := len(operation.HeaderParams) > 0
+	w.EmptyLine()
+	w.Line(`%s: async (%s): Promise<%s> => {`, operation.Name.CamelCase(), createOperationParams(operation), responseTypeName(operation))
+	if hasQueryParams {
+		w.Line(`  const params = {`)
+		for _, p := range operation.QueryParams {
+			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
+		}
+		w.Line(`  }`)
+	}
+	if hasHeaderParams {
+		w.Line(`  const headers = {`)
+		for _, p := range operation.HeaderParams {
+			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
+		}
+		w.Line(`  }`)
+	}
+	params := ``
+	if hasQueryParams {
+		params = `params: params,`
+	}
+	headers := ``
+	if hasHeaderParams {
+		headers = `headers: headers,`
+	}
+	w.Line(`  const config: AxiosRequestConfig = {%s%s}`, params, headers)
+	if body != nil {
+		w.Line(`  const bodyJson = encode(%s, parameters.body)`, IoTsType(&body.Type.Definition))
+		w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
+	} else {
+		w.Line("  const response = await axiosInstance.%s(`%s`, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
+	}
+	w.Line(`  switch (response.status) {`)
+	for _, response := range operation.Responses {
+		dataParam := ``
+		if !response.Type.Definition.IsEmpty() {
+			dataParam = fmt.Sprintf(`, data: decode(%s, response.data)`, IoTsType(&response.Type.Definition))
+		}
+		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
+		w.Line(`      return Promise.resolve({ status: "%s"%s })`, response.Name.Source, dataParam)
+	}
+	w.Line(`    default:`)
+	w.Line("      throw new Error(`Unexpected status code ${ response.status }`)")
+	w.Line(`  }`)
+	w.Line(`},`)
+}
+
+func generateAxiosClient(spec *spec.Spec, path string) *gen.TextFile {
+	w := NewTsWriter()
+	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
+	w.Line(`import { decode, encode } from './codec'`)
+	w.Line(`import {`)
+	for _, model := range spec.Models {
+		w.Line(`  %s,`, model.Name.PascalCase())
+		w.Line(`  T%s,`, model.Name.PascalCase())
+	}
+	w.Line(`} from './models';`)
+	for _, api := range spec.Apis {
+		generateClientApiClass(w, api)
+		for _, operation := range api.Operations {
+			generateIoTsResponse(w, &operation)
+		}
+	}
+	w.EmptyLine()
+	w.Line(`export * from './models'`)
+	w.Line(`export { Errors } from 'io-ts'`)
+	w.Line(`export { DecodeError } from './codec'`)
+	return &gen.TextFile{path, w.String()}
 }

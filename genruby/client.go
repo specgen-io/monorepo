@@ -2,10 +2,9 @@ package genruby
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec.v2"
 	"github.com/pinzolo/casee"
+	spec "github.com/specgen-io/spec.v2"
 	"github.com/vsapronov/gopoetry/ruby"
-	"io"
 	"path/filepath"
 	"specgen/gen"
 )
@@ -19,8 +18,8 @@ func GenerateClient(serviceFile string, generatePath string) error {
 	libGemPath := filepath.Join(generatePath, gemName)
 	models := generateModels(specification.ResolvedModels, moduleName, filepath.Join(libGemPath, "models.rb"))
 	clients := generateClientApisClasses(specification, libGemPath)
-	baseclient := gen.GenTextFile(func (w io.Writer) { generateBaseClient(w, moduleName) }, filepath.Join(libGemPath, "baseclient.rb"))
-	clientroot := gen.GenTextFile(func (w io.Writer) { generateClientRoot(w, gemName) }, filepath.Join(generatePath, gemName+".rb"))
+	baseclient := generateBaseClient(moduleName, filepath.Join(libGemPath, "baseclient.rb"))
+	clientroot := generateClientRoot(gemName, filepath.Join(generatePath, gemName+".rb"))
 
 	sources := []gen.TextFile{*clientroot, *baseclient, *models, *clients}
 	err = gen.WriteFiles(sources, true)
