@@ -1,11 +1,13 @@
-<#    package genruby
-<#
-<#    import (
-<#        "io"
-<#    )
-<#
-<#
-<#    func generateBaseClient(w io.Writer, moduleName string) {
+package genruby
+
+import (
+	"specgen/gen"
+	"specgen/static"
+	"strings"
+)
+
+func generateBaseClient(moduleName string, path string) *gen.TextFile {
+	code := `
 require "net/http"
 require "net/https"
 require "uri"
@@ -13,7 +15,7 @@ require "cgi"
 
 require "emery"
 
-module <%== moduleName %>
+module [[.ModuleName]]
   class BaseClient
     attr_reader :uri
     attr_reader :client
@@ -69,13 +71,17 @@ module <%== moduleName %>
       url
     end
   end
-end
-<#    }
-<#
-<#
-<#    func generateClientRoot(w io.Writer, gemName string) {
+end`
+	code, _ = static.ExecuteTemplate(code, struct { ModuleName string } { moduleName })
+	return &gen.TextFile{path, strings.TrimSpace(code)}
+}
+
+func generateClientRoot(gemName string, path string) *gen.TextFile {
+	code := `
 require "emery"
-require "<%== gemName %>/models"
-require "<%== gemName %>/baseclient"
-require "<%== gemName %>/client"
-<#    }
+require "[[.GemName]]/models"
+require "[[.GemName]]/baseclient"
+require "[[.GemName]]/client"`
+	code, _ = static.ExecuteTemplate(code, struct { GemName string } { gemName })
+	return &gen.TextFile{path, strings.TrimSpace(code)}
+}
