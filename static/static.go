@@ -9,7 +9,7 @@ import (
 	"text/template"
 )
 
-func renderTemplate(content string, data interface{}) (string, error) {
+func ExecuteTemplate(content string, data interface{}) (string, error) {
 	var buffer bytes.Buffer
 
 	t, err := template.New("template").Delims("[[", "]]").Parse(content)
@@ -32,7 +32,7 @@ func renderTemplateFile(box *rice.Box, template string, outputPath string, data 
 		return nil, err
 	}
 
-	text, err := renderTemplate(templateContent, data)
+	text, err := ExecuteTemplate(templateContent, data)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func RenderTemplate(template string, outPath string, data interface{}) ([]gen.Te
 	files := []gen.TextFile{}
 
 	err := riceBox.Walk(template, func(itemTemplatePath string, fileInfo os.FileInfo, walkError error) error {
-		itemOutputPath, walkError := renderTemplate(itemTemplatePath[len(template):], data)
+		itemOutputPath, walkError := ExecuteTemplate(itemTemplatePath[len(template):], data)
 		if walkError != nil {
 			return walkError
 		}
