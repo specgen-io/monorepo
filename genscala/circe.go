@@ -6,6 +6,7 @@ import (
 	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
 	"specgen/gen"
+	"strings"
 )
 
 func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) []gen.TextFile {
@@ -117,4 +118,38 @@ func generateCirceUnionItemsCodecs(models *spec.Models) *scala.ClassDeclaration 
 		}
 	}
 	return object
+}
+
+func generateJson(packageName string, path string) *gen.TextFile {
+	code := `
+package [[.PackageName]]
+
+object Jsoner {
+
+  import io.circe._
+  import io.circe.syntax._
+  import io.circe.parser._
+
+  def read[T](jsonStr: String)(implicit decoder: Decoder[T]): T = {
+    parse(jsonStr) match {
+      case Right(parsed) => {
+        parsed.as[T] match {
+          case Right(decoded) => decoded
+          case Left(failure) => throw failure
+        }
+      }
+      case Left(failure) => throw failure
+    }
+  }
+
+  def write[T](value: T, formatted: Boolean = false)(implicit encoder: Encoder[T]): String = {
+    if (formatted) {
+      Printer.spaces2.copy(dropNullValues = true).print(value.asJson)
+    } else {
+      Printer.noSpaces.copy(dropNullValues = true).print(value.asJson)
+    }
+  }
+}`
+	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {packageName })
+	return &gen.TextFile{path, strings.TrimSpace(code)}
 }

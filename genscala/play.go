@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"specgen/gen"
 	"specgen/genopenapi"
-	"specgen/static"
 	"strings"
 )
 
@@ -21,25 +20,16 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 	controllersPackage := controllersPackage(specification)
 	servicesPackage := servicesPackage(specification)
 
-	scalaCirceFiles, err := static.RenderTemplate("scala-circe", generatePath, static.ScalaStaticCode{PackageName: "spec.models"})
-	if err != nil {
-		return
-	}
-	scalaPlayStaticFiles, err := static.RenderTemplate("scala-play", generatePath, static.ScalaStaticCode{PackageName: "spec.controllers"})
-	if err != nil {
-		return
-	}
-	scalaHttpStaticFiles, err := static.RenderTemplate("scala-http", generatePath, static.ScalaStaticCode{PackageName: "spec.controllers"})
-	if err != nil {
-		return
-	}
+	scalaCirceFile := generateJson("spec.models", filepath.Join(generatePath, "Json.scala"))
+	scalaPlayParamsFile := generatePlayParams("spec.controllers", filepath.Join(generatePath, "PlayParamsTypesBindings.scala"))
+	scalaHttpStaticFile := generateStringParams("spec.controllers", filepath.Join(generatePath, "StringParams.scala"))
 
 	modelsFiles := GenerateCirceModels(specification, modelsPackage, generatePath)
 
 	sourceManaged := modelsFiles
-	sourceManaged = append(sourceManaged, scalaPlayStaticFiles...)
-	sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
-	sourceManaged = append(sourceManaged, scalaCirceFiles...)
+	sourceManaged = append(sourceManaged, *scalaPlayParamsFile)
+	sourceManaged = append(sourceManaged, *scalaHttpStaticFile)
+	sourceManaged = append(sourceManaged, *scalaCirceFile)
 
 	source := []gen.TextFile{}
 
@@ -561,4 +551,34 @@ func versionedTypeName(version spec.Name, typeName string) string {
 	} else {
 		return typeName
 	}
+}
+
+func generatePlayParams(packageName string, path string) *gen.TextFile {
+	code := `
+package [[.PackageName]]
+
+import play.api.mvc.QueryStringBindable
+
+object PlayParamsTypesBindings {
+  implicit def bindableParser[T](implicit stringBinder: QueryStringBindable[String], codec: Codec[T]): QueryStringBindable[T] = new QueryStringBindable[T] {
+    override def bind(key: String, params: Map[String, Seq[String]]): Option[Either[String, T]] =
+      for {
+        dateStr <- stringBinder.bind(key, params)
+      } yield {
+        dateStr match {
+          case Right(value) =>
+            try {
+              Right(codec.decode(value))
+            } catch {
+              case t: Throwable => Left(s"Unable to bind from key: $key, error: ${t.getMessage}")
+            }
+          case _ => Left(s"Unable to bind from key: $key")
+        }
+      }
+
+    override def unbind(key: String, value: T): String = stringBinder.unbind(key, codec.encode(value))
+  }
+}`
+	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {packageName })
+	return &gen.TextFile{path, strings.TrimSpace(code)}
 }

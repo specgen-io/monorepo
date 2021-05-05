@@ -7,12 +7,7 @@ fi
 
 echo "Building version: $VERSION"
 
-go get github.com/GeertJohan/go.rice/rice
-
 dep ensure
-
-rm -f specgen/static/rice-box.go
-$GOPATH/bin/rice embed-go --import-path specgen/static
 
 mkdir -p ./zips
 mkdir -p ./dist
