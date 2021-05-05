@@ -35,6 +35,13 @@ func generateModels(versionedModels spec.VersionedModels, packageName string, ge
 	for _, models := range versionedModels {
 		w := NewGoWriter()
 		w.Line("package %s", versionedPackage(models.Version, packageName))
+		w.Line("")
+		w.Line("import (")
+		w.Line("  \"encoding/json\"")
+		w.Line("  \"github.com/google/uuid\"")
+		w.Line("  \"github.com/shopspring/decimal\"")
+		w.Line("  \"time\"")
+		w.Line(")")
 		for _, model := range models.Models {
 			w.Line("")
 			if model.IsObject() {
@@ -69,7 +76,7 @@ func generateEnumModel(w *gen.Writer, model spec.NamedModel) {
 	w.Line("")
 	w.Line("const (")
 	for _, enumItem := range model.Enum.Items {
-		w.Line("  %s %s = %s", enumItem.Name.PascalCase(), model.Name.PascalCase(), enumItem.Value)
+		w.Line("  %s %s = \"%s\"", enumItem.Name.PascalCase(), model.Name.PascalCase(), enumItem.Value)
 	}
 	w.Line(")")
 }

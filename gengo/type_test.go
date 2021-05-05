@@ -29,7 +29,7 @@ func TestPlainTypeDouble(t *testing.T) {
 }
 
 func TestPlainTypeDecimal(t *testing.T) {
-	CheckPlainType(t, spec.TypeDecimal, "github.com/shopspring/decimal")
+	CheckPlainType(t, spec.TypeDecimal, "decimal.Decimal")
 }
 
 func TestPlainTypeBoolean(t *testing.T) {
@@ -37,15 +37,15 @@ func TestPlainTypeBoolean(t *testing.T) {
 }
 
 func TestPlainTypeDate(t *testing.T) {
-	CheckPlainType(t, spec.TypeDate, "time")
+	CheckPlainType(t, spec.TypeDate, "time.Time")
 }
 
 func TestPlainTypeDateTime(t *testing.T) {
-	CheckPlainType(t, spec.TypeDateTime, "time")
+	CheckPlainType(t, spec.TypeDateTime, "time.Time")
 }
 
 func TestPlainTypeJson(t *testing.T) {
-	CheckPlainType(t, spec.TypeJson, "encoding/json")
+	CheckPlainType(t, spec.TypeJson, "json.RawMessage")
 }
 
 func TestPlainTypeString(t *testing.T) {

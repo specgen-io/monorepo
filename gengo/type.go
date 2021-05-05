@@ -37,19 +37,19 @@ func PlainGoType(typ string) string {
 	case spec.TypeDouble:
 		return "float64"
 	case spec.TypeDecimal:
-		return "github.com/shopspring/decimal"
+		return "decimal.Decimal"
 	case spec.TypeBoolean:
 		return "bool"
 	case spec.TypeString:
 		return "string"
 	case spec.TypeUuid:
-		return "github.com/google/uuid"
+		return "uuid.UUID"
 	case spec.TypeDate:
-		return "time"
+		return "time.Time"
 	case spec.TypeDateTime:
-		return "time"
+		return "time.Time"
 	case spec.TypeJson:
-		return "encoding/json"
+		return "json.RawMessage"
 	default:
 		return typ
 	}
