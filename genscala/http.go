@@ -1,3 +1,12 @@
+package genscala
+
+import (
+	"specgen/gen"
+	"strings"
+)
+
+func generateStringParams(packageName string, path string) *gen.TextFile {
+	code := `
 package [[.PackageName]]
 
 import java.time.format.DateTimeFormatter
@@ -114,4 +123,7 @@ object ParamsTypesBindings {
       paramsList += ((name, codec.encode(value)))
     }
   }
+}`
+	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {packageName })
+	return &gen.TextFile{path, strings.TrimSpace(code)}
 }

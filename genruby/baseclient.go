@@ -2,7 +2,6 @@ package genruby
 
 import (
 	"specgen/gen"
-	"specgen/static"
 	"strings"
 )
 
@@ -72,7 +71,7 @@ module [[.ModuleName]]
     end
   end
 end`
-	code, _ = static.ExecuteTemplate(code, struct { ModuleName string } { moduleName })
+	code, _ = gen.ExecuteTemplate(code, struct { ModuleName string } {moduleName })
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
 
@@ -82,6 +81,6 @@ require "emery"
 require "[[.GemName]]/models"
 require "[[.GemName]]/baseclient"
 require "[[.GemName]]/client"`
-	code, _ = static.ExecuteTemplate(code, struct { GemName string } { gemName })
+	code, _ = gen.ExecuteTemplate(code, struct { GemName string } {gemName })
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
