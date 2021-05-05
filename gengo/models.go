@@ -40,9 +40,9 @@ func generateModels(versionedModels spec.VersionedModels, packageName string, ge
 			if model.IsObject() {
 				generateObjectModel(w, model)
 			} else if model.IsOneOf() {
-				generateEnumModel(w, model)
-			} else if model.IsEnum() {
 				generateOneOfModel(w, model)
+			} else if model.IsEnum() {
+				generateEnumModel(w, model)
 			}
 		}
 		file := gen.TextFile{
@@ -75,7 +75,6 @@ func generateEnumModel(w *gen.Writer, model spec.NamedModel) {
 }
 
 func generateOneOfModel(w *gen.Writer, model spec.NamedModel) {
-	w.Line("")
 	params := []string{}
 	for _, item := range model.OneOf.Items {
 		params = append(params, fmt.Sprintf("%s(%s)", GoType(&item.Type.Definition), item.Name.PascalCase()))
