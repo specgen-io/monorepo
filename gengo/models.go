@@ -14,8 +14,7 @@ func GenerateModels(serviceFile string, generatePath string) error {
 		return err
 	}
 
-	fileName := specification.Name.SnakeCase() + "_models.go"
-	modelsPath := filepath.Join(generatePath, fileName)
+	modelsPath := filepath.Join(generatePath, "models.go")
 	models := generateModels(specification.ResolvedModels, "spec", modelsPath)
 
 	err = gen.WriteFiles(models, true)
@@ -37,17 +36,17 @@ func generateModels(versionedModels spec.VersionedModels, packageName string, ge
 		w.Line("package %s", versionedPackage(models.Version, packageName))
 		w.Line("")
 		w.Line("import (")
-		w.Line("  \"encoding/json\"")
-		w.Line("  \"github.com/google/uuid\"")
-		w.Line("  \"github.com/shopspring/decimal\"")
-		w.Line("  \"time\"")
+		w.Line(`  "encoding/json"`)
+		w.Line(`  "github.com/google/uuid"`)
+		w.Line(`  "github.com/shopspring/decimal"`)
+		w.Line(`  "time"`)
 		w.Line(")")
 		for _, model := range models.Models {
 			w.Line("")
 			if model.IsObject() {
 				generateObjectModel(w, model)
 			} else if model.IsOneOf() {
-				generateOneOfModel(w, model)
+				//generateOneOfModel(w, model)
 			} else if model.IsEnum() {
 				generateEnumModel(w, model)
 			}
