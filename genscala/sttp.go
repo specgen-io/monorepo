@@ -6,7 +6,6 @@ import (
 	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
 	"specgen/gen"
-	"specgen/static"
 	"strings"
 )
 
@@ -18,24 +17,15 @@ func GenerateSttpClient(serviceFile string, generatePath string) error {
 
 	clientPackage := clientPackageName(specification.Name)
 
-	scalaStaticCode := static.ScalaStaticCode{PackageName: "spec"}
-
-	scalaCirceFiles, err := static.RenderTemplate("scala-circe", generatePath, scalaStaticCode)
-	if err != nil {
-		return err
-	}
-	scalaHttpStaticFiles, err := static.RenderTemplate("scala-http", generatePath, scalaStaticCode)
-	if err != nil {
-		return err
-	}
+	scalaCirceFile := generateJson("spec", filepath.Join(generatePath, "Json.scala"))
+	scalaHttpStaticFile := generateStringParams("spec", filepath.Join(generatePath, "StringParams.scala"))
 
 	modelsFiles := GenerateCirceModels(specification, clientPackage, generatePath)
 	interfacesFiles := generateClientInterfaces(specification, clientPackage, generatePath)
 	implsFiles := generateClientImplementations(specification, clientPackage, generatePath)
 
-	sourceManaged := scalaCirceFiles
-	sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
-	sourceManaged = append(sourceManaged, modelsFiles...)
+	sourceManaged := append(modelsFiles, *scalaCirceFile)
+	sourceManaged = append(sourceManaged, *scalaHttpStaticFile)
 	sourceManaged = append(sourceManaged, interfacesFiles...)
 	sourceManaged = append(sourceManaged, implsFiles...)
 
