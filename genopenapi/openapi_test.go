@@ -385,16 +385,15 @@ title: Bla API
 description: Some Bla API service
 version: 0
 
-http:
-    v2:
-        test:
-            some_url:
-                endpoint: GET /some/url
-                response:
-                    ok: Message
+v2:
+  http:
+    test:
+      some_url:
+        endpoint: GET /some/url
+        response:
+          ok: Message
 
-models:
-  v2:
+  models:
     Message:
       prop1: string
 `

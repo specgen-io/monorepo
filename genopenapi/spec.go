@@ -15,13 +15,13 @@ type Group struct {
 	Operations []Operation
 }
 
-func Groups(versions []spec.VersionedApis) []*Group {
+func Groups(specification *spec.Spec) []*Group {
 	groups := make([]*Group, 0)
 	groupsMap := make(map[string]*Group)
-	for _, version := range versions {
-		for _, api := range version.Apis {
+	for _, version := range specification.Versions {
+		for _, api := range version.Http.Apis {
 			for _, operation := range api.Operations {
-				url := version.GetUrl() + operation.Endpoint.Url
+				url := operation.FullUrl()
 				if _, contains := groupsMap[url]; !contains {
 					group := Group{Url: url, Operations: make([]Operation, 0)}
 					groups = append(groups, &group)
