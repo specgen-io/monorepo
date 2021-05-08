@@ -42,12 +42,12 @@ func generateOpenapi(spec *spec.Spec) *YamlMap {
 			Set("openapi", "3.0.0").
 			Set("info", info)
 
-	paths := generateApis(spec.Http.Versions)
+	paths := generateApis(spec)
 	openapi.Set("paths", paths)
 
 	schemas := Map()
 
-	for _, version := range spec.Models {
+	for _, version := range spec.Versions {
 		for _, model := range version.Models {
 			schemas.Set(versionedModelName(version.Version.Source, model.Name.Source), generateModel(model.Model))
 		}
@@ -64,9 +64,9 @@ func versionedModelName(version string, modelName string) string {
 	return modelName
 }
 
-func generateApis(apis []spec.VersionedApis) *YamlMap {
+func generateApis(spec *spec.Spec) *YamlMap {
 	paths := Map()
-	groups := Groups(apis)
+	groups := Groups(spec)
 	for _, group := range groups {
 		path := Map()
 		for _, o := range group.Operations {

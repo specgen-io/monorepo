@@ -16,7 +16,7 @@ func GenerateClient(serviceFile string, generatePath string) error {
 	gemName := specification.Name.SnakeCase()+"_client"
 	moduleName := clientModuleName(specification.Name)
 	libGemPath := filepath.Join(generatePath, gemName)
-	models := generateModels(specification.ResolvedModels, moduleName, filepath.Join(libGemPath, "models.rb"))
+	models := generateModels(specification, moduleName, filepath.Join(libGemPath, "models.rb"))
 	clients := generateClientApisClasses(specification, libGemPath)
 	baseclient := generateBaseClient(moduleName, filepath.Join(libGemPath, "baseclient.rb"))
 	clientroot := generateClientRoot(gemName, filepath.Join(generatePath, gemName+".rb"))
@@ -38,14 +38,14 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 	moduleName := clientModuleName(specification.Name)
 	rootModule := ruby.Module(moduleName)
 
-	for _, group := range specification.Http.Versions {
+	for _, version := range specification.Versions {
 		module := rootModule
-		if group.Version.Source != "" {
-			module = ruby.Module(group.Version.PascalCase())
+		if version.Version.Source != "" {
+			module = ruby.Module(version.Version.PascalCase())
 			rootModule.AddDeclarations(module)
 		}
-		for _, api := range group.Apis {
-			apiClass := generateClientApiClass(group.GetUrl(), api)
+		for _, api := range version.Http.Apis {
+			apiClass := generateClientApiClass(api)
 			module.AddDeclarations(apiClass)
 		}
 	}
@@ -79,7 +79,7 @@ func operationResult(operation *spec.NamedOperation, response *spec.NamedRespons
 	return ruby.Code(fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags))
 }
 
-func generateClientOperation(url string, operation spec.NamedOperation) *ruby.MethodDeclaration {
+func generateClientOperation(operation spec.NamedOperation) *ruby.MethodDeclaration {
 	method := ruby.Method(operation.Name.SnakeCase())
 	methodBody := method.Body()
 
@@ -98,9 +98,9 @@ func generateClientOperation(url string, operation spec.NamedOperation) *ruby.Me
 
 	url_compose := "url = @base_uri"
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		url_compose = url_compose + fmt.Sprintf(" + url_params.set_to_url('%s%s')", url, operation.Endpoint.Url)
+		url_compose = url_compose + fmt.Sprintf(" + url_params.set_to_url('%s')", operation.FullUrl())
 	} else {
-		url_compose = url_compose + fmt.Sprintf(" + '%s%s'", url, operation.Endpoint.Url)
+		url_compose = url_compose + fmt.Sprintf(" + '%s'", operation.FullUrl())
 	}
 	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		url_compose = url_compose + " + query.query_str"
@@ -132,11 +132,11 @@ func generateClientOperation(url string, operation spec.NamedOperation) *ruby.Me
 	return method
 }
 
-func generateClientApiClass(url string, api spec.Api) *ruby.ClassDeclaration {
+func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
 	apiClassName := clientClassName(api.Name)
 	apiClass := ruby.Class(apiClassName).Inherits("BaseClient")
 	for _, operation := range api.Operations {
-		method := generateClientOperation(url, operation)
+		method := generateClientOperation(operation)
 		apiClass.AddMembers(method)
 	}
 	return apiClass

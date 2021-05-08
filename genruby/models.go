@@ -16,26 +16,26 @@ func GenerateModels(serviceFile string, generatePath string) error {
 	fileName := specification.Name.SnakeCase()+"_models.rb"
 	moduleName := specification.Name.PascalCase()
 	modelsPath := filepath.Join(generatePath, fileName)
-	models := generateModels(specification.ResolvedModels, moduleName, modelsPath)
+	models := generateModels(specification, moduleName, modelsPath)
 
 	err = gen.WriteFile(models, true)
 	return err
 }
 
-func generateModels(versionedModels spec.VersionedModels, moduleName string, generatePath string) *gen.TextFile {
+func generateModels(specification *spec.Spec, moduleName string, generatePath string) *gen.TextFile {
 	unit := ruby.Unit()
 	unit.Require("date")
 	unit.Require("emery")
 
 	rootModule := ruby.Module(moduleName)
 
-	for _, models := range versionedModels {
+	for _, version := range specification.Versions {
 		module := rootModule
-		if models.Version.Source != "" {
-			module = ruby.Module(models.Version.PascalCase())
+		if version.Version.Source != "" {
+			module = ruby.Module(version.Version.PascalCase())
 			rootModule.AddDeclarations(module)
 		}
-		for _, model := range models.Models {
+		for _, model := range version.Models {
 			if model.IsObject() {
 				module.AddDeclarations(generateObjectModel(model))
 			} else if model.IsOneOf() {

@@ -92,8 +92,8 @@ func DefaultValue(typ *spec.TypeDef, valueStr string) interface{} {
 			spec.TypeDateTime:
 			return valueStr
 		default:
-			modelInfo := typ.Info.ModelInfo
-			if modelInfo != nil && modelInfo.Model.IsEnum() {
+			model := typ.Info.Model
+			if model != nil && model.IsEnum() {
 				return valueStr
 			} else {
 				panic(fmt.Sprintf("Type: %s does not support default value", typ.Name))
@@ -133,6 +133,6 @@ func PlainOpenApiType(typeInfo *spec.TypeInfo, typ string) *YamlMap {
 	case spec.TypeJson:
 		return Map().Set("type", "object")
 	default:
-		return Map().Set("$ref", "#/components/schemas/"+versionedModelName(typeInfo.ModelInfo.Version.Source, typ))
+		return Map().Set("$ref", "#/components/schemas/"+versionedModelName(typeInfo.Model.Version.Version.Source, typ))
 	}
 }

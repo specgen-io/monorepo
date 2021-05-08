@@ -64,12 +64,12 @@
   source = "https://github.com/specgen-io/spec.git"
 
 [[projects]]
-  branch = "main"
-  digest = "1:b3387bfeba176b92804d66919b797daa3fa9029fa40813609107534573606d00"
+  branch = "versions-refactoring"
+  digest = "1:870c9f12d38c3d8a8a6a64f77ce47fcab0d1b2495f0e7f32b41736a13e5b97c5"
   name = "github.com/specgen-io/spec.v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ad14facc76bb581087511a1b8e9802b7da82bbfe"
+  revision = "c65644fa65a03f27d47ce1d98712cf524895cf67"
   source = "https://github.com/specgen-io/spec.git"
 
 [[projects]]
