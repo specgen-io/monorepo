@@ -9,7 +9,7 @@ import (
 
 func TestEnumModel(t *testing.T) {
 	specYaml := `
-idl_version: 2
+spec: 2
 name: bla-api
 models:
   Model:
@@ -53,7 +53,7 @@ components:
 
 func TestObjectModel(t *testing.T) {
 	specYaml := `
-idl_version: 2
+spec: 2
 name: bla-api
 models:
   Model:
@@ -103,7 +103,7 @@ components:
 
 func TestUnionModel(t *testing.T) {
 	specYaml := `
-idl_version: 2
+spec: 2
 name: bla-api
 models:
   Model:
@@ -157,7 +157,7 @@ components:
 
 func TestApis(t *testing.T) {
 	specYaml := `
-idl_version: 2
+spec: 2
 name: bla-api
 http:
     mine:
@@ -257,7 +257,7 @@ components:
 
 func TestSpecification(t *testing.T) {
 	specYaml := `
-idl_version: 2
+spec: 2
 name: bla-api
 title: The Service
 description: The service with description
@@ -286,7 +286,7 @@ components:
 
 func TestFullSpecificationNoVersions(t *testing.T) {
 	specYaml := `
-idl_version: 2
+spec: 2
 name: bla-api
 title: Bla API
 description: Some Bla API service
@@ -379,7 +379,7 @@ components:
 
 func TestFullSpecificationWithVersions(t *testing.T) {
 	specYaml := `
-idl_version: 2
+spec: 2
 name: bla-api
 title: Bla API
 description: Some Bla API service
