@@ -35,7 +35,7 @@ func generateModels(specification *spec.Spec, moduleName string, generatePath st
 			module = ruby.Module(version.Version.PascalCase())
 			rootModule.AddDeclarations(module)
 		}
-		for _, model := range version.Models {
+		for _, model := range version.ResolvedModels {
 			if model.IsObject() {
 				module.AddDeclarations(generateObjectModel(model))
 			} else if model.IsOneOf() {
@@ -53,7 +53,7 @@ func generateModels(specification *spec.Spec, moduleName string, generatePath st
 	}
 }
 
-func generateObjectModel(model spec.NamedModel) ruby.Writable {
+func generateObjectModel(model *spec.NamedModel) ruby.Writable {
 	class := ruby.Class(model.Name.PascalCase())
 	class.AddCode("include DataClass")
 
@@ -73,7 +73,7 @@ func generateObjectModel(model spec.NamedModel) ruby.Writable {
 	return class
 }
 
-func generateEnumModel(model spec.NamedModel) ruby.Writable {
+func generateEnumModel(model *spec.NamedModel) ruby.Writable {
 	class := ruby.Class(model.Name.PascalCase())
 
 	class.AddCode("include Enum")
@@ -84,7 +84,7 @@ func generateEnumModel(model spec.NamedModel) ruby.Writable {
 	return class
 }
 
-func generateOneOfModel(model spec.NamedModel) ruby.Writable {
+func generateOneOfModel(model *spec.NamedModel) ruby.Writable {
 	params := []string{}
 	for _, item := range model.OneOf.Items {
 		params = append(params, fmt.Sprintf("%s: %s", item.Name.SnakeCase(), RubyType(&item.Type.Definition)))
