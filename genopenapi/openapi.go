@@ -66,7 +66,7 @@ func versionedModelName(version string, modelName string) string {
 
 func generateApis(spec *spec.Spec) *YamlMap {
 	paths := Map()
-	groups := Groups(spec)
+	groups := OperationsByUrl(spec)
 	for _, group := range groups {
 		path := Map()
 		for _, o := range group.Operations {
@@ -77,8 +77,9 @@ func generateApis(spec *spec.Spec) *YamlMap {
 	return paths
 }
 
-func generateOperation(o Operation) *YamlMap {
-	operationId := casee.ToCamelCase(o.Version.PascalCase() + o.Api.Name.PascalCase() + o.Operation.Name.PascalCase())
+func generateOperation(o *spec.NamedOperation) *YamlMap {
+	version := o.Api.Apis.Version.Version
+	operationId := casee.ToCamelCase(version.PascalCase() + o.Api.Name.PascalCase() + o.Name.PascalCase())
 	operation := Map().Set("operationId", operationId).Set("tags", Array().Add(o.Api.Name.Source))
 
 	if o.Operation.Description != nil {
