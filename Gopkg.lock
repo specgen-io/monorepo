@@ -65,11 +65,11 @@
 
 [[projects]]
   branch = "versions-refactoring"
-  digest = "1:870c9f12d38c3d8a8a6a64f77ce47fcab0d1b2495f0e7f32b41736a13e5b97c5"
+  digest = "1:a3d8f8e1d1a47689456408ceb0664a4683de67b98c13542a39bde338eaddab27"
   name = "github.com/specgen-io/spec.v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c65644fa65a03f27d47ce1d98712cf524895cf67"
+  revision = "cc40737cabd944b465d8eaf878e2147722d2fec0"
   source = "https://github.com/specgen-io/spec.git"
 
 [[projects]]
