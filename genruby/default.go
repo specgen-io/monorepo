@@ -42,9 +42,9 @@ func DefaultValue(typ *spec.TypeDef, value string) string {
 		case spec.TypeDateTime:
 			return `DateTime.strptime('`+value+`', '%Y-%m-%dT%H:%M:%S')`
 		default:
-			modelInfo := typ.Info.ModelInfo
-			if modelInfo != nil && modelInfo.Model.IsEnum() {
-				return modelInfo.Model.Name.PascalCase() + `::` + casee.ToSnakeCase(value)
+			model := typ.Info.Model
+			if model != nil && model.IsEnum() {
+				return model.Name.PascalCase() + `::` + casee.ToSnakeCase(value)
 			} else {
 				panic(fmt.Sprintf("Type: %s does not support default value", typ.Name))
 			}

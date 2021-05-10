@@ -11,16 +11,16 @@ import (
 
 func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) []gen.TextFile {
 	files := []gen.TextFile{}
-	for _, versionedModels := range spec.Models {
-		versionFile := generateCirceModels(&versionedModels, packageName, outPath)
+	for _, version := range spec.Versions {
+		versionFile := generateCirceModels(&version, packageName, outPath)
 		files = append(files, *versionFile)
 	}
 	return files
 }
 
-func generateCirceModels(versionedModels *spec.Models, packageName string, outPath string) *gen.TextFile {
-	if versionedModels.Version.Source != "" {
-		packageName = fmt.Sprintf("%s.%s", packageName, versionedModels.Version.FlatCase())
+func generateCirceModels(version *spec.Version, packageName string, outPath string) *gen.TextFile {
+	if version.Version.Source != "" {
+		packageName = fmt.Sprintf("%s.%s", packageName, version.Version.FlatCase())
 	}
 	unit := Unit(packageName)
 	unit.
@@ -32,7 +32,7 @@ func generateCirceModels(versionedModels *spec.Models, packageName string, outPa
 		Import("io.circe.{Decoder, Encoder}").
 		Import("io.circe.generic.extras.semiauto.{deriveUnwrappedDecoder, deriveUnwrappedEncoder}")
 
-	for _, model := range versionedModels.Models {
+	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
 			class := generateCirceObjectModel(model)
 			unit.AddDeclarations(class)
@@ -46,15 +46,15 @@ func generateCirceModels(versionedModels *spec.Models, packageName string, outPa
 		}
 	}
 
-	unit.AddDeclarations(generateCirceUnionItemsCodecs(versionedModels))
+	unit.AddDeclarations(generateCirceUnionItemsCodecs(version.ResolvedModels))
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, fmt.Sprintf("%sModels.scala", versionedModels.Version.PascalCase())),
+		Path:    filepath.Join(outPath, fmt.Sprintf("%sModels.scala", version.Version.PascalCase())),
 		Content: unit.Code(),
 	}
 }
 
-func generateCirceObjectModel(model spec.NamedModel) *scala.ClassDeclaration {
+func generateCirceObjectModel(model *spec.NamedModel) *scala.ClassDeclaration {
 	ctor := Constructor().ParamPerLine()
 	for _, field := range model.Object.Fields {
 		ctor.Param(scalaCamelCase(field.Name), ScalaType(&field.Type.Definition))
@@ -63,7 +63,7 @@ func generateCirceObjectModel(model spec.NamedModel) *scala.ClassDeclaration {
 	return modelClass
 }
 
-func generateCirceEnumModel(model spec.NamedModel) (scala.Writable, scala.Writable) {
+func generateCirceEnumModel(model *spec.NamedModel) (scala.Writable, scala.Writable) {
 	className := model.Name.PascalCase()
 
 	enumClass :=
@@ -85,7 +85,7 @@ func generateCirceEnumModel(model spec.NamedModel) (scala.Writable, scala.Writab
 	return enumClass, enumObject
 }
 
-func generateCirceUnionModel(model spec.NamedModel, packageName string) (scala.Writable, scala.Writable) {
+func generateCirceUnionModel(model *spec.NamedModel, packageName string) (scala.Writable, scala.Writable) {
 	trait := Trait(model.Name.PascalCase()).Sealed()
 
 	object := Object(model.Name.PascalCase())
@@ -101,11 +101,11 @@ func generateCirceUnionModel(model spec.NamedModel, packageName string) (scala.W
 	return trait, object
 }
 
-func generateCirceUnionItemsCodecs(models *spec.Models) *scala.ClassDeclaration {
+func generateCirceUnionItemsCodecs(models []*spec.NamedModel) *scala.ClassDeclaration {
 	object :=
 		Object("json").Extends("AutoDerivation").
 			Add(Line("implicit val auto = Configuration.default.withSnakeCaseMemberNames.withSnakeCaseConstructorNames.withDefaults"))
-	for _, model := range models.Models {
+	for _, model := range models {
 		if model.IsOneOf() {
 			for _, item := range model.OneOf.Items {
 				itemTypeName := model.Name.PascalCase() + "." + item.Name.PascalCase()

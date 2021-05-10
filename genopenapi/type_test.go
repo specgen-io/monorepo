@@ -85,11 +85,6 @@ func TestPlainTypeString(t *testing.T) {
 	checkType(t, spec.Plain(spec.TypeString), expected)
 }
 
-func TestCustomType(t *testing.T) {
-	expected := `$ref: '#/components/schemas/MyCustomType'`
-	checkType(t, VersionedPlain("", "MyCustomType"), expected)
-}
-
 func TestArrayType(t *testing.T) {
 	expected := `
 type: array
@@ -104,8 +99,8 @@ func TestMapType(t *testing.T) {
 	expected := `
 type: object
 additionalProperties:
-  $ref: '#/components/schemas/Model'
+  type: string
 `
-	typ := spec.Map(VersionedPlain("", "Model"))
+	typ := spec.Map(spec.Plain(spec.TypeString))
 	checkType(t, typ, expected)
 }
