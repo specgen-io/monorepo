@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"specgen/gen"
 	"specgen/genopenapi"
-	"specgen/static"
 	"strings"
 )
 
@@ -21,40 +20,31 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 	controllersPackage := controllersPackage(specification)
 	servicesPackage := servicesPackage(specification)
 
-	scalaCirceFiles, err := static.RenderTemplate("scala-circe", generatePath, static.ScalaStaticCode{PackageName: "spec.models"})
-	if err != nil {
-		return
-	}
-	scalaPlayStaticFiles, err := static.RenderTemplate("scala-play", generatePath, static.ScalaStaticCode{PackageName: "spec.controllers"})
-	if err != nil {
-		return
-	}
-	scalaHttpStaticFiles, err := static.RenderTemplate("scala-http", generatePath, static.ScalaStaticCode{PackageName: "spec.controllers"})
-	if err != nil {
-		return
-	}
+	scalaCirceFile := generateJson("spec.models", filepath.Join(generatePath, "Json.scala"))
+	scalaPlayParamsFile := generatePlayParams("spec.controllers", filepath.Join(generatePath, "PlayParamsTypesBindings.scala"))
+	scalaHttpStaticFile := generateStringParams("spec.controllers", filepath.Join(generatePath, "StringParams.scala"))
 
 	modelsFiles := GenerateCirceModels(specification, modelsPackage, generatePath)
 
 	sourceManaged := modelsFiles
-	sourceManaged = append(sourceManaged, scalaPlayStaticFiles...)
-	sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
-	sourceManaged = append(sourceManaged, scalaCirceFiles...)
+	sourceManaged = append(sourceManaged, *scalaPlayParamsFile)
+	sourceManaged = append(sourceManaged, *scalaHttpStaticFile)
+	sourceManaged = append(sourceManaged, *scalaCirceFile)
 
 	source := []gen.TextFile{}
 
-	for _, versionedApis := range specification.Http.Versions {
-		apisSourceManaged := generateApis(versionedApis, servicesPackage, controllersPackage, generatePath)
+	for _, version := range specification.Versions {
+		apisSourceManaged := generateApis(&version, servicesPackage, controllersPackage, generatePath)
 		sourceManaged = append(sourceManaged, apisSourceManaged...)
-		apiControllerFile := generateApiControllers(versionedApis, controllersPackage, generatePath)
+		apiControllerFile := generateApiControllers(&version, controllersPackage, generatePath)
 		sourceManaged = append(sourceManaged, *apiControllerFile)
-		apiRoutersFile := generateRouter(&versionedApis, "app", generatePath)
+		apiRoutersFile := generateRouter(&version, "app", generatePath)
 		sourceManaged = append(sourceManaged, *apiRoutersFile)
-		servicesSource := generateApisServices(versionedApis, servicesPackage, servicesPath)
+		servicesSource := generateApisServices(&version, servicesPackage, servicesPath)
 		source = append(source, servicesSource...)
 	}
 
-	routesFile := generateMainRouter(specification.Http.Versions, "app", generatePath)
+	routesFile := generateMainRouter(specification.Versions, "app", generatePath)
 	sourceManaged = append(sourceManaged, *routesFile)
 
 	genopenapi.GenerateSpecification(serviceFile, filepath.Join(swaggerPath, "swagger.yaml"))
@@ -72,19 +62,19 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 	return
 }
 
-func generateApis(versionedApis spec.VersionedApis, servicesPackage string, controllersPackage string, generatePath string) []gen.TextFile {
+func generateApis(version *spec.Version, servicesPackage string, controllersPackage string, generatePath string) []gen.TextFile {
 	sourceManaged := []gen.TextFile{}
-	for _, api := range versionedApis.Apis {
-		apiTraitFile := generateApiInterface(versionedApis.Version, api, servicesPackage, generatePath)
+	for _, api := range version.Http.Apis {
+		apiTraitFile := generateApiInterface(api, servicesPackage, generatePath)
 		sourceManaged = append(sourceManaged, *apiTraitFile)
 	}
 	return sourceManaged
 }
 
-func generateApisServices(versionedApis spec.VersionedApis, servicesPackage string, servicesPath string) []gen.TextFile {
+func generateApisServices(version *spec.Version, servicesPackage string, servicesPath string) []gen.TextFile {
 	source := []gen.TextFile{}
-	for _, api := range versionedApis.Apis {
-		apiClassFile := generateApiClass(versionedApis.Version, api, servicesPackage, servicesPath)
+	for _, api := range version.Http.Apis {
+		apiClassFile := generateApiClass(api, servicesPackage, servicesPath)
 		source = append(source, *apiClassFile)
 	}
 	return source
@@ -136,7 +126,8 @@ func operationSignature(operation spec.NamedOperation) *scala.MethodDeclaration 
 	return method
 }
 
-func generateApiInterface(version spec.Name, api spec.Api, packageName string, outPath string) *gen.TextFile {
+func generateApiInterface(api spec.Api, packageName string, outPath string) *gen.TextFile {
+	version := api.Apis.Version.Version
 	unit := Unit(versionedPackage(version, packageName))
 
 	modelsPackage := versionedPackage(version, "models")
@@ -169,7 +160,8 @@ func generateApiInterfaceTrait(api spec.Api, apiTraitName string) *scala.TraitDe
 	return apiTrait
 }
 
-func generateApiClass(version spec.Name, api spec.Api, packageName string, outPath string) *gen.TextFile {
+func generateApiClass(api spec.Api, packageName string, outPath string) *gen.TextFile {
+	version := api.Apis.Version.Version
 	unit := Unit(versionedPackage(version, packageName))
 
 	modelsPackage := versionedPackage(version, "models")
@@ -209,7 +201,7 @@ func addParamsParsing(params []spec.NamedParam, paramsName string, readingFun st
 		for _, param := range params {
 			paramBaseType := param.Type.Definition.BaseType()
 			method := "read"
-			if paramBaseType.Info.ModelInfo != nil && paramBaseType.Info.ModelInfo.Model.IsEnum() {
+			if paramBaseType.Info.Model != nil && paramBaseType.Info.Model.IsEnum() {
 				method = "readEnum"
 			}
 			code.Add(Code(`val %s = %s.%s[%s]("%s")`, param.Name.CamelCase(), paramsName, method, ScalaType(paramBaseType), param.Name.Source))
@@ -225,11 +217,11 @@ func addParamsParsing(params []spec.NamedParam, paramsName string, readingFun st
 	return code
 }
 
-func generateApiControllers(versionedApis spec.VersionedApis, packageName string, outPath string) *gen.TextFile {
-	unit := Unit(versionedPackage(versionedApis.Version, packageName))
+func generateApiControllers(version *spec.Version, packageName string, outPath string) *gen.TextFile {
+	unit := Unit(versionedPackage(version.Version, packageName))
 
-	modelsPackage := versionedPackage(versionedApis.Version, "models")
-	servicePackage := versionedPackage(versionedApis.Version, "services")
+	modelsPackage := versionedPackage(version.Version, "models")
+	servicePackage := versionedPackage(version.Version, "services")
 	unit.
 		Import("javax.inject._").
 		Import("scala.util._").
@@ -241,7 +233,7 @@ func generateApiControllers(versionedApis spec.VersionedApis, packageName string
 		Import(modelsPackage + "._").
 		Import(modelsPackage + ".json._")
 
-	for _, api := range versionedApis.Apis {
+	for _, api := range version.Http.Apis {
 		class :=
 			Class(controllerType(api.Name)).Attribute("Singleton").Extends("AbstractController(cc)").
 				Constructor(Constructor().
@@ -260,7 +252,7 @@ func generateApiControllers(versionedApis spec.VersionedApis, packageName string
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, fmt.Sprintf("%sControllers.scala", versionedApis.Version.PascalCase())),
+		Path:    filepath.Join(outPath, fmt.Sprintf("%sControllers.scala", version.Version.PascalCase())),
 		Content: unit.Code(),
 	}
 }
@@ -376,10 +368,10 @@ func getParsedOperationParams(operation spec.NamedOperation) []string {
 	return params
 }
 
-func generateRouter(versionedApis *spec.VersionedApis, packageName string, outPath string) *gen.TextFile {
-	packageName = versionedPackage(versionedApis.Version, packageName)
-	controllersPackage := versionedPackage(versionedApis.Version, "controllers")
-	modelsPackage := versionedPackage(versionedApis.Version, "models")
+func generateRouter(version *spec.Version, packageName string, outPath string) *gen.TextFile {
+	packageName = versionedPackage(version.Version, packageName)
+	controllersPackage := versionedPackage(version.Version, "controllers")
+	modelsPackage := versionedPackage(version.Version, "models")
 
 	unit :=
 		Unit(packageName).
@@ -392,17 +384,17 @@ func generateRouter(versionedApis *spec.VersionedApis, packageName string, outPa
 			Import(controllersPackage + "._").
 			Import(modelsPackage + "._")
 
-	for _, api := range versionedApis.Apis {
-		unit.AddDeclarations(generateApiRouter(versionedApis, api))
+	for _, api := range version.Http.Apis {
+		unit.AddDeclarations(generateApiRouter(api))
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, fmt.Sprintf("%sRouters.scala", versionedApis.Version.PascalCase())),
+		Path:    filepath.Join(outPath, fmt.Sprintf("%sRouters.scala", version.Version.PascalCase())),
 		Content: unit.Code(),
 	}
 }
 
-func generateMainRouter(versions []spec.VersionedApis, packageName string, outPath string) *gen.TextFile {
+func generateMainRouter(versions []spec.Version, packageName string, outPath string) *gen.TextFile {
 	unit :=
 		Unit(packageName).
 			Import("javax.inject._").
@@ -416,17 +408,17 @@ func generateMainRouter(versions []spec.VersionedApis, packageName string, outPa
 	}
 }
 
-func generateSpecRouterMainClass(versions []spec.VersionedApis) *scala.ClassDeclaration {
+func generateSpecRouterMainClass(versions []spec.Version) *scala.ClassDeclaration {
 	class :=
 		Class(`SpecRouter`).Extends(`SimpleRouter`).
 			Constructor(
 				Constructor().
 					Attribute(`Inject()`).
 					AddParams(Dynamic(func(code *scala.WritableList) {
-						for _, versionedApis := range versions {
-							for _, api := range versionedApis.Apis {
-								apiParamName := api.Name.CamelCase() + versionedApis.Version.PascalCase()
-								apiTypeName := versionedTypeName(versionedApis.Version, routerType(api.Name))
+						for _, version := range versions {
+							for _, api := range version.Http.Apis {
+								apiParamName := api.Name.CamelCase() + version.Version.PascalCase()
+								apiTypeName := versionedTypeName(version.Version, routerType(api.Name))
 								code.Add(Param(apiParamName, apiTypeName))
 							}
 						}
@@ -437,9 +429,9 @@ func generateSpecRouterMainClass(versions []spec.VersionedApis) *scala.ClassDecl
 				Block(
 					Line(`Seq(`),
 					Block(Dynamic(func(code *scala.WritableList) {
-						for _, versionedApis := range versions {
-							for _, api := range versionedApis.Apis {
-								apiParamName := api.Name.CamelCase() + versionedApis.Version.PascalCase()
+						for _, version := range versions {
+							for _, api := range version.Http.Apis {
+								apiParamName := api.Name.CamelCase() + version.Version.PascalCase()
 								code.Add(Line(`%s.routes,`, apiParamName))
 							}
 						}
@@ -458,7 +450,7 @@ func routeName(operationName spec.Name) string {
 	return fmt.Sprintf("route%s", operationName.PascalCase())
 }
 
-func generateApiRouter(versionedApis *spec.VersionedApis, api spec.Api) *scala.ClassDeclaration {
+func generateApiRouter(api spec.Api) *scala.ClassDeclaration {
 	class :=
 		Class(routerType(api.Name)).Extends(`SimpleRouter`).
 			Constructor(Constructor().
@@ -471,7 +463,7 @@ func generateApiRouter(versionedApis *spec.VersionedApis, api spec.Api) *scala.C
 		class.Add(
 			Line(`lazy val %s = Route("%s", PathPattern(List(`, routeName(operation.Name), operation.Endpoint.Method),
 			Block(Dynamic(func(code *scala.WritableList) {
-				reminder := versionedApis.GetUrl() + operation.Endpoint.Url
+				reminder := operation.FullUrl()
 				for _, param := range operation.Endpoint.UrlParams {
 					parts := strings.Split(reminder, spec.UrlParamStr(param.Name.Source))
 					code.Add(Line(`StaticPart("%s"),`, parts[0]))
@@ -561,4 +553,34 @@ func versionedTypeName(version spec.Name, typeName string) string {
 	} else {
 		return typeName
 	}
+}
+
+func generatePlayParams(packageName string, path string) *gen.TextFile {
+	code := `
+package [[.PackageName]]
+
+import play.api.mvc.QueryStringBindable
+
+object PlayParamsTypesBindings {
+  implicit def bindableParser[T](implicit stringBinder: QueryStringBindable[String], codec: Codec[T]): QueryStringBindable[T] = new QueryStringBindable[T] {
+    override def bind(key: String, params: Map[String, Seq[String]]): Option[Either[String, T]] =
+      for {
+        dateStr <- stringBinder.bind(key, params)
+      } yield {
+        dateStr match {
+          case Right(value) =>
+            try {
+              Right(codec.decode(value))
+            } catch {
+              case t: Throwable => Left(s"Unable to bind from key: $key, error: ${t.getMessage}")
+            }
+          case _ => Left(s"Unable to bind from key: $key")
+        }
+      }
+
+    override def unbind(key: String, value: T): String = stringBinder.unbind(key, codec.encode(value))
+  }
+}`
+	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {packageName })
+	return &gen.TextFile{path, strings.TrimSpace(code)}
 }

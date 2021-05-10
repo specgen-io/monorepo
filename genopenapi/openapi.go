@@ -42,12 +42,12 @@ func generateOpenapi(spec *spec.Spec) *YamlMap {
 			Set("openapi", "3.0.0").
 			Set("info", info)
 
-	paths := generateApis(spec.Http.Versions)
+	paths := generateApis(spec)
 	openapi.Set("paths", paths)
 
 	schemas := Map()
 
-	for _, version := range spec.Models {
+	for _, version := range spec.Versions {
 		for _, model := range version.Models {
 			schemas.Set(versionedModelName(version.Version.Source, model.Name.Source), generateModel(model.Model))
 		}
@@ -64,9 +64,9 @@ func versionedModelName(version string, modelName string) string {
 	return modelName
 }
 
-func generateApis(apis []spec.VersionedApis) *YamlMap {
+func generateApis(spec *spec.Spec) *YamlMap {
 	paths := Map()
-	groups := Groups(apis)
+	groups := OperationsByUrl(spec)
 	for _, group := range groups {
 		path := Map()
 		for _, o := range group.Operations {
@@ -77,8 +77,9 @@ func generateApis(apis []spec.VersionedApis) *YamlMap {
 	return paths
 }
 
-func generateOperation(o Operation) *YamlMap {
-	operationId := casee.ToCamelCase(o.Version.PascalCase() + o.Api.Name.PascalCase() + o.Operation.Name.PascalCase())
+func generateOperation(o *spec.NamedOperation) *YamlMap {
+	version := o.Api.Apis.Version.Version
+	operationId := casee.ToCamelCase(version.PascalCase() + o.Api.Name.PascalCase() + o.Name.PascalCase())
 	operation := Map().Set("operationId", operationId).Set("tags", Array().Add(o.Api.Name.Source))
 
 	if o.Operation.Description != nil {

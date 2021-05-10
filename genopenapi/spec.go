@@ -2,36 +2,30 @@ package genopenapi
 
 import spec "github.com/specgen-io/spec.v2"
 
-type Version string
-
-type Operation struct {
-	Version   spec.Name
-	Api       spec.Api
-	Operation spec.NamedOperation
-}
-
-type Group struct {
+type UrlOperations struct {
 	Url        string
-	Operations []Operation
+	Operations []*spec.NamedOperation
 }
 
-func Groups(versions []spec.VersionedApis) []*Group {
-	groups := make([]*Group, 0)
-	groupsMap := make(map[string]*Group)
-	for _, version := range versions {
-		for _, api := range version.Apis {
-			for _, operation := range api.Operations {
-				url := version.GetUrl() + operation.Endpoint.Url
+func OperationsByUrl(specification *spec.Spec) []*UrlOperations {
+	groups := make([]*UrlOperations, 0)
+	groupsMap := make(map[string]*UrlOperations)
+	for verIndex := range specification.Versions {
+		version := &specification.Versions[verIndex]
+		for apiIndex := range version.Http.Apis {
+			api := &version.Http.Apis[apiIndex]
+			for opIndex := range api.Operations {
+				operation := &api.Operations[opIndex]
+				url := operation.FullUrl()
 				if _, contains := groupsMap[url]; !contains {
-					group := Group{Url: url, Operations: make([]Operation, 0)}
-					groups = append(groups, &group)
-					groupsMap[url] = &group
+					urlOperations := UrlOperations{Url: url, Operations: make([]*spec.NamedOperation, 0)}
+					groups = append(groups, &urlOperations)
+					groupsMap[url] = &urlOperations
 				}
 				group, _ := groupsMap[url]
-				group.Operations = append(group.Operations, Operation{version.Version, api, operation})
+				group.Operations = append(group.Operations, operation)
 			}
 		}
 	}
-
 	return groups
 }

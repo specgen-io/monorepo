@@ -6,7 +6,6 @@ import (
 	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
 	"specgen/gen"
-	"specgen/static"
 	"strings"
 )
 
@@ -18,24 +17,15 @@ func GenerateSttpClient(serviceFile string, generatePath string) error {
 
 	clientPackage := clientPackageName(specification.Name)
 
-	scalaStaticCode := static.ScalaStaticCode{PackageName: "spec"}
-
-	scalaCirceFiles, err := static.RenderTemplate("scala-circe", generatePath, scalaStaticCode)
-	if err != nil {
-		return err
-	}
-	scalaHttpStaticFiles, err := static.RenderTemplate("scala-http", generatePath, scalaStaticCode)
-	if err != nil {
-		return err
-	}
+	scalaCirceFile := generateJson("spec", filepath.Join(generatePath, "Json.scala"))
+	scalaHttpStaticFile := generateStringParams("spec", filepath.Join(generatePath, "StringParams.scala"))
 
 	modelsFiles := GenerateCirceModels(specification, clientPackage, generatePath)
 	interfacesFiles := generateClientInterfaces(specification, clientPackage, generatePath)
 	implsFiles := generateClientImplementations(specification, clientPackage, generatePath)
 
-	sourceManaged := scalaCirceFiles
-	sourceManaged = append(sourceManaged, scalaHttpStaticFiles...)
-	sourceManaged = append(sourceManaged, modelsFiles...)
+	sourceManaged := append(modelsFiles, *scalaCirceFile)
+	sourceManaged = append(sourceManaged, *scalaHttpStaticFile)
 	sourceManaged = append(sourceManaged, interfacesFiles...)
 	sourceManaged = append(sourceManaged, implsFiles...)
 
@@ -53,15 +43,15 @@ func clientPackageName(name spec.Name) string {
 
 func generateClientImplementations(specification *spec.Spec, packageName string, outPath string) []gen.TextFile {
 	files := []gen.TextFile{}
-	for _, versionedApis := range specification.Http.Versions {
-		versionFile := generateClientApiImplementations(&versionedApis, packageName, outPath)
+	for _, version := range specification.Versions {
+		versionFile := generateClientApiImplementations(&version, packageName, outPath)
 		files = append(files, *versionFile)
 	}
 	return files
 }
 
-func generateClientApiImplementations(versionedApis *spec.VersionedApis, packageName string, outPath string) *gen.TextFile {
-	unit := Unit(versionedPackage(versionedApis.Version, packageName))
+func generateClientApiImplementations(version *spec.Version, packageName string, outPath string) *gen.TextFile {
+	unit := Unit(versionedPackage(version.Version, packageName))
 
 	unit.
 		Import("scala.concurrent._").
@@ -71,44 +61,44 @@ func generateClientApiImplementations(versionedApis *spec.VersionedApis, package
 		Import("spec.ParamsTypesBindings._").
 		Import("json._")
 
-	for _, api := range versionedApis.Apis {
-		apiTrait := generateClientApiClass(versionedApis, api)
+	for _, api := range version.Http.Apis {
+		apiTrait := generateClientApiClass(api)
 		unit.AddDeclarations(apiTrait)
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, versionedApis.Version.PascalCase()+"Client.scala"),
+		Path:    filepath.Join(outPath, version.Version.PascalCase()+"Client.scala"),
 		Content: unit.Code(),
 	}
 }
 
 func generateClientInterfaces(specification *spec.Spec, packageName string, outPath string) []gen.TextFile {
 	files := []gen.TextFile{}
-	for _, versionedApis := range specification.Http.Versions {
-		versionFile := generateClientApisInterfaces(&versionedApis, packageName, outPath)
+	for _, version := range specification.Versions {
+		versionFile := generateClientApisInterfaces(&version, packageName, outPath)
 		files = append(files, *versionFile)
 	}
 	return files
 }
 
-func generateClientApisInterfaces(versionedApis *spec.VersionedApis, packageName string, outPath string) *gen.TextFile {
-	unit := Unit(versionedPackage(versionedApis.Version, packageName))
+func generateClientApisInterfaces(version *spec.Version, packageName string, outPath string) *gen.TextFile {
+	unit := Unit(versionedPackage(version.Version, packageName))
 
 	unit.
 		Import("scala.concurrent._")
 
-	for _, api := range versionedApis.Apis {
+	for _, api := range version.Http.Apis {
 		apiTrait := generateClientApiTrait(api)
 		unit.AddDeclarations(apiTrait)
 	}
 
-	for _, api := range versionedApis.Apis {
+	for _, api := range version.Http.Apis {
 		apiObject := generateApiInterfaceResponse(api, clientTraitName(api.Name))
 		unit.AddDeclarations(apiObject)
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, versionedApis.Version.PascalCase()+"Interfaces.scala"),
+		Path:    filepath.Join(outPath, version.Version.PascalCase()+"Interfaces.scala"),
 		Content: unit.Code(),
 	}
 }
@@ -195,9 +185,9 @@ func generateResponseCases(operation spec.NamedOperation) *scala.StatementsDecla
 	return cases
 }
 
-func generateClientOperationImplementation(versionedApis *spec.VersionedApis, operation spec.NamedOperation) *scala.StatementsDeclaration {
+func generateClientOperationImplementation(operation spec.NamedOperation) *scala.StatementsDeclaration {
 	httpMethod := strings.ToLower(operation.Endpoint.Method)
-	url := versionedApis.GetUrl() + operation.Endpoint.Url
+	url := operation.FullUrl()
 	for _, param := range operation.Endpoint.UrlParams {
 		url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), "$"+param.Name.CamelCase(), -1)
 	}
@@ -271,7 +261,7 @@ func generateClientOperationImplementation(versionedApis *spec.VersionedApis, op
 	return code
 }
 
-func generateClientApiClass(versionedApis *spec.VersionedApis, api spec.Api) *scala.ClassDeclaration {
+func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
 	apiClassName := clientClassName(api.Name)
 	apiTraitName := clientTraitName(api.Name)
 	apiClass :=
@@ -284,7 +274,7 @@ func generateClientApiClass(versionedApis *spec.VersionedApis, api spec.Api) *sc
 			Add(Import("ExecutionContext.Implicits.global")).
 			Add(Line("private val logger: Logger = LoggerFactory.getLogger(this.getClass)"))
 	for _, operation := range api.Operations {
-		method := generateClientOperationSignature(operation).Body(generateClientOperationImplementation(versionedApis, operation))
+		method := generateClientOperationSignature(operation).Body(generateClientOperationImplementation(operation))
 		apiClass.Add(method)
 	}
 	return apiClass
