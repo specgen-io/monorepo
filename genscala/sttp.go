@@ -196,9 +196,9 @@ func generateClientOperationImplementation(operation spec.NamedOperation) *scala
 		addParamsWriting(operation.QueryParams, "query"),
 		Statements(Dynamic(func(code *scala.WritableList) {
 			if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
-				code.Add(Line(`val url = Uri.parse(baseUrl+s"%s").get.params(query.params:_*)`, operation.FullUrl()))
+				code.Add(Line(`val url = Uri.parse(baseUrl+s"%s").get.params(query.params:_*)`, url))
 			} else {
-				code.Add(Line(`val url = Uri.parse(baseUrl+s"%s").get`, operation.FullUrl()))
+				code.Add(Line(`val url = Uri.parse(baseUrl+s"%s").get`, url))
 			}
 		})...),
 		addParamsWriting(operation.HeaderParams, "headers"),
