@@ -15,7 +15,7 @@ func GenerateModels(serviceFile string, generatePath string) error {
 	}
 
 	modelsPath := filepath.Join(generatePath, "models.go")
-	models := generateModels(specification.ResolvedModels, "spec", modelsPath)
+	models := generateModels(specification, "spec", modelsPath)
 
 	err = gen.WriteFiles(models, true)
 	return err
@@ -28,12 +28,12 @@ func versionedPackage(version spec.Name, packageName string) string {
 	return packageName
 }
 
-func generateModels(versionedModels spec.VersionedModels, packageName string, generatePath string) []gen.TextFile {
+func generateModels(specification *spec.Spec, packageName string, generatePath string) []gen.TextFile {
 	files := []gen.TextFile{}
 
-	for _, models := range versionedModels {
+	for _, version := range specification.Versions {
 		w := NewGoWriter()
-		w.Line("package %s", versionedPackage(models.Version, packageName))
+		w.Line("package %s", versionedPackage(version.Version, packageName))
 		w.Line("")
 		w.Line("import (")
 		w.Line(`  "encoding/json"`)
@@ -41,7 +41,7 @@ func generateModels(versionedModels spec.VersionedModels, packageName string, ge
 		w.Line(`  "github.com/shopspring/decimal"`)
 		w.Line(`  "time"`)
 		w.Line(")")
-		for _, model := range models.Models {
+		for _, model := range version.ResolvedModels {
 			w.Line("")
 			if model.IsObject() {
 				generateObjectModel(w, model)
@@ -61,7 +61,7 @@ func generateModels(versionedModels spec.VersionedModels, packageName string, ge
 	return files
 }
 
-func generateObjectModel(w *gen.Writer, model spec.NamedModel) {
+func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("type %s struct {", model.Name.PascalCase())
 	for _, field := range model.Object.Fields {
 		typ := GoType(&field.Type.Definition)
@@ -70,7 +70,7 @@ func generateObjectModel(w *gen.Writer, model spec.NamedModel) {
 	w.Line("}")
 }
 
-func generateEnumModel(w *gen.Writer, model spec.NamedModel) {
+func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("type %s %s", model.Name.PascalCase(), "string")
 	w.Line("")
 	w.Line("const (")
@@ -80,7 +80,7 @@ func generateEnumModel(w *gen.Writer, model spec.NamedModel) {
 	w.Line(")")
 }
 
-func generateOneOfModel(w *gen.Writer, model spec.NamedModel) {
+func generateOneOfModel(w *gen.Writer, model *spec.NamedModel) {
 	params := []string{}
 	for _, item := range model.OneOf.Items {
 		params = append(params, fmt.Sprintf("%s(%s)", GoType(&item.Type.Definition), item.Name.PascalCase()))
