@@ -1,7 +1,7 @@
 [[constraint]]
   name = "github.com/specgen-io/spec.v2"
   source = "https://github.com/specgen-io/spec.git"
-  branch = "versions-refactoring"
+  branch = "main"
 
 [[constraint]]
   name = "github.com/specgen-io/spec.v1"
