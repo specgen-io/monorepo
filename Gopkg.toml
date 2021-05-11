@@ -4,11 +4,6 @@
   branch = "main"
 
 [[constraint]]
-  name = "github.com/specgen-io/spec.v1"
-  source = "https://github.com/specgen-io/spec.git"
-  branch = "v1"
-
-[[constraint]]
   branch = "master"
   name = "github.com/dollarshaveclub/line"
 

@@ -1,8 +1,8 @@
 package gents
 
 import (
-"fmt"
-spec "github.com/specgen-io/spec.v1"
+	"fmt"
+	spec "github.com/specgen-io/spec.v2"
 )
 
 func IoTsType(typ *spec.TypeDef) string {

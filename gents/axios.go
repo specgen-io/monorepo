@@ -2,7 +2,7 @@ package gents
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec.v1"
+	spec "github.com/specgen-io/spec.v2"
 	"path/filepath"
 	"specgen/gen"
 	"strings"
@@ -16,10 +16,10 @@ func GenerateAxiosClient(serviceFile string, generatePath string) error {
 
 	iots := generateIoTs(filepath.Join(generatePath, "io-ts.ts"))
 	codec := generateCodec(filepath.Join(generatePath, "codec.ts"))
-	models := GenerateIoTsModels(spec, filepath.Join(generatePath, "models.ts"))
-	client := generateAxiosClient(spec, filepath.Join(generatePath, "index.ts"))
+	clients := generateAxiosClients(spec, generatePath)
 
-	files := []gen.TextFile{*models, *client, *iots, *codec}
+	files := []gen.TextFile{*iots, *codec}
+	files = append(files, clients...)
 	err = gen.WriteFiles(files, true)
 	if err != nil {
 		return err
@@ -137,25 +137,33 @@ func generateOperation(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`},`)
 }
 
-func generateAxiosClient(spec *spec.Spec, path string) *gen.TextFile {
-	w := NewTsWriter()
+func generateAxiosClient(w *gen.Writer, version *spec.Version) {
 	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
 	w.Line(`import { decode, encode } from './codec'`)
-	w.Line(`import {`)
-	for _, model := range spec.Models {
-		w.Line(`  %s,`, model.Name.PascalCase())
-		w.Line(`  T%s,`, model.Name.PascalCase())
-	}
-	w.Line(`} from './models';`)
-	for _, api := range spec.Apis {
+	for _, api := range version.Http.Apis {
 		generateClientApiClass(w, api)
 		for _, operation := range api.Operations {
 			generateIoTsResponse(w, &operation)
 		}
 	}
 	w.EmptyLine()
-	w.Line(`export * from './models'`)
 	w.Line(`export { Errors } from 'io-ts'`)
 	w.Line(`export { DecodeError } from './codec'`)
-	return &gen.TextFile{path, w.String()}
+}
+
+func generateAxiosClients(spec *spec.Spec, path string) []gen.TextFile {
+	files := []gen.TextFile{}
+	for _, version := range spec.Versions {
+		w := NewTsWriter()
+		generateIoTsModels(w, &version)
+		w.EmptyLine()
+		generateAxiosClient(w, &version)
+		filename := "index.ts"
+		if version.Version.Source != "" {
+			filename = version.Version.FlatCase()+".ts"
+		}
+		file := gen.TextFile{filepath.Join(path, filename), w.String()}
+		files = append(files, file)
+	}
+	return files
 }
