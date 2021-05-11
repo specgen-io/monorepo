@@ -1,16 +1,27 @@
 package gents
 
 import (
-	spec "github.com/specgen-io/spec.v1"
+	spec "github.com/specgen-io/spec.v2"
+	"path/filepath"
 	"specgen/gen"
 )
 
-func GenerateIoTsModels(spec *spec.Spec, outPath string) *gen.TextFile {
-	w := NewTsWriter()
+func GenerateIoTsModels(spec *spec.Spec, outPath string) []gen.TextFile {
+	files := []gen.TextFile{}
+	for _, version := range spec.Versions {
+		w := NewTsWriter()
+		generateIoTsModels(w, &version)
+		filename := version.Version.FlatCase()+"models.ts"
+		files = append(files, gen.TextFile{Path: filepath.Join(outPath, filename), Content: w.String()})
+	}
+	return files
+}
+
+func generateIoTsModels(w *gen.Writer, version *spec.Version) {
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
 	w.Line("import * as t from './io-ts'")
-	for _, model := range spec.ResolvedModels {
+	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
 			generateIoTsObjectModel(w, model)
 		} else if model.IsEnum() {
@@ -19,10 +30,9 @@ func GenerateIoTsModels(spec *spec.Spec, outPath string) *gen.TextFile {
 			generateIoTsUnionModel(w, model)
 		}
 	}
-	return &gen.TextFile{Path: outPath, Content: w.String()}
 }
 
-func kindOfFields(objectModel spec.NamedModel) (bool, bool) {
+func kindOfFields(objectModel *spec.NamedModel) (bool, bool) {
 	var hasRequiredFields = false
 	var hasOptionalFields = false
 	for _, field := range objectModel.Object.Fields {
@@ -35,7 +45,7 @@ func kindOfFields(objectModel spec.NamedModel) (bool, bool) {
 	return hasRequiredFields, hasOptionalFields
 }
 
-func generateIoTsObjectModel(w *gen.Writer, model spec.NamedModel) {
+func generateIoTsObjectModel(w *gen.Writer, model *spec.NamedModel) {
 	hasRequiredFields, hasOptionalFields := kindOfFields(model)
 	if hasRequiredFields && hasOptionalFields {
 		w.Line("")
@@ -71,7 +81,7 @@ func generateIoTsObjectModel(w *gen.Writer, model spec.NamedModel) {
 	w.Line("export type %s = t.TypeOf<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func generateIoTsEnumModel(w *gen.Writer, model spec.NamedModel) {
+func generateIoTsEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("")
 	w.Line("export enum %s {", model.Name.PascalCase())
 	for _, item := range model.Enum.Items {
@@ -82,7 +92,7 @@ func generateIoTsEnumModel(w *gen.Writer, model spec.NamedModel) {
 	w.Line("export const T%s = t.enum(%s)", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func generateIoTsUnionModel(w *gen.Writer, model spec.NamedModel) {
+func generateIoTsUnionModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("")
 	w.Line("export const T%s = t.union([", model.Name.PascalCase())
 	for _, item := range model.OneOf.Items {

@@ -55,15 +55,6 @@
   version = "v0.8.1"
 
 [[projects]]
-  branch = "v1"
-  digest = "1:12834c7379a2ea0f580f9e05fc9196b5985cce355c00caa90383814ac9edad09"
-  name = "github.com/specgen-io/spec.v1"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "53d41c3ea669a1feb2289bed1cf166d6de2f054d"
-  source = "https://github.com/specgen-io/spec.git"
-
-[[projects]]
   branch = "main"
   digest = "1:41a8f5ea92c1958cb6519fc861713f8dcaa10f246f38c49c72c2afc6cc79284f"
   name = "github.com/specgen-io/spec.v2"
@@ -128,7 +119,6 @@
   input-imports = [
     "github.com/dollarshaveclub/line",
     "github.com/pinzolo/casee",
-    "github.com/specgen-io/spec.v1",
     "github.com/specgen-io/spec.v2",
     "github.com/spf13/cobra",
     "github.com/vsapronov/gopoetry/ruby",
