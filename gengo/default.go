@@ -36,11 +36,11 @@ func DefaultValue(typ *spec.TypeDef, value string) string {
 		case spec.TypeString:
 			return `"` + value + `"`
 		case spec.TypeUuid:
-			return `guuid.New(` + value + `)`
+			return `uuid.MustParse("` + value + `")`
 		case spec.TypeDate:
-			return `time.Parse("2006-01-02", "` + value + `")`
+			return `civil.ParseDate("` + value + `")`
 		case spec.TypeDateTime:
-			return `time.Parse("2006-01-02T15:04:05", "` + value + `")`
+			return `civil.ParseDateTime("` + value + `")`
 		default:
 			model := typ.Info.Model
 			if model != nil && model.IsEnum() {

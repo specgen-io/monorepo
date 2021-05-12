@@ -45,9 +45,9 @@ func PlainGoType(typ string) string {
 	case spec.TypeUuid:
 		return "uuid.UUID"
 	case spec.TypeDate:
-		return "time.Time"
+		return "civil.Date"
 	case spec.TypeDateTime:
-		return "time.Time"
+		return "civil.DateTime"
 	case spec.TypeJson:
 		return "json.RawMessage"
 	default:

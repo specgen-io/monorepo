@@ -37,11 +37,11 @@ func TestPlainTypeBoolean(t *testing.T) {
 }
 
 func TestPlainTypeDate(t *testing.T) {
-	CheckPlainType(t, spec.TypeDate, "time.Time")
+	CheckPlainType(t, spec.TypeDate, "civil.Date")
 }
 
 func TestPlainTypeDateTime(t *testing.T) {
-	CheckPlainType(t, spec.TypeDateTime, "time.Time")
+	CheckPlainType(t, spec.TypeDateTime, "civil.DateTime")
 }
 
 func TestPlainTypeJson(t *testing.T) {

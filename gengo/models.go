@@ -36,10 +36,10 @@ func generateModels(specification *spec.Spec, packageName string, generatePath s
 		w.Line("package %s", versionedPackage(version.Version, packageName))
 		w.Line("")
 		w.Line("import (")
+		w.Line(`  "cloud.google.com/go/civil"`)
 		w.Line(`  "encoding/json"`)
 		w.Line(`  "github.com/google/uuid"`)
 		w.Line(`  "github.com/shopspring/decimal"`)
-		w.Line(`  "time"`)
 		w.Line(")")
 		for _, model := range version.ResolvedModels {
 			w.Line("")
