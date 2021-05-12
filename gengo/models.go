@@ -46,7 +46,7 @@ func generateModels(specification *spec.Spec, packageName string, generatePath s
 			if model.IsObject() {
 				generateObjectModel(w, model)
 			} else if model.IsOneOf() {
-				//generateOneOfModel(w, model)
+				generateOneOfModel(w, model)
 			} else if model.IsEnum() {
 				generateEnumModel(w, model)
 			}
@@ -74,16 +74,26 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("type %s %s", model.Name.PascalCase(), "string")
 	w.Line("")
 	w.Line("const (")
+	var modelName string
+	choiceValuesStringsParams := []string{}
+	choiceValuesParams := []string{}
 	for _, enumItem := range model.Enum.Items {
-		w.Line("  %s %s = \"%s\"", enumItem.Name.PascalCase(), model.Name.PascalCase(), enumItem.Value)
+		modelName = model.Name.PascalCase()
+		w.Line("  %s %s = \"%s\"", enumItem.Name.PascalCase(), modelName, enumItem.Value)
+		choiceValuesStringsParams = append(choiceValuesStringsParams, fmt.Sprintf("string(%s)", enumItem.Name.PascalCase()))
+		choiceValuesParams = append(choiceValuesParams, fmt.Sprintf("%s", enumItem.Name.PascalCase()))
 	}
 	w.Line(")")
+	w.Line("")
+	w.Line("var %sValuesStrings = []string{%s}", modelName, strings.Join(choiceValuesStringsParams, ", "))
+	w.Line("var %sValues = []%s{%s}", modelName, modelName, strings.Join(choiceValuesParams, ", "))
 }
 
 func generateOneOfModel(w *gen.Writer, model *spec.NamedModel) {
-	params := []string{}
+	w.Line("type %s struct {", model.Name.PascalCase())
 	for _, item := range model.OneOf.Items {
-		params = append(params, fmt.Sprintf("%s(%s)", GoType(&item.Type.Definition), item.Name.PascalCase()))
+		typ := GoType(&item.Type.Definition)
+		w.Line("  %s %s `json:\"%s\"`", item.Name.PascalCase(), typ, item.Name.Source)
 	}
-	w.Line("var %s = []string{%s}", model.Name.PascalCase(), strings.Join(params, ", "))
+	w.Line("}")
 }
