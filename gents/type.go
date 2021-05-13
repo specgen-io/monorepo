@@ -5,12 +5,6 @@ import (
 	spec "github.com/specgen-io/spec.v2"
 )
 
-func TsWrapNullable(typ *spec.TypeDef) {
-	if !typ.IsNullable() {
-
-	}
-}
-
 func TsType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
@@ -60,4 +54,3 @@ func PlainTsType(typ string) string {
 		return typ
 	}
 }
-

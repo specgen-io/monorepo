@@ -11,7 +11,7 @@ func GenerateIoTsModels(spec *spec.Spec, outPath string) []gen.TextFile {
 	for _, version := range spec.Versions {
 		w := NewTsWriter()
 		generateIoTsModels(w, &version)
-		filename := version.Version.FlatCase()+"models.ts"
+		filename := version.Version.FlatCase() + "models.ts"
 		files = append(files, gen.TextFile{Path: filepath.Join(outPath, filename), Content: w.String()})
 	}
 	return files
@@ -22,6 +22,7 @@ func generateIoTsModels(w *gen.Writer, version *spec.Version) {
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
 	w.Line("import * as t from './io-ts'")
 	for _, model := range version.ResolvedModels {
+		w.EmptyLine()
 		if model.IsObject() {
 			generateIoTsObjectModel(w, model)
 		} else if model.IsEnum() {
@@ -48,7 +49,6 @@ func kindOfFields(objectModel *spec.NamedModel) (bool, bool) {
 func generateIoTsObjectModel(w *gen.Writer, model *spec.NamedModel) {
 	hasRequiredFields, hasOptionalFields := kindOfFields(model)
 	if hasRequiredFields && hasOptionalFields {
-		w.Line("")
 		w.Line("export const T%s = t.intersection([", model.Name.PascalCase())
 		w.Line("  t.interface({")
 		for _, field := range model.Object.Fields {
@@ -82,7 +82,6 @@ func generateIoTsObjectModel(w *gen.Writer, model *spec.NamedModel) {
 }
 
 func generateIoTsEnumModel(w *gen.Writer, model *spec.NamedModel) {
-	w.Line("")
 	w.Line("export enum %s {", model.Name.PascalCase())
 	for _, item := range model.Enum.Items {
 		w.Line(`  %s = "%s",`, item.Name.UpperCase(), item.Value)
@@ -93,7 +92,6 @@ func generateIoTsEnumModel(w *gen.Writer, model *spec.NamedModel) {
 }
 
 func generateIoTsUnionModel(w *gen.Writer, model *spec.NamedModel) {
-	w.Line("")
 	w.Line("export const T%s = t.union([", model.Name.PascalCase())
 	for _, item := range model.OneOf.Items {
 		w.Line("  t.interface({%s: %s}),", item.Name.Source, IoTsType(&item.Type.Definition))
