@@ -77,7 +77,7 @@ func generateIoTsObjectModel(w *gen.Writer, model *spec.NamedModel) {
 		}
 		w.Line("})")
 	}
-	w.Line("")
+	w.EmptyLine()
 	w.Line("export type %s = t.TypeOf<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
@@ -87,7 +87,7 @@ func generateIoTsEnumModel(w *gen.Writer, model *spec.NamedModel) {
 		w.Line(`  %s = "%s",`, item.Name.UpperCase(), item.Value)
 	}
 	w.Line("}")
-	w.Line("")
+	w.EmptyLine()
 	w.Line("export const T%s = t.enum(%s)", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
@@ -97,6 +97,6 @@ func generateIoTsUnionModel(w *gen.Writer, model *spec.NamedModel) {
 		w.Line("  t.interface({%s: %s}),", item.Name.Source, IoTsType(&item.Type.Definition))
 	}
 	w.Line("])")
-	w.Line("")
+	w.EmptyLine()
 	w.Line("export type %s = t.TypeOf<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
