@@ -13,12 +13,21 @@ func GenerateModels(serviceFile string, generatePath string) error {
 	if err != nil {
 		return err
 	}
+	files := []gen.TextFile{}
 
-	modelsPath := filepath.Join(generatePath, "models.go")
-	models := generateModels(specification, "spec", modelsPath)
+	for _, version := range specification.Versions {
+		w := NewGoWriter()
+		generateModels(w, &version, "spec")
+		generateHelperFunctions("spec", filepath.Join(generatePath, "helpers.go"))
+		folder := "spec"
+		if version.Version.Source != "" {
+			folder = folder + "_" + version.Version.FlatCase()
+		}
+		files = append(files, gen.TextFile{Path: filepath.Join(generatePath, folder, "models.go"), Content: w.String()})
+		files = append(files, *generateHelperFunctions("spec", filepath.Join(generatePath, "spec", "helpers.go")))
+	}
 
-	err = gen.WriteFiles(models, true)
-	return err
+	return gen.WriteFiles(files, true)
 }
 
 func versionedPackage(version spec.Name, packageName string) string {
@@ -28,40 +37,27 @@ func versionedPackage(version spec.Name, packageName string) string {
 	return packageName
 }
 
-func generateModels(specification *spec.Spec, packageName string, generatePath string) []gen.TextFile {
-	files := []gen.TextFile{}
-
-	for _, version := range specification.Versions {
-		w := NewGoWriter()
-		w.Line("package %s", versionedPackage(version.Version, packageName))
+func generateModels(w *gen.Writer, version *spec.Version, packageName string) {
+	w.Line("package %s", versionedPackage(version.Version, packageName))
+	w.Line("")
+	w.Line("import (")
+	w.Line(`  "cloud.google.com/go/civil"`)
+	w.Line(`  "encoding/json"`)
+	w.Line(`  "errors"`)
+	w.Line(`  "fmt"`)
+	w.Line(`  "github.com/google/uuid"`)
+	w.Line(`  "github.com/shopspring/decimal"`)
+	w.Line(")")
+	for _, model := range version.ResolvedModels {
 		w.Line("")
-		w.Line("import (")
-		w.Line(`  "cloud.google.com/go/civil"`)
-		w.Line(`  "encoding/json"`)
-		w.Line(`  "errors"`)
-		w.Line(`  "fmt"`)
-		w.Line(`  "github.com/google/uuid"`)
-		w.Line(`  "github.com/shopspring/decimal"`)
-		w.Line(")")
-		for _, model := range version.ResolvedModels {
-			w.Line("")
-			if model.IsObject() {
-				generateObjectModel(w, model)
-			} else if model.IsOneOf() {
-				generateOneOfModel(w, model)
-			} else if model.IsEnum() {
-				generateEnumModel(w, model)
-			}
+		if model.IsObject() {
+			generateObjectModel(w, model)
+		} else if model.IsOneOf() {
+			generateOneOfModel(w, model)
+		} else if model.IsEnum() {
+			generateEnumModel(w, model)
 		}
-		generateHelperFunctions(w)
-		file := gen.TextFile{
-			Path:    generatePath,
-			Content: w.String(),
-		}
-		files = append(files, file)
 	}
-
-	return files
 }
 
 func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {
@@ -96,29 +92,6 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("  if err != nil { return err }")
 	w.Line("  *self = %s(str)", modelName)
 	w.Line("  return nil")
-	w.Line("}")
-}
-
-func generateHelperFunctions(w *gen.Writer) {
-	w.Line("")
-	w.Line("func contains(lookFor string, arr []string) bool {")
-	w.Line("  for _, value := range arr{")
-	w.Line("    if lookFor == value {")
-	w.Line("      return true")
-	w.Line("    }")
-	w.Line("  }")
-	w.Line("  return false")
-	w.Line("}")
-	w.Line("")
-	w.Line("func readEnumStringValue(b []byte, values []string) (string, error) {")
-	w.Line("  var str string")
-	w.Line("  if err := json.Unmarshal(b, &str); err != nil {")
-	w.Line("    return \"\", err")
-	w.Line("  }")
-	w.Line("  if !contains(str, values) {")
-	w.Line("    return \"\", errors.New(fmt.Sprintf(\"Unknown enum value: %ss\", str))", "%")
-	w.Line("  }")
-	w.Line("  return str, nil")
 	w.Line("}")
 }
 
