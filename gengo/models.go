@@ -14,11 +14,9 @@ func GenerateModels(serviceFile string, generatePath string) error {
 		return err
 	}
 	files := []gen.TextFile{}
-
 	for _, version := range specification.Versions {
 		w := NewGoWriter()
 		generateModels(w, &version, "spec")
-		generateHelperFunctions("spec", filepath.Join(generatePath, "helpers.go"))
 		folder := "spec"
 		if version.Version.Source != "" {
 			folder = folder + "_" + version.Version.FlatCase()
@@ -26,7 +24,6 @@ func GenerateModels(serviceFile string, generatePath string) error {
 		files = append(files, gen.TextFile{Path: filepath.Join(generatePath, folder, "models.go"), Content: w.String()})
 		files = append(files, *generateHelperFunctions("spec", filepath.Join(generatePath, "spec", "helpers.go")))
 	}
-
 	return gen.WriteFiles(files, true)
 }
 
