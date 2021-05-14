@@ -34,28 +34,31 @@ func versionedPackage(version spec.Name, packageName string) string {
 	return packageName
 }
 
-func generateImport(version *spec.Version, typ string, importStr string) string {
+func generateImport(w *gen.Writer, version *spec.Version, typ string, importStr string) *gen.Writer {
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
 			for _, field := range model.Object.Fields {
 				if field.Type.Definition.Plain == typ {
-					return fmt.Sprintf(`import "%s"`, importStr)
+					w.Line(`import "%s"`, importStr)
+					return w
 				}
 			}
 		}
 	}
-	return ""
+	return nil
 }
 
 func generateModels(w *gen.Writer, version *spec.Version, packageName string) {
 	w.Line("package %s", versionedPackage(version.Version, packageName))
 	w.Line("")
-	w.Line(generateImport(version, spec.TypeDecimal, "cloud.google.com/go/civil"))
-	w.Line(generateImport(version, spec.TypeJson, "encoding/json"))
-	w.Line(generateImport(version, spec.TypeUuid, "github.com/google/uuid"))
-	w.Line(generateImport(version, spec.TypeDecimal, "github.com/shopspring/decimal"))
+	generateImport(w, version, spec.TypeDecimal, "cloud.google.com/go/civil")
+	generateImport(w, version, spec.TypeJson, "encoding/json")
+	generateImport(w, version, spec.TypeUuid, "github.com/google/uuid")
+	generateImport(w, version, spec.TypeDecimal, "github.com/shopspring/decimal")
 	for _, model := range version.ResolvedModels {
-		w.Line("")
+		if strings.Contains(w.String(), "import") {
+			w.Line("")
+		}
 		if model.IsObject() {
 			generateObjectModel(w, model)
 		} else if model.IsOneOf() {
