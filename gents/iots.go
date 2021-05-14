@@ -8,6 +8,7 @@ import (
 func generateIoTs(path string) *gen.TextFile {
 	code := `
 export * from 'io-ts';
+export * from 'io-ts-types';
 
 import * as t from 'io-ts';
 
