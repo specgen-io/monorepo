@@ -6,15 +6,28 @@ import (
 	"specgen/gen"
 )
 
-func GenerateIoTsModels(spec *spec.Spec, outPath string) []gen.TextFile {
+func GenerateIoTsModels(serviceFile string, generatePath string) error {
+	spec, err := spec.ReadSpec(serviceFile)
+	if err != nil {
+		return err
+	}
+
 	files := []gen.TextFile{}
 	for _, version := range spec.Versions {
 		w := NewTsWriter()
 		generateIoTsModels(w, &version)
-		filename := version.Version.FlatCase() + "models.ts"
-		files = append(files, gen.TextFile{Path: filepath.Join(outPath, filename), Content: w.String()})
+		filename := "index.ts"
+		if version.Version.Source != "" {
+			filename = version.Version.FlatCase()+".ts"
+		}
+		files = append(files, gen.TextFile{Path: filepath.Join(generatePath, filename), Content: w.String()})
 	}
-	return files
+	err = gen.WriteFiles(files, true)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func generateIoTsModels(w *gen.Writer, version *spec.Version) {
