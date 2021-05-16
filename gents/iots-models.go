@@ -11,17 +11,18 @@ func GenerateIoTsModels(serviceFile string, generatePath string) error {
 	if err != nil {
 		return err
 	}
-
 	files := []gen.TextFile{}
 	for _, version := range spec.Versions {
 		w := NewTsWriter()
 		generateIoTsModels(w, &version)
 		filename := "index.ts"
 		if version.Version.Source != "" {
-			filename = version.Version.FlatCase()+".ts"
+			filename = version.Version.FlatCase() + ".ts"
 		}
 		files = append(files, gen.TextFile{Path: filepath.Join(generatePath, filename), Content: w.String()})
 	}
+	iots := generateIoTs(filepath.Join(generatePath, "io-ts.ts"))
+	files = append(files, *iots)
 	err = gen.WriteFiles(files, true)
 	if err != nil {
 		return err

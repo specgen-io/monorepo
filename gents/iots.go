@@ -48,6 +48,32 @@ export class EnumType<E extends typeof Enum> extends t.Type<E[keyof E]> {
 const enumType = <E extends typeof Enum>(e: E, name?: string) => new EnumType<E>(e, name);
 
 export { enumType as enum }
+
+import { pipe } from 'fp-ts/lib/pipeable';
+import { fold } from 'fp-ts/lib/Either';
+import { identity } from 'fp-ts/lib/function';
+
+export class DecodeError extends Error {
+    errors: t.Errors
+    constructor(errors: t.Errors) {
+        super('Decoding failed');
+        this.errors = errors;
+    }
+}
+
+export const decode = <A, O, I>(codec: t.Type<A, O, I>, value: I): A => {
+    return pipe(
+        codec.decode(value),
+        fold(
+            errors => { throw new DecodeError(errors); },
+            identity
+        )
+    );
+};
+
+export const encode = <A, O, I>(codec: t.Type<A, O, I>, value: A): O => {
+    return codec.encode(value);
+};
 `
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }

@@ -8,18 +8,21 @@ import (
 	"strings"
 )
 
-func GenerateAxiosClient(serviceFile string, generatePath string) error {
+func GenerateAxiosClient(serviceFile string, generatePath string, models string) error {
 	spec, err := spec.ReadSpec(serviceFile)
 	if err != nil {
 		return err
 	}
 
-	iots := generateIoTs(filepath.Join(generatePath, "io-ts.ts"))
-	codec := generateCodec(filepath.Join(generatePath, "codec.ts"))
-	clients := generateAxiosClients(spec, generatePath)
+	files := generateAxiosClients(spec, models == "io-ts", generatePath)
 
-	files := []gen.TextFile{*iots, *codec}
-	files = append(files, clients...)
+	if models == "io-ts" {
+		iots := generateIoTs(filepath.Join(generatePath, "io-ts.ts"))
+		files = append(files, *iots)
+	} else {
+		superstruct := generateSuperstruct(filepath.Join(generatePath, "superstruct.ts"))
+		files = append(files, *superstruct)
+	}
 	err = gen.WriteFiles(files, true)
 	if err != nil {
 		return err
@@ -117,7 +120,7 @@ func generateOperation(w *gen.Writer, operation *spec.NamedOperation) {
 	}
 	w.Line(`  const config: AxiosRequestConfig = {%s%s}`, params, headers)
 	if body != nil {
-		w.Line(`  const bodyJson = encode(%s, parameters.body)`, IoTsType(&body.Type.Definition))
+		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, IoTsType(&body.Type.Definition))
 		w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
 	} else {
 		w.Line("  const response = await axiosInstance.%s(`%s`, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
@@ -126,7 +129,7 @@ func generateOperation(w *gen.Writer, operation *spec.NamedOperation) {
 	for _, response := range operation.Responses {
 		dataParam := ``
 		if !response.Type.Definition.IsEmpty() {
-			dataParam = fmt.Sprintf(`, data: decode(%s, response.data)`, IoTsType(&response.Type.Definition))
+			dataParam = fmt.Sprintf(`, data: t.decode(%s, response.data)`, IoTsType(&response.Type.Definition))
 		}
 		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
 		w.Line(`      return Promise.resolve({ status: "%s"%s })`, response.Name.Source, dataParam)
@@ -139,28 +142,28 @@ func generateOperation(w *gen.Writer, operation *spec.NamedOperation) {
 
 func generateAxiosClient(w *gen.Writer, version *spec.Version) {
 	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
-	w.Line(`import { decode, encode } from './codec'`)
 	for _, api := range version.Http.Apis {
 		generateClientApiClass(w, api)
 		for _, operation := range api.Operations {
 			generateIoTsResponse(w, &operation)
 		}
 	}
-	w.EmptyLine()
-	w.Line(`export { Errors } from 'io-ts'`)
-	w.Line(`export { DecodeError } from './codec'`)
 }
 
-func generateAxiosClients(spec *spec.Spec, path string) []gen.TextFile {
+func generateAxiosClients(spec *spec.Spec, ioTsModels bool, path string) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, version := range spec.Versions {
 		w := NewTsWriter()
-		generateIoTsModels(w, &version)
+		if ioTsModels {
+			generateIoTsModels(w, &version)
+		} else {
+			generateSuperstructModels(w, &version)
+		}
 		w.EmptyLine()
 		generateAxiosClient(w, &version)
 		filename := "index.ts"
 		if version.Version.Source != "" {
-			filename = version.Version.FlatCase()+".ts"
+			filename = version.Version.FlatCase() + ".ts"
 		}
 		file := gen.TextFile{filepath.Join(path, filename), w.String()}
 		files = append(files, file)
