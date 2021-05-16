@@ -1,6 +1,5 @@
 package cmd
 
-
 import (
 	"github.com/spf13/cobra"
 	"specgen/fail"
@@ -10,6 +9,7 @@ import (
 func init() {
 	cmdClientTsAxios.Flags().String(SpecFile, "", SpecFileDescription)
 	cmdClientTsAxios.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdClientTsAxios.Flags().String("ts-models", "io-ts", "TypeScript models library")
 
 	cmdClientTsAxios.MarkFlagRequired(SpecFile)
 	cmdClientTsAxios.MarkFlagRequired(GeneratePath)
@@ -27,7 +27,10 @@ var cmdClientTsAxios = &cobra.Command{
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		err = gents.GenerateAxiosClient(specFile, generatePath)
+		tsModels, err := cmd.Flags().GetString("ts-models")
+		fail.IfError(err)
+
+		err = gents.GenerateAxiosClient(specFile, generatePath, tsModels)
 		fail.IfErrorF(err, "Failed to generate code")
 	},
 }

@@ -6,7 +6,7 @@ import (
 	"specgen/gen"
 )
 
-func GenerateSuperstructModels(serviceFile string, outPath string) error {
+func GenerateSuperstructModels(serviceFile string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil {
 		return err
@@ -17,15 +17,17 @@ func GenerateSuperstructModels(serviceFile string, outPath string) error {
 		generateSuperstructModels(w, &version)
 		filename := "index.ts"
 		if version.Version.Source != "" {
-			filename = version.Version.FlatCase()+".ts"
+			filename = version.Version.FlatCase() + ".ts"
 		}
-		files = append(files, gen.TextFile{Path: filepath.Join(outPath, filename), Content: w.String()})
+		files = append(files, gen.TextFile{Path: filepath.Join(generatePath, filename), Content: w.String()})
 	}
+	superstruct := generateSuperstruct(filepath.Join(generatePath, "superstruct.ts"))
+	files = append(files, *superstruct)
 	return gen.WriteFiles(files, true)
 }
 
 func generateSuperstructModels(w *gen.Writer, version *spec.Version) {
-	w.Line(`import * as t from 'superstruct'`)
+	w.Line(`import * as t from './superstruct'`)
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
 		if model.IsObject() {
