@@ -2,7 +2,7 @@ package gengo
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec.v2"
+	"github.com/specgen-io/spec.v2"
 	"path/filepath"
 	"specgen/gen"
 	"strings"
@@ -19,7 +19,7 @@ func GenerateModels(serviceFile string, generatePath string) error {
 		generateModels(w, &version, "spec")
 		folder := "spec"
 		if version.Version.Source != "" {
-			folder = folder + "_" + version.Version.FlatCase()
+			folder += "_" + version.Version.FlatCase()
 		}
 		files = append(files, gen.TextFile{Path: filepath.Join(generatePath, folder, "models.go"), Content: w.String()})
 		files = append(files, *generateHelperFunctions("spec", filepath.Join(generatePath, "spec", "helpers.go")))
@@ -38,7 +38,7 @@ func generateImport(w *gen.Writer, version *spec.Version, typ string, importStr 
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
 			for _, field := range model.Object.Fields {
-				if field.Type.Definition.Plain == typ {
+ 				if checkType(&field.Type.Definition, typ) {
 					w.Line(`import "%s"`, importStr)
 					return w
 				}
@@ -48,10 +48,28 @@ func generateImport(w *gen.Writer, version *spec.Version, typ string, importStr 
 	return nil
 }
 
+func checkType(fieldType *spec.TypeDef, typ string) bool {
+	if fieldType.Plain == typ {
+		switch fieldType.Node {
+		case spec.PlainType:
+			return true
+		case spec.NullableType:
+			return checkType(fieldType.Child, typ)
+		case spec.ArrayType:
+			return checkType(fieldType.Child, typ)
+		case spec.MapType:
+			return checkType(fieldType.Child, typ)
+		default:
+			panic(fmt.Sprintf("Unknown type: %v", typ))
+		}
+	}
+	return false
+}
+
 func generateModels(w *gen.Writer, version *spec.Version, packageName string) {
 	w.Line("package %s", versionedPackage(version.Version, packageName))
 	w.Line("")
-	generateImport(w, version, spec.TypeDecimal, "cloud.google.com/go/civil")
+	generateImport(w, version, spec.TypeDate, "cloud.google.com/go/civil")
 	generateImport(w, version, spec.TypeJson, "encoding/json")
 	generateImport(w, version, spec.TypeUuid, "github.com/google/uuid")
 	generateImport(w, version, spec.TypeDecimal, "github.com/shopspring/decimal")
