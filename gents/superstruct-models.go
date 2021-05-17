@@ -56,8 +56,14 @@ func generateSuperstructEnumModel(w *gen.Writer, model *spec.NamedModel) {
 		w.Line(`  "%s",`, item.Value)
 	}
 	w.Line("])")
-	w.Line("")
+	w.EmptyLine()
 	w.Line("export type %s = t.Infer<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
+	w.EmptyLine()
+	w.Line("export const %s = {", model.Name.PascalCase())
+	for _, item := range model.Enum.Items {
+		w.Line(`  %s: <%s>"%s",`, item.Name.UpperCase(), model.Name.PascalCase(), item.Value)
+	}
+	w.Line("}")
 }
 
 func generateSuperstructUnionModel(w *gen.Writer, model *spec.NamedModel) {
