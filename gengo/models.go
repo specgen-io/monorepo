@@ -49,10 +49,10 @@ func generateImport(w *gen.Writer, version *spec.Version, typ string, importStr 
 }
 
 func checkType(fieldType *spec.TypeDef, typ string) bool {
-	if fieldType.Plain == typ {
+	if fieldType.Plain != typ {
 		switch fieldType.Node {
 		case spec.PlainType:
-			return true
+			return false
 		case spec.NullableType:
 			return checkType(fieldType.Child, typ)
 		case spec.ArrayType:
@@ -63,7 +63,7 @@ func checkType(fieldType *spec.TypeDef, typ string) bool {
 			panic(fmt.Sprintf("Unknown type: %v", typ))
 		}
 	}
-	return false
+	return true
 }
 
 func generateModels(w *gen.Writer, version *spec.Version, packageName string) {
