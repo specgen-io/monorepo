@@ -68,14 +68,14 @@ func checkType(fieldType *spec.TypeDef, typ string) bool {
 
 func generateModels(w *gen.Writer, version *spec.Version, packageName string) {
 	w.Line("package %s", versionedPackage(version.Version, packageName))
-	w.Line("")
+	w.EmptyLine()
 	generateImport(w, version, spec.TypeDate, "cloud.google.com/go/civil")
 	generateImport(w, version, spec.TypeJson, "encoding/json")
 	generateImport(w, version, spec.TypeUuid, "github.com/google/uuid")
 	generateImport(w, version, spec.TypeDecimal, "github.com/shopspring/decimal")
 	for _, model := range version.ResolvedModels {
 		if strings.Contains(w.String(), "import") {
-			w.Line("")
+			w.EmptyLine()
 		}
 		if model.IsObject() {
 			generateObjectModel(w, model)
@@ -98,7 +98,7 @@ func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {
 
 func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("type %s %s", model.Name.PascalCase(), "string")
-	w.Line("")
+	w.EmptyLine()
 	w.Line("const (")
 	modelName := model.Name.PascalCase()
 	choiceValuesStringsParams := []string{}
@@ -110,10 +110,10 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 		choiceValuesParams = append(choiceValuesParams, fmt.Sprintf("%s", enumItemName))
 	}
 	w.Line(")")
-	w.Line("")
+	w.EmptyLine()
 	w.Line("var %sValuesStrings = []string{%s}", modelName, strings.Join(choiceValuesStringsParams, ", "))
 	w.Line("var %sValues = []%s{%s}", modelName, modelName, strings.Join(choiceValuesParams, ", "))
-	w.Line("")
+	w.EmptyLine()
 	w.Line("func (self *%s) UnmarshalJSON(b []byte) error {", modelName)
 	w.Line("  str, err := readEnumStringValue(b, %sValuesStrings)", modelName)
 	w.Line("  if err != nil { return err }")
