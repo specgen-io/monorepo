@@ -49,7 +49,7 @@ func generateCirceModels(version *spec.Version, packageName string, outPath stri
 	unit.AddDeclarations(generateCirceUnionItemsCodecs(version.ResolvedModels))
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, version.Version.FlatCase(), "Models.scala"),
+		Path:    filepath.Join(outPath, fmt.Sprintf("%sModels.scala", version.Version.PascalCase())),
 		Content: unit.Code(),
 	}
 }
@@ -150,6 +150,6 @@ object Jsoner {
     }
   }
 }`
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
+	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {packageName })
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
