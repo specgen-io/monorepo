@@ -67,7 +67,7 @@ func generateClientApiImplementations(version *spec.Version, packageName string,
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, version.Version.FlatCase(), "Client.scala"),
+		Path:    filepath.Join(outPath, version.Version.PascalCase()+"Client.scala"),
 		Content: unit.Code(),
 	}
 }
@@ -98,7 +98,7 @@ func generateClientApisInterfaces(version *spec.Version, packageName string, out
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, version.Version.FlatCase(), "Interfaces.scala"),
+		Path:    filepath.Join(outPath, version.Version.PascalCase()+"Interfaces.scala"),
 		Content: unit.Code(),
 	}
 }

@@ -146,7 +146,7 @@ func generateApiInterface(api spec.Api, packageName string, outPath string) *gen
 	unit.AddDeclarations(apiObject)
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, version.FlatCase(), fmt.Sprintf("%s.scala", apiTraitName)),
+		Path:    filepath.Join(outPath, fmt.Sprintf("%s%s.scala", apiTraitName, version.PascalCase())),
 		Content: unit.Code(),
 	}
 }
@@ -189,7 +189,7 @@ func generateApiClass(api spec.Api, packageName string, outPath string) *gen.Tex
 	unit.AddDeclarations(class)
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, version.FlatCase(), fmt.Sprintf("%s.scala", apiClassName)),
+		Path:    filepath.Join(outPath, fmt.Sprintf("%s%s.scala", apiClassName, version.PascalCase())),
 		Content: unit.Code(),
 	}
 }
@@ -252,7 +252,7 @@ func generateApiControllers(version *spec.Version, packageName string, outPath s
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, version.Version.FlatCase(), "Controllers.scala"),
+		Path:    filepath.Join(outPath, fmt.Sprintf("%sControllers.scala", version.Version.PascalCase())),
 		Content: unit.Code(),
 	}
 }
@@ -302,7 +302,7 @@ func generateControllerMethod(operation spec.NamedOperation) *scala.MethodDeclar
 								Line("val result = api.%s(%s)", operation.Name.CamelCase(), JoinParams(allParams)),
 								Code("val response = result.map "),
 								Scope(
-									Dynamic(func(code *scala.WritableList) { genResponseCases(code, operation) })...,
+									Dynamic(func(code *scala.WritableList) { genResponseCases(code, operation)})...,
 								),
 								Line("response.recover { case _: Exception => InternalServerError }"),
 							),
@@ -313,7 +313,7 @@ func generateControllerMethod(operation spec.NamedOperation) *scala.MethodDeclar
 						Line("val result = api.%s(%s)", operation.Name.CamelCase(), JoinParams(allParams)),
 						Code("val response = result.map "),
 						Scope(
-							Dynamic(func(code *scala.WritableList) { genResponseCases(code, operation) })...,
+							Dynamic(func(code *scala.WritableList) { genResponseCases(code, operation)})...,
 						),
 						Line("response.recover { case _: Exception => InternalServerError }"),
 					)
@@ -389,7 +389,7 @@ func generateRouter(version *spec.Version, packageName string, outPath string) *
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, version.Version.FlatCase(), "Routers.scala"),
+		Path:    filepath.Join(outPath, fmt.Sprintf("%sRouters.scala", version.Version.PascalCase())),
 		Content: unit.Code(),
 	}
 }
@@ -417,7 +417,7 @@ func generateSpecRouterMainClass(versions []spec.Version) *scala.ClassDeclaratio
 					AddParams(Dynamic(func(code *scala.WritableList) {
 						for _, version := range versions {
 							for _, api := range version.Http.Apis {
-								apiParamName := version.Version.FlatCase() + api.Name.PascalCase()
+								apiParamName := api.Name.CamelCase() + version.Version.PascalCase()
 								apiTypeName := versionedTypeName(version.Version, routerType(api.Name))
 								code.Add(Param(apiParamName, apiTypeName))
 							}
@@ -431,7 +431,7 @@ func generateSpecRouterMainClass(versions []spec.Version) *scala.ClassDeclaratio
 					Block(Dynamic(func(code *scala.WritableList) {
 						for _, version := range versions {
 							for _, api := range version.Http.Apis {
-								apiParamName := version.Version.FlatCase() + api.Name.PascalCase()
+								apiParamName := api.Name.CamelCase() + version.Version.PascalCase()
 								code.Add(Line(`%s.routes,`, apiParamName))
 							}
 						}
@@ -581,6 +581,6 @@ object PlayParamsTypesBindings {
     override def unbind(key: String, value: T): String = stringBinder.unbind(key, codec.encode(value))
   }
 }`
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
+	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {packageName })
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
