@@ -189,7 +189,7 @@ func generateApiClass(api spec.Api, packageName string, outPath string) *gen.Tex
 	unit.AddDeclarations(class)
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, fmt.Sprintf("%s%s.scala", apiClassName, version.PascalCase())),
+		Path:    filepath.Join(outPath, version.FlatCase(), fmt.Sprintf("%s.scala", apiClassName)),
 		Content: unit.Code(),
 	}
 }
@@ -302,7 +302,7 @@ func generateControllerMethod(operation spec.NamedOperation) *scala.MethodDeclar
 								Line("val result = api.%s(%s)", operation.Name.CamelCase(), JoinParams(allParams)),
 								Code("val response = result.map "),
 								Scope(
-									Dynamic(func(code *scala.WritableList) { genResponseCases(code, operation)})...,
+									Dynamic(func(code *scala.WritableList) { genResponseCases(code, operation) })...,
 								),
 								Line("response.recover { case _: Exception => InternalServerError }"),
 							),
@@ -313,7 +313,7 @@ func generateControllerMethod(operation spec.NamedOperation) *scala.MethodDeclar
 						Line("val result = api.%s(%s)", operation.Name.CamelCase(), JoinParams(allParams)),
 						Code("val response = result.map "),
 						Scope(
-							Dynamic(func(code *scala.WritableList) { genResponseCases(code, operation)})...,
+							Dynamic(func(code *scala.WritableList) { genResponseCases(code, operation) })...,
 						),
 						Line("response.recover { case _: Exception => InternalServerError }"),
 					)
@@ -581,6 +581,6 @@ object PlayParamsTypesBindings {
     override def unbind(key: String, value: T): String = stringBinder.unbind(key, codec.encode(value))
   }
 }`
-	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {packageName })
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
