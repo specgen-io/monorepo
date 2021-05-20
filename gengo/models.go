@@ -22,7 +22,7 @@ func GenerateModels(serviceFile string, generatePath string) error {
 			folder += "_" + version.Version.FlatCase()
 		}
 		files = append(files, gen.TextFile{Path: filepath.Join(generatePath, folder, "models.go"), Content: w.String()})
-		files = append(files, *generateHelperFunctions("spec", filepath.Join(generatePath, "spec", "helpers.go")))
+		files = append(files, *generateHelperFunctions(folder, filepath.Join(generatePath, folder, "helpers.go")))
 	}
 	return gen.WriteFiles(files, true)
 }
