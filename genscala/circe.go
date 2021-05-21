@@ -28,9 +28,9 @@ func generateCirceModels(version *spec.Version, packageName string, outPath stri
 		Import("java.time._").
 		Import("java.time.format._").
 		Import("java.util.UUID").
-		Import("io.circe.generic.extras.{AutoDerivation, Configuration}").
 		Import("io.circe.{Decoder, Encoder}").
-		Import("io.circe.generic.extras.semiauto.{deriveUnwrappedDecoder, deriveUnwrappedEncoder}")
+		Import("io.circe.generic.extras.Configuration").
+		Import("io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder, deriveUnwrappedDecoder, deriveUnwrappedEncoder}")
 
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
@@ -103,17 +103,23 @@ func generateCirceUnionModel(model *spec.NamedModel, packageName string) (scala.
 
 func generateCirceUnionItemsCodecs(models []*spec.NamedModel) *scala.ClassDeclaration {
 	object :=
-		Object("json").Extends("AutoDerivation").
+		Object("json").
 			Add(Line("implicit val auto = Configuration.default.withSnakeCaseMemberNames.withSnakeCaseConstructorNames.withDefaults"))
 	for _, model := range models {
-		if model.IsOneOf() {
-			for _, item := range model.OneOf.Items {
-				itemTypeName := model.Name.PascalCase() + "." + item.Name.PascalCase()
-				itemCodecName := model.Name.PascalCase() + item.Name.PascalCase()
-				object.Add(
-					Line("implicit val encoder%s: Encoder[%s] = deriveUnwrappedEncoder", itemCodecName, itemTypeName),
-					Line("implicit val decoder%s: Decoder[%s] = deriveUnwrappedDecoder", itemCodecName, itemTypeName),
-				)
+		if !model.IsEnum() {
+			object.Add(
+				Line("implicit val encoder%s: Encoder[%s] = deriveConfiguredEncoder", model.Name.PascalCase(), model.Name.PascalCase()),
+				Line("implicit val decoder%s: Decoder[%s] = deriveConfiguredDecoder", model.Name.PascalCase(), model.Name.PascalCase()),
+			)
+			if model.IsOneOf() {
+				for _, item := range model.OneOf.Items {
+					itemTypeName := model.Name.PascalCase() + "." + item.Name.PascalCase()
+					itemCodecName := model.Name.PascalCase() + item.Name.PascalCase()
+					object.Add(
+						Line("implicit val encoder%s: Encoder[%s] = deriveUnwrappedEncoder", itemCodecName, itemTypeName),
+						Line("implicit val decoder%s: Decoder[%s] = deriveUnwrappedDecoder", itemCodecName, itemTypeName),
+					)
+				}
 			}
 		}
 	}
@@ -150,6 +156,6 @@ object Jsoner {
     }
   }
 }`
-	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {packageName })
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
