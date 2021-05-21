@@ -36,26 +36,21 @@ func clientModuleName(serviceName spec.Name) string {
 
 func generateClientApisClasses(specification *spec.Spec, generatePath string) *gen.TextFile {
 	moduleName := clientModuleName(specification.Name)
-	rootModule := ruby.Module(moduleName)
-
-	for _, version := range specification.Versions {
-		module := rootModule
-		if version.Version.Source != "" {
-			module = ruby.Module(version.Version.PascalCase())
-			rootModule.AddDeclarations(module)
-		}
-		for _, api := range version.Http.Apis {
-			apiClass := generateClientApiClass(api)
-			module.AddDeclarations(apiClass)
-		}
-	}
 
 	unit := ruby.Unit()
 	unit.Require("net/http")
 	unit.Require("net/https")
 	unit.Require("uri")
 	unit.Require("emery")
-	unit.AddDeclarations(rootModule)
+
+	for _, version := range specification.Versions {
+		module := ruby.Module(versionedModule(moduleName, version.Version))
+		for _, api := range version.Http.Apis {
+			apiClass := generateClientApiClass(api)
+			module.AddDeclarations(apiClass)
+		}
+		unit.AddDeclarations(module)
+	}
 
 	return &gen.TextFile{
 		Path:    filepath.Join(generatePath, "client.rb"),
@@ -157,5 +152,13 @@ func addParamsWriting(code *ruby.StatementsDeclaration, params []spec.NamedParam
 		for _, p := range params {
 			code.AddLn(fmt.Sprintf("%s.set('%s', %s, %s)", paramsName, p.Name.Source, RubyType(&p.Type.Definition), p.Name.SnakeCase()))
 		}
+	}
+}
+
+func versionedModule(moduleName string, version spec.Name) string {
+	if version.Source != "" {
+		return fmt.Sprintf("%s::%s", moduleName, version.PascalCase())
+	} else {
+		return moduleName
 	}
 }
