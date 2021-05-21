@@ -27,14 +27,8 @@ func generateModels(specification *spec.Spec, moduleName string, generatePath st
 	unit.Require("date")
 	unit.Require("emery")
 
-	rootModule := ruby.Module(moduleName)
-
 	for _, version := range specification.Versions {
-		module := rootModule
-		if version.Version.Source != "" {
-			module = ruby.Module(version.Version.PascalCase())
-			rootModule.AddDeclarations(module)
-		}
+		module := ruby.Module(versionedModule(moduleName, version.Version))
 		for _, model := range version.ResolvedModels {
 			if model.IsObject() {
 				module.AddDeclarations(generateObjectModel(model))
@@ -44,8 +38,8 @@ func generateModels(specification *spec.Spec, moduleName string, generatePath st
 				module.AddDeclarations(generateEnumModel(model))
 			}
 		}
+		unit.AddDeclarations(module)
 	}
-	unit.AddDeclarations(rootModule)
 
 	return &gen.TextFile{
 		Path:    generatePath,
