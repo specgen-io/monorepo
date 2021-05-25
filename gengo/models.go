@@ -3,8 +3,8 @@ package gengo
 import (
 	"fmt"
 	"github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/gen"
 	"path/filepath"
-	"specgen/gen"
 	"strings"
 )
 

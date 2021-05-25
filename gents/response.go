@@ -2,7 +2,7 @@ package gents
 
 import (
 	spec "github.com/specgen-io/spec"
-	"specgen/gen"
+	"github.com/specgen-io/specgen/gen"
 )
 
 func generateIoTsResponse(w *gen.Writer, operation *spec.NamedOperation) {
