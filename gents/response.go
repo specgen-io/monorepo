@@ -1,7 +1,7 @@
 package gents
 
 import (
-	spec "github.com/specgen-io/spec.v2"
+	spec "github.com/specgen-io/spec"
 	"specgen/gen"
 )
 
