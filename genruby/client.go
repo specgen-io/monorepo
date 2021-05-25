@@ -3,7 +3,7 @@ package genruby
 import (
 	"fmt"
 	"github.com/pinzolo/casee"
-	spec "github.com/specgen-io/spec.v2"
+	spec "github.com/specgen-io/spec"
 	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"
 	"specgen/gen"
