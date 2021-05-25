@@ -7,8 +7,6 @@ fi
 
 echo "Building version: $VERSION"
 
-dep ensure
-
 mkdir -p ./zips
 mkdir -p ./dist
 
