@@ -11,9 +11,11 @@ import (
 
 func GenerateModels(serviceFile string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
-	fileName := specification.Name.SnakeCase()+"_models.rb"
+	fileName := specification.Name.SnakeCase() + "_models.rb"
 	moduleName := specification.Name.PascalCase()
 	modelsPath := filepath.Join(generatePath, fileName)
 	models := generateModels(specification, moduleName, modelsPath)
@@ -28,23 +30,37 @@ func generateModels(specification *spec.Spec, moduleName string, generatePath st
 	unit.Require("emery")
 
 	for _, version := range specification.Versions {
-		module := ruby.Module(versionedModule(moduleName, version.Version))
-		for _, model := range version.ResolvedModels {
-			if model.IsObject() {
-				module.AddDeclarations(generateObjectModel(model))
-			} else if model.IsOneOf() {
-				module.AddDeclarations(generateOneOfModel(model))
-			} else if model.IsEnum() {
-				module.AddDeclarations(generateEnumModel(model))
-			}
+		if version.Version.Source == "" {
+			module := generateVersionModelsModule(&version, moduleName)
+			unit.AddDeclarations(module)
 		}
-		unit.AddDeclarations(module)
+	}
+
+	for _, version := range specification.Versions {
+		if version.Version.Source != "" {
+			module := generateVersionModelsModule(&version, moduleName)
+			unit.AddDeclarations(module)
+		}
 	}
 
 	return &gen.TextFile{
 		Path:    generatePath,
 		Content: unit.Code(),
 	}
+}
+
+func generateVersionModelsModule(version *spec.Version, moduleName string) *ruby.ModuleDeclaration {
+	module := ruby.Module(versionedModule(moduleName, version.Version))
+	for _, model := range version.ResolvedModels {
+		if model.IsObject() {
+			module.AddDeclarations(generateObjectModel(model))
+		} else if model.IsOneOf() {
+			module.AddDeclarations(generateOneOfModel(model))
+		} else if model.IsEnum() {
+			module.AddDeclarations(generateEnumModel(model))
+		}
+	}
+	return module
 }
 
 func generateObjectModel(model *spec.NamedModel) ruby.Writable {
