@@ -11,9 +11,11 @@ import (
 
 func GenerateClient(serviceFile string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
-	gemName := specification.Name.SnakeCase()+"_client"
+	gemName := specification.Name.SnakeCase() + "_client"
 	moduleName := clientModuleName(specification.Name)
 	libGemPath := filepath.Join(generatePath, gemName)
 	models := generateModels(specification, moduleName, filepath.Join(libGemPath, "models.rb"))
@@ -44,18 +46,32 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 	unit.Require("emery")
 
 	for _, version := range specification.Versions {
-		module := ruby.Module(versionedModule(moduleName, version.Version))
-		for _, api := range version.Http.Apis {
-			apiClass := generateClientApiClass(api)
-			module.AddDeclarations(apiClass)
+		if version.Version.Source == "" {
+			module := generateVersionClientModule(&version, moduleName)
+			unit.AddDeclarations(module)
 		}
-		unit.AddDeclarations(module)
+	}
+
+	for _, version := range specification.Versions {
+		if version.Version.Source != "" {
+			module := generateVersionClientModule(&version, moduleName)
+			unit.AddDeclarations(module)
+		}
 	}
 
 	return &gen.TextFile{
 		Path:    filepath.Join(generatePath, "client.rb"),
 		Content: unit.Code(),
 	}
+}
+
+func generateVersionClientModule(version *spec.Version, moduleName string) *ruby.ModuleDeclaration {
+	module := ruby.Module(versionedModule(moduleName, version.Version))
+	for _, api := range version.Http.Apis {
+		apiClass := generateClientApiClass(api)
+		module.AddDeclarations(apiClass)
+	}
+	return module
 }
 
 func operationResult(operation *spec.NamedOperation, response *spec.NamedResponse) *ruby.WritableCode {
@@ -152,13 +168,5 @@ func addParamsWriting(code *ruby.StatementsDeclaration, params []spec.NamedParam
 		for _, p := range params {
 			code.AddLn(fmt.Sprintf("%s.set('%s', %s, %s)", paramsName, p.Name.Source, RubyType(&p.Type.Definition), p.Name.SnakeCase()))
 		}
-	}
-}
-
-func versionedModule(moduleName string, version spec.Name) string {
-	if version.Source != "" {
-		return fmt.Sprintf("%s::%s", moduleName, version.PascalCase())
-	} else {
-		return moduleName
 	}
 }
