@@ -2,7 +2,7 @@ package genscala
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec.v2"
+	spec "github.com/specgen-io/spec"
 )
 
 func ScalaType(typ *spec.TypeDef) string {

@@ -2,7 +2,7 @@ package gengo
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec.v2"
+	spec "github.com/specgen-io/spec"
 )
 
 func GoType(typ *spec.TypeDef) string {

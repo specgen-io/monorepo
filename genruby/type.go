@@ -2,7 +2,7 @@ package genruby
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec.v2"
+	spec "github.com/specgen-io/spec"
 )
 
 func RubyType(typ *spec.TypeDef) string {
