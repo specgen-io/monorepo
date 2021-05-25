@@ -2,8 +2,8 @@ package gents
 
 import (
 	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/gen"
 	"path/filepath"
-	"specgen/gen"
 )
 
 func GenerateIoTsModels(serviceFile string, generatePath string) error {

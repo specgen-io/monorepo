@@ -3,9 +3,9 @@ package genruby
 import (
 	"fmt"
 	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/gen"
 	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"
-	"specgen/gen"
 	"strings"
 )
 
