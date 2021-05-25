@@ -145,7 +145,7 @@ func generateClientOperation(operation spec.NamedOperation) *ruby.MethodDeclarat
 
 func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
 	apiClassName := clientClassName(api.Name)
-	apiClass := ruby.Class(apiClassName).Inherits("BaseClient")
+	apiClass := ruby.Class(apiClassName).Inherits("Http::BaseClient")
 	for _, operation := range api.Operations {
 		method := generateClientOperation(operation)
 		apiClass.AddMembers(method)
@@ -164,7 +164,7 @@ func addParams(method *ruby.MethodDeclaration, params []spec.NamedParam) {
 
 func addParamsWriting(code *ruby.StatementsDeclaration, params []spec.NamedParam, paramsName string) {
 	if params != nil && len(params) > 0 {
-		code.AddLn(paramsName + " = StringParams.new")
+		code.AddLn(paramsName + " = Http::StringParams.new")
 		for _, p := range params {
 			code.AddLn(fmt.Sprintf("%s.set('%s', %s, %s)", paramsName, p.Name.Source, RubyType(&p.Type.Definition), p.Name.SnakeCase()))
 		}
