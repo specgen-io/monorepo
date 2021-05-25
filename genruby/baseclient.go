@@ -14,7 +14,7 @@ require "cgi"
 
 require "emery"
 
-module [[.ModuleName]]
+module Http
   class BaseClient
     attr_reader :uri
     attr_reader :client
@@ -70,7 +70,8 @@ module [[.ModuleName]]
       url
     end
   end
-end`
+end
+`
 	code, _ = gen.ExecuteTemplate(code, struct { ModuleName string } {moduleName })
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
