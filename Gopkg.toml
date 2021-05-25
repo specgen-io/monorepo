@@ -1,5 +1,5 @@
 [[constraint]]
-  name = "github.com/specgen-io/spec.v2"
+  name = "github.com/specgen-io/spec"
   source = "https://github.com/specgen-io/spec.git"
   branch = "main"
 
