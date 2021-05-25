@@ -1,7 +1,7 @@
 package genscala
 
 import (
-	spec "github.com/specgen-io/spec.v2"
+	spec "github.com/specgen-io/spec"
 	"path/filepath"
 	"specgen/gen"
 )
