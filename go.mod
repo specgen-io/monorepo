@@ -4,13 +4,11 @@ go 1.15
 
 require (
 	github.com/dollarshaveclub/line v0.0.0-20171219191008-fc7a351a8b58
-	github.com/fatih/camelcase v1.0.0 // indirect
 	github.com/pinzolo/casee v0.0.0-20210416022938-38877fea886d
-	github.com/pkg/errors v0.8.1 // indirect
-	github.com/specgen-io/spec v0.0.0-20210510200254-1b1a1057c8ed
+	github.com/specgen-io/spec v0.0.0-20210526150424-ce37ff5882fd
 	github.com/spf13/cobra v0.0.7
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vsapronov/gopoetry v0.0.0-20210103035313-4d5870499935
-	github.com/vsapronov/yaml v0.0.0-20210524152850-f8bb619f377c
+	gopkg.in/vsapronov/yaml.v3 v3.0.0-20210526032505-672d34aebd3f
 	gotest.tools v2.2.0+incompatible
 )
