@@ -3,8 +3,8 @@ package gents
 import (
 	"fmt"
 	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/gen"
 	"path/filepath"
-	"specgen/gen"
 	"strings"
 )
 

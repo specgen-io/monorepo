@@ -3,10 +3,10 @@ package genscala
 import (
 	"fmt"
 	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/gen"
+	"github.com/specgen-io/specgen/genopenapi"
 	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
-	"specgen/gen"
-	"specgen/genopenapi"
 	"strings"
 )
 

@@ -2,8 +2,8 @@ package genscala
 
 import (
 	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/gen"
 	"path/filepath"
-	"specgen/gen"
 )
 
 func GenerateServiceModels(serviceFile string, generatePath string) error {

@@ -15,8 +15,8 @@ parameters:
 jobs:
   build-specgen:
     docker:
-      - image: circleci/golang:1.12
-    working_directory: /go/src/specgen
+      - image: cimg/go:1.15.6
+    working_directory: ~/specgen
     steps:
       - checkout
       - run:
@@ -27,7 +27,7 @@ jobs:
           command: |
             mkdir -p /tmp/test-results
             go get -u github.com/jstemmer/go-junit-report
-            go test ./... -v 2>&1 | ../../bin/go-junit-report > /tmp/test-results/go-test-report.xml
+            go test ./... -v 2>&1 | go-junit-report > /tmp/test-results/go-test-report.xml
       - store_artifacts:
           path: ./zips
           destination: zips
