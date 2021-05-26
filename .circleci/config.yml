@@ -15,7 +15,7 @@ parameters:
 jobs:
   build-specgen:
     docker:
-      - image: circleci/golang:1.12
+      - image: cimg/go:1.15.6
     working_directory: ~/specgen
     steps:
       - checkout
