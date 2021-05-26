@@ -2,7 +2,7 @@ package genopenapi
 
 import (
 	"bytes"
-	"github.com/vsapronov/yaml"
+	yaml "gopkg.in/vsapronov/yaml.v3"
 )
 
 type MapItem struct {
