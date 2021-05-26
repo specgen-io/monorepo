@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/pinzolo/casee"
 	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/gen"
 	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"
-	"specgen/gen"
 )
 
 func GenerateClient(serviceFile string, generatePath string) error {

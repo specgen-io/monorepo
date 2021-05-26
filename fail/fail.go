@@ -1,8 +1,8 @@
 package fail
 
 import (
+	"github.com/specgen-io/specgen/console"
 	"os"
-	"specgen/console"
 )
 
 func Fail(args ...interface{}) {

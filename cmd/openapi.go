@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"github.com/specgen-io/specgen/fail"
+	"github.com/specgen-io/specgen/genopenapi"
 	"github.com/spf13/cobra"
-	"specgen/fail"
-	"specgen/genopenapi"
 )
 
 func init() {

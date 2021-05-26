@@ -2,10 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"specgen/version"
-
+	"github.com/specgen-io/specgen/version"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var verbose bool
