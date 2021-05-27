@@ -3,7 +3,7 @@ package gents
 import (
 	"fmt"
 	spec "github.com/specgen-io/spec"
-	"github.com/specgen-io/specgen/gen"
+	"gopkg.in/specgen-io/specgen.v2/gen"
 	"path/filepath"
 	"strings"
 )
