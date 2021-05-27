@@ -17,7 +17,7 @@ else
     exit 1
 fi
 
-RELEASE_NAME=$VERSION
+RELEASE_NAME=v$VERSION
 
 go get github.com/aktau/github-release
 
