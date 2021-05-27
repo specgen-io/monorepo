@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/specgen-io/specgen/fail"
-	"github.com/specgen-io/specgen/genopenapi"
+	"gopkg.in/specgen-io/specgen.v2/fail"
+	"gopkg.in/specgen-io/specgen.v2/genopenapi"
 	"github.com/spf13/cobra"
 )
 

@@ -23,7 +23,7 @@ go get github.com/aktau/github-release
 
 echo "Creating release in Github: $RELEASE_NAME"
 set +e
-$GOPATH/bin/github-release release --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME
+$GOPATH/bin/github-release release --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --target v2
 set -e
 
 echo "Releasing zips/specgen_darwin_amd64.zip"

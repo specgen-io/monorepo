@@ -8,7 +8,7 @@ name := "sbt-specgen"
 version := versionValue
 
 homepage := Some(url("https://specgen.io"))
-scmInfo := Some(ScmInfo(url("https://github.com/specgen-io/specgen"), "git@github.com:specgen-io/specgen.git"))
+scmInfo := Some(ScmInfo(url("https://gopkg.in/specgen-io/specgen.v2"), "git@github.com:specgen-io/specgen.git"))
 developers := List(Developer("vsapronov", "vsapronov", "vladimir.sapronov@gmail.com", url("https://github.com/vsapronov")))
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
