@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/pinzolo/casee"
 	spec "github.com/specgen-io/spec"
-	"gopkg.in/specgen-io/specgen.v2/gen"
+	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"
 )

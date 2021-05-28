@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"gopkg.in/specgen-io/specgen.v2/version"
+	"github.com/specgen-io/specgen/v2/version"
 	"github.com/spf13/cobra"
 	"os"
 )
