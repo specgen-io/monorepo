@@ -1,7 +1,7 @@
 package gengo
 
 import (
-	"gopkg.in/specgen-io/specgen.v2/gen"
+	"github.com/specgen-io/specgen/v2/gen"
 	"strings"
 )
 
