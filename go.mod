@@ -8,7 +8,7 @@ require (
 	github.com/specgen-io/spec v0.0.0-20210526150424-ce37ff5882fd
 	github.com/spf13/cobra v0.0.7
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/vsapronov/gopoetry v0.0.0-20210103035313-4d5870499935
+	github.com/vsapronov/gopoetry v0.0.0-20210531035345-49688774af3e
 	gopkg.in/vsapronov/yaml.v3 v3.0.0-20210526032505-672d34aebd3f
 	gotest.tools v2.2.0+incompatible
 )
