@@ -15,23 +15,21 @@ func GenerateService(serviceFile string, generatePath string) error {
 		return err
 	}
 	files := []gen.TextFile{}
-
 	for _, version := range specification.Versions {
 		w := NewGoWriter()
-
+		generateRouting(w, &version, "spec")
 		folder := "spec"
 		if version.Version.Source != "" {
 			folder += "_" + version.Version.FlatCase()
 		}
-		apiRoutersFile := generateRouting(w, &version, folder, generatePath)
-		files = append(files, *apiRoutersFile)
-
+		files = append(files, gen.TextFile{Path: filepath.Join(generatePath, folder, "routing.go"), Content: w.String()})
+		files = append(files, *generateParamsParser(folder, filepath.Join(generatePath, folder, "parsing.go")))
 	}
 	return gen.WriteFiles(files, true)
 }
 
-func generateRouting(w *gen.Writer, version *spec.Version, packageName string, generatePath string) *gen.TextFile {
-	w.Line("package %s", packageName)
+func generateRouting(w *gen.Writer, version *spec.Version, packageName string) {
+	w.Line("package %s", versionedPackage(version.Version, packageName))
 	w.EmptyLine()
 	w.Line("import (")
 	w.Line(`  "encoding/json"`)
@@ -42,10 +40,6 @@ func generateRouting(w *gen.Writer, version *spec.Version, packageName string, g
 	generateCheckErrors(w)
 	for _, api := range version.Http.Apis {
 		generateApiRouter(w, api)
-	}
-	return &gen.TextFile{
-		Path:    filepath.Join(generatePath, packageName, "routing.go"),
-		Content: w.String(),
 	}
 }
 
@@ -78,21 +72,11 @@ func generateApiRouter(w *gen.Writer, api spec.Api) {
 		if reminder != `` {
 			w.Line(`router.%s("%s", func(w http.ResponseWriter, r *http.Request) {`, nameToPascalCase(operation.Endpoint.Method), reminder)
 		} else {
-			w.Line(`router.SetCors("/echo/header", &vestigo.CorsAccessControl{`)
-			w.Line(`  AllowHeaders: []string{"Int-Header", "String-Header"},`)
-			w.Line(`})`)
-
 			w.Line(`router.%s("%s", func(w http.ResponseWriter, r *http.Request) {`, nameToPascalCase(operation.Endpoint.Method), strings.Join(urlParams, ""))
 		}
 
-		parts := strings.Split(operation.Name.Source, "_")
-		operationName := parts[1]
 		for _, response := range operation.Responses {
-			if strings.Contains(operation.Endpoint.Method, "POST") {
-				generatePostMethod(w, response, operationName, api.Name.Source, operation.Name.PascalCase())
-			} else if strings.Contains(operation.Endpoint.Method, "GET") {
-				generateGetMethod(w, response, operation.Name.Source, operationName, operation)
-			}
+			generateOperationMethod(w, response, api.Name.Source, operation)
 		}
 
 		w.Unindent()
@@ -106,49 +90,62 @@ func nameToPascalCase(name string) string {
 	return casee.ToPascalCase(name)
 }
 
-func generatePostMethod(w *gen.Writer, response spec.NamedResponse, operationName string, apiName string, operation string) {
-	if !response.Type.Definition.IsEmpty() {
-		w.Line("  var %s %s", operationName, GoType(&response.Type.Definition))
+func parserMethodName(typ *spec.TypeDef) string {
+	switch typ.Node {
+	case spec.PlainType:
+		return casee.ToPascalCase(typ.Name)
+	case spec.NullableType:
+		return parserMethodName(typ.Child) + "Nullable"
+	case spec.ArrayType:
+		return parserMethodName(typ.Child) + "Array"
+	default:
+		panic(fmt.Sprintf("Unknown type: %v", typ))
 	}
-	w.Line("  json.NewDecoder(r.Body).Decode(&%s)", operationName)
-	w.Line("  response := %sService.%s(&%s)", apiName, operation, operationName)
-	w.Line("  w.WriteHeader(%s)", spec.HttpStatusCode(response.Name))
-	w.Line("  json.NewEncoder(w).Encode(response.%s)", response.Name.PascalCase())
 }
 
-func generateGetMethod(w *gen.Writer, response spec.NamedResponse, namedOperation string, operationName string, operation spec.NamedOperation) {
-	var paramsName string
-	urlParams := []string{}
-	if strings.Contains(namedOperation, "query") {
-		w.Line("  %s := NewParamsParser(r.URL.Query())", operationName)
-		for _, params := range operation.QueryParams {
-			queryParams := params.Name.Source
-			paramsName = params.Name.CamelCase()
-			w.Line(`  %s := %s.%s("%s")`, paramsName, operationName, nameToPascalCase(params.Type.Definition.Name), queryParams)
-			urlParams = append(urlParams, fmt.Sprintf("%s", paramsName))
-		}
-		w.Line("  if checkErrors(%s, w) {", operationName)
-	} else if strings.Contains(namedOperation, "header") {
-		w.Line("  %s := NewParamsParser(r.URL.Query())", operationName)
-		for _, params := range operation.HeaderParams {
-			headerParams := params.Name.Source
-			paramsName = params.Name.CamelCase()
-			w.Line(`  %s := %s.%s("%s")`, paramsName, operationName, nameToPascalCase(params.Type.Definition.Name), headerParams)
-			urlParams = append(urlParams, fmt.Sprintf("%s", paramsName))
-		}
-		w.Line("  if checkErrors(%s, w) {", operationName)
-	} else if strings.Contains(namedOperation, "url_params") {
-		w.Line("  %s := NewParamsParser(r.URL.Query())", "query")
-		for _, param := range operation.Endpoint.UrlParams {
-			queryParams := param.Name.Source
-			paramsName = param.Name.CamelCase()
-			w.Line(`  %s := %s.%s(":%s")`, paramsName, "query", nameToPascalCase(param.Type.Definition.Name), queryParams)
-			urlParams = append(urlParams, fmt.Sprintf("%s", paramsName))
-		}
-		w.Line("  if checkErrors(%s, w) {", "query")
+func parserParameterCall(param *spec.NamedParam) string {
+	if param.Default != nil {
+		defaultValue := DefaultValue(&param.Type.Definition, *param.Default)
+		return fmt.Sprintf(`%sDefaulted("%s", %s)`, parserMethodName(&param.Type.Definition), param.Name.Source, defaultValue)
+	} else {
+		return fmt.Sprintf(`%s("%s")`, parserMethodName(&param.Type.Definition), param.Name.Source)
 	}
-	w.Line("    response := echoService.%s(%s)", operation.Name.PascalCase(), strings.Join(urlParams, ", "))
-	w.Line("  w.WriteHeader(%s)", spec.HttpStatusCode(response.Name))
-	w.Line("  json.NewEncoder(w).Encode(response.%s)", response.Name.PascalCase())
-	w.Line("  }")
+}
+
+func generateOperationMethod(w *gen.Writer, response spec.NamedResponse, apiName string, operation spec.NamedOperation) {
+	if operation.Body != nil {
+		w.Line(`  var body %s`, GoType(&response.Type.Definition))
+		w.Line(`  json.NewDecoder(r.Body).Decode(&body)`)
+		w.Line(`  response := %sService.%s(&body)`, apiName, operation.Name.PascalCase())
+		w.Line(`  w.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
+		w.Line(`  json.NewEncoder(w).Encode(response.%s)`, response.Name.PascalCase())
+	} else if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
+		w.Line(`  query := NewParamsParser(r.URL.Query())`)
+		for _, param := range operation.QueryParams {
+			w.Line(`  %s := query.%s`, param.Name.CamelCase(), parserParameterCall(&param))
+		}
+		w.Line(`  if checkErrors(query, w) {`)
+		w.Line(`    response := %sService.%s(%s)`, apiName, operation.Name.PascalCase(), strings.Join(addParameters(operation), ", "))
+		w.Line(`    w.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
+		w.Line(`    json.NewEncoder(w).Encode(response.%s)`, response.Name.PascalCase())
+		w.Line(`  }`)
+	}
+}
+
+func addParameters(operation spec.NamedOperation) []string{
+	urlParams := []string{}
+
+	for _, param := range operation.QueryParams {
+		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+	}
+
+	for _, param := range operation.HeaderParams {
+		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+	}
+
+	for _, param := range operation.Endpoint.UrlParams {
+		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+	}
+
+	return urlParams
 }
