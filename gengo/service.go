@@ -93,7 +93,7 @@ func nameToPascalCase(name string) string {
 func parserMethodName(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return casee.ToPascalCase(typ.Name)
+		return plainType(typ.Plain)
 	case spec.NullableType:
 		return parserMethodName(typ.Child) + "Nullable"
 	case spec.ArrayType:
@@ -103,12 +103,46 @@ func parserMethodName(typ *spec.TypeDef) string {
 	}
 }
 
+func plainType(typ string) string {
+	switch typ {
+	case spec.TypeInt32:
+		return "Int"
+	case spec.TypeInt64:
+		return "Int64"
+	case spec.TypeFloat:
+		return "Float"
+	case
+		spec.TypeDouble,
+		spec.TypeDecimal:
+		return "Float64"
+	case
+		spec.TypeBoolean,
+		spec.TypeString,
+		spec.TypeUuid,
+		spec.TypeDate,
+		spec.TypeDateTime,
+		spec.TypeJson:
+		return "String"
+	default:
+		return typ
+	}
+}
+
 func parserParameterCall(param *spec.NamedParam) string {
 	if param.Default != nil {
 		defaultValue := DefaultValue(&param.Type.Definition, *param.Default)
 		return fmt.Sprintf(`%sDefaulted("%s", %s)`, parserMethodName(&param.Type.Definition), param.Name.Source, defaultValue)
 	} else {
 		return fmt.Sprintf(`%s("%s")`, parserMethodName(&param.Type.Definition), param.Name.Source)
+	}
+}
+
+func parserEnumParameterCall(param *spec.NamedParam) string {
+	if param.Default != nil {
+		defaultValue := DefaultValue(&param.Type.Definition, *param.Default)
+		return fmt.Sprintf(`%sDefaulted("%s", %sValuesStrings, %s)`, "StringEnum", param.Name.Source, parserMethodName(&param.Type.Definition), defaultValue)
+	} else {
+		return fmt.Sprintf(`%s("%s", %sValuesStrings)`, "StringEnum", param.Name.Source, parserMethodName(&param.Type.Definition))
 	}
 }
 
@@ -122,7 +156,11 @@ func generateOperationMethod(w *gen.Writer, response spec.NamedResponse, apiName
 	} else if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		w.Line(`  query := NewParamsParser(r.URL.Query())`)
 		for _, param := range operation.QueryParams {
-			w.Line(`  %s := query.%s`, param.Name.CamelCase(), parserParameterCall(&param))
+			if param.Type.Definition.Info.Model != nil {
+				w.Line(`  %s := %s(query.%s)`, param.Name.CamelCase(), parserMethodName(&param.Type.Definition), parserEnumParameterCall(&param))
+			} else {
+				w.Line(`  %s := query.%s`, param.Name.CamelCase(), parserParameterCall(&param))
+			}
 		}
 		w.Line(`  if checkErrors(query, w) {`)
 		w.Line(`    response := %sService.%s(%s)`, apiName, operation.Name.PascalCase(), strings.Join(addParameters(operation), ", "))
@@ -132,7 +170,7 @@ func generateOperationMethod(w *gen.Writer, response spec.NamedResponse, apiName
 	}
 }
 
-func addParameters(operation spec.NamedOperation) []string{
+func addParameters(operation spec.NamedOperation) []string {
 	urlParams := []string{}
 
 	for _, param := range operation.QueryParams {
