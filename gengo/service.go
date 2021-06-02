@@ -110,23 +110,25 @@ func plainType(typ string) string {
 	case spec.TypeInt64:
 		return "Int64"
 	case spec.TypeFloat:
-		return "Float"
-	case
-		spec.TypeDouble:
+		return "Float32"
+	case spec.TypeDouble:
 		return "Float64"
-	case
-		spec.TypeDecimal:
-		return "Float64"
-	case
-		spec.TypeBoolean,
-		spec.TypeString,
-		spec.TypeUuid,
-		spec.TypeDate,
-		spec.TypeDateTime:
+	case spec.TypeDecimal:
+		return "Decimal"
+	case spec.TypeBoolean:
+		return "Bool"
+	case spec.TypeString:
 		return "String"
+	case spec.TypeUuid:
+		return "Uuid"
+	case spec.TypeDate:
+		return "Date"
+	case spec.TypeDateTime:
+		return "DateTime"
 	default:
 		return typ
 	}
+
 }
 
 func parserParameterCall(param *spec.NamedParam) string {
