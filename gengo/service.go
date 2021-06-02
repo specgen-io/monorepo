@@ -90,21 +90,34 @@ func nameToPascalCase(name string) string {
 	return casee.ToPascalCase(name)
 }
 
-func parserTypeName(typ *spec.TypeDef) string {
-	switch typ.Node {
-	case spec.PlainType:
-		return plainType(typ.Plain)
-	case spec.NullableType:
-		return parserTypeName(typ.Child) + "Nullable"
-	case spec.ArrayType:
-		return parserTypeName(typ.Child) + "Array"
-	default:
-		panic(fmt.Sprintf("Unknown type: %v", typ))
+func parserMethodNameDefault(param *spec.NamedParam) (string, *string) {
+	methodName := parserTypeName(&param.Type.Definition)
+	if param.Default != nil {
+		defaultValue := DefaultValue(&param.Type.Definition, *param.Default)
+		return methodName+`Defaulted`, &defaultValue
+	} else {
+		return methodName, nil
 	}
 }
 
-func plainType(typ string) string {
-	switch typ {
+func parserTypeName(typ *spec.TypeDef) string {
+	switch typ.Node {
+	case spec.PlainType:
+		return plainType(typ)
+	case spec.NullableType:
+		return plainType(typ.Child) + "Nullable"
+	case spec.ArrayType:
+		return plainType(typ.Child) + "Array"
+	default:
+		panic(fmt.Sprintf("Unsupported string param type: %v", typ.Plain))
+	}
+}
+
+func plainType(typ *spec.TypeDef) string {
+	if typ.Info.Model != nil && typ.Info.Model.IsEnum() {
+		return "StringEnum"
+	}
+	switch typ.Plain {
 	case spec.TypeInt32:
 		return "Int"
 	case spec.TypeInt64:
@@ -125,26 +138,26 @@ func plainType(typ string) string {
 		spec.TypeDateTime:
 		return "String"
 	default:
-		return typ
+		panic(fmt.Sprintf("Unsupported string param type: %v", typ.Plain))
 	}
 }
 
 func parserParameterCall(param *spec.NamedParam) string {
+	parserParams := []string{ fmt.Sprintf(`"%s"`, param.Name.Source) }
+	methodName, defaultParam := parserMethodNameDefault(param)
 	isEnum := param.Type.Definition.Info.Model != nil && param.Type.Definition.Info.Model.IsEnum()
-	if param.Default != nil {
-		defaultValue := DefaultValue(&param.Type.Definition, *param.Default)
-		if isEnum {
-			return fmt.Sprintf(`%s(query.%sDefaulted("%s", %sValuesStrings, %s))`, parserTypeName(&param.Type.Definition), "StringEnum", param.Name.Source, parserTypeName(&param.Type.Definition), defaultValue)
-		} else {
-			return fmt.Sprintf(`query.%sDefaulted("%s", %s)`, parserTypeName(&param.Type.Definition), param.Name.Source, defaultValue)
-		}
-	} else {
-		if isEnum {
-			return fmt.Sprintf(`%s(query.%s("%s", %sValuesStrings))`, parserTypeName(&param.Type.Definition), "StringEnum", param.Name.Source, parserTypeName(&param.Type.Definition))
-		} else {
-			return fmt.Sprintf(`query.%s("%s")`, parserTypeName(&param.Type.Definition), param.Name.Source)
-		}
+	enumModel := param.Type.Definition.Info.Model
+	if isEnum {
+		parserParams = append(parserParams, enumModel.Name.PascalCase()+`ValuesStrings`)
 	}
+	if defaultParam != nil {
+		parserParams = append(parserParams, *defaultParam)
+	}
+	call := fmt.Sprintf(`query.%s(%s)`, methodName, strings.Join(parserParams, ", "))
+	if isEnum {
+		call = fmt.Sprintf(`%s(%s)`, enumModel.Name.PascalCase(), call)
+	}
+	return call
 }
 
 func generateOperationMethod(w *gen.Writer, response spec.NamedResponse, apiName string, operation spec.NamedOperation) {
