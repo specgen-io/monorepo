@@ -10,7 +10,10 @@ func generateParamsParser(packageName string, path string) *gen.TextFile {
 package [[.PackageName]]
 
 import (
+	"cloud.google.com/go/civil"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"strconv"
 	"strings"
 )
@@ -44,6 +47,36 @@ func (parser *ParamsParser) parseFloat32(s string) float32 {
 
 func (parser *ParamsParser) parseFloat64(s string) float64 {
 	v, err := strconv.ParseFloat(s, 64)
+	parser.addError(err)
+	return v
+}
+
+func (parser *ParamsParser) parseDecimal(s string) decimal.Decimal {
+	v, err := decimal.NewFromString(s)
+	parser.addError(err)
+	return v
+}
+
+func (parser *ParamsParser) parseBool(s string) bool {
+	v, err := strconv.ParseBool(s)
+	parser.addError(err)
+	return v
+}
+
+func (parser *ParamsParser) parseUuid(s string) uuid.UUID {
+	v, err := uuid.Parse(s)
+	parser.addError(err)
+	return v
+}
+
+func (parser *ParamsParser) parseDate(s string) civil.Date {
+	v, err := civil.ParseDate(s)
+	parser.addError(err)
+	return v
+}
+
+func (parser *ParamsParser) parseDateTime(s string) civil.DateTime {
+	v, err := civil.ParseDateTime(s)
 	parser.addError(err)
 	return v
 }
@@ -268,6 +301,196 @@ func (parser *ParamsParser) Float64Array(name string) []float64 {
 	return convertedValues
 }
 
+func (parser *ParamsParser) Decimal(name string) decimal.Decimal {
+	if !parser.exactlyOneValue(name) {
+		return decimal.Decimal{}
+	}
+	return parser.parseDecimal(parser.values[name][0])
+}
+
+func (parser *ParamsParser) DecimalNullable(name string) *decimal.Decimal {
+	if !parser.notMoreThenOneValue(name) {
+		return nil
+	}
+	pValues := parser.values[name]
+	if len(pValues) == 0 {
+		return nil
+	} else {
+		convertedValue := parser.parseDecimal(pValues[0])
+		return &convertedValue
+	}
+}
+
+func (parser *ParamsParser) DecimalDefaulted(name string, defaultValue decimal.Decimal) decimal.Decimal {
+	value := parser.StringNullable(name)
+	if value == nil {
+		return defaultValue
+	} else {
+		return parser.parseDecimal(*value)
+	}
+}
+
+func (parser *ParamsParser) DecimalArray(name string) []decimal.Decimal {
+	stringValues := parser.StringArray(name)
+	convertedValues := []decimal.Decimal{}
+	for _, stringValue := range stringValues {
+		convertedValues = append(convertedValues, parser.parseDecimal(stringValue))
+	}
+	return convertedValues
+}
+
+func (parser *ParamsParser) Bool(name string) bool {
+	if !parser.exactlyOneValue(name) {
+		return false
+	}
+	return parser.parseBool(parser.values[name][0])
+}
+
+func (parser *ParamsParser) BoolNullable(name string) *bool {
+	if !parser.notMoreThenOneValue(name) {
+		return nil
+	}
+	pValues := parser.values[name]
+	if len(pValues) == 0 {
+		return nil
+	} else {
+		convertedValue := parser.parseBool(pValues[0])
+		return &convertedValue
+	}
+}
+
+func (parser *ParamsParser) BoolDefaulted(name string, defaultValue bool) bool {
+	value := parser.StringNullable(name)
+	if value == nil {
+		return defaultValue
+	} else {
+		return parser.parseBool(*value)
+	}
+}
+
+func (parser *ParamsParser) BoolArray(name string) []bool {
+	stringValues := parser.StringArray(name)
+	convertedValues := []bool{}
+	for _, stringValue := range stringValues {
+		convertedValues = append(convertedValues, parser.parseBool(stringValue))
+	}
+	return convertedValues
+}
+
+func (parser *ParamsParser) Uuid(name string) uuid.UUID {
+	if !parser.exactlyOneValue(name) {
+		return uuid.Nil
+	}
+	return parser.parseUuid(parser.values[name][0])
+}
+
+func (parser *ParamsParser) UuidNullable(name string) *uuid.UUID {
+	if !parser.notMoreThenOneValue(name) {
+		return nil
+	}
+	pValues := parser.values[name]
+	if len(pValues) == 0 {
+		return nil
+	} else {
+		convertedValue := parser.parseUuid(pValues[0])
+		return &convertedValue
+	}
+}
+
+func (parser *ParamsParser) UuidDefaulted(name string, defaultValue uuid.UUID) uuid.UUID {
+	value := parser.StringNullable(name)
+	if value == nil {
+		return defaultValue
+	} else {
+		return parser.parseUuid(*value)
+	}
+}
+
+func (parser *ParamsParser) UuidArray(name string) []uuid.UUID {
+	stringValues := parser.StringArray(name)
+	convertedValues := []uuid.UUID{}
+	for _, stringValue := range stringValues {
+		convertedValues = append(convertedValues, parser.parseUuid(stringValue))
+	}
+	return convertedValues
+}
+
+func (parser *ParamsParser) Date(name string) civil.Date {
+	if !parser.exactlyOneValue(name) {
+		return civil.Date{}
+	}
+	return parser.parseDate(parser.values[name][0])
+}
+
+func (parser *ParamsParser) DateNullable(name string) *civil.Date {
+	if !parser.notMoreThenOneValue(name) {
+		return nil
+	}
+	pValues := parser.values[name]
+	if len(pValues) == 0 {
+		return nil
+	} else {
+		convertedValue := parser.parseDate(pValues[0])
+		return &convertedValue
+	}
+}
+
+func (parser *ParamsParser) DateDefaulted(name string, defaultValue civil.Date) civil.Date {
+	value := parser.StringNullable(name)
+	if value == nil {
+		return defaultValue
+	} else {
+		return parser.parseDate(*value)
+	}
+}
+
+func (parser *ParamsParser) DateArray(name string) []civil.Date {
+	stringValues := parser.StringArray(name)
+	convertedValues := []civil.Date{}
+	for _, stringValue := range stringValues {
+		convertedValues = append(convertedValues, parser.parseDate(stringValue))
+	}
+	return convertedValues
+}
+
+func (parser *ParamsParser) DateTime(name string) civil.DateTime {
+	if !parser.exactlyOneValue(name) {
+		return civil.DateTime{}
+	}
+	return parser.parseDateTime(parser.values[name][0])
+}
+
+func (parser *ParamsParser) DateTimeNullable(name string) *civil.DateTime {
+	if !parser.notMoreThenOneValue(name) {
+		return nil
+	}
+	pValues := parser.values[name]
+	if len(pValues) == 0 {
+		return nil
+	} else {
+		convertedValue := parser.parseDateTime(pValues[0])
+		return &convertedValue
+	}
+}
+
+func (parser *ParamsParser) DateTimeDefaulted(name string, defaultValue civil.DateTime) civil.DateTime {
+	value := parser.StringNullable(name)
+	if value == nil {
+		return defaultValue
+	} else {
+		return parser.parseDateTime(*value)
+	}
+}
+
+func (parser *ParamsParser) DateTimeArray(name string) []civil.DateTime {
+	stringValues := parser.StringArray(name)
+	convertedValues := []civil.DateTime{}
+	for _, stringValue := range stringValues {
+		convertedValues = append(convertedValues, parser.parseDateTime(stringValue))
+	}
+	return convertedValues
+}
+
 func (parser *ParamsParser) StringEnum(name string, values []string) string {
 	if !parser.exactlyOneValue(name) {
 		return ""
@@ -307,6 +530,6 @@ func (parser *ParamsParser) StringEnumArray(name string, values []string) []stri
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {packageName })
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }

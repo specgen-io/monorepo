@@ -123,26 +123,27 @@ func plainType(typ *spec.TypeDef) string {
 	case spec.TypeInt64:
 		return "Int64"
 	case spec.TypeFloat:
-		return "Float"
-	case
-		spec.TypeDouble:
+		return "Float32"
+	case spec.TypeDouble:
 		return "Float64"
-	case
-		spec.TypeDecimal:
-		return "Float64"
-	case
-		spec.TypeBoolean,
-		spec.TypeString,
-		spec.TypeUuid,
-		spec.TypeDate,
-		spec.TypeDateTime:
+	case spec.TypeDecimal:
+		return "Decimal"
+	case spec.TypeBoolean:
+		return "Bool"
+	case spec.TypeString:
 		return "String"
+	case spec.TypeUuid:
+		return "Uuid"
+	case spec.TypeDate:
+		return "Date"
+	case spec.TypeDateTime:
+		return "DateTime"
 	default:
 		panic(fmt.Sprintf("Unsupported string param type: %v", typ.Plain))
 	}
 }
 
-func parserParameterCall(param *spec.NamedParam) string {
+func parserParameterCall(param *spec.NamedParam, operationName string) string {
 	parserParams := []string{ fmt.Sprintf(`"%s"`, param.Name.Source) }
 	methodName, defaultParam := parserMethodNameDefault(param)
 	isEnum := param.Type.Definition.Info.Model != nil && param.Type.Definition.Info.Model.IsEnum()
@@ -153,7 +154,7 @@ func parserParameterCall(param *spec.NamedParam) string {
 	if defaultParam != nil {
 		parserParams = append(parserParams, *defaultParam)
 	}
-	call := fmt.Sprintf(`query.%s(%s)`, methodName, strings.Join(parserParams, ", "))
+	call := fmt.Sprintf(`%s.%s(%s)`, operationName, methodName, strings.Join(parserParams, ", "))
 	if isEnum {
 		call = fmt.Sprintf(`%s(%s)`, enumModel.Name.PascalCase(), call)
 	}
@@ -164,34 +165,49 @@ func generateOperationMethod(w *gen.Writer, response spec.NamedResponse, apiName
 	if operation.Body != nil {
 		w.Line(`  var body %s`, GoType(&response.Type.Definition))
 		w.Line(`  json.NewDecoder(r.Body).Decode(&body)`)
-		w.Line(`  response := %sService.%s(&body)`, apiName, operation.Name.PascalCase())
-		w.Line(`  w.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
-		w.Line(`  json.NewEncoder(w).Encode(response.%s)`, response.Name.PascalCase())
 	} else if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		w.Line(`  query := NewParamsParser(r.URL.Query())`)
 		for _, param := range operation.QueryParams {
-			w.Line(`  %s := %s`, param.Name.CamelCase(), parserParameterCall(&param))
+			w.Line(`  %s := %s`, param.Name.CamelCase(), parserParameterCall(&param, "query"))
 		}
 		w.Line(`  if !checkErrors(query, w) { return }`)
-		w.Line(`  response := %sService.%s(%s)`, apiName, operation.Name.PascalCase(), strings.Join(addParameters(operation), ", "))
+	} else if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
+		w.Line(`  header := NewParamsParser(r.Header)`)
+		for _, param := range operation.HeaderParams {
+			w.Line(`  %s := %s`, param.Name.CamelCase(), parserParameterCall(&param, "header"))
+		}
+		w.Line(`  if !checkErrors(header, w) { return }`)
+	} else if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
+		w.Line(`  query := NewParamsParser(r.URL.Query())`)
+		for _, param := range operation.Endpoint.UrlParams {
+			w.Line(`  %s := %s`, param.Name.CamelCase(), parserParameterCall(&param, "query"))
+		}
+		w.Line(`  if !checkErrors(query, w) { return }`)
+	} else {
+		w.Line(`  %sService.%sResponse()`, apiName, operation.Name.PascalCase())
 		w.Line(`  w.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
-		w.Line(`  json.NewEncoder(w).Encode(response.%s)`, response.Name.PascalCase())
+		return
 	}
+
+	w.Line(`  response := %sService.%s(%s)`, apiName, operation.Name.PascalCase(), strings.Join(addParameters(operation), ", "))
+	w.Line(`  w.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
+	w.Line(`  json.NewEncoder(w).Encode(response.%s)`, response.Name.PascalCase())
 }
 
 func addParameters(operation spec.NamedOperation) []string {
 	urlParams := []string{}
-
-	for _, param := range operation.QueryParams {
-		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
-	}
-
-	for _, param := range operation.HeaderParams {
-		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
-	}
-
-	for _, param := range operation.Endpoint.UrlParams {
-		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+	if operation.Body == nil {
+		for _, param := range operation.QueryParams {
+			urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+		}
+		for _, param := range operation.HeaderParams {
+			urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+		}
+		for _, param := range operation.Endpoint.UrlParams {
+			urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+		}
+	} else {
+		urlParams = append(urlParams, fmt.Sprintf("%s", "&body"))
 	}
 
 	return urlParams
