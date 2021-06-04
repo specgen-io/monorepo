@@ -14,7 +14,7 @@ func GenerateServiceModels(serviceFile string, generatePath string) error {
 
 	modelsPackage := modelsPackageName(specification.Name)
 
-	scalaCirceFile := generateJson(modelsPackage, filepath.Join(generatePath, "Json.scala"))
+	scalaCirceFile := generateJson("spec", filepath.Join(generatePath, "Json.scala"))
 
 	modelsFiles := GenerateCirceModels(specification, modelsPackage, generatePath)
 
