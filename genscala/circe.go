@@ -2,7 +2,7 @@ package genscala
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
@@ -28,14 +28,14 @@ func generateCirceModels(version *spec.Version, packageName string, outPath stri
 		Import("java.time._").
 		Import("java.time.format._").
 		Import("java.util.UUID").
-		Import("io.circe.{Decoder, Encoder}").
-		Import("io.circe.generic.extras.Configuration").
-		Import("io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder, deriveUnwrappedDecoder, deriveUnwrappedEncoder}")
+		Import("io.circe.Codec").
+		Import("io.circe.generic.extras.{Configuration, JsonKey}").
+		Import("io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveUnwrappedCodec}")
 
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
-			class := generateCirceObjectModel(model)
-			unit.AddDeclarations(class)
+			class, object := generateCirceObjectModel(model)
+			unit.AddDeclarations(class, object)
 		} else if model.IsEnum() {
 			enumClass, enumObject := generateCirceEnumModel(model)
 			unit.AddDeclarations(enumClass, enumObject)
@@ -46,21 +46,27 @@ func generateCirceModels(version *spec.Version, packageName string, outPath stri
 		}
 	}
 
-	unit.AddDeclarations(generateCirceUnionItemsCodecs(version.ResolvedModels))
-
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, fmt.Sprintf("%sModels.scala", version.Version.PascalCase())),
 		Content: unit.Code(),
 	}
 }
 
-func generateCirceObjectModel(model *spec.NamedModel) *scala.ClassDeclaration {
+func generateCirceObjectModel(model *spec.NamedModel) (scala.Writable, scala.Writable) {
 	ctor := Constructor().ParamPerLine()
 	for _, field := range model.Object.Fields {
-		ctor.Param(scalaCamelCase(field.Name), ScalaType(&field.Type.Definition))
+		jsonKey := fmt.Sprintf(`JsonKey("%s")`, field.Name.Source)
+		fieldParam := Param(scalaCamelCase(field.Name), ScalaType(&field.Type.Definition)).Attribute(jsonKey)
+		ctor.AddParams(fieldParam)
 	}
 	modelClass := CaseClass(model.Name.PascalCase()).Constructor(ctor)
-	return modelClass
+
+	modelObject := Object(model.Name.PascalCase())
+	modelObject.Add(
+		Line("implicit val config = Configuration.default"),
+		Line("implicit val codec: Codec[%s] = deriveConfiguredCodec", model.Name.PascalCase()),
+	)
+	return modelClass, modelObject
 }
 
 func generateCirceEnumModel(model *spec.NamedModel) (scala.Writable, scala.Writable) {
@@ -98,32 +104,19 @@ func generateCirceUnionModel(model *spec.NamedModel, packageName string) (scala.
 		object.Add(itemClass)
 	}
 
-	return trait, object
-}
+	object.Add(
+		Line("implicit val config = Configuration.default.withSnakeCaseConstructorNames"),
+		Line("implicit val codec: Codec[%s] = deriveConfiguredCodec", model.Name.PascalCase()),
+	)
 
-func generateCirceUnionItemsCodecs(models []*spec.NamedModel) *scala.ClassDeclaration {
-	object :=
-		Object("json").
-			Add(Line("implicit val auto = Configuration.default.withSnakeCaseMemberNames.withSnakeCaseConstructorNames.withDefaults"))
-	for _, model := range models {
-		if !model.IsEnum() {
-			object.Add(
-				Line("implicit val encoder%s: Encoder[%s] = deriveConfiguredEncoder", model.Name.PascalCase(), model.Name.PascalCase()),
-				Line("implicit val decoder%s: Decoder[%s] = deriveConfiguredDecoder", model.Name.PascalCase(), model.Name.PascalCase()),
-			)
-			if model.IsOneOf() {
-				for _, item := range model.OneOf.Items {
-					itemTypeName := model.Name.PascalCase() + "." + item.Name.PascalCase()
-					itemCodecName := model.Name.PascalCase() + item.Name.PascalCase()
-					object.Add(
-						Line("implicit val encoder%s: Encoder[%s] = deriveUnwrappedEncoder", itemCodecName, itemTypeName),
-						Line("implicit val decoder%s: Decoder[%s] = deriveUnwrappedDecoder", itemCodecName, itemTypeName),
-					)
-				}
-			}
-		}
+	for _, item := range model.OneOf.Items {
+		itemTypeName := model.Name.PascalCase() + "." + item.Name.PascalCase()
+		object.Add(
+			Line("implicit val codec%s: Codec[%s] = deriveUnwrappedCodec", item.Name.PascalCase(), itemTypeName),
+		)
 	}
-	return object
+
+	return trait, object
 }
 
 func generateJson(packageName string, path string) *gen.TextFile {

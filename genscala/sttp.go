@@ -58,8 +58,7 @@ func generateClientApiImplementations(version *spec.Version, packageName string,
 		Import("org.slf4j._").
 		Import("com.softwaremill.sttp._").
 		Import("spec.Jsoner").
-		Import("spec.ParamsTypesBindings._").
-		Import("json._")
+		Import("spec.ParamsTypesBindings._")
 
 	for _, api := range version.Http.Apis {
 		apiTrait := generateClientApiClass(api)
