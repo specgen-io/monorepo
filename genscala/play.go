@@ -230,8 +230,7 @@ func generateApiControllers(version *spec.Version, packageName string, outPath s
 		Import("spec.controllers.ParamsTypesBindings._").
 		Import("spec.models.Jsoner").
 		Import(servicePackage + "._").
-		Import(modelsPackage + "._").
-		Import(modelsPackage + ".json._")
+		Import(modelsPackage + "._")
 
 	for _, api := range version.Http.Apis {
 		class :=
