@@ -194,13 +194,22 @@ func generateOperationMethod(w *gen.Writer, apiName string, operation spec.Named
 	addParamsParser(w, operation, operation.Endpoint.UrlParams, "query", "URL.Query()")
 
 	for _, response := range operation.Responses {
-		w.Line(`  response := %sService.%s(%s)`, apiName, operation.Name.PascalCase(), strings.Join(addParamName(operation), ", "))
-		w.Line(`  w.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
-		w.Line(`  json.NewEncoder(w).Encode(response.%s)`, response.Name.PascalCase())
+		if spec.HttpStatusCode(response.Name) != "200" {
+			addResponse(w, "", apiName, operation, response.Name)
+			return
+		} else {
+			addResponse(w, "response := ", apiName, operation, response.Name)
+			w.Line(`  json.NewEncoder(w).Encode(response.%s)`, response.Name.PascalCase())
+		}
 	}
 }
 
-func addParamName(operation spec.NamedOperation) []string {
+func addResponse(w *gen.Writer, responseStr, apiName string, operation spec.NamedOperation, responseName spec.Name) {
+	w.Line(`  %s%sService.%s(%s)`, responseStr, apiName, operation.Name.PascalCase(), strings.Join(addUrlParams(operation), ", "))
+	w.Line(`  w.WriteHeader(%s)`, spec.HttpStatusCode(responseName))
+}
+
+func addUrlParams(operation spec.NamedOperation) []string {
 	urlParams := []string{}
 	if operation.Body == nil {
 		for _, param := range operation.QueryParams {
