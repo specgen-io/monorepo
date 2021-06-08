@@ -193,20 +193,17 @@ func generateOperationMethod(w *gen.Writer, apiName string, operation spec.Named
 	addParamsParser(w, operation, operation.HeaderParams, "header", "Header")
 	addParamsParser(w, operation, operation.Endpoint.UrlParams, "query", "URL.Query()")
 
-	for _, response := range operation.Responses {
-		if spec.HttpStatusCode(response.Name) != "200" {
-			addResponse(w, "", apiName, operation, response.Name)
-			return
-		} else {
-			addResponse(w, "response := ", apiName, operation, response.Name)
-			w.Line(`  json.NewEncoder(w).Encode(response.%s)`, response.Name.PascalCase())
-		}
-	}
-}
+	w.Line(`  response := %sService.%s(%s)`, apiName, operation.Name.PascalCase(), strings.Join(addUrlParams(operation), ", "))
 
-func addResponse(w *gen.Writer, responseStr, apiName string, operation spec.NamedOperation, responseName spec.Name) {
-	w.Line(`  %s%sService.%s(%s)`, responseStr, apiName, operation.Name.PascalCase(), strings.Join(addUrlParams(operation), ", "))
-	w.Line(`  w.WriteHeader(%s)`, spec.HttpStatusCode(responseName))
+	for _, response := range operation.Responses {
+		w.Line(`  if response.%s != nil {`, response.Name.PascalCase())
+		w.Line(`    w.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
+		if spec.HttpStatusCode(response.Name) == "200" {
+			w.Line(`    json.NewEncoder(w).Encode(response.%s)`, response.Name.PascalCase())
+		}
+		w.Line(`    return`)
+		w.Line(`  }`)
+	}
 }
 
 func addUrlParams(operation spec.NamedOperation) []string {
