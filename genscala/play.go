@@ -287,7 +287,7 @@ func generateControllerMethod(operation spec.NamedOperation) *scala.MethodDeclar
 							addParamsParsing(operation.HeaderParams, "header", "request.headers.get"),
 							Statements(Dynamic(func(code *scala.WritableList) {
 								if operation.Body != nil {
-									code.Add(Line("val body = Jsoner.read[%s](request.body.utf8String)", ScalaType(&operation.Body.Type.Definition)))
+									code.Add(Line("val body = Jsoner.readThrowing[%s](request.body.utf8String)", ScalaType(&operation.Body.Type.Definition)))
 								}
 							})...),
 							Line("(%s)", JoinParams(parseParams)),
