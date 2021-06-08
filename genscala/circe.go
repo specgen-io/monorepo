@@ -129,7 +129,7 @@ object Jsoner {
   import io.circe.syntax._
   import io.circe.parser._
 
-  def read[T](jsonStr: String)(implicit decoder: Decoder[T]): T = {
+  def readThrowing[T](jsonStr: String)(implicit decoder: Decoder[T]): T = {
     parse(jsonStr) match {
       case Right(parsed) => {
         parsed.as[T] match {
@@ -140,6 +140,9 @@ object Jsoner {
       case Left(failure) => throw failure
     }
   }
+
+  def read[T](jsonStr: String)(implicit decoder: Decoder[T]): Either[Error, T] =
+    parse(jsonStr).flatMap(json => json.as[T])
 
   def write[T](value: T, formatted: Boolean = false)(implicit encoder: Encoder[T]): String = {
     if (formatted) {

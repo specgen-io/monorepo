@@ -177,7 +177,7 @@ func generateResponseCases(operation spec.NamedOperation) *scala.StatementsDecla
 	for _, response := range operation.Responses {
 		responseParam := ``
 		if !response.Type.Definition.IsEmpty() {
-			responseParam = fmt.Sprintf(`Jsoner.read[%s](body)`, ScalaType(&response.Type.Definition))
+			responseParam = fmt.Sprintf(`Jsoner.readThrowing[%s](body)`, ScalaType(&response.Type.Definition))
 		}
 		cases.Add(Line(`case %s => %s.%s(%s)`, spec.HttpStatusCode(response.Name), responseType(operation), response.Name.PascalCase(), responseParam))
 	}
