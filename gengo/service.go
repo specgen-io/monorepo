@@ -40,6 +40,8 @@ func generateRouting(w *gen.Writer, version *spec.Version, packageName string) {
 	w.Line(`  "net/http"`)
 	w.Line(`)`)
 	generateCheckErrors(w)
+	generateCheckOperationErrors(w)
+	w.EmptyLine()
 	for _, api := range version.Http.Apis {
 		generateApiRouter(w, api)
 	}
@@ -54,8 +56,19 @@ func checkErrors(params *ParamsParser, w http.ResponseWriter) bool {
 		return false
 		}
 	return true
+}`)
 }
-`)
+
+func generateCheckOperationErrors(w *gen.Writer) {
+	w.Line(`
+func checkOperationErrors(err error, w http.ResponseWriter) bool {
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Println(err.Error())
+		return false
+	}
+	return true
+}`)
 }
 
 func getVestigoUrl(operation spec.NamedOperation) []string {
@@ -193,8 +206,8 @@ func generateOperationMethod(w *gen.Writer, apiName string, operation spec.Named
 	addParamsParser(w, operation, operation.HeaderParams, "header", "Header")
 	addParamsParser(w, operation, operation.Endpoint.UrlParams, "query", "URL.Query()")
 
-	w.Line(`  response := %sService.%s(%s)`, apiName, operation.Name.PascalCase(), strings.Join(addUrlParams(operation), ", "))
-
+	w.Line(`  response, err := %sService.%s(%s)`, apiName, operation.Name.PascalCase(), strings.Join(addUrlParams(operation), ", "))
+	w.Line(`  if !checkOperationErrors(err, w) { return }`)
 	for _, response := range operation.Responses {
 		w.Line(`  if response.%s != nil {`, response.Name.PascalCase())
 		w.Line(`    w.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
