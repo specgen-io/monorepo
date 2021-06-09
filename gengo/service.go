@@ -18,19 +18,23 @@ func GenerateService(serviceFile string, generatePath string) error {
 	}
 	files := []gen.TextFile{}
 	for _, version := range specification.Versions {
-		w := NewGoWriter()
-		generateRouting(w, &version, "spec")
 		folder := "spec"
 		if version.Version.Source != "" {
 			folder += "_" + version.Version.FlatCase()
 		}
-		files = append(files, gen.TextFile{Path: filepath.Join(generatePath, folder, "routing.go"), Content: w.String()})
+
+		files = append(files, *generateRouting(&version, "spec", generatePath, folder))
+
 		files = append(files, *generateParamsParser(folder, filepath.Join(generatePath, folder, "parsing.go")))
+		files = append(files, *generateEchoService(folder, filepath.Join(generatePath, folder, "echo_service.go")))
+		files = append(files, *generateCheckService("spec", filepath.Join(generatePath, "spec", "check_service.go")))
+		files = append(files, *generateEchoServiceV2("spec_v2", filepath.Join(generatePath, "spec_v2", "echo_service.go")))
 	}
 	return gen.WriteFiles(files, true)
 }
 
-func generateRouting(w *gen.Writer, version *spec.Version, packageName string) {
+func generateRouting(version *spec.Version, packageName, generatePath, folder string) *gen.TextFile {
+	w := NewGoWriter()
 	w.Line("package %s", versionedPackage(version.Version, packageName))
 	w.EmptyLine()
 	w.Line("import (")
@@ -42,8 +46,14 @@ func generateRouting(w *gen.Writer, version *spec.Version, packageName string) {
 	generateCheckErrors(w)
 	generateCheckOperationErrors(w)
 	w.EmptyLine()
+
 	for _, api := range version.Http.Apis {
 		generateApiRouter(w, api)
+	}
+
+	return &gen.TextFile{
+		Path:    filepath.Join(generatePath, folder, "routing.go"),
+		Content: w.String(),
 	}
 }
 
