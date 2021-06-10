@@ -22,8 +22,8 @@ func GenerateService(serviceFile string, generatePath string) error {
 		if version.Version.Source != "" {
 			folder += "_" + version.Version.FlatCase()
 		}
-
 		files = append(files, *generateRouting(&version, "spec", generatePath, folder))
+		files = append(files, *generateServices(&version, "spec", generatePath, folder))
 
 		files = append(files, *generateParamsParser(folder, filepath.Join(generatePath, folder, "parsing.go")))
 		files = append(files, *generateEchoService(folder, filepath.Join(generatePath, folder, "echo_service.go")))
@@ -231,18 +231,18 @@ func generateOperationMethod(w *gen.Writer, apiName string, operation spec.Named
 
 func addUrlParams(operation spec.NamedOperation) []string {
 	urlParams := []string{}
-	if operation.Body == nil {
-		for _, param := range operation.QueryParams {
-			urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
-		}
-		for _, param := range operation.HeaderParams {
-			urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
-		}
-		for _, param := range operation.Endpoint.UrlParams {
-			urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
-		}
-	} else {
+
+	if operation.Body != nil {
 		urlParams = append(urlParams, fmt.Sprintf("%s", "&body"))
+	}
+	for _, param := range operation.QueryParams {
+		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+	}
+	for _, param := range operation.HeaderParams {
+		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+	}
+	for _, param := range operation.Endpoint.UrlParams {
+		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
 	}
 
 	return urlParams

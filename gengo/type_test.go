@@ -13,7 +13,7 @@ func CheckPlainType(t *testing.T, plainType string, expected string) {
 }
 
 func TestPlainTypeInt(t *testing.T) {
-	CheckPlainType(t, spec.TypeInt32, "int32")
+	CheckPlainType(t, spec.TypeInt32, "int")
 }
 
 func TestPlainTypeLong(t *testing.T) {
