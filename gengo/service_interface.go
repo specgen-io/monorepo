@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-func generateServices(version *spec.Version, packageName, generatePath, folder string) *gen.TextFile {
+func generateServicesInterfaces(version *spec.Version, packageName, generatePath, folder string) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", versionedPackage(version.Version, packageName))
+	w.Line("package %s", packageName)
 	w.EmptyLine()
 	addImport(w, version, spec.TypeDate, "cloud.google.com/go/civil")
 	addImport(w, version, spec.TypeJson, "encoding/json")
@@ -39,11 +39,16 @@ func generateServices(version *spec.Version, packageName, generatePath, folder s
 
 func addImport(w *gen.Writer, version *spec.Version, typ string, importStr string) *gen.Writer {
 	for _, api := range version.Http.Apis {
-		for _, operation := range api.Operations {
-			checkParam(w, operation.QueryParams, importStr, typ)
-			checkParam(w, operation.HeaderParams, importStr, typ)
-			checkParam(w, operation.Endpoint.UrlParams, importStr, typ)
-		}
+		addImportApi(w, &api, typ, importStr)
+	}
+	return nil
+}
+
+func addImportApi(w *gen.Writer, api *spec.Api, typ string, importStr string) *gen.Writer {
+	for _, operation := range api.Operations {
+		checkParam(w, operation.QueryParams, importStr, typ)
+		checkParam(w, operation.HeaderParams, importStr, typ)
+		checkParam(w, operation.Endpoint.UrlParams, importStr, typ)
 	}
 	return nil
 }
@@ -81,22 +86,22 @@ func generateOperationResponseStruct(w *gen.Writer, operation spec.NamedOperatio
 }
 
 func addParams(operation spec.NamedOperation) []string {
-	urlParams := []string{}
+	params := []string{}
 
 	if operation.Body != nil {
-		urlParams = append(urlParams, fmt.Sprintf("body *%s", GoType(&operation.Body.Type.Definition)))
+		params = append(params, fmt.Sprintf("body *%s", GoType(&operation.Body.Type.Definition)))
 	}
 	for _, param := range operation.QueryParams {
-		urlParams = append(urlParams, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
 	}
 	for _, param := range operation.HeaderParams {
-		urlParams = append(urlParams, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		urlParams = append(urlParams, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
 	}
 
-	return urlParams
+	return params
 }
 
 func generateInterface(w *gen.Writer, api spec.Api) {

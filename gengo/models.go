@@ -13,18 +13,21 @@ func GenerateModels(serviceFile string, generatePath string) error {
 	if err != nil {
 		return err
 	}
+	files := generateModels(specification, generatePath)
+	return gen.WriteFiles(files, true)
+}
+
+func generateModels(specification *spec.Spec, generatePath string) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, version := range specification.Versions {
-		w := NewGoWriter()
-		generateModels(w, &version, "spec")
-		folder := "spec"
-		if version.Version.Source != "" {
-			folder += "_" + version.Version.FlatCase()
-		}
-		files = append(files, gen.TextFile{Path: filepath.Join(generatePath, folder, "models.go"), Content: w.String()})
+		folder := versionedFolder("spec", &version)
+		packageName := folder
+		versionPath := filepath.Join(generatePath, folder)
+
+		files = append(files, *generateVersionModels(&version, packageName, versionPath))
 		files = append(files, *generateHelperFunctions(folder, filepath.Join(generatePath, folder, "helpers.go")))
 	}
-	return gen.WriteFiles(files, true)
+	return files
 }
 
 func versionedPackage(version spec.Name, packageName string) string {
@@ -66,7 +69,8 @@ func checkType(fieldType *spec.TypeDef, typ string) bool {
 	return true
 }
 
-func generateModels(w *gen.Writer, version *spec.Version, packageName string) {
+func generateVersionModels(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
+	w := NewGoWriter()
 	w.Line("package %s", versionedPackage(version.Version, packageName))
 	w.EmptyLine()
 	generateImport(w, version, spec.TypeDate, "cloud.google.com/go/civil")
@@ -85,6 +89,7 @@ func generateModels(w *gen.Writer, version *spec.Version, packageName string) {
 			generateEnumModel(w, model)
 		}
 	}
+	return &gen.TextFile{Path: filepath.Join(generatePath, "models.go"), Content: w.String()}
 }
 
 func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {
