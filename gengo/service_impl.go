@@ -8,12 +8,11 @@ import (
 	"strings"
 )
 
-func generateServicesImplementations(version *spec.Version, packageName, generatePath, folder string) []gen.TextFile {
+func generateServicesImplementations(version *spec.Version, packageName string, generatePath string) []gen.TextFile {
 	versionPackageName := versionedPackage(version.Version, packageName)
-	apiGeneratePath := filepath.Join(generatePath, folder)
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *generateServiceImplementation(&api, versionPackageName, apiGeneratePath))
+		files = append(files, *generateServiceImplementation(&api, versionPackageName, generatePath))
 	}
 	return files
 }

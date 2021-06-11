@@ -20,21 +20,18 @@ func GenerateModels(serviceFile string, generatePath string) error {
 func generateModels(specification *spec.Spec, generatePath string) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, version := range specification.Versions {
-		folder := versionedFolder("spec", &version)
-		packageName := folder
-		versionPath := filepath.Join(generatePath, folder)
-
-		files = append(files, *generateVersionModels(&version, packageName, versionPath))
-		files = append(files, *generateHelperFunctions(folder, filepath.Join(generatePath, folder, "helpers.go")))
+		versionPath := filepath.Join(generatePath, versionedFolder(version.Version, "spec"))
+		versionPackageName := versionedPackage(version.Version, "spec")
+		files = append(files, generateVersionModels(&version, versionPackageName, versionPath)...)
 	}
 	return files
 }
 
-func versionedPackage(version spec.Name, packageName string) string {
-	if version.Source != "" {
-		return fmt.Sprintf("%s_%s", packageName, version.FlatCase())
+func generateVersionModels(version *spec.Version, packageName string, generatePath string) []gen.TextFile {
+	return []gen.TextFile{
+		*generateVersionModelsCode(version, packageName, generatePath),
+		*generateHelperFunctions(packageName, filepath.Join(generatePath, "helpers.go")),
 	}
-	return packageName
 }
 
 func generateImport(w *gen.Writer, version *spec.Version, typ string, importStr string) *gen.Writer {
@@ -69,18 +66,16 @@ func checkType(fieldType *spec.TypeDef, typ string) bool {
 	return true
 }
 
-func generateVersionModels(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
+func generateVersionModelsCode(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", versionedPackage(version.Version, packageName))
+	w.Line("package %s", packageName)
 	w.EmptyLine()
 	generateImport(w, version, spec.TypeDate, "cloud.google.com/go/civil")
 	generateImport(w, version, spec.TypeJson, "encoding/json")
 	generateImport(w, version, spec.TypeUuid, "github.com/google/uuid")
 	generateImport(w, version, spec.TypeDecimal, "github.com/shopspring/decimal")
 	for _, model := range version.ResolvedModels {
-		if strings.Contains(w.String(), "import") {
-			w.EmptyLine()
-		}
+		w.EmptyLine()
 		if model.IsObject() {
 			generateObjectModel(w, model)
 		} else if model.IsOneOf() {
@@ -109,10 +104,10 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	choiceValuesStringsParams := []string{}
 	choiceValuesParams := []string{}
 	for _, enumItem := range model.Enum.Items {
-		enumItemName := enumItem.Name.PascalCase()
-		w.Line("  %s %s = \"%s\"", enumItemName, modelName, enumItem.Value)
-		choiceValuesStringsParams = append(choiceValuesStringsParams, fmt.Sprintf("string(%s)", enumItemName))
-		choiceValuesParams = append(choiceValuesParams, fmt.Sprintf("%s", enumItemName))
+		enumConstName := modelName+enumItem.Name.PascalCase()
+		w.Line("  %s %s = \"%s\"", enumConstName, modelName, enumItem.Value)
+		choiceValuesStringsParams = append(choiceValuesStringsParams, fmt.Sprintf("string(%s)", enumConstName))
+		choiceValuesParams = append(choiceValuesParams, fmt.Sprintf("%s", enumConstName))
 	}
 	w.Line(")")
 	w.EmptyLine()

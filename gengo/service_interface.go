@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func generateServicesInterfaces(version *spec.Version, packageName, generatePath, folder string) *gen.TextFile {
+func generateServicesInterfaces(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
 	w.EmptyLine()
@@ -32,7 +32,7 @@ func generateServicesInterfaces(version *spec.Version, packageName, generatePath
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(generatePath, folder, "services.go"),
+		Path:    filepath.Join(generatePath, "services.go"),
 		Content: w.String(),
 	}
 }

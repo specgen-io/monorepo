@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func generateRouting(version *spec.Version, packageName, generatePath, folder string) *gen.TextFile {
+func generateRouting(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
 	w.EmptyLine()
@@ -27,7 +27,7 @@ func generateRouting(version *spec.Version, packageName, generatePath, folder st
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(generatePath, folder, "routing.go"),
+		Path:    filepath.Join(generatePath, "routing.go"),
 		Content: w.String(),
 	}
 }
