@@ -34,20 +34,6 @@ func generateVersionModels(version *spec.Version, packageName string, generatePa
 	}
 }
 
-func generateImport(w *gen.Writer, version *spec.Version, typ string, importStr string) *gen.Writer {
-	for _, model := range version.ResolvedModels {
-		if model.IsObject() {
-			for _, field := range model.Object.Fields {
- 				if checkType(&field.Type.Definition, typ) {
-					w.Line(`import "%s"`, importStr)
-					return w
-				}
-			}
-		}
-	}
-	return nil
-}
-
 func checkType(fieldType *spec.TypeDef, typ string) bool {
 	if fieldType.Plain != typ {
 		switch fieldType.Node {
@@ -66,14 +52,42 @@ func checkType(fieldType *spec.TypeDef, typ string) bool {
 	return true
 }
 
+func versionHasType(version *spec.Version, typ string) bool {
+	for _, model := range version.ResolvedModels {
+		if model.IsObject() {
+			for _, field := range model.Object.Fields {
+				if checkType(&field.Type.Definition, typ) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func generateVersionModelsCode(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
-	w.EmptyLine()
-	generateImport(w, version, spec.TypeDate, "cloud.google.com/go/civil")
-	generateImport(w, version, spec.TypeJson, "encoding/json")
-	generateImport(w, version, spec.TypeUuid, "github.com/google/uuid")
-	generateImport(w, version, spec.TypeDecimal, "github.com/shopspring/decimal")
+
+	imports := []string{}
+	if versionHasType(version, spec.TypeDate) {
+		imports = append(imports, fmt.Sprintf(`import "%s"`, "cloud.google.com/go/civil"))
+	}
+	if versionHasType(version, spec.TypeJson) {
+		imports = append(imports, fmt.Sprintf(`import "%s"`, "encoding/json"))
+	}
+	if versionHasType(version, spec.TypeUuid) {
+		imports = append(imports, fmt.Sprintf(`import "%s"`, "github.com/google/uuid"))
+	}
+	if versionHasType(version, spec.TypeDecimal) {
+		imports = append(imports, fmt.Sprintf(`import "%s"`, "github.com/shopspring/decimal"))
+	}
+
+	if len(imports) > 0 {
+		w.EmptyLine()
+		w.Line(`%s`, strings.Join(imports, "\n"))
+	}
+
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
 		if model.IsObject() {
@@ -104,7 +118,7 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	choiceValuesStringsParams := []string{}
 	choiceValuesParams := []string{}
 	for _, enumItem := range model.Enum.Items {
-		enumConstName := modelName+enumItem.Name.PascalCase()
+		enumConstName := modelName + enumItem.Name.PascalCase()
 		w.Line("  %s %s = \"%s\"", enumConstName, modelName, enumItem.Value)
 		choiceValuesStringsParams = append(choiceValuesStringsParams, fmt.Sprintf("string(%s)", enumConstName))
 		choiceValuesParams = append(choiceValuesParams, fmt.Sprintf("%s", enumConstName))

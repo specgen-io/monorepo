@@ -11,20 +11,33 @@ import (
 func generateServicesInterfaces(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
-	w.EmptyLine()
-	addImport(w, version, spec.TypeDate, "cloud.google.com/go/civil")
-	addImport(w, version, spec.TypeJson, "encoding/json")
-	addImport(w, version, spec.TypeUuid, "github.com/google/uuid")
-	addImport(w, version, spec.TypeDecimal, "github.com/shopspring/decimal")
-	if strings.Contains(w.String(), "import") {
-		w.EmptyLine()
+
+	imports := []string{}
+	if apiHasType(version, spec.TypeDate) {
+		imports = append(imports, fmt.Sprintf(`import "%s"`, "cloud.google.com/go/civil"))
 	}
+	if apiHasType(version, spec.TypeJson) {
+		imports = append(imports, fmt.Sprintf(`import "%s"`, "encoding/json"))
+	}
+	if apiHasType(version, spec.TypeUuid) {
+		imports = append(imports, fmt.Sprintf(`import "%s"`, "github.com/google/uuid"))
+	}
+	if apiHasType(version, spec.TypeDecimal) {
+		imports = append(imports, fmt.Sprintf(`import "%s"`, "github.com/shopspring/decimal"))
+	}
+
+	if len(imports) > 0 {
+		w.EmptyLine()
+		w.Line(`%s`, strings.Join(imports, "\n"))
+	}
+
+	w.EmptyLine()
 	w.Line(`type EmptyDef struct{}`)
 	w.EmptyLine()
 	w.Line(`var Empty = EmptyDef{}`)
-	w.EmptyLine()
 
 	for _, api := range version.Http.Apis {
+		w.EmptyLine()
 		for _, operation := range api.Operations {
 			generateOperationResponseStruct(w, operation)
 		}
@@ -37,32 +50,39 @@ func generateServicesInterfaces(version *spec.Version, packageName string, gener
 	}
 }
 
-func addImport(w *gen.Writer, version *spec.Version, typ string, importStr string) *gen.Writer {
+func apiHasType(version *spec.Version, typ string) bool {
 	for _, api := range version.Http.Apis {
-		addImportApi(w, &api, typ, importStr)
+		if operationHasType(&api, typ) {
+			return true
+		}
 	}
-	return nil
+	return false
 }
 
-func addImportApi(w *gen.Writer, api *spec.Api, typ string, importStr string) *gen.Writer {
+func operationHasType(api *spec.Api, typ string) bool {
 	for _, operation := range api.Operations {
-		checkParam(w, operation.QueryParams, importStr, typ)
-		checkParam(w, operation.HeaderParams, importStr, typ)
-		checkParam(w, operation.Endpoint.UrlParams, importStr, typ)
+		if paramHasType(operation.QueryParams, typ) {
+			return true
+		}
+		if paramHasType(operation.HeaderParams, typ) {
+			return true
+		}
+		if paramHasType(operation.Endpoint.UrlParams, typ) {
+			return true
+		}
 	}
-	return nil
+	return false
 }
 
-func checkParam(w *gen.Writer, namedParams []spec.NamedParam, importStr, typ string) *gen.Writer {
+func paramHasType(namedParams []spec.NamedParam, typ string) bool {
 	if namedParams != nil && len(namedParams) > 0 {
 		for _, param := range namedParams {
 			if checkType(&param.Type.Definition, typ) {
-				w.Line(`import "%s"`, importStr)
-				return w
+				return true
 			}
 		}
 	}
-	return nil
+	return false
 }
 
 func addResponseParams(response spec.NamedResponse) []string {
@@ -82,12 +102,10 @@ func generateOperationResponseStruct(w *gen.Writer, operation spec.NamedOperatio
 		w.Line(`  %s`, strings.Join(addResponseParams(response), "\n    "))
 	}
 	w.Line(`}`)
-	w.EmptyLine()
 }
 
 func addParams(operation spec.NamedOperation) []string {
 	params := []string{}
-
 	if operation.Body != nil {
 		params = append(params, fmt.Sprintf("body *%s", GoType(&operation.Body.Type.Definition)))
 	}
@@ -100,7 +118,6 @@ func addParams(operation spec.NamedOperation) []string {
 	for _, param := range operation.Endpoint.UrlParams {
 		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
 	}
-
 	return params
 }
 
@@ -110,5 +127,4 @@ func generateInterface(w *gen.Writer, api spec.Api) {
 		w.Line(`  %s(%s) (*%sResponse, error)`, operation.Name.PascalCase(), strings.Join(addParams(operation), ", "), operation.Name.PascalCase())
 	}
 	w.Line(`}`)
-	w.EmptyLine()
 }

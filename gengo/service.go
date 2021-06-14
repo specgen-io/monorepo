@@ -26,7 +26,9 @@ func GenerateService(serviceFile string, generatePath string) error {
 		implFiles = append(implFiles, generateServicesImplementations(&version, versionPackageName, versionPath)...)
 	}
 	err = gen.WriteFiles(generatedFiles, true)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	err = gen.WriteFiles(implFiles, false)
 	return err
 }
