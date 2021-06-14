@@ -29,7 +29,7 @@ func GoType(typ *spec.TypeDef) string {
 func PlainGoType(typ string) string {
 	switch typ {
 	case spec.TypeInt32:
-		return "int32"
+		return "int"
 	case spec.TypeInt64:
 		return "int64"
 	case spec.TypeFloat:
