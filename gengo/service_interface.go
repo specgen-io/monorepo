@@ -37,10 +37,11 @@ func generateServicesInterfaces(version *spec.Version, packageName string, gener
 	w.Line(`var Empty = EmptyDef{}`)
 
 	for _, api := range version.Http.Apis {
-		w.EmptyLine()
 		for _, operation := range api.Operations {
+			w.EmptyLine()
 			generateOperationResponseStruct(w, operation)
 		}
+		w.EmptyLine()
 		generateInterface(w, api)
 	}
 
