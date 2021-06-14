@@ -36,7 +36,7 @@ func DefaultValue(typ *spec.TypeDef, value string) string {
 		case spec.TypeString:
 			return `"` + value + `"`
 		case spec.TypeUuid:
-			return `uuid.MustParse("` + value + `")`
+			return `uuid.Parse("` + value + `")`
 		case spec.TypeDate:
 			return `civil.ParseDate("` + value + `")`
 		case spec.TypeDateTime:
