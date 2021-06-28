@@ -23,16 +23,16 @@ func generateServiceImplementation(api *spec.Api, packageName string, generatePa
 	imports := []string{}
 	imports = append(imports, `import "errors"`)
 	if operationHasType(api, spec.TypeDate) {
-		imports = append(imports, fmt.Sprintf(`import "%s"`, "cloud.google.com/go/civil"))
+		imports = append(imports, fmt.Sprintf(`import  "cloud.google.com/go/civil"`))
 	}
 	if operationHasType(api, spec.TypeJson) {
-		imports = append(imports, fmt.Sprintf(`import "%s"`, "encoding/json"))
+		imports = append(imports, fmt.Sprintf(`import "encoding/json"`))
 	}
 	if operationHasType(api, spec.TypeUuid) {
-		imports = append(imports, fmt.Sprintf(`import "%s"`, "github.com/google/uuid"))
+		imports = append(imports, fmt.Sprintf(`import "github.com/google/uuid"`))
 	}
 	if operationHasType(api, spec.TypeDecimal) {
-		imports = append(imports, fmt.Sprintf(`import "%s"`, "github.com/shopspring/decimal"))
+		imports = append(imports, fmt.Sprintf(`import "github.com/shopspring/decimal"`))
 	}
 
 	if len(imports) > 0 {
