@@ -20,6 +20,9 @@ export const decode = <T>(struct: t.Struct<T, unknown>, value: unknown): T => {
 export const encode = <T>(struct: t.Struct<T, unknown>, value: T): unknown => {
     return JSON.parse(JSON.stringify(value))
 };
-`
+
+export const StrInteger = t.coerce<number, unknown, string>(t.integer(), t.string(), (value: string): number => parseInt(value))
+export const StrFloat = t.coerce<number, unknown, string>(t.number(), t.string(), (value: string): number => parseFloat(value))`
+
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
