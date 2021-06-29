@@ -45,7 +45,7 @@ components:
 	spec, err := spec.ParseSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -95,7 +95,7 @@ components:
 	spec, err := spec.ParseSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -149,7 +149,7 @@ components:
 	spec, err := spec.ParseSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -249,7 +249,7 @@ components:
 	spec, err := spec.ParseSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -278,7 +278,7 @@ components:
 	spec, err := spec.ParseSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -371,7 +371,7 @@ components:
 	spec, err := spec.ParseSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -431,7 +431,7 @@ components:
 	spec, err := spec.ParseSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateOpenapi(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
