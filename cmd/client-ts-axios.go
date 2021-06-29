@@ -9,7 +9,7 @@ import (
 func init() {
 	cmdClientTsAxios.Flags().String(SpecFile, "", SpecFileDescription)
 	cmdClientTsAxios.Flags().String(GeneratePath, "", GeneratePathDescription)
-	cmdClientTsAxios.Flags().String("ts-models", "io-ts", "TypeScript models library")
+	cmdClientTsAxios.Flags().String(Validation, "superstruct", ValidationDescription)
 
 	cmdClientTsAxios.MarkFlagRequired(SpecFile)
 	cmdClientTsAxios.MarkFlagRequired(GeneratePath)
@@ -27,10 +27,10 @@ var cmdClientTsAxios = &cobra.Command{
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		tsModels, err := cmd.Flags().GetString("ts-models")
+		validation, err := cmd.Flags().GetString(Validation)
 		fail.IfError(err)
 
-		err = gents.GenerateAxiosClient(specFile, generatePath, tsModels)
+		err = gents.GenerateAxiosClient(specFile, generatePath, validation)
 		fail.IfErrorF(err, "Failed to generate code")
 	},
 }

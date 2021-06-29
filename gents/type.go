@@ -6,19 +6,23 @@ import (
 )
 
 func TsType(typ *spec.TypeDef) string {
+	return PackagedTsType(typ, nil)
+}
+
+func PackagedTsType(typ *spec.TypeDef, modelsPackage *string) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainTsType(typ.Plain)
+		return PlainTsType(typ.Plain, modelsPackage)
 	case spec.NullableType:
-		child := TsType(typ.Child)
+		child := PackagedTsType(typ.Child, modelsPackage)
 		result := child + " | null"
 		return result
 	case spec.ArrayType:
-		child := TsType(typ.Child)
+		child := PackagedTsType(typ.Child, modelsPackage)
 		result := child + "[]"
 		return result
 	case spec.MapType:
-		child := TsType(typ.Child)
+		child := PackagedTsType(typ.Child, modelsPackage)
 		result := "Record<string, " + child + ">"
 		return result
 	default:
@@ -26,7 +30,7 @@ func TsType(typ *spec.TypeDef) string {
 	}
 }
 
-func PlainTsType(typ string) string {
+func PlainTsType(typ string, modelsPackage *string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "number"
@@ -47,10 +51,14 @@ func PlainTsType(typ string) string {
 	case spec.TypeDate:
 		return "string"
 	case spec.TypeDateTime:
-		return "string"
+		return "Date"
 	case spec.TypeJson:
 		return "unknown"
 	default:
-		return typ
+		if modelsPackage != nil {
+			return fmt.Sprintf("%s.%s", *modelsPackage, typ)
+		} else {
+			return typ
+		}
 	}
 }

@@ -13,21 +13,25 @@ func GenerateSpecification(serviceFile string, outFile string) (err error) {
 		return
 	}
 
-	openapi := generateOpenapi(spec)
+	openApiFile := GenerateOpenapi(spec, outFile)
 
-	data, err := ToYamlString(openapi)
-	if err != nil {
-		return
-	}
-
-	openApiFile := gen.TextFile{outFile, data}
-
-	err = gen.WriteFile(&openApiFile, true)
+	err = gen.WriteFile(openApiFile, true)
 
 	return
 }
 
-func generateOpenapi(spec *spec.Spec) *YamlMap {
+func GenerateOpenapi(spec *spec.Spec, outFile string) *gen.TextFile {
+	openapi := generateSpecification(spec)
+
+	data, err := ToYamlString(openapi)
+	if err != nil {
+		panic(err)
+	}
+
+	return &gen.TextFile{outFile, data}
+}
+
+func generateSpecification(spec *spec.Spec) *YamlMap {
 	info := Map()
 	if spec.Title != nil {
 		info.Set("title", spec.Title)

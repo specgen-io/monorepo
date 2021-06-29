@@ -145,7 +145,8 @@ func generateAxiosClient(w *gen.Writer, version *spec.Version) {
 	for _, api := range version.Http.Apis {
 		generateClientApiClass(w, api)
 		for _, operation := range api.Operations {
-			generateIoTsResponse(w, &operation)
+			w.EmptyLine()
+			generateResponse(w, &operation, nil)
 		}
 	}
 }
