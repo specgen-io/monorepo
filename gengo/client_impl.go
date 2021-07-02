@@ -40,6 +40,7 @@ func generateClientImplementation(api *spec.Api, packageName string, generatePat
 		imports = append(imports, fmt.Sprintf(`import "github.com/shopspring/decimal"`))
 	}
 
+	//TODO: Imports will never be empty according to code above
 	if len(imports) > 0 {
 		w.EmptyLine()
 		w.Line(`%s`, strings.Join(imports, "\n"))

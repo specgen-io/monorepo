@@ -136,6 +136,7 @@ func generateOperationMethod(w *gen.Writer, apiName string, operation spec.Named
 	}
 	addParamsParser(w, operation, operation.QueryParams, "query", "URL.Query()")
 	addParamsParser(w, operation, operation.HeaderParams, "header", "Header")
+	//TODO: Is it bug there's "query" below for url params?
 	addParamsParser(w, operation, operation.Endpoint.UrlParams, "query", "URL.Query()")
 
 	w.Line(`  response, err := %sService.%s(%s)`, apiName, operation.Name.PascalCase(), strings.Join(addUrlParams(operation), ", "))
@@ -152,6 +153,7 @@ func generateOperationMethod(w *gen.Writer, apiName string, operation spec.Named
 }
 
 func addUrlParams(operation spec.NamedOperation) []string {
+	//TODO: Rename urlParams - they are not only URL params
 	urlParams := []string{}
 
 	if operation.Body != nil {

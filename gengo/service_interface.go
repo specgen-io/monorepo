@@ -53,6 +53,7 @@ func generateServicesInterfaces(version *spec.Version, packageName string, gener
 
 func addResponseParams(response spec.NamedResponse) []string {
 	responseParams := []string{}
+	//TODO: Check if it's possible to return EmptyDef from GoType - what other parts of codegen would be affected?
 	responseType := GoType(&response.Type.Definition)
 	if response.Type.Definition.IsEmpty() {
 		responseType = "EmptyDef"
@@ -63,6 +64,7 @@ func addResponseParams(response spec.NamedResponse) []string {
 }
 
 func generateOperationResponseStruct(w *gen.Writer, operation spec.NamedOperation) {
+	//TODO: Make helper function responseTypeName(operation *spec.NamedOperation) string - use it everywhere instead of %sResponse
 	w.Line(`type %sResponse struct {`, operation.Name.PascalCase())
 	for _, response := range operation.Responses {
 		w.Line(`  %s`, strings.Join(addResponseParams(response), "\n    "))
@@ -87,6 +89,7 @@ func addParams(operation spec.NamedOperation) []string {
 	return params
 }
 
+//TODO: Make helper function serviceInterfaceTypeName(api *spec.Api) string - use it everywhere instead of I%sService
 func generateInterface(w *gen.Writer, api spec.Api) {
 	w.Line(`type I%sService interface {`, api.Name.PascalCase())
 	for _, operation := range api.Operations {

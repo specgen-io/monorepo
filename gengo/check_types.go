@@ -5,6 +5,8 @@ import (
 	"github.com/specgen-io/spec"
 )
 
+//TODO: Tweak function names in the code below.
+// For example apiHasType receives version as a parameter therefore it should be named "versionHasType".
 func apiHasType(version *spec.Version, typ string) bool {
 	for _, api := range version.Http.Apis {
 		if operationHasType(&api, typ) {
@@ -29,6 +31,7 @@ func operationHasType(api *spec.Api, typ string) bool {
 	return false
 }
 
+//TODO: Strage method name - there's no type provided
 func bodyHasType(api *spec.Api) bool {
 	for _, operation := range api.Operations {
 		if operation.Body != nil {
@@ -67,6 +70,7 @@ func checkType(fieldType *spec.TypeDef, typ string) bool {
 	return true
 }
 
+//TODO: What about unions?
 func versionHasType(version *spec.Version, typ string) bool {
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {

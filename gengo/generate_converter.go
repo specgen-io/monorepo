@@ -6,6 +6,7 @@ import (
 )
 
 func generateConverter(packageName string, path string) *gen.TextFile {
+	//TODO: Rename ParamsParser interface into ParamsSetter
 	code := `
 package [[.PackageName]]
 

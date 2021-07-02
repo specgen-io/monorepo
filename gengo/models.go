@@ -38,6 +38,7 @@ func generateVersionModelsCode(version *spec.Version, packageName string, genera
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
 
+	//TODO: Try to use array of types here
 	imports := []string{}
 	if versionHasType(version, spec.TypeDate) {
 		imports = append(imports, fmt.Sprintf(`import "cloud.google.com/go/civil"`))
@@ -54,6 +55,7 @@ func generateVersionModelsCode(version *spec.Version, packageName string, genera
 
 	if len(imports) > 0 {
 		w.EmptyLine()
+		//TODO: Loop through imports here
 		w.Line(`%s`, strings.Join(imports, "\n"))
 	}
 
