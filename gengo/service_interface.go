@@ -14,16 +14,16 @@ func generateServicesInterfaces(version *spec.Version, packageName string, gener
 
 	imports := []string{}
 	if apiHasType(version, spec.TypeDate) {
-		imports = append(imports, fmt.Sprintf(`import "%s"`, "cloud.google.com/go/civil"))
+		imports = append(imports, fmt.Sprintf(`import "cloud.google.com/go/civil"`))
 	}
 	if apiHasType(version, spec.TypeJson) {
-		imports = append(imports, fmt.Sprintf(`import "%s"`, "encoding/json"))
+		imports = append(imports, fmt.Sprintf(`import "encoding/json"`))
 	}
 	if apiHasType(version, spec.TypeUuid) {
-		imports = append(imports, fmt.Sprintf(`import "%s"`, "github.com/google/uuid"))
+		imports = append(imports, fmt.Sprintf(`import "github.com/google/uuid"`))
 	}
 	if apiHasType(version, spec.TypeDecimal) {
-		imports = append(imports, fmt.Sprintf(`import "%s"`, "github.com/shopspring/decimal"))
+		imports = append(imports, fmt.Sprintf(`import "github.com/shopspring/decimal"`))
 	}
 
 	if len(imports) > 0 {
@@ -49,41 +49,6 @@ func generateServicesInterfaces(version *spec.Version, packageName string, gener
 		Path:    filepath.Join(generatePath, "services.go"),
 		Content: w.String(),
 	}
-}
-
-func apiHasType(version *spec.Version, typ string) bool {
-	for _, api := range version.Http.Apis {
-		if operationHasType(&api, typ) {
-			return true
-		}
-	}
-	return false
-}
-
-func operationHasType(api *spec.Api, typ string) bool {
-	for _, operation := range api.Operations {
-		if paramHasType(operation.QueryParams, typ) {
-			return true
-		}
-		if paramHasType(operation.HeaderParams, typ) {
-			return true
-		}
-		if paramHasType(operation.Endpoint.UrlParams, typ) {
-			return true
-		}
-	}
-	return false
-}
-
-func paramHasType(namedParams []spec.NamedParam, typ string) bool {
-	if namedParams != nil && len(namedParams) > 0 {
-		for _, param := range namedParams {
-			if checkType(&param.Type.Definition, typ) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func addResponseParams(response spec.NamedResponse) []string {
