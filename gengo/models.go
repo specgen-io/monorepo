@@ -34,53 +34,22 @@ func generateVersionModels(version *spec.Version, packageName string, generatePa
 	}
 }
 
-func checkType(fieldType *spec.TypeDef, typ string) bool {
-	if fieldType.Plain != typ {
-		switch fieldType.Node {
-		case spec.PlainType:
-			return false
-		case spec.NullableType:
-			return checkType(fieldType.Child, typ)
-		case spec.ArrayType:
-			return checkType(fieldType.Child, typ)
-		case spec.MapType:
-			return checkType(fieldType.Child, typ)
-		default:
-			panic(fmt.Sprintf("Unknown type: %v", typ))
-		}
-	}
-	return true
-}
-
-func versionHasType(version *spec.Version, typ string) bool {
-	for _, model := range version.ResolvedModels {
-		if model.IsObject() {
-			for _, field := range model.Object.Fields {
-				if checkType(&field.Type.Definition, typ) {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
 func generateVersionModelsCode(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
 
 	imports := []string{}
 	if versionHasType(version, spec.TypeDate) {
-		imports = append(imports, fmt.Sprintf(`import "%s"`, "cloud.google.com/go/civil"))
+		imports = append(imports, fmt.Sprintf(`import "cloud.google.com/go/civil"`))
 	}
 	if versionHasType(version, spec.TypeJson) {
-		imports = append(imports, fmt.Sprintf(`import "%s"`, "encoding/json"))
+		imports = append(imports, fmt.Sprintf(`import "encoding/json"`))
 	}
 	if versionHasType(version, spec.TypeUuid) {
-		imports = append(imports, fmt.Sprintf(`import "%s"`, "github.com/google/uuid"))
+		imports = append(imports, fmt.Sprintf(`import "github.com/google/uuid"`))
 	}
 	if versionHasType(version, spec.TypeDecimal) {
-		imports = append(imports, fmt.Sprintf(`import "%s"`, "github.com/shopspring/decimal"))
+		imports = append(imports, fmt.Sprintf(`import "github.com/shopspring/decimal"`))
 	}
 
 	if len(imports) > 0 {
