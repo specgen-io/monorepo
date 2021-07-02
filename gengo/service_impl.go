@@ -51,6 +51,7 @@ func generateServiceImplementation(api *spec.Api, packageName string, generatePa
 	}
 }
 
+//TODO: Make helper function serviceTypeName(api *spec.Api) string - use it everywhere instead of %sService
 func generateTypeStruct(w *gen.Writer, api spec.Api) {
 	w.Line(`type %sService struct{}`, api.Name.PascalCase())
 }

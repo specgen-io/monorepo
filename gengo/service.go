@@ -33,6 +33,7 @@ func GenerateService(serviceFile string, generatePath string) error {
 	return err
 }
 
+//TODO: May be move these functions to separate helper file since it's used in both service and client
 func versionedFolder(version spec.Name, folder string) string {
 	if version.Source != "" {
 		return fmt.Sprintf(`%s_%s`, folder, version.FlatCase())
