@@ -11,7 +11,7 @@ import (
 func genereateServiceApis(version *spec.Version, generatePath string) *gen.TextFile {
 	w := NewTsWriter()
 
-	w.Line("import * as models from './%s'", versionFilename(version,"models", ""))
+	w.Line("import * as models from './%s'", versionFilename(version, "models", ""))
 
 	for _, api := range version.Http.Apis {
 		generateApiService(w, &api)
@@ -37,14 +37,21 @@ func generateApiService(w *gen.Writer, api *spec.Api) {
 }
 
 func serviceInterfaceName(api *spec.Api) string {
-	return api.Name.PascalCase()+"Service"
+	return api.Name.PascalCase() + "Service"
 }
 
 func paramsTypeName(operation *spec.NamedOperation) string {
-	return operation.Name.PascalCase()+"Params"
+	return operation.Name.PascalCase() + "Params"
 }
 
 var modelsPackage = "models"
+
+func addServiceParam(w *gen.Writer, paramName string, typ *spec.TypeDef, modelsPackage *string) {
+	if typ.IsNullable() {
+		paramName = paramName + "?"
+	}
+	w.Line("  %s: %s,", paramName, PackagedTsType(typ, modelsPackage))
+}
 
 func generateServiceParams(w *gen.Writer, params []spec.NamedParam, isHeader bool) {
 	for _, param := range params {
@@ -52,7 +59,7 @@ func generateServiceParams(w *gen.Writer, params []spec.NamedParam, isHeader boo
 		if isHeader {
 			paramName = isTsIdentifier(strings.ToLower(param.Name.Source))
 		}
-		w.Line("  %s: %s,", paramName, PackagedTsType(&param.Type.Definition, &modelsPackage))
+		addServiceParam(w, paramName, &param.Type.Definition, &modelsPackage)
 	}
 }
 
@@ -69,7 +76,7 @@ func generateOperationParams(w *gen.Writer, operation *spec.NamedOperation) {
 	generateServiceParams(w, operation.Endpoint.UrlParams, false)
 	generateServiceParams(w, operation.QueryParams, false)
 	if operation.Body != nil {
-		w.Line("  body: %s,", PackagedTsType(&operation.Body.Type.Definition, &modelsPackage))
+		addServiceParam(w, "body", &operation.Body.Type.Definition, &modelsPackage)
 	}
 	w.Line("}")
 }
