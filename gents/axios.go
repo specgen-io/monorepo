@@ -146,7 +146,7 @@ func generateAxiosClient(w *gen.Writer, version *spec.Version) {
 		generateClientApiClass(w, api)
 		for _, operation := range api.Operations {
 			w.EmptyLine()
-			generateResponse(w, &operation, nil)
+			generateOperationResponse(w, &operation, nil)
 		}
 	}
 }

@@ -26,7 +26,7 @@ func generateApiService(w *gen.Writer, api *spec.Api) {
 		w.EmptyLine()
 		generateOperationParams(w, &operation)
 		w.EmptyLine()
-		generateResponse(w, &operation, &modelsPackage)
+		generateOperationResponse(w, &operation, &modelsPackage)
 	}
 	w.EmptyLine()
 	w.Line("export interface %s {", serviceInterfaceName(api))
