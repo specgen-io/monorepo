@@ -15,7 +15,7 @@ func PackagedTsType(typ *spec.TypeDef, modelsPackage *string) string {
 		return PlainTsType(typ.Plain, modelsPackage)
 	case spec.NullableType:
 		child := PackagedTsType(typ.Child, modelsPackage)
-		result := child + " | null"
+		result := child + " | undefined"
 		return result
 	case spec.ArrayType:
 		child := PackagedTsType(typ.Child, modelsPackage)
