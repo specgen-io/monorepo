@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func genereateExpressRouting(version *spec.Version, generatePath string) *gen.TextFile {
+func generateExpressVersionRouting(version *spec.Version, generatePath string) *gen.TextFile {
 	w := NewTsWriter()
 
 	w.Line("import express from 'express'")
@@ -18,45 +18,17 @@ func genereateExpressRouting(version *spec.Version, generatePath string) *gen.Te
 	w.Line("import * as services from './%s'", versionFilename(version,"services", ""))
 
 	for _, api := range version.Http.Apis {
-		generateApiRoutingParams(w, &api)
+		for _, operation := range api.Operations {
+			generateParams(w, &operation.Name, "HeaderParams", true, operation.HeaderParams)
+			generateParams(w, &operation.Name, "UrlParams", false, operation.Endpoint.UrlParams)
+			generateParams(w, &operation.Name, "QueryParams", false, operation.QueryParams)
+		}
+
 		generateExpressApiRouting(w, &api)
 	}
 
 	filename := versionFilename(version, "routing", "ts")
 	return &gen.TextFile{filepath.Join(generatePath, filename), w.String()}
-}
-
-func stringParamsRuntimeTypeName(operationName *spec.Name, namePostfix string) string {
-	return fmt.Sprintf("T%s%s", operationName.PascalCase(), namePostfix)
-}
-
-func stringParamsTypeName(operationName *spec.Name, namePostfix string) string {
-	return fmt.Sprintf("%s%s", operationName.PascalCase(), namePostfix)
-}
-
-func generateParams(w *gen.Writer, operationName *spec.Name, namePostfix string, isHeader bool, params []spec.NamedParam) {
-	if len(params) > 0 {
-		w.EmptyLine()
-		w.Line("const %s = t.type({", stringParamsRuntimeTypeName(operationName, namePostfix))
-		for _, param := range params {
-			paramName := param.Name.Source
-			if isHeader {
-				paramName = isTsIdentifier(strings.ToLower(param.Name.Source))
-			}
-			w.Line("  %s: %s,", paramName, StringSsType(&param.Type.Definition))
-		}
-		w.Line("})")
-		w.EmptyLine()
-		w.Line("type %s = t.Infer<typeof %s>", stringParamsTypeName(operationName, namePostfix), stringParamsRuntimeTypeName(operationName, namePostfix))
-	}
-}
-
-func generateApiRoutingParams(w *gen.Writer, api *spec.Api) {
-	for _, operation := range api.Operations {
-		generateParams(w, &operation.Name, "HeaderParams", true, operation.HeaderParams)
-		generateParams(w, &operation.Name, "UrlParams", false, operation.Endpoint.UrlParams)
-		generateParams(w, &operation.Name, "QueryParams", false, operation.QueryParams)
-	}
 }
 
 func generateExpressApiRouting(w *gen.Writer, api *spec.Api) {
@@ -83,14 +55,14 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 func generateExpressOperationRouting(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
 	w.Line("  try {")
-	generateExpressOperationRoutingMeat(w.IndentedWith(2), operation)
+	generateExpressOperationRoutingCode(w.IndentedWith(2), operation)
 	w.Line("  } catch (error) {")
 	w.Line("    response.status(500).send()")
 	w.Line("  }")
 	w.Line("})")
 }
 
-func generateExpressOperationRoutingMeat(w *gen.Writer, operation *spec.NamedOperation) {
+func generateExpressOperationRoutingCode(w *gen.Writer, operation *spec.NamedOperation) {
 	apiCallParams := []string{}
 	if operation.Body != nil {
 		w.Line("let body = t.decode(models.%s, request.body)", SsType(&operation.Body.Type.Definition))

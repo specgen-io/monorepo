@@ -5,7 +5,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen"
 )
 
-func generateResponse(w *gen.Writer, operation *spec.NamedOperation, modelsPackage *string) {
+func generateOperationResponse(w *gen.Writer, operation *spec.NamedOperation, modelsPackage *string) {
 	w.Line("export type %s =", responseTypeName(operation))
 	for _, response := range operation.Responses {
 		if !response.Type.Definition.IsEmpty() {

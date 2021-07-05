@@ -20,7 +20,7 @@ func GenerateExpressService(serviceFile string, swaggerPath string, generatePath
 
 	for _, version := range specification.Versions {
 		sources = append(sources, *genereateServiceApis(&version, generatePath))
-		sources = append(sources, *genereateExpressRouting(&version, generatePath))
+		sources = append(sources, *generateExpressVersionRouting(&version, generatePath))
 		sources = append(sources, *generateModels(&version, generatePath))
 	}
 	sources = append(sources, *genopenapi.GenerateOpenapi(specification, swaggerPath))
