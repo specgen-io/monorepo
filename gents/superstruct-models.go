@@ -14,8 +14,8 @@ func generateSuperstructModels(specification *spec.Spec, generatePath string) []
 		versionModelsFile := gen.TextFile{Path: filepath.Join(generatePath, versionFilename(&version, "models", "ts")), Content: w.String()}
 		files = append(files, versionModelsFile)
 	}
-	superstruct := generateSuperstructStaticCode(filepath.Join(generatePath, "superstruct.ts"))
-	files = append(files, *superstruct)
+	staticCode := generateSuperstructStaticCode(filepath.Join(generatePath, "superstruct.ts"))
+	files = append(files, *staticCode)
 	return files
 }
 
