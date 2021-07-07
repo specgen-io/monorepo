@@ -2,27 +2,23 @@ package gents
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/spec"
 )
 
 func TsType(typ *spec.TypeDef) string {
-	return PackagedTsType(typ, nil)
-}
-
-func PackagedTsType(typ *spec.TypeDef, modelsPackage *string) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainTsType(typ.Plain, modelsPackage)
+		return PlainTsType(typ.Plain)
 	case spec.NullableType:
-		child := PackagedTsType(typ.Child, modelsPackage)
+		child := TsType(typ.Child)
 		result := child + " | undefined"
 		return result
 	case spec.ArrayType:
-		child := PackagedTsType(typ.Child, modelsPackage)
+		child := TsType(typ.Child)
 		result := child + "[]"
 		return result
 	case spec.MapType:
-		child := PackagedTsType(typ.Child, modelsPackage)
+		child := TsType(typ.Child)
 		result := "Record<string, " + child + ">"
 		return result
 	default:
@@ -30,7 +26,7 @@ func PackagedTsType(typ *spec.TypeDef, modelsPackage *string) string {
 	}
 }
 
-func PlainTsType(typ string, modelsPackage *string) string {
+func PlainTsType(typ string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "number"
@@ -55,10 +51,8 @@ func PlainTsType(typ string, modelsPackage *string) string {
 	case spec.TypeJson:
 		return "unknown"
 	default:
-		if modelsPackage != nil {
-			return fmt.Sprintf("%s.%s", *modelsPackage, typ)
-		} else {
-			return typ
-		}
+		return fmt.Sprintf("%s.%s", modelsPackage, typ)
 	}
 }
+
+var modelsPackage = "models"

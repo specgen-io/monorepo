@@ -5,20 +5,20 @@ import (
 	"github.com/specgen-io/spec"
 )
 
-func SsType(typ *spec.TypeDef) string {
+func SuperstructType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainSsType(typ.Plain)
+		return PlainSuperstructType(typ.Plain)
 	case spec.NullableType:
-		child := SsType(typ.Child)
+		child := SuperstructType(typ.Child)
 		result := "t.optional(t.nullable(" + child + "))"
 		return result
 	case spec.ArrayType:
-		child := SsType(typ.Child)
+		child := SuperstructType(typ.Child)
 		result := "t.array(" + child + ")"
 		return result
 	case spec.MapType:
-		child := SsType(typ.Child)
+		child := SuperstructType(typ.Child)
 		result := "t.record(t.string(), " + child + ")"
 		return result
 	default:
@@ -26,7 +26,7 @@ func SsType(typ *spec.TypeDef) string {
 	}
 }
 
-func PlainSsType(typ string) string {
+func PlainSuperstructType(typ string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "t.number()"

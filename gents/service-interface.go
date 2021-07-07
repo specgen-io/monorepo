@@ -8,10 +8,10 @@ import (
 	"strings"
 )
 
-func genereateServiceApis(version *spec.Version, generatePath string) *gen.TextFile {
+func generateServiceApis(version *spec.Version, generatePath string) *gen.TextFile {
 	w := NewTsWriter()
 
-	w.Line("import * as models from './%s'", versionFilename(version, "models", ""))
+	w.Line("import * as %s from './%s'", modelsPackage, versionFilename(version, "models", ""))
 
 	for _, api := range version.Http.Apis {
 		generateApiService(w, &api)
@@ -26,12 +26,12 @@ func generateApiService(w *gen.Writer, api *spec.Api) {
 		w.EmptyLine()
 		generateOperationParams(w, &operation)
 		w.EmptyLine()
-		generateOperationResponse(w, &operation, &modelsPackage)
+		generateOperationResponse(w, &operation)
 	}
 	w.EmptyLine()
 	w.Line("export interface %s {", serviceInterfaceName(api))
 	for _, operation := range api.Operations {
-		w.Line("  %s(params: %s): Promise<%s>", operation.Name.CamelCase(), paramsTypeName(&operation), responseTypeName(&operation))
+		w.Line("  %s(params: %s): Promise<%s>", operation.Name.CamelCase(), operationParamsTypeName(&operation), responseTypeName(&operation))
 	}
 	w.Line("}")
 }
@@ -40,26 +40,25 @@ func serviceInterfaceName(api *spec.Api) string {
 	return api.Name.PascalCase() + "Service"
 }
 
-func paramsTypeName(operation *spec.NamedOperation) string {
+func operationParamsTypeName(operation *spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Params"
 }
 
-var modelsPackage = "models"
-
-func addServiceParam(w *gen.Writer, paramName string, typ *spec.TypeDef, modelsPackage *string) {
+func addServiceParam(w *gen.Writer, paramName string, typ *spec.TypeDef) {
 	if typ.IsNullable() {
 		paramName = paramName + "?"
 	}
-	w.Line("  %s: %s,", paramName, PackagedTsType(typ, modelsPackage))
+	w.Line("  %s: %s,", paramName, TsType(typ))
 }
 
 func generateServiceParams(w *gen.Writer, params []spec.NamedParam, isHeader bool) {
 	for _, param := range params {
 		paramName := param.Name.Source
 		if isHeader {
-			paramName = isTsIdentifier(strings.ToLower(param.Name.Source))
+			paramName = strings.ToLower(param.Name.Source)
 		}
-		addServiceParam(w, paramName, &param.Type.Definition, &modelsPackage)
+		paramName = isTsIdentifier(paramName)
+		addServiceParam(w, paramName, &param.Type.Definition)
 	}
 }
 
@@ -71,12 +70,12 @@ func isTsIdentifier(name string) string {
 }
 
 func generateOperationParams(w *gen.Writer, operation *spec.NamedOperation) {
-	w.Line("export interface %s {", paramsTypeName(operation))
+	w.Line("export interface %s {", operationParamsTypeName(operation))
 	generateServiceParams(w, operation.HeaderParams, true)
 	generateServiceParams(w, operation.Endpoint.UrlParams, false)
 	generateServiceParams(w, operation.QueryParams, false)
 	if operation.Body != nil {
-		addServiceParam(w, "body", &operation.Body.Type.Definition, &modelsPackage)
+		addServiceParam(w, "body", &operation.Body.Type.Definition)
 	}
 	w.Line("}")
 }

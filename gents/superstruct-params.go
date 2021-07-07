@@ -3,32 +3,52 @@ package gents
 import (
 	"fmt"
 	"github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/v2/gen"
+	"strings"
 )
 
-func StringSsTypeDefaulted(param *spec.NamedParam) string {
-	theType := StringSsType(&param.Type.Definition)
+func generateSuperstructParams(w *gen.Writer, typeName string, isHeader bool, params []spec.NamedParam) {
+	if len(params) > 0 {
+		w.EmptyLine()
+		w.Line("const %s = t.type({", paramsRuntimeTypeName(typeName))
+		for _, param := range params {
+			paramName := param.Name.Source
+			if isHeader {
+				paramName = strings.ToLower(param.Name.Source)
+			}
+			paramName = isTsIdentifier(paramName)
+			w.Line("  %s: %s,", paramName, ParamSuperstructTypeDefaulted(&param))
+		}
+		w.Line("})")
+		w.EmptyLine()
+		w.Line("type %s = t.Infer<typeof %s>", typeName, paramsRuntimeTypeName(typeName))
+	}
+}
+
+func ParamSuperstructTypeDefaulted(param *spec.NamedParam) string {
+	theType := ParamSuperstructType(&param.Type.Definition)
 	if param.Default != nil {
 		theType = fmt.Sprintf("t.defaulted(%s, %s)", theType, DefaultValue(&param.Type.Definition, *param.Default))
 	}
 	return theType
 }
 
-func StringSsType(typ *spec.TypeDef) string {
+func ParamSuperstructType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return StringPlainSsType(typ.Plain)
+		return ParamPlainSuperstructType(typ.Plain)
 	case spec.NullableType:
 		if typ.Child.Node != spec.PlainType {
 			panic(fmt.Sprintf("Unsupported string type: %v", typ))
 		}
-		child := StringPlainSsType(typ.Child.Plain)
+		child := ParamPlainSuperstructType(typ.Child.Plain)
 		result := "t.optional(" + child + ")"
 		return result
 	case spec.ArrayType:
 		if typ.Child.Node != spec.PlainType {
 			panic(fmt.Sprintf("Unsupported string type: %v", typ))
 		}
-		child := StringPlainSsType(typ.Child.Plain)
+		child := ParamPlainSuperstructType(typ.Child.Plain)
 		result := "t.array(" + child + ")"
 		return result
 	default:
@@ -36,7 +56,7 @@ func StringSsType(typ *spec.TypeDef) string {
 	}
 }
 
-func StringPlainSsType(typ string) string {
+func ParamPlainSuperstructType(typ string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "t.StrInteger"
@@ -59,6 +79,6 @@ func StringPlainSsType(typ string) string {
 	case spec.TypeDateTime:
 		return "t.DateTime"
 	default:
-		return "models.T"+typ
+		return fmt.Sprintf("%s.T"+typ, modelsPackage)
 	}
 }
