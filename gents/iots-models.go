@@ -1,40 +1,28 @@
 package gents
 
 import (
-	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"path/filepath"
 )
 
-func GenerateIoTsModels(serviceFile string, generatePath string) error {
-	spec, err := spec.ReadSpec(serviceFile)
-	if err != nil {
-		return err
-	}
+func generateIoTsModels(specification *spec.Spec, generatePath string) []gen.TextFile {
 	files := []gen.TextFile{}
-	for _, version := range spec.Versions {
+	for _, version := range specification.Versions {
 		w := NewTsWriter()
-		generateIoTsModels(w, &version)
-		filename := "index.ts"
-		if version.Version.Source != "" {
-			filename = version.Version.FlatCase() + ".ts"
-		}
-		files = append(files, gen.TextFile{Path: filepath.Join(generatePath, filename), Content: w.String()})
+		generateIoTsVersionModels(w, &version)
+		versionModelsFile := gen.TextFile{Path: filepath.Join(generatePath, versionFilename(&version, "models", "ts")), Content: w.String()}
+		files = append(files, versionModelsFile)
 	}
-	iots := generateIoTs(filepath.Join(generatePath, "io-ts.ts"))
-	files = append(files, *iots)
-	err = gen.WriteFiles(files, true)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	superstruct := generateIoTsStaticCode(filepath.Join(generatePath, "io-ts.ts"))
+	files = append(files, *superstruct)
+	return files
 }
 
-func generateIoTsModels(w *gen.Writer, version *spec.Version) {
+func generateIoTsVersionModels(w *gen.Writer, version *spec.Version) {
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
-	w.Line("import * as t from './io-ts'")
+	w.Line(importIoTsEncoding)
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
 		if model.IsObject() {

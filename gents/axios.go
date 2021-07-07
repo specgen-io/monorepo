@@ -2,33 +2,56 @@ package gents
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"path/filepath"
 	"strings"
 )
 
-func GenerateAxiosClient(serviceFile string, generatePath string, models string) error {
-	spec, err := spec.ReadSpec(serviceFile)
+func GenerateAxiosClient(serviceFile string, generatePath string, validation string) error {
+	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil {
 		return err
 	}
 
-	files := generateAxiosClients(spec, models == "io-ts", generatePath)
-
-	if models == "io-ts" {
-		iots := generateIoTs(filepath.Join(generatePath, "io-ts.ts"))
-		files = append(files, *iots)
-	} else {
-		superstruct := generateSuperstruct(filepath.Join(generatePath, "superstruct.ts"))
-		files = append(files, *superstruct)
+	sources := []gen.TextFile{}
+	for _, version := range specification.Versions {
+		sources = append(sources, *generateAxiosClient(&version, generatePath, validation))
 	}
-	err = gen.WriteFiles(files, true)
+
+	modelsFiles := generateModels(specification, validation, generatePath)
+	sources = append(sources, modelsFiles...)
+
+	err = gen.WriteFiles(sources, true)
+
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func generateAxiosClient(version *spec.Version, path string, validation string) *gen.TextFile {
+	w := NewTsWriter()
+	generateAxiosClientCode(w, version, validation)
+	filename := "index.ts"
+	if version.Version.Source != "" {
+		filename = version.Version.FlatCase() + ".ts"
+	}
+	return &gen.TextFile{filepath.Join(path, filename), w.String()}
+}
+
+func generateAxiosClientCode(w *gen.Writer, version *spec.Version, validation string) {
+	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
+	w.Line(importEncoding(validation))
+	w.Line(`import * as %s from './%s'`, modelsPackage, versionFilename(version, "models", ""))
+	for _, api := range version.Http.Apis {
+		generateClientApiClass(w, api, validation)
+		for _, operation := range api.Operations {
+			w.EmptyLine()
+			generateOperationResponse(w, &operation)
+		}
+	}
 }
 
 func getUrl(endpoint spec.Endpoint) string {
@@ -78,19 +101,19 @@ func createOperationParams(operation *spec.NamedOperation) string {
 	return fmt.Sprintf("parameters: {%s}", strings.Join(operationParams, ", "))
 }
 
-func generateClientApiClass(w *gen.Writer, api spec.Api) {
+func generateClientApiClass(w *gen.Writer, api spec.Api, validation string) {
 	w.EmptyLine()
 	w.Line(`export const %sClient = (axiosInstance: AxiosInstance) => {`, api.Name.CamelCase())
 	w.Line(`  return {`)
 	w.Line(`    axiosInstance,`)
 	for _, operation := range api.Operations {
-		generateOperation(w.IndentedWith(2), &operation)
+		generateOperation(w.IndentedWith(2), &operation, validation)
 	}
 	w.Line(`  }`)
 	w.Line(`}`)
 }
 
-func generateOperation(w *gen.Writer, operation *spec.NamedOperation) {
+func generateOperation(w *gen.Writer, operation *spec.NamedOperation, validation string) {
 	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0
@@ -120,7 +143,7 @@ func generateOperation(w *gen.Writer, operation *spec.NamedOperation) {
 	}
 	w.Line(`  const config: AxiosRequestConfig = {%s%s}`, params, headers)
 	if body != nil {
-		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, IoTsType(&body.Type.Definition))
+		w.Line(`  const bodyJson = t.encode(%s.%s, parameters.body)`, modelsPackage, runtimeType(validation, &body.Type.Definition))
 		w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
 	} else {
 		w.Line("  const response = await axiosInstance.%s(`%s`, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
@@ -129,7 +152,7 @@ func generateOperation(w *gen.Writer, operation *spec.NamedOperation) {
 	for _, response := range operation.Responses {
 		dataParam := ``
 		if !response.Type.Definition.IsEmpty() {
-			dataParam = fmt.Sprintf(`, data: t.decode(%s, response.data)`, IoTsType(&response.Type.Definition))
+			dataParam = fmt.Sprintf(`, data: t.decode(%s.%s, response.data)`, modelsPackage, runtimeType(validation, &response.Type.Definition))
 		}
 		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
 		w.Line(`      return Promise.resolve({ status: "%s"%s })`, response.Name.Source, dataParam)
@@ -138,36 +161,4 @@ func generateOperation(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line("      throw new Error(`Unexpected status code ${ response.status }`)")
 	w.Line(`  }`)
 	w.Line(`},`)
-}
-
-func generateAxiosClient(w *gen.Writer, version *spec.Version) {
-	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
-	for _, api := range version.Http.Apis {
-		generateClientApiClass(w, api)
-		for _, operation := range api.Operations {
-			w.EmptyLine()
-			generateOperationResponse(w, &operation, nil)
-		}
-	}
-}
-
-func generateAxiosClients(spec *spec.Spec, ioTsModels bool, path string) []gen.TextFile {
-	files := []gen.TextFile{}
-	for _, version := range spec.Versions {
-		w := NewTsWriter()
-		if ioTsModels {
-			generateIoTsModels(w, &version)
-		} else {
-			generateSuperstructModels(w, &version)
-		}
-		w.EmptyLine()
-		generateAxiosClient(w, &version)
-		filename := "index.ts"
-		if version.Version.Source != "" {
-			filename = version.Version.FlatCase() + ".ts"
-		}
-		file := gen.TextFile{filepath.Join(path, filename), w.String()}
-		files = append(files, file)
-	}
-	return files
 }
