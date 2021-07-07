@@ -14,8 +14,8 @@ func generateIoTsModels(specification *spec.Spec, generatePath string) []gen.Tex
 		versionModelsFile := gen.TextFile{Path: filepath.Join(generatePath, versionFilename(&version, "models", "ts")), Content: w.String()}
 		files = append(files, versionModelsFile)
 	}
-	superstruct := generateIoTsStaticCode(filepath.Join(generatePath, "io-ts.ts"))
-	files = append(files, *superstruct)
+	staticCode := generateIoTsStaticCode(filepath.Join(generatePath, "io-ts.ts"))
+	files = append(files, *staticCode)
 	return files
 }
 
