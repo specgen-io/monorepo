@@ -11,9 +11,9 @@ var importSuperstructEncoding = `import * as t from './superstruct'`
 
 func generateSuperstructStaticCode(path string) *gen.TextFile {
 	code := `
-export * from 'superstruct'
+export * from "superstruct"
 
-import * as t from 'superstruct';
+import * as t from "superstruct"
 
 export const DateTime = t.coerce<Date, unknown, string>(t.date(), t.string(), (value: string): Date => new Date(value))
 
@@ -26,7 +26,14 @@ export const encode = <T>(struct: t.Struct<T, unknown>, value: T): unknown => {
 };
 
 export const StrInteger = t.coerce<number, unknown, string>(t.integer(), t.string(), (value: string): number => parseInt(value))
-export const StrFloat = t.coerce<number, unknown, string>(t.number(), t.string(), (value: string): number => parseFloat(value))`
+export const StrFloat = t.coerce<number, unknown, string>(t.number(), t.string(), (value: string): number => parseFloat(value))
+export const StrBoolean = t.coerce<boolean, unknown, string>(t.boolean(), t.string(), (value: string): boolean => {
+    switch (value) {
+        case 'true': return true
+        case 'false': return false
+        default: throw new Error('Unknown boolean value: "'+value+'"')
+    }
+})`
 
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
