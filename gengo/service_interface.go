@@ -5,7 +5,6 @@ import (
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"path/filepath"
-	"strings"
 )
 
 func generateServicesInterfaces(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
@@ -13,22 +12,24 @@ func generateServicesInterfaces(version *spec.Version, packageName string, gener
 	w.Line("package %s", packageName)
 
 	imports := []string{}
-	if apiHasType(version, spec.TypeDate) {
-		imports = append(imports, fmt.Sprintf(`import "cloud.google.com/go/civil"`))
+	if versionHasType(version, spec.TypeDate) {
+		imports = append(imports, `import "cloud.google.com/go/civil"`)
 	}
-	if apiHasType(version, spec.TypeJson) {
-		imports = append(imports, fmt.Sprintf(`import "encoding/json"`))
+	if versionHasType(version, spec.TypeJson) {
+		imports = append(imports, `import "encoding/json"`)
 	}
-	if apiHasType(version, spec.TypeUuid) {
-		imports = append(imports, fmt.Sprintf(`import "github.com/google/uuid"`))
+	if versionHasType(version, spec.TypeUuid) {
+		imports = append(imports, `import "github.com/google/uuid"`)
 	}
-	if apiHasType(version, spec.TypeDecimal) {
-		imports = append(imports, fmt.Sprintf(`import "github.com/shopspring/decimal"`))
+	if versionHasType(version, spec.TypeDecimal) {
+		imports = append(imports, `import "github.com/shopspring/decimal"`)
 	}
 
 	if len(imports) > 0 {
 		w.EmptyLine()
-		w.Line(`%s`, strings.Join(imports, "\n"))
+		for _, imp := range imports {
+			w.Line(imp)
+		}
 	}
 
 	w.EmptyLine()
@@ -51,28 +52,15 @@ func generateServicesInterfaces(version *spec.Version, packageName string, gener
 	}
 }
 
-func addResponseParams(response spec.NamedResponse) []string {
-	responseParams := []string{}
-	//TODO: Check if it's possible to return EmptyDef from GoType - what other parts of codegen would be affected?
-	responseType := GoType(&response.Type.Definition)
-	if response.Type.Definition.IsEmpty() {
-		responseType = "EmptyDef"
-	}
-	responseParams = append(responseParams, fmt.Sprintf(`%s *%s`, response.Name.PascalCase(), responseType))
-
-	return responseParams
-}
-
 func generateOperationResponseStruct(w *gen.Writer, operation spec.NamedOperation) {
-	//TODO: Make helper function responseTypeName(operation *spec.NamedOperation) string - use it everywhere instead of %sResponse
-	w.Line(`type %sResponse struct {`, operation.Name.PascalCase())
+	w.Line(`type %s struct {`, responseTypeName(&operation))
 	for _, response := range operation.Responses {
-		w.Line(`  %s`, strings.Join(addResponseParams(response), "\n    "))
+		w.Line(`  %s *%s`, response.Name.PascalCase(), GoType(&response.Type.Definition))
 	}
 	w.Line(`}`)
 }
 
-func addParams(operation spec.NamedOperation) []string {
+func addMethodParams(operation spec.NamedOperation) []string {
 	params := []string{}
 	if operation.Body != nil {
 		params = append(params, fmt.Sprintf("body *%s", GoType(&operation.Body.Type.Definition)))
@@ -89,11 +77,10 @@ func addParams(operation spec.NamedOperation) []string {
 	return params
 }
 
-//TODO: Make helper function serviceInterfaceTypeName(api *spec.Api) string - use it everywhere instead of I%sService
 func generateInterface(w *gen.Writer, api spec.Api) {
-	w.Line(`type I%sService interface {`, api.Name.PascalCase())
+	w.Line(`type %s interface {`, serviceInterfaceTypeName(&api))
 	for _, operation := range api.Operations {
-		w.Line(`  %s(%s) (*%sResponse, error)`, operation.Name.PascalCase(), strings.Join(addParams(operation), ", "), operation.Name.PascalCase())
+		w.Line(`  %s(%s) (*%s, error)`, operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), responseTypeName(&operation))
 	}
 	w.Line(`}`)
 }

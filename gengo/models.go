@@ -5,7 +5,6 @@ import (
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"path/filepath"
-	"strings"
 )
 
 func GenerateModels(serviceFile string, generatePath string) error {
@@ -30,7 +29,7 @@ func generateModels(specification *spec.Spec, generatePath string) []gen.TextFil
 func generateVersionModels(version *spec.Version, packageName string, generatePath string) []gen.TextFile {
 	return []gen.TextFile{
 		*generateVersionModelsCode(version, packageName, generatePath),
-		*generateHelperFunctions(packageName, filepath.Join(generatePath, "helpers.go")),
+		*generateEnumsHelperFunctions(packageName, filepath.Join(generatePath, "enums_helpers.go")),
 	}
 }
 
@@ -38,25 +37,25 @@ func generateVersionModelsCode(version *spec.Version, packageName string, genera
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
 
-	//TODO: Try to use array of types here
 	imports := []string{}
-	if versionHasType(version, spec.TypeDate) {
-		imports = append(imports, fmt.Sprintf(`import "cloud.google.com/go/civil"`))
+	if versionModelsHasType(version, spec.TypeDate) {
+		imports = append(imports, `import "cloud.google.com/go/civil"`)
 	}
-	if versionHasType(version, spec.TypeJson) {
-		imports = append(imports, fmt.Sprintf(`import "encoding/json"`))
+	if versionModelsHasType(version, spec.TypeJson) {
+		imports = append(imports, `import "encoding/json"`)
 	}
-	if versionHasType(version, spec.TypeUuid) {
-		imports = append(imports, fmt.Sprintf(`import "github.com/google/uuid"`))
+	if versionModelsHasType(version, spec.TypeUuid) {
+		imports = append(imports, `import "github.com/google/uuid"`)
 	}
-	if versionHasType(version, spec.TypeDecimal) {
-		imports = append(imports, fmt.Sprintf(`import "github.com/shopspring/decimal"`))
+	if versionModelsHasType(version, spec.TypeDecimal) {
+		imports = append(imports, `import "github.com/shopspring/decimal"`)
 	}
 
 	if len(imports) > 0 {
 		w.EmptyLine()
-		//TODO: Loop through imports here
-		w.Line(`%s`, strings.Join(imports, "\n"))
+		for _, imp := range imports {
+			w.Line(imp)
+		}
 	}
 
 	for _, model := range version.ResolvedModels {
@@ -75,8 +74,7 @@ func generateVersionModelsCode(version *spec.Version, packageName string, genera
 func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("type %s struct {", model.Name.PascalCase())
 	for _, field := range model.Object.Fields {
-		typ := GoType(&field.Type.Definition)
-		w.Line("  %s %s `json:\"%s\"`", field.Name.PascalCase(), typ, field.Name.Source)
+		w.Line("  %s %s `json:\"%s\"`", field.Name.PascalCase(), GoType(&field.Type.Definition), field.Name.Source)
 	}
 	w.Line("}")
 }
@@ -96,8 +94,8 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	}
 	w.Line(")")
 	w.EmptyLine()
-	w.Line("var %sValuesStrings = []string{%s}", modelName, strings.Join(choiceValuesStringsParams, ", "))
-	w.Line("var %sValues = []%s{%s}", modelName, modelName, strings.Join(choiceValuesParams, ", "))
+	w.Line("var %sValuesStrings = []string{%s}", modelName, JoinDelimParams(choiceValuesStringsParams))
+	w.Line("var %sValues = []%s{%s}", modelName, modelName, JoinDelimParams(choiceValuesParams))
 	w.EmptyLine()
 	w.Line("func (self *%s) UnmarshalJSON(b []byte) error {", modelName)
 	w.Line("  str, err := readEnumStringValue(b, %sValuesStrings)", modelName)
@@ -110,8 +108,7 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 func generateOneOfModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("type %s struct {", model.Name.PascalCase())
 	for _, item := range model.OneOf.Items {
-		typ := GoType(&item.Type.Definition)
-		w.Line("  %s *%s `json:\"%s,omitempty\"`", item.Name.PascalCase(), typ, item.Name.Source)
+		w.Line("  %s *%s `json:\"%s,omitempty\"`", item.Name.PascalCase(), GoType(&item.Type.Definition), item.Name.Source)
 	}
 	w.Line("}")
 }

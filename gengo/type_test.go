@@ -52,6 +52,10 @@ func TestPlainTypeString(t *testing.T) {
 	CheckPlainType(t, spec.TypeString, "string")
 }
 
+func TestPlainTypeEmpty(t *testing.T) {
+	CheckPlainType(t, spec.TypeEmpty, "EmptyDef")
+}
+
 func TestNullableType(t *testing.T) {
 	typ := spec.Nullable(spec.Plain(spec.TypeString))
 	goType := GoType(typ)

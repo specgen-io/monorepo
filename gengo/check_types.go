@@ -5,18 +5,16 @@ import (
 	"github.com/specgen-io/spec"
 )
 
-//TODO: Tweak function names in the code below.
-// For example apiHasType receives version as a parameter therefore it should be named "versionHasType".
-func apiHasType(version *spec.Version, typ string) bool {
+func versionHasType(version *spec.Version, typ string) bool {
 	for _, api := range version.Http.Apis {
-		if operationHasType(&api, typ) {
+		if apiHasType(&api, typ) {
 			return true
 		}
 	}
 	return false
 }
 
-func operationHasType(api *spec.Api, typ string) bool {
+func apiHasType(api *spec.Api, typ string) bool {
 	for _, operation := range api.Operations {
 		if paramHasType(operation.QueryParams, typ) {
 			return true
@@ -31,8 +29,7 @@ func operationHasType(api *spec.Api, typ string) bool {
 	return false
 }
 
-//TODO: Strage method name - there's no type provided
-func bodyHasType(api *spec.Api) bool {
+func apiHasBody(api *spec.Api) bool {
 	for _, operation := range api.Operations {
 		if operation.Body != nil {
 			return true
@@ -70,12 +67,18 @@ func checkType(fieldType *spec.TypeDef, typ string) bool {
 	return true
 }
 
-//TODO: What about unions?
-func versionHasType(version *spec.Version, typ string) bool {
+func versionModelsHasType(version *spec.Version, typ string) bool {
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
 			for _, field := range model.Object.Fields {
 				if checkType(&field.Type.Definition, typ) {
+					return true
+				}
+			}
+		}
+		if model.IsOneOf() {
+			for _, item := range model.OneOf.Items {
+				if checkType(&item.Type.Definition, typ) {
 					return true
 				}
 			}
