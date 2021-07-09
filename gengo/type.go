@@ -50,6 +50,8 @@ func PlainGoType(typ string) string {
 		return "civil.DateTime"
 	case spec.TypeJson:
 		return "json.RawMessage"
+	case spec.TypeEmpty:
+		return "EmptyDef"
 	default:
 		return typ
 	}

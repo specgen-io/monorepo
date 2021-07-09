@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-//TODO: Rename file to more specific: routing string params parsing
 func parserDefaultName(param *spec.NamedParam) (string, *string) {
 	methodName := parserMethodName(&param.Type.Definition)
 	if param.Default != nil {

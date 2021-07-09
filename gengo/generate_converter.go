@@ -6,7 +6,6 @@ import (
 )
 
 func generateConverter(packageName string, path string) *gen.TextFile {
-	//TODO: Rename ParamsParser interface into ParamsSetter
 	code := `
 package [[.PackageName]]
 
@@ -54,16 +53,16 @@ func convertDateTime(value civil.DateTime) string {
 	return value.String()
 }
 
-type ParamsParser interface {
+type ParamsSetter interface {
 	Add(key string, value string)
 	Set(key string, value string)
 }
 
 type ParamsConverter struct {
-	parser ParamsParser
+	parser ParamsSetter
 }
 
-func NewParamsConverter(parser ParamsParser) *ParamsConverter {
+func NewParamsConverter(parser ParamsSetter) *ParamsConverter {
 	return &ParamsConverter{parser}
 }
 

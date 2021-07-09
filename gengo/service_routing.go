@@ -71,22 +71,21 @@ func getVestigoUrl(operation spec.NamedOperation) []string {
 }
 
 func addSetCors(w *gen.Writer, operation spec.NamedOperation) {
-	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, strings.Join(getVestigoUrl(operation), ""))
+	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, JoinParams(getVestigoUrl(operation)))
 	params := []string{}
 	for _, param := range operation.HeaderParams {
 		params = append(params, fmt.Sprintf("%s", param.Name.Source))
 	}
-	w.Line(`  AllowHeaders: []string{"%s"},`, strings.Join(params, ", "))
+	w.Line(`  AllowHeaders: []string{"%s"},`, JoinDelimParams(params))
 	w.Line(`})`)
 }
 
 func generateApiRouter(w *gen.Writer, api spec.Api) {
-	apiName := api.Name.PascalCase()
-	w.Line(`func Add%sRoutes(router *vestigo.Router, %sService I%sService) {`, apiName, api.Name.Source, apiName)
+	w.Line(`func Add%sRoutes(router *vestigo.Router, %s %s) {`, api.Name.PascalCase(), serviceInterfaceTypeVar(&api), serviceInterfaceTypeName(&api))
 	for _, operation := range api.Operations {
 		w.Indent()
-		w.Line(`router.%s("%s", func(w http.ResponseWriter, r *http.Request) {`, ToPascalCase(operation.Endpoint.Method), strings.Join(getVestigoUrl(operation), ""))
-		generateOperationMethod(w, api.Name.Source, operation)
+		w.Line(`router.%s("%s", func(w http.ResponseWriter, r *http.Request) {`, ToPascalCase(operation.Endpoint.Method), JoinParams(getVestigoUrl(operation)))
+		generateOperationMethod(w, api, operation)
 		w.Line(`})`)
 		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
 			addSetCors(w, operation)
@@ -112,7 +111,7 @@ func parserParameterCall(operation spec.NamedOperation, param *spec.NamedParam, 
 	if defaultParam != nil {
 		parserParams = append(parserParams, *defaultParam)
 	}
-	call := fmt.Sprintf(`%s.%s(%s)`, paramsParserName, methodName, strings.Join(parserParams, ", "))
+	call := fmt.Sprintf(`%s.%s(%s)`, paramsParserName, methodName, JoinDelimParams(parserParams))
 	if isEnum {
 		call = fmt.Sprintf(`%s(%s)`, enumModel.Name.PascalCase(), call)
 	}
@@ -129,17 +128,16 @@ func addParamsParser(w *gen.Writer, operation spec.NamedOperation, namedParams [
 	}
 }
 
-func generateOperationMethod(w *gen.Writer, apiName string, operation spec.NamedOperation) {
+func generateOperationMethod(w *gen.Writer, api spec.Api, operation spec.NamedOperation) {
 	if operation.Body != nil {
 		w.Line(`  var body %s`, GoType(&operation.Body.Type.Definition))
 		w.Line(`  json.NewDecoder(r.Body).Decode(&body)`)
 	}
-	addParamsParser(w, operation, operation.QueryParams, "query", "URL.Query()")
-	addParamsParser(w, operation, operation.HeaderParams, "header", "Header")
-	//TODO: Is it bug there's "query" below for url params?
-	addParamsParser(w, operation, operation.Endpoint.UrlParams, "query", "URL.Query()")
+	addParamsParser(w, operation, operation.QueryParams, "queryParams", "URL.Query()")
+	addParamsParser(w, operation, operation.HeaderParams, "headerParams", "Header")
+	addParamsParser(w, operation, operation.Endpoint.UrlParams, "urlParams", "URL.Query()")
 
-	w.Line(`  response, err := %sService.%s(%s)`, apiName, operation.Name.PascalCase(), strings.Join(addUrlParams(operation), ", "))
+	w.Line(`  response, err := %s.%s(%s)`, serviceInterfaceTypeVar(&api), operation.Name.PascalCase(), JoinDelimParams(addOperationMethodParams(operation)))
 	w.Line(`  if !checkOperationErrors(err, w) { return }`)
 	for _, response := range operation.Responses {
 		w.Line(`  if response.%s != nil {`, response.Name.PascalCase())
@@ -152,10 +150,8 @@ func generateOperationMethod(w *gen.Writer, apiName string, operation spec.Named
 	}
 }
 
-func addUrlParams(operation spec.NamedOperation) []string {
-	//TODO: Rename urlParams - they are not only URL params
+func addOperationMethodParams(operation spec.NamedOperation) []string {
 	urlParams := []string{}
-
 	if operation.Body != nil {
 		urlParams = append(urlParams, fmt.Sprintf("%s", "&body"))
 	}
@@ -168,6 +164,5 @@ func addUrlParams(operation spec.NamedOperation) []string {
 	for _, param := range operation.Endpoint.UrlParams {
 		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
 	}
-
 	return urlParams
 }

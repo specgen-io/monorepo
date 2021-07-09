@@ -1,40 +1,40 @@
 package gengo
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
-	"strings"
-)
-
-func generateHelperFunctions(packageName string, path string) *gen.TextFile {
-	code := `
-package [[.PackageName]]
-
-import (
-	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/specgen-io/spec"
 )
 
-func contains(lookFor string, arr []string) bool {
-	for _, value := range arr{
-		if lookFor == value {
-			return true
-		}
-	}
-	return false
+func serviceInterfaceTypeName(api *spec.Api) string {
+	return fmt.Sprintf(`I%sService`, api.Name.PascalCase())
 }
 
-func readEnumStringValue(b []byte, values []string) (string, error) {
-	var str string
-	if err := json.Unmarshal(b, &str); err != nil {
-		return "", err
-	}
-	if !contains(str, values) {
-		return "", errors.New(fmt.Sprintf("Unknown enum value: %s", str))
-	}
-	return str, nil
+func serviceInterfaceTypeVar(api *spec.Api) string {
+	return fmt.Sprintf(`%sService`, api.Name.Source)
 }
-`
-	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {packageName })
-	return &gen.TextFile{path, strings.TrimSpace(code)}
+
+func serviceTypeName(api *spec.Api) string {
+	return fmt.Sprintf(`Service%s`, api.Name.PascalCase())
+}
+
+func clientTypeName(api *spec.Api) string {
+	return fmt.Sprintf(`%sClient`, api.Name.SnakeCase())
+}
+
+func responseTypeName(operation *spec.NamedOperation) string {
+	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
+}
+
+func versionedFolder(version spec.Name, folder string) string {
+	if version.Source != "" {
+		return fmt.Sprintf(`%s_%s`, folder, version.FlatCase())
+	}
+	return folder
+}
+
+func versionedPackage(version spec.Name, packageName string) string {
+	if version.Source != "" {
+		return fmt.Sprintf("%s_%s", packageName, version.FlatCase())
+	}
+	return packageName
 }
