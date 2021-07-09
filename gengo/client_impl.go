@@ -20,30 +20,29 @@ func generateClientImplementation(api *spec.Api, packageName string, generatePat
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
 
-	imports := []string{}
-	imports = append(imports, `import "fmt"`)
-	imports = append(imports, `import "errors"`)
-	imports = append(imports, `import "io/ioutil"`)
-	imports = append(imports, `import "net/http"`)
-	imports = append(imports, `import "encoding/json"`)
-
-	if bodyHasType(api) {
+	imports := []string{
+		`import "fmt"`,
+		`import "errors"`,
+		`import "io/ioutil"`,
+		`import "net/http"`,
+		`import "encoding/json"`,
+	}
+	if apiHasBody(api) {
 		imports = append(imports, `import "bytes"`)
 	}
-	if operationHasType(api, spec.TypeDate) {
-		imports = append(imports, fmt.Sprintf(`import "cloud.google.com/go/civil"`))
+	if apiHasType(api, spec.TypeDate) {
+		imports = append(imports, `import "cloud.google.com/go/civil"`)
 	}
-	if operationHasType(api, spec.TypeUuid) {
-		imports = append(imports, fmt.Sprintf(`import "github.com/google/uuid"`))
+	if apiHasType(api, spec.TypeUuid) {
+		imports = append(imports, `import "github.com/google/uuid"`)
 	}
-	if operationHasType(api, spec.TypeDecimal) {
-		imports = append(imports, fmt.Sprintf(`import "github.com/shopspring/decimal"`))
+	if apiHasType(api, spec.TypeDecimal) {
+		imports = append(imports, `import "github.com/shopspring/decimal"`)
 	}
 
-	//TODO: Imports will never be empty according to code above
-	if len(imports) > 0 {
-		w.EmptyLine()
-		w.Line(`%s`, strings.Join(imports, "\n"))
+	w.EmptyLine()
+	for _, imp := range imports {
+		w.Line(imp)
 	}
 
 	w.EmptyLine()
@@ -52,7 +51,7 @@ func generateClientImplementation(api *spec.Api, packageName string, generatePat
 	generateNewClient(w, *api)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		generateClientFunction(w, api.Name, operation)
+		generateClientFunction(w, *api, operation)
 	}
 
 	return &gen.TextFile{
@@ -62,19 +61,19 @@ func generateClientImplementation(api *spec.Api, packageName string, generatePat
 }
 
 func generateClientTypeStruct(w *gen.Writer, api spec.Api) {
-	w.Line(`type %sClient struct {`, api.Name.SnakeCase())
+	w.Line(`type %s struct {`, clientTypeName(&api))
 	w.Line(`  baseUrl string`)
 	w.Line(`}`)
 }
 
 func generateNewClient(w *gen.Writer, api spec.Api) {
-	w.Line(`func New%sClient(baseUrl string) *%sClient {`, api.Name.PascalCase(), api.Name.SnakeCase())
-	w.Line(`  return &%sClient{baseUrl}`, api.Name.SnakeCase())
+	w.Line(`func New%s(baseUrl string) *%s {`, ToPascalCase(clientTypeName(&api)), clientTypeName(&api))
+	w.Line(`  return &%s{baseUrl}`, clientTypeName(&api))
 	w.Line(`}`)
 }
 
-func generateClientFunction(w *gen.Writer, apiName spec.Name, operation spec.NamedOperation) {
-	w.Line(`func (client *%sClient) %s(%s) (*%sResponse, error) {`, apiName.SnakeCase(), operation.Name.PascalCase(), strings.Join(addParams(operation), ", "), operation.Name.PascalCase())
+func generateClientFunction(w *gen.Writer, api spec.Api, operation spec.NamedOperation) {
+	w.Line(`func (client *%s) %s(%s) (*%s, error) {`, clientTypeName(&api), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), responseTypeName(&operation))
 	var body = "nil"
 	if operation.Body != nil {
 		w.Line(`  bodyJSON, err := json.Marshal(body)`)
@@ -114,7 +113,7 @@ func getUrl(operation spec.NamedOperation) []string {
 
 func addRequestUrlParams(operation spec.NamedOperation) string {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		return fmt.Sprintf(`fmt.Sprintf("%s", %s)`, strings.Join(getUrl(operation), ""), strings.Join(addUrlParam(operation), ", "))
+		return fmt.Sprintf(`fmt.Sprintf("%s", %s)`, JoinParams(getUrl(operation)), JoinDelimParams(addUrlParam(operation)))
 	} else {
 		return fmt.Sprintf(`"%s"`, operation.Endpoint.Url)
 	}
@@ -172,7 +171,7 @@ func addResponse(w *gen.Writer, operation spec.NamedOperation) {
 			w.Line(`  body := &%s`, ToPascalCase(response.Type.Definition.Name))
 		}
 		w.EmptyLine()
-		w.Line(`  return &%sResponse{%s: body}, nil`, operation.Name.PascalCase(), response.Name.PascalCase())
+		w.Line(`  return &%s{%s: body}, nil`, responseTypeName(&operation), response.Name.PascalCase())
 		w.Line(`}`)
 	}
 }
