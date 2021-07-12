@@ -74,9 +74,9 @@ func addSetCors(w *gen.Writer, operation spec.NamedOperation) {
 	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, JoinParams(getVestigoUrl(operation)))
 	params := []string{}
 	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf("%s", param.Name.Source))
+		params = append(params, fmt.Sprintf(`"%s"`, param.Name.Source))
 	}
-	w.Line(`  AllowHeaders: []string{"%s"},`, JoinDelimParams(params))
+	w.Line(`  AllowHeaders: []string{%s},`, JoinDelimParams(params))
 	w.Line(`})`)
 }
 
