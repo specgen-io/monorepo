@@ -17,7 +17,7 @@ func GenerateService(serviceFile string, generatePath string) error {
 		versionPath := filepath.Join(generatePath, versionedFolder(version.Version, "spec"))
 		versionPackageName := versionedPackage(version.Version, "spec")
 
-		generatedFiles = append(generatedFiles, *generateParamsParser(versionPackageName, filepath.Join(versionPath, "parsing.go")))
+		generatedFiles = append(generatedFiles, *generateParamsParser(versionPackageName, filepath.Join(versionPath, "params_parsing.go")))
 		generatedFiles = append(generatedFiles, *generateRouting(&version, versionPackageName, versionPath))
 		generatedFiles = append(generatedFiles, *generateServicesInterfaces(&version, versionPackageName, versionPath))
 		generatedFiles = append(generatedFiles, generateVersionModels(&version, versionPackageName, versionPath)...)
