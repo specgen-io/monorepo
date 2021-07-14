@@ -1,7 +1,7 @@
 package genopenapi
 
 import (
-	yaml "gopkg.in/vsapronov/yaml.v3"
+	yaml "gopkg.in/specgen-io/yaml.v3"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
