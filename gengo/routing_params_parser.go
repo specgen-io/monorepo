@@ -133,8 +133,14 @@ func (parser *ParamsParser) parseDate(s string) civil.Date {
 
 func (parser *ParamsParser) parseDateTime(s string) civil.DateTime {
 	t, err := time.Parse("2006-01-02T15:04:05.999Z", s)
-	parser.addError(err)
-	return civil.DateTimeOf(t)
+	if err == nil {
+		parser.addError(err)
+		return civil.DateTimeOf(t)
+	} else {
+		v, err := civil.ParseDateTime(s)
+		parser.addError(err)
+		return v
+	}
 }
 
 func (parser *ParamsParser) parseStringEnum(s string, vs []string) string {
