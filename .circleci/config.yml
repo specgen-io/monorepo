@@ -209,7 +209,7 @@ workflows:
       - circleci/run-pipeline-workflow:
           name: test-service-go
           repository: specgen-io/test-service-go
-          workflow-name: service-go
+          workflow-name: build-test
           branch: << pipeline.parameters.test-branch >>
           pipeline-attempts: 30
           context: specgen
@@ -237,8 +237,34 @@ workflows:
                 - main
                 - /v.*/
       - circleci/start-pipeline:
+          name: test-service-express
+          repository: specgen-io/test-service-express
+          branch: << pipeline.parameters.test-branch >>
+          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          context: specgen
+          requires:
+            - test-service-go
+          filters:
+            branches:
+              only:
+                - main
+                - /v.*/
+      - circleci/start-pipeline:
           name: test-client-ruby
           repository: specgen-io/test-client-ruby
+          branch: << pipeline.parameters.test-branch >>
+          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          context: specgen
+          requires:
+            - test-service-go
+          filters:
+            branches:
+              only:
+                - main
+                - /v.*/
+      - circleci/start-pipeline:
+          name: test-client-go
+          repository: specgen-io/test-client-go
           branch: << pipeline.parameters.test-branch >>
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
@@ -278,6 +304,19 @@ workflows:
       - circleci/start-pipeline:
           name: test-models-circe
           repository: specgen-io/test-models-circe
+          branch: << pipeline.parameters.test-branch >>
+          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          context: specgen
+          requires:
+            - build-sbt-specgen
+          filters:
+            branches:
+              only:
+                - main
+                - /v.*/
+      - circleci/start-pipeline:
+          name: test-models-go
+          repository: specgen-io/test-models-go
           branch: << pipeline.parameters.test-branch >>
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
