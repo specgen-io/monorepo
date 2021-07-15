@@ -11,21 +11,18 @@ var importIoTsEncoding = `import * as t from './io-ts'`
 
 func generateIoTsStaticCode(path string) *gen.TextFile {
 	code := `
-export * from 'io-ts';
-export * from 'io-ts-types';
+export * from 'io-ts'
+export * from 'io-ts-types'
 
-import * as t from 'io-ts';
+import * as t from 'io-ts'
 
-// Copy-paste from here: https://github.com/gcanti/io-ts/pull/366
+import { pipe, identity } from 'fp-ts/lib/function'
+import { fold, map } from 'fp-ts/lib/Either'
+
 
 enum Enum {}
-/**
- * @since 2.3.0
- */
+
 export class EnumType<E extends typeof Enum> extends t.Type<E[keyof E]> {
-  /**
-   * @since 2.3.0
-   */
   readonly _tag: 'EnumType' = 'EnumType'
   private readonly _enum: E
   private readonly _enumValues: Set<string | number>
@@ -46,22 +43,43 @@ export class EnumType<E extends typeof Enum> extends t.Type<E[keyof E]> {
   }
 }
 
-/**
- * @since 2.3.0
- */
-const enumType = <E extends typeof Enum>(e: E, name?: string) => new EnumType<E>(e, name);
+const enumType = <E extends typeof Enum>(e: E, name?: string) => new EnumType<E>(e, name)
 
 export { enumType as enum }
 
-import { pipe } from 'fp-ts/lib/pipeable';
-import { fold } from 'fp-ts/lib/Either';
-import { identity } from 'fp-ts/lib/function';
+export class WithDefault<RT extends t.Any, A = any, O = A, I = unknown> extends t.Type<A, O, I> {
+  readonly _tag: 'WithDefault' = 'WithDefault'
+  constructor(
+      name: string,
+      is: WithDefault<RT, A, O, I>['is'],
+      validate: WithDefault<RT, A, O, I>['validate'],
+      serialize: WithDefault<RT, A, O, I>['encode'],
+      readonly type: RT,
+  ) {
+      super(name, is, validate, serialize)
+  }
+}
+
+export const withDefault = <RT extends t.Type<A, O>, A = any, O = A>(type: RT, defaultValue: t.TypeOf<RT>): WithDefault<RT, t.TypeOf<RT>, t.OutputOf<RT>, unknown> => {
+  const Nullable = t.union([type, t.null, t.undefined])
+  return new WithDefault(
+    'WithDefault',
+      (m: unknown): m is t.TypeOf<RT> => type.is(m),
+      (s: unknown, c: t.Context): t.Validation<t.TypeOf<RT>> => {
+          const validationResult: t.Validation<t.TypeOf<RT | t.NullC | t.UndefinedC>> = Nullable.validate(s, c)
+          const applyDefault = map<A | null | undefined, A>(value => value != null ? value : defaultValue)
+          return applyDefault(validationResult)
+      },
+      (a: t.TypeOf<RT>) => type.encode(a),
+      type,
+  )
+}
 
 export class DecodeError extends Error {
     errors: t.Errors
     constructor(errors: t.Errors) {
-        super('Decoding failed');
-        this.errors = errors;
+        super('Decoding failed')
+        this.errors = errors
     }
 }
 
@@ -69,15 +87,15 @@ export const decode = <A, O, I>(codec: t.Type<A, O, I>, value: I): A => {
     return pipe(
         codec.decode(value),
         fold(
-            errors => { throw new DecodeError(errors); },
+            errors => { throw new DecodeError(errors) },
             identity
         )
-    );
-};
+    )
+}
 
 export const encode = <A, O, I>(codec: t.Type<A, O, I>, value: A): O => {
-    return codec.encode(value);
-};
+    return codec.encode(value)
+}
 `
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
