@@ -77,7 +77,7 @@ func ParamPlainSuperstructType(typ string) string {
 	case spec.TypeDate:
 		return "t.string()"
 	case spec.TypeDateTime:
-		return "t.DateTime"
+		return "t.StrDateTime"
 	default:
 		return fmt.Sprintf("%s.T"+typ, modelsPackage)
 	}

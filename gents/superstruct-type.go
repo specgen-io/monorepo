@@ -47,7 +47,7 @@ func PlainSuperstructType(typ string) string {
 	case spec.TypeDate:
 		return "t.string()"
 	case spec.TypeDateTime:
-		return "t.DateTime"
+		return "t.StrDateTime"
 	case spec.TypeJson:
 		return "t.unknown()"
 	default:
