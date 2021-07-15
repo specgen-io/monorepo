@@ -19,5 +19,9 @@ func generateParams(w *gen.Writer, typeName string, isHeader bool, params []spec
 		generateSuperstructParams(w, typeName, isHeader, params)
 		return
 	}
+	if validation == IoTs {
+		generateIoTsParams(w, typeName, isHeader, params)
+		return
+	}
 	panic(fmt.Sprintf("Unknown validation: %s", validation))
 }

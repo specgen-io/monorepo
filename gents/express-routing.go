@@ -13,7 +13,7 @@ func generateExpressVersionRouting(version *spec.Version, validation string, gen
 
 	w.Line("import express from 'express'")
 	w.Line("import {Request, Response} from 'express'")
-	w.Line(importSuperstructEncoding)
+	w.Line(importEncoding(validation))
 	w.Line("import * as %s from './%s'", modelsPackage, versionFilename(version, "models", ""))
 	w.Line("import * as services from './%s'", versionFilename(version, "services", ""))
 
