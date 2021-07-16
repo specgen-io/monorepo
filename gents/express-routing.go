@@ -8,6 +8,52 @@ import (
 	"strings"
 )
 
+func generateExpressSpecRouter(specification *spec.Spec, generatePath string) *gen.TextFile {
+	w := NewTsWriter()
+	w.Line("import express from 'express'")
+	for _, version := range specification.Versions {
+		w.Line("import * as %s from './%s'", versionModule(&version, "services"), versionFilename(&version, "services", ""))
+		w.Line("import * as %s from './%s'", versionModule(&version, "routing"), versionFilename(&version, "routing", ""))
+	}
+
+	routerParams := []string{}
+	for _, version := range specification.Versions {
+		for _, api := range version.Http.Apis {
+			routerParams = append(routerParams, fmt.Sprintf("%s: %s.%s", apiServiceParamName(&api), versionModule(&version, "services"), serviceInterfaceName(&api)))
+		}
+	}
+
+	w.EmptyLine()
+	w.Line("export let specRouter = (%s): express.Router => {", strings.Join(routerParams, ", "))
+	w.Line("  let router = express.Router()")
+	for _, version := range specification.Versions {
+		for _, api := range version.Http.Apis {
+			w.Line("  router.use('%s', %s.%s(%s))", versionUrl(&version), versionModule(&version, "routing"), apiRouterName(&api), apiServiceParamName(&api))
+		}
+	}
+	w.Line("  return router")
+	w.Line("}")
+
+	return &gen.TextFile{filepath.Join(generatePath, "spec-routing.ts"), w.String()}
+}
+
+func versionUrl(version *spec.Version) string {
+	url := version.Http.GetUrl()
+	if url == "" {
+		return "/"
+	}
+	return url
+}
+
+func apiServiceParamName(api *spec.Api) string {
+	version := api.Apis.Version
+	paramName := api.Name.CamelCase() + "Service"
+	if version.Version.Source != "" {
+		paramName = paramName + version.Version.PascalCase()
+	}
+	return paramName
+}
+
 func generateExpressVersionRouting(version *spec.Version, validation string, generatePath string) *gen.TextFile {
 	w := NewTsWriter()
 
@@ -31,9 +77,13 @@ func generateExpressVersionRouting(version *spec.Version, validation string, gen
 	return &gen.TextFile{filepath.Join(generatePath, filename), w.String()}
 }
 
+func apiRouterName(api *spec.Api) string {
+	return api.Name.CamelCase() + "Router"
+}
+
 func generateExpressApiRouting(w *gen.Writer, api *spec.Api, validation string) {
 	w.EmptyLine()
-	w.Line("export let %sRouter = (service: services.%s): express.Router => {", api.Name.CamelCase(), serviceInterfaceName(api))
+	w.Line("export let %s = (service: services.%s): express.Router => {", apiRouterName(api), serviceInterfaceName(api))
 	w.Line("  let router = express.Router()")
 	for _, operation := range api.Operations {
 		w.EmptyLine()

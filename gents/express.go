@@ -18,6 +18,7 @@ func GenerateExpressService(serviceFile string, swaggerPath string, generatePath
 		sources = append(sources, *generateServiceApis(&version, generatePath))
 		sources = append(sources, *generateExpressVersionRouting(&version, validation, generatePath))
 	}
+	sources = append(sources, *generateExpressSpecRouter(specification, generatePath))
 
 	modelsFiles := generateModels(specification, validation, generatePath)
 	sources = append(sources, modelsFiles...)
@@ -38,6 +39,13 @@ func versionFilename(version *spec.Version, filename string, ext string) string 
 	}
 	if ext != "" {
 		filename = filename + "." + ext
+	}
+	return filename
+}
+
+func versionModule(version *spec.Version, filename string) string {
+	if version.Version.Source != "" {
+		filename = filename + "_" + version.Version.FlatCase()
 	}
 	return filename
 }
