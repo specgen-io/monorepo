@@ -35,7 +35,7 @@ func GenerateExpressService(serviceFile string, swaggerPath string, generatePath
 
 func versionFilename(version *spec.Version, filename string, ext string) string {
 	if version.Version.Source != "" {
-		filename = filename + "-" + version.Version.FlatCase()
+		filename = filename + "_" + version.Version.FlatCase()
 	}
 	if ext != "" {
 		filename = filename + "." + ext
