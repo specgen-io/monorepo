@@ -34,7 +34,7 @@ func generateExpressSpecRouter(specification *spec.Spec, generatePath string) *g
 	w.Line("  return router")
 	w.Line("}")
 
-	return &gen.TextFile{filepath.Join(generatePath, "spec-routing.ts"), w.String()}
+	return &gen.TextFile{filepath.Join(generatePath, "spec_router.ts"), w.String()}
 }
 
 func versionUrl(version *spec.Version) string {
