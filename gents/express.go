@@ -25,6 +25,14 @@ func GenerateExpressService(serviceFile string, swaggerPath string, generatePath
 
 	sources = append(sources, *genopenapi.GenerateOpenapi(specification, swaggerPath))
 
+	if servicesPath != "" {
+		services := generateServicesImplementations(specification, servicesPath)
+		err = gen.WriteFiles(services, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = gen.WriteFiles(sources, true)
 	if err != nil {
 		return err
