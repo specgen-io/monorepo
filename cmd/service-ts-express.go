@@ -18,7 +18,6 @@ func init() {
 
 	cmdServiceTsExpress.MarkFlagRequired(SwaggerPath)
 	cmdServiceTsExpress.MarkFlagRequired(GeneratePath)
-	cmdServiceTsExpress.MarkFlagRequired(ServicesPath)
 
 	rootCmd.AddCommand(cmdServiceTsExpress)
 
