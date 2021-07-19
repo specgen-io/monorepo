@@ -1,8 +1,7 @@
 package gen
 
 import (
-	"bytes"
-	"io"
+	"github.com/specgen-io/specgen/v2/console"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -23,13 +22,20 @@ func Exists(path string) bool {
 }
 
 func WriteFile(file *TextFile, overwrite bool) error {
+	fullpath, err := filepath.Abs(file.Path)
+	if err != nil {
+		return err
+	}
 	if overwrite || !Exists(file.Path) {
 		data := []byte(file.Content)
 
 		dir := filepath.Dir(file.Path)
 		_ = os.MkdirAll(dir, os.ModePerm)
 
+		console.PrintLn("Writing:", fullpath)
 		return ioutil.WriteFile(file.Path, data, 0644)
+	} else {
+		console.PrintLn("Skipping:", fullpath)
 	}
 	return nil
 }
@@ -42,19 +48,4 @@ func WriteFiles(files []TextFile, overwrite bool) error {
 		}
 	}
 	return nil
-}
-
-func FileExists(name string) bool {
-	if fi, err := os.Stat(name); err == nil {
-		if fi.Mode().IsRegular() {
-			return true
-		}
-	}
-	return false
-}
-
-func GenTextFile(generate func (io.Writer), path string) *TextFile {
-	w := new(bytes.Buffer)
-	generate(w)
-	return &TextFile{Path: path, Content: w.String()}
 }
