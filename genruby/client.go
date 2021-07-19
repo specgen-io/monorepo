@@ -3,10 +3,10 @@ package genruby
 import (
 	"fmt"
 	"github.com/pinzolo/casee"
-	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"github.com/vsapronov/gopoetry/ruby"
 	"path/filepath"
+	"strings"
 )
 
 func GenerateClient(serviceFile string, generatePath string) error {
@@ -39,42 +39,39 @@ func clientModuleName(serviceName spec.Name) string {
 func generateClientApisClasses(specification *spec.Spec, generatePath string) *gen.TextFile {
 	moduleName := clientModuleName(specification.Name)
 
-	unit := ruby.Unit()
-	unit.Require("net/http")
-	unit.Require("net/https")
-	unit.Require("uri")
-	unit.Require("emery")
+	w := NewRubyWriter()
+	w.Line(`require "net/http"`)
+	w.Line(`require "net/https"`)
+	w.Line(`require "uri"`)
+	w.Line(`require "emery"`)
 
 	for _, version := range specification.Versions {
 		if version.Version.Source == "" {
-			module := generateVersionClientModule(&version, moduleName)
-			unit.AddDeclarations(module)
+			w.EmptyLine()
+			generateVersionClientModule(w, &version, moduleName)
 		}
 	}
 
 	for _, version := range specification.Versions {
 		if version.Version.Source != "" {
-			module := generateVersionClientModule(&version, moduleName)
-			unit.AddDeclarations(module)
+			w.EmptyLine()
+			generateVersionClientModule(w, &version, moduleName)
 		}
 	}
 
-	return &gen.TextFile{
-		Path:    filepath.Join(generatePath, "client.rb"),
-		Content: unit.Code(),
-	}
+	return &gen.TextFile{Path: filepath.Join(generatePath, "client.rb"), Content: w.String()}
 }
 
-func generateVersionClientModule(version *spec.Version, moduleName string) *ruby.ModuleDeclaration {
-	module := ruby.Module(versionedModule(moduleName, version.Version))
-	for _, api := range version.Http.Apis {
-		apiClass := generateClientApiClass(api)
-		module.AddDeclarations(apiClass)
+func generateVersionClientModule(w *gen.Writer, version *spec.Version, moduleName string) {
+	w.Line("module %s", versionedModule(moduleName, version.Version))
+	for index, api := range version.Http.Apis {
+		if index != 0 { w.EmptyLine() }
+		generateClientApiClass(w.Indented(), api)
 	}
-	return module
+	w.Line("end")
 }
 
-func operationResult(operation *spec.NamedOperation, response *spec.NamedResponse) *ruby.WritableCode {
+func operationResult(operation *spec.NamedOperation, response *spec.NamedResponse) string {
 	body := "nil"
 	if !response.Type.Definition.IsEmpty() {
 		body = fmt.Sprintf("Jsoner.from_json(%s, response.body)", RubyType(&response.Type.Definition))
@@ -87,25 +84,26 @@ func operationResult(operation *spec.NamedOperation, response *spec.NamedRespons
 			flags += fmt.Sprintf(", :%s? => false", r.Name.Source)
 		}
 	}
-	return ruby.Code(fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags))
+	return fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags)
 }
 
-func generateClientOperation(operation spec.NamedOperation) *ruby.MethodDeclaration {
-	method := ruby.Method(operation.Name.SnakeCase())
-	methodBody := method.Body()
-
-	addParams(method, operation.HeaderParams)
+func generateClientOperation(w *gen.Writer, operation spec.NamedOperation) {
+	args := []string{}
+	args = append(args, addParams(operation.HeaderParams)...)
 	if operation.Body != nil {
-		method.KeywordArg("body")
+		args = append(args, "body:")
 	}
-	addParams(method, operation.Endpoint.UrlParams)
-	addParams(method, operation.QueryParams)
+	args = append(args, addParams(operation.Endpoint.UrlParams)...)
+	args = append(args, addParams(operation.QueryParams)...)
+
+	w.Line("def %s(%s)", operation.Name.SnakeCase(), strings.Join(args, ", "))
+	w.Indent()
 
 	httpMethod := casee.ToPascalCase(operation.Endpoint.Method)
 
-	addParamsWriting(methodBody, operation.Endpoint.UrlParams, "url_params")
-	addParamsWriting(methodBody, operation.QueryParams, "query")
-	addParamsWriting(methodBody, operation.HeaderParams, "header")
+	addParamsWriting(w, operation.Endpoint.UrlParams, "url_params")
+	addParamsWriting(w, operation.QueryParams, "query")
+	addParamsWriting(w, operation.HeaderParams, "header")
 
 	url_compose := "url = @base_uri"
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
@@ -116,57 +114,60 @@ func generateClientOperation(operation spec.NamedOperation) *ruby.MethodDeclarat
 	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		url_compose = url_compose + " + query.query_str"
 	}
-	methodBody.AddLn(url_compose)
+	w.Line(url_compose)
 
-	methodBody.AddLn(fmt.Sprintf("request = Net::HTTP::%s.new(url)", httpMethod))
+	w.Line(fmt.Sprintf("request = Net::HTTP::%s.new(url)", httpMethod))
 
 	if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
-		methodBody.AddLn("header.params.each { |name, value| request.add_field(name, value) }")
+		w.Line("header.params.each { |name, value| request.add_field(name, value) }")
 	}
 
 	if operation.Body != nil {
 		boydRubyType := RubyType(&operation.Body.Type.Definition)
-		methodBody.AddLn(fmt.Sprintf("body_json = Jsoner.to_json(%s, T.check_var('body', %s, body))", boydRubyType, boydRubyType))
-		methodBody.AddLn("request.body = body_json")
+		w.Line(fmt.Sprintf("body_json = Jsoner.to_json(%s, T.check_var('body', %s, body))", boydRubyType, boydRubyType))
+		w.Line("request.body = body_json")
 	}
-	methodBody.AddLn("response = @client.request(request)")
-	methodBody.AddLn("case response.code")
+	w.Line("response = @client.request(request)")
+	w.Line("case response.code")
 
 	for _, response := range operation.Responses {
-		methodBody.AddLn(fmt.Sprintf("when '%s'", spec.HttpStatusCode(response.Name)))
-		methodBody.Scope().AddCode(operationResult(&operation, &response))
+		w.Line("when '%s'", spec.HttpStatusCode(response.Name))
+		w.Line("  %s", operationResult(&operation, &response))
 	}
 
-	methodBody.AddLn("else")
-	methodBody.Scope().Add("raise StandardError.new(\"Unexpected HTTP response code #{response.code}\")")
-	methodBody.AddLn("end")
-	return method
+	w.Line("else")
+	w.Line(`  raise StandardError.new("Unexpected HTTP response code #{response.code}")`)
+	w.Line("end")
+	w.Unindent()
+	w.Line("end")
 }
 
-func generateClientApiClass(api spec.Api) *ruby.ClassDeclaration {
-	apiClassName := clientClassName(api.Name)
-	apiClass := ruby.Class(apiClassName).Inherits("Http::BaseClient")
-	for _, operation := range api.Operations {
-		method := generateClientOperation(operation)
-		apiClass.AddMembers(method)
+func generateClientApiClass(w *gen.Writer, api spec.Api) {
+	w.Line("class %s < Http::BaseClient", clientClassName(api.Name))
+	for index, operation := range api.Operations {
+		if index != 0 { w.EmptyLine() }
+		generateClientOperation(w.Indented(), operation)
 	}
-	return apiClass
+	w.Line("end")
 }
 
-func addParams(method *ruby.MethodDeclaration, params []spec.NamedParam) {
+func addParams(params []spec.NamedParam) []string {
+	args := []string{}
 	for _, param := range params {
-		arg := method.KeywordArg(param.Name.SnakeCase())
+		arg := param.Name.SnakeCase()+":"
 		if param.Default != nil {
-			arg.Default(ruby.Code(DefaultValue(&param.Type.Definition, *param.Default)))
+			arg += " "+DefaultValue(&param.Type.Definition, *param.Default)
 		}
+		args = append(args, arg)
 	}
+	return args
 }
 
-func addParamsWriting(code *ruby.StatementsDeclaration, params []spec.NamedParam, paramsName string) {
+func addParamsWriting(w *gen.Writer, params []spec.NamedParam, paramsName string) {
 	if params != nil && len(params) > 0 {
-		code.AddLn(paramsName + " = Http::StringParams.new")
+		w.Line("%s = Http::StringParams.new", paramsName)
 		for _, p := range params {
-			code.AddLn(fmt.Sprintf("%s.set('%s', %s, %s)", paramsName, p.Name.Source, RubyType(&p.Type.Definition), p.Name.SnakeCase()))
+			w.Line("%s.set('%s', %s, %s)", paramsName, p.Name.Source, RubyType(&p.Type.Definition), p.Name.SnakeCase())
 		}
 	}
 }
