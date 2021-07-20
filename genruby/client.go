@@ -123,8 +123,8 @@ func generateClientOperation(w *gen.Writer, operation spec.NamedOperation) {
 	}
 
 	if operation.Body != nil {
-		boydRubyType := RubyType(&operation.Body.Type.Definition)
-		w.Line(fmt.Sprintf("body_json = Jsoner.to_json(%s, T.check_var('body', %s, body))", boydRubyType, boydRubyType))
+		bodyRubyType := RubyType(&operation.Body.Type.Definition)
+		w.Line(fmt.Sprintf("body_json = Jsoner.to_json(%s, T.check_var('body', %s, body))", bodyRubyType, bodyRubyType))
 		w.Line("request.body = body_json")
 	}
 	w.Line("response = @client.request(request)")
