@@ -214,7 +214,6 @@ github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1
 github.com/smartystreets/goconvey v1.6.4/go.mod h1:syvi0/a8iFYH4r/RixwvyeAJjdLS9QV7WQ/tjFTllLA=
 github.com/specgen-io/spec v0.0.0-20210714170255-1154bf63bedd h1:BAgEQLFpt5RyDf4vTk+Eb59Csd80SIX2QvThgpVbkZE=
 github.com/specgen-io/spec v0.0.0-20210714170255-1154bf63bedd/go.mod h1:/p05SvMlu/S0kocM9pJy2myQk9xaD/h02QLKgrOOmXY=
-github.com/specgen-io/specgen v1.10.87 h1:iopC6YN7FJ1r7Y1Tzg1z911u6PDBilPVWI7lE3mVUwA=
 github.com/spf13/afero v1.6.0/go.mod h1:Ai8FlHk4v/PARR026UzYexafAt9roJ7LcLMAmO6Z93I=
 github.com/spf13/cast v1.3.1/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
 github.com/spf13/cobra v1.2.1 h1:+KmjbUw1hriSNMF55oPrkZcb27aECyrj8V2ytv7kWDw=
