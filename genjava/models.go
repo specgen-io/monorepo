@@ -41,31 +41,12 @@ func generateVersionModels(version *spec.Version, packageName string, generatePa
 	return files
 }
 
-func generateImports(w *gen.Writer, model *spec.NamedModel) {
-	imports := []string{}
-
-	if model.IsObject() {
-		imports = append(imports, `import com.fasterxml.jackson.annotation.*;`)
-	}
-	if modelsHasType(model, spec.TypeJson) {
-		imports = append(imports, `import com.fasterxml.jackson.databind.JsonNode;`)
-	}
-	if modelsHasType(model, spec.TypeDate) {
-		imports = append(imports, `import java.time.*;`)
-	}
-	if modelsHasType(model, spec.TypeDecimal) {
-		imports = append(imports, `import java.math.BigDecimal;`)
-	}
-	if modelsHasType(model, spec.TypeUuid) || modelsHasMapType(model) {
-		imports = append(imports, `import java.util.*;`)
-	}
-
-	if len(imports) > 0 {
-		w.EmptyLine()
-		for _, imp := range imports {
-			w.Line(imp)
-		}
-	}
+func generateImports(w *gen.Writer) {
+	w.Line(`import com.fasterxml.jackson.annotation.*;`)
+	w.Line(`import com.fasterxml.jackson.databind.JsonNode;`)
+	w.Line(`import java.math.BigDecimal;`)
+	w.Line(`import java.time.*;`)
+	w.Line(`import java.util.*;`)
 }
 
 func addType(field spec.NamedDefinition) string {
@@ -99,7 +80,8 @@ func addSetterParams(field spec.NamedDefinition) string {
 func generateObjectModel(model *spec.NamedModel, packageName string, generatePath string) *gen.TextFile {
 	w := NewJavaWriter()
 	w.Line("package io.specgen.%s;", packageName)
-	generateImports(w, model)
+	w.EmptyLine()
+	generateImports(w)
 	w.EmptyLine()
 	w.Line(`public class %s {`, model.Name.PascalCase())
 
@@ -142,7 +124,8 @@ func generateObjectModel(model *spec.NamedModel, packageName string, generatePat
 func generateEnumModel(model *spec.NamedModel, packageName string, generatePath string) *gen.TextFile {
 	w := NewJavaWriter()
 	w.Line("package io.specgen.%s;", packageName)
-	generateImports(w, model)
+	w.EmptyLine()
+	generateImports(w)
 	w.EmptyLine()
 	w.Line(`public enum %s {`, model.Name.PascalCase())
 	for _, enumItem := range model.Enum.Items {
