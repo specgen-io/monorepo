@@ -28,7 +28,7 @@ do
         exec_name+='.exe'
     fi
 
-    env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-s -w -X specgen/version.Current=$VERSION" -o $exec_name specgen.go
+    env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-s -w -X github.com/specgen-io/specgen/v2/version.Current=$VERSION" -o $exec_name specgen.go
     if [ $? -ne 0 ]; then
         echo 'An error has occurred! Aborting the script execution...'
         exit 1
