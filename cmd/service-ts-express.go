@@ -42,7 +42,7 @@ var cmdServiceTsExpress = &cobra.Command{
 		validation, err := cmd.Flags().GetString(Validation)
 		fail.IfError(err)
 
-		err = gents.GenerateExpressService(specFile, swaggerPath, generatePath, servicesPath, validation)
+		err = gents.GenerateService(specFile, swaggerPath, generatePath, servicesPath, "express", validation)
 		fail.IfErrorF(err, "Failed to generate service code")
 	},
 }
