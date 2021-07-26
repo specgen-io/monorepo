@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/console"
 	"github.com/specgen-io/specgen/v2/version"
 	"github.com/spf13/cobra"
 	"os"
@@ -16,6 +17,7 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
+	console.PrintLnF("Running specgen version: %s", version.Current)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
