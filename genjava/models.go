@@ -5,6 +5,7 @@ import (
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"path/filepath"
+	"strings"
 )
 
 func GenerateModels(serviceFile string, generatePath string) error {
@@ -23,8 +24,42 @@ func generateModels(specification *spec.Spec, generatePath string) []gen.TextFil
 		versionPath := filepath.Join(generatePath, versionedFolder(version.Version, "spec"))
 		versionPackageName := versionedPackage(version.Version, "spec")
 		files = append(files, generateVersionModels(&version, versionPackageName, versionPath)...)
+
+		files = append(files, *generateJsoner("io.specgen", filepath.Join(generatePath, "Jsoner.java")))
 	}
 	return files
+}
+
+func generateJsoner(packageName string, path string) *gen.TextFile {
+	code := `
+package [[.PackageName]];
+
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.datatype.jsr310.*;
+
+import java.io.*;
+
+public class Jsoner {
+
+	public static <T> String serialize(ObjectMapper objectMapper, T data) throws IOException {
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		objectMapper.registerModule(new JSR310Module())
+			.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+			.writeValue(byteArrayOutputStream, data);
+
+		return byteArrayOutputStream.toString();
+	}
+
+	public static <T> T deserialize(ObjectMapper objectMapper, String jsonStr, Class<T> tClass) throws IOException {
+		InputStream inputStream = new ByteArrayInputStream(jsonStr.getBytes());
+
+		return objectMapper.readValue(inputStream, tClass);
+	}
+}
+`
+
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
+	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
 
 func generateVersionModels(version *spec.Version, packageName string, generatePath string) []gen.TextFile {
