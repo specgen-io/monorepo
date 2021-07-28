@@ -14,7 +14,7 @@ require "cgi"
 
 require "emery"
 
-module Http
+module [[.ModuleName]]
   class BaseClient
     attr_reader :uri
     attr_reader :client
@@ -72,7 +72,7 @@ module Http
   end
 end
 `
-	code, _ = gen.ExecuteTemplate(code, struct { ModuleName string } {moduleName })
+	code, _ = gen.ExecuteTemplate(code, struct{ ModuleName string }{moduleName})
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
 
@@ -82,6 +82,6 @@ require "emery"
 require "[[.GemName]]/models"
 require "[[.GemName]]/baseclient"
 require "[[.GemName]]/client"`
-	code, _ = gen.ExecuteTemplate(code, struct { GemName string } {gemName })
+	code, _ = gen.ExecuteTemplate(code, struct{ GemName string }{gemName})
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }

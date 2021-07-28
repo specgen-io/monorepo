@@ -65,8 +65,10 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 func generateVersionClientModule(w *gen.Writer, version *spec.Version, moduleName string) {
 	w.Line("module %s", versionedModule(moduleName, version.Version))
 	for index, api := range version.Http.Apis {
-		if index != 0 { w.EmptyLine() }
-		generateClientApiClass(w.Indented(), api)
+		if index != 0 {
+			w.EmptyLine()
+		}
+		generateClientApiClass(w.Indented(), moduleName, &api)
 	}
 	w.Line("end")
 }
@@ -87,7 +89,7 @@ func operationResult(operation *spec.NamedOperation, response *spec.NamedRespons
 	return fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags)
 }
 
-func generateClientOperation(w *gen.Writer, operation spec.NamedOperation) {
+func generateClientOperation(w *gen.Writer, moduleName string, operation *spec.NamedOperation) {
 	args := []string{}
 	args = append(args, addParams(operation.HeaderParams)...)
 	if operation.Body != nil {
@@ -101,9 +103,9 @@ func generateClientOperation(w *gen.Writer, operation spec.NamedOperation) {
 
 	httpMethod := casee.ToPascalCase(operation.Endpoint.Method)
 
-	addParamsWriting(w, operation.Endpoint.UrlParams, "url_params")
-	addParamsWriting(w, operation.QueryParams, "query")
-	addParamsWriting(w, operation.HeaderParams, "header")
+	addParamsWriting(w, moduleName, operation.Endpoint.UrlParams, "url_params")
+	addParamsWriting(w, moduleName, operation.QueryParams, "query")
+	addParamsWriting(w, moduleName, operation.HeaderParams, "header")
 
 	url_compose := "url = @base_uri"
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
@@ -132,7 +134,7 @@ func generateClientOperation(w *gen.Writer, operation spec.NamedOperation) {
 
 	for _, response := range operation.Responses {
 		w.Line("when '%s'", spec.HttpStatusCode(response.Name))
-		w.Line("  %s", operationResult(&operation, &response))
+		w.Line("  %s", operationResult(operation, &response))
 	}
 
 	w.Line("else")
@@ -142,11 +144,13 @@ func generateClientOperation(w *gen.Writer, operation spec.NamedOperation) {
 	w.Line("end")
 }
 
-func generateClientApiClass(w *gen.Writer, api spec.Api) {
-	w.Line("class %s < Http::BaseClient", clientClassName(api.Name))
+func generateClientApiClass(w *gen.Writer, moduleName string, api *spec.Api) {
+	w.Line("class %s < %s::BaseClient", clientClassName(api.Name), moduleName)
 	for index, operation := range api.Operations {
-		if index != 0 { w.EmptyLine() }
-		generateClientOperation(w.Indented(), operation)
+		if index != 0 {
+			w.EmptyLine()
+		}
+		generateClientOperation(w.Indented(), moduleName, &operation)
 	}
 	w.Line("end")
 }
@@ -154,18 +158,18 @@ func generateClientApiClass(w *gen.Writer, api spec.Api) {
 func addParams(params []spec.NamedParam) []string {
 	args := []string{}
 	for _, param := range params {
-		arg := param.Name.SnakeCase()+":"
+		arg := param.Name.SnakeCase() + ":"
 		if param.Default != nil {
-			arg += " "+DefaultValue(&param.Type.Definition, *param.Default)
+			arg += " " + DefaultValue(&param.Type.Definition, *param.Default)
 		}
 		args = append(args, arg)
 	}
 	return args
 }
 
-func addParamsWriting(w *gen.Writer, params []spec.NamedParam, paramsName string) {
+func addParamsWriting(w *gen.Writer, moduleName string, params []spec.NamedParam, paramsName string) {
 	if params != nil && len(params) > 0 {
-		w.Line("%s = Http::StringParams.new", paramsName)
+		w.Line("%s = %s::StringParams.new", paramsName, moduleName)
 		for _, p := range params {
 			w.Line("%s.set('%s', %s, %s)", paramsName, p.Name.Source, RubyType(&p.Type.Definition), p.Name.SnakeCase())
 		}

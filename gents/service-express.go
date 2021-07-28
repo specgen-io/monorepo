@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+var express = "express"
+
 func generateExpressSpecRouter(specification *spec.Spec, generatePath string) *gen.TextFile {
 	w := NewTsWriter()
 	w.Line("import express from 'express'")
