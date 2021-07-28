@@ -43,7 +43,7 @@ public class Jsoner {
 
 	public static <T> String serialize(ObjectMapper objectMapper, T data) throws IOException {
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		objectMapper.registerModule(new JSR310Module())
+		objectMapper.registerModule(new JavaTimeModule())
 			.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
 			.writeValue(byteArrayOutputStream, data);
 
