@@ -12,7 +12,7 @@ var express = "express"
 
 func generateExpressSpecRouter(specification *spec.Spec, generatePath string) *gen.TextFile {
 	w := NewTsWriter()
-	w.Line("import express from 'express'")
+	w.Line("import {Router} from 'express'")
 	for _, version := range specification.Versions {
 		w.Line("import * as %s from './%s'", versionModule(&version, "services"), versionFilename(&version, "services", ""))
 		w.Line("import * as %s from './%s'", versionModule(&version, "routing"), versionFilename(&version, "routing", ""))
@@ -26,8 +26,8 @@ func generateExpressSpecRouter(specification *spec.Spec, generatePath string) *g
 	}
 
 	w.EmptyLine()
-	w.Line("export let specRouter = (%s): express.Router => {", strings.Join(routerParams, ", "))
-	w.Line("  let router = express.Router()")
+	w.Line("export let specRouter = (%s) => {", strings.Join(routerParams, ", "))
+	w.Line("  let router = Router()")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
 			w.Line("  router.use('%s', %s.%s(%s))", versionUrl(&version), versionModule(&version, "routing"), apiRouterName(&api), apiServiceParamName(&api))
@@ -59,7 +59,7 @@ func apiServiceParamName(api *spec.Api) string {
 func generateExpressVersionRouting(version *spec.Version, validation string, generatePath string) *gen.TextFile {
 	w := NewTsWriter()
 
-	w.Line("import express from 'express'")
+	w.Line("import {Router} from 'express'")
 	w.Line("import {Request, Response} from 'express'")
 	w.Line(importEncoding(validation))
 	w.Line("import * as %s from './%s'", modelsPackage, versionFilename(version, "models", ""))
@@ -85,8 +85,8 @@ func apiRouterName(api *spec.Api) string {
 
 func generateExpressApiRouting(w *gen.Writer, api *spec.Api, validation string) {
 	w.EmptyLine()
-	w.Line("export let %s = (service: services.%s): express.Router => {", apiRouterName(api), serviceInterfaceName(api))
-	w.Line("  let router = express.Router()")
+	w.Line("export let %s = (service: services.%s) => {", apiRouterName(api), serviceInterfaceName(api))
+	w.Line("  let router = Router()")
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		generateExpressOperationRouting(w.Indented(), &operation, validation)
@@ -106,11 +106,7 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 
 func generateExpressOperationRouting(w *gen.Writer, operation *spec.NamedOperation, validation string) {
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
-	w.Line("  try {")
-	generateExpressOperationRoutingCode(w.IndentedWith(2), operation, validation)
-	w.Line("  } catch (error) {")
-	w.Line("    response.status(500).send()")
-	w.Line("  }")
+	generateExpressOperationRoutingCode(w.Indented(), operation, validation)
 	w.Line("})")
 }
 
@@ -152,15 +148,19 @@ func generateExpressOperationRoutingCode(w *gen.Writer, operation *spec.NamedOpe
 		w.Line("  return")
 		w.Line("}")
 	}
-	w.Line("let result = await service.%s({%s})", operation.Name.CamelCase(), strings.Join(apiCallParams, ", "))
-	w.Line("switch (result.status) {")
+	w.Line("try {")
+	w.Line("  let result = await service.%s({%s})", operation.Name.CamelCase(), strings.Join(apiCallParams, ", "))
+	w.Line("  switch (result.status) {")
 	for _, response := range operation.Responses {
-		w.Line("  case '%s':", response.Name.FlatCase())
+		w.Line("    case '%s':", response.Name.FlatCase())
 		responseBody := ".send()"
 		if !response.Type.Definition.IsEmpty() {
 			responseBody = fmt.Sprintf(".type('json').send(JSON.stringify(t.encode(%s.%s, result.data)))", modelsPackage, runtimeType(validation, &response.Type.Definition))
 		}
-		w.Line("    response.status(%s)%s", spec.HttpStatusCode(response.Name), responseBody)
+		w.Line("      response.status(%s)%s", spec.HttpStatusCode(response.Name), responseBody)
 	}
+	w.Line("  }")
+	w.Line("} catch (error) {")
+	w.Line("  response.status(500).send()")
 	w.Line("}")
 }
