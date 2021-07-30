@@ -61,3 +61,16 @@ func generateSpecRouter(specification *spec.Spec, server string, generatePath st
 	}
 	panic(fmt.Sprintf("Unknown server: %s", server))
 }
+
+func apiRouterName(api *spec.Api) string {
+	return api.Name.CamelCase() + "Router"
+}
+
+func apiServiceParamName(api *spec.Api) string {
+	version := api.Apis.Version
+	paramName := api.Name.CamelCase() + "Service"
+	if version.Version.Source != "" {
+		paramName = paramName + version.Version.PascalCase()
+	}
+	return paramName
+}

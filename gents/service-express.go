@@ -30,7 +30,7 @@ func generateExpressSpecRouter(specification *spec.Spec, generatePath string) *g
 	w.Line("  let router = Router()")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			w.Line("  router.use('%s', %s.%s(%s))", versionUrl(&version), versionModule(&version, "routing"), apiRouterName(&api), apiServiceParamName(&api))
+			w.Line("  router.use('%s', %s.%s(%s))", expressVersionUrl(&version), versionModule(&version, "routing"), apiRouterName(&api), apiServiceParamName(&api))
 		}
 	}
 	w.Line("  return router")
@@ -39,21 +39,12 @@ func generateExpressSpecRouter(specification *spec.Spec, generatePath string) *g
 	return &gen.TextFile{filepath.Join(generatePath, "spec_router.ts"), w.String()}
 }
 
-func versionUrl(version *spec.Version) string {
+func expressVersionUrl(version *spec.Version) string {
 	url := version.Http.GetUrl()
 	if url == "" {
 		return "/"
 	}
 	return url
-}
-
-func apiServiceParamName(api *spec.Api) string {
-	version := api.Apis.Version
-	paramName := api.Name.CamelCase() + "Service"
-	if version.Version.Source != "" {
-		paramName = paramName + version.Version.PascalCase()
-	}
-	return paramName
 }
 
 func generateExpressVersionRouting(version *spec.Version, validation string, generatePath string) *gen.TextFile {
@@ -79,10 +70,6 @@ func generateExpressVersionRouting(version *spec.Version, validation string, gen
 	return &gen.TextFile{filepath.Join(generatePath, filename), w.String()}
 }
 
-func apiRouterName(api *spec.Api) string {
-	return api.Name.CamelCase() + "Router"
-}
-
 func generateExpressApiRouting(w *gen.Writer, api *spec.Api, validation string) {
 	w.EmptyLine()
 	w.Line("export let %s = (service: services.%s) => {", apiRouterName(api), serviceInterfaceName(api))
@@ -106,11 +93,7 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 
 func generateExpressOperationRouting(w *gen.Writer, operation *spec.NamedOperation, validation string) {
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
-	generateExpressOperationRoutingCode(w.Indented(), operation, validation)
-	w.Line("})")
-}
-
-func generateExpressOperationRoutingCode(w *gen.Writer, operation *spec.NamedOperation, validation string) {
+	w.Indent()
 	apiCallParams := []string{}
 
 	if operation.Body != nil || len(operation.Endpoint.UrlParams) > 0 || len(operation.HeaderParams) > 0 || len(operation.QueryParams) > 0 {
@@ -163,4 +146,6 @@ func generateExpressOperationRoutingCode(w *gen.Writer, operation *spec.NamedOpe
 	w.Line("} catch (error) {")
 	w.Line("  response.status(500).send()")
 	w.Line("}")
+	w.Unindent()
+	w.Line("})")
 }
