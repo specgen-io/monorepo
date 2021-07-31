@@ -68,9 +68,18 @@ func apiRouterName(api *spec.Api) string {
 
 func apiServiceParamName(api *spec.Api) string {
 	version := api.Apis.Version
-	paramName := api.Name.CamelCase() + "Service"
+	name := api.Name.CamelCase() + "Service"
 	if version.Version.Source != "" {
-		paramName = paramName + version.Version.PascalCase()
+		name = name + version.Version.PascalCase()
 	}
-	return paramName
+	return name
+}
+
+func apiVersionedRouterName(api *spec.Api) string {
+	version := api.Apis.Version
+	name := api.Name.CamelCase() + "Router"
+	if version.Version.Source != "" {
+		name = name + version.Version.PascalCase()
+	}
+	return name
 }
