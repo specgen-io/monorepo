@@ -12,6 +12,9 @@ const GeneratePathDescription = "Path to generate source code into"
 const ServicesPath = "services-path"
 const ServicesPathDescription = "Path to scaffold services code"
 
+const TsServer = "server"
+const TsServerDescription = "TypeScript server library: express, koa"
+
 const Validation = "validation"
 const ValidationDescription = "TypeScript validation library: superstruct, io-ts"
 
