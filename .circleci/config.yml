@@ -148,6 +148,12 @@ jobs:
               echo "Will not release - not running on main branch"
             fi
 
+  build-complete:
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - run: echo "Build is complete!!!"
+
 commands:
   setup-sonatype-sbt:
     steps:
@@ -206,135 +212,45 @@ workflows:
           context: specgen
           requires:
             - build-specgen
-      - circleci/run-pipeline-workflow:
-          name: test-service-go
-          repository: specgen-io/test-service-go
-          workflow-name: build-test
-          branch: << pipeline.parameters.test-branch >>
-          pipeline-attempts: 30
-          context: specgen
-          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+      - build-complete:
           requires:
             - build-sbt-specgen
             - build-gem-specgen
             - build-npm-specgen
+      - circleci/start-pipeline:
+          name: test-models
+          repository: specgen-io/test-models
+          branch: << pipeline.parameters.test-branch >>
+          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          context: specgen
+          requires:
+            - build-complete
           filters:
             branches:
               only:
                 - main
                 - /v.*/
       - circleci/start-pipeline:
-          name: test-service-play
-          repository: specgen-io/test-service-play
+          name: test-clients
+          repository: specgen-io/test-clients
           branch: << pipeline.parameters.test-branch >>
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
           requires:
-            - test-service-go
+            - build-complete
           filters:
             branches:
               only:
                 - main
                 - /v.*/
       - circleci/start-pipeline:
-          name: test-service-express
-          repository: specgen-io/test-service-express
+          name: test-services
+          repository: specgen-io/test-services
           branch: << pipeline.parameters.test-branch >>
           pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
           context: specgen
           requires:
-            - test-service-go
-          filters:
-            branches:
-              only:
-                - main
-                - /v.*/
-      - circleci/start-pipeline:
-          name: test-client-ruby
-          repository: specgen-io/test-client-ruby
-          branch: << pipeline.parameters.test-branch >>
-          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
-          context: specgen
-          requires:
-            - test-service-go
-          filters:
-            branches:
-              only:
-                - main
-                - /v.*/
-      - circleci/start-pipeline:
-          name: test-client-go
-          repository: specgen-io/test-client-go
-          branch: << pipeline.parameters.test-branch >>
-          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
-          context: specgen
-          requires:
-            - test-service-go
-          filters:
-            branches:
-              only:
-                - main
-                - /v.*/
-      - circleci/start-pipeline:
-          name: test-models-ruby
-          repository: specgen-io/test-models-ruby
-          branch: << pipeline.parameters.test-branch >>
-          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
-          context: specgen
-          requires:
-            - build-gem-specgen
-          filters:
-            branches:
-              only:
-                - main
-                - /v.*/
-      - circleci/start-pipeline:
-          name: test-client-axios
-          repository: specgen-io/test-client-axios
-          branch: << pipeline.parameters.test-branch >>
-          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
-          context: specgen
-          requires:
-            - test-service-go
-          filters:
-            branches:
-              only:
-                - main
-                - /v.*/
-      - circleci/start-pipeline:
-          name: test-models-circe
-          repository: specgen-io/test-models-circe
-          branch: << pipeline.parameters.test-branch >>
-          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
-          context: specgen
-          requires:
-            - build-sbt-specgen
-          filters:
-            branches:
-              only:
-                - main
-                - /v.*/
-      - circleci/start-pipeline:
-          name: test-models-go
-          repository: specgen-io/test-models-go
-          branch: << pipeline.parameters.test-branch >>
-          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
-          context: specgen
-          requires:
-            - build-sbt-specgen
-          filters:
-            branches:
-              only:
-                - main
-                - /v.*/
-      - circleci/start-pipeline:
-          name: test-client-sttp
-          repository: specgen-io/test-client-sttp
-          branch: << pipeline.parameters.test-branch >>
-          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
-          context: specgen
-          requires:
-            - test-service-go
+            - build-complete
           filters:
             branches:
               only:
