@@ -2,9 +2,8 @@ package genscala
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
 	"strings"
 )
@@ -51,23 +50,24 @@ func generateClientImplementations(specification *spec.Spec, packageName string,
 }
 
 func generateClientApiImplementations(version *spec.Version, packageName string, outPath string) *gen.TextFile {
-	unit := Unit(versionedPackage(version.Version, packageName))
+	w := NewScalaWriter()
 
-	unit.
-		Import("scala.concurrent._").
-		Import("org.slf4j._").
-		Import("com.softwaremill.sttp._").
-		Import("spec.Jsoner").
-		Import("spec.ParamsTypesBindings._")
+	w.Line(`package %s`, versionedPackage(version.Version, packageName))
+	w.EmptyLine()
+	w.Line(`import scala.concurrent._`)
+	w.Line(`import org.slf4j._`)
+	w.Line(`import com.softwaremill.sttp._`)
+	w.Line(`import spec.Jsoner`)
+	w.Line(`import spec.ParamsTypesBindings._`)
 
 	for _, api := range version.Http.Apis {
-		apiTrait := generateClientApiClass(api)
-		unit.AddDeclarations(apiTrait)
+		w.EmptyLine()
+		generateClientApiClass(w, api)
 	}
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, version.Version.PascalCase()+"Client.scala"),
-		Content: unit.Code(),
+		Content: w.String(),
 	}
 }
 
@@ -81,76 +81,71 @@ func generateClientInterfaces(specification *spec.Spec, packageName string, outP
 }
 
 func generateClientApisInterfaces(version *spec.Version, packageName string, outPath string) *gen.TextFile {
-	unit := Unit(versionedPackage(version.Version, packageName))
-
-	unit.
-		Import("scala.concurrent._")
+	w := NewScalaWriter()
+	w.Line(`package %s`, versionedPackage(version.Version, packageName))
+	w.EmptyLine()
+	w.Line(`import scala.concurrent._`)
 
 	for _, api := range version.Http.Apis {
-		apiTrait := generateClientApiTrait(api)
-		unit.AddDeclarations(apiTrait)
+		w.EmptyLine()
+		generateClientApiTrait(w, api)
 	}
 
 	for _, api := range version.Http.Apis {
-		apiObject := generateApiInterfaceResponse(api, clientTraitName(api.Name))
-		unit.AddDeclarations(apiObject)
+		w.EmptyLine()
+		generateApiInterfaceResponse(w, api, clientTraitName(api.Name))
 	}
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, version.Version.PascalCase()+"Interfaces.scala"),
-		Content: unit.Code(),
+		Content: w.String(),
 	}
 }
 
-func createParams(params []spec.NamedParam, defaulted bool) []scala.Writable {
-	methodParams := []scala.Writable{}
+func createParams(params []spec.NamedParam, defaulted bool) []string {
+	methodParams := []string{}
 	for _, param := range params {
 		if !defaulted && param.Default == nil {
-			methodParams = append(methodParams, Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
+			methodParams = append(methodParams, fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
 		}
 		if defaulted && param.Default != nil {
 			defaultValue := DefaultValue(&param.Type.Definition, *param.Default)
-			methodParams = append(methodParams, Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition)).Init(Code(defaultValue)))
+			methodParams = append(methodParams, fmt.Sprintf(`%s: %s = %s`, param.Name.CamelCase(), ScalaType(&param.Type.Definition), defaultValue))
 		}
 	}
 	return methodParams
 }
 
-func createBodyParam(operation spec.NamedOperation) scala.Writable {
-	if operation.Body == nil {
-		return nil
-	}
-	return Param("body", ScalaType(&operation.Body.Type.Definition))
-}
-
-func createUrlParams(urlParams []spec.NamedParam) []scala.Writable {
-	methodParams := []scala.Writable{}
+func createUrlParams(urlParams []spec.NamedParam) []string {
+	methodParams := []string{}
 	for _, param := range urlParams {
-		methodParams = append(methodParams, Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
+		methodParams = append(methodParams, fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
 	}
 	return methodParams
 }
 
-func generateClientOperationSignature(operation spec.NamedOperation) *scala.MethodDeclaration {
-	returnType := "Future[" + responseType(operation) + "]"
-	method :=
-		Def(operation.Name.CamelCase()).Returns(returnType).
-			AddParams(createParams(operation.HeaderParams, false)...).
-			AddParams(createBodyParam(operation)).
-			AddParams(createUrlParams(operation.Endpoint.UrlParams)...).
-			AddParams(createParams(operation.QueryParams, false)...).
-			AddParams(createParams(operation.HeaderParams, true)...).
-			AddParams(createParams(operation.QueryParams, true)...)
-	return method
+func generateClientOperationSignature(operation spec.NamedOperation) string {
+	methodParams := []string{}
+	methodParams = append(methodParams, createParams(operation.HeaderParams, false)...)
+	if operation.Body != nil {
+		methodParams = append(methodParams, fmt.Sprintf(`body: %s`, ScalaType(&operation.Body.Type.Definition)))
+	}
+	methodParams = append(methodParams, createUrlParams(operation.Endpoint.UrlParams)...)
+	methodParams = append(methodParams, createParams(operation.QueryParams, false)...)
+	methodParams = append(methodParams, createParams(operation.HeaderParams, true)...)
+	methodParams = append(methodParams, createParams(operation.QueryParams, true)...)
+
+	return fmt.Sprintf(`def %s(%s): Future[%s]`, operation.Name.CamelCase(), JoinParams(methodParams), responseType(operation))
 }
 
-func generateClientApiTrait(api spec.Api) *scala.TraitDeclaration {
+func generateClientApiTrait(w *gen.Writer, api spec.Api) {
 	apiTraitName := clientTraitName(api.Name)
-	apiTrait := Trait(apiTraitName).Add(Import(apiTraitName + "._"))
+	w.Line(`trait %s {`, apiTraitName)
+	w.Line(`  import %s._`, apiTraitName)
 	for _, operation := range api.Operations {
-		apiTrait.Add(generateClientOperationSignature(operation))
+		w.Line(`  %s`, generateClientOperationSignature(operation))
 	}
-	return apiTrait
+	w.Line(`}`)
 }
 
 func clientTraitName(apiName spec.Name) string {
@@ -161,120 +156,84 @@ func clientClassName(apiName spec.Name) string {
 	return apiName.PascalCase() + "Client"
 }
 
-func addParamsWriting(params []spec.NamedParam, paramsName string) *scala.StatementsDeclaration {
-	code := Statements()
+func addParamsWriting(w *gen.Writer, params []spec.NamedParam, paramsName string) {
 	if params != nil && len(params) > 0 {
-		code.Add(Line("val %s = new StringParamsWriter()", paramsName))
+		w.Line(`val %s = new StringParamsWriter()`, paramsName)
 		for _, p := range params {
-			code.Add(Line(`%s.write("%s", %s)`, paramsName, p.Name.Source, p.Name.CamelCase()))
+			w.Line(`%s.write("%s", %s)`, paramsName, p.Name.Source, p.Name.CamelCase())
 		}
 	}
-	return code
 }
 
-func generateResponseCases(operation spec.NamedOperation) *scala.StatementsDeclaration {
-	cases := scala.Statements()
-	for _, response := range operation.Responses {
-		responseParam := ``
-		if !response.Type.Definition.IsEmpty() {
-			responseParam = fmt.Sprintf(`Jsoner.readThrowing[%s](body)`, ScalaType(&response.Type.Definition))
-		}
-		cases.Add(Line(`case %s => %s.%s(%s)`, spec.HttpStatusCode(response.Name), responseType(operation), response.Name.PascalCase(), responseParam))
-	}
-	return cases
-}
-
-func generateClientOperationImplementation(operation spec.NamedOperation) *scala.StatementsDeclaration {
+func generateClientOperationImplementation(w *gen.Writer, operation spec.NamedOperation) {
 	httpMethod := strings.ToLower(operation.Endpoint.Method)
 	url := operation.FullUrl()
 	for _, param := range operation.Endpoint.UrlParams {
 		url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), "$"+param.Name.CamelCase(), -1)
 	}
 
-	code := Statements(
-		addParamsWriting(operation.QueryParams, "query"),
-		Statements(Dynamic(func(code *scala.WritableList) {
-			if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
-				code.Add(Line(`val url = Uri.parse(baseUrl+s"%s").get.params(query.params:_*)`, url))
-			} else {
-				code.Add(Line(`val url = Uri.parse(baseUrl+s"%s").get`, url))
-			}
-		})...),
-		addParamsWriting(operation.HeaderParams, "headers"),
-		Statements(Dynamic(func(code *scala.WritableList) {
-			if operation.Body != nil {
-				code.Add(
-					Line(`val bodyJson = Jsoner.write(body)`),
-					Line(`logger.debug(s"Request to url: ${url}, body: ${bodyJson}")`),
-				)
-			} else {
-				code.Add(
-					Line(`logger.debug(s"Request to url: ${url}")`),
-				)
-			}
-		})...),
-		Line("val response: Future[Response[String]] ="),
-		Block(
-			Line("sttp"),
-			Block(
-				Line(`.%s(url)`, httpMethod),
-				Statements(Dynamic(func(code *scala.WritableList) {
-					if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
-						code.Add(
-							Line(`.headers(headers.params:_*)`),
-						)
-					}
-					if operation.Body != nil {
-						code.Add(
-							Line(`.header("Content-Type", "application/json")`),
-							Line(`.body(bodyJson)`),
-						)
-					}
-				})...),
-				Line(`.parseResponseIf { status => status < 500 }`),
-				Line(`.send()`),
-			),
-		),
-		Code(`response.map `),
-		Scope(
-			Line(`response: Response[String] =>`),
-			Block(
-				Code(`response.body match `),
-				Scope(
-					Code(`case Right(body) => `),
-					Block(
-						Line(`logger.debug(s"Response status: ${response.code}, body: ${body}")`),
-						Code(`response.code match `),
-						Scope(generateResponseCases(operation)),
-					),
-					Code(`case Left(errorData) => `),
-					Block(
-						Line(`val errorMessage = s"Request failed, status code: ${response.code}, body: ${new String(errorData)}"`),
-						Line(`logger.error(errorMessage)`),
-						Line(`throw new RuntimeException(errorMessage)`),
-					),
-				),
-			),
-		),
-	)
-	return code
+	addParamsWriting(w, operation.QueryParams, "query")
+	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
+		w.Line(`val url = Uri.parse(baseUrl+s"%s").get.params(query.params:_*)`, url)
+	} else {
+		w.Line(`val url = Uri.parse(baseUrl+s"%s").get`, url)
+	}
+
+	addParamsWriting(w, operation.HeaderParams, "headers")
+	if operation.Body != nil {
+		w.Line(`val bodyJson = Jsoner.write(body)`)
+		w.Line(`logger.debug(s"Request to url: ${url}, body: ${bodyJson}")`)
+	} else {
+		w.Line(`logger.debug(s"Request to url: ${url}")`)
+	}
+	w.Line(`val response: Future[Response[String]] =`)
+	w.Line(`  sttp`)
+	w.Line(`    .%s(url)`, httpMethod)
+
+	if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
+		w.Line(`    .headers(headers.params:_*)`)
+	}
+	if operation.Body != nil {
+		w.Line(`    .header("Content-Type", "application/json")`)
+		w.Line(`    .body(bodyJson)`)
+	}
+	w.Line(`    .parseResponseIf { status => status < 500 }`)
+	w.Line(`    .send()`)
+
+	w.Line(`response.map {`)
+	w.Line(`  response: Response[String] =>`)
+	w.Line(`    response.body match {`)
+	w.Line(`      case Right(body) =>`)
+	w.Line(`        logger.debug(s"Response status: ${response.code}, body: ${body}")`)
+	w.Line(`        response.code match {`)
+	for _, response := range operation.Responses {
+		responseParam := ``
+		if !response.Type.Definition.IsEmpty() {
+			responseParam = fmt.Sprintf(`Jsoner.readThrowing[%s](body)`, ScalaType(&response.Type.Definition))
+		}
+		w.Line(`          case %s => %s.%s(%s)`, spec.HttpStatusCode(response.Name), responseType(operation), response.Name.PascalCase(), responseParam)
+	}
+	w.Line(`        }`)
+	w.Line(`      case Left(errorData) =>`)
+	w.Line(`        val errorMessage = s"Request failed, status code: ${response.code}, body: ${new String(errorData)}"`)
+	w.Line(`        logger.error(errorMessage)`)
+	w.Line(`        throw new RuntimeException(errorMessage)`)
+	w.Line(`    }`)
+	w.Line(`}`)
 }
 
-func generateClientApiClass(api spec.Api) *scala.ClassDeclaration {
+func generateClientApiClass(w *gen.Writer, api spec.Api) {
 	apiClassName := clientClassName(api.Name)
 	apiTraitName := clientTraitName(api.Name)
-	apiClass :=
-		Class(apiClassName).Extends(apiTraitName).
-			Constructor(Constructor().
-				Param("baseUrl", "String").
-				ImplicitParam("backend", "SttpBackend[Future, Nothing]"),
-			).
-			Add(Import(apiTraitName + "._")).
-			Add(Import("ExecutionContext.Implicits.global")).
-			Add(Line("private val logger: Logger = LoggerFactory.getLogger(this.getClass)"))
+
+	w.Line(`class %s(baseUrl: String)(implicit backend: SttpBackend[Future, Nothing]) extends %s {`, apiClassName, apiTraitName)
+	w.Line(`  import %s._`, apiTraitName)
+	w.Line(`  import ExecutionContext.Implicits.global`)
+	w.Line(`  private val logger: Logger = LoggerFactory.getLogger(this.getClass)`)
 	for _, operation := range api.Operations {
-		method := generateClientOperationSignature(operation).Body(generateClientOperationImplementation(operation))
-		apiClass.Add(method)
+		w.Line(`  %s = {`, generateClientOperationSignature(operation))
+		generateClientOperationImplementation(w.IndentedWith(2), operation)
+		w.Line(`  }`)
 	}
-	return apiClass
+	w.Line(`}`)
 }

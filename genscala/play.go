@@ -2,10 +2,9 @@ package genscala
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/genopenapi"
-	"github.com/vsapronov/gopoetry/scala"
 	"path/filepath"
 	"strings"
 )
@@ -16,9 +15,9 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 		return
 	}
 
-	modelsPackage := modelsPackage(specification)
-	controllersPackage := controllersPackage(specification)
-	servicesPackage := servicesPackage(specification)
+	modelsPackage := "models"
+	controllersPackage := "controllers"
+	servicesPackage := "services"
 
 	scalaCirceFile := generateJson("spec.models", filepath.Join(generatePath, "Json.scala"))
 	scalaPlayParamsFile := generatePlayParams("spec.controllers", filepath.Join(generatePath, "PlayParamsTypesBindings.scala"))
@@ -92,243 +91,202 @@ func apiClassType(apiName spec.Name) string {
 	return apiName.PascalCase() + "Service"
 }
 
-func controllersPackage(specification *spec.Spec) string {
-	return "controllers"
-}
-
-func servicesPackage(specification *spec.Spec) string {
-	return "services"
-}
-
-func modelsPackage(specification *spec.Spec) string {
-	return "models"
-}
-
 func controllerMethodName(operation spec.NamedOperation) string {
 	return operation.Name.CamelCase()
 }
 
-func operationSignature(operation spec.NamedOperation) *scala.MethodDeclaration {
-	returnType := "Future[" + responseType(operation) + "]"
-	method := Def(controllerMethodName(operation)).Returns(returnType)
+func operationSignature(operation spec.NamedOperation) string {
+	params := []string{}
 	for _, param := range operation.HeaderParams {
-		method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
+		params = append(params, fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
 	}
 	if operation.Body != nil {
-		method.Param("body", ScalaType(&operation.Body.Type.Definition))
+		params = append(params, fmt.Sprintf(`body: %s`, ScalaType(&operation.Body.Type.Definition)))
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
+		params = append(params, fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
 	}
 	for _, param := range operation.QueryParams {
-		method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
+		params = append(params, fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
 	}
-	return method
+
+	return fmt.Sprintf(`def %s(%s): Future[%s]`, controllerMethodName(operation), JoinParams(params), responseType(operation))
 }
 
 func generateApiInterface(api spec.Api, packageName string, outPath string) *gen.TextFile {
 	version := api.Apis.Version.Version
-	unit := Unit(versionedPackage(version, packageName))
 
+	w := NewScalaWriter()
+	w.Line(`package %s`, versionedPackage(version, packageName))
 	modelsPackage := versionedPackage(version, "models")
 
-	unit.
-		Import("com.google.inject.ImplementedBy").
-		Import("scala.concurrent.Future").
-		Import(modelsPackage + "._")
+	w.EmptyLine()
+	w.Line(`import com.google.inject.ImplementedBy`)
+	w.Line(`import scala.concurrent.Future`)
+	w.Line(`import %s._`, modelsPackage)
 
 	apiTraitName := apiTraitType(api.Name)
 
-	apiTrait := generateApiInterfaceTrait(api, apiTraitName)
-	unit.AddDeclarations(apiTrait)
+	w.EmptyLine()
+	w.Line(`@ImplementedBy(classOf[%s])`, apiClassType(api.Name))
+	w.Line(`trait %s {`, apiTraitName)
+	w.Line(`  import %s._`, apiTraitName)
+	for _, operation := range api.Operations {
+		w.Line(`  %s`, operationSignature(operation))
+	}
+	w.Line(`}`)
 
-	apiObject := generateApiInterfaceResponse(api, apiTraitName)
-	unit.AddDeclarations(apiObject)
+	w.EmptyLine()
+	generateApiInterfaceResponse(w, api, apiTraitName)
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, fmt.Sprintf("%s%s.scala", apiTraitName, version.PascalCase())),
-		Content: unit.Code(),
+		Content: w.String(),
 	}
-}
-
-func generateApiInterfaceTrait(api spec.Api, apiTraitName string) *scala.TraitDeclaration {
-	apiTrait := Trait(apiTraitName).Attribute("ImplementedBy(classOf[" + apiClassType(api.Name) + "])")
-	apiTrait.Add(Import(apiTraitName + "._"))
-	for _, operation := range api.Operations {
-		apiTrait.Add(operationSignature(operation))
-	}
-	return apiTrait
 }
 
 func generateApiClass(api spec.Api, packageName string, outPath string) *gen.TextFile {
 	version := api.Apis.Version.Version
-	unit := Unit(versionedPackage(version, packageName))
+
+	w := NewScalaWriter()
+	w.Line(`package %s`, versionedPackage(version, packageName))
 
 	modelsPackage := versionedPackage(version, "models")
 
-	unit.
-		Import("javax.inject._").
-		Import("scala.concurrent._").
-		Import(modelsPackage + "._")
+	w.EmptyLine()
+	w.Line(`import javax.inject._`)
+	w.Line(`import scala.concurrent._`)
+	w.Line(`import %s._`, modelsPackage)
 
 	apiClassName := apiClassType(api.Name)
 	apiTraitName := apiTraitType(api.Name)
-	class :=
-		Class(apiClassName).Attribute("Singleton").Extends(apiTraitName).
-			Constructor(Constructor().
-				Attribute("Inject()").
-				ImplicitParam("ec", "ExecutionContext"),
-			).
-			Add(Import(apiTraitName + "._"))
+
+	w.EmptyLine()
+	w.Line(`@Singleton`)
+	w.Line(`class %s @Inject()()(implicit ec: ExecutionContext) extends %s {`, apiClassName, apiTraitName)
+	w.Line(`  import %s._`, apiTraitName)
 
 	for _, operation := range api.Operations {
-		method := operationSignature(operation).Override().BodyInline(Code("Future { ??? }"), Eol())
-		class.Add(method)
+		w.Line(`  override %s = Future { ??? }`, operationSignature(operation))
 	}
 
-	unit.AddDeclarations(class)
+	w.Line(`}`)
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, version.FlatCase(), fmt.Sprintf("%s.scala", apiClassName)),
-		Content: unit.Code(),
+		Content: w.String(),
 	}
 }
 
-func addParamsParsing(params []spec.NamedParam, paramsName string, readingFun string) *scala.StatementsDeclaration {
-	code := Statements()
+func addParamsParsing(w *gen.Writer, params []spec.NamedParam, paramsName string, readingFun string) {
 	if params != nil && len(params) > 0 {
-		code.Add(Line(`val %s = new StringParamsReader(%s)`, paramsName, readingFun))
+		w.Line(`val %s = new StringParamsReader(%s)`, paramsName, readingFun)
 		for _, param := range params {
 			paramBaseType := param.Type.Definition.BaseType()
 			method := "read"
 			if paramBaseType.Info.Model != nil && paramBaseType.Info.Model.IsEnum() {
 				method = "readEnum"
 			}
-			code.Add(Code(`val %s = %s.%s[%s]("%s")`, param.Name.CamelCase(), paramsName, method, ScalaType(paramBaseType), param.Name.Source))
+			paramLine := fmt.Sprintf(`val %s = %s.%s[%s]("%s")`, param.Name.CamelCase(), paramsName, method, ScalaType(paramBaseType), param.Name.Source)
 			if !param.Type.Definition.IsNullable() {
 				if param.Default != nil {
-					code.Add(Line(`.getOrElse(%s)`, DefaultValue(&param.Type.Definition, *param.Default)))
+					paramLine += fmt.Sprintf(`.getOrElse(%s)`, DefaultValue(&param.Type.Definition, *param.Default))
 				} else {
-					code.Add(Line(".get"))
+					paramLine += fmt.Sprintf(`.get`)
 				}
 			}
+			w.Line(paramLine)
 		}
 	}
-	return code
 }
 
 func generateApiControllers(version *spec.Version, packageName string, outPath string) *gen.TextFile {
-	unit := Unit(versionedPackage(version.Version, packageName))
-
 	modelsPackage := versionedPackage(version.Version, "models")
 	servicePackage := versionedPackage(version.Version, "services")
-	unit.
-		Import("javax.inject._").
-		Import("scala.util._").
-		Import("scala.concurrent._").
-		Import("play.api.mvc._").
-		Import("spec.controllers.ParamsTypesBindings._").
-		Import("spec.models.Jsoner").
-		Import(servicePackage + "._").
-		Import(modelsPackage + "._")
+	w := NewScalaWriter()
+	w.Line(`package %s`, versionedPackage(version.Version, packageName))
+	w.EmptyLine()
+	w.Line(`import javax.inject._`)
+	w.Line(`import scala.util._`)
+	w.Line(`import scala.concurrent._`)
+	w.Line(`import play.api.mvc._`)
+	w.Line(`import spec.controllers.ParamsTypesBindings._`)
+	w.Line(`import spec.models.Jsoner`)
+	w.Line(`import %s._`, servicePackage)
+	w.Line(`import %s._`, modelsPackage)
 
 	for _, api := range version.Http.Apis {
-		class :=
-			Class(controllerType(api.Name)).Attribute("Singleton").Extends("AbstractController(cc)").
-				Constructor(Constructor().
-					Attribute("Inject()").
-					Param("api", apiTraitType(api.Name)).
-					Param("cc", "ControllerComponents").
-					ImplicitParam("ec", "ExecutionContext"),
-				)
-
-		class.Add(Import(apiTraitType(api.Name) + "._"))
-
+		w.EmptyLine()
+		w.Line(`@Singleton`)
+		w.Line(`class %s @Inject()(api: %s, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {`, controllerType(api.Name), apiTraitType(api.Name), )
+		w.Line(`  import %s._`, apiTraitType(api.Name))
 		for _, operation := range api.Operations {
-			class.Add(generateControllerMethod(operation))
+			generateControllerMethod(w.Indented(), operation)
 		}
-		unit.AddDeclarations(class)
+		w.Line(`}`)
 	}
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, fmt.Sprintf("%sControllers.scala", version.Version.PascalCase())),
-		Content: unit.Code(),
+		Content: w.String(),
 	}
 }
 
-func generateControllerMethod(operation spec.NamedOperation) *scala.MethodDeclaration {
+func generateControllerMethod(w *gen.Writer, operation spec.NamedOperation) {
 	parseParams := getParsedOperationParams(operation)
 	allParams := getOperationCallParams(operation)
 
-	method := Def(operation.Name.CamelCase())
-
+	params := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
-		method.Param(param.Name.CamelCase(), ScalaType(&param.Type.Definition))
+		params = append(params, fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
 	}
 	for _, param := range operation.QueryParams {
-		method.Param(param.Name.Source, ScalaType(&param.Type.Definition))
+		params = append(params, fmt.Sprintf(`%s: %s`, param.Name.Source, ScalaType(&param.Type.Definition)))
 	}
 
-	method.BodyInline(
-		Statements(Dynamic(func(code *scala.WritableList) {
-			if operation.Body != nil {
-				code.Add(Code("Action(parse.byteString).async "))
-			} else {
-				code.Add(Code("Action.async "))
-			}
-		})...),
-		Scope(
-			Line("implicit request =>"),
-			Block(Dynamic(func(code *scala.WritableList) {
-				if len(parseParams) > 0 {
-					code.Add(
-						Code("val params = Try "),
-						Scope(
-							addParamsParsing(operation.HeaderParams, "header", "request.headers.get"),
-							Statements(Dynamic(func(code *scala.WritableList) {
-								if operation.Body != nil {
-									code.Add(Line("val body = Jsoner.readThrowing[%s](request.body.utf8String)", ScalaType(&operation.Body.Type.Definition)))
-								}
-							})...),
-							Line("(%s)", JoinParams(parseParams)),
-						),
-						Code("params match "),
-						Scope(
-							Line("case Failure(ex) => Future { BadRequest }"),
-							Line("case Success(params) => "),
-							Block(
-								Line("val (%s) = params", JoinParams(parseParams)),
-								Line("val result = api.%s(%s)", operation.Name.CamelCase(), JoinParams(allParams)),
-								Code("val response = result.map "),
-								Scope(
-									Dynamic(func(code *scala.WritableList) { genResponseCases(code, operation) })...,
-								),
-								Line("response.recover { case _: Exception => InternalServerError }"),
-							),
-						),
-					)
-				} else {
-					code.Add(
-						Line("val result = api.%s(%s)", operation.Name.CamelCase(), JoinParams(allParams)),
-						Code("val response = result.map "),
-						Scope(
-							Dynamic(func(code *scala.WritableList) { genResponseCases(code, operation) })...,
-						),
-						Line("response.recover { case _: Exception => InternalServerError }"),
-					)
-				}
-			})...),
-		),
-	)
-	return method
+	payload := ``
+	if operation.Body != nil {
+		payload = `(parse.byteString)`
+	}
+
+	w.Line(`def %s(%s) = Action%s.async {`, operation.Name.CamelCase(), JoinParams(params), payload)
+	w.Line(`  implicit request =>`)
+	w.IndentWith(2)
+	if len(parseParams) > 0 {
+		w.Line(`val params = Try {`)
+		addParamsParsing(w.Indented(), operation.HeaderParams, "header", "request.headers.get")
+		if operation.Body != nil {
+			w.Line(`  val body = Jsoner.readThrowing[%s](request.body.utf8String)`, ScalaType(&operation.Body.Type.Definition))
+		}
+		w.Line(`  (%s)`, JoinParams(parseParams))
+		w.Line(`}`)
+		w.Line(`params match {`)
+		w.Line(`  case Failure(ex) => Future { BadRequest }`)
+		w.Line(`  case Success(params) => `)
+		w.Line(`    val (%s) = params`, JoinParams(parseParams))
+		w.Line(`    val result = api.%s(%s)`, operation.Name.CamelCase(), JoinParams(allParams))
+		w.Line(`    val response = result.map {`)
+		genResponseCases(w.IndentedWith(3), operation)
+		w.Line(`    }`)
+		w.Line(`    response.recover { case _: Exception => InternalServerError }`)
+		w.Line(`}`)
+	} else {
+		w.Line(`val result = api.%s(%s)`, operation.Name.CamelCase(), JoinParams(allParams))
+		w.Line(`val response = result.map {`)
+		genResponseCases(w.Indented(), operation)
+		w.Line(`}`)
+		w.Line(`response.recover { case _: Exception => InternalServerError }`)
+	}
+	w.UnindentWith(2)
+	w.Line(`}`)
 }
 
-func genResponseCases(code *scala.WritableList, operation spec.NamedOperation) {
+func genResponseCases(w *gen.Writer, operation spec.NamedOperation) {
 	for _, r := range operation.Responses {
 		if !r.Type.Definition.IsEmpty() {
-			code.Add(Line("case %s.%s(body) => new Status(%s)(Jsoner.write(body))", responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name)))
+			w.Line(`case %s.%s(body) => new Status(%s)(Jsoner.write(body))`, responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name))
 		} else {
-			code.Add(Line("case %s.%s() => new Status(%s)", responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name)))
+			w.Line(`case %s.%s() => new Status(%s)`, responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name))
 		}
 	}
 }
@@ -372,73 +330,69 @@ func generateRouter(version *spec.Version, packageName string, outPath string) *
 	controllersPackage := versionedPackage(version.Version, "controllers")
 	modelsPackage := versionedPackage(version.Version, "models")
 
-	unit :=
-		Unit(packageName).
-			Import("javax.inject._").
-			Import("play.api.mvc._").
-			Import("play.api.routing._").
-			Import("play.core.routing._").
-			Import("spec.controllers.ParamsTypesBindings._").
-			Import("spec.controllers.PlayParamsTypesBindings._").
-			Import(controllersPackage + "._").
-			Import(modelsPackage + "._")
+	w := NewScalaWriter()
+	w.Line(`package %s`, packageName)
+
+	w.EmptyLine()
+	w.Line(`import javax.inject._`)
+	w.Line(`import play.api.mvc._`)
+	w.Line(`import play.api.routing._`)
+	w.Line(`import play.core.routing._`)
+	w.Line(`import spec.controllers.ParamsTypesBindings._`)
+	w.Line(`import spec.controllers.PlayParamsTypesBindings._`)
+	w.Line(`import %s._`, controllersPackage)
+	w.Line(`import %s._`, modelsPackage)
 
 	for _, api := range version.Http.Apis {
-		unit.AddDeclarations(generateApiRouter(api))
+		w.EmptyLine()
+		generateApiRouter(w, api)
 	}
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, fmt.Sprintf("%sRouters.scala", version.Version.PascalCase())),
-		Content: unit.Code(),
+		Content: w.String(),
 	}
 }
 
 func generateMainRouter(versions []spec.Version, packageName string, outPath string) *gen.TextFile {
-	unit :=
-		Unit(packageName).
-			Import("javax.inject._").
-			Import("play.api.routing._")
+	w := NewScalaWriter()
+	w.Line(`package %s`, packageName)
 
-	unit.AddDeclarations(generateSpecRouterMainClass(versions))
+	w.EmptyLine()
+	w.Line(`import javax.inject._`)
+	w.Line(`import play.api.routing._`)
+
+	generateSpecRouterMainClass(w, versions)
 
 	return &gen.TextFile{
 		Path:    filepath.Join(outPath, "SpecRouter.scala"),
-		Content: unit.Code(),
+		Content: w.String(),
 	}
 }
 
-func generateSpecRouterMainClass(versions []spec.Version) *scala.ClassDeclaration {
-	class :=
-		Class(`SpecRouter`).Extends(`SimpleRouter`).
-			Constructor(
-				Constructor().
-					Attribute(`Inject()`).
-					AddParams(Dynamic(func(code *scala.WritableList) {
-						for _, version := range versions {
-							for _, api := range version.Http.Apis {
-								apiParamName := api.Name.CamelCase() + version.Version.PascalCase()
-								apiTypeName := versionedTypeName(version.Version, routerType(api.Name))
-								code.Add(Param(apiParamName, apiTypeName))
-							}
-						}
-					})...),
-			).
-			Add(
-				Line(`def routes: Router.Routes =`),
-				Block(
-					Line(`Seq(`),
-					Block(Dynamic(func(code *scala.WritableList) {
-						for _, version := range versions {
-							for _, api := range version.Http.Apis {
-								apiParamName := api.Name.CamelCase() + version.Version.PascalCase()
-								code.Add(Line(`%s.routes,`, apiParamName))
-							}
-						}
-					})...),
-					Line(`).reduce { (r1, r2) => r1.orElse(r2) }`),
-				),
-			)
-	return class
+func generateSpecRouterMainClass(w *gen.Writer, versions []spec.Version) {
+	params := []string{}
+	for _, version := range versions {
+		for _, api := range version.Http.Apis {
+			apiParamName := api.Name.CamelCase() + version.Version.PascalCase()
+			apiTypeName := versionedTypeName(version.Version, routerType(api.Name))
+			params = append(params, fmt.Sprintf(`%s: %s`, apiParamName, apiTypeName))
+		}
+	}
+
+	w.EmptyLine()
+	w.Line(`class SpecRouter @Inject()(%s) extends SimpleRouter {`, JoinParams(params))
+
+	w.Line(`  def routes: Router.Routes =`)
+	w.Line(`    Seq(`)
+	for _, version := range versions {
+		for _, api := range version.Http.Apis {
+			apiParamName := api.Name.CamelCase() + version.Version.PascalCase()
+			w.Line(`      %s.routes,`, apiParamName)
+		}
+	}
+	w.Line(`    ).reduce { (r1, r2) => r1.orElse(r2) }`)
+	w.Line(`}`)
 }
 
 func routerType(apiName spec.Name) string {
@@ -449,80 +403,53 @@ func routeName(operationName spec.Name) string {
 	return fmt.Sprintf("route%s", operationName.PascalCase())
 }
 
-func generateApiRouter(api spec.Api) *scala.ClassDeclaration {
-	class :=
-		Class(routerType(api.Name)).Extends(`SimpleRouter`).
-			Constructor(Constructor().
-				Attribute(`Inject()`).
-				Param(`Action`, `DefaultActionBuilder`).
-				Param(`controller`, controllerType(api.Name)),
-			)
+func generateApiRouter(w *gen.Writer, api spec.Api) {
+	w.Line(`class %s @Inject()(Action: DefaultActionBuilder, controller: %s) extends SimpleRouter {`, routerType(api.Name), controllerType(api.Name))
 
 	for _, operation := range api.Operations {
-		class.Add(
-			Line(`lazy val %s = Route("%s", PathPattern(List(`, routeName(operation.Name), operation.Endpoint.Method),
-			Block(Dynamic(func(code *scala.WritableList) {
-				reminder := operation.FullUrl()
-				for _, param := range operation.Endpoint.UrlParams {
-					parts := strings.Split(reminder, spec.UrlParamStr(param.Name.Source))
-					code.Add(Line(`StaticPart("%s"),`, parts[0]))
-					code.Add(Line(`DynamicPart("%s", """[^/]+""", true),`, param.Name.Source))
-					reminder = parts[1]
-				}
-				if reminder != `` {
-					code.Add(Line(`StaticPart("%s"),`, reminder))
-				}
-			})...),
-			Line(`)))`),
-		)
+		w.Line(`  lazy val %s = Route("%s", PathPattern(List(`, routeName(operation.Name), operation.Endpoint.Method)
+		reminder := operation.FullUrl()
+		for _, param := range operation.Endpoint.UrlParams {
+			parts := strings.Split(reminder, spec.UrlParamStr(param.Name.Source))
+			w.Line(`    StaticPart("%s"),`, parts[0])
+			w.Line(`    DynamicPart("%s", """[^/]+""", true),`, param.Name.Source)
+			reminder = parts[1]
+		}
+		if reminder != `` {
+			w.Line(`    StaticPart("%s"),`, reminder)
+		}
+		w.Line(`  )))`)
 	}
 
-	class.Add(Code(`def routes: Router.Routes = `))
-
-	cases := Scope()
+	w.Line(`  def routes: Router.Routes = {`)
 	for _, operation := range api.Operations {
 		arguments := JoinParams(getControllerParams(operation))
-		cases.Add(
-			Line(`case %s(params@_) =>`, routeName(operation.Name)),
-			Block(Dynamic(func(code *scala.WritableList) {
-				if len(arguments) > 0 {
-					code.Add(
-						Line(`val arguments =`),
-						Block(
-							Code(`for `),
-							Scope(Dynamic(func(code *scala.WritableList) {
-								for _, p := range operation.Endpoint.UrlParams {
-									code.Add(
-										Line(`%s <- params.fromPath[%s]("%s").value`, p.Name.CamelCase(), ScalaType(&p.Type.Definition), p.Name.Source),
-									)
-								}
-								for _, p := range operation.QueryParams {
-									defaultValue := `None`
-									if p.Default != nil {
-										defaultValue = fmt.Sprintf(`Some(%s)`, DefaultValue(&p.Type.Definition, *p.Default))
-									}
-									code.Add(Line(`%s <- params.fromQuery[%s]("%s", %s).value`, p.Name.CamelCase(), ScalaType(&p.Type.Definition), p.Name.Source, defaultValue))
-								}
-							})...),
-							Line(`yield (%s)`, arguments),
-						),
-						Code(`arguments match`),
-						Scope(
-							Line(`case Left(_) => Action { Results.BadRequest }`),
-							Line(`case Right((%s)) => controller.%s(%s)`, arguments, controllerMethodName(operation), arguments),
-						),
-					)
-				} else {
-					code.Add(
-						Line(`controller.%s(%s)`, controllerMethodName(operation), arguments),
-					)
+		w.Line(`    case %s(params@_) =>`, routeName(operation.Name))
+		if len(arguments) > 0 {
+			w.Line(`      val arguments =`)
+			w.Line(`        for {`)
+			for _, p := range operation.Endpoint.UrlParams {
+				w.Line(`          %s <- params.fromPath[%s]("%s").value`, p.Name.CamelCase(), ScalaType(&p.Type.Definition), p.Name.Source)
+			}
+			for _, p := range operation.QueryParams {
+				defaultValue := `None`
+				if p.Default != nil {
+					defaultValue = fmt.Sprintf(`Some(%s)`, DefaultValue(&p.Type.Definition, *p.Default))
 				}
-			})...),
-		)
+				w.Line(`          %s <- params.fromQuery[%s]("%s", %s).value`, p.Name.CamelCase(), ScalaType(&p.Type.Definition), p.Name.Source, defaultValue)
+			}
+			w.Line(`        }`)
+			w.Line(`        yield (%s)`, arguments)
+			w.Line(`      arguments match{`)
+			w.Line(`        case Left(_) => Action { Results.BadRequest }`)
+			w.Line(`        case Right((%s)) => controller.%s(%s)`, arguments, controllerMethodName(operation), arguments)
+			w.Line(`      }`)
+		} else {
+			w.Line(`      controller.%s(%s)`, controllerMethodName(operation), arguments)
+		}
 	}
-	class.Add(cases)
-
-	return class
+	w.Line(`  }`)
+	w.Line(`}`)
 }
 
 func getControllerParams(operation spec.NamedOperation) []string {
