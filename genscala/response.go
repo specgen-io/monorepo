@@ -1,39 +1,32 @@
 package genscala
 
 import (
-	spec "github.com/specgen-io/spec"
-	"github.com/vsapronov/gopoetry/scala"
+	"github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/v2/gen"
 )
 
 func responseType(operation spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Response"
 }
 
-func generateResponse(responseTypeName string, responses spec.Responses) (*scala.TraitDeclaration, *scala.ClassDeclaration) {
-	trait := scala.Trait(responseTypeName).Sealed()
-
-	object := scala.Object(responseTypeName)
-
+func generateResponse(w *gen.Writer, responseTypeName string, responses spec.Responses) {
+	w.Line(`sealed trait %s`, responseTypeName)
+	w.Line(`object %s {`, responseTypeName)
 	for _, response := range responses {
-		var bodyParam scala.Writable = nil
+		var bodyParam = ""
 		if !response.Type.Definition.IsEmpty() {
-			bodyParam = Param(`body`, ScalaType(&response.Type.Definition))
+			bodyParam = `body: `+ ScalaType(&response.Type.Definition)
 		}
-		responseClass :=
-			CaseClass(response.Name.PascalCase()).Extends(responseTypeName).Constructor(Constructor().AddParams(bodyParam))
-
-		object.Add(responseClass)
+		w.Line(`  case class %s(%s) extends %s`, response.Name.PascalCase(), bodyParam, responseTypeName)
 	}
-
-	return trait, object
+	w.Line(`}`)
 }
 
-func generateApiInterfaceResponse(api spec.Api, apiTraitName string) *scala.ClassDeclaration {
-	apiObject := Object(apiTraitName)
+func generateApiInterfaceResponse(w *gen.Writer, api spec.Api, apiTraitName string) {
+	w.Line(`object %s {`, apiTraitName)
 	for _, operation := range api.Operations {
 		responseTypeName := responseType(operation)
-		trait, object := generateResponse(responseTypeName, operation.Responses)
-		apiObject.Add(trait, object)
+		generateResponse(w.Indented(), responseTypeName, operation.Responses)
 	}
-	return apiObject
+	w.Line(`}`)
 }
