@@ -237,6 +237,28 @@ commands:
                   <password>$JFROG_PASS</password>
                 </server>
               </servers>
+              <profiles>
+                <profile>
+                  <id>artifactory</id>
+                  <repositories>
+                    <repository>
+                      <id>artifactory</id>
+                      <name>maven</name>
+                      <url>https://<<parameters.jfrog-server-url>>/artifactory/<<parameters.repo-name>></url>
+                    </repository>
+                  </repositories>
+                  <pluginRepositories>
+                    <pluginRepository>
+                      <id>artifactory</id>
+                      <name>maven</name>
+                      <url>https://specgen.jfrog.io/artifactory/maven</url>
+                    </pluginRepository>
+                  </pluginRepositories>
+                  <activation>
+                    <activeByDefault>true</activeByDefault>
+                  </activation>
+                </profile>
+              </profiles>
             </settings>
             END
   setup-rubygems:
@@ -278,6 +300,11 @@ workflows:
             - build-maven-specgen
             - build-gem-specgen
             - build-npm-specgen
+          filters:
+            branches:
+              only:
+                - main
+                - /v.*/
       - circleci/start-pipeline:
           name: test-models
           repository: specgen-io/test-models
@@ -286,11 +313,6 @@ workflows:
           context: specgen
           requires:
             - build-complete
-          filters:
-            branches:
-              only:
-                - main
-                - /v.*/
       - circleci/start-pipeline:
           name: test-clients
           repository: specgen-io/test-clients
@@ -299,11 +321,6 @@ workflows:
           context: specgen
           requires:
             - build-complete
-          filters:
-            branches:
-              only:
-                - main
-                - /v.*/
       - circleci/start-pipeline:
           name: test-services
           repository: specgen-io/test-services
@@ -312,15 +329,10 @@ workflows:
           context: specgen
           requires:
             - build-complete
-          filters:
-            branches:
-              only:
-                - main
-                - /v.*/
       - approve-sonatype:
           type: approval
           requires:
-            - build-sbt-specgen
+            - build-complete
       - build-sbt-specgen-sonatype:
           context: specgen
           requires:
