@@ -168,7 +168,6 @@ jobs:
       - run:
           name: Deploy Maven plugin
           command: |
-            cd ./plugins/maven-specgen
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/maven-specgen
               mvn deploy -Dproject.version=<< pipeline.parameters.specgen-version >> -Dartifactory=true
