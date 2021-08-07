@@ -155,6 +155,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: ./plugins/maven-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
       - setup-artifactory-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
@@ -174,6 +176,11 @@ jobs:
             else
               echo "Will not release - not running on main branch"
             fi
+      - save_cache:
+          key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
+          paths:
+            - ~/.ivy2
+            - ~/.m2
 
   build-complete:
     docker:
