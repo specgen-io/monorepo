@@ -139,11 +139,37 @@ jobs:
       - run:
           name: npm publish package
           command: |
-            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then          
+            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/npm-specgen
               npm version << pipeline.parameters.specgen-version >>
               npm install
               npm publish
+            else
+              echo "Will not release - not running on main branch"
+            fi
+
+  build-maven-specgen:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/npm-specgen
+      - setup-artifactory-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - run:
+          name: Build Maven plugin
+          command: |
+            cd ./plugins/maven-specgen
+            mvn clean install
+      - run:
+          name: Publish SBT plugin
+          command: |
+            mvn deploy -Dproject.version=0.0.6 -Dartifactory=true
+            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
+              cd ./plugins/maven-specgen
+              mvn deploy -Dproject.version=0.0.6 -Dartifactory=true
             else
               echo "Will not release - not running on main branch"
             fi
@@ -183,6 +209,30 @@ commands:
           command: |
             mkdir -p ~/.sbt/gpg
             (echo "$SONATYPE_GPG_SECRET_KEY" | base64 -d) > ~/.sbt/gpg/secring.asc
+  setup-artifactory-maven:
+    parameters:
+      jfrog-server-url:
+        type: string
+      repo-name:
+        type: string
+    steps:
+      - run:
+          name: Setup Artifactory for SBT
+          command: |
+            mkdir -p ~/.sbt/1.0
+            tee > ~/.m2/settings.xml \<<END
+            <?xml version="1.0" encoding="UTF-8"?>
+            <settings xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 http://maven.apache.org/xsd/settings-1.2.0.xsd" xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <servers>
+                <server>
+                  <id>artifactory</id>
+                  <username>$JFROG_USER</username>
+                  <password>$JFROG_PASS</password>
+                </server>
+              </servers>
+            </settings>
+            END
   setup-rubygems:
     steps:
       - run:
@@ -205,6 +255,10 @@ workflows:
           requires:
             - build-specgen
       - build-sbt-specgen:
+          context: specgen
+          requires:
+            - build-specgen
+      - build-maven-specgen:
           context: specgen
           requires:
             - build-specgen
