@@ -169,7 +169,6 @@ jobs:
           name: Deploy Maven plugin
           command: |
             cd ./plugins/maven-specgen
-            mvn deploy -Dproject.version=<< pipeline.parameters.specgen-version >> -Dartifactory=true
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/maven-specgen
               mvn deploy -Dproject.version=<< pipeline.parameters.specgen-version >> -Dartifactory=true
@@ -277,6 +276,7 @@ workflows:
       - build-complete:
           requires:
             - build-sbt-specgen
+            - build-maven-specgen
             - build-gem-specgen
             - build-npm-specgen
       - circleci/start-pipeline:
