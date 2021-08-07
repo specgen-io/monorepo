@@ -162,10 +162,11 @@ jobs:
           name: Build Maven plugin
           command: |
             cd ./plugins/maven-specgen
-            mvn clean install
+            mvn clean install -Dproject.version=0.0.6
       - run:
           name: Publish SBT plugin
           command: |
+            cd ./plugins/maven-specgen
             mvn deploy -Dproject.version=0.0.6 -Dartifactory=true
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/maven-specgen
