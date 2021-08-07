@@ -168,8 +168,8 @@ jobs:
       - run:
           name: Deploy Maven plugin
           command: |
-            mvn deploy -Dproject.version=<< pipeline.parameters.specgen-version >> -Dartifactory=true
             cd ./plugins/maven-specgen
+            mvn deploy -Dproject.version=<< pipeline.parameters.specgen-version >> -Dartifactory=true
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/maven-specgen
               mvn deploy -Dproject.version=<< pipeline.parameters.specgen-version >> -Dartifactory=true
