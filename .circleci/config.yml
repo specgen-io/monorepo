@@ -219,7 +219,7 @@ commands:
       - run:
           name: Setup Artifactory for SBT
           command: |
-            mkdir -p ~/.sbt/1.0
+            mkdir -p ~/.m2
             tee > ~/.m2/settings.xml \<<END
             <?xml version="1.0" encoding="UTF-8"?>
             <settings xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 http://maven.apache.org/xsd/settings-1.2.0.xsd" xmlns="http://maven.apache.org/SETTINGS/1.2.0"
