@@ -21,7 +21,7 @@
     </profiles>
 
     <groupId>io.specgen</groupId>
-    <artifactId>maven-specgen-plugin</artifactId>
+    <artifactId>specgen-maven-plugin</artifactId>
     <version>${project.version}</version>
     <packaging>maven-plugin</packaging>
 
