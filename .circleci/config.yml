@@ -154,7 +154,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: ./plugins/npm-specgen
+          at: ./plugins/maven-specgen/src/main/resources
       - setup-artifactory-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
@@ -162,15 +162,15 @@ jobs:
           name: Build Maven plugin
           command: |
             cd ./plugins/maven-specgen
-            mvn clean install -Dproject.version=0.0.6
+            mvn clean install -Dproject.version=<< pipeline.parameters.specgen-version >>
       - run:
-          name: Publish SBT plugin
+          name: Deploy Maven plugin
           command: |
+            mvn deploy -Dproject.version=<< pipeline.parameters.specgen-version >> -Dartifactory=true
             cd ./plugins/maven-specgen
-            mvn deploy -Dproject.version=0.0.6 -Dartifactory=true
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/maven-specgen
-              mvn deploy -Dproject.version=0.0.6 -Dartifactory=true
+              mvn deploy -Dproject.version=<< pipeline.parameters.specgen-version >> -Dartifactory=true
             else
               echo "Will not release - not running on main branch"
             fi
@@ -218,7 +218,7 @@ commands:
         type: string
     steps:
       - run:
-          name: Setup Artifactory for SBT
+          name: Setup Artifactory for Maven
           command: |
             mkdir -p ~/.m2
             tee > ~/.m2/settings.xml \<<END
