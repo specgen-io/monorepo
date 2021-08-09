@@ -24,7 +24,7 @@ func generateModels(specification *spec.Spec, generatePath string) []gen.TextFil
 		versionPath := filepath.Join(generatePath, versionedFolder(version.Version, "spec"))
 		versionPackageName := versionedPackage(specification, version.Version, "spec")
 		files = append(files, generateVersionModels(&version, versionPackageName, versionPath)...)
-		files = append(files, *generateJsoner(fmt.Sprintf("%s.models", validSpecificationName(specification)), filepath.Join(generatePath, "Jsoner.java")))
+		files = append(files, *generateJsoner(fmt.Sprintf("%s.models", specification.Name.SnakeCase()), filepath.Join(generatePath, "Jsoner.java")))
 	}
 	return files
 }
@@ -81,8 +81,6 @@ func generateImports(w *gen.Writer) {
 	w.Line(`import java.math.BigDecimal;`)
 	w.Line(`import com.fasterxml.jackson.databind.JsonNode;`)
 	w.Line(`import com.fasterxml.jackson.annotation.*;`)
-	w.Line(`import com.fasterxml.jackson.annotation.JsonTypeInfo;`)
-	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes;`)
 	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
 }
 
@@ -181,7 +179,12 @@ func generateOneOfModels(model *spec.NamedModel, packageName string, generatePat
 	w.EmptyLine()
 	w.Line(`@JsonTypeInfo(`)
 	w.Line(`  use = JsonTypeInfo.Id.NAME,`)
-	w.Line(`  include = JsonTypeInfo.As.WRAPPER_OBJECT)`)
+	if model.OneOf.Discriminator != nil {
+		w.Line(`  include = JsonTypeInfo.As.PROPERTY`)
+	} else {
+		w.Line(`  include = JsonTypeInfo.As.WRAPPER_OBJECT`)
+	}
+	w.Line(`)`)
 	w.Line(`@JsonSubTypes({`)
 	for _, item := range model.OneOf.Items {
 		w.Line(`  @Type(value = %s%s.class, name = "%s"),`, model.Name.PascalCase(), item.Name.PascalCase(), item.Name.Source)
