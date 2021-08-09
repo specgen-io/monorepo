@@ -16,7 +16,7 @@ func generateSuperstructParams(w *gen.Writer, typeName string, isHeader bool, pa
 			if isHeader {
 				paramName = strings.ToLower(param.Name.Source)
 			}
-			paramName = isTsIdentifier(paramName)
+			paramName = tsIdentifier(paramName)
 			w.Line("  %s: %s,", paramName, ParamSuperstructTypeDefaulted(&param))
 		}
 		w.Line("})")
