@@ -57,13 +57,12 @@ func generateServiceParams(w *gen.Writer, params []spec.NamedParam, isHeader boo
 		if isHeader {
 			paramName = strings.ToLower(param.Name.Source)
 		}
-		paramName = isTsIdentifier(paramName)
-		addServiceParam(w, paramName, &param.Type.Definition)
+		addServiceParam(w, tsIdentifier(paramName), &param.Type.Definition)
 	}
 }
 
-func isTsIdentifier(name string) string {
-	if strings.Contains(name, "-") {
+func tsIdentifier(name string) string {
+	if !checkFormat(tsIdentifierFormat, name) {
 		return fmt.Sprintf("'%s'", name)
 	}
 	return name

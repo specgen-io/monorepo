@@ -16,8 +16,7 @@ func generateIoTsParams(w *gen.Writer, typeName string, isHeader bool, params []
 			if isHeader {
 				paramName = strings.ToLower(param.Name.Source)
 			}
-			paramName = isTsIdentifier(paramName)
-			w.Line("  %s: %s,", paramName, ParamIoTsTypeDefaulted(&param))
+			w.Line("  %s: %s,", tsIdentifier(paramName), ParamIoTsTypeDefaulted(&param))
 		}
 		w.Line("})")
 		w.EmptyLine()
