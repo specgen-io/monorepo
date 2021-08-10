@@ -194,20 +194,20 @@ func generateOneOfModels(model *spec.NamedModel, packageName string, generatePat
 	w.Line(`}`)
 
 	for _, item := range model.OneOf.Items {
-		files = append(files, *generateOneOfModel(item, model, packageName, generatePath))
+		files = append(files, *generateOneOfImplementation(item, model, packageName, generatePath))
 	}
 	files = append(files, gen.TextFile{Path: filepath.Join(generatePath, fmt.Sprintf("%s.java", model.Name.Source)), Content: w.String()})
 
 	return files
 }
 
-func generateOneOfModel(item spec.NamedDefinition, model *spec.NamedModel, packageName string, generatePath string) *gen.TextFile {
+func generateOneOfImplementation(item spec.NamedDefinition, model *spec.NamedModel, packageName string, generatePath string) *gen.TextFile {
 	w := NewJavaWriter()
 	w.Line("package %s;", packageName)
 	w.EmptyLine()
 	generateImports(w)
 	w.EmptyLine()
-	w.Line(`  public class %s%s implements %s {`, model.Name.PascalCase(), item.Name.PascalCase(), model.Name.PascalCase())
+	w.Line(`public class %s%s implements %s {`, model.Name.PascalCase(), item.Name.PascalCase(), model.Name.PascalCase())
 	w.Line(`  @JsonUnwrapped`)
 	w.Line(`  public %s data;`, item.Type.Definition.Name)
 	w.EmptyLine()
