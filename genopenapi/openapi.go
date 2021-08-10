@@ -33,9 +33,11 @@ func GenerateOpenapi(spec *spec.Spec, outFile string) *gen.TextFile {
 
 func generateSpecification(spec *spec.Spec) *YamlMap {
 	info := Map()
+	title := spec.Name.Source
 	if spec.Title != nil {
-		info.Set("title", spec.Title)
+		title = *spec.Title
 	}
+	info.Set("title", title)
 	if spec.Description != nil {
 		info.Set("description", spec.Description)
 	}
@@ -111,7 +113,8 @@ func generateOperation(o *spec.NamedOperation) *YamlMap {
 	}
 
 	responses := Map()
-	for _, r := range o.Operation.Responses {
+	allResponses := addSpecialResponses(&o.Operation)
+	for _, r := range allResponses {
 		responses.Set(spec.HttpStatusCode(r.Name), generateResponse(r.Definition))
 	}
 	operation.Set("responses", responses)
