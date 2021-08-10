@@ -57,8 +57,7 @@ func generateServiceParams(w *gen.Writer, params []spec.NamedParam, isHeader boo
 		if isHeader {
 			paramName = strings.ToLower(param.Name.Source)
 		}
-		paramName = tsIdentifier(paramName)
-		addServiceParam(w, paramName, &param.Type.Definition)
+		addServiceParam(w, tsIdentifier(paramName), &param.Type.Definition)
 	}
 }
 
