@@ -216,6 +216,8 @@ github.com/specgen-io/spec v0.0.0-20210809215251-ab59147a0baf h1:z7TRhDEK1NE1J5p
 github.com/specgen-io/spec v0.0.0-20210809215251-ab59147a0baf/go.mod h1:/p05SvMlu/S0kocM9pJy2myQk9xaD/h02QLKgrOOmXY=
 github.com/specgen-io/spec v0.0.0-20210809222415-68264d0e658f h1:IvcYTAoHaPjL3E4WJUvWMmPMEIku6eCbv4k7uiyMYb4=
 github.com/specgen-io/spec v0.0.0-20210809222415-68264d0e658f/go.mod h1:/p05SvMlu/S0kocM9pJy2myQk9xaD/h02QLKgrOOmXY=
+github.com/specgen-io/spec v0.0.0-20210810165909-67f62f0774b8 h1:qidEuPBheZJPQo4K7WrF2YWAXu+hTh2FtIu2+Odnf/M=
+github.com/specgen-io/spec v0.0.0-20210810165909-67f62f0774b8/go.mod h1:/p05SvMlu/S0kocM9pJy2myQk9xaD/h02QLKgrOOmXY=
 github.com/spf13/afero v1.6.0/go.mod h1:Ai8FlHk4v/PARR026UzYexafAt9roJ7LcLMAmO6Z93I=
 github.com/spf13/cast v1.3.1/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
 github.com/spf13/cobra v1.2.1 h1:+KmjbUw1hriSNMF55oPrkZcb27aECyrj8V2ytv7kWDw=
