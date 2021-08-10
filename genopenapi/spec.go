@@ -45,11 +45,11 @@ func addSpecialResponses(operation *spec.Operation) spec.Responses {
 	responses := operation.Responses
 	if operation.HasParams() || operation.Body != nil {
 		if operation.GetResponse(spec.HttpStatusBadRequest) == nil {
-			responses = append(responses, *createEmptyResponse(spec.HttpStatusBadRequest, "Service will throw this if parameters are not provided or couldn't be parsed correctly"))
+			responses = append(responses, *createEmptyResponse(spec.HttpStatusBadRequest, "Service will return this if parameters are not provided or couldn't be parsed correctly"))
 		}
 	}
 	if operation.GetResponse(spec.HttpStatusInternalServerError) == nil {
-		responses = append(responses, *createEmptyResponse(spec.HttpStatusInternalServerError, "Service will throw this if unexpected internal error happens"))
+		responses = append(responses, *createEmptyResponse(spec.HttpStatusInternalServerError, "Service will return this if unexpected internal error happens"))
 	}
 	return responses
 }
