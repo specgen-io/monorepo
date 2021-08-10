@@ -12,9 +12,9 @@ func versionedFolder(version spec.Name, folder string) string {
 	return folder
 }
 
-func versionedPackage(version spec.Name, packageName string) string {
+func versionedPackage(specification *spec.Spec, version spec.Name, packageName string) string {
 	if version.Source != "" {
-		return fmt.Sprintf("%s_%s", packageName, version.FlatCase())
+		return fmt.Sprintf("%s.models.%s_%s", specification.Name.SnakeCase(), packageName, version.FlatCase())
 	}
-	return packageName
+	return fmt.Sprintf("%s.models.%s", specification.Name.SnakeCase(), packageName)
 }

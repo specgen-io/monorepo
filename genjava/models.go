@@ -22,10 +22,9 @@ func generateModels(specification *spec.Spec, generatePath string) []gen.TextFil
 	files := []gen.TextFile{}
 	for _, version := range specification.Versions {
 		versionPath := filepath.Join(generatePath, versionedFolder(version.Version, "spec"))
-		versionPackageName := versionedPackage(version.Version, "spec")
+		versionPackageName := versionedPackage(specification, version.Version, "spec")
 		files = append(files, generateVersionModels(&version, versionPackageName, versionPath)...)
-
-		files = append(files, *generateJsoner("io.specgen", filepath.Join(generatePath, "Jsoner.java")))
+		files = append(files, *generateJsoner(fmt.Sprintf("%s.models", specification.Name.SnakeCase()), filepath.Join(generatePath, "Jsoner.java")))
 	}
 	return files
 }
@@ -59,7 +58,7 @@ public class Jsoner {
 `
 
 	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
-	return &gen.TextFile{path, strings.TrimSpace(code)}
+	return &gen.TextFile{Path: path, Content: strings.TrimSpace(code)}
 }
 
 func generateVersionModels(version *spec.Version, packageName string, generatePath string) []gen.TextFile {
@@ -68,7 +67,7 @@ func generateVersionModels(version *spec.Version, packageName string, generatePa
 		if model.IsObject() {
 			files = append(files, *generateObjectModel(model, packageName, generatePath))
 		} else if model.IsOneOf() {
-			//files = append(files, *generateOneOfModel(model, packageName, generatePath))
+			files = append(files, generateOneOfModels(model, packageName, generatePath)...)
 		} else if model.IsEnum() {
 			files = append(files, *generateEnumModel(model, packageName, generatePath))
 		}
@@ -77,11 +76,12 @@ func generateVersionModels(version *spec.Version, packageName string, generatePa
 }
 
 func generateImports(w *gen.Writer) {
-	w.Line(`import com.fasterxml.jackson.annotation.*;`)
-	w.Line(`import com.fasterxml.jackson.databind.JsonNode;`)
-	w.Line(`import java.math.BigDecimal;`)
 	w.Line(`import java.time.*;`)
 	w.Line(`import java.util.*;`)
+	w.Line(`import java.math.BigDecimal;`)
+	w.Line(`import com.fasterxml.jackson.databind.JsonNode;`)
+	w.Line(`import com.fasterxml.jackson.annotation.*;`)
+	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
 }
 
 func addType(field spec.NamedDefinition) string {
@@ -114,7 +114,7 @@ func addSetterParams(field spec.NamedDefinition) string {
 
 func generateObjectModel(model *spec.NamedModel, packageName string, generatePath string) *gen.TextFile {
 	w := NewJavaWriter()
-	w.Line("package io.specgen.%s;", packageName)
+	w.Line("package %s;", packageName)
 	w.EmptyLine()
 	generateImports(w)
 	w.EmptyLine()
@@ -122,7 +122,6 @@ func generateObjectModel(model *spec.NamedModel, packageName string, generatePat
 
 	constructParams := []string{}
 	for _, field := range model.Object.Fields {
-		w.EmptyLine()
 		w.Line(`  @JsonProperty("%s")`, field.Name.SnakeCase())
 		if checkType(&field.Type.Definition, spec.TypeJson) {
 			w.Line(`  @JsonRawValue`)
@@ -158,7 +157,7 @@ func generateObjectModel(model *spec.NamedModel, packageName string, generatePat
 
 func generateEnumModel(model *spec.NamedModel, packageName string, generatePath string) *gen.TextFile {
 	w := NewJavaWriter()
-	w.Line("package io.specgen.%s;", packageName)
+	w.Line("package %s;", packageName)
 	w.EmptyLine()
 	generateImports(w)
 	w.EmptyLine()
@@ -169,4 +168,56 @@ func generateEnumModel(model *spec.NamedModel, packageName string, generatePath 
 	w.Line(`}`)
 
 	return &gen.TextFile{Path: filepath.Join(generatePath, fmt.Sprintf("%s.java", model.Name.Source)), Content: w.String()}
+}
+
+func generateOneOfModels(model *spec.NamedModel, packageName string, generatePath string) []gen.TextFile {
+	files := []gen.TextFile{}
+	w := NewJavaWriter()
+	w.Line("package %s;", packageName)
+	w.EmptyLine()
+	generateImports(w)
+	w.EmptyLine()
+	w.Line(`@JsonTypeInfo(`)
+	w.Line(`  use = JsonTypeInfo.Id.NAME,`)
+	if model.OneOf.Discriminator != nil {
+		w.Line(`  include = JsonTypeInfo.As.PROPERTY`)
+	} else {
+		w.Line(`  include = JsonTypeInfo.As.WRAPPER_OBJECT`)
+	}
+	w.Line(`)`)
+	w.Line(`@JsonSubTypes({`)
+	for _, item := range model.OneOf.Items {
+		w.Line(`  @Type(value = %s%s.class, name = "%s"),`, model.Name.PascalCase(), item.Name.PascalCase(), item.Name.Source)
+	}
+	w.Line(`})`)
+	w.Line(`public interface %s {`, model.Name.PascalCase())
+	w.Line(`}`)
+
+	for _, item := range model.OneOf.Items {
+		files = append(files, *generateOneOfImplementation(item, model, packageName, generatePath))
+	}
+	files = append(files, gen.TextFile{Path: filepath.Join(generatePath, fmt.Sprintf("%s.java", model.Name.Source)), Content: w.String()})
+
+	return files
+}
+
+func generateOneOfImplementation(item spec.NamedDefinition, model *spec.NamedModel, packageName string, generatePath string) *gen.TextFile {
+	w := NewJavaWriter()
+	w.Line("package %s;", packageName)
+	w.EmptyLine()
+	generateImports(w)
+	w.EmptyLine()
+	w.Line(`public class %s%s implements %s {`, model.Name.PascalCase(), item.Name.PascalCase(), model.Name.PascalCase())
+	w.Line(`  @JsonUnwrapped`)
+	w.Line(`  public %s data;`, item.Type.Definition.Name)
+	w.EmptyLine()
+	w.Line(`  public %s%s() {`, model.Name.PascalCase(), item.Name.PascalCase())
+	w.Line(`  }`)
+	w.EmptyLine()
+	w.Line(`  public %s%s(%s data) {`, model.Name.PascalCase(), item.Name.PascalCase(), item.Type.Definition.Name)
+	w.Line(`  	this.data = data;`)
+	w.Line(`  }`)
+	w.Line(`}`)
+
+	return &gen.TextFile{Path: filepath.Join(generatePath, fmt.Sprintf("%s.java", model.Name.Source+item.Name.PascalCase())), Content: w.String()}
 }
