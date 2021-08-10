@@ -29,6 +29,7 @@ models:
 	expectedOpenApiYaml := `
 openapi: 3.0.0
 info:
+  title: bla-api
   version: ""
 paths: {}
 components:
@@ -70,6 +71,7 @@ models:
 	expectedOpenApiYaml := `
 openapi: 3.0.0
 info:
+  title: bla-api
   version: ""
 paths: {}
 components:
@@ -119,6 +121,7 @@ models:
 	expectedOpenApiYaml := `
 openapi: 3.0.0
 info:
+  title: bla-api
   version: ""
 paths: {}
 components:
@@ -187,6 +190,7 @@ models:
 	expectedOpenApiYaml := `
 openapi: 3.0.0
 info:
+  title: bla-api
   version: ""
 paths:
   /create/{id}:
@@ -235,6 +239,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyModel'
+        "400":
+          description: Service will return this if parameters are not provided or couldn't be parsed correctly
+        "500":
+          description: Service will return this if unexpected internal error happens
 components:
   schemas:
     MyModel:
@@ -332,6 +340,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Model1'
+        "500":
+          description: Service will return this if unexpected internal error happens
   /ping:
     get:
       operationId: testPing
@@ -346,6 +356,10 @@ paths:
       responses:
         "200":
           description: ""
+        "400":
+          description: Service will return this if parameters are not provided or couldn't be parsed correctly
+        "500":
+          description: Service will return this if unexpected internal error happens
 components:
   schemas:
     Model1:
@@ -417,6 +431,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/v2.Message'
+        "500":
+          description: Service will return this if unexpected internal error happens
 components:
   schemas:
     v2.Message:
