@@ -55,14 +55,14 @@ func generateIoTsObjectModel(w *gen.Writer, model *spec.NamedModel) {
 		w.Line("  t.interface({")
 		for _, field := range model.Object.Fields {
 			if !field.Type.Definition.IsNullable() {
-				w.Line("    %s: %s", tsIdentifier(field.Name.Source), IoTsType(&field.Type.Definition))
+				w.Line("    %s: %s", field.Name.Source, IoTsType(&field.Type.Definition))
 			}
 		}
 		w.Line("  }),")
 		w.Line("  t.partial({")
 		for _, field := range model.Object.Fields {
 			if field.Type.Definition.IsNullable() {
-				w.Line("    %s: %s,", tsIdentifier(field.Name.Source), IoTsType(&field.Type.Definition))
+				w.Line("    %s: %s,", field.Name.Source, IoTsType(&field.Type.Definition))
 			}
 		}
 		w.Line("  })")
@@ -75,7 +75,7 @@ func generateIoTsObjectModel(w *gen.Writer, model *spec.NamedModel) {
 		w.Line("")
 		w.Line("export const T%s = %s({", model.Name.PascalCase(), ioTsType)
 		for _, field := range model.Object.Fields {
-			w.Line("  %s: %s,", tsIdentifier(field.Name.Source), IoTsType(&field.Type.Definition))
+			w.Line("  %s: %s,", field.Name.Source, IoTsType(&field.Type.Definition))
 		}
 		w.Line("})")
 	}
@@ -96,7 +96,7 @@ func generateIoTsEnumModel(w *gen.Writer, model *spec.NamedModel) {
 func generateIoTsUnionModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.union([", model.Name.PascalCase())
 	for _, item := range model.OneOf.Items {
-		w.Line("  t.interface({%s: %s}),", tsIdentifier(item.Name.Source), IoTsType(&item.Type.Definition))
+		w.Line("  t.interface({%s: %s}),", item.Name.Source, IoTsType(&item.Type.Definition))
 	}
 	w.Line("])")
 	w.EmptyLine()

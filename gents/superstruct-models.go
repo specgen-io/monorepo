@@ -36,7 +36,7 @@ func generateSuperstructVersionModels(w *gen.Writer, version *spec.Version) {
 func generateSuperstructObjectModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.object({", model.Name.PascalCase())
 	for _, field := range model.Object.Fields {
-		w.Line("  %s: %s,", tsIdentifier(field.Name.Source), SuperstructType(&field.Type.Definition))
+		w.Line("  %s: %s,", field.Name.Source, SuperstructType(&field.Type.Definition))
 	}
 	w.Line("})")
 	w.Line("")
@@ -62,7 +62,7 @@ func generateSuperstructEnumModel(w *gen.Writer, model *spec.NamedModel) {
 func generateSuperstructUnionModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.union([", model.Name.PascalCase())
 	for _, item := range model.OneOf.Items {
-		w.Line("  t.object({%s: %s}),", tsIdentifier(item.Name.Source), SuperstructType(&item.Type.Definition))
+		w.Line("  t.object({%s: %s}),", item.Name.Source, SuperstructType(&item.Type.Definition))
 	}
 	w.Line("])")
 	w.Line("")
