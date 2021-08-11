@@ -66,7 +66,7 @@ func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("  include DataClass")
 	for _, field := range model.Object.Fields {
 		typ := RubyType(&field.Type.Definition)
-		w.Line("  val :%s, %s", field.Name.SnakeCase(), typ)
+		w.Line("  val :%s, %s", field.Name.Source, typ)
 	}
 	w.Line("end")
 }
@@ -75,7 +75,7 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("class %s", model.Name.PascalCase())
 	w.Line("  include Enum")
 	for _, enumItem := range model.Enum.Items {
-		w.Line("  define :%s, '%s'", enumItem.Name.SnakeCase(), enumItem.Value)
+		w.Line("  define :%s, '%s'", enumItem.Name.Source, enumItem.Value)
 	}
 	w.Line("end")
 }
@@ -83,7 +83,7 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 func generateOneOfModel(w *gen.Writer, model *spec.NamedModel) {
 	params := []string{}
 	for _, item := range model.OneOf.Items {
-		params = append(params, fmt.Sprintf("%s: %s", item.Name.SnakeCase(), RubyType(&item.Type.Definition)))
+		params = append(params, fmt.Sprintf("%s: %s", item.Name.Source, RubyType(&item.Type.Definition)))
 	}
 	w.Line("%s = T.union(%s)", model.Name.PascalCase(), strings.Join(params, ", "))
 }
