@@ -1,6 +1,7 @@
 package gents
 
 import (
+	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"path/filepath"
@@ -29,7 +30,11 @@ func generateServiceImplementation(api *spec.Api, generatePath string) *gen.Text
 	operations := []string{}
 	for _, operation := range api.Operations {
 		operations = append(operations, operation.Name.CamelCase())
-		w.Line("  let %s = async (params: services.%s): Promise<services.%s> => {", operation.Name.CamelCase(), operationParamsTypeName(&operation), responseTypeName(&operation))
+		params := ""
+		if operation.Body != nil || operation.HasParams() {
+			params = fmt.Sprintf(`params: services.%s`, operationParamsTypeName(&operation))
+		}
+		w.Line("  let %s = async (%s): Promise<services.%s> => {", operation.Name.CamelCase(), params, responseTypeName(&operation))
 		w.Line("    throw new Error('Not Implemented')")
 		w.Line("  }")
 		w.EmptyLine()
