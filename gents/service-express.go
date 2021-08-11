@@ -94,45 +94,18 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 func generateExpressOperationRouting(w *gen.Writer, operation *spec.NamedOperation, validation string) {
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
 	w.Indent()
-	apiCallParams := []string{}
 
-	if operation.Body != nil || len(operation.Endpoint.UrlParams) > 0 || len(operation.HeaderParams) > 0 || len(operation.QueryParams) > 0 {
-		if operation.Body != nil {
-			w.Line("var body: %s", TsType(&operation.Body.Type.Definition))
-		}
-		if len(operation.Endpoint.UrlParams) > 0 {
-			w.Line("var urlParams: %s", paramsTypeName(operation, "UrlParams"))
-		}
-		if len(operation.HeaderParams) > 0 {
-			w.Line("var headerParams: %s", paramsTypeName(operation, "HeaderParams"))
-		}
-		if len(operation.QueryParams) > 0 {
-			w.Line("var queryParams: %s", paramsTypeName(operation, "QueryParams"))
-		}
-		w.Line("try {")
-		if operation.Body != nil {
-			w.Line("  body = t.decode(%s.%s, request.body)", modelsPackage, runtimeType(validation, &operation.Body.Type.Definition))
-			apiCallParams = append(apiCallParams, "body")
-		}
-		if len(operation.Endpoint.UrlParams) > 0 {
-			w.Line("  urlParams = t.decode(%s, request.params)", paramsRuntimeTypeName(paramsTypeName(operation, "UrlParams")))
-			apiCallParams = append(apiCallParams, "...urlParams")
-		}
-		if len(operation.HeaderParams) > 0 {
-			w.Line("  headerParams = t.decode(%s, request.headers)", paramsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")))
-			apiCallParams = append(apiCallParams, "...headerParams")
-		}
-		if len(operation.QueryParams) > 0 {
-			w.Line("  queryParams = t.decode(%s, request.query)", paramsRuntimeTypeName(paramsTypeName(operation, "QueryParams")))
-			apiCallParams = append(apiCallParams, "...queryParams")
-		}
-		w.Line("} catch (error) {")
-		w.Line("  response.status(400).send()")
-		w.Line("  return")
-		w.Line("}")
-	}
+	apiCallParamsObject := generateParametersParsing(
+		w, operation, validation,
+		"request.body",
+		"request.headers",
+		"request.params",
+		"request.query",
+		"response.status(400).send()",
+	)
+
 	w.Line("try {")
-	w.Line("  let result = await service.%s({%s})", operation.Name.CamelCase(), strings.Join(apiCallParams, ", "))
+	w.Line("  let result = await service.%s(%s)", operation.Name.CamelCase(), apiCallParamsObject)
 	w.Line("  switch (result.status) {")
 	for _, response := range operation.Responses {
 		w.Line("    case '%s':", response.Name.FlatCase())

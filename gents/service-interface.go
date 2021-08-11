@@ -23,15 +23,21 @@ func generateServiceApis(version *spec.Version, generatePath string) *gen.TextFi
 
 func generateApiService(w *gen.Writer, api *spec.Api) {
 	for _, operation := range api.Operations {
-		w.EmptyLine()
-		generateOperationParams(w, &operation)
+		if operation.Body != nil || operation.HasParams() {
+			w.EmptyLine()
+			generateOperationParams(w, &operation)
+		}
 		w.EmptyLine()
 		generateOperationResponse(w, &operation)
 	}
 	w.EmptyLine()
 	w.Line("export interface %s {", serviceInterfaceName(api))
 	for _, operation := range api.Operations {
-		w.Line("  %s(params: %s): Promise<%s>", operation.Name.CamelCase(), operationParamsTypeName(&operation), responseTypeName(&operation))
+		params := ""
+		if operation.Body != nil || operation.HasParams() {
+			params = fmt.Sprintf(`params: %s`, operationParamsTypeName(&operation))
+		}
+		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, responseTypeName(&operation))
 	}
 	w.Line("}")
 }
