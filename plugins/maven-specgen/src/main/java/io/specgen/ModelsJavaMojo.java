@@ -6,41 +6,47 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 import java.io.*;
-import java.nio.file.*;
 import java.util.*;
+import java.nio.file.*;
 
-@Mojo(name = "generate", defaultPhase = LifecyclePhase.COMPILE)
-public class MainMojo extends AbstractMojo {
-	@Parameter(property = "commandlineArgs")
-	String commandlineArgs;
+@Mojo(name = "models-java", defaultPhase = LifecyclePhase.COMPILE)
+public class ModelsJavaMojo extends AbstractMojo {
+	@Parameter(property = "specFile", defaultValue = "${project.basedir}/spec.yaml")
+	String specFile;
+
+	@Parameter(property = "generatePath", defaultValue = "${project.build.directory}/generated-sources/java/test_service.models")
+	String generatePath;
 
 	public void execute() {
 		getLog().info("Running codegen plugin");
 
-		runSpecgen(commandlineArgs);
+		String[] commandlineArgs = {"models-java", "--spec-file", specFile, "--generate-path", generatePath};
+
+		try {
+			runSpecgen(commandlineArgs);
+		} catch (Exception error) {
+			getLog().error(error);
+			throw error;
+		}
 	}
 
-	public void runSpecgen(String params) {
+	public void runSpecgen(String[] params) {
 		String specgenFullPath = getSpecgenPath();
 
-		List<String> specgenArgs = new ArrayList<>();
-		specgenArgs.add(specgenFullPath);
-		List<String> paramsArray = Arrays.asList(params.split(" "));
-		specgenArgs.addAll(paramsArray);
-		String[] specgenCommand = specgenArgs.toArray(new String[0]);
+		List<String> newList = new ArrayList<>();
+		newList.add(specgenFullPath);
+		newList.addAll(Arrays.asList(params));
+
+		String[] specgenCommand = newList.toArray(new String[0]);
 
 		Result result = executeCommand(specgenCommand);
 
-		if (result.exception != null) {
-			getLog().error("Specgen run failed with exception: %s", result.exception);
-		}
-
-		getLog().info(String.format("Program exited with code: %s", result.exitCode));
-		getLog().info(result.stdout);
-
 		if (result.exitCode != 0) {
-			throw new RuntimeException(String.format("Failed to run specgen tool, exit code: %d", result.exitCode));
+			throw new RuntimeException("Failed to run specgen tool, exit code: " + result.exitCode);
 		}
+
+		getLog().info("Program exited with code: " + result.exitCode);
+		getLog().info(result.stdout);
 	}
 
 	private String getSpecgenPath() {
@@ -49,54 +55,39 @@ public class MainMojo extends AbstractMojo {
 		String exeName = getExeName("specgen");
 
 		String specgenRelativePath = String.format("/dist/%s_%s/%s", osName, archName, exeName);
-
-		InputStream specgenToolStream = this.getClass().getResourceAsStream(specgenRelativePath);
 		String jarPath = this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
 		String specgenPath = jarPath.substring(0, jarPath.lastIndexOf('.')) + specgenRelativePath;
 
 		File specPathFile = new File(specgenPath);
 		if (!specPathFile.exists()) {
-			getLog().info(String.format("Unpacking specgen tool into: %s", specPathFile.getPath()));
+			getLog().info("Unpacking specgen tool into: " + specPathFile.getPath());
 			File specPathParent = specPathFile.getParentFile();
 			if (!specPathParent.exists()) {
 				specPathParent.mkdirs();
 			}
-			try {
-				Files.copy(specgenToolStream, Paths.get(specPathFile.getPath()), StandardCopyOption.REPLACE_EXISTING);
+
+			try (InputStream specgenToolStream = this.getClass().getResourceAsStream(specgenRelativePath)) {
+				if (specgenToolStream != null) {
+					Files.copy(specgenToolStream, Paths.get(specPathFile.getPath()), StandardCopyOption.REPLACE_EXISTING);
+				}
 			} catch (IOException e) {
-				throw new UncheckedIOException(e);
+				throw new RuntimeException("Failed to copy specgen file", e);
 			}
+
 			specPathFile.setExecutable(true);
 		}
 
 		return specPathFile.getPath();
 	}
 
-	static class Result {
-		int exitCode;
-		String stdout;
-		String stderr;
-		Throwable exception;
-
-		public Result(Throwable exception) {
-			this.exception = exception;
-		}
-
-		public Result(int exitCode, String stdout, String stderr) {
-			this.exitCode = exitCode;
-			this.stdout = stdout;
-			this.stderr = stderr;
-		}
-	}
-
 	private Result executeCommand(String[] command) {
+		getLog().info("Running specgen tool");
+		getLog().info(String.join(" ", command));
+
+		ProcessBuilder processBuilder = new ProcessBuilder();
+		processBuilder.command(command);
+
 		try {
-			getLog().info("Running specgen tool");
-			getLog().info(String.join(" ", command));
-
-			ProcessBuilder processBuilder = new ProcessBuilder();
-			processBuilder.command(command);
-
 			Process process = processBuilder.start();
 
 			int exitCode = process.waitFor();
@@ -114,10 +105,10 @@ public class MainMojo extends AbstractMojo {
 					stderr.append(errorLine).append("\n");
 				}
 			}
-
 			return new Result(exitCode, stdout.toString(), stderr.toString());
-		} catch (Throwable ex) {
-			return new Result(ex);
+
+		} catch (IOException | InterruptedException e) {
+			throw new RuntimeException("Failed to execute command specgen", e);
 		}
 	}
 
@@ -150,6 +141,18 @@ public class MainMojo extends AbstractMojo {
 			return toolName + ".exe";
 		} else {
 			return toolName;
+		}
+	}
+
+	static class Result {
+		int exitCode;
+		String stdout;
+		String stderr;
+
+		public Result(int exitCode, String stdout, String stderr) {
+			this.exitCode = exitCode;
+			this.stdout = stdout;
+			this.stderr = stderr;
 		}
 	}
 }
