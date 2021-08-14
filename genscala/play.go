@@ -29,8 +29,6 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 		sourcesOverwrite = append(sourcesOverwrite, *apiControllerFile)
 		apiRoutersFile := generateRouter(&version, "app", generatePath)
 		sourcesOverwrite = append(sourcesOverwrite, *apiRoutersFile)
-		servicesSource := generateApisServices(&version, servicesPackage, servicesPath)
-		sourcesScaffold = append(sourcesScaffold, servicesSource...)
 	}
 	routesFile := generateMainRouter(specification.Versions, "app", generatePath)
 	sourcesOverwrite = append(sourcesOverwrite, *routesFile)
