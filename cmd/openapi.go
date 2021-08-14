@@ -26,7 +26,7 @@ var cmdOpenapi = &cobra.Command{
 		outFile, err := cmd.Flags().GetString(OutFile)
 		fail.IfError(err)
 
-		err = genopenapi.GenerateSpecification(specFile, outFile)
+		err = genopenapi.GenerateAndWriteOpenapi(specFile, outFile)
 		fail.IfErrorF(err, "Failed to generate OpeanAPI specifiction")
 	},
 }

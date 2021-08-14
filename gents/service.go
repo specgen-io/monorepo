@@ -13,28 +13,32 @@ func GenerateService(serviceFile string, swaggerPath string, generatePath string
 		return err
 	}
 
-	sources := []gen.TextFile{}
+	sourcesOverwrite := []gen.TextFile{}
+	sourcesScaffold := []gen.TextFile{}
 
 	for _, version := range specification.Versions {
-		sources = append(sources, *generateServiceApis(&version, generatePath))
-		sources = append(sources, *generateVersionRouting(&version, validation, server, generatePath))
+		sourcesOverwrite = append(sourcesOverwrite, *generateServiceApis(&version, generatePath))
+		sourcesOverwrite = append(sourcesOverwrite, *generateVersionRouting(&version, validation, server, generatePath))
 	}
-	sources = append(sources, *generateSpecRouter(specification, server, generatePath))
+	sourcesOverwrite = append(sourcesOverwrite, *generateSpecRouter(specification, server, generatePath))
 
 	modelsFiles := generateModels(specification, validation, generatePath)
-	sources = append(sources, modelsFiles...)
+	sourcesOverwrite = append(sourcesOverwrite, modelsFiles...)
 
-	sources = append(sources, *genopenapi.GenerateOpenapi(specification, swaggerPath))
-
-	if servicesPath != "" {
-		services := generateServicesImplementations(specification, servicesPath)
-		err = gen.WriteFiles(services, false)
-		if err != nil {
-			return err
-		}
+	if swaggerPath != "" {
+		sourcesOverwrite = append(sourcesOverwrite, *genopenapi.GenerateOpenapi(specification, swaggerPath))
 	}
 
-	err = gen.WriteFiles(sources, true)
+	if servicesPath != "" {
+		sourcesScaffold = generateServicesImplementations(specification, servicesPath)
+	}
+
+	err = gen.WriteFiles(sourcesScaffold, false)
+	if err != nil {
+		return err
+	}
+
+	err = gen.WriteFiles(sourcesOverwrite, true)
 	if err != nil {
 		return err
 	}

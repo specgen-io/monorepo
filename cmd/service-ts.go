@@ -16,10 +16,9 @@ func init() {
 	cmdServiceTs.Flags().String(Validation, "", ValidationDescription)
 
 	cmdServiceTs.MarkFlagRequired(TsServer)
-	cmdServiceTs.MarkFlagRequired(SpecFile)
-	cmdServiceTs.MarkFlagRequired(SwaggerPath)
-	cmdServiceTs.MarkFlagRequired(GeneratePath)
 	cmdServiceTs.MarkFlagRequired(Validation)
+	cmdServiceTs.MarkFlagRequired(SpecFile)
+	cmdServiceTs.MarkFlagRequired(GeneratePath)
 
 	rootCmd.AddCommand(cmdServiceTs)
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GenerateSpecification(serviceFile string, outFile string) (err error) {
+func GenerateAndWriteOpenapi(serviceFile string, outFile string) (err error) {
 	spec, err := spec.ReadSpec(serviceFile)
 	if err != nil {
 		return

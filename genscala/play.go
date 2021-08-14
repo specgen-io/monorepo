@@ -19,41 +19,49 @@ func GeneratePlayService(serviceFile string, swaggerPath string, generatePath st
 	controllersPackage := "controllers"
 	servicesPackage := "services"
 
-	scalaCirceFile := generateJson("spec.models", filepath.Join(generatePath, "Json.scala"))
-	scalaPlayParamsFile := generatePlayParams("spec.controllers", filepath.Join(generatePath, "PlayParamsTypesBindings.scala"))
-	scalaHttpStaticFile := generateStringParams("spec.controllers", filepath.Join(generatePath, "StringParams.scala"))
-
-	modelsFiles := GenerateCirceModels(specification, modelsPackage, generatePath)
-
-	sourceManaged := modelsFiles
-	sourceManaged = append(sourceManaged, *scalaPlayParamsFile)
-	sourceManaged = append(sourceManaged, *scalaHttpStaticFile)
-	sourceManaged = append(sourceManaged, *scalaCirceFile)
-
-	source := []gen.TextFile{}
+	sourcesOverwrite := []gen.TextFile{}
+	sourcesScaffold := []gen.TextFile{}
 
 	for _, version := range specification.Versions {
 		apisSourceManaged := generateApis(&version, servicesPackage, controllersPackage, generatePath)
-		sourceManaged = append(sourceManaged, apisSourceManaged...)
+		sourcesOverwrite = append(sourcesOverwrite, apisSourceManaged...)
 		apiControllerFile := generateApiControllers(&version, controllersPackage, generatePath)
-		sourceManaged = append(sourceManaged, *apiControllerFile)
+		sourcesOverwrite = append(sourcesOverwrite, *apiControllerFile)
 		apiRoutersFile := generateRouter(&version, "app", generatePath)
-		sourceManaged = append(sourceManaged, *apiRoutersFile)
+		sourcesOverwrite = append(sourcesOverwrite, *apiRoutersFile)
 		servicesSource := generateApisServices(&version, servicesPackage, servicesPath)
-		source = append(source, servicesSource...)
+		sourcesScaffold = append(sourcesScaffold, servicesSource...)
+	}
+	routesFile := generateMainRouter(specification.Versions, "app", generatePath)
+	sourcesOverwrite = append(sourcesOverwrite, *routesFile)
+
+	scalaPlayParamsFile := generatePlayParams("spec.controllers", filepath.Join(generatePath, "PlayParamsTypesBindings.scala"))
+	sourcesOverwrite = append(sourcesOverwrite, *scalaPlayParamsFile)
+	scalaHttpStaticFile := generateStringParams("spec.controllers", filepath.Join(generatePath, "StringParams.scala"))
+	sourcesOverwrite = append(sourcesOverwrite, *scalaHttpStaticFile)
+
+	scalaCirceFile := generateJson("spec.models", filepath.Join(generatePath, "Json.scala"))
+	sourcesOverwrite = append(sourcesOverwrite, *scalaCirceFile)
+	modelsFiles := GenerateCirceModels(specification, modelsPackage, generatePath)
+	sourcesOverwrite = append(sourcesOverwrite, modelsFiles...)
+
+	if swaggerPath != "" {
+		sourcesOverwrite = append(sourcesOverwrite, *genopenapi.GenerateOpenapi(specification, swaggerPath))
 	}
 
-	routesFile := generateMainRouter(specification.Versions, "app", generatePath)
-	sourceManaged = append(sourceManaged, *routesFile)
+	if servicesPath != "" {
+		for _, version := range specification.Versions {
+			servicesSource := generateApisServices(&version, servicesPackage, servicesPath)
+			sourcesScaffold = append(sourcesScaffold, servicesSource...)
+		}
+	}
 
-	genopenapi.GenerateSpecification(serviceFile, filepath.Join(swaggerPath, "swagger.yaml"))
-
-	err = gen.WriteFiles(source, false)
+	err = gen.WriteFiles(sourcesScaffold, false)
 	if err != nil {
 		return
 	}
 
-	err = gen.WriteFiles(sourceManaged, true)
+	err = gen.WriteFiles(sourcesOverwrite, true)
 	if err != nil {
 		return
 	}
@@ -218,7 +226,7 @@ func generateApiControllers(version *spec.Version, packageName string, outPath s
 	for _, api := range version.Http.Apis {
 		w.EmptyLine()
 		w.Line(`@Singleton`)
-		w.Line(`class %s @Inject()(api: %s, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {`, controllerType(api.Name), apiTraitType(api.Name), )
+		w.Line(`class %s @Inject()(api: %s, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {`, controllerType(api.Name), apiTraitType(api.Name))
 		w.Line(`  import %s._`, apiTraitType(api.Name))
 		for _, operation := range api.Operations {
 			generateControllerMethod(w.Indented(), operation)

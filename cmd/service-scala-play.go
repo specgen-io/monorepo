@@ -14,10 +14,7 @@ func init() {
 	cmdServiceScalaPlay.Flags().String(ServicesPath, "", ServicesPathDescription)
 
 	cmdServiceScalaPlay.MarkFlagRequired(SpecFile)
-
-	cmdServiceScalaPlay.MarkFlagRequired(SwaggerPath)
 	cmdServiceScalaPlay.MarkFlagRequired(GeneratePath)
-	cmdServiceScalaPlay.MarkFlagRequired(ServicesPath)
 
 	rootCmd.AddCommand(cmdServiceScalaPlay)
 }
