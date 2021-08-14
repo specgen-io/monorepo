@@ -6,7 +6,7 @@ import Specgen._
 
 object SpecKeys {
   lazy val specFile = settingKey[File]("Path to service specification file")
-  lazy val specSwagger = settingKey[File]("Path to folder where swagger specification should be generated")
+  lazy val specSwagger = settingKey[File]("Path to generated swagger specification file")
   lazy val specGeneratePath = settingKey[File]("Path to generate source code into")
   lazy val specServicesPath = settingKey[File]("Path to scaffold services code")
 
@@ -64,7 +64,7 @@ object SpecPlay extends AutoPlugin {
 
   override val projectSettings = Seq(
     specFile := file("spec.yaml"),
-    specSwagger := baseDirectory.value / "public",
+    specSwagger := baseDirectory.value / "public" / "swagger.yaml",
     specGeneratePath := (sourceManaged in Compile).value / "spec",
     specServicesPath := (scalaSource in Compile).value / "services",
     specgenServicePlay := specgenTask.value,
