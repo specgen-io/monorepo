@@ -22,10 +22,10 @@ func generateModels(specification *spec.Spec, generatePath string) []gen.TextFil
 	files := []gen.TextFile{}
 	for _, version := range specification.Versions {
 		packageName := fmt.Sprintf("%s.models", specification.Name.SnakeCase())
-		versionedPackageName := versionedPackage(version.Version, "spec")
-		versionPath := filepath.Join(generatePath, versionedPackageName)
-		files = append(files, generateVersionModels(&version, fmt.Sprintf(`%s.%s`, packageName, versionedPackageName), versionPath)...)
-		files = append(files, *generateJsoner(packageName, filepath.Join(generatePath, "Jsoner.java")))
+		versionedPackageName := versionedPackage(version.Version, packageName)
+		versionPath := versionedPath(version.Version, generatePath)
+		files = append(files, generateVersionModels(&version, versionedPackageName, versionPath)...)
+		files = append(files, *generateJsoner(versionedPackageName, filepath.Join(generatePath, "Jsoner.java")))
 	}
 
 	return files
