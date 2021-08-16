@@ -5,16 +5,16 @@ import (
 	"github.com/specgen-io/spec"
 )
 
-func versionedFolder(version spec.Name, folder string) string {
+func versionedPackage(version spec.Name, packageName string) string {
 	if version.Source != "" {
-		return fmt.Sprintf(`%s_%s`, folder, version.FlatCase())
+		return fmt.Sprintf(`%s.%s`, packageName, version.FlatCase())
 	}
-	return folder
+	return packageName
 }
 
-func versionedPackage(specification *spec.Spec, version spec.Name, packageName string) string {
+func versionedPath(version spec.Name, generatePath string) string {
 	if version.Source != "" {
-		return fmt.Sprintf("%s.models.%s_%s", specification.Name.SnakeCase(), packageName, version.FlatCase())
+		return fmt.Sprintf(`%s/%s`, generatePath, version.FlatCase())
 	}
-	return fmt.Sprintf("%s.models.%s", specification.Name.SnakeCase(), packageName)
+	return generatePath
 }

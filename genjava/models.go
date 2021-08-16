@@ -20,12 +20,15 @@ func GenerateModels(serviceFile string, generatePath string) error {
 
 func generateModels(specification *spec.Spec, generatePath string) []gen.TextFile {
 	files := []gen.TextFile{}
+	packageName := fmt.Sprintf("%s.models", specification.Name.SnakeCase())
+	generatePath = filepath.Join(generatePath, packageName)
 	for _, version := range specification.Versions {
-		versionPath := filepath.Join(generatePath, versionedFolder(version.Version, "spec"))
-		versionPackageName := versionedPackage(specification, version.Version, "spec")
-		files = append(files, generateVersionModels(&version, versionPackageName, versionPath)...)
-		files = append(files, *generateJsoner(fmt.Sprintf("%s.models", specification.Name.SnakeCase()), filepath.Join(generatePath, "Jsoner.java")))
+		versionedPackageName := versionedPackage(version.Version, packageName)
+		versionPath := versionedPath(version.Version, generatePath)
+		files = append(files, generateVersionModels(&version, versionedPackageName, versionPath)...)
+		files = append(files, *generateJsoner(versionedPackageName, filepath.Join(generatePath, "Jsoner.java")))
 	}
+
 	return files
 }
 
