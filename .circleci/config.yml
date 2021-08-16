@@ -7,10 +7,7 @@ orbs:
 parameters:
   specgen-version:
     type: string
-    default: 2.0.<< pipeline.number >>
-  test-branch:
-    type: string
-    default: main
+    default: 2.0.<<pipeline.number>>
 
 jobs:
   build-specgen:
@@ -21,7 +18,7 @@ jobs:
       - checkout
       - run:
           name: Build
-          command: ./build.sh << pipeline.parameters.specgen-version >>
+          command: ./build.sh <<pipeline.parameters.specgen-version>>
       - run:
           name: Unit tests
           command: |
@@ -47,7 +44,7 @@ jobs:
           name: Release
           command: |
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
-              ./release.sh << pipeline.parameters.specgen-version >> ${GITHUB_TOKEN}
+              ./release.sh <<pipeline.parameters.specgen-version>> ${GITHUB_TOKEN}
             else
               echo "Will not release - not running on main or v* branch"
             fi
@@ -66,7 +63,7 @@ jobs:
           name: Build gem
           command: |
             cd ./plugins/gem-specgen
-            export VERSION=<< pipeline.parameters.specgen-version >>
+            export VERSION=<<pipeline.parameters.specgen-version>>
             gem build specgen.gemspec
       - setup-rubygems
       - run:
@@ -74,7 +71,7 @@ jobs:
           command: |
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/gem-specgen
-              export VERSION=<< pipeline.parameters.specgen-version >>
+              export VERSION=<<pipeline.parameters.specgen-version>>
               gem push --key rubygems specgen-$VERSION.gem
             else
               echo "Will not release - not running on main branch"
@@ -96,13 +93,13 @@ jobs:
           name: Build SBT plugin
           command: |
             cd ./plugins/sbt-specgen
-            sbt -Dversion=<< pipeline.parameters.specgen-version >> clean test
+            sbt -Dversion=<<pipeline.parameters.specgen-version>> clean test
       - run:
           name: Publish SBT plugin
           command: |
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/sbt-specgen
-              sbt -Dversion=<< pipeline.parameters.specgen-version >> publish
+              sbt -Dversion=<<pipeline.parameters.specgen-version>> publish
             else
               echo "Will not release - not running on main branch"
             fi
@@ -127,7 +124,7 @@ jobs:
           name: Publish SBT plugin
           command: |
             cd ./plugins/sbt-specgen
-            sbt -Dversion=<< pipeline.parameters.specgen-version >> publishSigned sonatypeRelease
+            sbt -Dversion=<<pipeline.parameters.specgen-version>> publishSigned sonatypeRelease
 
   build-npm-specgen:
     docker:
@@ -141,7 +138,7 @@ jobs:
           command: |
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/npm-specgen
-              npm version << pipeline.parameters.specgen-version >>
+              npm version <<pipeline.parameters.specgen-version>>
               npm install
               npm publish
             else
@@ -164,13 +161,13 @@ jobs:
           name: Build Maven plugin
           command: |
             cd ./plugins/maven-specgen
-            mvn clean install -Dproject.version=<< pipeline.parameters.specgen-version >>
+            mvn clean install -Dproject.version=<<pipeline.parameters.specgen-version>>
       - run:
           name: Deploy Maven plugin
           command: |
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/maven-specgen
-              mvn deploy -Dproject.version=<< pipeline.parameters.specgen-version >> -Dartifactory=true
+              mvn deploy -Dproject.version=<<pipeline.parameters.specgen-version>> -Dartifactory=true
             else
               echo "Will not release - not running on main branch"
             fi
@@ -308,24 +305,32 @@ workflows:
       - circleci/start-pipeline:
           name: test-models
           repository: specgen-io/test-models
-          branch: << pipeline.parameters.test-branch >>
-          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          branch: main
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
           context: specgen
           requires:
             - build-complete
       - circleci/start-pipeline:
           name: test-clients
           repository: specgen-io/test-clients
-          branch: << pipeline.parameters.test-branch >>
-          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          branch: main
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
           context: specgen
           requires:
             - build-complete
       - circleci/start-pipeline:
           name: test-services
           repository: specgen-io/test-services
-          branch: << pipeline.parameters.test-branch >>
-          pipeline-parameters: '{"specgen-version": "<< pipeline.parameters.specgen-version >>"}'
+          branch: main
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
+          context: specgen
+          requires:
+            - build-complete
+      - circleci/start-pipeline:
+          name: generated-code
+          repository: specgen-io/generated-code
+          branch: main
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
           context: specgen
           requires:
             - build-complete
