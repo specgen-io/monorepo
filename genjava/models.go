@@ -192,7 +192,6 @@ func generateOneOfModels(model *spec.NamedModel, packageName string, generatePat
 		w.Line(`  include = JsonTypeInfo.As.WRAPPER_OBJECT`)
 		w.Line(`)`)
 	}
-	w.Line(`)`)
 	w.Line(`@JsonSubTypes({`)
 	for _, item := range model.OneOf.Items {
 		w.Line(`  @Type(value = %s%s.class, name = "%s"),`, model.Name.PascalCase(), item.Name.PascalCase(), item.Name.Source)
