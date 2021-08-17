@@ -27,14 +27,14 @@ func responseTypeName(operation *spec.NamedOperation) string {
 
 func versionedFolder(version spec.Name, folder string) string {
 	if version.Source != "" {
-		return fmt.Sprintf(`%s_%s`, folder, version.FlatCase())
+		return fmt.Sprintf(`%s/%s`, folder, version.FlatCase())
 	}
 	return folder
 }
 
 func versionedPackage(version spec.Name, packageName string) string {
 	if version.Source != "" {
-		return fmt.Sprintf("%s_%s", packageName, version.FlatCase())
+		return version.FlatCase()
 	}
 	return packageName
 }

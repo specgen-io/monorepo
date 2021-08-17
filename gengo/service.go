@@ -1,6 +1,7 @@
 package gengo
 
 import (
+	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"path/filepath"
@@ -13,9 +14,12 @@ func GenerateService(serviceFile string, generatePath string) error {
 	}
 	generatedFiles := []gen.TextFile{}
 	implFiles := []gen.TextFile{}
+
+	packageName := fmt.Sprintf("%s_service", specification.Name.SnakeCase())
+	generatePath = filepath.Join(generatePath, packageName)
 	for _, version := range specification.Versions {
-		versionPath := filepath.Join(generatePath, versionedFolder(version.Version, "spec"))
-		versionPackageName := versionedPackage(version.Version, "spec")
+		versionPackageName := versionedPackage(version.Version, packageName)
+		versionPath := versionedFolder(version.Version, generatePath)
 
 		generatedFiles = append(generatedFiles, *generateParamsParser(versionPackageName, filepath.Join(versionPath, "params_parsing.go")))
 		generatedFiles = append(generatedFiles, *generateRouting(&version, versionPackageName, versionPath))
