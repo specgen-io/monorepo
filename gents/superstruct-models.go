@@ -34,7 +34,7 @@ func generateSuperstructVersionModels(w *gen.Writer, version *spec.Version) {
 }
 
 func generateSuperstructObjectModel(w *gen.Writer, model *spec.NamedModel) {
-	w.Line("export const T%s = t.object({", model.Name.PascalCase())
+	w.Line("export const T%s = t.type({", model.Name.PascalCase())
 	for _, field := range model.Object.Fields {
 		w.Line("  %s: %s,", field.Name.Source, SuperstructType(&field.Type.Definition))
 	}
@@ -60,11 +60,19 @@ func generateSuperstructEnumModel(w *gen.Writer, model *spec.NamedModel) {
 }
 
 func generateSuperstructUnionModel(w *gen.Writer, model *spec.NamedModel) {
-	w.Line("export const T%s = t.union([", model.Name.PascalCase())
-	for _, item := range model.OneOf.Items {
-		w.Line("  t.object({%s: %s}),", item.Name.Source, SuperstructType(&item.Type.Definition))
+	if model.OneOf.Discriminator != nil {
+		w.Line("export const T%s = t.union([", model.Name.PascalCase())
+		for _, item := range model.OneOf.Items {
+			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", tsIdentifier(*model.OneOf.Discriminator), item.Name.Source, SuperstructType(&item.Type.Definition))
+		}
+		w.Line("])")
+	} else {
+		w.Line("export const T%s = t.union([", model.Name.PascalCase())
+		for _, item := range model.OneOf.Items {
+			w.Line("  t.object({%s: %s}),", item.Name.Source, SuperstructType(&item.Type.Definition))
+		}
+		w.Line("])")
 	}
-	w.Line("])")
-	w.Line("")
+	w.EmptyLine()
 	w.Line("export type %s = t.Infer<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
