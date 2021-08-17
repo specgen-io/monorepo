@@ -1,21 +1,25 @@
 package io.specgen;
 
-import org.apache.maven.plugin.*;
+import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 
 import java.io.*;
 import java.util.*;
 import java.nio.file.*;
 
-@Mojo(name = "models-java", defaultPhase = LifecyclePhase.COMPILE)
+@Mojo(name = "models-java", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class ModelsJavaMojo extends AbstractMojo {
 	@Parameter(property = "specFile", defaultValue = "${project.basedir}/spec.yaml")
 	String specFile;
 
-	@Parameter(property = "generatePath", defaultValue = "${project.build.directory}/generated-sources/java/test_service.models")
+	@Parameter(property = "generatePath", defaultValue = "${project.build.directory}/generated-sources/java")
 	String generatePath;
+
+	@Parameter(defaultValue = "${project}")
+	private MavenProject project;
 
 	public void execute() {
 		getLog().info("Running codegen plugin");
@@ -28,6 +32,8 @@ public class ModelsJavaMojo extends AbstractMojo {
 			getLog().error(error);
 			throw error;
 		}
+
+		project.addCompileSourceRoot(generatePath);
 	}
 
 	public void runSpecgen(String[] params) {
