@@ -180,12 +180,17 @@ func generateOneOfModels(model *spec.NamedModel, packageName string, generatePat
 	w.EmptyLine()
 	generateImports(w)
 	w.EmptyLine()
-	w.Line(`@JsonTypeInfo(`)
-	w.Line(`  use = JsonTypeInfo.Id.NAME,`)
 	if model.OneOf.Discriminator != nil {
-		w.Line(`  include = JsonTypeInfo.As.PROPERTY`)
+		w.Line(`@JsonTypeInfo(`)
+		w.Line(`  use = JsonTypeInfo.Id.NAME,`)
+		w.Line(`  include = JsonTypeInfo.As.PROPERTY,`)
+		w.Line(`  property = "%s"`, *model.OneOf.Discriminator)
+		w.Line(`)`)
 	} else {
+		w.Line(`@JsonTypeInfo(`)
+		w.Line(`  use = JsonTypeInfo.Id.NAME,`)
 		w.Line(`  include = JsonTypeInfo.As.WRAPPER_OBJECT`)
+		w.Line(`)`)
 	}
 	w.Line(`)`)
 	w.Line(`@JsonSubTypes({`)
