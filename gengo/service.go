@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/genopenapi"
 	"path/filepath"
 )
 
-func GenerateService(serviceFile string, generatePath string) error {
+func GenerateService(serviceFile string, swaggerPath string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil {
 		return err
@@ -31,6 +32,11 @@ func GenerateService(serviceFile string, generatePath string) error {
 
 		implFiles = append(implFiles, generateServicesImplementations(&version, versionPackageName, versionPath)...)
 	}
+
+	if swaggerPath != "" {
+		generatedFiles = append(generatedFiles, *genopenapi.GenerateOpenapi(specification, swaggerPath))
+	}
+
 	err = gen.WriteFiles(generatedFiles, true)
 	if err != nil {
 		return err
