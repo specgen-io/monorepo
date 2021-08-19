@@ -21,7 +21,7 @@ func generateServiceImplementation(api *spec.Api, packageName string, generatePa
 
 	imports := []string{`import "errors"`}
 	if apiHasType(api, spec.TypeDate) {
-		imports = append(imports, `import  "cloud.google.com/go/civil"`)
+		imports = append(imports, `import "cloud.google.com/go/civil"`)
 	}
 	if apiHasType(api, spec.TypeJson) {
 		imports = append(imports, `import "encoding/json"`)

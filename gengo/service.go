@@ -15,8 +15,11 @@ func GenerateService(serviceFile string, generatePath string) error {
 	generatedFiles := []gen.TextFile{}
 	implFiles := []gen.TextFile{}
 
-	packageName := fmt.Sprintf("%s_service", specification.Name.SnakeCase())
+	packageName := "spec"
 	generatePath = filepath.Join(generatePath, packageName)
+
+	generatedFiles = append(generatedFiles, *generateRoutes(specification, packageName, generatePath))
+
 	for _, version := range specification.Versions {
 		versionPackageName := versionedPackage(version.Version, packageName)
 		versionPath := versionedFolder(version.Version, generatePath)
@@ -34,4 +37,35 @@ func GenerateService(serviceFile string, generatePath string) error {
 	}
 	err = gen.WriteFiles(implFiles, false)
 	return err
+}
+
+func generateRoutes(specification *spec.Spec, packageName string, generatePath string) *gen.TextFile {
+	w := NewGoWriter()
+	w.Line("package %s", packageName)
+	w.EmptyLine()
+	w.Line("import (")
+	w.Line(`  "github.com/husobee/vestigo"`)
+	w.Line(`  "github.com/specgen-io/test-service/go/spec/v2"`)
+	w.Line(`)`)
+	w.EmptyLine()
+	w.Line(`func AddRoutes(router *vestigo.Router) {`)
+	for _, version := range specification.Versions {
+		for _, api := range version.Http.Apis {
+			versionedPackageName := addVersionedPackage(version.Version, packageName)
+			w.Line(`  %sAdd%sRoutes(router, &%s%s{})`, versionedPackageName, api.Name.PascalCase(), versionedPackageName, serviceTypeName(&api))
+		}
+	}
+	w.Line(`}`)
+
+	return &gen.TextFile{
+		Path:    filepath.Join(generatePath, "routes.go"),
+		Content: w.String(),
+	}
+}
+
+func addVersionedPackage(version spec.Name, packageName string) string {
+	if version.Source != "" {
+		return fmt.Sprintf(`%s.`, versionedPackage(version, packageName))
+	}
+	return ""
 }

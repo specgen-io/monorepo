@@ -14,7 +14,7 @@ func serviceInterfaceTypeVar(api *spec.Api) string {
 }
 
 func serviceTypeName(api *spec.Api) string {
-	return fmt.Sprintf(`Service%s`, api.Name.PascalCase())
+	return fmt.Sprintf(`%sService`, api.Name.PascalCase())
 }
 
 func clientTypeName(api *spec.Api) string {
