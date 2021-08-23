@@ -13,7 +13,11 @@ func generateRoutes(moduleName string, specification *spec.Spec, packageName str
 	w.EmptyLine()
 	w.Line("import (")
 	w.Line(`  "github.com/husobee/vestigo"`)
-	w.Line(`  "%s/%s"`, moduleName, addVersionedFolder(specification, packageName))
+	for _, version := range specification.Versions {
+		if version.Version.Source != "" {
+			w.Line(`  "%s/%s"`, moduleName, versionedFolder(version.Version, packageName))
+		}
+	}
 	w.Line(`)`)
 	w.EmptyLine()
 	w.Line(`func AddRoutes(router *vestigo.Router, %s) {`, JoinDelimParams(addRoutesParams(specification, packageName)))

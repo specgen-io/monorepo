@@ -46,13 +46,6 @@ func addVersionedPackage(version spec.Name, packageName string) string {
 	return ""
 }
 
-func addVersionedFolder(specification *spec.Spec, folder string) string {
-	for _, version := range specification.Versions {
-		return versionedFolder(version.Version, folder)
-	}
-	return ""
-}
-
 func addVersionedInterfaceVar(api *spec.Api, version spec.Name) string {
 	return serviceInterfaceTypeVar(api) + version.PascalCase()
 }
