@@ -212,12 +212,6 @@ github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
 github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1:OnSkiWE9lh6wB0YB77sQom3nweQdgAjqCqsofrRNTgc=
 github.com/smartystreets/goconvey v1.6.4/go.mod h1:syvi0/a8iFYH4r/RixwvyeAJjdLS9QV7WQ/tjFTllLA=
-github.com/specgen-io/spec v0.0.0-20210809215251-ab59147a0baf h1:z7TRhDEK1NE1J5pJQ1XExenPBM4I78iANflY5FKhb/c=
-github.com/specgen-io/spec v0.0.0-20210809215251-ab59147a0baf/go.mod h1:/p05SvMlu/S0kocM9pJy2myQk9xaD/h02QLKgrOOmXY=
-github.com/specgen-io/spec v0.0.0-20210809222415-68264d0e658f h1:IvcYTAoHaPjL3E4WJUvWMmPMEIku6eCbv4k7uiyMYb4=
-github.com/specgen-io/spec v0.0.0-20210809222415-68264d0e658f/go.mod h1:/p05SvMlu/S0kocM9pJy2myQk9xaD/h02QLKgrOOmXY=
-github.com/specgen-io/spec v0.0.0-20210810165909-67f62f0774b8 h1:qidEuPBheZJPQo4K7WrF2YWAXu+hTh2FtIu2+Odnf/M=
-github.com/specgen-io/spec v0.0.0-20210810165909-67f62f0774b8/go.mod h1:/p05SvMlu/S0kocM9pJy2myQk9xaD/h02QLKgrOOmXY=
 github.com/specgen-io/spec v0.0.0-20210810234910-94493fc97897 h1:8mphKyXTrof8eD720pvHp1f/JcPTaQEPJyJuVpFlqS4=
 github.com/specgen-io/spec v0.0.0-20210810234910-94493fc97897/go.mod h1:/p05SvMlu/S0kocM9pJy2myQk9xaD/h02QLKgrOOmXY=
 github.com/spf13/afero v1.6.0/go.mod h1:Ai8FlHk4v/PARR026UzYexafAt9roJ7LcLMAmO6Z93I=
