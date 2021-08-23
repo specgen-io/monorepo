@@ -65,13 +65,13 @@ func generateParamsParser(packageName string, path string) *gen.TextFile {
 package [[.PackageName]]
 
 import (
+	"cloud.google.com/go/civil"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"strconv"
 	"strings"
 	"time"
-	"cloud.google.com/go/civil"
-	"github.com/google/uuid"
-	"github.com/shopspring/decimal"
 )
 
 type ParamsParser struct {
