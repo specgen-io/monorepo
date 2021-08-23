@@ -38,3 +38,21 @@ func versionedPackage(version spec.Name, packageName string) string {
 	}
 	return packageName
 }
+
+func addVersionedPackage(version spec.Name, packageName string) string {
+	if version.Source != "" {
+		return fmt.Sprintf(`%s.`, versionedPackage(version, packageName))
+	}
+	return ""
+}
+
+func addVersionedFolder(specification *spec.Spec, folder string) string {
+	for _, version := range specification.Versions {
+		return versionedFolder(version.Version, folder)
+	}
+	return ""
+}
+
+func addVersionedInterfaceVar(api *spec.Api, version spec.Name) string {
+	return serviceInterfaceTypeVar(api) + version.PascalCase()
+}
