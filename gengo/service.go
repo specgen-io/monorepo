@@ -41,6 +41,6 @@ func GenerateService(moduleName string, serviceFile string, swaggerPath string, 
 	if err != nil {
 		return err
 	}
-	err = gen.WriteFiles(implFiles, true)
+	err = gen.WriteFiles(implFiles, false)
 	return err
 }
