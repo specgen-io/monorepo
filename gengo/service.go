@@ -27,7 +27,10 @@ func GenerateService(moduleName string, serviceFile string, swaggerPath string, 
 		generatedFiles = append(generatedFiles, *generateServicesInterfaces(&version, versionPackageName, versionPath))
 		generatedFiles = append(generatedFiles, generateVersionModels(&version, versionPackageName, versionPath)...)
 
-		implFiles = append(implFiles, generateServicesImplementations(moduleName, packageName, &version, versionedPackage(version.Version, "main"), versionedFolder(version.Version, generatePath))...)
+		servicesPackageName := "services"
+		servicesVersionPackageName := versionedPackage(version.Version, servicesPackageName)
+		servicesVersionPath := versionedFolder(version.Version, filepath.Join(generatePath, servicesPackageName))
+		implFiles = append(implFiles, generateServicesImplementations(moduleName, packageName, &version, servicesVersionPackageName, servicesVersionPath)...)
 	}
 
 	if swaggerPath != "" {
