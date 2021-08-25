@@ -7,7 +7,7 @@ import java.io.File
 
 
 @CacheableTask
-public open class GenerateJavaModelsTask public constructor() : SpecgenRunTask() {
+public open class SpecgenModelsJavaTask public constructor() : SpecgenBaseTask() {
     @OutputDirectory
     public val outputDirectory: Property<File> =
         project.objects.property<File>().convention(project.buildDir.resolve("generated-src/specgen"))

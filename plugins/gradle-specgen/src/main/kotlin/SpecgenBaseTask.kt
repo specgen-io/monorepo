@@ -4,14 +4,13 @@ import org.gradle.api.DefaultTask
 import org.gradle.work.DisableCachingByDefault
 import java.io.File
 import java.io.IOException
-import java.net.URLDecoder
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
 private class JarHandle private constructor()
 
 @DisableCachingByDefault(because = "Abstract super-class, not to be instantiated directly")
-public abstract class SpecgenRunTask : DefaultTask() {
+public abstract class SpecgenBaseTask : DefaultTask() {
     init {
         group = SpecgenPlugin.SPECGEN_GROUP
     }
@@ -35,7 +34,7 @@ public abstract class SpecgenRunTask : DefaultTask() {
                     }
 
                     try {
-                        checkNotNull(this@SpecgenRunTask.javaClass.getResourceAsStream(specgenRelativePath)) { "specgen executable isn't present in JAR." }
+                        checkNotNull(this@SpecgenBaseTask.javaClass.getResourceAsStream(specgenRelativePath)) { "specgen executable isn't present in JAR." }
                             .use { specgenToolStream ->
                                 Files.copy(
                                     specgenToolStream,
@@ -53,7 +52,7 @@ public abstract class SpecgenRunTask : DefaultTask() {
                 args(*args)
             }.assertNormalExitValue()
         } catch (error: Exception) {
-            throw SpecgenGenerationException("Source generation failed.", error)
+            throw SpecgenException("Source generation failed.", error)
         }
     }
 

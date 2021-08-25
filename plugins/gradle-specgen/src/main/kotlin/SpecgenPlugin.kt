@@ -11,13 +11,13 @@ import org.gradle.kotlin.dsl.*
 public class SpecgenPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = target.run {
         apply<JavaLibraryPlugin>()
-        val generateJavaModels by tasks.creating(GenerateJavaModelsTask::class)
+        val generateModelsJava by tasks.creating(SpecgenModelsJavaTask::class)
 
         afterEvaluate {
             project.configure<JavaPluginExtension> {
                 sourceSets.all {
-                    java.srcDir(generateJavaModels.outputDirectory.get())
-                    tasks[compileJavaTaskName]?.dependsOn(generateJavaModels)
+                    java.srcDir(generateModelsJava.outputDirectory.get())
+                    tasks[compileJavaTaskName]?.dependsOn(generateModelsJava)
                 }
             }
         }

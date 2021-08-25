@@ -194,20 +194,15 @@ jobs:
       - run:
           name: Deploy Gradle plugin
           command: |
-            cd ./plugins/gradle-specgen
-            ./gradlew publishAllPublicationsToArtifactoryRepository --build-cache --no-daemon \
-            -Djfrog.user=$JFROG_USER \
-            -Djfrog.pass=$JFROG_PASS \
-            -Dproject.version=<<pipeline.parameters.specgen-version>>
-      #            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
-      #              cd ./plugins/gradle-specgen
-      #              ./gradlew publishAllPublicationsToArtifactoryRepository --build-cache --no-daemon \
-      #              -Djfrog.user=$JFROG_USER \
-      #              -Djfrog.pass=$JFROG_PASS \
-      #              -Dproject.version=<<pipeline.parameters.specgen-version>>
-      #            else
-      #              echo "Will not release - not running on main branch"
-      #            fi
+            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
+              cd ./plugins/gradle-specgen
+              ./gradlew publishAllPublicationsToArtifactoryRepository --build-cache --no-daemon \
+              -Djfrog.user=$JFROG_USER \
+              -Djfrog.pass=$JFROG_PASS \
+              -Dproject.version=<<pipeline.parameters.specgen-version>>
+            else
+              echo "Will not release - not running on main branch"
+            fi
       - save_cache:
           key: cache-{{ checksum "./plugins/gradle-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-specgen/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
