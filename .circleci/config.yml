@@ -110,7 +110,7 @@ jobs:
             - ~/.ivy2
             - ~/.m2
 
-  build-sbt-specgen-sonatype:
+  sbt-sonatype:
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
@@ -207,7 +207,7 @@ jobs:
           key: cache-{{ checksum "./plugins/gradle-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-specgen/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
 
-  build-gradle-specgen-pluginportal:
+  gradle-pluginportal:
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
@@ -356,6 +356,14 @@ workflows:
                 - main
                 - /v.*/
       - circleci/start-pipeline:
+          name: test-plugins
+          repository: specgen-io/test-plugins
+          branch: main
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
+          context: specgen
+          requires:
+            - build-complete
+      - circleci/start-pipeline:
           name: test-models
           repository: specgen-io/test-models
           branch: main
@@ -387,16 +395,15 @@ workflows:
           context: specgen
           requires:
             - build-complete
-      - approve-sonatype:
+      - approve-release:
           type: approval
           requires:
             - build-complete
-      - build-sbt-specgen-sonatype:
+      - sbt-sonatype:
           context: specgen
           requires:
-            - approve-sonatype
-      - build-gradle-specgen-pluginportal:
+            - approve-release
+      - gradle-pluginportal:
           context: specgen
           requires:
-            - approve-sonatype
-
+            - approve-release
