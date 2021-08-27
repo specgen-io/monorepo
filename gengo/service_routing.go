@@ -11,13 +11,18 @@ import (
 func generateRouting(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
+
+	imports := []string{
+		`"encoding/json"`,
+		`"fmt"`,
+		`"github.com/husobee/vestigo"`,
+		`"net/http"`,
+	}
 	w.EmptyLine()
-	w.Line("import (")
-	w.Line(`  "encoding/json"`)
-	w.Line(`  "fmt"`)
-	w.Line(`  "github.com/husobee/vestigo"`)
-	w.Line(`  "net/http"`)
-	w.Line(`)`)
+	for _, imp := range imports {
+		w.Line(`import %s`, imp)
+	}
+
 	generateCheckErrors(w)
 	generateCheckOperationErrors(w)
 	w.EmptyLine()
