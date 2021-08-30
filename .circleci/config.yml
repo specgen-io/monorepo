@@ -62,7 +62,9 @@ jobs:
             cd ./plugins/gem-specgen
             export VERSION=<<pipeline.parameters.specgen-version>>
             gem build specgen.gemspec
-      - artifactory/setup-gems
+      - artifactory/setup-gems:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: gems
       - run:
           name: Push gem
           command: |
