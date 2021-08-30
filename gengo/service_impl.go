@@ -17,26 +17,13 @@ func generateServicesImplementations(moduleName string, importedPackage string, 
 
 func generateServiceImplementation(moduleName string, importedPackage string, version *spec.Version, api *spec.Api, packageName string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
-
 	w.Line("package %s", packageName)
 
-	imports := []string{`import "errors"`}
-	if apiHasType(api, spec.TypeDate) {
-		imports = append(imports, `import "cloud.google.com/go/civil"`)
-	}
-	if apiHasType(api, spec.TypeJson) {
-		imports = append(imports, `import "encoding/json"`)
-	}
-	if apiHasType(api, spec.TypeUuid) {
-		imports = append(imports, `import "github.com/google/uuid"`)
-	}
-	if apiHasType(api, spec.TypeDecimal) {
-		imports = append(imports, `import "github.com/shopspring/decimal"`)
-	}
-
+	imports := []string{`"errors"`}
+	imports = generateImports(api, imports)
 	w.EmptyLine()
 	for _, imp := range imports {
-		w.Line(imp)
+		w.Line(`import %s`, imp)
 	}
 	w.Line(`import "%s/%s"`, moduleName, versionedFolder(version.Version, importedPackage))
 

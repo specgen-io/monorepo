@@ -7,28 +7,16 @@ import (
 	"path/filepath"
 )
 
-func generateServicesInterfaces(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
+func generateServicesInterfaces(version *spec.Version, packageName string, generatePath string, fileName string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
 
 	imports := []string{}
-	if versionHasType(version, spec.TypeDate) {
-		imports = append(imports, `import "cloud.google.com/go/civil"`)
-	}
-	if versionHasType(version, spec.TypeJson) {
-		imports = append(imports, `import "encoding/json"`)
-	}
-	if versionHasType(version, spec.TypeUuid) {
-		imports = append(imports, `import "github.com/google/uuid"`)
-	}
-	if versionHasType(version, spec.TypeDecimal) {
-		imports = append(imports, `import "github.com/shopspring/decimal"`)
-	}
-
+	imports = generateVersionImports(version, imports)
 	if len(imports) > 0 {
 		w.EmptyLine()
 		for _, imp := range imports {
-			w.Line(imp)
+			w.Line(`import %s`, imp)
 		}
 	}
 
@@ -43,11 +31,11 @@ func generateServicesInterfaces(version *spec.Version, packageName string, gener
 			generateOperationResponseStruct(w, operation)
 		}
 		w.EmptyLine()
-		generateInterface(w, api)
+		generateInterface(w, api, fileName)
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(generatePath, "services.go"),
+		Path:    filepath.Join(generatePath, fileName),
 		Content: w.String(),
 	}
 }
@@ -77,10 +65,24 @@ func addMethodParams(operation spec.NamedOperation) []string {
 	return params
 }
 
-func generateInterface(w *gen.Writer, api spec.Api) {
-	w.Line(`type %s interface {`, serviceInterfaceTypeName(&api))
+func generateInterface(w *gen.Writer, api spec.Api, fileName string) {
+	var interfaceName string
+	if isServiceOrClient(fileName) {
+		interfaceName = serviceInterfaceTypeName(&api)
+	} else {
+		interfaceName = clientInterfaceTypeName(&api)
+	}
+	w.Line(`type %s interface {`, interfaceName)
 	for _, operation := range api.Operations {
 		w.Line(`  %s(%s) (*%s, error)`, operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), responseTypeName(&operation))
 	}
 	w.Line(`}`)
+}
+
+func isServiceOrClient(fileName string) bool {
+	if fileName == "services.go" {
+		return true
+	} else {
+		return false
+	}
 }
