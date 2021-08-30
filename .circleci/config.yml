@@ -57,8 +57,30 @@ jobs:
       - attach_workspace:
           at: ./plugins/gem-specgen/lib
       - run:
-          name: Check Base64
-          command: echo -n '$RUBYGEMS_API_KEY' | base64
+          name: Build gem
+          command: |
+            cd ./plugins/gem-specgen
+            export VERSION=<<pipeline.parameters.specgen-version>>
+            gem build specgen.gemspec
+      - artifactory/setup-gems
+      - run:
+          name: Push gem
+          command: |
+            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
+              cd ./plugins/gem-specgen
+              export VERSION=<<pipeline.parameters.specgen-version>>
+              gem push specgen-$VERSION.gem --host https://moda.jfrog.io/moda/api/gems/gems
+            else
+              echo "Will not release - not running on main branch"
+            fi
+
+  gem-rubygems:
+    docker:
+      - image: circleci/ruby:2.4.9
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/gem-specgen/lib
       - run:
           name: Build gem
           command: |
@@ -358,6 +380,10 @@ workflows:
           requires:
             - approve-release
       - gradle-pluginportal:
+          context: specgen
+          requires:
+            - approve-release
+      - gem-rubygems:
           context: specgen
           requires:
             - approve-release
