@@ -1,8 +1,8 @@
 version: 2.1
 
 orbs:
-  circleci: moda/circleci@0.4.0
-  artifactory: moda/artifactory@0.2.0
+  circleci: specgen/circleci@0.1.0
+  artifactory: specgen/artifactory@0.1.0
 
 parameters:
   specgen-version:
@@ -154,7 +154,7 @@ jobs:
           at: ./plugins/maven-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
-      - setup-artifactory-maven:
+      - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
       - run:
@@ -260,52 +260,6 @@ commands:
           command: |
             mkdir -p ~/.sbt/gpg
             (echo "$SONATYPE_GPG_SECRET_KEY" | base64 -d) > ~/.sbt/gpg/secring.asc
-  setup-artifactory-maven:
-    parameters:
-      jfrog-server-url:
-        type: string
-      repo-name:
-        type: string
-    steps:
-      - run:
-          name: Setup Artifactory for Maven
-          command: |
-            mkdir -p ~/.m2
-            tee > ~/.m2/settings.xml \<<END
-            <?xml version="1.0" encoding="UTF-8"?>
-            <settings xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 http://maven.apache.org/xsd/settings-1.2.0.xsd" xmlns="http://maven.apache.org/SETTINGS/1.2.0"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-              <servers>
-                <server>
-                  <id>artifactory</id>
-                  <username>$JFROG_USER</username>
-                  <password>$JFROG_PASS</password>
-                </server>
-              </servers>
-              <profiles>
-                <profile>
-                  <id>artifactory</id>
-                  <repositories>
-                    <repository>
-                      <id>artifactory</id>
-                      <name>maven</name>
-                      <url>https://<<parameters.jfrog-server-url>>/artifactory/<<parameters.repo-name>></url>
-                    </repository>
-                  </repositories>
-                  <pluginRepositories>
-                    <pluginRepository>
-                      <id>artifactory</id>
-                      <name>maven</name>
-                      <url>https://specgen.jfrog.io/artifactory/maven</url>
-                    </pluginRepository>
-                  </pluginRepositories>
-                  <activation>
-                    <activeByDefault>true</activeByDefault>
-                  </activation>
-                </profile>
-              </profiles>
-            </settings>
-            END
   setup-rubygems:
     steps:
       - run:
