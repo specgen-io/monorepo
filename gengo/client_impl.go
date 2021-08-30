@@ -21,28 +21,19 @@ func generateClientImplementation(api *spec.Api, packageName string, generatePat
 	w.Line("package %s", packageName)
 
 	imports := []string{
-		`import "fmt"`,
-		`import "errors"`,
-		`import "io/ioutil"`,
-		`import "net/http"`,
-		`import "encoding/json"`,
+		`"fmt"`,
+		`"errors"`,
+		`"io/ioutil"`,
+		`"net/http"`,
+		`"encoding/json"`,
 	}
 	if apiHasBody(api) {
-		imports = append(imports, `import "bytes"`)
+		imports = append(imports, `"bytes"`)
 	}
-	if apiHasType(api, spec.TypeDate) {
-		imports = append(imports, `import "cloud.google.com/go/civil"`)
-	}
-	if apiHasType(api, spec.TypeUuid) {
-		imports = append(imports, `import "github.com/google/uuid"`)
-	}
-	if apiHasType(api, spec.TypeDecimal) {
-		imports = append(imports, `import "github.com/shopspring/decimal"`)
-	}
-
+	imports = generateImports(api, imports)
 	w.EmptyLine()
 	for _, imp := range imports {
-		w.Line(imp)
+		w.Line(`import %s`, imp)
 	}
 
 	w.EmptyLine()

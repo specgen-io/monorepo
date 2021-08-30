@@ -1,7 +1,6 @@
 package gengo
 
 import (
-	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"path/filepath"
@@ -14,15 +13,16 @@ func GenerateGoClient(serviceFile string, generatePath string) error {
 	}
 	generatedFiles := []gen.TextFile{}
 
-	packageName := fmt.Sprintf("%s_client", specification.Name.SnakeCase())
-	generatePath = filepath.Join(generatePath, packageName)
+	packageName := "spec"
 	for _, version := range specification.Versions {
 		versionPackageName := versionedPackage(version.Version, packageName)
-		versionPath := versionedFolder(version.Version, generatePath)
+		generatedPath := filepath.Join(generatePath, packageName)
+		versionPath := versionedFolder(version.Version, generatedPath)
 
 		generatedFiles = append(generatedFiles, *generateConverter(versionPackageName, filepath.Join(versionPath, "converter.go")))
 		generatedFiles = append(generatedFiles, generateVersionModels(&version, versionPackageName, versionPath)...)
 		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, versionPackageName, versionPath)...)
+		generatedFiles = append(generatedFiles, *generateServicesInterfaces(&version, versionPackageName, versionPath, "responses.go"))
 	}
 	err = gen.WriteFiles(generatedFiles, true)
 	return err

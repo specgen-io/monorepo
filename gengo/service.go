@@ -24,7 +24,7 @@ func GenerateService(moduleName string, serviceFile string, swaggerPath string, 
 
 		generatedFiles = append(generatedFiles, *generateParamsParser(versionPackageName, filepath.Join(versionPath, "params_parsing.go")))
 		generatedFiles = append(generatedFiles, *generateRouting(&version, versionPackageName, versionPath))
-		generatedFiles = append(generatedFiles, *generateServicesInterfaces(&version, versionPackageName, versionPath))
+		generatedFiles = append(generatedFiles, *generateServicesInterfaces(&version, versionPackageName, versionPath, "services.go"))
 		generatedFiles = append(generatedFiles, generateVersionModels(&version, versionPackageName, versionPath)...)
 
 		servicesPackageName := "services"
