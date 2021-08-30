@@ -306,7 +306,7 @@ commands:
       - run:
           name: Setup Artifactory for RubyGems
           command: |
-            export JFROG_USER_SAFE=$(echo "$JFROG_USER" | sed "s/@/$%40/")
+            export JFROG_USER_SAFE=$(echo "$JFROG_USER" | sed "s/@/%40/")
             gem source --add https://$JFROG_USER_SAFE:$JFROG_PASS@<< parameters.jfrog-server-url >>/artifactory/api/gems/<< parameters.repo-name >>/
             curl -u$JFROG_USER:$JFROG_PASS https://<< parameters.jfrog-server-url >>/artifactory/api/gems/<< parameters.repo-name >>/api/v1/api_key.yaml > ~/.gem/credentials
             chmod 600 ~/.gem/credentials
