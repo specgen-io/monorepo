@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   circleci: specgen/circleci@0.1.0
-  artifactory: specgen/artifactory@0.1.0
+  artifactory: specgen/artifactory@0.4.0
 
 parameters:
   specgen-version:
@@ -151,6 +151,28 @@ jobs:
             sbt -Dversion=<<pipeline.parameters.specgen-version>> publishSigned sonatypeRelease
 
   build-npm-specgen:
+    docker:
+      - image: cimg/node:14.15.1
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/npm-specgen
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+      - run:
+          name: npm publish package
+          command: |
+            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
+              cd ./plugins/npm-specgen
+              npm version <<pipeline.parameters.specgen-version>>
+              npm install
+              npm publish
+            else
+              echo "Will not release - not running on main branch"
+            fi
+
+  npm-npmjs:
     docker:
       - image: cimg/node:14.15.1
     steps:
@@ -397,6 +419,10 @@ workflows:
           requires:
             - approve-release
       - gradle-pluginportal:
+          context: specgen
+          requires:
+            - approve-release
+      - npm-npmjs:
           context: specgen
           requires:
             - approve-release
