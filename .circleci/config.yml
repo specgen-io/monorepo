@@ -71,7 +71,7 @@ jobs:
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/gem-specgen
               export VERSION=<<pipeline.parameters.specgen-version>>
-              gem push specgen-$VERSION.gem --host https://specgen.jfrog.io/specgen/api/gems/gems
+              gem push specgen-$VERSION.gem --host https://specgen.jfrog.io/artifactory/api/gems/gems
             else
               echo "Will not release - not running on main branch"
             fi
