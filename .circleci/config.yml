@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   circleci: specgen/circleci@0.1.0
-  artifactory: specgen/artifactory@0.4.0
+  artifactory: specgen/artifactory@0.5.0
 
 parameters:
   specgen-version:
