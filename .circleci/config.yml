@@ -406,8 +406,6 @@ workflows:
     jobs:
       - approve-release:
           type: approval
-          requires:
-            - build-complete
       - sbt-sonatype:
           context: specgen
           requires:
