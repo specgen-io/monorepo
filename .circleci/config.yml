@@ -152,7 +152,7 @@ jobs:
 
   build-npm-specgen:
     docker:
-      - image: cimg/node:14.15.1
+      - image: cimg/node:16.8.0
     steps:
       - checkout
       - attach_workspace:
@@ -175,7 +175,7 @@ jobs:
 
   npm-npmjs:
     docker:
-      - image: cimg/node:14.15.1
+      - image: cimg/node:16.8.0
     steps:
       - checkout
       - attach_workspace:
