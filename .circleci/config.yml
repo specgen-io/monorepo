@@ -161,7 +161,9 @@ jobs:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
       - run:
-          name: npm publish package
+          name: |
+            npm pkg set name=@specgen.io/specgen.io
+            npm publish package
           command: |
             if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
               cd ./plugins/npm-specgen
