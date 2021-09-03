@@ -123,7 +123,7 @@ func generateOneOfModel(w *gen.Writer, model *spec.NamedModel) {
 		for _, item := range model.OneOf.Items {
 			w.Line(`  if u.%s != nil {`, item.Name.PascalCase())
 			w.Line(`    return json.Marshal(&struct {`)
-			w.Line("      Discriminator string `json:\"_type\"`")
+			w.Line("      Discriminator string `json:\"%s\"`", *model.OneOf.Discriminator)
 			w.Line(`      *%s`, GoType(&item.Type.Definition))
 			w.Line(`    }{`)
 			w.Line(`      Discriminator: "%s",`, item.Name.Source)
@@ -136,7 +136,7 @@ func generateOneOfModel(w *gen.Writer, model *spec.NamedModel) {
 		w.EmptyLine()
 		w.Line(`func (u *%s) UnmarshalJSON(data []byte) error {`, model.Name.PascalCase())
 		w.Line(`  var discriminator struct {`)
-		w.Line("    Value string `json:\"_type\"`")
+		w.Line("    Value string `json:\"%s\"`", *model.OneOf.Discriminator)
 		w.Line(`  }`)
 		w.Line(`  err := json.Unmarshal(data, &discriminator)`)
 		w.Line(`  if err != nil { return err }`)
@@ -150,7 +150,7 @@ func generateOneOfModel(w *gen.Writer, model *spec.NamedModel) {
 			w.Line(`      u.%s = &unionCase`, item.Name.PascalCase())
 		}
 		w.Line(`    default:`)
-		w.Line(`      return errors.New(fmt.Sprintf("unexpected union discriminator field _type value: %s", discriminator.Value))`, "%s")
+		w.Line(`      return errors.New(fmt.Sprintf("unexpected union discriminator field %s value: %s", discriminator.Value))`, *model.OneOf.Discriminator, "%s")
 		w.Line(`  }`)
 		w.Line(`  return nil`)
 		w.Line(`}`)
