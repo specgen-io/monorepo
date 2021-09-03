@@ -42,22 +42,25 @@ func generateVersionModelsCode(version *spec.Version, packageName string, genera
 
 	imports := []string{}
 	if versionModelsHasType(version, spec.TypeDate) {
-		imports = append(imports, `import "cloud.google.com/go/civil"`)
+		imports = append(imports, `"cloud.google.com/go/civil"`)
 	}
 	if versionModelsHasType(version, spec.TypeJson) {
-		imports = append(imports, `import "encoding/json"`)
+		imports = append(imports, `"encoding/json"`)
 	}
 	if versionModelsHasType(version, spec.TypeUuid) {
-		imports = append(imports, `import "github.com/google/uuid"`)
+		imports = append(imports, `"github.com/google/uuid"`)
 	}
 	if versionModelsHasType(version, spec.TypeDecimal) {
-		imports = append(imports, `import "github.com/shopspring/decimal"`)
+		imports = append(imports, `"github.com/shopspring/decimal"`)
+	}
+	if isOneOfModel(version) {
+		imports = append(imports, `"errors"`, `"fmt"`)
 	}
 
 	if len(imports) > 0 {
 		w.EmptyLine()
 		for _, imp := range imports {
-			w.Line(imp)
+			w.Line(`import %s`, imp)
 		}
 	}
 
@@ -114,4 +117,42 @@ func generateOneOfModel(w *gen.Writer, model *spec.NamedModel) {
 		w.Line("  %s *%s `json:\"%s,omitempty\"`", item.Name.PascalCase(), GoType(&item.Type.Definition), item.Name.Source)
 	}
 	w.Line("}")
+	if model.OneOf.Discriminator != nil {
+		w.EmptyLine()
+		w.Line(`func (u %s) MarshalJSON() ([]byte, error) {`, model.Name.PascalCase())
+		for _, item := range model.OneOf.Items {
+			w.Line(`  if u.%s != nil {`, item.Name.PascalCase())
+			w.Line(`    return json.Marshal(&struct {`)
+			w.Line("      Discriminator string `json:\"%s\"`", *model.OneOf.Discriminator)
+			w.Line(`      *%s`, GoType(&item.Type.Definition))
+			w.Line(`    }{`)
+			w.Line(`      Discriminator: "%s",`, item.Name.Source)
+			w.Line(`      %s: u.%s,`, GoType(&item.Type.Definition), item.Name.PascalCase())
+			w.Line(`    })`)
+			w.Line(`  }`)
+		}
+		w.Line(`  return nil, errors.New("union case not set")`)
+		w.Line(`}`)
+		w.EmptyLine()
+		w.Line(`func (u *%s) UnmarshalJSON(data []byte) error {`, model.Name.PascalCase())
+		w.Line(`  var discriminator struct {`)
+		w.Line("    Value string `json:\"%s\"`", *model.OneOf.Discriminator)
+		w.Line(`  }`)
+		w.Line(`  err := json.Unmarshal(data, &discriminator)`)
+		w.Line(`  if err != nil { return err }`)
+		w.EmptyLine()
+		w.Line(`  switch discriminator.Value {`)
+		for _, item := range model.OneOf.Items {
+			w.Line(`    case "%s":`, item.Name.Source)
+			w.Line(`      unionCase := %s{}`, GoType(&item.Type.Definition))
+			w.Line(`      err := json.Unmarshal(data, &unionCase)`)
+			w.Line(`      if err != nil { return err }`)
+			w.Line(`      u.%s = &unionCase`, item.Name.PascalCase())
+		}
+		w.Line(`    default:`)
+		w.Line(`      return errors.New(fmt.Sprintf("unexpected union discriminator field %s value: %s", discriminator.Value))`, *model.OneOf.Discriminator, "%s")
+		w.Line(`  }`)
+		w.Line(`  return nil`)
+		w.Line(`}`)
+	}
 }
