@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   circleci: specgen/circleci@0.1.0
-  artifactory: specgen/artifactory@0.1.0
+  artifactory: specgen/artifactory@0.5.0
 
 parameters:
   specgen-version:
@@ -25,15 +25,6 @@ jobs:
             mkdir -p /tmp/test-results
             go get -u github.com/jstemmer/go-junit-report
             go test ./... -v 2>&1 | go-junit-report > /tmp/test-results/go-test-report.xml
-      - store_artifacts:
-          path: ./zips
-          destination: zips
-      - store_artifacts:
-          path: ./dist
-          destination: specgen
-      - store_artifacts:
-          path: /tmp/test-results
-          destination: go-test-report
       - store_test_results:
           path: /tmp/test-results
       - persist_to_workspace:
@@ -57,8 +48,32 @@ jobs:
       - attach_workspace:
           at: ./plugins/gem-specgen/lib
       - run:
-          name: Check Base64
-          command: echo -n '$RUBYGEMS_API_KEY' | base64
+          name: Build gem
+          command: |
+            cd ./plugins/gem-specgen
+            export VERSION=<<pipeline.parameters.specgen-version>>
+            gem build specgen.gemspec
+      - setup-gems:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: gems
+      - run:
+          name: Push gem
+          command: |
+            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
+              cd ./plugins/gem-specgen
+              export VERSION=<<pipeline.parameters.specgen-version>>
+              gem push specgen-$VERSION.gem --host https://specgen.jfrog.io/artifactory/api/gems/gems
+            else
+              echo "Will not release - not running on main branch"
+            fi
+
+  gem-rubygems:
+    docker:
+      - image: circleci/ruby:2.4.9
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/gem-specgen/lib
       - run:
           name: Build gem
           command: |
@@ -128,7 +143,30 @@ jobs:
 
   build-npm-specgen:
     docker:
-      - image: cimg/node:14.15.1
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/npm-specgen
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+      - run:
+          name: npm publish package
+          command: |
+            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
+              cd ./plugins/npm-specgen
+              npm pkg set name=@specgen.io/specgen.io
+              npm version <<pipeline.parameters.specgen-version>>
+              npm install
+              npm publish
+            else
+              echo "Will not release - not running on main branch"
+            fi
+
+  npm-npmjs:
+    docker:
+      - image: cimg/node:16.8.0
     steps:
       - checkout
       - attach_workspace:
@@ -272,6 +310,21 @@ commands:
             END
             chmod 600 ~/.gem/credentials
 
+  setup-gems:
+    parameters:
+      jfrog-server-url:
+        type: string
+      repo-name:
+        type: string
+    steps:
+      - run:
+          name: Setup Artifactory for RubyGems
+          command: |
+            export JFROG_USER_SAFE=$(echo "$JFROG_USER" | sed "s/@/%40/")
+            gem source --add https://$JFROG_USER_SAFE:$JFROG_PASS@<< parameters.jfrog-server-url >>/artifactory/api/gems/<< parameters.repo-name >>/
+            curl -u$JFROG_USER:$JFROG_PASS https://<< parameters.jfrog-server-url >>/artifactory/api/gems/<< parameters.repo-name >>/api/v1/api_key.yaml > ~/.gem/credentials
+            chmod 600 ~/.gem/credentials
+
 workflows:
   build-release:
     jobs:
@@ -349,15 +402,23 @@ workflows:
           context: specgen
           requires:
             - build-complete
+  publish:
+    jobs:
       - approve-release:
           type: approval
-          requires:
-            - build-complete
       - sbt-sonatype:
           context: specgen
           requires:
             - approve-release
       - gradle-pluginportal:
+          context: specgen
+          requires:
+            - approve-release
+      - npm-npmjs:
+          context: specgen
+          requires:
+            - approve-release
+      - gem-rubygems:
           context: specgen
           requires:
             - approve-release
