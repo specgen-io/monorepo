@@ -86,3 +86,12 @@ func versionModelsHasType(version *spec.Version, typ string) bool {
 	}
 	return false
 }
+
+func isOneOfModel(version *spec.Version) bool {
+	for _, model := range version.ResolvedModels {
+		if model.IsOneOf() {
+			return true
+		}
+	}
+	return false
+}
