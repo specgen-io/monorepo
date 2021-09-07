@@ -11,21 +11,14 @@ import (
 func generateRouting(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
-
-	imports := []string{
-		`"encoding/json"`,
-		`"fmt"`,
-		`"github.com/husobee/vestigo"`,
-		`"net/http"`,
-	}
 	w.EmptyLine()
-	for _, imp := range imports {
-		w.Line(`import %s`, imp)
-	}
 
-	generateCheckErrors(w)
-	generateCheckOperationErrors(w)
-	w.EmptyLine()
+	w.Line(`import (`)
+	w.Line(`  "encoding/json"`)
+	w.Line(`  "github.com/husobee/vestigo"`)
+	w.Line(`  log "github.com/sirupsen/logrus"`)
+	w.Line(`  "net/http"`)
+	w.Line(`)`)
 
 	for _, api := range version.Http.Apis {
 		generateApiRouter(w, api)
@@ -35,30 +28,6 @@ func generateRouting(version *spec.Version, packageName string, generatePath str
 		Path:    filepath.Join(generatePath, "routing.go"),
 		Content: w.String(),
 	}
-}
-
-func generateCheckErrors(w *gen.Writer) {
-	w.Line(`
-func checkErrors(params *ParamsParser, w http.ResponseWriter) bool {
-	if len(params.Errors) > 0 {
-		w.WriteHeader(400)
-		fmt.Println(params.Errors)
-		return false
-		}
-	return true
-}`)
-}
-
-func generateCheckOperationErrors(w *gen.Writer) {
-	w.Line(`
-func checkOperationErrors(err error, w http.ResponseWriter) bool {
-	if err != nil {
-		w.WriteHeader(500)
-		fmt.Println(err.Error())
-		return false
-	}
-	return true
-}`)
 }
 
 func getVestigoUrl(operation spec.NamedOperation) []string {
@@ -85,12 +54,20 @@ func addSetCors(w *gen.Writer, operation spec.NamedOperation) {
 	w.Line(`})`)
 }
 
+func logFieldsName(operation *spec.NamedOperation) string {
+	return fmt.Sprintf("log%s", operation.Name.PascalCase())
+}
+
 func generateApiRouter(w *gen.Writer, api spec.Api) {
+	w.EmptyLine()
 	w.Line(`func Add%sRoutes(router *vestigo.Router, %s %s) {`, api.Name.PascalCase(), serviceInterfaceTypeVar(&api), serviceInterfaceTypeName(&api))
 	for _, operation := range api.Operations {
+		w.EmptyLine()
 		w.Indent()
-		w.Line(`router.%s("%s", func(w http.ResponseWriter, r *http.Request) {`, ToPascalCase(operation.Endpoint.Method), JoinParams(getVestigoUrl(operation)))
-		generateOperationMethod(w, api, operation)
+		url := JoinParams(getVestigoUrl(operation))
+		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), url)
+		w.Line(`router.%s("%s", func(w http.ResponseWriter, r *http.Request) {`, ToPascalCase(operation.Endpoint.Method), url)
+		generateOperationMethod(w, api, &operation)
 		w.Line(`})`)
 		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
 			addSetCors(w, operation)
@@ -98,10 +75,9 @@ func generateApiRouter(w *gen.Writer, api spec.Api) {
 		w.Unindent()
 	}
 	w.Line(`}`)
-	w.EmptyLine()
 }
 
-func parserParameterCall(operation spec.NamedOperation, param *spec.NamedParam, paramsParserName string) string {
+func parserParameterCall(operation *spec.NamedOperation, param *spec.NamedParam, paramsParserName string) string {
 	paramNameSource := param.Name.Source
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		paramNameSource = ":" + paramNameSource
@@ -123,39 +99,67 @@ func parserParameterCall(operation spec.NamedOperation, param *spec.NamedParam, 
 	return call
 }
 
-func addParamsParser(w *gen.Writer, operation spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramName string) {
+func addParamsParser(w *gen.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramName string) {
 	if namedParams != nil && len(namedParams) > 0 {
 		w.Line(`  %s := NewParamsParser(r.%s)`, paramsParserName, paramName)
 		for _, param := range namedParams {
 			w.Line(`  %s := %s`, param.Name.CamelCase(), parserParameterCall(operation, &param, paramsParserName))
 		}
-		w.Line(`  if !checkErrors(%s, w) { return }`, paramsParserName)
+		w.Line(`  if len(%s.Errors) > 0 {`, paramsParserName)
+		w.Line(`    log.Warnf("Can't parse %s: %%s", %s.Errors)`, paramsParserName, paramsParserName)
+		w.Line(`    w.WriteHeader(400)`)
+		w.Line(`    log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
+		w.Line(`    return`)
+		w.Line(`  }`)
 	}
 }
 
-func generateOperationMethod(w *gen.Writer, api spec.Api, operation spec.NamedOperation) {
+func generateOperationMethod(w *gen.Writer, api spec.Api, operation *spec.NamedOperation) {
+	w.Line(  `  log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	if operation.Body != nil {
 		w.Line(`  var body %s`, GoType(&operation.Body.Type.Definition))
-		w.Line(`  json.NewDecoder(r.Body).Decode(&body)`)
+		w.Line(`  err := json.NewDecoder(r.Body).Decode(&body)`)
+		w.Line(`  if err != nil {`)
+		w.Line(`    log.Warnf("Decoding body JSON failed: %%s", err.Error())`)
+		w.Line(`    w.WriteHeader(400)`)
+		w.Line(`    log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
+		w.Line(`    return`)
+		w.Line(`  }`)
 	}
 	addParamsParser(w, operation, operation.QueryParams, "queryParams", "URL.Query()")
 	addParamsParser(w, operation, operation.HeaderParams, "headerParams", "Header")
 	addParamsParser(w, operation, operation.Endpoint.UrlParams, "urlParams", "URL.Query()")
 
 	w.Line(`  response, err := %s.%s(%s)`, serviceInterfaceTypeVar(&api), operation.Name.PascalCase(), JoinDelimParams(addOperationMethodParams(operation)))
-	w.Line(`  if !checkOperationErrors(err, w) { return }`)
+
+	w.Line(`  if response == nil || err != nil {`)
+	w.Line(`    if err != nil {`)
+	w.Line(`      log.Errorf("Error returned from service implementation: %%s", err.Error())`)
+	w.Line(`    } else {`)
+	w.Line(`      log.Errorf("No result returned from service implementation")`)
+	w.Line(`    }`)
+	w.Line(`    w.WriteHeader(500)`)
+	w.Line(`    log.WithFields(%s).WithField("status", 500).Info("Completed request")`, logFieldsName(operation))
+	w.Line(`    return`)
+	w.Line(`  }`)
+
 	for _, response := range operation.Responses {
 		w.Line(`  if response.%s != nil {`, response.Name.PascalCase())
 		w.Line(`    w.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
-		if spec.HttpStatusCode(response.Name) == "200" {
+		if !response.Type.Definition.IsEmpty() {
 			w.Line(`    json.NewEncoder(w).Encode(response.%s)`, response.Name.PascalCase())
 		}
+		w.Line(`    log.WithFields(%s).WithField("status", %s).Info("Completed request")`, logFieldsName(operation), spec.HttpStatusCode(response.Name))
 		w.Line(`    return`)
 		w.Line(`  }`)
 	}
+	w.Line(`  log.Error("Result from service implementation does not have anything in it")`)
+	w.Line(`  w.WriteHeader(500)`)
+	w.Line(`  log.WithFields(%s).WithField("status", 500).Info("Completed request")`, logFieldsName(operation))
+	w.Line(`  return`)
 }
 
-func addOperationMethodParams(operation spec.NamedOperation) []string {
+func addOperationMethodParams(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
 	if operation.Body != nil {
 		urlParams = append(urlParams, fmt.Sprintf("%s", "&body"))
