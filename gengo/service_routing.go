@@ -30,22 +30,18 @@ func generateRouting(version *spec.Version, packageName string, generatePath str
 	}
 }
 
-func getVestigoUrl(operation spec.NamedOperation) []string {
-	reminder := operation.FullUrl()
-	urlParams := []string{}
+func getVestigoUrl(operation spec.NamedOperation) string {
+	url := operation.FullUrl()
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		for _, param := range operation.Endpoint.UrlParams {
-			parts := strings.Split(reminder, spec.UrlParamStr(param.Name.Source))
-			urlParams = append(urlParams, fmt.Sprintf("%s:%s", parts[0], param.Name.Source))
-			reminder = parts[1]
+			url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), fmt.Sprintf(":%s", param.Name.Source), -1)
 		}
 	}
-	urlParams = append(urlParams, fmt.Sprintf("%s", reminder))
-	return urlParams
+	return url
 }
 
 func addSetCors(w *gen.Writer, operation spec.NamedOperation) {
-	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, JoinParams(getVestigoUrl(operation)))
+	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, getVestigoUrl(operation))
 	params := []string{}
 	for _, param := range operation.HeaderParams {
 		params = append(params, fmt.Sprintf(`"%s"`, param.Name.Source))
@@ -64,7 +60,7 @@ func generateApiRouter(w *gen.Writer, api spec.Api) {
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		w.Indent()
-		url := JoinParams(getVestigoUrl(operation))
+		url := getVestigoUrl(operation)
 		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), url)
 		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, ToPascalCase(operation.Endpoint.Method), url)
 		generateOperationMethod(w, api, &operation)
