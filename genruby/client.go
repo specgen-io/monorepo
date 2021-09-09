@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/pinzolo/casee"
 	"github.com/specgen-io/spec"
-	"specgen/gen"
+	"github.com/specgen-io/specgen/v2/gen"
 	"path/filepath"
 	"strings"
 )

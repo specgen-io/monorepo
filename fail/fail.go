@@ -1,7 +1,7 @@
 package fail
 
 import (
-	"specgen/console"
+	"github.com/specgen-io/specgen/v2/console"
 	"os"
 )
 

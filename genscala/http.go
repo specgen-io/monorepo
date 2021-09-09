@@ -1,7 +1,7 @@
 package genscala
 
 import (
-	"specgen/gen"
+	"github.com/specgen-io/specgen/v2/gen"
 	"strings"
 )
 

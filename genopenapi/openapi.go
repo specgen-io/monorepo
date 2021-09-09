@@ -3,7 +3,7 @@ package genopenapi
 import (
 	"github.com/pinzolo/casee"
 	spec "github.com/specgen-io/spec"
-	"specgen/gen"
+	"github.com/specgen-io/specgen/v2/gen"
 	"strings"
 )
 

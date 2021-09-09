@@ -3,8 +3,8 @@ package genscala
 import (
 	"fmt"
 	"github.com/specgen-io/spec"
-	"specgen/gen"
-	"specgen/genopenapi"
+	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/genopenapi"
 	"path/filepath"
 	"strings"
 )
