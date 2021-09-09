@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"specgen/fail"
-	"specgen/genscala"
+	"github.com/specgen-io/specgen/v2/fail"
+	"github.com/specgen-io/specgen/v2/genscala"
 	"github.com/spf13/cobra"
 )
 
