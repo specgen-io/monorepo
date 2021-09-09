@@ -22,3 +22,12 @@ func checkType(fieldType *spec.TypeDef, typ string) bool {
 	}
 	return true
 }
+
+func isArrayField(model *spec.NamedModel) bool {
+	for _, field := range model.Object.Fields {
+		if field.Type.Definition.Node == spec.ArrayType {
+			return true
+		}
+	}
+	return false
+}
