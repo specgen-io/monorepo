@@ -3,8 +3,8 @@ package gents
 import (
 	"fmt"
 	"github.com/specgen-io/spec"
-	"github.com/specgen-io/specgen/v2/gen"
-	"github.com/specgen-io/specgen/v2/genopenapi"
+	"specgen/gen"
+	"specgen/genopenapi"
 )
 
 func GenerateService(serviceFile string, swaggerPath string, generatePath string, servicesPath string, server string, validation string) error {

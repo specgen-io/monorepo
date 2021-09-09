@@ -1,7 +1,7 @@
 package gents
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"specgen/gen"
 	"strings"
 )
 

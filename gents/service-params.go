@@ -3,7 +3,7 @@ package gents
 import (
 	"fmt"
 	"github.com/specgen-io/spec"
-	"github.com/specgen-io/specgen/v2/gen"
+	"specgen/gen"
 )
 
 func paramsRuntimeTypeName(typeName string) string {
