@@ -2,7 +2,7 @@ package genscala
 
 import (
 	"github.com/specgen-io/spec"
-	"github.com/specgen-io/specgen/v2/gen"
+	"specgen/gen"
 )
 
 func responseType(operation spec.NamedOperation) string {

@@ -1,6 +1,6 @@
 package genjava
 
-import "github.com/specgen-io/specgen/v2/gen"
+import "specgen/gen"
 
 func NewJavaWriter() *gen.Writer {
 	return gen.NewWriter("\t", 2)

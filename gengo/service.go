@@ -2,8 +2,8 @@ package gengo
 
 import (
 	"github.com/specgen-io/spec"
-	"github.com/specgen-io/specgen/v2/gen"
-	"github.com/specgen-io/specgen/v2/genopenapi"
+	"specgen/gen"
+	"specgen/genopenapi"
 	"path/filepath"
 )
 

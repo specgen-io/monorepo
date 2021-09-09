@@ -1,7 +1,7 @@
 package gen
 
 import (
-	"github.com/specgen-io/specgen/v2/console"
+	"specgen/console"
 	"io/ioutil"
 	"os"
 	"path/filepath"
