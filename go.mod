@@ -1,4 +1,4 @@
-module github.com/specgen-io/specgen/v2
+module specgen
 
 go 1.16
 

@@ -2,7 +2,7 @@ package gents
 
 import (
 	"github.com/specgen-io/spec"
-	"github.com/specgen-io/specgen/v2/gen"
+	"specgen/gen"
 )
 
 func generateOperationResponse(w *gen.Writer, operation *spec.NamedOperation) {

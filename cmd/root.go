@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/console"
-	"github.com/specgen-io/specgen/v2/version"
+	"specgen/console"
+	"specgen/version"
 	"github.com/spf13/cobra"
 	"os"
 )
