@@ -277,10 +277,10 @@ func addObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
 	formatParams := []string{}
 	formatArgs := []string{}
 	for _, field := range model.Object.Fields {
-		formatParams = append(formatParams, fmt.Sprintf(`{%s=%s}`, field.Name.CamelCase(), "%s"))
+		formatParams = append(formatParams, fmt.Sprintf(`%s=%s`, field.Name.CamelCase(), "%s"))
 		formatArgs = append(formatArgs, fmt.Sprintf(`%s`, field.Name.CamelCase()))
 	}
-	w.Line(`  return String.format("%s%s", %s);`, model.Name.PascalCase(), JoinParams(formatParams), JoinParams(formatArgs))
+	w.Line(`  return String.format("%s{%s}", %s);`, model.Name.PascalCase(), JoinParams(formatParams), JoinParams(formatArgs))
 	w.Line(`}`)
 }
 
@@ -315,10 +315,10 @@ func addObjectModelArraysMethods(w *gen.Writer, model *spec.NamedModel) {
 	formatParams := []string{}
 	formatArgs := []string{}
 	for _, field := range model.Object.Fields {
-		formatParams = append(formatParams, fmt.Sprintf(`{%s=%s}`, field.Name.CamelCase(), "%s"))
-		formatArgs = append(formatArgs, fmt.Sprintf(`%s`, field.Name.CamelCase()))
+		formatParams = append(formatParams, fmt.Sprintf(`%s=%s`, field.Name.CamelCase(), "%s"))
+		formatArgs = append(formatArgs, fmt.Sprintf(`Arrays.toString(%s)`, field.Name.CamelCase()))
 	}
-	w.Line(`  return String.format("%s%s", %s);`, model.Name.PascalCase(), JoinParams(formatParams), JoinParams(formatArgs))
+	w.Line(`  return String.format("%s{%s}", %s);`, model.Name.PascalCase(), JoinParams(formatParams), JoinParams(formatArgs))
 	w.Line(`}`)
 }
 
