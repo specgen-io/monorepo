@@ -18,3 +18,11 @@ func versionedPath(version spec.Name, generatePath string) string {
 	}
 	return generatePath
 }
+
+func getterName(field *spec.NamedDefinition) string {
+	return fmt.Sprintf(`get%s`, field.Name.PascalCase())
+}
+
+func setterName(field *spec.NamedDefinition) string {
+	return fmt.Sprintf(`set%s`, field.Name.PascalCase())
+}

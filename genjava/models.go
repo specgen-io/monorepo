@@ -145,25 +145,78 @@ func generateObjectModel(model *spec.NamedModel, packageName string, generatePat
 
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
-		w.Line(`  public %s get%s() {`, addType(field), field.Name.PascalCase())
+		w.Line(`  public %s %s() {`, addType(field), getterName(&field))
 		w.Line(`    return %s;`, addGetterBody(field))
 		w.Line(`  }`)
 		w.EmptyLine()
-		w.Line(`  public void set%s(%s) {`, field.Name.PascalCase(), addSetterParams(field))
+		w.Line(`  public void %s(%s) {`, setterName(&field), addSetterParams(field))
 		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), addFieldName(field))
 		w.Line(`  }`)
 	}
 	w.EmptyLine()
 	w.Indent()
-	if isArrayField(model) {
-		addObjectModelArraysMethods(w, model)
-	} else {
-		addObjectModelMethods(w, model)
-	}
+	addObjectModelMethods(w, model)
 	w.Unindent()
 	w.Line(`}`)
 
 	return &gen.TextFile{Path: filepath.Join(generatePath, fmt.Sprintf(`%s.java`, model.Name.Source)), Content: w.String()}
+}
+
+func addObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
+	w.Line(`@Override`)
+	w.Line(`public boolean equals(Object o) {`)
+	w.Line(`  if (this == o) return true;`)
+	w.Line(`  if (!(o instanceof %s)) return false;`, model.Name.PascalCase())
+	w.Line(`  %s that = (%s) o;`, model.Name.PascalCase(), model.Name.PascalCase())
+	equalsParams := []string{}
+	for _, field := range model.Object.Fields {
+		equalsParam := equalsExpression(&field.Type.Definition, fmt.Sprintf(`%s()`, getterName(&field)), fmt.Sprintf(`%s()`, getterName(&field)))
+		equalsParams = append(equalsParams, equalsParam)
+	}
+	w.Line(`  return %s;`, strings.Join(equalsParams, " && "))
+	w.Line(`}`)
+	w.EmptyLine()
+	w.Line(`@Override`)
+	w.Line(`public int hashCode() {`)
+	hashCodeParams := []string{}
+	hashParams := []string{}
+	var arrayFieldCount, nonArrayFieldCount int
+	for _, field := range model.Object.Fields {
+		if isArrayField(&field.Type.Definition) {
+			hashCodeParams = append(hashCodeParams, fmt.Sprintf(`%s()`, getterName(&field)))
+			arrayFieldCount++
+		} else {
+			hashParams = append(hashParams, fmt.Sprintf(`%s()`, getterName(&field)))
+			nonArrayFieldCount++
+		}
+	}
+	if arrayFieldCount > 0 && nonArrayFieldCount == 0 {
+		w.Line(`  int result = Arrays.hashCode(%s);`, hashCodeParams[0])
+		for _, param := range hashCodeParams[1:] {
+			w.Line(`  result = 31 * result + Arrays.hashCode(%s);`, param)
+		}
+		w.Line(`  return result;`)
+	} else if arrayFieldCount > 0 && nonArrayFieldCount > 0 {
+		w.Line(`  int result = Objects.hash(%s);`, JoinParams(hashParams))
+		for _, param := range hashCodeParams {
+			w.Line(`  result = 31 * result + Arrays.hashCode(%s);`, param)
+		}
+		w.Line(`  return result;`)
+	} else if arrayFieldCount == 0 && nonArrayFieldCount > 0 {
+		w.Line(`  return Objects.hash(%s);`, JoinParams(hashParams))
+	}
+	w.Line(`}`)
+	w.EmptyLine()
+	w.Line(`@Override`)
+	w.Line(`public String toString() {`)
+	formatParams := []string{}
+	formatArgs := []string{}
+	for _, field := range model.Object.Fields {
+		formatParams = append(formatParams, fmt.Sprintf(`%s=%s`, field.Name.CamelCase(), "%s"))
+		formatArgs = append(formatArgs, toStringExpression(&field.Type.Definition, field.Name.CamelCase()))
+	}
+	w.Line(`  return String.format("%s{%s}", %s);`, model.Name.PascalCase(), JoinParams(formatParams), JoinParams(formatArgs))
+	w.Line(`}`)
 }
 
 func generateEnumModel(model *spec.NamedModel, packageName string, generatePath string) *gen.TextFile {
@@ -250,86 +303,14 @@ func generateOneOfImplementation(item spec.NamedDefinition, model *spec.NamedMod
 	return &gen.TextFile{Path: filepath.Join(generatePath, fmt.Sprintf(`%s.java`, model.Name.Source+item.Name.PascalCase())), Content: w.String()}
 }
 
-func addObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
-	w.Line(`@Override`)
-	w.Line(`public boolean equals(Object o) {`)
-	w.Line(`  if (this == o) return true;`)
-	w.Line(`  if (!(o instanceof %s)) return false;`, model.Name.PascalCase())
-	w.Line(`  %s %s = (%s) o;`, model.Name.PascalCase(), model.Name.CamelCase(), model.Name.PascalCase())
-	equalsParams := []string{}
-	for _, field := range model.Object.Fields {
-		equalsParams = append(equalsParams, fmt.Sprintf(`Objects.equals(get%s(), %s.get%s())`, field.Name.PascalCase(), model.Name.CamelCase(), field.Name.PascalCase()))
-	}
-	w.Line(`  return %s;`, strings.Join(equalsParams, " && "))
-	w.Line(`}`)
-	w.EmptyLine()
-	w.Line(`@Override`)
-	w.Line(`public int hashCode() {`)
-	hashCodeParams := []string{}
-	for _, field := range model.Object.Fields {
-		hashCodeParams = append(hashCodeParams, fmt.Sprintf(`get%s()`, field.Name.PascalCase()))
-	}
-	w.Line(`  return Objects.hash(%s);`, JoinParams(hashCodeParams))
-	w.Line(`}`)
-	w.EmptyLine()
-	w.Line(`@Override`)
-	w.Line(`public String toString() {`)
-	formatParams := []string{}
-	formatArgs := []string{}
-	for _, field := range model.Object.Fields {
-		formatParams = append(formatParams, fmt.Sprintf(`%s=%s`, field.Name.CamelCase(), "%s"))
-		formatArgs = append(formatArgs, fmt.Sprintf(`%s`, field.Name.CamelCase()))
-	}
-	w.Line(`  return String.format("%s{%s}", %s);`, model.Name.PascalCase(), JoinParams(formatParams), JoinParams(formatArgs))
-	w.Line(`}`)
-}
-
-func addObjectModelArraysMethods(w *gen.Writer, model *spec.NamedModel) {
-	w.Line(`@Override`)
-	w.Line(`public boolean equals(Object o) {`)
-	w.Line(`  if (this == o) return true;`)
-	w.Line(`  if (!(o instanceof %s)) return false;`, model.Name.PascalCase())
-	w.Line(`  %s %s = (%s) o;`, model.Name.PascalCase(), model.Name.CamelCase(), model.Name.PascalCase())
-	equalsParams := []string{}
-	for _, field := range model.Object.Fields {
-		equalsParams = append(equalsParams, fmt.Sprintf(`Arrays.equals(get%s(), %s.get%s())`, field.Name.PascalCase(), model.Name.CamelCase(), field.Name.PascalCase()))
-	}
-	w.Line(`  return %s;`, strings.Join(equalsParams, " && "))
-	w.Line(`}`)
-	w.EmptyLine()
-	w.Line(`@Override`)
-	w.Line(`public int hashCode() {`)
-	hashCodeParams := []string{}
-	for _, field := range model.Object.Fields {
-		hashCodeParams = append(hashCodeParams,field.Name.PascalCase())
-	}
-	w.Line(`  int result = Arrays.hashCode(get%s());`, hashCodeParams[0])
-	for _, param := range hashCodeParams[1:] {
-		w.Line(`  result = 31 * result + Arrays.hashCode(get%s());`, param)
-	}
-	w.Line(`  return result;`)
-	w.Line(`}`)
-	w.EmptyLine()
-	w.Line(`@Override`)
-	w.Line(`public String toString() {`)
-	formatParams := []string{}
-	formatArgs := []string{}
-	for _, field := range model.Object.Fields {
-		formatParams = append(formatParams, fmt.Sprintf(`%s=%s`, field.Name.CamelCase(), "%s"))
-		formatArgs = append(formatArgs, fmt.Sprintf(`Arrays.toString(%s)`, field.Name.CamelCase()))
-	}
-	w.Line(`  return String.format("%s{%s}", %s);`, model.Name.PascalCase(), JoinParams(formatParams), JoinParams(formatArgs))
-	w.Line(`}`)
-}
-
 func addOneOfModelMethods(w *gen.Writer, item spec.NamedDefinition, model *spec.NamedModel) {
 	modelItemName := model.Name.PascalCase() + item.Name.PascalCase()
 	w.Line(`@Override`)
 	w.Line(`public boolean equals(Object o) {`)
 	w.Line(`  if (this == o) return true;`)
 	w.Line(`  if (!(o instanceof %s)) return false;`, modelItemName)
-	w.Line(`  %s %s = (%s) o;`, modelItemName, item.Name.CamelCase(), modelItemName)
-	w.Line(`  return Objects.equals(getData(), %s.getData());`, item.Name.CamelCase())
+	w.Line(`  %s that = (%s) o;`, modelItemName, modelItemName)
+	w.Line(`  return Objects.equals(getData(), that.getData());`)
 	w.Line(`}`)
 	w.EmptyLine()
 	w.Line(`@Override`)
