@@ -1,11 +1,9 @@
 package genruby
 
 import (
-	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"path/filepath"
-	"strings"
 )
 
 func GenerateModels(serviceFile string, generatePath string) error {
@@ -45,7 +43,7 @@ func generateModels(specification *spec.Spec, moduleName string, generatePath st
 
 func generateVersionModelsModule(w *gen.Writer, version *spec.Version, moduleName string) {
 	w.EmptyLine()
-	w.Line("module %s", versionedModule(moduleName, version.Version))
+	w.Line(`module %s`, versionedModule(moduleName, version.Version))
 	for index, model := range version.ResolvedModels {
 		if index != 0 {
 			w.EmptyLine()
@@ -58,32 +56,38 @@ func generateVersionModelsModule(w *gen.Writer, version *spec.Version, moduleNam
 			generateEnumModel(w.Indented(), model)
 		}
 	}
-	w.Line("end")
+	w.Line(`end`)
 }
 
 func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {
-	w.Line("class %s", model.Name.PascalCase())
-	w.Line("  include DataClass")
+	w.Line(`class %s`, model.Name.PascalCase())
+	w.Line(`  include DataClass`)
 	for _, field := range model.Object.Fields {
 		typ := RubyType(&field.Type.Definition)
-		w.Line("  val :%s, %s", field.Name.Source, typ)
+		w.Line(`  val :%s, %s`, field.Name.Source, typ)
 	}
-	w.Line("end")
+	w.Line(`end`)
 }
 
 func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
-	w.Line("class %s", model.Name.PascalCase())
-	w.Line("  include Enum")
+	w.Line(`class %s`, model.Name.PascalCase())
+	w.Line(`  include Enum`)
 	for _, enumItem := range model.Enum.Items {
-		w.Line("  define :%s, '%s'", enumItem.Name.Source, enumItem.Value)
+		w.Line(`  define :%s, '%s'`, enumItem.Name.Source, enumItem.Value)
 	}
-	w.Line("end")
+	w.Line(`end`)
 }
 
 func generateOneOfModel(w *gen.Writer, model *spec.NamedModel) {
-	params := []string{}
-	for _, item := range model.OneOf.Items {
-		params = append(params, fmt.Sprintf("%s: %s", item.Name.Source, RubyType(&item.Type.Definition)))
+	w.Line(`class %s`, model.Name.PascalCase())
+	w.Line(`  include TaggedUnion`)
+	if model.OneOf.Discriminator != nil {
+		w.Line(`  with_discriminator "%s"`, *model.OneOf.Discriminator)
 	}
-	w.Line("%s = T.union(%s)", model.Name.PascalCase(), strings.Join(params, ", "))
+	for _, field := range model.OneOf.Items {
+		typ := RubyType(&field.Type.Definition)
+		w.Line(`  tag :%s, %s`, field.Name.Source, typ)
+	}
+	w.Line(`end`)
+
 }

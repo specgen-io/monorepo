@@ -49,7 +49,7 @@ func PlainRubyType(typ string) string {
 	case spec.TypeDateTime:
 		return "DateTime"
 	case spec.TypeJson:
-		return "T.hash(String, Untyped)"
+		return "T.hash(String, Unknown)"
 	default:
 		return typ
 	}
