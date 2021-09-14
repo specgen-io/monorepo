@@ -31,14 +31,14 @@ jobs:
           root: .
           paths:
             - dist
-      - run:
-          name: Release
-          command: |
-            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
-              ./release.sh <<pipeline.parameters.specgen-version>> ${GITHUB_TOKEN}
-            else
-              echo "Will not release - not running on main or v* branch"
-            fi
+#      - run:
+#          name: Release
+#          command: |
+#            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
+#              ./release.sh <<pipeline.parameters.specgen-version>> ${GITHUB_TOKEN}
+#            else
+#              echo "Will not release - not running on main or v* branch"
+#            fi
 
   build-gem-specgen:
     docker:
