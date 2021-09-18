@@ -15,8 +15,8 @@ func versionedPath(prefix string, version *spec.Version, path string) string {
 
 func commonPrefixPath(s1, s2 string) string {
 	result := ""
-	p1 := filepath.SplitList(s1)
-	p2 := filepath.SplitList(s2)
+	p1 := strings.Split(s1, "/")
+	p2 := strings.Split(s2, "/")
 	minLength := len(p2)
 	if len(p1) < minLength {
 		minLength = len(p1)
