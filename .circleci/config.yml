@@ -59,13 +59,9 @@ jobs:
       - run:
           name: Push gem
           command: |
-            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
-              cd ./plugins/gem-specgen
-              export VERSION=<<pipeline.parameters.specgen-version>>
-              gem push specgen-$VERSION.gem --host https://specgen.jfrog.io/artifactory/api/gems/gems
-            else
-              echo "Will not release - not running on main branch"
-            fi
+            cd ./plugins/gem-specgen
+            export VERSION=<<pipeline.parameters.specgen-version>>
+            gem push specgen-$VERSION.gem --host https://specgen.jfrog.io/artifactory/api/gems/gems
 
   gem-rubygems:
     docker:
@@ -84,13 +80,9 @@ jobs:
       - run:
           name: Push gem
           command: |
-            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
-              cd ./plugins/gem-specgen
-              export VERSION=<<pipeline.parameters.specgen-version>>
-              gem push --key rubygems specgen-$VERSION.gem
-            else
-              echo "Will not release - not running on main branch"
-            fi
+            cd ./plugins/gem-specgen
+            export VERSION=<<pipeline.parameters.specgen-version>>
+            gem push --key rubygems specgen-$VERSION.gem
 
   build-sbt-specgen:
     docker:
@@ -112,12 +104,8 @@ jobs:
       - run:
           name: Publish SBT plugin
           command: |
-            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
-              cd ./plugins/sbt-specgen
-              sbt -Dversion=<<pipeline.parameters.specgen-version>> publish
-            else
-              echo "Will not release - not running on main branch"
-            fi
+            cd ./plugins/sbt-specgen
+            sbt -Dversion=<<pipeline.parameters.specgen-version>> publish
       - save_cache:
           key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
           paths:
@@ -154,15 +142,11 @@ jobs:
       - run:
           name: npm publish package
           command: |
-            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
-              cd ./plugins/npm-specgen
-              npm pkg set name=@specgen.io/specgen.io
-              npm version <<pipeline.parameters.specgen-version>>
-              npm install
-              npm publish
-            else
-              echo "Will not release - not running on main branch"
-            fi
+            cd ./plugins/npm-specgen
+            npm pkg set name=@specgen.io/specgen.io
+            npm version <<pipeline.parameters.specgen-version>>
+            npm install
+            npm publish
 
   npm-npmjs:
     docker:
@@ -203,12 +187,8 @@ jobs:
       - run:
           name: Deploy Maven plugin
           command: |
-            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
-              cd ./plugins/maven-specgen
-              mvn deploy -Dproject.version=<<pipeline.parameters.specgen-version>> -Dartifactory=true
-            else
-              echo "Will not release - not running on main branch"
-            fi
+            cd ./plugins/maven-specgen
+            mvn deploy -Dproject.version=<<pipeline.parameters.specgen-version>> -Dartifactory=true
       - save_cache:
           key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
           paths:
@@ -232,15 +212,11 @@ jobs:
       - run:
           name: Deploy Gradle plugin
           command: |
-            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
-              cd ./plugins/gradle-specgen
-              ./gradlew publishAllPublicationsToArtifactoryRepository --build-cache --no-daemon \
-              -Djfrog.user=$JFROG_USER \
-              -Djfrog.pass=$JFROG_PASS \
-              -Dproject.version=<<pipeline.parameters.specgen-version>>
-            else
-              echo "Will not release - not running on main branch"
-            fi
+            cd ./plugins/gradle-specgen
+            ./gradlew publishAllPublicationsToArtifactoryRepository --build-cache --no-daemon \
+            -Djfrog.user=$JFROG_USER \
+            -Djfrog.pass=$JFROG_PASS \
+            -Dproject.version=<<pipeline.parameters.specgen-version>>
       - save_cache:
           key: cache-{{ checksum "./plugins/gradle-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-specgen/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
