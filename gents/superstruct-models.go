@@ -9,18 +9,17 @@ import (
 func generateSuperstructModels(specification *spec.Spec, generatePath string) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, version := range specification.Versions {
-		w := NewTsWriter()
-		generateSuperstructVersionModels(w, &version)
-		versionModelsFile := gen.TextFile{Path: filepath.Join(generatePath, versionFilename(&version, "models", "ts")), Content: w.String()}
-		files = append(files, versionModelsFile)
+		files = append(files, *generateSuperstructVersionModels(&version, generatePath))
 	}
-	staticCode := generateSuperstructStaticCode(filepath.Join(generatePath, "superstruct.ts"))
+	staticCode := generateSuperstructStaticCode(filepath.Join(generatePath, Superstruct+".ts"))
 	files = append(files, *staticCode)
 	return files
 }
 
-func generateSuperstructVersionModels(w *gen.Writer, version *spec.Version) {
-	w.Line(importSuperstructEncoding)
+func generateSuperstructVersionModels(version *spec.Version, generatePath string) *gen.TextFile {
+	filePath := versionedPath(generatePath, version, "models.ts")
+	w := NewTsWriter()
+	w.Line(`import * as t from '%s'`, importPath(filepath.Join(generatePath, Superstruct), filePath))
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
 		if model.IsObject() {
@@ -31,6 +30,7 @@ func generateSuperstructVersionModels(w *gen.Writer, version *spec.Version) {
 			generateSuperstructUnionModel(w, model)
 		}
 	}
+	return &gen.TextFile{Path: filePath, Content: w.String()}
 }
 
 func generateSuperstructObjectModel(w *gen.Writer, model *spec.NamedModel) {

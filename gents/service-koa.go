@@ -2,6 +2,7 @@ package gents
 
 import (
 	"fmt"
+	"github.com/pinzolo/casee"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"path/filepath"
@@ -11,17 +12,20 @@ import (
 var koa = "koa"
 
 func generateKoaSpecRouter(specification *spec.Spec, generatePath string) *gen.TextFile {
+	path := filepath.Join(generatePath, "spec_router.ts")
 	w := NewTsWriter()
 	w.Line("import Router from '@koa/router'")
 	for _, version := range specification.Versions {
-		w.Line("import * as %s from './%s'", versionModule(&version, "services"), versionFilename(&version, "services", ""))
-		w.Line("import * as %s from './%s'", versionModule(&version, "routing"), versionFilename(&version, "routing", ""))
+		for _, api := range version.Http.Apis {
+			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), importPath(serviceApiPath(generatePath, &api), path))
+			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), importPath(versionedPath(generatePath, &version, "routing.ts"), path))
+		}
 	}
 
 	routerParams := []string{}
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			routerParams = append(routerParams, fmt.Sprintf("%s: %s.%s", apiServiceParamName(&api), versionModule(&version, "services"), serviceInterfaceName(&api)))
+			routerParams = append(routerParams, fmt.Sprintf("%s: %s", apiServiceParamName(&api), serviceInterfaceNameVersioned(&api)))
 		}
 	}
 
@@ -30,8 +34,8 @@ func generateKoaSpecRouter(specification *spec.Spec, generatePath string) *gen.T
 	w.Line("  let router = new Router()")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			apiRouterNameConst := apiVersionedRouterName(&api)
-			w.Line("  const %s = %s.%s(%s)", apiRouterNameConst, versionModule(&version, "routing"), apiRouterName(&api), apiServiceParamName(&api))
+			apiRouterNameConst := "the" + casee.ToPascalCase(apiVersionedRouterName(&api))
+			w.Line("  const %s = %s(%s)", apiRouterNameConst, apiRouterNameVersioned(&api), apiServiceParamName(&api))
 			if version.Http.GetUrl() == "" {
 				w.Line("  router.use(%s.routes(), %s.allowedMethods())", apiRouterNameConst, apiRouterNameConst)
 			} else {
@@ -42,16 +46,19 @@ func generateKoaSpecRouter(specification *spec.Spec, generatePath string) *gen.T
 	w.Line("  return router")
 	w.Line("}")
 
-	return &gen.TextFile{filepath.Join(generatePath, "spec_router.ts"), w.String()}
+	return &gen.TextFile{path, w.String()}
 }
 
 func generateKoaVersionRouting(version *spec.Version, validation string, generatePath string) *gen.TextFile {
+	path := versionedPath(generatePath, version, "routing.ts")
 	w := NewTsWriter()
 
 	w.Line("import Router from '@koa/router'")
-	w.Line(importEncoding(validation))
-	w.Line("import * as %s from './%s'", modelsPackage, versionFilename(version, "models", ""))
-	w.Line("import * as services from './%s'", versionFilename(version, "services", ""))
+	w.Line(`import * as t from '%s'`, importPath(filepath.Join(generatePath, validation), path))
+	w.Line("import * as models from './models'")
+	for _, api := range version.Http.Apis {
+		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), serviceName(&api))
+	}
 
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
@@ -63,13 +70,12 @@ func generateKoaVersionRouting(version *spec.Version, validation string, generat
 		generateKoaApiRouting(w, &api, validation)
 	}
 
-	filename := versionFilename(version, "routing", "ts")
-	return &gen.TextFile{filepath.Join(generatePath, filename), w.String()}
+	return &gen.TextFile{path, w.String()}
 }
 
 func generateKoaApiRouting(w *gen.Writer, api *spec.Api, validation string) {
 	w.EmptyLine()
-	w.Line("export let %s = (service: services.%s) => {", apiRouterName(api), serviceInterfaceName(api))
+	w.Line("export let %s = (service: %s) => {", apiRouterName(api), serviceInterfaceName(api))
 	w.Line("  let router = new Router()")
 	for _, operation := range api.Operations {
 		w.EmptyLine()
