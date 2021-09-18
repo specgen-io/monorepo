@@ -357,11 +357,6 @@ workflows:
             - build-gradle-specgen
             - build-gem-specgen
             - build-npm-specgen
-          filters:
-            branches:
-              only:
-                - main
-                - /v.*/
       - circleci/start-pipeline:
           name: test-plugins
           repository: specgen-io/test-plugins
@@ -406,6 +401,11 @@ workflows:
     jobs:
       - approve-release:
           type: approval
+          filters:
+            branches:
+              only:
+                - main
+                - /v.*/
       - sbt-sonatype:
           context: specgen
           requires:
