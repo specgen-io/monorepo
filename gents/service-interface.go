@@ -4,24 +4,21 @@ import (
 	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 	"strings"
 )
 
-func generateServiceApis(version *spec.Version, generatePath string) *gen.TextFile {
-	w := NewTsWriter()
-
-	w.Line("import * as %s from './%s'", modelsPackage, versionFilename(version, "models", ""))
-
+func generateServiceApis(version *spec.Version, generatePath string) []gen.TextFile {
+	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
-		generateApiService(w, &api)
+		serviceFile := generateApiService(&api, generatePath)
+		files = append(files, *serviceFile)
 	}
-
-	filename := versionFilename(version, "services", "ts")
-	return &gen.TextFile{filepath.Join(generatePath, filename), w.String()}
+	return files
 }
 
-func generateApiService(w *gen.Writer, api *spec.Api) {
+func generateApiService(api *spec.Api, generatePath string) *gen.TextFile {
+	w := NewTsWriter()
+	w.Line("import * as %s from './models'", modelsPackage) //TODO: Do we need alias here?
 	for _, operation := range api.Operations {
 		if operation.Body != nil || operation.HasParams() {
 			w.EmptyLine()
@@ -40,10 +37,32 @@ func generateApiService(w *gen.Writer, api *spec.Api) {
 		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, responseTypeName(&operation))
 	}
 	w.Line("}")
+	return &gen.TextFile{serviceApiPath(generatePath, api), w.String()}
+}
+
+func serviceApiPath(generatePath string, api *spec.Api) string {
+	return versionedPath(generatePath, api.Apis.Version, serviceFileName(api))
 }
 
 func serviceInterfaceName(api *spec.Api) string {
 	return api.Name.PascalCase() + "Service"
+}
+
+func serviceInterfaceNameVersioned(api *spec.Api) string {
+	result := serviceInterfaceName(api)
+	version := api.Apis.Version.Version
+	if version.Source != "" {
+		result = result + version.PascalCase()
+	}
+	return result
+}
+
+func serviceName(api *spec.Api) string {
+	return api.Name.SnakeCase() + "_service"
+}
+
+func serviceFileName(api *spec.Api) string {
+	return serviceName(api) + ".ts"
 }
 
 func operationParamsTypeName(operation *spec.NamedOperation) string {

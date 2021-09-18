@@ -9,20 +9,19 @@ import (
 func generateIoTsModels(specification *spec.Spec, generatePath string) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, version := range specification.Versions {
-		w := NewTsWriter()
-		generateIoTsVersionModels(w, &version)
-		versionModelsFile := gen.TextFile{Path: filepath.Join(generatePath, versionFilename(&version, "models", "ts")), Content: w.String()}
-		files = append(files, versionModelsFile)
+		files = append(files, *generateIoTsVersionModels(&version, generatePath))
 	}
-	staticCode := generateIoTsStaticCode(filepath.Join(generatePath, "io-ts.ts"))
+	staticCode := generateIoTsStaticCode(filepath.Join(generatePath, IoTs+".ts"))
 	files = append(files, *staticCode)
 	return files
 }
 
-func generateIoTsVersionModels(w *gen.Writer, version *spec.Version) {
+func generateIoTsVersionModels(version *spec.Version, generatePath string) *gen.TextFile {
+	filePath := versionedPath(generatePath, version, "models.ts")
+	w := NewTsWriter()
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
-	w.Line(importIoTsEncoding)
+	w.Line(`import * as t from '%s'`, importPath(filepath.Join(generatePath, IoTs), filePath))
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
 		if model.IsObject() {
@@ -33,6 +32,7 @@ func generateIoTsVersionModels(w *gen.Writer, version *spec.Version) {
 			generateIoTsUnionModel(w, model)
 		}
 	}
+	return &gen.TextFile{Path: filePath, Content: w.String()}
 }
 
 func kindOfFields(objectModel *spec.NamedModel) (bool, bool) {

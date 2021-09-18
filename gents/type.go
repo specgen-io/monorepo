@@ -55,4 +55,5 @@ func PlainTsType(typ string) string {
 	}
 }
 
+//TODO: Consider removing
 var modelsPackage = "models"
