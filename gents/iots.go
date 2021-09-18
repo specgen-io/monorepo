@@ -7,8 +7,6 @@ import (
 
 var IoTs = "io-ts"
 
-var importIoTsEncoding = `import * as t from './io-ts'`
-
 func generateIoTsStaticCode(path string) *gen.TextFile {
 	code := `
 export * from 'io-ts'

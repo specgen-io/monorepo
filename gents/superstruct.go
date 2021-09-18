@@ -7,8 +7,6 @@ import (
 
 var Superstruct = "superstruct"
 
-var importSuperstructEncoding = `import * as t from './superstruct'`
-
 func generateSuperstructStaticCode(path string) *gen.TextFile {
 	code := `
 export * from "superstruct"

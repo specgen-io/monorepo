@@ -31,20 +31,13 @@ func GenerateAxiosClient(serviceFile string, generatePath string, validation str
 	return nil
 }
 
-func generateAxiosClient(version *spec.Version, path string, validation string) *gen.TextFile {
-	w := NewTsWriter()
-	generateAxiosClientCode(w, version, validation)
-	filename := "index.ts"
-	if version.Version.Source != "" {
-		filename = version.Version.FlatCase() + ".ts"
-	}
-	return &gen.TextFile{filepath.Join(path, filename), w.String()}
-}
+func generateAxiosClient(version *spec.Version, generatePath string, validation string) *gen.TextFile {
+	path := versionedPath(generatePath, version, "index.ts")
 
-func generateAxiosClientCode(w *gen.Writer, version *spec.Version, validation string) {
+	w := NewTsWriter()
 	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
-	w.Line(importEncoding(validation))
-	w.Line(`import * as %s from './%s'`, modelsPackage, versionFilename(version, "models", ""))
+	w.Line(`import * as t from '%s'`, importPath(filepath.Join(generatePath, validation), path))
+	w.Line(`import * as %s from './models'`, modelsPackage)
 	for _, api := range version.Http.Apis {
 		generateClientApiClass(w, api, validation)
 		for _, operation := range api.Operations {
@@ -52,6 +45,7 @@ func generateAxiosClientCode(w *gen.Writer, version *spec.Version, validation st
 			generateOperationResponse(w, &operation)
 		}
 	}
+	return &gen.TextFile{path, w.String()}
 }
 
 func getUrl(endpoint spec.Endpoint) string {

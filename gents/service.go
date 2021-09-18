@@ -17,7 +17,7 @@ func GenerateService(serviceFile string, swaggerPath string, generatePath string
 	sourcesScaffold := []gen.TextFile{}
 
 	for _, version := range specification.Versions {
-		sourcesOverwrite = append(sourcesOverwrite, *generateServiceApis(&version, generatePath))
+		sourcesOverwrite = append(sourcesOverwrite, generateServiceApis(&version, generatePath)...)
 		sourcesOverwrite = append(sourcesOverwrite, *generateVersionRouting(&version, validation, server, generatePath))
 	}
 	sourcesOverwrite = append(sourcesOverwrite, *generateSpecRouter(specification, server, generatePath))
@@ -30,7 +30,7 @@ func GenerateService(serviceFile string, swaggerPath string, generatePath string
 	}
 
 	if servicesPath != "" {
-		sourcesScaffold = generateServicesImplementations(specification, servicesPath)
+		sourcesScaffold = generateServicesImplementations(specification, servicesPath, generatePath)
 	}
 
 	err = gen.WriteFiles(sourcesScaffold, false)
@@ -70,6 +70,15 @@ func apiRouterName(api *spec.Api) string {
 	return api.Name.CamelCase() + "Router"
 }
 
+func apiRouterNameVersioned(api *spec.Api) string {
+	result := apiRouterName(api)
+	version := api.Apis.Version.Version
+	if version.Source != "" {
+		result = result + version.PascalCase()
+	}
+	return result
+}
+
 func apiServiceParamName(api *spec.Api) string {
 	version := api.Apis.Version
 	name := api.Name.CamelCase() + "Service"
@@ -79,6 +88,7 @@ func apiServiceParamName(api *spec.Api) string {
 	return name
 }
 
+//TODO: Same as above
 func apiVersionedRouterName(api *spec.Api) string {
 	version := api.Apis.Version
 	name := api.Name.CamelCase() + "Router"
