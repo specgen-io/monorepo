@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-func GenerateGoClient(serviceFile string, generatePath string) error {
+func GenerateGoClient(moduleName string, serviceFile string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil {
 		return err
@@ -16,29 +16,26 @@ func GenerateGoClient(serviceFile string, generatePath string) error {
 	packageName := "spec"
 	for _, version := range specification.Versions {
 		versionPackageName := versionedPackage(version.Version, packageName)
-		generatedPath := filepath.Join(generatePath, packageName)
-		versionPath := createPath(version.Version.FlatCase(), generatedPath)
+		versionPath := versionedFolder(version.Version, filepath.Join(generatePath, packageName))
 
 		generatedFiles = append(generatedFiles, *generateConverter(versionPackageName, filepath.Join(versionPath, "converter.go")))
 		generatedFiles = append(generatedFiles, generateVersionModels(&version, createPath(versionPath, modelsPackage))...)
-		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, versionPackageName, versionPath)...)
-		generatedFiles = append(generatedFiles, *generateServicesResponses(&version, versionPackageName, versionPath, "responses.go"))
+		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, moduleName, versionPackageName, versionPath)...)
+		generatedFiles = append(generatedFiles, *generateServicesResponses(&version, moduleName, versionPackageName, versionPath, "responses.go"))
 	}
 	err = gen.WriteFiles(generatedFiles, true)
 	return err
 }
 
-func generateServicesResponses(version *spec.Version, packageName string, generatePath string, fileName string) *gen.TextFile {
+func generateServicesResponses(version *spec.Version, rootPackage string, packageName string, generatePath string, fileName string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
 
 	imports := []string{}
-	imports = generateVersionImports(version, imports)
-	if len(imports) > 0 {
-		w.EmptyLine()
-		for _, imp := range imports {
-			w.Line(`import %s`, imp)
-		}
+	imports = append(imports, createPackageName(rootPackage, generatePath, modelsPackage))
+	w.EmptyLine()
+	for _, imp := range imports {
+		w.Line(`import %s`, imp)
 	}
 
 	w.EmptyLine()
