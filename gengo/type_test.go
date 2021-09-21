@@ -71,5 +71,5 @@ func TestArrayType(t *testing.T) {
 func TestMapType(t *testing.T) {
 	typ := spec.Map(spec.Plain("Model"))
 	goType := GoType(typ)
-	assert.Equal(t, goType, "map[string]Model")
+	assert.Equal(t, goType, "map[string]models.Model")
 }
