@@ -36,6 +36,6 @@ func readEnumStringValue(b []byte, values []string) (string, error) {
 	return str, nil
 }
 `
-	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {"models" })
+	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {getShortPackageName(path) })
 	return &gen.TextFile{filepath.Join(path, "enums_helpers.go"), strings.TrimSpace(code)}
 }

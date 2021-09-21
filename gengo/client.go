@@ -17,10 +17,10 @@ func GenerateGoClient(serviceFile string, generatePath string) error {
 	for _, version := range specification.Versions {
 		versionPackageName := versionedPackage(version.Version, packageName)
 		generatedPath := filepath.Join(generatePath, packageName)
-		versionPath := versionedFolder(version.Version, generatedPath)
+		versionPath := createPath(version.Version.FlatCase(), generatedPath)
 
 		generatedFiles = append(generatedFiles, *generateConverter(versionPackageName, filepath.Join(versionPath, "converter.go")))
-		generatedFiles = append(generatedFiles, generateVersionModels(&version, versionPath)...)
+		generatedFiles = append(generatedFiles, generateVersionModels(&version, createPath(versionPath, modelsPackage))...)
 		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, versionPackageName, versionPath)...)
 		generatedFiles = append(generatedFiles, *generateServicesResponses(&version, versionPackageName, versionPath, "responses.go"))
 	}

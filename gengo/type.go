@@ -6,19 +6,27 @@ import (
 )
 
 func GoType(typ *spec.TypeDef) string {
+	return goType(typ, modelsPackage)
+}
+
+func GoTypeSamePackage(typ *spec.TypeDef) string {
+	return goType(typ, "")
+}
+
+func goType(typ *spec.TypeDef, modelsPackage string) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainGoType(typ.Plain)
+		return PlainGoType(typ.Plain, modelsPackage)
 	case spec.NullableType:
-		child := GoType(typ.Child)
+		child := goType(typ.Child, modelsPackage)
 		result := "*" + child
 		return result
 	case spec.ArrayType:
-		child := GoType(typ.Child)
+		child := goType(typ.Child, modelsPackage)
 		result := "[]" + child
 		return result
 	case spec.MapType:
-		child := GoType(typ.Child)
+		child := goType(typ.Child, modelsPackage)
 		result := "map[string]" + child
 		return result
 	default:
@@ -26,7 +34,7 @@ func GoType(typ *spec.TypeDef) string {
 	}
 }
 
-func PlainGoType(typ string) string {
+func PlainGoType(typ string, modelsPackage string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "int"
@@ -53,7 +61,10 @@ func PlainGoType(typ string) string {
 	case spec.TypeEmpty:
 		return "EmptyDef"
 	default:
-		return fmt.Sprintf("%s.%s", modelsPackage, typ)
+		if modelsPackage != "" {
+			return fmt.Sprintf("%s.%s", modelsPackage, typ)
+		}
+		return typ
 	}
 }
 
