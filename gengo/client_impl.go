@@ -8,15 +8,15 @@ import (
 	"strings"
 )
 
-func generateClientsImplementations(version *spec.Version, packageName string, generatePath string) []gen.TextFile {
+func generateClientsImplementations(version *spec.Version, rootPackage string, packageName string, generatePath string) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *generateClientImplementation(&api, packageName, generatePath))
+		files = append(files, *generateClientImplementation(&api, rootPackage, packageName, generatePath))
 	}
 	return files
 }
 
-func generateClientImplementation(api *spec.Api, packageName string, generatePath string) *gen.TextFile {
+func generateClientImplementation(api *spec.Api, rootPackage, packageName string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
 
@@ -31,6 +31,7 @@ func generateClientImplementation(api *spec.Api, packageName string, generatePat
 		imports = append(imports, `"bytes"`)
 	}
 	imports = generateApiImports(api, imports)
+	imports = append(imports, createPackageName(rootPackage, generatePath, modelsPackage))
 	w.EmptyLine()
 	for _, imp := range imports {
 		w.Line(`import %s`, imp)
@@ -153,7 +154,7 @@ func addResponse(w *gen.Writer, operation spec.NamedOperation) {
 				w.Line(`  err = resp.Body.Close()`)
 				w.EmptyLine()
 				if operation.Body == nil {
-					w.Line(`  var body *%s`, ToPascalCase(response.Type.Definition.Name))
+					w.Line(`  var body *%s.%s`, modelsPackage, ToPascalCase(response.Type.Definition.Name))
 				}
 				w.Line(`  err = json.Unmarshal(responseBody, &body)`)
 				addCheckError(w)
