@@ -20,7 +20,7 @@ func generateServiceImplementation(moduleName string, importedPackage string, ve
 	w.Line("package %s", packageName)
 
 	imports := []string{`"errors"`}
-	imports = generateImports(api, imports)
+	imports = generateApiImports(api, imports)
 	w.EmptyLine()
 	for _, imp := range imports {
 		w.Line(`import %s`, imp)
@@ -74,4 +74,8 @@ func versionedType(def *spec.TypeDef, version *spec.Version, packageName string)
 		typ = fmt.Sprintf(`%s.%s`, versionedPackage(version.Version, packageName), typ)
 	}
 	return typ
+}
+
+func serviceTypeName(api *spec.Api) string {
+	return fmt.Sprintf(`%sService`, api.Name.PascalCase())
 }

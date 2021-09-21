@@ -30,7 +30,7 @@ func generateClientImplementation(api *spec.Api, packageName string, generatePat
 	if apiHasBody(api) {
 		imports = append(imports, `"bytes"`)
 	}
-	imports = generateImports(api, imports)
+	imports = generateApiImports(api, imports)
 	w.EmptyLine()
 	for _, imp := range imports {
 		w.Line(`import %s`, imp)
