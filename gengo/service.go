@@ -24,7 +24,7 @@ func GenerateService(moduleName string, serviceFile string, swaggerPath string, 
 		generatedFiles = append(generatedFiles, *generateParamsParser(versionPath))
 		generatedFiles = append(generatedFiles, *generateRouting(&version, moduleName, versionPath))
 		generatedFiles = append(generatedFiles, generateServicesInterfaces(&version, moduleName, versionPath)...)
-		generatedFiles = append(generatedFiles, generateVersionModels(&version, versionPath)...)
+		generatedFiles = append(generatedFiles, generateVersionModels(&version, createPath(versionPath, modelsPackage))...)
 
 		servicesPackageName := "services"
 		servicesVersionPackageName := versionedPackage(version.Version, servicesPackageName)
