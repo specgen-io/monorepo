@@ -22,23 +22,24 @@ func generateModels(specification *spec.Spec, generatePath string) []gen.TextFil
 	packageName := fmt.Sprintf("%s_models", specification.Name.SnakeCase())
 	generatePath = filepath.Join(generatePath, packageName)
 	for _, version := range specification.Versions {
-		versionPackageName := versionedPackage(version.Version, packageName)
+//		versionPackageName := versionedPackage(version.Version, packageName)
 		versionPath := versionedFolder(version.Version, generatePath)
-		files = append(files, generateVersionModels(&version, versionPackageName, versionPath)...)
+		files = append(files, generateVersionModels(&version, versionPath)...)
 	}
 	return files
 }
 
-func generateVersionModels(version *spec.Version, packageName string, generatePath string) []gen.TextFile {
+func generateVersionModels(version *spec.Version, generatePath string) []gen.TextFile {
+	modelsPath := filepath.Join(generatePath, "models")
 	return []gen.TextFile{
-		*generateVersionModelsCode(version, packageName, generatePath),
-		*generateEnumsHelperFunctions(packageName, filepath.Join(generatePath, "enums_helpers.go")),
+		*generateVersionModelsCode(version, modelsPath),
+		*generateEnumsHelperFunctions(modelsPath),
 	}
 }
 
-func generateVersionModelsCode(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
+func generateVersionModelsCode(version *spec.Version, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", packageName)
+	w.Line("package models")
 
 	imports := []string{}
 	if versionModelsHasType(version, spec.TypeDate) {
@@ -100,8 +101,8 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	}
 	w.Line(")")
 	w.EmptyLine()
-	w.Line("var %sValuesStrings = []string{%s}", modelName, JoinDelimParams(choiceValuesStringsParams))
-	w.Line("var %sValues = []%s{%s}", modelName, modelName, JoinDelimParams(choiceValuesParams))
+	w.Line("var %s = []string{%s}", enumValuesStrings(model), JoinDelimParams(choiceValuesStringsParams))
+	w.Line("var %s = []%s{%s}", enumValues(model), modelName, JoinDelimParams(choiceValuesParams))
 	w.EmptyLine()
 	w.Line("func (self *%s) UnmarshalJSON(b []byte) error {", modelName)
 	w.Line("  str, err := readEnumStringValue(b, %sValuesStrings)", modelName)
@@ -109,6 +110,14 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("  *self = %s(str)", modelName)
 	w.Line("  return nil")
 	w.Line("}")
+}
+
+func enumValuesStrings(model *spec.NamedModel) string {
+	return fmt.Sprintf("%sValuesStrings", model.Name.PascalCase())
+}
+
+func enumValues(model *spec.NamedModel) string {
+	return fmt.Sprintf("%sValues", model.Name.PascalCase())
 }
 
 func generateOneOfModel(w *gen.Writer, model *spec.NamedModel) {

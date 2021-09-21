@@ -8,16 +8,29 @@ import (
 	"strings"
 )
 
-func generateRouting(version *spec.Version, packageName string, generatePath string) *gen.TextFile {
+func generateRouting(version *spec.Version, rootPackage string, modulePath string) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", packageName)
+	w.Line("package %s", getShortPackageName(modulePath))
 	w.EmptyLine()
 
+	imports := []string{
+		`"encoding/json"`,
+		`"github.com/husobee/vestigo"`,
+		`log "github.com/sirupsen/logrus"`,
+		`"net/http"`,
+	}
+
+	for _, api := range version.Http.Apis {
+		imports = append(imports, apiPackage(rootPackage, modulePath, &api))
+	}
+	imports = append(imports, createPackageName(rootPackage, modulePath, modelsPackage))
+
+	sortImports(imports)
+
 	w.Line(`import (`)
-	w.Line(`  "encoding/json"`)
-	w.Line(`  "github.com/husobee/vestigo"`)
-	w.Line(`  log "github.com/sirupsen/logrus"`)
-	w.Line(`  "net/http"`)
+	for _, imp := range imports {
+		w.Line(`  %s`, imp)
+	}
 	w.Line(`)`)
 
 	for _, api := range version.Http.Apis {
@@ -25,7 +38,7 @@ func generateRouting(version *spec.Version, packageName string, generatePath str
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(generatePath, "routing.go"),
+		Path:    filepath.Join(modulePath, "routing.go"),
 		Content: w.String(),
 	}
 }
@@ -56,7 +69,7 @@ func logFieldsName(operation *spec.NamedOperation) string {
 
 func generateApiRouter(w *gen.Writer, api spec.Api) {
 	w.EmptyLine()
-	w.Line(`func Add%sRoutes(router *vestigo.Router, %s %s) {`, api.Name.PascalCase(), serviceInterfaceTypeVar(&api), serviceInterfaceTypeName(&api))
+	w.Line(`func Add%sRoutes(router *vestigo.Router, %s %s) {`, api.Name.PascalCase(), serviceInterfaceTypeVar(&api), fmt.Sprintf("%s.Service", api.Name.SnakeCase()))
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		w.Indent()
@@ -83,14 +96,14 @@ func parserParameterCall(operation *spec.NamedOperation, param *spec.NamedParam,
 	isEnum := param.Type.Definition.Info.Model != nil && param.Type.Definition.Info.Model.IsEnum()
 	enumModel := param.Type.Definition.Info.Model
 	if isEnum {
-		parserParams = append(parserParams, enumModel.Name.PascalCase()+`ValuesStrings`)
+		parserParams = append(parserParams, fmt.Sprintf("%s.%s", modelsPackage, enumValuesStrings(enumModel)))
 	}
 	if defaultParam != nil {
 		parserParams = append(parserParams, *defaultParam)
 	}
 	call := fmt.Sprintf(`%s.%s(%s)`, paramsParserName, methodName, JoinDelimParams(parserParams))
 	if isEnum {
-		call = fmt.Sprintf(`%s(%s)`, enumModel.Name.PascalCase(), call)
+		call = fmt.Sprintf(`%s.%s(%s)`, modelsPackage, enumModel.Name.PascalCase(), call)
 	}
 	return call
 }

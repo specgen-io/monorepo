@@ -3,22 +3,11 @@ package gengo
 import (
 	"fmt"
 	"github.com/specgen-io/spec"
+	"strings"
 )
-
-func serviceInterfaceTypeName(api *spec.Api) string {
-	return fmt.Sprintf(`I%sService`, api.Name.PascalCase())
-}
-
-func clientInterfaceTypeName(api *spec.Api) string {
-	return fmt.Sprintf(`I%sClient`, api.Name.PascalCase())
-}
 
 func serviceInterfaceTypeVar(api *spec.Api) string {
 	return fmt.Sprintf(`%sService`, api.Name.Source)
-}
-
-func serviceTypeName(api *spec.Api) string {
-	return fmt.Sprintf(`%sService`, api.Name.PascalCase())
 }
 
 func clientTypeName(api *spec.Api) string {
@@ -43,13 +32,21 @@ func versionedPackage(version spec.Name, packageName string) string {
 	return packageName
 }
 
-func addVersionedPackage(version spec.Name, packageName string) string {
-	if version.Source != "" {
-		return fmt.Sprintf(`%s.`, versionedPackage(version, packageName))
-	}
-	return ""
+func apiPackage(root string, packageName string, api *spec.Api) string {
+	return fmt.Sprintf(`"%s/%s/%s"`, root, packageName, api.Name.SnakeCase())
 }
 
-func addVersionedInterfaceVar(api *spec.Api, version spec.Name) string {
-	return serviceInterfaceTypeVar(api) + version.PascalCase()
+func createPackageName(args ...string) string {
+	parts := []string{}
+	for _, arg := range args {
+		if arg != "" {
+			parts = append(parts, arg)
+		}
+	}
+	return fmt.Sprintf(`"%s"`, strings.Join(parts, "/"))
+}
+
+func getShortPackageName(path string) string {
+	parts := strings.Split(path, "/")
+	return parts[len(parts)-1]
 }

@@ -2,7 +2,7 @@ package gengo
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/spec"
 )
 
 func GoType(typ *spec.TypeDef) string {
@@ -53,6 +53,8 @@ func PlainGoType(typ string) string {
 	case spec.TypeEmpty:
 		return "EmptyDef"
 	default:
-		return typ
+		return fmt.Sprintf("%s.%s", modelsPackage, typ)
 	}
 }
+
+var modelsPackage = "models"

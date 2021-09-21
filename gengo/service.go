@@ -16,16 +16,15 @@ func GenerateService(moduleName string, serviceFile string, swaggerPath string, 
 	implFiles := []gen.TextFile{}
 
 	packageName := "spec"
-	generatedFiles = append(generatedFiles, *generateRoutes(moduleName, specification, packageName, filepath.Join(generatePath, packageName)))
+	generatedFiles = append(generatedFiles, *generateRoutes(moduleName, specification, moduleName, filepath.Join(generatePath, packageName)))
 
 	for _, version := range specification.Versions {
-		versionPackageName := versionedPackage(version.Version, packageName)
 		versionPath := versionedFolder(version.Version, filepath.Join(generatePath, packageName))
 
-		generatedFiles = append(generatedFiles, *generateParamsParser(versionPackageName, filepath.Join(versionPath, "params_parsing.go")))
-		generatedFiles = append(generatedFiles, *generateRouting(&version, versionPackageName, versionPath))
-		generatedFiles = append(generatedFiles, *generateServicesInterfaces(&version, versionPackageName, versionPath, "services.go"))
-		generatedFiles = append(generatedFiles, generateVersionModels(&version, versionPackageName, versionPath)...)
+		generatedFiles = append(generatedFiles, *generateParamsParser(versionPath))
+		generatedFiles = append(generatedFiles, *generateRouting(&version, moduleName, versionPath))
+		generatedFiles = append(generatedFiles, generateServicesInterfaces(&version, moduleName, versionPath)...)
+		generatedFiles = append(generatedFiles, generateVersionModels(&version, versionPath)...)
 
 		servicesPackageName := "services"
 		servicesVersionPackageName := versionedPackage(version.Version, servicesPackageName)
