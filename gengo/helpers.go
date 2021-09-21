@@ -3,6 +3,7 @@ package gengo
 import (
 	"fmt"
 	"github.com/specgen-io/spec"
+	"path/filepath"
 	"strings"
 )
 
@@ -44,6 +45,16 @@ func createPackageName(args ...string) string {
 		}
 	}
 	return fmt.Sprintf(`"%s"`, strings.Join(parts, "/"))
+}
+
+func createPath(args ...string) string {
+	parts := []string{}
+	for _, arg := range args {
+		if arg != "" {
+			parts = append(parts, arg)
+		}
+	}
+	return filepath.Join(parts...)
 }
 
 func getShortPackageName(path string) string {
