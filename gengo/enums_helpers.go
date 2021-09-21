@@ -2,10 +2,11 @@ package gengo
 
 import (
 	"github.com/specgen-io/specgen/v2/gen"
+	"path/filepath"
 	"strings"
 )
 
-func generateEnumsHelperFunctions(packageName string, path string) *gen.TextFile {
+func generateEnumsHelperFunctions(path string) *gen.TextFile {
 	code := `
 package [[.PackageName]]
 
@@ -35,6 +36,6 @@ func readEnumStringValue(b []byte, values []string) (string, error) {
 	return str, nil
 }
 `
-	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {packageName })
-	return &gen.TextFile{path, strings.TrimSpace(code)}
+	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {"models" })
+	return &gen.TextFile{filepath.Join(path, "enums_helpers.go"), strings.TrimSpace(code)}
 }
