@@ -7,14 +7,14 @@ import (
 )
 
 func init() {
-	cmdServiceGo.Flags().String(ModuleName, "", ModuleNameDescription)
-
 	cmdServiceGo.Flags().String(SpecFile, "", SpecFileDescription)
-
+	cmdServiceGo.Flags().String(ModuleName, "", ModuleNameDescription)
 	cmdServiceGo.Flags().String(SwaggerPath, "", SwaggerPathDescription)
 	cmdServiceGo.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdServiceGo.Flags().String(ServicesPath, "", ServicesPathDescription)
 
 	cmdServiceGo.MarkFlagRequired(SpecFile)
+	cmdServiceGo.MarkFlagRequired(ModuleName)
 	cmdServiceGo.MarkFlagRequired(GeneratePath)
 
 	rootCmd.AddCommand(cmdServiceGo)
@@ -24,10 +24,10 @@ var cmdServiceGo = &cobra.Command{
 	Use:   "service-go",
 	Short: "Generate Go service source code",
 	Run: func(cmd *cobra.Command, args []string) {
-		moduleName, err := cmd.Flags().GetString(ModuleName)
+		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)
 
-		specFile, err := cmd.Flags().GetString(SpecFile)
+		moduleName, err := cmd.Flags().GetString(ModuleName)
 		fail.IfError(err)
 
 		swaggerPath, err := cmd.Flags().GetString(SwaggerPath)
@@ -36,7 +36,10 @@ var cmdServiceGo = &cobra.Command{
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		err = gengo.GenerateService(moduleName, specFile, swaggerPath, generatePath)
+		servicesPath, err := cmd.Flags().GetString(ServicesPath)
+		fail.IfError(err)
+
+		err = gengo.GenerateService(specFile, moduleName, swaggerPath, generatePath, servicesPath)
 		fail.IfErrorF(err, "Failed to generate service code")
 	},
 }

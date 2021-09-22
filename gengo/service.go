@@ -6,37 +6,41 @@ import (
 	"github.com/specgen-io/specgen/v2/genopenapi"
 )
 
-func GenerateService(moduleName string, serviceFile string, swaggerPath string, generatePath string) error {
+func GenerateService(serviceFile string, moduleName string, swaggerPath string, generatePath string, servicesPath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil {
 		return err
 	}
-	generatedFiles := []gen.TextFile{}
-	implFiles := []gen.TextFile{}
+	sourcesOverride := []gen.TextFile{}
+	sourcesScaffold := []gen.TextFile{}
 
-	generatedFiles = append(generatedFiles, *generateSpecRouting(specification, moduleName, generatePath))
+	sourcesOverride = append(sourcesOverride, *generateSpecRouting(specification, moduleName, generatePath))
 
 	for _, version := range specification.Versions {
 		versionPath := createPath(generatePath, version.Version.FlatCase())
 
-		generatedFiles = append(generatedFiles, *generateParamsParser(versionPath))
-		generatedFiles = append(generatedFiles, *generateRouting(&version, moduleName, versionPath))
-		generatedFiles = append(generatedFiles, generateServicesInterfaces(&version, moduleName, versionPath)...)
-		generatedFiles = append(generatedFiles, generateVersionModels(&version, createPath(versionPath, modelsPackage))...)
-
-		servicesPackageName := "services"
-		servicesVersionPath := createPath(generatePath, servicesPackageName, version.Version.FlatCase())
-		implFiles = append(implFiles, generateServicesImplementations(moduleName, versionPath, &version, servicesVersionPath)...)
+		sourcesOverride = append(sourcesOverride, *generateParamsParser(versionPath))
+		sourcesOverride = append(sourcesOverride, *generateRouting(&version, moduleName, versionPath))
+		sourcesOverride = append(sourcesOverride, generateServicesInterfaces(&version, moduleName, versionPath)...)
+		sourcesOverride = append(sourcesOverride, generateVersionModels(&version, createPath(versionPath, modelsPackage))...)
 	}
 
 	if swaggerPath != "" {
-		generatedFiles = append(generatedFiles, *genopenapi.GenerateOpenapi(specification, swaggerPath))
+		sourcesOverride = append(sourcesOverride, *genopenapi.GenerateOpenapi(specification, swaggerPath))
 	}
 
-	err = gen.WriteFiles(generatedFiles, true)
+	if servicesPath != "" {
+		for _, version := range specification.Versions {
+			versionPath := createPath(generatePath, version.Version.FlatCase())
+			servicesVersionPath := createPath(servicesPath, version.Version.FlatCase())
+			sourcesScaffold = append(sourcesScaffold, generateServicesImplementations(moduleName, versionPath, &version, servicesVersionPath)...)
+		}
+	}
+
+	err = gen.WriteFiles(sourcesOverride, true)
 	if err != nil {
 		return err
 	}
-	err = gen.WriteFiles(implFiles, false)
+	err = gen.WriteFiles(sourcesScaffold, false)
 	return err
 }
