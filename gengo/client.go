@@ -13,9 +13,8 @@ func GenerateGoClient(moduleName string, serviceFile string, generatePath string
 	}
 	generatedFiles := []gen.TextFile{}
 
-	packageName := "spec"
 	for _, version := range specification.Versions {
-		versionPath := createPath(generatePath, packageName, version.Version.FlatCase())
+		versionPath := createPath(generatePath, version.Version.FlatCase())
 
 		generatedFiles = append(generatedFiles, *generateConverter(versionPath))
 		generatedFiles = append(generatedFiles, generateVersionModels(&version, createPath(versionPath, modelsPackage))...)
