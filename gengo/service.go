@@ -4,7 +4,6 @@ import (
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/genopenapi"
-	"path/filepath"
 )
 
 func GenerateService(moduleName string, serviceFile string, swaggerPath string, generatePath string) error {
@@ -15,11 +14,10 @@ func GenerateService(moduleName string, serviceFile string, swaggerPath string, 
 	generatedFiles := []gen.TextFile{}
 	implFiles := []gen.TextFile{}
 
-	packageName := "spec"
-	generatedFiles = append(generatedFiles, *generateSpecRouting(specification, moduleName, filepath.Join(generatePath, packageName)))
+	generatedFiles = append(generatedFiles, *generateSpecRouting(specification, moduleName, generatePath))
 
 	for _, version := range specification.Versions {
-		versionPath := createPath(generatePath, packageName, version.Version.FlatCase())
+		versionPath := createPath(generatePath, version.Version.FlatCase())
 
 		generatedFiles = append(generatedFiles, *generateParamsParser(versionPath))
 		generatedFiles = append(generatedFiles, *generateRouting(&version, moduleName, versionPath))
