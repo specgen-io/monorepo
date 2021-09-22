@@ -2,10 +2,11 @@ package gengo
 
 import (
 	"github.com/specgen-io/specgen/v2/gen"
+	"path/filepath"
 	"strings"
 )
 
-func generateConverter(packageName string, path string) *gen.TextFile {
+func generateConverter(path string) *gen.TextFile {
 	code := `
 package [[.PackageName]]
 
@@ -221,6 +222,6 @@ func (self *ParamsConverter) StringEnumArray(key string, values []interface{}) {
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
-	return &gen.TextFile{path, strings.TrimSpace(code)}
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{getShortPackageName(path)})
+	return &gen.TextFile{filepath.Join(path, "converter.go"), strings.TrimSpace(code)}
 }

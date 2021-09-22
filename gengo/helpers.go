@@ -19,24 +19,6 @@ func responseTypeName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
 }
 
-func versionedFolder(version spec.Name, folder string) string {
-	if version.Source != "" {
-		return fmt.Sprintf(`%s/%s`, folder, version.FlatCase())
-	}
-	return folder
-}
-
-func versionedPackage(version spec.Name, packageName string) string {
-	if version.Source != "" {
-		return version.FlatCase()
-	}
-	return packageName
-}
-
-func apiPackage(root string, packageName string, api *spec.Api) string {
-	return fmt.Sprintf(`"%s/%s/%s"`, root, packageName, api.Name.SnakeCase())
-}
-
 func createPackageName(args ...string) string {
 	parts := []string{}
 	for _, arg := range args {
@@ -44,7 +26,7 @@ func createPackageName(args ...string) string {
 			parts = append(parts, arg)
 		}
 	}
-	return fmt.Sprintf(`"%s"`, strings.Join(parts, "/"))
+	return strings.Join(parts, "/")
 }
 
 func createPath(args ...string) string {

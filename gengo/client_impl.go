@@ -8,17 +8,17 @@ import (
 	"strings"
 )
 
-func generateClientsImplementations(version *spec.Version, rootPackage string, packageName string, generatePath string) []gen.TextFile {
+func generateClientsImplementations(version *spec.Version, rootPackage string, generatePath string) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *generateClientImplementation(&api, rootPackage, packageName, generatePath))
+		files = append(files, *generateClientImplementation(&api, rootPackage, generatePath))
 	}
 	return files
 }
 
-func generateClientImplementation(api *spec.Api, rootPackage, packageName string, generatePath string) *gen.TextFile {
+func generateClientImplementation(api *spec.Api, rootPackage string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", packageName)
+	w.Line("package %s", getShortPackageName(generatePath))
 
 	imports := Imports().
 		Add("fmt").
