@@ -10,26 +10,20 @@ import (
 func generateRoutes(moduleName string, specification *spec.Spec, rootPackage string, modulePath string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", getShortPackageName(modulePath))
-	w.EmptyLine()
 
-	imports := []string{
-		`"github.com/husobee/vestigo"`,
-	}
+	imports := Imports()
+	imports.Add("github.com/husobee/vestigo")
 	for _, version := range specification.Versions {
 		versionModule := versionedFolder(version.Version, modulePath)
 		if version.Version.Source != "" {
-			imports = append(imports, fmt.Sprintf(`%s`, createPackageName(moduleName, modulePath, version.Version.Source)))
+			imports.Add(createPackageName(moduleName, modulePath, version.Version.Source))
 		}
 		for _, api := range version.Http.Apis {
-			imports = append(imports, fmt.Sprintf(`%s %s`, versionedApiImportAlias(&api), apiPackage(rootPackage, versionModule, &api)))
+			imports.AddAlias(createPackageName(rootPackage, versionModule, api.Name.SnakeCase()), versionedApiImportAlias(&api))
 		}
 	}
+	imports.Write(w)
 
-	w.Line(`import (`)
-	for _, imp := range imports {
-		w.Line(`  %s`, imp)
-	}
-	w.Line(`)`)
 	w.EmptyLine()
 	routesParams := []string{}
 	for _, version := range specification.Versions {

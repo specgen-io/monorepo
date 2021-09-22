@@ -43,15 +43,11 @@ func addMethodParams(operation spec.NamedOperation) []string {
 func generateInterface(api *spec.Api, rootPackage string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", api.Name.SnakeCase())
-	imports := []string{}
-	imports = generateApiImports(api, imports)
-	imports = append(imports, createPackageName(rootPackage, generatePath, modelsPackage))
 
-	w.Line(`import (`)
-	for _, imp := range imports {
-		w.Line(`  %s`, imp)
-	}
-	w.Line(`)`)
+	imports := Imports()
+	imports.AddApiTypes(api)
+	imports.Add(createPackageName(rootPackage, generatePath, modelsPackage))
+	imports.Write(w)
 
 	w.EmptyLine()
 	w.Line(`type EmptyDef struct{}`)

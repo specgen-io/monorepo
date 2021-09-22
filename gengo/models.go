@@ -32,29 +32,9 @@ func generateVersionModelsCode(version *spec.Version, generatePath string) *gen.
 	w := NewGoWriter()
 	w.Line("package %s", getShortPackageName(generatePath))
 
-	imports := []string{}
-	if versionModelsHasType(version, spec.TypeDate) {
-		imports = append(imports, `"cloud.google.com/go/civil"`)
-	}
-	if versionModelsHasType(version, spec.TypeJson) {
-		imports = append(imports, `"encoding/json"`)
-	}
-	if versionModelsHasType(version, spec.TypeUuid) {
-		imports = append(imports, `"github.com/google/uuid"`)
-	}
-	if versionModelsHasType(version, spec.TypeDecimal) {
-		imports = append(imports, `"github.com/shopspring/decimal"`)
-	}
-	if isOneOfModel(version) {
-		imports = append(imports, `"errors"`, `"fmt"`)
-	}
-
-	if len(imports) > 0 {
-		w.EmptyLine()
-		for _, imp := range imports {
-			w.Line(`import %s`, imp)
-		}
-	}
+	imports := Imports()
+	imports.AddModelsTypes(version)
+	imports.Write(w)
 
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()

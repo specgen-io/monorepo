@@ -31,12 +31,8 @@ func generateServicesResponses(version *spec.Version, rootPackage string, packag
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
 
-	imports := []string{}
-	imports = append(imports, createPackageName(rootPackage, generatePath, modelsPackage))
-	w.EmptyLine()
-	for _, imp := range imports {
-		w.Line(`import %s`, imp)
-	}
+	imports := Imports().Add(createPackageName(rootPackage, generatePath, modelsPackage))
+	imports.Write(w)
 
 	w.EmptyLine()
 	w.Line(`type EmptyDef struct{}`)
