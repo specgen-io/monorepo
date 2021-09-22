@@ -47,7 +47,7 @@ func generateRoutes(moduleName string, specification *spec.Spec, rootPackage str
 	w.Line(`}`)
 
 	return &gen.TextFile{
-		Path:    filepath.Join(modulePath, "routes.go"),
+		Path:    filepath.Join(modulePath, "spec_routing.go"),
 		Content: w.String(),
 	}
 }
