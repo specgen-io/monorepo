@@ -11,27 +11,18 @@ import (
 func generateRouting(version *spec.Version, rootPackage string, modulePath string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", getShortPackageName(modulePath))
-	w.EmptyLine()
 
-	imports := []string{
-		`"encoding/json"`,
-		`"github.com/husobee/vestigo"`,
-		`log "github.com/sirupsen/logrus"`,
-		`"net/http"`,
-	}
+	imports := Imports()
+	imports.Add("encoding/json")
+	imports.Add("github.com/husobee/vestigo")
+	imports.AddAlias("github.com/sirupsen/logrus", "log")
+	imports.Add("net/http")
 
 	for _, api := range version.Http.Apis {
-		imports = append(imports, apiPackage(rootPackage, modulePath, &api))
+		imports.Add(apiPackage(rootPackage, modulePath, &api))
 	}
-	imports = append(imports, createPackageName(rootPackage, modulePath, modelsPackage))
-
-	sortImports(imports)
-
-	w.Line(`import (`)
-	for _, imp := range imports {
-		w.Line(`  %s`, imp)
-	}
-	w.Line(`)`)
+	imports.Add(createPackageName(rootPackage, modulePath, modelsPackage))
+	imports.Write(w)
 
 	for _, api := range version.Http.Apis {
 		generateApiRouter(w, api)

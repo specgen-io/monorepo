@@ -1,49 +1,83 @@
 package gengo
 
 import (
-	"fmt"
 	"github.com/specgen-io/spec"
-	"path/filepath"
+	"github.com/specgen-io/specgen/v2/gen"
 	"sort"
 )
 
-func generateApiImports(api *spec.Api, imports []string) []string {
+type imports struct {
+	imports map[string]string
+}
+
+func Imports() *imports {
+	return &imports{imports: make(map[string]string)}
+}
+
+func (self *imports) Add(theImport string) *imports {
+	self.imports[theImport] = ""
+	return self
+}
+
+func (self *imports) AddAlias(theImport string, alias string) *imports {
+	self.imports[theImport] = alias
+	return self
+}
+
+func (self *imports) Write(w *gen.Writer) {
+	if len(self.imports) > 0 {
+		imports := make([]string, 0, len(self.imports))
+		for theImport := range self.imports {
+			imports = append(imports, theImport)
+		}
+		sort.Strings(imports)
+
+		w.EmptyLine()
+		w.Line(`import (`)
+		for _, theImport := range imports {
+			alias := self.imports[theImport]
+			if alias != "" {
+				w.Line(`  %s "%s"`, alias, theImport)
+			} else {
+				w.Line(`  "%s"`, theImport)
+			}
+		}
+		w.Line(`)`)
+	}
+}
+
+func (self *imports) AddApiTypes(api *spec.Api) *imports {
 	if apiHasType(api, spec.TypeDate) {
-		imports = append(imports, `"cloud.google.com/go/civil"`)
+		self.Add("cloud.google.com/go/civil")
 	}
 	if apiHasType(api, spec.TypeJson) {
-		imports = append(imports, `"encoding/json"`)
+		self.Add("encoding/json")
 	}
 	if apiHasType(api, spec.TypeUuid) {
-		imports = append(imports, `"github.com/google/uuid"`)
+		self.Add("github.com/google/uuid")
 	}
 	if apiHasType(api, spec.TypeDecimal) {
-		imports = append(imports, `"github.com/shopspring/decimal"`)
+		self.Add("github.com/shopspring/decimal")
 	}
-	return imports
+	return self
 }
 
-type Package struct {
-	root string
-	packageName string
-}
-
-func NewPackage (root string, packageName string) Package {
-	return Package{root, packageName}
-}
-
-func (p Package) Import() string {
-	return fmt.Sprintf(`"%s/%s"`, p.root, p.packageName)
-}
-
-func (p Package) ImportAlias(alias string) string {
-	return fmt.Sprintf(`%s %s`, alias, p.Import())
-}
-
-func (p Package) Path(filename string) string {
-	return filepath.Join(p.packageName, filename)
-}
-
-func sortImports(imports []string) {
-	sort.Strings(imports)
+func (self *imports) AddModelsTypes(version *spec.Version) *imports {
+	if versionModelsHasType(version, spec.TypeDate) {
+		self.Add("cloud.google.com/go/civil")
+	}
+	if versionModelsHasType(version, spec.TypeJson) {
+		self.Add("encoding/json")
+	}
+	if versionModelsHasType(version, spec.TypeUuid) {
+		self.Add("github.com/google/uuid")
+	}
+	if versionModelsHasType(version, spec.TypeDecimal) {
+		self.Add("github.com/shopspring/decimal")
+	}
+	if isOneOfModel(version) {
+		self.Add("errors")
+		self.Add("fmt")
+	}
+	return self
 }

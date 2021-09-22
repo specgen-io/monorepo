@@ -20,22 +20,18 @@ func generateClientImplementation(api *spec.Api, rootPackage, packageName string
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
 
-	imports := []string{
-		`"fmt"`,
-		`"errors"`,
-		`"io/ioutil"`,
-		`"net/http"`,
-		`"encoding/json"`,
-	}
+	imports := Imports().
+		Add("fmt").
+		Add("errors").
+		Add("io/ioutil").
+		Add("net/http").
+		Add("encoding/json")
 	if apiHasBody(api) {
-		imports = append(imports, `"bytes"`)
+		imports.Add("bytes")
 	}
-	imports = generateApiImports(api, imports)
-	imports = append(imports, createPackageName(rootPackage, generatePath, modelsPackage))
-	w.EmptyLine()
-	for _, imp := range imports {
-		w.Line(`import %s`, imp)
-	}
+	imports.AddApiTypes(api)
+	imports.Add(createPackageName(rootPackage, generatePath, modelsPackage))
+	imports.Write(w)
 
 	w.EmptyLine()
 	generateClientTypeStruct(w, *api)

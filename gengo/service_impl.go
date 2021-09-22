@@ -19,13 +19,11 @@ func generateServiceImplementation(moduleName string, importedPackage string, ve
 	w := NewGoWriter()
 	w.Line("package %s", packageName)
 
-	imports := []string{`"errors"`}
-	imports = generateApiImports(api, imports)
-	w.EmptyLine()
-	for _, imp := range imports {
-		w.Line(`import %s`, imp)
-	}
-	w.Line(`import "%s/%s"`, moduleName, versionedFolder(version.Version, importedPackage))
+	imports := Imports()
+	imports.Add("errors")
+	imports.AddApiTypes(api)
+	imports.Add(fmt.Sprintf(`%s/%s`, moduleName, versionedFolder(version.Version, importedPackage)))
+	imports.Write(w)
 
 	w.EmptyLine()
 	generateTypeStruct(w, *api)
