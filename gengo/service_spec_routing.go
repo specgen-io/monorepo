@@ -7,19 +7,18 @@ import (
 	"path/filepath"
 )
 
-func generateRoutes(moduleName string, specification *spec.Spec, rootPackage string, modulePath string) *gen.TextFile {
+func generateSpecRouting(specification *spec.Spec, moduleName string, modulePath string) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", getShortPackageName(modulePath))
 
 	imports := Imports()
 	imports.Add("github.com/husobee/vestigo")
 	for _, version := range specification.Versions {
-		versionModule := versionedFolder(version.Version, modulePath)
 		if version.Version.Source != "" {
-			imports.Add(createPackageName(moduleName, modulePath, version.Version.Source))
+			imports.Add(createPackageName(moduleName, modulePath, version.Version.FlatCase()))
 		}
 		for _, api := range version.Http.Apis {
-			imports.AddAlias(createPackageName(rootPackage, versionModule, api.Name.SnakeCase()), versionedApiImportAlias(&api))
+			imports.AddAlias(createPackageName(moduleName, modulePath, version.Version.FlatCase(), api.Name.SnakeCase()), versionedApiImportAlias(&api))
 		}
 	}
 	imports.Write(w)

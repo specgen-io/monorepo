@@ -7,28 +7,41 @@ import (
 	"path/filepath"
 )
 
-func generateServicesImplementations(moduleName string, importedPackage string, version *spec.Version, packageName string, generatePath string) []gen.TextFile {
+func generateServicesImplementations(moduleName string, versionModulePath string, version *spec.Version, generatePath string) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *generateServiceImplementation(moduleName, importedPackage, version, &api, packageName, generatePath))
+		files = append(files, *generateServiceImplementation(moduleName, versionModulePath, &api, generatePath))
 	}
 	return files
 }
 
-func generateServiceImplementation(moduleName string, importedPackage string, version *spec.Version, api *spec.Api, packageName string, generatePath string) *gen.TextFile {
+func generateServiceImplementation(moduleName string, versionModulePath string, api *spec.Api, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", packageName)
+	w.Line("package %s", getShortPackageName(generatePath))
 
 	imports := Imports()
 	imports.Add("errors")
 	imports.AddApiTypes(api)
-	imports.Add(fmt.Sprintf(`%s/%s`, moduleName, versionedFolder(version.Version, importedPackage)))
+	imports.Add(createPackageName(moduleName, versionModulePath, api.Name.SnakeCase()))
+	if paramsContainsModel(api) {
+		imports.Add(createPackageName(moduleName, versionModulePath, modelsPackage))
+	}
 	imports.Write(w)
 
 	w.EmptyLine()
-	generateTypeStruct(w, *api)
+	w.Line(`type %s struct{}`, serviceTypeName(api))
 	w.EmptyLine()
-	generateFunction(w, *api, version, importedPackage)
+	apiPackage := api.Name.SnakeCase()
+	for _, operation := range api.Operations {
+		w.Line(`func (service *%s) %s(%s) (*%s.%s, error) {`,
+			serviceTypeName(api),
+			operation.Name.PascalCase(),
+			JoinDelimParams(addVersionedMethodParams(operation)),
+			apiPackage,
+			responseTypeName(&operation))
+		w.Line(`  return nil, errors.New("implementation has not added yet")`)
+		w.Line(`}`)
+	}
 
 	return &gen.TextFile{
 		Path:    filepath.Join(generatePath, fmt.Sprintf("%s_service.go", api.Name.SnakeCase())),
@@ -36,42 +49,52 @@ func generateServiceImplementation(moduleName string, importedPackage string, ve
 	}
 }
 
-func generateTypeStruct(w *gen.Writer, api spec.Api) {
-	w.Line(`type %s struct{}`, serviceTypeName(&api))
-}
-
-func generateFunction(w *gen.Writer, api spec.Api, version *spec.Version, packageName string) {
-	for _, operation := range api.Operations {
-		w.Line(`func (service *%s) %s(%s) (*%s.%s, error) {`, serviceTypeName(&api), operation.Name.PascalCase(), JoinDelimParams(addVersionedMethodParams(operation, version, packageName)), versionedPackage(version.Version, packageName), responseTypeName(&operation))
-		w.Line(`  return nil, errors.New("implementation has not added yet")`)
-		w.Line(`}`)
-	}
-}
-
-func addVersionedMethodParams(operation spec.NamedOperation, version *spec.Version, packageName string) []string {
+func addVersionedMethodParams(operation spec.NamedOperation) []string {
 	params := []string{}
 
 	if operation.Body != nil {
-		params = append(params, fmt.Sprintf("body *%s", versionedType(&operation.Body.Type.Definition, version, packageName)))
+		params = append(params, fmt.Sprintf("body *%s", GoType(&operation.Body.Type.Definition)))
 	}
 	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), versionedType(&param.Type.Definition, version, packageName)))
+		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
 	}
 	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), versionedType(&param.Type.Definition, version, packageName)))
+		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), versionedType(&param.Type.Definition, version, packageName)))
+		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
 	}
 	return params
 }
 
-func versionedType(def *spec.TypeDef, version *spec.Version, packageName string) string {
-	typ := GoType(def)
-	if def.Info.Model != nil {
-		typ = fmt.Sprintf(`%s.%s`, versionedPackage(version.Version, packageName), typ)
+func paramsContainsModel(api *spec.Api) bool {
+	for _, operation := range api.Operations {
+		if operation.Body != nil {
+			if isModel(&operation.Body.Type.Definition) {
+				return true
+			}
+		}
+		for _, param := range operation.QueryParams {
+			if isModel(&param.Type.Definition) {
+				return true
+			}
+		}
+		for _, param := range operation.HeaderParams {
+			if isModel(&param.Type.Definition) {
+				return true
+			}
+		}
+		for _, param := range operation.Endpoint.UrlParams {
+			if isModel(&param.Type.Definition) {
+				return true
+			}
+		}
 	}
-	return typ
+	return false
+}
+
+func isModel(def *spec.TypeDef) bool {
+	return def.Info.Model != nil
 }
 
 func serviceTypeName(api *spec.Api) string {

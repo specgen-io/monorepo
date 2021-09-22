@@ -16,10 +16,10 @@ func GenerateService(moduleName string, serviceFile string, swaggerPath string, 
 	implFiles := []gen.TextFile{}
 
 	packageName := "spec"
-	generatedFiles = append(generatedFiles, *generateRoutes(moduleName, specification, moduleName, filepath.Join(generatePath, packageName)))
+	generatedFiles = append(generatedFiles, *generateSpecRouting(specification, moduleName, filepath.Join(generatePath, packageName)))
 
 	for _, version := range specification.Versions {
-		versionPath := versionedFolder(version.Version, filepath.Join(generatePath, packageName))
+		versionPath := createPath(generatePath, packageName, version.Version.FlatCase())
 
 		generatedFiles = append(generatedFiles, *generateParamsParser(versionPath))
 		generatedFiles = append(generatedFiles, *generateRouting(&version, moduleName, versionPath))
@@ -27,9 +27,8 @@ func GenerateService(moduleName string, serviceFile string, swaggerPath string, 
 		generatedFiles = append(generatedFiles, generateVersionModels(&version, createPath(versionPath, modelsPackage))...)
 
 		servicesPackageName := "services"
-		servicesVersionPackageName := versionedPackage(version.Version, servicesPackageName)
-		servicesVersionPath := versionedFolder(version.Version, filepath.Join(generatePath, servicesPackageName))
-		implFiles = append(implFiles, generateServicesImplementations(moduleName, packageName, &version, servicesVersionPackageName, servicesVersionPath)...)
+		servicesVersionPath := createPath(generatePath, servicesPackageName, version.Version.FlatCase())
+		implFiles = append(implFiles, generateServicesImplementations(moduleName, versionPath, &version, servicesVersionPath)...)
 	}
 
 	if swaggerPath != "" {

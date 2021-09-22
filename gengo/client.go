@@ -15,21 +15,20 @@ func GenerateGoClient(moduleName string, serviceFile string, generatePath string
 
 	packageName := "spec"
 	for _, version := range specification.Versions {
-		versionPackageName := versionedPackage(version.Version, packageName)
-		versionPath := versionedFolder(version.Version, filepath.Join(generatePath, packageName))
+		versionPath := createPath(generatePath, packageName, version.Version.FlatCase())
 
-		generatedFiles = append(generatedFiles, *generateConverter(versionPackageName, filepath.Join(versionPath, "converter.go")))
+		generatedFiles = append(generatedFiles, *generateConverter(versionPath))
 		generatedFiles = append(generatedFiles, generateVersionModels(&version, createPath(versionPath, modelsPackage))...)
-		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, moduleName, versionPackageName, versionPath)...)
-		generatedFiles = append(generatedFiles, *generateServicesResponses(&version, moduleName, versionPackageName, versionPath, "responses.go"))
+		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, moduleName, versionPath)...)
+		generatedFiles = append(generatedFiles, *generateServicesResponses(&version, moduleName, versionPath))
 	}
 	err = gen.WriteFiles(generatedFiles, true)
 	return err
 }
 
-func generateServicesResponses(version *spec.Version, rootPackage string, packageName string, generatePath string, fileName string) *gen.TextFile {
+func generateServicesResponses(version *spec.Version, rootPackage string, generatePath string) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", packageName)
+	w.Line("package %s", getShortPackageName(generatePath))
 
 	imports := Imports().Add(createPackageName(rootPackage, generatePath, modelsPackage))
 	imports.Write(w)
@@ -47,7 +46,7 @@ func generateServicesResponses(version *spec.Version, rootPackage string, packag
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(generatePath, fileName),
+		Path:    filepath.Join(generatePath, "responses.go"),
 		Content: w.String(),
 	}
 }

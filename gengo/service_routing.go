@@ -19,13 +19,13 @@ func generateRouting(version *spec.Version, rootPackage string, modulePath strin
 	imports.Add("net/http")
 
 	for _, api := range version.Http.Apis {
-		imports.Add(apiPackage(rootPackage, modulePath, &api))
+		imports.Add(createPackageName(rootPackage, modulePath, api.Name.SnakeCase()))
 	}
 	imports.Add(createPackageName(rootPackage, modulePath, modelsPackage))
 	imports.Write(w)
 
 	for _, api := range version.Http.Apis {
-		generateApiRouter(w, api)
+		generateApiRouter(w, &api)
 	}
 
 	return &gen.TextFile{
@@ -34,7 +34,7 @@ func generateRouting(version *spec.Version, rootPackage string, modulePath strin
 	}
 }
 
-func getVestigoUrl(operation spec.NamedOperation) string {
+func getVestigoUrl(operation *spec.NamedOperation) string {
 	url := operation.FullUrl()
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		for _, param := range operation.Endpoint.UrlParams {
@@ -44,7 +44,7 @@ func getVestigoUrl(operation spec.NamedOperation) string {
 	return url
 }
 
-func addSetCors(w *gen.Writer, operation spec.NamedOperation) {
+func addSetCors(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, getVestigoUrl(operation))
 	params := []string{}
 	for _, param := range operation.HeaderParams {
@@ -58,19 +58,21 @@ func logFieldsName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf("log%s", operation.Name.PascalCase())
 }
 
-func generateApiRouter(w *gen.Writer, api spec.Api) {
+func generateApiRouter(w *gen.Writer, api *spec.Api) {
 	w.EmptyLine()
-	w.Line(`func Add%sRoutes(router *vestigo.Router, %s %s) {`, api.Name.PascalCase(), serviceInterfaceTypeVar(&api), fmt.Sprintf("%s.Service", api.Name.SnakeCase()))
-	for _, operation := range api.Operations {
-		w.EmptyLine()
+	w.Line(`func %s(router *vestigo.Router, %s %s) {`, addRoutes(api), serviceInterfaceTypeVar(api), fmt.Sprintf("%s.Service", api.Name.SnakeCase()))
+	for i, operation := range api.Operations {
+		if i != 0 {
+			w.EmptyLine()
+		}
 		w.Indent()
-		url := getVestigoUrl(operation)
+		url := getVestigoUrl(&operation)
 		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), url)
 		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, ToPascalCase(operation.Endpoint.Method), url)
-		generateOperationMethod(w.Indented(), api, &operation)
+		generateOperationMethod(w.Indented(), &operation)
 		w.Line(`})`)
 		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
-			addSetCors(w, operation)
+			addSetCors(w, &operation)
 		}
 		w.Unindent()
 	}
@@ -114,7 +116,7 @@ func generateOperationParametersParsing(w *gen.Writer, operation *spec.NamedOper
 	}
 }
 
-func generateOperationMethod(w *gen.Writer, api spec.Api, operation *spec.NamedOperation) {
+func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(  `log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	if operation.Body != nil {
 		w.Line(`var body %s`, GoType(&operation.Body.Type.Definition))
@@ -130,7 +132,7 @@ func generateOperationMethod(w *gen.Writer, api spec.Api, operation *spec.NamedO
 	generateOperationParametersParsing(w, operation, operation.HeaderParams, "headerParams", "req.Header")
 	generateOperationParametersParsing(w, operation, operation.Endpoint.UrlParams, "urlParams", "req.URL.Query()")
 
-	w.Line(`response, err := %s.%s(%s)`, serviceInterfaceTypeVar(&api), operation.Name.PascalCase(), JoinDelimParams(addOperationMethodParams(operation)))
+	w.Line(`response, err := %s.%s(%s)`, serviceInterfaceTypeVar(operation.Api), operation.Name.PascalCase(), JoinDelimParams(addOperationMethodParams(operation)))
 
 	w.Line(`if response == nil || err != nil {`)
 	w.Line(`  if err != nil {`)
@@ -174,4 +176,8 @@ func addOperationMethodParams(operation *spec.NamedOperation) []string {
 		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
 	}
 	return urlParams
+}
+
+func addRoutes(api *spec.Api) string {
+	return fmt.Sprintf(`Add%sRoutes`, api.Name.PascalCase())
 }
