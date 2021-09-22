@@ -22,6 +22,7 @@ func responseTypeName(operation *spec.NamedOperation) string {
 func createPackageName(args ...string) string {
 	parts := []string{}
 	for _, arg := range args {
+		arg = strings.TrimPrefix(arg, "./")
 		if arg != "" {
 			parts = append(parts, arg)
 		}

@@ -7,12 +7,12 @@ import (
 )
 
 func init() {
-	cmdClientGo.Flags().String(ModuleName, "", ModuleNameDescription)
-
 	cmdClientGo.Flags().String(SpecFile, "", SpecFileDescription)
+	cmdClientGo.Flags().String(ModuleName, "", ModuleNameDescription)
 	cmdClientGo.Flags().String(GeneratePath, "", GeneratePathDescription)
 
 	cmdClientGo.MarkFlagRequired(SpecFile)
+	cmdClientGo.MarkFlagRequired(ModuleName)
 	cmdClientGo.MarkFlagRequired(GeneratePath)
 
 	rootCmd.AddCommand(cmdClientGo)
@@ -22,16 +22,16 @@ var cmdClientGo = &cobra.Command{
 	Use:   "client-go",
 	Short: "Generate Go client source code",
 	Run: func(cmd *cobra.Command, args []string) {
-		moduleName, err := cmd.Flags().GetString(ModuleName)
+		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)
 
-		specFile, err := cmd.Flags().GetString(SpecFile)
+		moduleName, err := cmd.Flags().GetString(ModuleName)
 		fail.IfError(err)
 
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		err = gengo.GenerateGoClient(moduleName, specFile, generatePath)
+		err = gengo.GenerateGoClient(specFile, moduleName, generatePath)
 		fail.IfErrorF(err, "Failed to generate client code")
 	},
 }

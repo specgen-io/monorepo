@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-func GenerateGoClient(moduleName string, serviceFile string, generatePath string) error {
+func GenerateGoClient(serviceFile string, moduleName string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil {
 		return err
