@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 	"strings"
 )
 
@@ -61,7 +60,7 @@ func parserMethodNamePlain(typ *spec.TypeDef) string {
 	}
 }
 
-func generateParamsParser(modulePath string) *gen.TextFile {
+func generateParamsParser(module module) *gen.TextFile {
 	code := `
 package [[.PackageName]]
 
@@ -593,6 +592,6 @@ func (parser *ParamsParser) StringEnumArray(name string, values []string) []stri
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{getShortPackageName(modulePath)})
-	return &gen.TextFile{filepath.Join(modulePath, "params_parsing.go"), strings.TrimSpace(code)}
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
+	return &gen.TextFile{module.GetPath("params_parsing.go"), strings.TrimSpace(code)}
 }

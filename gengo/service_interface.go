@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 )
 
-func generateServicesInterfaces(version *spec.Version, rootPackage, generatePath string) []gen.TextFile {
+func generateServicesInterfaces(version *spec.Version, versionModule module, modelsModule module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *generateInterface(&api, rootPackage, generatePath))
+		apiModule := versionModule.Submodule(api.Name.SnakeCase())
+		files = append(files, *generateInterface(&api, apiModule, modelsModule))
 	}
 	return files
 }
@@ -40,13 +40,13 @@ func addMethodParams(operation spec.NamedOperation) []string {
 	return params
 }
 
-func generateInterface(api *spec.Api, rootPackage string, generatePath string) *gen.TextFile {
+func generateInterface(api *spec.Api, apiModule module, modelsModule module) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", api.Name.SnakeCase())
+	w.Line("package %s", apiModule.Name)
 
 	imports := Imports()
 	imports.AddApiTypes(api)
-	imports.Add(createPackageName(rootPackage, generatePath, modelsPackage))
+	imports.Add(modelsModule.Package)
 	imports.Write(w)
 
 	w.EmptyLine()
@@ -64,7 +64,7 @@ func generateInterface(api *spec.Api, rootPackage string, generatePath string) *
 	}
 	w.Line(`}`)
 	return &gen.TextFile{
-		Path:    filepath.Join(generatePath, api.Name.SnakeCase(), "service.go"),
+		Path:    apiModule.GetPath("service.go"),
 		Content: w.String(),
 	}
 }
