@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 )
 
-func GenerateModels(serviceFile string, generatePath string) error {
+func GenerateModels(serviceFile string, moduleName string, generatePath string) error {
 	specification, err := spec.ReadSpec(serviceFile)
 	if err != nil {
 		return err
@@ -15,22 +14,22 @@ func GenerateModels(serviceFile string, generatePath string) error {
 	files := []gen.TextFile{}
 
 	for _, version := range specification.Versions {
-		modelsPath := createPath(generatePath, version.Version.FlatCase(), modelsPackage)
-		files = append(files, generateVersionModels(&version, modelsPath)...)
+		modelsModule := Module(moduleName, createPath(generatePath, version.Version.FlatCase(), modelsPackage))
+		files = append(files, generateVersionModels(&version, modelsModule)...)
 	}
 	return gen.WriteFiles(files, true)
 }
 
-func generateVersionModels(version *spec.Version, modelsPath string) []gen.TextFile {
+func generateVersionModels(version *spec.Version, module module) []gen.TextFile {
 	return []gen.TextFile{
-		*generateVersionModelsCode(version, modelsPath),
-		*generateEnumsHelperFunctions(modelsPath),
+		*generateVersionModelsCode(version, module),
+		*generateEnumsHelperFunctions(module),
 	}
 }
 
-func generateVersionModelsCode(version *spec.Version, generatePath string) *gen.TextFile {
+func generateVersionModelsCode(version *spec.Version, module module) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", getShortPackageName(generatePath))
+	w.Line("package %s", module.Name)
 
 	imports := Imports()
 	imports.AddModelsTypes(version)
@@ -46,7 +45,7 @@ func generateVersionModelsCode(version *spec.Version, generatePath string) *gen.
 			generateEnumModel(w, model)
 		}
 	}
-	return &gen.TextFile{Path: filepath.Join(generatePath, "models.go"), Content: w.String()}
+	return &gen.TextFile{Path: module.GetPath("models.go"), Content: w.String()}
 }
 
 func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {

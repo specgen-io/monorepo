@@ -4,21 +4,20 @@ import (
 	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 	"strings"
 )
 
-func generateClientsImplementations(version *spec.Version, rootPackage string, generatePath string) []gen.TextFile {
+func generateClientsImplementations(version *spec.Version, versionModule module, modelsModule module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *generateClientImplementation(&api, rootPackage, generatePath))
+		files = append(files, *generateClientImplementation(&api, versionModule, modelsModule))
 	}
 	return files
 }
 
-func generateClientImplementation(api *spec.Api, rootPackage string, generatePath string) *gen.TextFile {
+func generateClientImplementation(api *spec.Api, versionModule module, modelsModule module) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", getShortPackageName(generatePath))
+	w.Line("package %s", versionModule.Name)
 
 	imports := Imports().
 		Add("fmt").
@@ -30,7 +29,7 @@ func generateClientImplementation(api *spec.Api, rootPackage string, generatePat
 		imports.Add("bytes")
 	}
 	imports.AddApiTypes(api)
-	imports.Add(createPackageName(rootPackage, generatePath, modelsPackage))
+	imports.Add(modelsModule.Package)
 	imports.Write(w)
 
 	w.EmptyLine()
@@ -43,7 +42,7 @@ func generateClientImplementation(api *spec.Api, rootPackage string, generatePat
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(generatePath, fmt.Sprintf("%s_client.go", api.Name.SnakeCase())),
+		Path:    versionModule.GetPath(fmt.Sprintf("%s_client.go", api.Name.SnakeCase())),
 		Content: w.String(),
 	}
 }

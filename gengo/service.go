@@ -17,12 +17,13 @@ func GenerateService(serviceFile string, moduleName string, swaggerPath string, 
 	sourcesOverride = append(sourcesOverride, *generateSpecRouting(specification, moduleName, generatePath))
 
 	for _, version := range specification.Versions {
-		versionPath := createPath(generatePath, version.Version.FlatCase())
+		versionModule := Module(moduleName, createPath(generatePath, version.Version.FlatCase()))
+		modelsModule := Module(moduleName, createPath(generatePath, version.Version.FlatCase(), modelsPackage))
 
-		sourcesOverride = append(sourcesOverride, *generateParamsParser(versionPath))
-		sourcesOverride = append(sourcesOverride, *generateRouting(&version, moduleName, versionPath))
-		sourcesOverride = append(sourcesOverride, generateServicesInterfaces(&version, moduleName, versionPath)...)
-		sourcesOverride = append(sourcesOverride, generateVersionModels(&version, createPath(versionPath, modelsPackage))...)
+		sourcesOverride = append(sourcesOverride, *generateParamsParser(versionModule))
+		sourcesOverride = append(sourcesOverride, *generateRouting(&version, versionModule, modelsModule))
+		sourcesOverride = append(sourcesOverride, generateServicesInterfaces(&version, versionModule, modelsModule)...)
+		sourcesOverride = append(sourcesOverride, generateVersionModels(&version, modelsModule)...)
 	}
 
 	if swaggerPath != "" {
