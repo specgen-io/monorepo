@@ -3,7 +3,6 @@ package gengo
 import (
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 )
 
 func GenerateGoClient(serviceFile string, moduleName string, generatePath string) error {
@@ -14,22 +13,23 @@ func GenerateGoClient(serviceFile string, moduleName string, generatePath string
 	generatedFiles := []gen.TextFile{}
 
 	for _, version := range specification.Versions {
-		versionPath := createPath(generatePath, version.Version.FlatCase())
+		versionModule := Module(moduleName, createPath(generatePath, version.Version.FlatCase()))
+		modelsModule := Module(moduleName, createPath(generatePath, version.Version.FlatCase(), modelsPackage))
 
-		generatedFiles = append(generatedFiles, *generateConverter(versionPath))
-		generatedFiles = append(generatedFiles, generateVersionModels(&version, createPath(versionPath, modelsPackage))...)
-		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, moduleName, versionPath)...)
-		generatedFiles = append(generatedFiles, *generateServicesResponses(&version, moduleName, versionPath))
+		generatedFiles = append(generatedFiles, *generateConverter(versionModule))
+		generatedFiles = append(generatedFiles, generateVersionModels(&version, modelsModule)...)
+		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, versionModule, modelsModule)...)
+		generatedFiles = append(generatedFiles, *generateServicesResponses(&version, versionModule, modelsModule))
 	}
 	err = gen.WriteFiles(generatedFiles, true)
 	return err
 }
 
-func generateServicesResponses(version *spec.Version, rootPackage string, generatePath string) *gen.TextFile {
+func generateServicesResponses(version *spec.Version, versionModule module, modelsModule module) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", getShortPackageName(generatePath))
+	w.Line("package %s", versionModule.Name)
 
-	imports := Imports().Add(createPackageName(rootPackage, generatePath, modelsPackage))
+	imports := Imports().Add(modelsModule.Package)
 	imports.Write(w)
 
 	w.EmptyLine()
@@ -45,7 +45,7 @@ func generateServicesResponses(version *spec.Version, rootPackage string, genera
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(generatePath, "responses.go"),
+		Path:    versionModule.GetPath("responses.go"),
 		Content: w.String(),
 	}
 }

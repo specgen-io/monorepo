@@ -8,9 +8,11 @@ import (
 
 func init() {
 	modelsGo.Flags().String(SpecFile, "", SpecFileDescription)
+	modelsGo.Flags().String(ModuleName, "", ModuleNameDescription)
 	modelsGo.Flags().String(GeneratePath, "", GeneratePathDescription)
 
 	modelsGo.MarkFlagRequired(SpecFile)
+	modelsGo.MarkFlagRequired(ModuleName)
 	modelsGo.MarkFlagRequired(GeneratePath)
 
 	rootCmd.AddCommand(modelsGo)
@@ -23,10 +25,13 @@ var modelsGo = &cobra.Command{
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)
 
+		moduleName, err := cmd.Flags().GetString(ModuleName)
+		fail.IfError(err)
+
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		err = gengo.GenerateModels(specFile, generatePath)
+		err = gengo.GenerateModels(specFile, moduleName, generatePath)
 		fail.IfErrorF(err, "Failed to generate models code")
 	},
 }

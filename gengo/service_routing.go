@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 	"strings"
 )
 
-func generateRouting(version *spec.Version, rootPackage string, modulePath string) *gen.TextFile {
+func generateRouting(version *spec.Version, versionModule module, modelsModule module) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", getShortPackageName(modulePath))
+	w.Line("package %s", versionModule.Name)
 
 	imports := Imports()
 	imports.Add("encoding/json")
@@ -19,9 +18,10 @@ func generateRouting(version *spec.Version, rootPackage string, modulePath strin
 	imports.Add("net/http")
 
 	for _, api := range version.Http.Apis {
-		imports.Add(createPackageName(rootPackage, modulePath, api.Name.SnakeCase()))
+		apiModule := versionModule.Submodule(api.Name.SnakeCase())
+		imports.Add(apiModule.Package)
 	}
-	imports.Add(createPackageName(rootPackage, modulePath, modelsPackage))
+	imports.Add(modelsModule.Package)
 	imports.Write(w)
 
 	for _, api := range version.Http.Apis {
@@ -29,7 +29,7 @@ func generateRouting(version *spec.Version, rootPackage string, modulePath strin
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(modulePath, "routing.go"),
+		Path:    versionModule.GetPath("routing.go"),
 		Content: w.String(),
 	}
 }
