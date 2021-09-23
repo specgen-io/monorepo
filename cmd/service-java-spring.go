@@ -21,7 +21,7 @@ func init() {
 }
 
 var cmdServiceJavaSpring = &cobra.Command{
-	Use:   "srvice-java-spring",
+	Use:   "service-java-spring",
 	Short: "Generate Spring Java service source code",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
