@@ -1,7 +1,10 @@
 package cmd
 
 const ModuleName = "module-name"
-const ModuleNameDescription = "Go module name"
+const ModuleNameDescription = "Module name"
+
+const PackageName = "package-name"
+const PackageNameDescription = "Package name"
 
 const SpecFile = "spec-file"
 const SpecFileDescription = "Path to service specification file"
