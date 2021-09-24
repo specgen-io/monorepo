@@ -13,22 +13,20 @@ func GenerateModels(serviceFile string, generatePath string) error {
 	if err != nil {
 		return err
 	}
-	files := generateModels(specification, generatePath)
-
+	packageName := fmt.Sprintf("%s.models", specification.Name.SnakeCase())
+	generatePath = filepath.Join(generatePath, packageName)
+	files := generateModels(specification, packageName, generatePath)
 	return gen.WriteFiles(files, true)
 }
 
-func generateModels(specification *spec.Spec, generatePath string) []gen.TextFile {
+func generateModels(specification *spec.Spec, packageName string, generatePath string) []gen.TextFile {
 	files := []gen.TextFile{}
-	packageName := fmt.Sprintf("%s.models", specification.Name.SnakeCase())
-	generatePath = filepath.Join(generatePath, packageName)
 	for _, version := range specification.Versions {
 		versionedPackageName := versionedPackage(version.Version, packageName)
 		versionPath := versionedPath(version.Version, generatePath)
 		files = append(files, generateVersionModels(&version, versionedPackageName, versionPath)...)
-		files = append(files, *generateJsoner(versionedPackageName, filepath.Join(generatePath, "Jsoner.java")))
 	}
-
+	files = append(files, *generateJsoner(packageName, filepath.Join(generatePath, "Jsoner.java")))
 	return files
 }
 
