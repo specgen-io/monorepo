@@ -11,10 +11,13 @@ func GenerateService(serviceFile string, packageName string, swaggerPath string,
 	if err != nil {
 		return err
 	}
+
+	generatePath = filepath.Join(generatePath, packageName)
+
 	sourcesOverride := []gen.TextFile{}
 	sourcesScaffold := []gen.TextFile{}
 
-	generatePath = filepath.Join(generatePath, packageName)
+	sourcesOverride = append(sourcesOverride, *generateJsoner(packageName, generatePath))
 	for _, version := range specification.Versions {
 		versionedPackageName := versionedPackage(version.Version, packageName)
 		versionPath := versionedPath(version.Version, generatePath)

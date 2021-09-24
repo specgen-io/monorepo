@@ -26,7 +26,7 @@ func generateModels(specification *spec.Spec, packageName string, generatePath s
 		versionPath := versionedPath(version.Version, generatePath)
 		files = append(files, generateVersionModels(&version, versionedPackageName, versionPath)...)
 	}
-	files = append(files, *generateJsoner(packageName, filepath.Join(generatePath, "Jsoner.java")))
+	files = append(files, *generateJsoner(packageName, generatePath))
 	return files
 }
 
@@ -59,7 +59,7 @@ public class Jsoner {
 `
 
 	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
-	return &gen.TextFile{Path: path, Content: strings.TrimSpace(code)}
+	return &gen.TextFile{Path: filepath.Join(path, "Jsoner.java"), Content: strings.TrimSpace(code)}
 }
 
 func generateVersionModels(version *spec.Version, packageName string, generatePath string) []gen.TextFile {
