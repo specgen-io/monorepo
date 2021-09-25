@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 	"strings"
 )
 
@@ -14,23 +13,22 @@ func GenerateModels(serviceFile string, generatePath string) error {
 		return err
 	}
 	packageName := fmt.Sprintf("%s.models", specification.Name.SnakeCase())
-	generatePath = filepath.Join(generatePath, packageName)
-	files := generateModels(specification, packageName, generatePath)
+	modelsPackage := Module(generatePath, packageName)
+	files := generateModels(specification, modelsPackage)
 	return gen.WriteFiles(files, true)
 }
 
-func generateModels(specification *spec.Spec, packageName string, generatePath string) []gen.TextFile {
+func generateModels(specification *spec.Spec, thePackage module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, version := range specification.Versions {
-		versionedPackageName := versionedPackage(version.Version, packageName)
-		versionPath := versionedPath(version.Version, generatePath)
-		files = append(files, generateVersionModels(&version, versionedPackageName, versionPath)...)
+		versionPackage := thePackage.Submodule(version.Version.FlatCase())
+		files = append(files, generateVersionModels(&version, versionPackage)...)
 	}
-	files = append(files, *generateJsoner(packageName, generatePath))
+	files = append(files, *generateJsoner(thePackage))
 	return files
 }
 
-func generateJsoner(packageName string, path string) *gen.TextFile {
+func generateJsoner(thePackage module) *gen.TextFile {
 	code := `
 package [[.PackageName]];
 
@@ -58,19 +56,19 @@ public class Jsoner {
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
-	return &gen.TextFile{Path: filepath.Join(path, "Jsoner.java"), Content: strings.TrimSpace(code)}
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.Package})
+	return &gen.TextFile{Path: thePackage.GetPath("Jsoner.java"), Content: strings.TrimSpace(code)}
 }
 
-func generateVersionModels(version *spec.Version, packageName string, generatePath string) []gen.TextFile {
+func generateVersionModels(version *spec.Version, thePackage module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
-			files = append(files, *generateObjectModel(model, packageName, generatePath))
+			files = append(files, *generateObjectModel(model, thePackage))
 		} else if model.IsOneOf() {
-			files = append(files, generateOneOfModels(model, packageName, generatePath)...)
+			files = append(files, generateOneOfModels(model, thePackage)...)
 		} else if model.IsEnum() {
-			files = append(files, *generateEnumModel(model, packageName, generatePath))
+			files = append(files, *generateEnumModel(model, thePackage))
 		}
 	}
 	return files
@@ -113,13 +111,14 @@ func addSetterParams(field spec.NamedDefinition) string {
 	return fmt.Sprintf(`%s %s`, addType(field), addFieldName(field))
 }
 
-func generateObjectModel(model *spec.NamedModel, packageName string, generatePath string) *gen.TextFile {
+func generateObjectModel(model *spec.NamedModel, thePackage module) *gen.TextFile {
 	w := NewJavaWriter()
-	w.Line(`package %s;`, packageName)
+	w.Line(`package %s;`, thePackage.Package)
 	w.EmptyLine()
 	generateImports(w)
 	w.EmptyLine()
-	w.Line(`public class %s {`, model.Name.PascalCase())
+	className := model.Name.PascalCase()
+	w.Line(`public class %s {`, className)
 
 	constructParams := []string{}
 	for _, field := range model.Object.Fields {
@@ -152,12 +151,10 @@ func generateObjectModel(model *spec.NamedModel, packageName string, generatePat
 		w.Line(`  }`)
 	}
 	w.EmptyLine()
-	w.Indent()
-	addObjectModelMethods(w, model)
-	w.Unindent()
+	addObjectModelMethods(w.Indented(), model)
 	w.Line(`}`)
 
-	return &gen.TextFile{Path: filepath.Join(generatePath, fmt.Sprintf(`%s.java`, model.Name.Source)), Content: w.String()}
+	return &gen.TextFile{Path: thePackage.GetPath(className+".java"), Content: w.String()}
 }
 
 func addObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
@@ -217,25 +214,26 @@ func addObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateEnumModel(model *spec.NamedModel, packageName string, generatePath string) *gen.TextFile {
+func generateEnumModel(model *spec.NamedModel, thePackage module) *gen.TextFile {
 	w := NewJavaWriter()
-	w.Line(`package %s;`, packageName)
+	w.Line(`package %s;`, thePackage.Package)
 	w.EmptyLine()
 	generateImports(w)
 	w.EmptyLine()
-	w.Line(`public enum %s {`, model.Name.PascalCase())
+	enumName := model.Name.PascalCase()
+	w.Line(`public enum %s {`, enumName)
 	for _, enumItem := range model.Enum.Items {
 		w.Line(`  %s,`, enumItem.Value)
 	}
 	w.Line(`}`)
 
-	return &gen.TextFile{Path: filepath.Join(generatePath, fmt.Sprintf(`%s.java`, model.Name.Source)), Content: w.String()}
+	return &gen.TextFile{Path: thePackage.GetPath(enumName+".java"), Content: w.String()}
 }
 
-func generateOneOfModels(model *spec.NamedModel, packageName string, generatePath string) []gen.TextFile {
+func generateOneOfModels(model *spec.NamedModel, thePackage module) []gen.TextFile {
 	files := []gen.TextFile{}
 	w := NewJavaWriter()
-	w.Line("package %s;", packageName)
+	w.Line("package %s;", thePackage.Package)
 	w.EmptyLine()
 	generateImports(w)
 	w.EmptyLine()
@@ -256,32 +254,33 @@ func generateOneOfModels(model *spec.NamedModel, packageName string, generatePat
 		w.Line(`  @Type(value = %s%s.class, name = "%s"),`, model.Name.PascalCase(), item.Name.PascalCase(), item.Name.Source)
 	}
 	w.Line(`})`)
-	w.Line(`public interface %s {`, model.Name.PascalCase())
+	interfaceName := model.Name.PascalCase()
+	w.Line(`public interface %s {`, interfaceName)
 	w.Line(`}`)
 
 	for _, item := range model.OneOf.Items {
-		files = append(files, *generateOneOfImplementation(item, model, packageName, generatePath))
+		files = append(files, *generateOneOfImplementation(item, model, thePackage))
 	}
-	files = append(files, gen.TextFile{Path: filepath.Join(generatePath, fmt.Sprintf("%s.java", model.Name.Source)), Content: w.String()})
+	files = append(files, gen.TextFile{Path: thePackage.GetPath(interfaceName+".java"), Content: w.String()})
 
 	return files
 }
 
-func generateOneOfImplementation(item spec.NamedDefinition, model *spec.NamedModel, packageName string, generatePath string) *gen.TextFile {
-	modelItemName := model.Name.PascalCase() + item.Name.PascalCase()
+func generateOneOfImplementation(item spec.NamedDefinition, model *spec.NamedModel, thePackage module) *gen.TextFile {
+	className := model.Name.PascalCase() + item.Name.PascalCase()
 	w := NewJavaWriter()
-	w.Line(`package %s;`, packageName)
+	w.Line(`package %s;`, thePackage.Package)
 	w.EmptyLine()
 	generateImports(w)
 	w.EmptyLine()
-	w.Line(`public class %s implements %s {`, modelItemName, model.Name.PascalCase())
+	w.Line(`public class %s implements %s {`, className, model.Name.PascalCase())
 	w.Line(`  @JsonUnwrapped`)
 	w.Line(`  public %s data;`, JavaType(&item.Type.Definition))
 	w.EmptyLine()
-	w.Line(`  public %s() {`, modelItemName)
+	w.Line(`  public %s() {`, className)
 	w.Line(`  }`)
 	w.EmptyLine()
-	w.Line(`  public %s(%s data) {`, modelItemName, JavaType(&item.Type.Definition))
+	w.Line(`  public %s(%s data) {`, className, JavaType(&item.Type.Definition))
 	w.Line(`  	this.data = data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
@@ -298,7 +297,7 @@ func generateOneOfImplementation(item spec.NamedDefinition, model *spec.NamedMod
 	w.Unindent()
 	w.Line(`}`)
 
-	return &gen.TextFile{Path: filepath.Join(generatePath, fmt.Sprintf(`%s.java`, model.Name.Source+item.Name.PascalCase())), Content: w.String()}
+	return &gen.TextFile{Path: thePackage.GetPath(className+".java"), Content: w.String()}
 }
 
 func addOneOfModelMethods(w *gen.Writer, item spec.NamedDefinition, model *spec.NamedModel) {
