@@ -3,7 +3,6 @@ package genjava
 import (
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 )
 
 func GenerateService(serviceFile string, packageName string, swaggerPath string, generatePath string, servicesPath string) error {
@@ -12,16 +11,14 @@ func GenerateService(serviceFile string, packageName string, swaggerPath string,
 		return err
 	}
 
-	generatePath = filepath.Join(generatePath, packageName)
-
 	sourcesOverride := []gen.TextFile{}
 	sourcesScaffold := []gen.TextFile{}
 
-	sourcesOverride = append(sourcesOverride, *generateJsoner(packageName, generatePath))
+	modelsPackage := Module(generatePath, packageName)
+	sourcesOverride = append(sourcesOverride, *generateJsoner(modelsPackage))
 	for _, version := range specification.Versions {
-		versionedPackageName := versionedPackage(version.Version, packageName)
-		versionPath := versionedPath(version.Version, generatePath)
-		sourcesOverride = append(sourcesOverride, generateVersionModels(&version, versionedPackageName, versionPath)...)
+		versionPackage := modelsPackage.Submodule(version.Version.FlatCase())
+		sourcesOverride = append(sourcesOverride, generateVersionModels(&version, versionPackage)...)
 	}
 
 	err = gen.WriteFiles(sourcesOverride, true)
