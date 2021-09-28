@@ -6,18 +6,18 @@ import (
 	"github.com/specgen-io/specgen/v2/gen"
 )
 
-func generateServicesImplementations(version *spec.Version, thePackage Package, modelsPackage Package, servicePackage Package) []gen.TextFile {
+func generateServicesImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, servicesVersionPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
-		serviceSubpackage := servicePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, *generateServiceImplementation(version, &api, thePackage, modelsPackage, serviceSubpackage))
+		serviceVersionSubpackage := servicesVersionPackage.Subpackage(api.Name.SnakeCase())
+		files = append(files, *generateServiceImplementation(version, &api, thePackage, modelsVersionPackage, serviceVersionSubpackage))
 	}
 	return files
 }
 
-func generateServiceImplementation(version *spec.Version, api *spec.Api, apiPackage Package, modelsPackage Package, servicePackage Package) *gen.TextFile {
+func generateServiceImplementation(version *spec.Version, api *spec.Api, thePackage Module, modelsVersionPackage Module, serviceVersionSubpackage Module) *gen.TextFile {
 	w := NewJavaWriter()
-	w.Line(`package %s;`, apiPackage.PackageName)
+	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	w.Line(`import java.math.BigDecimal;`)
 	w.Line(`import java.time.*;`)
@@ -25,8 +25,8 @@ func generateServiceImplementation(version *spec.Version, api *spec.Api, apiPack
 	w.EmptyLine()
 	w.Line(`import org.springframework.stereotype.Service;`)
 	w.EmptyLine()
-	w.Line(`import %s;`, modelsPackage.PackageStar)
-	w.Line(`import %s;`, servicePackage.PackageStar)
+	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
+	w.Line(`import %s;`, serviceVersionSubpackage.PackageStar)
 	w.EmptyLine()
 	w.Line(`@Service("%s")`, versionServiceName(serviceName(api), version))
 	w.Line(`public class %s implements %s {`, serviceName(api), serviceInterfaceName(api))
@@ -39,7 +39,7 @@ func generateServiceImplementation(version *spec.Version, api *spec.Api, apiPack
 	w.Line(`}`)
 
 	return &gen.TextFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", serviceName(api))),
+		Path:    thePackage.GetPath(fmt.Sprintf("%s.java", serviceName(api))),
 		Content: w.String(),
 	}
 }

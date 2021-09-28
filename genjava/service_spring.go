@@ -15,7 +15,7 @@ func GenerateService(serviceFile string, packageName string, swaggerPath string,
 	sourcesOverride := []gen.TextFile{}
 	sourcesScaffold := []gen.TextFile{}
 
-	mainPackage := PackageInfo(generatePath, packageName)
+	mainPackage := Package(generatePath, packageName)
 
 	modelsPackage := mainPackage.Subpackage("models")
 	sourcesOverride = append(sourcesOverride, *generateJsoner(modelsPackage))
@@ -38,7 +38,7 @@ func GenerateService(serviceFile string, packageName string, swaggerPath string,
 	}
 
 	if servicesPath != "" {
-		servicesImplPackage := PackageInfo(servicesPath, packageName)
+		servicesImplPackage := Package(servicesPath, packageName)
 		for _, version := range specification.Versions {
 			servicesImplVersionPath := servicesImplPackage.Subpackage("services_implementations")
 			serviceImplVersionPackage := servicesImplVersionPath.Subpackage(version.Version.FlatCase())
