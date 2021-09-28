@@ -6,7 +6,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen"
 )
 
-func generateServicesInterfaces(version *spec.Version, thePackage Package, modelsVersionPackage Package) []gen.TextFile {
+func generateServicesInterfaces(version *spec.Version, thePackage Module, modelsVersionPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
@@ -15,7 +15,7 @@ func generateServicesInterfaces(version *spec.Version, thePackage Package, model
 	return files
 }
 
-func generateInterface(api *spec.Api, apiPackage Package, modelsVersionPackage Package) []gen.TextFile {
+func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Module) []gen.TextFile {
 
 	files := []gen.TextFile{}
 	w := NewJavaWriter()
@@ -86,7 +86,7 @@ func addOperationResponseParams(operation spec.NamedOperation) []string {
 	return params
 }
 
-func generateResponseInterface(operation spec.NamedOperation, apiPackage Package, modelsVersionPackage Package) []gen.TextFile {
+func generateResponseInterface(operation spec.NamedOperation, apiPackage Module, modelsVersionPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -105,7 +105,7 @@ func generateResponseInterface(operation spec.NamedOperation, apiPackage Package
 	return files
 }
 
-func generateResponsesImplementations(operation spec.NamedOperation, response spec.NamedResponse, apiPackage Package, modelsVersionPackage Package) *gen.TextFile {
+func generateResponsesImplementations(operation spec.NamedOperation, response spec.NamedResponse, apiPackage Module, modelsVersionPackage Module) *gen.TextFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()

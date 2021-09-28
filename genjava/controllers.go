@@ -6,16 +6,16 @@ import (
 	"github.com/specgen-io/specgen/v2/gen"
 )
 
-func generateServicesControllers(version *spec.Version, thePackage Package, modelsPackage Package, modelsVersionPackage Package, serviceVersionPackage Package) []gen.TextFile {
+func generateServicesControllers(version *spec.Version, thePackage Module, modelsPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
-		serviceSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, generateController(version, &api, thePackage, modelsPackage, modelsVersionPackage, serviceSubpackage)...)
+		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
+		files = append(files, generateController(version, &api, thePackage, modelsPackage, modelsVersionPackage, serviceVersionSubpackage)...)
 	}
 	return files
 }
 
-func generateController(version *spec.Version, api *spec.Api, apiPackage Package, modelsPackage Package, modelsVersionPackage Package, serviceVersionPackage Package) []gen.TextFile {
+func generateController(version *spec.Version, api *spec.Api, apiPackage Module, modelsPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -78,7 +78,7 @@ func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operati
 				w.Line(`  headers.add(CONTENT_TYPE, "application/json");`)
 				w.Line(`  String responseJson = Jsoner.serialize(objectMapper, result);`)
 				w.EmptyLine()
-				w.Line(`  return new ResponseEntity<>(responseJson, headers, HttpStatus.OK);`)
+				w.Line(`  return new ResponseEntity<>(responseJson, headers, HttpStatus.%s);`, resp.Name.UpperCase())
 			}
 		}
 	}
