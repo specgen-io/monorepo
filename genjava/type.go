@@ -73,7 +73,35 @@ func PlainJavaType(typ string, referenceTypesOnly bool) string {
 		return "LocalDateTime"
 	case spec.TypeJson:
 		return "Object"
+	case spec.TypeEmpty:
+		return "void"
 	default:
 		return typ
+	}
+}
+
+func addDateFormatAnnotation(typ *spec.TypeDef) string {
+	switch typ.Node {
+	case spec.PlainType:
+		return plainDateFormatAnnotation(typ.Plain)
+	case spec.NullableType:
+		return addDateFormatAnnotation(typ.Child)
+	case spec.ArrayType:
+		return addDateFormatAnnotation(typ.Child)
+	case spec.MapType:
+		return addDateFormatAnnotation(typ.Child)
+	default:
+		panic(fmt.Sprintf("Unknown type: %v", typ))
+	}
+}
+
+func plainDateFormatAnnotation(typ string) string {
+	switch typ {
+	case spec.TypeDate:
+		return " @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)"
+	case spec.TypeDateTime:
+		return " @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)"
+	default:
+		return ""
 	}
 }
