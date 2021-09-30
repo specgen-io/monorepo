@@ -7,11 +7,12 @@ import (
 )
 
 func GenerateModels(serviceFile string, generatePath string) error {
-	specification, err := spec.ReadSpec(serviceFile)
+	result, err := spec.ReadSpecFile(serviceFile)
 	if err != nil {
 		return err
 	}
 
+	specification := result.Spec
 	fileName := specification.Name.SnakeCase() + "_models.rb"
 	moduleName := specification.Name.PascalCase()
 	modelsPath := filepath.Join(generatePath, fileName)

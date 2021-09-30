@@ -7,10 +7,13 @@ import (
 )
 
 func GenerateService(serviceFile string, moduleName string, swaggerPath string, generatePath string, servicesPath string) error {
-	specification, err := spec.ReadSpec(serviceFile)
+	result, err := spec.ReadSpecFile(serviceFile)
 	if err != nil {
 		return err
 	}
+
+	specification := result.Spec
+
 	sourcesOverride := []gen.TextFile{}
 	sourcesScaffold := []gen.TextFile{}
 

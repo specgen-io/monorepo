@@ -9,11 +9,12 @@ import (
 )
 
 func GenerateAxiosClient(serviceFile string, generatePath string, validation string) error {
-	specification, err := spec.ReadSpec(serviceFile)
+	result, err := spec.ReadSpecFile(serviceFile)
 	if err != nil {
 		return err
 	}
 
+	specification := result.Spec
 	sources := []gen.TextFile{}
 	for _, version := range specification.Versions {
 		sources = append(sources, *generateAxiosClient(&version, generatePath, validation))

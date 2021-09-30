@@ -7,10 +7,13 @@ import (
 )
 
 func GenerateModels(serviceFile string, moduleName string, generatePath string) error {
-	specification, err := spec.ReadSpec(serviceFile)
+	result, err := spec.ReadSpecFile(serviceFile)
 	if err != nil {
 		return err
 	}
+
+	specification := result.Spec
+
 	files := []gen.TextFile{}
 
 	for _, version := range specification.Versions {

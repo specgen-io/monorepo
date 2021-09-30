@@ -7,10 +7,12 @@ import (
 )
 
 func GenerateModels(serviceFile string, generatePath string, validation string) error {
-	specification, err := spec.ReadSpec(serviceFile)
+	result, err := spec.ReadSpecFile(serviceFile)
 	if err != nil {
 		return err
 	}
+
+	specification := result.Spec
 	files := generateModels(specification, validation, generatePath)
 	return gen.WriteFiles(files, true)
 }

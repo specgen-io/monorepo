@@ -10,11 +10,12 @@ import (
 )
 
 func GeneratePlayService(serviceFile string, swaggerPath string, generatePath string, servicesPath string) (err error) {
-	specification, err := spec.ReadSpec(serviceFile)
+	result, err := spec.ReadSpecFile(serviceFile)
 	if err != nil {
 		return
 	}
 
+	specification := result.Spec
 	modelsPackage := "models"
 	controllersPackage := "controllers"
 	servicesPackage := "services"

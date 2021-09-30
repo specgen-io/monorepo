@@ -8,10 +8,11 @@ import (
 )
 
 func GenerateModels(serviceFile string, generatePath string) error {
-	specification, err := spec.ReadSpec(serviceFile)
+	result, err := spec.ReadSpecFile(serviceFile)
 	if err != nil {
 		return err
 	}
+	specification := result.Spec
 	packageName := fmt.Sprintf("%s.models", specification.Name.SnakeCase())
 	modelsPackage := Package(generatePath, packageName)
 	files := generateModels(specification, modelsPackage)

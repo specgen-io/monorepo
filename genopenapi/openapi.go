@@ -8,12 +8,13 @@ import (
 )
 
 func GenerateAndWriteOpenapi(serviceFile string, outFile string) (err error) {
-	spec, err := spec.ReadSpec(serviceFile)
+	result, err := spec.ReadSpecFile(serviceFile)
 	if err != nil {
 		return
 	}
 
-	openApiFile := GenerateOpenapi(spec, outFile)
+	specification := result.Spec
+	openApiFile := GenerateOpenapi(specification, outFile)
 
 	err = gen.WriteFile(openApiFile, true)
 
@@ -162,8 +163,8 @@ func generateModel(model spec.Model) *YamlMap {
 func generateUnionModel(model spec.Model) *YamlMap {
 	schema := Map().Set("type", "object")
 
-	if model.OneOf.Description != nil {
-		schema.Set("description", model.OneOf.Description)
+	if model.Description() != nil {
+		schema.Set("description", model.Description())
 	}
 
 	properties := Map()
@@ -182,8 +183,8 @@ func generateUnionModel(model spec.Model) *YamlMap {
 func generateObjectModel(model spec.Model) *YamlMap {
 	schema := Map().Set("type", "object")
 
-	if model.Object.Description != nil {
-		schema.Set("description", model.Object.Description)
+	if model.Description() != nil {
+		schema.Set("description", model.Description())
 	}
 
 	required := Array()
@@ -213,8 +214,8 @@ func generateObjectModel(model spec.Model) *YamlMap {
 func generateEnumModel(model spec.Model) *YamlMap {
 	schema := Map().Set("type", "string")
 
-	if model.Enum.Description != nil {
-		schema.Set("description", model.Enum.Description)
+	if model.Description() != nil {
+		schema.Set("description", model.Description())
 	}
 
 	openApiItems := Array()

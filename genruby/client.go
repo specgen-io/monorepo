@@ -10,11 +10,12 @@ import (
 )
 
 func GenerateClient(serviceFile string, generatePath string) error {
-	specification, err := spec.ReadSpec(serviceFile)
+	result, err := spec.ReadSpecFile(serviceFile)
 	if err != nil {
 		return err
 	}
 
+	specification := result.Spec
 	gemName := specification.Name.SnakeCase() + "_client"
 	moduleName := clientModuleName(specification.Name)
 	libGemPath := filepath.Join(generatePath, gemName)

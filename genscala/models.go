@@ -7,11 +7,12 @@ import (
 )
 
 func GenerateServiceModels(serviceFile string, generatePath string) error {
-	specification, err := spec.ReadSpec(serviceFile)
+	result, err := spec.ReadSpecFile(serviceFile)
 	if err != nil {
 		return err
 	}
 
+	specification := result.Spec
 	modelsPackage := modelsPackageName(specification.Name)
 
 	scalaCirceFile := generateJson("spec", filepath.Join(generatePath, "Json.scala"))
