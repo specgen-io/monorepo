@@ -1,24 +1,18 @@
 package io.specgen;
 
 import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.MavenProject;
 
 import java.io.*;
 import java.util.*;
 import java.nio.file.*;
 
 public abstract class SpecgenAbstractMojo extends AbstractMojo {
-	public void runSpecgen(String[] params) {
+	public void runSpecgen(List<String> params) {
 		String specgenFullPath = getSpecgenPath();
 
-		List<String> newList = new ArrayList<>();
-		newList.add(specgenFullPath);
-		newList.addAll(Arrays.asList(params));
-
-		String[] specgenCommand = newList.toArray(new String[0]);
+		List<String> specgenCommand = new ArrayList<>();
+		specgenCommand.add(specgenFullPath);
+		specgenCommand.addAll(params);
 
 		Result result = executeCommand(specgenCommand);
 
@@ -61,7 +55,7 @@ public abstract class SpecgenAbstractMojo extends AbstractMojo {
 		return specPathFile.getPath();
 	}
 
-	private Result executeCommand(String[] command) {
+	private Result executeCommand(List<String> command) {
 		getLog().info("Running specgen tool");
 		getLog().info(String.join(" ", command));
 
