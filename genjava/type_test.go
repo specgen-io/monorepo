@@ -56,6 +56,10 @@ func TestPlainTypeJson(t *testing.T) {
 	CheckPlainType(t, spec.TypeJson, "Object")
 }
 
+func TestPlainTypeEmpty(t *testing.T) {
+	CheckPlainType(t, spec.TypeEmpty, "void")
+}
+
 func TestNullableType(t *testing.T) {
 	typ := spec.Nullable(spec.Plain(spec.TypeInt32))
 	javaType := JavaType(typ)
