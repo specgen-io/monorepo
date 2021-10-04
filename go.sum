@@ -220,6 +220,12 @@ github.com/specgen-io/spec v0.0.0-20210929225154-9e2479484fe5 h1:ki7pMh+nc2MkeQ9
 github.com/specgen-io/spec v0.0.0-20210929225154-9e2479484fe5/go.mod h1:gLlve979iYN676lxxoEpD/nFy1AVg+iDT8mWF5GwthY=
 github.com/specgen-io/spec v0.0.0-20210930013431-5ef3b8fff589 h1:kXRNpw+lqZsKjCRyhA4bhf3ehl9VxLSOuF/wPqFe044=
 github.com/specgen-io/spec v0.0.0-20210930013431-5ef3b8fff589/go.mod h1:gLlve979iYN676lxxoEpD/nFy1AVg+iDT8mWF5GwthY=
+github.com/specgen-io/spec v0.0.0-20210930224327-54bc2424d3e1 h1:uzno6353sK/dh8vrGxBm7WEd5j798I0/nT2c9d/g3Pc=
+github.com/specgen-io/spec v0.0.0-20210930224327-54bc2424d3e1/go.mod h1:gLlve979iYN676lxxoEpD/nFy1AVg+iDT8mWF5GwthY=
+github.com/specgen-io/spec v0.0.0-20210930231612-fe82077ff85a h1:YKMeEq1PK9dz9f5Et9CCu6v2ZlDJOJ0r2oaL+wj2jZY=
+github.com/specgen-io/spec v0.0.0-20210930231612-fe82077ff85a/go.mod h1:gLlve979iYN676lxxoEpD/nFy1AVg+iDT8mWF5GwthY=
+github.com/specgen-io/spec v0.0.0-20211001145939-c9813ebbd4c7 h1:RVYNVqQ/FKfEUA+56l5j5FeRCgS8ChBFtjwmk+dPcIA=
+github.com/specgen-io/spec v0.0.0-20211001145939-c9813ebbd4c7/go.mod h1:gLlve979iYN676lxxoEpD/nFy1AVg+iDT8mWF5GwthY=
 github.com/spf13/afero v1.6.0/go.mod h1:Ai8FlHk4v/PARR026UzYexafAt9roJ7LcLMAmO6Z93I=
 github.com/spf13/cast v1.3.1/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
 github.com/spf13/cobra v1.2.1 h1:+KmjbUw1hriSNMF55oPrkZcb27aECyrj8V2ytv7kWDw=
