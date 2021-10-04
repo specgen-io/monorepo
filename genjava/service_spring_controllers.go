@@ -36,7 +36,8 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 	w.Line(`import %s;`, serviceVersionPackage.PackageStar)
 	w.EmptyLine()
 	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), version))
-	w.Line(`public class %s {`, controllerName(api))
+	className := controllerName(api)
+	w.Line(`public class %s {`, className)
 	w.Line(`  final %s %s;`, serviceInterfaceName(api), serviceVarName(api))
 	w.EmptyLine()
 	w.Line(`  public %s(%s %s) {`, controllerName(api), serviceInterfaceName(api), serviceVarName(api))
@@ -64,15 +65,15 @@ func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operati
 	if operation.Body != nil {
 		w.Line(`  var requestBody = Jsoner.deserialize(objectMapper, jsonStr, %s.class);`, JavaType(&operation.Body.Type.Definition))
 	}
-	response := collectResponses(operation)
-	if len(response) == 1 {
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(api), operation.Name.CamelCase(), JoinParams(addServiceMethodParams(operation)))
+	if len(operation.Responses) == 1 {
 		for _, resp := range operation.Responses {
 			if resp.Type.Definition.IsEmpty() {
-				w.Line(`  %s.%s(%s);`, serviceVarName(api), operation.Name.CamelCase(), JoinParams(addServiceMethodParams(operation)))
+				w.Line(`  %s;`, serviceCall)
 				w.EmptyLine()
-				w.Line(`  return new ResponseEntity<>(HttpStatus.OK);`)
+				w.Line(`  return new ResponseEntity<>(HttpStatus.%s);`, resp.Name.UpperCase())
 			} else {
-				w.Line(`  var result = %s.%s(%s);`, serviceVarName(api), operation.Name.CamelCase(), JoinParams(addServiceMethodParams(operation)))
+				w.Line(`  var result = %s;`, serviceCall)
 				w.EmptyLine()
 				w.Line(`  HttpHeaders headers = new HttpHeaders();`)
 				w.Line(`  headers.add(CONTENT_TYPE, "application/json");`)
@@ -82,8 +83,8 @@ func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operati
 			}
 		}
 	}
-	if len(response) > 1 {
-		w.Line(`  var result = %s.%s(%s);`, serviceVarName(api), operation.Name.CamelCase(), JoinParams(addServiceMethodParams(operation)))
+	if len(operation.Responses) > 1 {
+		w.Line(`  var result = %s;`, serviceCall)
 		w.EmptyLine()
 		for _, resp := range operation.Responses {
 			w.Line(`  if (result instanceof %s) {`, serviceResponseImplName(operation, resp))
@@ -96,20 +97,35 @@ func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operati
 	w.Line(`}`)
 }
 
+func generateMethodParam(namedParams []spec.NamedParam, paramAnnotationName string) []string {
+	params := []string{}
+
+	if namedParams != nil && len(namedParams) > 0 {
+		for _, namedParam := range namedParams {
+			paramName := fmt.Sprintf(`@%s("%s")`, paramAnnotationName, namedParam.Name.Source)
+			paramTypeName := fmt.Sprintf(`%s %s`, JavaType(&namedParam.Type.Definition), namedParam.Name.CamelCase())
+			dateFormatAnnotation := checkDateType(&namedParam.Type.Definition)
+			if dateFormatAnnotation != "" {
+				params = append(params, fmt.Sprintf(`%s %s %s`, paramName, dateFormatAnnotation, paramTypeName))
+			} else {
+				params = append(params, fmt.Sprintf(`%s %s`, paramName, paramTypeName))
+			}
+		}
+	}
+
+	return params
+}
+
 func addMethodParams(operation spec.NamedOperation) []string {
 	methodParams := []string{}
+
 	if operation.Body != nil {
 		methodParams = append(methodParams, "@RequestBody String jsonStr")
 	}
-	for _, param := range operation.QueryParams {
-		methodParams = append(methodParams, fmt.Sprintf(`@RequestParam("%s")%s %s %s`, param.Name.Source, addDateFormatAnnotation(&param.Type.Definition), JavaType(&param.Type.Definition), param.Name.CamelCase()))
-	}
-	for _, param := range operation.HeaderParams {
-		methodParams = append(methodParams, fmt.Sprintf(`@RequestHeader("%s")%s %s %s`, param.Name.Source, addDateFormatAnnotation(&param.Type.Definition), JavaType(&param.Type.Definition), param.Name.CamelCase()))
-	}
-	for _, param := range operation.Endpoint.UrlParams {
-		methodParams = append(methodParams, fmt.Sprintf(`@PathVariable("%s")%s %s %s`, param.Name.Source, addDateFormatAnnotation(&param.Type.Definition), JavaType(&param.Type.Definition), param.Name.CamelCase()))
-	}
+	methodParams = append(methodParams, generateMethodParam(operation.QueryParams, "RequestParam")...)
+	methodParams = append(methodParams, generateMethodParam(operation.HeaderParams, "RequestHeader")...)
+	methodParams = append(methodParams, generateMethodParam(operation.Endpoint.UrlParams, "PathVariable")...)
+
 	return methodParams
 }
 

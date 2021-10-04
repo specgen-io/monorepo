@@ -34,8 +34,7 @@ func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Mo
 	w.Line(`}`)
 
 	for _, operation := range api.Operations {
-		responses := collectResponses(operation)
-		if len(responses) > 1 {
+		if len(operation.Responses) > 1 {
 			files = append(files, generateResponseInterface(operation, apiPackage, modelsVersionPackage)...)
 		}
 	}
@@ -48,22 +47,13 @@ func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Mo
 	return files
 }
 
-func collectResponses(operation spec.NamedOperation) []spec.NamedResponse {
-	responses := []spec.NamedResponse{}
-	for _, response := range operation.Responses {
-		responses = append(responses, response)
-	}
-	return responses
-}
-
 func generateResponsesSignatures(operation spec.NamedOperation) string {
-	responses := collectResponses(operation)
-	if len(responses) == 1 {
+	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
 			return fmt.Sprintf(`%s %s(%s)`, JavaType(&response.Type.Definition), operation.Name.CamelCase(), JoinParams(addOperationResponseParams(operation)))
 		}
 	}
-	if len(responses) > 1 {
+	if len(operation.Responses) > 1 {
 		return fmt.Sprintf(`%s %s(%s)`, serviceResponseInterfaceName(operation), operation.Name.CamelCase(), JoinParams(addOperationResponseParams(operation)))
 	}
 	return ""
