@@ -210,7 +210,7 @@ jobs:
           command: |
             cd ./plugins/maven-specgen
             export GPG_TTY=$(tty)
-            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true -Dproject.version=<<pipeline.parameters.specgen-version>>
+            mvn -X deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true -Dproject.version=<<pipeline.parameters.specgen-version>>
       - save_cache:
           key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
           paths:
