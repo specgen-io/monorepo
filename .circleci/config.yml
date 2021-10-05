@@ -210,7 +210,7 @@ jobs:
           command: |
             cd ./plugins/maven-specgen
             export GPG_TTY=$(tty)
-            mvn deploy -Dproject.version=<<pipeline.parameters.specgen-version>> -Dsonatype=true
+            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true -Dproject.version=<<pipeline.parameters.specgen-version>>
       - save_cache:
           key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
           paths:
@@ -290,21 +290,6 @@ commands:
                   <password>$SONATYPE_PASSWORD</password>
                 </server>
               </servers>
-              <profiles>
-                <profile>
-                  <id>ossrh</id>
-                  <activation>
-                    <property>
-                      <name>sonatype</name>
-                      <value>true</value>
-                    </property>
-                  </activation>
-                  <properties>
-                    <gpg.executable>gpg</gpg.executable>
-                    <gpg.passphrase>$SONATYPE_GPG_PASSPHRASE</gpg.passphrase>
-                  </properties>
-                </profile>
-              </profiles>
             </settings>
             END
 
