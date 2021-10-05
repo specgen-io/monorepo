@@ -5,11 +5,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen"
 )
 
-func GenerateGoClient(serviceFile string, moduleName string, generatePath string) error {
-	specification, err := spec.ReadSpec(serviceFile)
-	if err != nil {
-		return err
-	}
+func GenerateGoClient(specification *spec.Spec, moduleName string, generatePath string) error {
 	generatedFiles := []gen.TextFile{}
 
 	for _, version := range specification.Versions {
@@ -21,7 +17,7 @@ func GenerateGoClient(serviceFile string, moduleName string, generatePath string
 		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, versionModule, modelsModule)...)
 		generatedFiles = append(generatedFiles, *generateServicesResponses(&version, versionModule, modelsModule))
 	}
-	err = gen.WriteFiles(generatedFiles, true)
+	err := gen.WriteFiles(generatedFiles, true)
 	return err
 }
 

@@ -26,7 +26,9 @@ var modelsRuby = &cobra.Command{
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		err = genruby.GenerateModels(specFile, generatePath)
+		specification := readSpecFile(specFile)
+
+		err = genruby.GenerateModels(specification, generatePath)
 		fail.IfErrorF(err, "Failed to generate models code")
 	},
 }

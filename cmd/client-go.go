@@ -31,7 +31,9 @@ var cmdClientGo = &cobra.Command{
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		err = gengo.GenerateGoClient(specFile, moduleName, generatePath)
+		specification := readSpecFile(specFile)
+
+		err = gengo.GenerateGoClient(specification, moduleName, generatePath)
 		fail.IfErrorF(err, "Failed to generate client code")
 	},
 }

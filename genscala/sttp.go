@@ -8,12 +8,7 @@ import (
 	"strings"
 )
 
-func GenerateSttpClient(serviceFile string, generatePath string) error {
-	specification, err := spec.ReadSpec(serviceFile)
-	if err != nil {
-		return err
-	}
-
+func GenerateSttpClient(specification *spec.Spec, generatePath string) error {
 	clientPackage := clientPackageName(specification.Name)
 
 	scalaCirceFile := generateJson("spec", filepath.Join(generatePath, "Json.scala"))
@@ -28,7 +23,7 @@ func GenerateSttpClient(serviceFile string, generatePath string) error {
 	sourceManaged = append(sourceManaged, interfacesFiles...)
 	sourceManaged = append(sourceManaged, implsFiles...)
 
-	err = gen.WriteFiles(sourceManaged, true)
+	err := gen.WriteFiles(sourceManaged, true)
 	if err != nil {
 		return err
 	}

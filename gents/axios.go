@@ -8,12 +8,7 @@ import (
 	"strings"
 )
 
-func GenerateAxiosClient(serviceFile string, generatePath string, validation string) error {
-	specification, err := spec.ReadSpec(serviceFile)
-	if err != nil {
-		return err
-	}
-
+func GenerateAxiosClient(specification *spec.Spec, generatePath string, validation string) error {
 	sources := []gen.TextFile{}
 	for _, version := range specification.Versions {
 		sources = append(sources, *generateAxiosClient(&version, generatePath, validation))
@@ -22,7 +17,7 @@ func GenerateAxiosClient(serviceFile string, generatePath string, validation str
 	modelsFiles := generateModels(specification, validation, generatePath)
 	sources = append(sources, modelsFiles...)
 
-	err = gen.WriteFiles(sources, true)
+	err := gen.WriteFiles(sources, true)
 
 	if err != nil {
 		return err

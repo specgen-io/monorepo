@@ -26,7 +26,9 @@ var modelsJava = &cobra.Command{
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		err = genjava.GenerateModels(specFile, generatePath)
+		specification := readSpecFile(specFile)
+
+		err = genjava.GenerateModels(specification, generatePath)
 		fail.IfErrorF(err, "Failed to generate models code")
 	},
 }
