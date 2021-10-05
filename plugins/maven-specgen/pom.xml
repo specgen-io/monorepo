@@ -18,9 +18,6 @@
                 </repository>
             </distributionManagement>
         </profile>
-    </profiles>
-
-    <profiles>
         <profile>
             <id>sonatype</id>
             <activation>
