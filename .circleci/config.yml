@@ -273,44 +273,45 @@ jobs:
 
 commands:
   setup-sonatype-maven:
-    - run:
-        name: Add PGP secret key
-        command: |
-          mkdir -p ~/.gpg
-          (echo "$SONATYPE_GPG_SECRET_KEY" | base64 -d) > ~/.gpg/private.key
-          gpg --import ~/.gpg/private.key
-          gpg --list-keys
-    - run:
-        name: Setup Sonatype for Maven
-        command: |
-          mkdir -p ~/.m2
-          tee > ~/.m2/settings.xml \<<END
-          <settings>
-            <localRepository>/maven-repo</localRepository>
-            <servers>
-              <server>
-                <id>ossrh</id>
-                <username>$SONATYPE_USER</username>
-                <password>$SONATYPE_PASSWORD</password>
-              </server>
-            </servers>
-            <profiles>
-              <profile>
-                <id>ossrh</id>
-                <activation>
-                  <property>
-                    <name>sonatype</name>
-                    <value>true</value>
-                  </property>
-                </activation>
-                <properties>
-                  <gpg.executable>gpg2</gpg.executable>
-                  <gpg.passphrase>$SONATYPE_GPG_PASSPHRASE</gpg.passphrase>
-                </properties>
-              </profile>
-            </profiles>
-          </settings>
-          END
+    steps:
+      - run:
+          name: Add PGP secret key
+          command: |
+            mkdir -p ~/.gpg
+            (echo "$SONATYPE_GPG_SECRET_KEY" | base64 -d) > ~/.gpg/private.key
+            gpg --import ~/.gpg/private.key
+            gpg --list-keys
+      - run:
+          name: Setup Sonatype for Maven
+          command: |
+            mkdir -p ~/.m2
+            tee > ~/.m2/settings.xml \<<END
+            <settings>
+              <localRepository>/maven-repo</localRepository>
+              <servers>
+                <server>
+                  <id>ossrh</id>
+                  <username>$SONATYPE_USER</username>
+                  <password>$SONATYPE_PASSWORD</password>
+                </server>
+              </servers>
+              <profiles>
+                <profile>
+                  <id>ossrh</id>
+                  <activation>
+                    <property>
+                      <name>sonatype</name>
+                      <value>true</value>
+                    </property>
+                  </activation>
+                  <properties>
+                    <gpg.executable>gpg2</gpg.executable>
+                    <gpg.passphrase>$SONATYPE_GPG_PASSPHRASE</gpg.passphrase>
+                  </properties>
+                </profile>
+              </profiles>
+            </settings>
+            END
 
   setup-sonatype-sbt:
     steps:
