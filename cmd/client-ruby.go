@@ -26,7 +26,9 @@ var cmdClientRuby = &cobra.Command{
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		err = genruby.GenerateClient(specFile, generatePath)
+		specification := readSpecFile(specFile)
+
+		err = genruby.GenerateClient(specification, generatePath)
 		fail.IfErrorF(err, "Failed to generate client code")
 	},
 }

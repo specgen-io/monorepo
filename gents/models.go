@@ -6,13 +6,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen"
 )
 
-func GenerateModels(serviceFile string, generatePath string, validation string) error {
-	result, err := spec.ReadSpecFile(serviceFile)
-	if err != nil {
-		return err
-	}
-
-	specification := result.Spec
+func GenerateModels(specification *spec.Spec, generatePath string, validation string) error {
 	files := generateModels(specification, validation, generatePath)
 	return gen.WriteFiles(files, true)
 }

@@ -7,12 +7,7 @@ import (
 	"strings"
 )
 
-func GenerateModels(serviceFile string, generatePath string) error {
-	result, err := spec.ReadSpecFile(serviceFile)
-	if err != nil {
-		return err
-	}
-	specification := result.Spec
+func GenerateModels(specification *spec.Spec, generatePath string) error {
 	packageName := fmt.Sprintf("%s.models", specification.Name.SnakeCase())
 	modelsPackage := Package(generatePath, packageName)
 	files := generateModels(specification, modelsPackage)

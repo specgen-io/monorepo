@@ -6,19 +6,13 @@ import (
 	"path/filepath"
 )
 
-func GenerateModels(serviceFile string, generatePath string) error {
-	result, err := spec.ReadSpecFile(serviceFile)
-	if err != nil {
-		return err
-	}
-
-	specification := result.Spec
+func GenerateModels(specification *spec.Spec, generatePath string) error {
 	fileName := specification.Name.SnakeCase() + "_models.rb"
 	moduleName := specification.Name.PascalCase()
 	modelsPath := filepath.Join(generatePath, fileName)
 	models := generateModels(specification, moduleName, modelsPath)
 
-	err = gen.WriteFile(models, true)
+	err := gen.WriteFile(models, true)
 	return err
 }
 

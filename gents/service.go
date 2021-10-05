@@ -7,13 +7,7 @@ import (
 	"github.com/specgen-io/specgen/v2/genopenapi"
 )
 
-func GenerateService(serviceFile string, swaggerPath string, generatePath string, servicesPath string, server string, validation string) error {
-	result, err := spec.ReadSpecFile(serviceFile)
-	if err != nil {
-		return err
-	}
-
-	specification := result.Spec
+func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validation string) error {
 	sourcesOverwrite := []gen.TextFile{}
 	sourcesScaffold := []gen.TextFile{}
 
@@ -34,7 +28,7 @@ func GenerateService(serviceFile string, swaggerPath string, generatePath string
 		sourcesScaffold = generateServicesImplementations(specification, servicesPath, generatePath)
 	}
 
-	err = gen.WriteFiles(sourcesScaffold, false)
+	err := gen.WriteFiles(sourcesScaffold, false)
 	if err != nil {
 		return err
 	}

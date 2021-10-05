@@ -7,17 +7,9 @@ import (
 	"strings"
 )
 
-func GenerateAndWriteOpenapi(serviceFile string, outFile string) (err error) {
-	result, err := spec.ReadSpecFile(serviceFile)
-	if err != nil {
-		return
-	}
-
-	specification := result.Spec
+func GenerateAndWriteOpenapi(specification *spec.Spec, outFile string) (err error) {
 	openApiFile := GenerateOpenapi(specification, outFile)
-
 	err = gen.WriteFile(openApiFile, true)
-
 	return
 }
 

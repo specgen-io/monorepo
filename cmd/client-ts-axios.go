@@ -30,7 +30,9 @@ var cmdClientTsAxios = &cobra.Command{
 		validation, err := cmd.Flags().GetString(Validation)
 		fail.IfError(err)
 
-		err = gents.GenerateAxiosClient(specFile, generatePath, validation)
+		specification := readSpecFile(specFile)
+
+		err = gents.GenerateAxiosClient(specification, generatePath, validation)
 		fail.IfErrorF(err, "Failed to generate code")
 	},
 }

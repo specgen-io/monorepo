@@ -9,13 +9,7 @@ import (
 	"strings"
 )
 
-func GenerateClient(serviceFile string, generatePath string) error {
-	result, err := spec.ReadSpecFile(serviceFile)
-	if err != nil {
-		return err
-	}
-
-	specification := result.Spec
+func GenerateClient(specification *spec.Spec, generatePath string) error {
 	gemName := specification.Name.SnakeCase() + "_client"
 	moduleName := clientModuleName(specification.Name)
 	libGemPath := filepath.Join(generatePath, gemName)
@@ -25,7 +19,7 @@ func GenerateClient(serviceFile string, generatePath string) error {
 	clientroot := generateClientRoot(gemName, filepath.Join(generatePath, gemName+".rb"))
 
 	sources := []gen.TextFile{*clientroot, *baseclient, *models, *clients}
-	err = gen.WriteFiles(sources, true)
+	err := gen.WriteFiles(sources, true)
 	return err
 }
 

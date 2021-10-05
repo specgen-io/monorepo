@@ -6,13 +6,7 @@ import (
 	"path/filepath"
 )
 
-func GenerateServiceModels(serviceFile string, generatePath string) error {
-	result, err := spec.ReadSpecFile(serviceFile)
-	if err != nil {
-		return err
-	}
-
-	specification := result.Spec
+func GenerateServiceModels(specification *spec.Spec, generatePath string) error {
 	modelsPackage := modelsPackageName(specification.Name)
 
 	scalaCirceFile := generateJson("spec", filepath.Join(generatePath, "Json.scala"))
@@ -21,7 +15,7 @@ func GenerateServiceModels(serviceFile string, generatePath string) error {
 
 	sourceManaged := append(modelsFiles, *scalaCirceFile)
 
-	err = gen.WriteFiles(sourceManaged, true)
+	err := gen.WriteFiles(sourceManaged, true)
 	if err != nil {
 		return err
 	}

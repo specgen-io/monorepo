@@ -46,7 +46,9 @@ var cmdServiceTs = &cobra.Command{
 		server, err := cmd.Flags().GetString(TsServer)
 		fail.IfError(err)
 
-		err = gents.GenerateService(specFile, swaggerPath, generatePath, servicesPath, server, validation)
+		specification := readSpecFile(specFile)
+
+		err = gents.GenerateService(specification, swaggerPath, generatePath, servicesPath, server, validation)
 		fail.IfErrorF(err, "Failed to generate service code")
 	},
 }

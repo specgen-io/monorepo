@@ -19,10 +19,9 @@ var cmdSpecFormat = &cobra.Command{
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)
 
-		result, err := spec.ReadSpecFile(specFile)
-		fail.IfErrorF(err, "Failed to read spec")
+		specification := readSpecFile(specFile)
 
-		err = spec.WriteSpecFile(result.Spec, specFile)
+		err = spec.WriteSpecFile(specification, specFile)
 		fail.IfErrorF(err, "Failed to write spec")
 	},
 }
