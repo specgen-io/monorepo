@@ -287,7 +287,6 @@ commands:
             mkdir -p ~/.m2
             tee > ~/.m2/settings.xml \<<END
             <settings>
-              <localRepository>/maven-repo</localRepository>
               <servers>
                 <server>
                   <id>ossrh</id>
