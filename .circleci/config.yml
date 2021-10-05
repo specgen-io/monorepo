@@ -206,11 +206,6 @@ jobs:
           key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
       - setup-sonatype-maven
       - run:
-          name: Build Maven plugin
-          command: |
-            cd ./plugins/maven-specgen
-            mvn clean install -Dproject.version=<<pipeline.parameters.specgen-version>>
-      - run:
           name: Deploy Maven plugin
           command: |
             cd ./plugins/maven-specgen
