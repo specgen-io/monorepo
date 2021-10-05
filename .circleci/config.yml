@@ -278,8 +278,8 @@ commands:
           name: Add PGP secret key
           command: |
             mkdir -p ~/.gpg
-            (echo "$SONATYPE_GPG_SECRET_KEY" | base64 -d) > ~/.gpg/private.key
-            gpg --import ~/.gpg/private.key
+            (echo "$SONATYPE_GPG_SECRET_KEY" | base64 -d) > ~/private.key
+            gpg --batch --import ~/private.key
             gpg --list-keys
       - run:
           name: Setup Sonatype for Maven
