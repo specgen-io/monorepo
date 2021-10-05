@@ -300,7 +300,7 @@ commands:
                     </property>
                   </activation>
                   <properties>
-                    <gpg.executable>gpg2</gpg.executable>
+                    <gpg.executable>gpg</gpg.executable>
                     <gpg.passphrase>$SONATYPE_GPG_PASSPHRASE</gpg.passphrase>
                   </properties>
                 </profile>
