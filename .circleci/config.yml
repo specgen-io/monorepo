@@ -209,7 +209,8 @@ jobs:
           name: Deploy Maven plugin
           command: |
             cd ./plugins/maven-specgen
-            export GPG_TTY=$(tty)
+            export SIGN_KEY=$SONATYPE_GPG_SECRET_KEY
+            export SIGN_KEY_PASS=$SONATYPE_GPG_PASSPHRASE
             mvn deploy -Dproject.version=<<pipeline.parameters.specgen-version>> -Dsonatype=true
       - save_cache:
           key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
@@ -271,13 +272,6 @@ commands:
   setup-sonatype-maven:
     steps:
       - run:
-          name: Add PGP secret key
-          command: |
-            mkdir -p ~/.gpg
-            (echo "$SONATYPE_GPG_SECRET_KEY" | base64 -d) > ~/private.key
-            gpg --batch --import ~/private.key
-            gpg --list-keys
-      - run:
           name: Setup Sonatype for Maven
           command: |
             mkdir -p ~/.m2
@@ -290,21 +284,6 @@ commands:
                   <password>$SONATYPE_PASSWORD</password>
                 </server>
               </servers>
-              <profiles>
-                <profile>
-                  <id>ossrh</id>
-                  <activation>
-                    <property>
-                      <name>sonatype</name>
-                      <value>true</value>
-                    </property>
-                  </activation>
-                  <properties>
-                    <gpg.executable>gpg</gpg.executable>
-                    <gpg.passphrase>$SONATYPE_GPG_PASSPHRASE</gpg.passphrase>
-                  </properties>
-                </profile>
-              </profiles>
             </settings>
             END
 
