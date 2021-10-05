@@ -9,12 +9,7 @@ import (
 	"strings"
 )
 
-func GeneratePlayService(serviceFile string, swaggerPath string, generatePath string, servicesPath string) (err error) {
-	specification, err := spec.ReadSpec(serviceFile)
-	if err != nil {
-		return
-	}
-
+func GeneratePlayService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string) (err error) {
 	modelsPackage := "models"
 	controllersPackage := "controllers"
 	servicesPackage := "services"

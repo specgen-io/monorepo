@@ -43,10 +43,10 @@ components:
         - third
 `
 
-	spec, err := spec.ParseSpec([]byte(specYaml))
+	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -94,10 +94,10 @@ components:
             type: string
 `
 
-	spec, err := spec.ParseSpec([]byte(specYaml))
+	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -149,10 +149,10 @@ components:
           type: string
 `
 
-	spec, err := spec.ParseSpec([]byte(specYaml))
+	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -254,10 +254,10 @@ components:
           type: string
 `
 	//assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
-	spec, err := spec.ParseSpec([]byte(specYaml))
+	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -283,10 +283,10 @@ components:
   schemas: {}
 `
 
-	spec, err := spec.ParseSpec([]byte(specYaml))
+	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -382,10 +382,10 @@ components:
           format: int32
 `
 
-	spec, err := spec.ParseSpec([]byte(specYaml))
+	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -444,10 +444,10 @@ components:
           type: string
 `
 
-	spec, err := spec.ParseSpec([]byte(specYaml))
+	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(spec))
+	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))

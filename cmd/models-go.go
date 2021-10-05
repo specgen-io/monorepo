@@ -31,7 +31,9 @@ var modelsGo = &cobra.Command{
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		err = gengo.GenerateModels(specFile, moduleName, generatePath)
+		specification := readSpecFile(specFile)
+
+		err = gengo.GenerateModels(specification, moduleName, generatePath)
 		fail.IfErrorF(err, "Failed to generate models code")
 	},
 }
