@@ -209,7 +209,7 @@ jobs:
           name: Deploy Maven plugin
           command: |
             cd ./plugins/maven-specgen
-            export SIGN_KEY=$SONATYPE_GPG_SECRET_KEY
+            export SIGN_KEY=$(echo "$SONATYPE_GPG_SECRET_KEY" | base64 -d)
             export SIGN_KEY_PASS=$SONATYPE_GPG_PASSPHRASE
             mvn deploy -Dproject.version=<<pipeline.parameters.specgen-version>> -Dsonatype=true
       - save_cache:
