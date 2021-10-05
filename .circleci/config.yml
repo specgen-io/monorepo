@@ -214,6 +214,7 @@ jobs:
           name: Deploy Maven plugin
           command: |
             cd ./plugins/maven-specgen
+            export GPG_TTY=$(tty)
             mvn deploy -Dproject.version=<<pipeline.parameters.specgen-version>> -Dsonatype=true
       - save_cache:
           key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
