@@ -7,7 +7,6 @@ fi
 
 echo "Building version: $VERSION"
 
-mkdir -p ./zips
 mkdir -p ./dist
 
 platforms=("windows/amd64" "darwin/amd64" "linux/amd64")
@@ -19,9 +18,6 @@ do
     platform_split=(${platform//\// })
     GOOS=${platform_split[0]}
     GOARCH=${platform_split[1]}
-
-    ###### build and package spec
-    output_name="specgen_${GOOS}_${GOARCH}"
 
     exec_name="specgen"
     if [ $GOOS = "windows" ]; then
@@ -37,9 +33,7 @@ do
     mkdir -p ./dist/${GOOS}_${GOARCH}
     cp $exec_name ./dist/${GOOS}_${GOARCH}/$exec_name
 
-    zip "./zips/$output_name.zip" $exec_name -q
-
-    rm -rf ./output $exec_name "$output_name.zip"
+    rm -rf ./output $exec_name
 done
 
 echo "Done building version: $VERSION"
