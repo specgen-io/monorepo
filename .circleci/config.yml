@@ -452,10 +452,10 @@ workflows:
           context: specgen
           requires:
             - build-complete
-  publish:
-    jobs:
       - approve-release:
           type: approval
+          requires:
+            - build-complete
           filters:
             branches:
               only:
