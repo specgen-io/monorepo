@@ -18,6 +18,54 @@
                 </repository>
             </distributionManagement>
         </profile>
+        <profile>
+            <id>sonatype</id>
+            <activation>
+                <property>
+                    <name>sonatype</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>ossrh</id>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                </snapshotRepository>
+                <repository>
+                    <id>ossrh</id>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+            </distributionManagement>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.8</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <groupId>io.specgen</groupId>
@@ -25,7 +73,27 @@
     <version>${project.version}</version>
     <packaging>maven-plugin</packaging>
 
-    <name>Codegen Maven Plugin</name>
+    <name>Specgen Maven Plugin</name>
+    <description>Maven plugin for specgen code generation.</description>
+    <url>https://specgen.io</url>
+    <scm>
+        <connection>git@github.com:specgen-io/specgen.git</connection>
+        <url>https://github.com/specgen-io/specgen/v2</url>
+    </scm>
+    <licenses>
+        <license>
+            <name>MIT</name>
+            <url>http://opensource.org/licenses/MIT</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <id>vsapronov</id>
+            <name>Vladimir Sapronov</name>
+            <email>vladimir.sapronov@gmail.com</email>
+            <url>https://github.com/vsapronov</url>
+        </developer>
+    </developers>
 
     <properties>
         <project.version>0.0.0-SNAPSHOT</project.version>

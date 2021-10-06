@@ -195,6 +195,28 @@ jobs:
             - ~/.ivy2
             - ~/.m2
 
+  maven-sonatype:
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/maven-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
+      - setup-sonatype-maven
+      - run:
+          name: Deploy Maven plugin
+          command: |
+            cd ./plugins/maven-specgen
+            export GPG_TTY=$(tty)
+            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true -Dproject.version=<<pipeline.parameters.specgen-version>>
+      - save_cache:
+          key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
+          paths:
+            - ~/.ivy2
+            - ~/.m2
+
   build-gradle-specgen:
     docker:
       - image: circleci/openjdk:8-jdk
@@ -246,6 +268,31 @@ jobs:
       - run: echo "Build is complete!!!"
 
 commands:
+  setup-sonatype-maven:
+    steps:
+      - run:
+          name: Add PGP secret key
+          command: |
+            mkdir -p ~/.gpg
+            (echo "$SONATYPE_GPG_SECRET_KEY" | base64 -d) > ~/private.key
+            gpg --batch --import ~/private.key
+            gpg --list-keys
+      - run:
+          name: Setup Sonatype for Maven
+          command: |
+            mkdir -p ~/.m2
+            tee > ~/.m2/settings.xml \<<END
+            <settings>
+              <servers>
+                <server>
+                  <id>ossrh</id>
+                  <username>$SONATYPE_USER</username>
+                  <password>$SONATYPE_PASSWORD</password>
+                </server>
+              </servers>
+            </settings>
+            END
+
   setup-sonatype-sbt:
     steps:
       - run:
@@ -383,6 +430,10 @@ workflows:
                 - main
                 - /v.*/
       - sbt-sonatype:
+          context: specgen
+          requires:
+            - approve-release
+      - maven-sonatype:
           context: specgen
           requires:
             - approve-release
