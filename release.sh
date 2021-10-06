@@ -17,6 +17,10 @@ else
     exit 1
 fi
 
+zip "./specgen_darwin_amd64.zip" "./dist/darwin_amd64/specgen" -q -j
+zip "./specgen_linux_amd64.zip" "./dist/linux_amd64/specgen" -q -j
+zip "./specgen_windows_amd64.zip" "./dist/windows_amd64/specgen.exe" -q -j
+
 RELEASE_NAME=v$VERSION
 
 go get github.com/aktau/github-release
@@ -26,11 +30,11 @@ set +e
 $GOPATH/bin/github-release release --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --target v2
 set -e
 
-echo "Releasing zips/specgen_darwin_amd64.zip"
-$GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --name specgen_darwin_amd64.zip  --file zips/specgen_darwin_amd64.zip
-echo "Releasing zips/specgen_linux_amd64.zip"
-$GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --name specgen_linux_amd64.zip   --file zips/specgen_linux_amd64.zip
-echo "Releasing zips/specgen_windows_amd64.zip"
-$GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --name specgen_windows_amd64.zip --file zips/specgen_windows_amd64.zip
+echo "Releasing specgen_darwin_amd64.zip"
+$GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --name specgen_darwin_amd64.zip  --file specgen_darwin_amd64.zip
+echo "Releasing specgen_linux_amd64.zip"
+$GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --name specgen_linux_amd64.zip   --file specgen_linux_amd64.zip
+echo "Releasing specgen_windows_amd64.zip"
+$GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --name specgen_windows_amd64.zip --file specgen_windows_amd64.zip
 
-echo "Done releasing $VERSION"
+echo "Done releasing $RELEASE_NAME"
