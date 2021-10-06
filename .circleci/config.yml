@@ -210,7 +210,7 @@ jobs:
           command: |
             cd ./plugins/maven-specgen
             export GPG_TTY=$(tty)
-            mvn -X deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true -Dproject.version=<<pipeline.parameters.specgen-version>>
+            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true -Dproject.version=<<pipeline.parameters.specgen-version>>
       - save_cache:
           key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
           paths:
@@ -353,101 +353,99 @@ workflows:
     jobs:
       - build-specgen:
           context: specgen
-
-      - maven-sonatype:
+      - build-gem-specgen:
           context: specgen
           requires:
             - build-specgen
-
-#      - build-gem-specgen:
-#          context: specgen
-#          requires:
-#            - build-specgen
-#      - build-sbt-specgen:
-#          context: specgen
-#          requires:
-#            - build-specgen
-#      - build-maven-specgen:
-#          context: specgen
-#          requires:
-#            - build-specgen
-#      - build-gradle-specgen:
-#          context: specgen
-#          requires:
-#            - build-specgen
-#      - build-npm-specgen:
-#          context: specgen
-#          requires:
-#            - build-specgen
-#      - build-complete:
-#          requires:
-#            - build-sbt-specgen
-#            - build-maven-specgen
-#            - build-gradle-specgen
-#            - build-gem-specgen
-#            - build-npm-specgen
-#      - circleci/start-pipeline:
-#          name: test-plugins
-#          repository: specgen-io/test-plugins
-#          branch: main
-#          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
-#          context: specgen
-#          requires:
-#            - build-complete
-#      - circleci/start-pipeline:
-#          name: test-models
-#          repository: specgen-io/test-models
-#          branch: main
-#          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
-#          context: specgen
-#          requires:
-#            - build-complete
-#      - circleci/start-pipeline:
-#          name: test-clients
-#          repository: specgen-io/test-clients
-#          branch: main
-#          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
-#          context: specgen
-#          requires:
-#            - build-complete
-#      - circleci/start-pipeline:
-#          name: test-services
-#          repository: specgen-io/test-services
-#          branch: main
-#          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
-#          context: specgen
-#          requires:
-#            - build-complete
-#      - circleci/start-pipeline:
-#          name: generated-code
-#          repository: specgen-io/generated-code
-#          branch: main
-#          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
-#          context: specgen
-#          requires:
-#            - build-complete
-#  publish:
-#    jobs:
-#      - approve-release:
-#          type: approval
-#          filters:
-#            branches:
-#              only:
-#                - main
-#                - /v.*/
-#      - sbt-sonatype:
-#          context: specgen
-#          requires:
-#            - approve-release
-#      - gradle-pluginportal:
-#          context: specgen
-#          requires:
-#            - approve-release
-#      - npm-npmjs:
-#          context: specgen
-#          requires:
-#            - approve-release
-#      - gem-rubygems:
-#          context: specgen
-#          requires:
-#            - approve-release
+      - build-sbt-specgen:
+          context: specgen
+          requires:
+            - build-specgen
+      - build-maven-specgen:
+          context: specgen
+          requires:
+            - build-specgen
+      - build-gradle-specgen:
+          context: specgen
+          requires:
+            - build-specgen
+      - build-npm-specgen:
+          context: specgen
+          requires:
+            - build-specgen
+      - build-complete:
+          requires:
+            - build-sbt-specgen
+            - build-maven-specgen
+            - build-gradle-specgen
+            - build-gem-specgen
+            - build-npm-specgen
+      - circleci/start-pipeline:
+          name: test-plugins
+          repository: specgen-io/test-plugins
+          branch: main
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
+          context: specgen
+          requires:
+            - build-complete
+      - circleci/start-pipeline:
+          name: test-models
+          repository: specgen-io/test-models
+          branch: main
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
+          context: specgen
+          requires:
+            - build-complete
+      - circleci/start-pipeline:
+          name: test-clients
+          repository: specgen-io/test-clients
+          branch: main
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
+          context: specgen
+          requires:
+            - build-complete
+      - circleci/start-pipeline:
+          name: test-services
+          repository: specgen-io/test-services
+          branch: main
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
+          context: specgen
+          requires:
+            - build-complete
+      - circleci/start-pipeline:
+          name: generated-code
+          repository: specgen-io/generated-code
+          branch: main
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
+          context: specgen
+          requires:
+            - build-complete
+  publish:
+    jobs:
+      - approve-release:
+          type: approval
+          filters:
+            branches:
+              only:
+                - main
+                - /v.*/
+      - sbt-sonatype:
+          context: specgen
+          requires:
+            - approve-release
+      - maven-sonatype:
+          context: specgen
+          requires:
+            - approve-release
+      - gradle-pluginportal:
+          context: specgen
+          requires:
+            - approve-release
+      - npm-npmjs:
+          context: specgen
+          requires:
+            - approve-release
+      - gem-rubygems:
+          context: specgen
+          requires:
+            - approve-release
