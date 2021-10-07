@@ -17,6 +17,15 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Write version
+          command: |
+            tee > ./version/version.go \<<END
+            package version
+
+            var Current = "<<pipeline.parameters.specgen-version>>"
+
+            END
+      - run:
           name: Build
           command: ./build.sh <<pipeline.parameters.specgen-version>>
       - run:
@@ -37,8 +46,14 @@ jobs:
             git config --global user.email $GITHUB_EMAIL
             git config --global user.name $GITHUB_USER
             git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen.git
-            git tag v<<pipeline.parameters.specgen-version>>
-            git push --tags
+            if [[ `git status --porcelain` ]]; then
+              git commit -m "[skip ci] Bumped version to v<<pipeline.parameters.specgen-version>>"
+              git push
+            else
+              echo "No changes detected - nothing to commit"
+            fi
+            git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen verison: v<<pipeline.parameters.specgen-version>>"
+            git push -f --tags
 
   build-gem-specgen:
     docker:
