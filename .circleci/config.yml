@@ -461,14 +461,14 @@ workflows:
           context: specgen
           requires:
             - approve-release
-      - sbt-sonatype:
-          context: specgen
-          requires:
-            - approve-release
       - maven-sonatype:
           context: specgen
           requires:
             - approve-release
+      - sbt-sonatype:
+          context: specgen
+          requires:
+            - maven-sonatype
       - gradle-pluginportal:
           context: specgen
           requires:
