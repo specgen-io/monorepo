@@ -32,7 +32,7 @@ jobs:
           name: Unit tests
           command: |
             mkdir -p /tmp/test-results
-            go get -u github.com/jstemmer/go-junit-report
+            go install github.com/jstemmer/go-junit-report@latest
             go test ./... -v 2>&1 | go-junit-report > /tmp/test-results/go-test-report.xml
       - store_test_results:
           path: /tmp/test-results
@@ -47,6 +47,7 @@ jobs:
             git config --global user.name $GITHUB_USER
             git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen.git
             if [[ `git status --porcelain` ]]; then
+              git add --all
               git commit -m "[skip ci] Bumped version to v<<pipeline.parameters.specgen-version>>"
               git push
             else
