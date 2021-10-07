@@ -7,8 +7,6 @@ fi
 
 echo "Building version: $VERSION"
 
-mkdir -p ./dist
-
 platforms=("windows/amd64" "darwin/amd64" "linux/amd64")
 for platform in "${platforms[@]}"
 do
@@ -19,21 +17,18 @@ do
     GOOS=${platform_split[0]}
     GOARCH=${platform_split[1]}
 
-    exec_name="specgen"
+    EXEC_NAME="specgen"
     if [ $GOOS = "windows" ]; then
-        exec_name+='.exe'
+        EXEC_NAME+='.exe'
     fi
 
-    env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-s -w -X github.com/specgen-io/specgen/v2/version.Current=$VERSION" -o $exec_name specgen.go
+    env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-s -w" -o ./dist/${GOOS}_${GOARCH}/${EXEC_NAME} specgen.go
     if [ $? -ne 0 ]; then
         echo 'An error has occurred! Aborting the script execution...'
         exit 1
     fi
 
-    mkdir -p ./dist/${GOOS}_${GOARCH}
-    cp $exec_name ./dist/${GOOS}_${GOARCH}/$exec_name
-
-    rm -rf ./output $exec_name
+    rm -rf ./output
 done
 
 echo "Done building version: $VERSION"
