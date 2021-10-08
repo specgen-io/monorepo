@@ -8,8 +8,10 @@ import (
 
 func GenerateModels(specification *spec.Spec, validation string, generatePath string) error {
 	module := Module(generatePath)
-	validationModule := module.Submodule(validation)
 	sources := []gen.TextFile{}
+	validationModule := module.Submodule(validation)
+	validationFile := generateValidation(validation, validationModule)
+	sources = append(sources, *validationFile)
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
