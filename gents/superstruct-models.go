@@ -3,23 +3,11 @@ package gents
 import (
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 )
 
-func generateSuperstructModels(specification *spec.Spec, generatePath string) []gen.TextFile {
-	files := []gen.TextFile{}
-	for _, version := range specification.Versions {
-		files = append(files, *generateSuperstructVersionModels(&version, generatePath))
-	}
-	staticCode := generateSuperstructStaticCode(filepath.Join(generatePath, Superstruct+".ts"))
-	files = append(files, *staticCode)
-	return files
-}
-
-func generateSuperstructVersionModels(version *spec.Version, generatePath string) *gen.TextFile {
-	filePath := versionedPath(generatePath, version, "models.ts")
+func generateSuperstructVersionModels(version *spec.Version, superstructModule module, module module) *gen.TextFile {
 	w := NewTsWriter()
-	w.Line(`import * as t from '%s'`, importPath(filepath.Join(generatePath, Superstruct), filePath))
+	w.Line(`import * as t from '%s'`, superstructModule.GetImport(module))
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
 		if model.IsObject() {
@@ -30,7 +18,7 @@ func generateSuperstructVersionModels(version *spec.Version, generatePath string
 			generateSuperstructUnionModel(w, model)
 		}
 	}
-	return &gen.TextFile{Path: filePath, Content: w.String()}
+	return &gen.TextFile{Path: module.GetPath(), Content: w.String()}
 }
 
 func generateSuperstructObjectModel(w *gen.Writer, model *spec.NamedModel) {

@@ -3,25 +3,13 @@ package gents
 import (
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 )
 
-func generateIoTsModels(specification *spec.Spec, generatePath string) []gen.TextFile {
-	files := []gen.TextFile{}
-	for _, version := range specification.Versions {
-		files = append(files, *generateIoTsVersionModels(&version, generatePath))
-	}
-	staticCode := generateIoTsStaticCode(filepath.Join(generatePath, IoTs+".ts"))
-	files = append(files, *staticCode)
-	return files
-}
-
-func generateIoTsVersionModels(version *spec.Version, generatePath string) *gen.TextFile {
-	filePath := versionedPath(generatePath, version, "models.ts")
+func generateIoTsVersionModels(version *spec.Version, iotsModule module, module module) *gen.TextFile {
 	w := NewTsWriter()
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
-	w.Line(`import * as t from '%s'`, importPath(filepath.Join(generatePath, IoTs), filePath))
+	w.Line(`import * as t from '%s'`, iotsModule.GetImport(module))
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
 		if model.IsObject() {
@@ -32,7 +20,7 @@ func generateIoTsVersionModels(version *spec.Version, generatePath string) *gen.
 			generateIoTsUnionModel(w, model)
 		}
 	}
-	return &gen.TextFile{Path: filePath, Content: w.String()}
+	return &gen.TextFile{Path: module.GetPath(), Content: w.String()}
 }
 
 func kindOfFields(objectModel *spec.NamedModel) (bool, bool) {

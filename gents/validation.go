@@ -3,17 +3,8 @@ package gents
 import (
 	"fmt"
 	"github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/v2/gen"
 )
-
-//func importEncoding(toPath string, validation string) string {
-//	if validation == Superstruct {
-//		return importSuperstructEncoding(toPath)
-//	}
-//	if validation == IoTs {
-//		return importIoTsEncoding
-//	}
-//	panic(fmt.Sprintf("Unknown validation: %s", validation))
-//}
 
 func runtimeType(validation string, typ *spec.TypeDef) string {
 	if validation == Superstruct {
@@ -21,6 +12,16 @@ func runtimeType(validation string, typ *spec.TypeDef) string {
 	}
 	if validation == IoTs {
 		return IoTsType(typ)
+	}
+	panic(fmt.Sprintf("Unknown validation: %s", validation))
+}
+
+func generateValidation(validation string, validationModule module) *gen.TextFile {
+	if validation == Superstruct {
+		return generateSuperstructStaticCode(validationModule)
+	}
+	if validation == IoTs {
+		return generateIoTsStaticCode(validationModule)
 	}
 	panic(fmt.Sprintf("Unknown validation: %s", validation))
 }

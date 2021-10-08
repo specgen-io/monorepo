@@ -46,13 +46,6 @@ jobs:
             git config --global user.email $GITHUB_EMAIL
             git config --global user.name $GITHUB_USER
             git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen.git
-            if [[ `git status --porcelain` ]]; then
-              git add --all
-              git commit -m "[skip ci] Bumped version to v<<pipeline.parameters.specgen-version>>"
-              git push
-            else
-              echo "No changes detected - nothing to commit"
-            fi
             git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen verison: v<<pipeline.parameters.specgen-version>>"
             git push -f --tags
 
