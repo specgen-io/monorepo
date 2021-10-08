@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func generateParametersParsing(w *gen.Writer, operation *spec.NamedOperation, validation string, body string, headers string, urlParams string, query string, badRequestStatement string) string {
+func generateParametersParsing(w *gen.Writer, validation string, operation *spec.NamedOperation, body string, headers string, urlParams string, query string, badRequestStatement string) string {
 	if operation.Body == nil && !operation.HasParams() {
 		return ""
 	}

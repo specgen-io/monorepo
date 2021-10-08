@@ -4,18 +4,27 @@ import (
 	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 	"strings"
 )
 
 func GenerateAxiosClient(specification *spec.Spec, generatePath string, validation string) error {
 	sources := []gen.TextFile{}
-	for _, version := range specification.Versions {
-		sources = append(sources, *generateAxiosClient(&version, generatePath, validation))
-	}
 
-	modelsFiles := generateModels(specification, validation, generatePath)
-	sources = append(sources, modelsFiles...)
+	module := Module(generatePath)
+
+	validationModule := module.Submodule(validation)
+	validationFile := generateValidation(validation, validationModule)
+	sources = append(sources, *validationFile)
+
+	for _, version := range specification.Versions {
+		versionModule := module.Submodule(version.Version.FlatCase())
+		modelsModule := versionModule.Submodule("models")
+		sources = append(sources, *generateVersionModels(&version, validation, validationModule, modelsModule))
+		for _, api := range version.Http.Apis {
+			apiModule := versionModule.Submodule(api.Name.SnakeCase())
+			sources = append(sources, *generateApiClient(api, validation, validationModule, modelsModule, apiModule))
+		}
+	}
 
 	err := gen.WriteFiles(sources, true)
 
@@ -24,23 +33,6 @@ func GenerateAxiosClient(specification *spec.Spec, generatePath string, validati
 	}
 
 	return nil
-}
-
-func generateAxiosClient(version *spec.Version, generatePath string, validation string) *gen.TextFile {
-	path := versionedPath(generatePath, version, "index.ts")
-
-	w := NewTsWriter()
-	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
-	w.Line(`import * as t from '%s'`, importPath(filepath.Join(generatePath, validation), path))
-	w.Line(`import * as %s from './models'`, modelsPackage)
-	for _, api := range version.Http.Apis {
-		generateClientApiClass(w, api, validation)
-		for _, operation := range api.Operations {
-			w.EmptyLine()
-			generateOperationResponse(w, &operation)
-		}
-	}
-	return &gen.TextFile{path, w.String()}
 }
 
 func getUrl(endpoint spec.Endpoint) string {
@@ -90,9 +82,13 @@ func createOperationParams(operation *spec.NamedOperation) string {
 	return fmt.Sprintf("parameters: {%s}", strings.Join(operationParams, ", "))
 }
 
-func generateClientApiClass(w *gen.Writer, api spec.Api, validation string) {
+func generateApiClient(api spec.Api, validation string, validationModule module, modelsModule module, module module) *gen.TextFile {
+	w := NewTsWriter()
+	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
+	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
+	w.Line(`import * as %s from '%s'`, modelsPackage, modelsModule.GetImport(module))
 	w.EmptyLine()
-	w.Line(`export const %sClient = (axiosInstance: AxiosInstance) => {`, api.Name.CamelCase())
+	w.Line(`export const client = (axiosInstance: AxiosInstance) => {`)
 	w.Line(`  return {`)
 	w.Line(`    axiosInstance,`)
 	for _, operation := range api.Operations {
@@ -100,6 +96,11 @@ func generateClientApiClass(w *gen.Writer, api spec.Api, validation string) {
 	}
 	w.Line(`  }`)
 	w.Line(`}`)
+	for _, operation := range api.Operations {
+		w.EmptyLine()
+		generateOperationResponse(w, &operation)
+	}
+	return &gen.TextFile{module.GetPath(), w.String()}
 }
 
 func generateOperation(w *gen.Writer, operation *spec.NamedOperation, validation string) {

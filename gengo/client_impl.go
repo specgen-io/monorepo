@@ -10,7 +10,9 @@ import (
 func generateClientsImplementations(version *spec.Version, versionModule module, modelsModule module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *generateClientImplementation(&api, versionModule, modelsModule))
+		apiModule := versionModule.Submodule(api.Name.SnakeCase())
+		files = append(files, *generateConverter(apiModule))
+		files = append(files, *generateClientImplementation(&api, apiModule, modelsModule))
 	}
 	return files
 }
@@ -33,34 +35,40 @@ func generateClientImplementation(api *spec.Api, versionModule module, modelsMod
 	imports.Write(w)
 
 	w.EmptyLine()
-	generateClientTypeStruct(w, *api)
+	w.Line(`type EmptyDef struct{}`)
 	w.EmptyLine()
-	generateNewClient(w, *api)
+	w.Line(`var Empty = EmptyDef{}`)
+
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		generateClientFunction(w, *api, operation)
+		generateOperationResponseStruct(w, operation)
+	}
+
+	w.EmptyLine()
+	generateClientWithCtor(w)
+	for _, operation := range api.Operations {
+		w.EmptyLine()
+		generateClientFunction(w, operation)
 	}
 
 	return &gen.TextFile{
-		Path:    versionModule.GetPath(fmt.Sprintf("%s_client.go", api.Name.SnakeCase())),
+		Path:    versionModule.GetPath("client.go"),
 		Content: w.String(),
 	}
 }
 
-func generateClientTypeStruct(w *gen.Writer, api spec.Api) {
-	w.Line(`type %s struct {`, clientTypeName(&api))
+func generateClientWithCtor(w *gen.Writer) {
+	w.Line(`type %s struct {`, clientTypeName())
 	w.Line(`  baseUrl string`)
 	w.Line(`}`)
-}
-
-func generateNewClient(w *gen.Writer, api spec.Api) {
-	w.Line(`func New%s(baseUrl string) *%s {`, ToPascalCase(clientTypeName(&api)), clientTypeName(&api))
-	w.Line(`  return &%s{baseUrl}`, clientTypeName(&api))
+	w.EmptyLine()
+	w.Line(`func New%s(baseUrl string) *%s {`, ToPascalCase(clientTypeName()), clientTypeName())
+	w.Line(`  return &%s{baseUrl}`, clientTypeName())
 	w.Line(`}`)
 }
 
-func generateClientFunction(w *gen.Writer, api spec.Api, operation spec.NamedOperation) {
-	w.Line(`func (client *%s) %s(%s) (*%s, error) {`, clientTypeName(&api), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), responseTypeName(&operation))
+func generateClientFunction(w *gen.Writer, operation spec.NamedOperation) {
+	w.Line(`func (client *%s) %s(%s) (*%s, error) {`, clientTypeName(), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), responseTypeName(&operation))
 	var body = "nil"
 	if operation.Body != nil {
 		w.Line(`  bodyJSON, err := json.Marshal(body)`)

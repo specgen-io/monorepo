@@ -7,18 +7,19 @@ import (
 	"strings"
 )
 
-func generateServiceApis(version *spec.Version, generatePath string) []gen.TextFile {
+func generateServiceApis(version *spec.Version, modelsModule module, module module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
-		serviceFile := generateApiService(&api, generatePath)
+		apiModule := module.Submodule(serviceName(&api))
+		serviceFile := generateApiService(&api, modelsModule, apiModule)
 		files = append(files, *serviceFile)
 	}
 	return files
 }
 
-func generateApiService(api *spec.Api, generatePath string) *gen.TextFile {
+func generateApiService(api *spec.Api, modelsModule module, module module) *gen.TextFile {
 	w := NewTsWriter()
-	w.Line("import * as %s from './models'", modelsPackage) //TODO: Do we need alias here?
+	w.Line("import * as %s from '%s'", modelsPackage, modelsModule.GetImport(module))
 	for _, operation := range api.Operations {
 		if operation.Body != nil || operation.HasParams() {
 			w.EmptyLine()
@@ -37,11 +38,7 @@ func generateApiService(api *spec.Api, generatePath string) *gen.TextFile {
 		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, responseTypeName(&operation))
 	}
 	w.Line("}")
-	return &gen.TextFile{serviceApiPath(generatePath, api), w.String()}
-}
-
-func serviceApiPath(generatePath string, api *spec.Api) string {
-	return versionedPath(generatePath, api.Apis.Version, serviceFileName(api))
+	return &gen.TextFile{module.GetPath(), w.String()}
 }
 
 func serviceInterfaceName(api *spec.Api) string {

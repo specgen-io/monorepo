@@ -5,20 +5,21 @@ import (
 	"github.com/pinzolo/casee"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 	"strings"
 )
 
 var koa = "koa"
 
-func generateKoaSpecRouter(specification *spec.Spec, generatePath string) *gen.TextFile {
-	path := filepath.Join(generatePath, "spec_router.ts")
+func generateKoaSpecRouter(specification *spec.Spec, rootModule module, module module) *gen.TextFile {
 	w := NewTsWriter()
 	w.Line("import Router from '@koa/router'")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), importPath(serviceApiPath(generatePath, &api), path))
-			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), importPath(versionedPath(generatePath, &version, "routing.ts"), path))
+			versionModule := rootModule.Submodule(version.Version.FlatCase())
+			apiModule := versionModule.Submodule(serviceName(&api))   //TODO: This logic is repeated here, it also exists where api module is created
+			routerModule := versionModule.Submodule("routing") //TODO: This logic is repeated here, it also exists where router module is created
+			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), apiModule.GetImport(module))
+			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), routerModule.GetImport(module))
 		}
 	}
 
@@ -46,15 +47,14 @@ func generateKoaSpecRouter(specification *spec.Spec, generatePath string) *gen.T
 	w.Line("  return router")
 	w.Line("}")
 
-	return &gen.TextFile{path, w.String()}
+	return &gen.TextFile{module.GetPath(), w.String()}
 }
 
-func generateKoaVersionRouting(version *spec.Version, validation string, generatePath string) *gen.TextFile {
-	path := versionedPath(generatePath, version, "routing.ts")
+func generateKoaVersionRouting(version *spec.Version, validation string, validationModule module, module module) *gen.TextFile {
 	w := NewTsWriter()
 
 	w.Line("import Router from '@koa/router'")
-	w.Line(`import * as t from '%s'`, importPath(filepath.Join(generatePath, validation), path))
+	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
 	w.Line("import * as models from './models'")
 	for _, api := range version.Http.Apis {
 		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), serviceName(&api))
@@ -70,7 +70,7 @@ func generateKoaVersionRouting(version *spec.Version, validation string, generat
 		generateKoaApiRouting(w, &api, validation)
 	}
 
-	return &gen.TextFile{path, w.String()}
+	return &gen.TextFile{module.GetPath(), w.String()}
 }
 
 func generateKoaApiRouting(w *gen.Writer, api *spec.Api, validation string) {
@@ -98,14 +98,7 @@ func generateKoaOperationRouting(w *gen.Writer, operation *spec.NamedOperation, 
 	w.Line("router.%s('%s', async (ctx) => {", strings.ToLower(operation.Endpoint.Method), getKoaUrl(operation.Endpoint))
 	w.Indent()
 
-	apiCallParamsObject := generateParametersParsing(
-		w, operation, validation,
-		"ctx.request.body",
-		"ctx.request.headers",
-		"ctx.params",
-		"ctx.request.query",
-		"ctx.throw(400, error)",
-	)
+	apiCallParamsObject := generateParametersParsing(w, validation, operation, "ctx.request.body", "ctx.request.headers", "ctx.params", "ctx.request.query", "ctx.throw(400, error)")
 
 	w.Line("try {")
 	w.Line("  let result = await service.%s(%s)", operation.Name.CamelCase(), apiCallParamsObject)
