@@ -1,16 +1,31 @@
 package gents
 
 import (
-	"github.com/specgen-io/spec"
-	"path/filepath"
+	"fmt"
 	"strings"
 )
 
-func versionedPath(prefix string, version *spec.Version, path string) string {
-	if version.Version.Source != "" {
-		return filepath.Join(prefix, version.Version.FlatCase(), path)
+type module struct {
+	path        string
+}
+
+func Module(folderPath string) module {
+	return module{path: folderPath}
+}
+
+func (m module) GetPath() string {
+	return fmt.Sprintf(`%s.ts`, m.path)
+}
+
+func (m module) GetImport(toModule module) string {
+	return importPath(m.GetPath(), toModule.GetPath())
+}
+
+func (m module) Submodule(name string) module {
+	if name != "" {
+		return Module(fmt.Sprintf(`%s/%s`, m.path, name))
 	}
-	return filepath.Join(prefix, path)
+	return m
 }
 
 func commonPrefixPath(s1, s2 string) string {

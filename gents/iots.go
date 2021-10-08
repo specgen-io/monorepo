@@ -7,7 +7,7 @@ import (
 
 var IoTs = "io-ts"
 
-func generateIoTsStaticCode(path string) *gen.TextFile {
+func generateIoTsStaticCode(module module) *gen.TextFile {
 	code := `
 export * from 'io-ts'
 export * from 'io-ts-types'
@@ -95,5 +95,5 @@ export const encode = <A, O, I>(codec: t.Type<A, O, I>, value: A): O => {
     return codec.encode(value)
 }
 `
-	return &gen.TextFile{path, strings.TrimSpace(code)}
+	return &gen.TextFile{module.GetPath(), strings.TrimSpace(code)}
 }

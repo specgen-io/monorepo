@@ -7,21 +7,22 @@ import (
 	"strings"
 )
 
-func generateServicesImplementations(specification *spec.Spec, servicesPath string, generatePath string) []gen.TextFile {
+func generateServicesImplementations(specification *spec.Spec, generatedModule module, module module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			files = append(files, *generateServiceImplementation(&api, servicesPath, generatePath))
+			apiModule := generatedModule.Submodule(version.Version.FlatCase()).Submodule(serviceName(&api))  //TODO: This logic is duplicated, other place is where API module is generated
+			implModule := module.Submodule(version.Version.FlatCase()).Submodule(api.Name.SnakeCase()+"_service")
+			files = append(files, *generateServiceImplementation(&api, apiModule, implModule))
 		}
 	}
 	return files
 }
 
-func generateServiceImplementation(api *spec.Api, servicesPath string, generatePath string) *gen.TextFile {
-	path := versionedPath(servicesPath, api.Apis.Version, api.Name.SnakeCase()+"_service.ts")
+func generateServiceImplementation(api *spec.Api, apiModule module, module module) *gen.TextFile {
 	w := NewTsWriter()
 
-	w.Line("import * as service from '%s'", importPath(serviceApiPath(generatePath, api), path))
+	w.Line("import * as service from '%s'", apiModule.GetImport(module))
 	w.EmptyLine()
 	w.Line("export let %sService = (): service.%s => {", api.Name.CamelCase(), serviceInterfaceName(api)) //TODO: remove services
 
@@ -39,5 +40,5 @@ func generateServiceImplementation(api *spec.Api, servicesPath string, generateP
 	}
 	w.Line("  return {%s}", strings.Join(operations, ", "))
 	w.Line("}")
-	return &gen.TextFile{path, w.String()}
+	return &gen.TextFile{module.GetPath(), w.String()}
 }
