@@ -11,8 +11,8 @@ func serviceInterfaceTypeVar(api *spec.Api) string {
 	return fmt.Sprintf(`%sService`, api.Name.Source)
 }
 
-func clientTypeName(api *spec.Api) string {
-	return fmt.Sprintf(`%sClient`, api.Name.SnakeCase())
+func clientTypeName() string {
+	return `Client`
 }
 
 func responseTypeName(operation *spec.NamedOperation) string {
