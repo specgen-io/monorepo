@@ -9,18 +9,13 @@ import (
 func GenerateModels(specification *spec.Spec, validation string, generatePath string) error {
 	module := Module(generatePath)
 	validationModule := module.Submodule(validation)
-	files := generateModels(specification, validation, validationModule, module)
-	return gen.WriteFiles(files, true)
-}
-
-func generateModels(specification *spec.Spec, validation string, validationModule module, module module) []gen.TextFile {
-	files := []gen.TextFile{}
+	sources := []gen.TextFile{}
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
-		files = append(files, *generateVersionModels(&version, validation, validationModule, modelsModule))
+		sources = append(sources, *generateVersionModels(&version, validation, validationModule, modelsModule))
 	}
-	return files
+	return gen.WriteFiles(sources, true)
 }
 
 func generateVersionModels(version *spec.Version, validation string, validationModule module, module module) *gen.TextFile {
