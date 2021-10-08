@@ -7,7 +7,7 @@ import (
 
 var Superstruct = "superstruct"
 
-func generateSuperstructStaticCode(path string) *gen.TextFile {
+func generateSuperstructStaticCode(module module) *gen.TextFile {
 	code := `
 export * from "superstruct"
 
@@ -32,5 +32,5 @@ export const StrBoolean = t.coerce<boolean, unknown, string>(t.boolean(), t.stri
     }
 })`
 
-	return &gen.TextFile{path, strings.TrimSpace(code)}
+	return &gen.TextFile{module.GetPath(), strings.TrimSpace(code)}
 }

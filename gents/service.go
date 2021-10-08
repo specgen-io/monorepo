@@ -8,24 +8,30 @@ import (
 )
 
 func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validation string) error {
+	generateModule := Module(generatePath)
+
 	sourcesOverwrite := []gen.TextFile{}
 	sourcesScaffold := []gen.TextFile{}
 
-	for _, version := range specification.Versions {
-		sourcesOverwrite = append(sourcesOverwrite, generateServiceApis(&version, generatePath)...)
-		sourcesOverwrite = append(sourcesOverwrite, *generateVersionRouting(&version, validation, server, generatePath))
-	}
-	sourcesOverwrite = append(sourcesOverwrite, *generateSpecRouter(specification, server, generatePath))
+	validationModule := generateModule.Submodule(validation)
+	validationFile := generateValidation(validation, validationModule)
+	sourcesOverwrite = append(sourcesOverwrite, *validationFile)
 
-	modelsFiles := generateModels(specification, validation, generatePath)
-	sourcesOverwrite = append(sourcesOverwrite, modelsFiles...)
+	for _, version := range specification.Versions {
+		versionModule := generateModule.Submodule(version.Version.FlatCase())
+		modelsModule := versionModule.Submodule("models")
+		sourcesOverwrite = append(sourcesOverwrite, *generateVersionModels(&version, validation, validationModule, modelsModule))
+		sourcesOverwrite = append(sourcesOverwrite, generateServiceApis(&version, modelsModule, versionModule)...)
+		sourcesOverwrite = append(sourcesOverwrite, *generateVersionRouting(&version, validation, server, validationModule, versionModule))
+	}
+	sourcesOverwrite = append(sourcesOverwrite, *generateSpecRouter(specification, server, generateModule, generateModule.Submodule("spec_router")))
 
 	if swaggerPath != "" {
 		sourcesOverwrite = append(sourcesOverwrite, *genopenapi.GenerateOpenapi(specification, swaggerPath))
 	}
 
 	if servicesPath != "" {
-		sourcesScaffold = generateServicesImplementations(specification, servicesPath, generatePath)
+		sourcesScaffold = generateServicesImplementations(specification, generateModule, Module(servicesPath))
 	}
 
 	err := gen.WriteFiles(sourcesScaffold, false)
@@ -41,22 +47,23 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 	return nil
 }
 
-func generateVersionRouting(version *spec.Version, validation string, server string, generatePath string) *gen.TextFile {
+func generateVersionRouting(version *spec.Version, validation string, server string, validationModule module, module module) *gen.TextFile {
+	routingModule := module.Submodule("routing")
 	if server == express {
-		return generateExpressVersionRouting(version, validation, generatePath)
+		return generateExpressVersionRouting(version, validation, validationModule, routingModule)
 	}
 	if server == koa {
-		return generateKoaVersionRouting(version, validation, generatePath)
+		return generateKoaVersionRouting(version, validation, validationModule, routingModule)
 	}
 	panic(fmt.Sprintf("Unknown server: %s", server))
 }
 
-func generateSpecRouter(specification *spec.Spec, server string, generatePath string) *gen.TextFile {
+func generateSpecRouter(specification *spec.Spec, server string, rootModule module, module module) *gen.TextFile {
 	if server == express {
-		return generateExpressSpecRouter(specification, generatePath)
+		return generateExpressSpecRouter(specification, rootModule, module)
 	}
 	if server == koa {
-		return generateKoaSpecRouter(specification, generatePath)
+		return generateKoaSpecRouter(specification, rootModule, module)
 	}
 	panic(fmt.Sprintf("Unknown server: %s", server))
 }

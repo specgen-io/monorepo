@@ -4,17 +4,21 @@ import (
 	"fmt"
 	"github.com/specgen-io/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
 	"strings"
 )
 
 func GenerateAxiosClient(specification *spec.Spec, generatePath string, validation string) error {
 	sources := []gen.TextFile{}
+	module := Module(generatePath)
+	validationModule := module.Submodule(validation)
+	validationFile := generateValidation(validation, validationModule)
+	sources = append(sources, *validationFile)
 	for _, version := range specification.Versions {
-		sources = append(sources, *generateAxiosClient(&version, generatePath, validation))
+		versionModule := module.Submodule(version.Version.FlatCase())
+		clientModule := versionModule.Submodule("index")
+		sources = append(sources, *generateAxiosClient(&version, validation, validationModule, clientModule))
 	}
-
-	modelsFiles := generateModels(specification, validation, generatePath)
+	modelsFiles := generateModels(specification, validation, validationModule, module)
 	sources = append(sources, modelsFiles...)
 
 	err := gen.WriteFiles(sources, true)
@@ -26,12 +30,10 @@ func GenerateAxiosClient(specification *spec.Spec, generatePath string, validati
 	return nil
 }
 
-func generateAxiosClient(version *spec.Version, generatePath string, validation string) *gen.TextFile {
-	path := versionedPath(generatePath, version, "index.ts")
-
+func generateAxiosClient(version *spec.Version, validation string, validationModule module, module module) *gen.TextFile {
 	w := NewTsWriter()
 	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
-	w.Line(`import * as t from '%s'`, importPath(filepath.Join(generatePath, validation), path))
+	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
 	w.Line(`import * as %s from './models'`, modelsPackage)
 	for _, api := range version.Http.Apis {
 		generateClientApiClass(w, api, validation)
@@ -40,7 +42,7 @@ func generateAxiosClient(version *spec.Version, generatePath string, validation 
 			generateOperationResponse(w, &operation)
 		}
 	}
-	return &gen.TextFile{path, w.String()}
+	return &gen.TextFile{module.GetPath(), w.String()}
 }
 
 func getUrl(endpoint spec.Endpoint) string {
