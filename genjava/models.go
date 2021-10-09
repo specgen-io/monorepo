@@ -225,7 +225,7 @@ func generateEnumModel(model *spec.NamedModel, thePackage Module) *gen.TextFile 
 	enumName := model.Name.PascalCase()
 	w.Line(`public enum %s {`, enumName)
 	for _, enumItem := range model.Enum.Items {
-		w.Line(`  %s,`, enumItem.Value)
+		w.Line(`  @JsonProperty("%s") %s,`, enumItem.Value, enumItem.Name.UpperCase())
 	}
 	w.Line(`}`)
 
