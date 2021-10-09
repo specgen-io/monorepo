@@ -7,6 +7,9 @@ import (
 )
 
 func GenerateService(specification *spec.Spec, packageName string, swaggerPath string, generatePath string, servicesPath string) error {
+	if packageName == "" {
+		packageName = specification.Name.SnakeCase()
+	}
 	sourcesOverride := []gen.TextFile{}
 	sourcesScaffold := []gen.TextFile{}
 

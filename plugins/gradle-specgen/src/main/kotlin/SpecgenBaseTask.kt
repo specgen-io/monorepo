@@ -15,7 +15,7 @@ public abstract class SpecgenBaseTask : DefaultTask() {
         group = SpecgenPlugin.SPECGEN_GROUP
     }
 
-    protected fun runSpecgen(vararg args: String) {
+    protected fun runSpecgen(args: List<String>) {
         try {
             project.exec {
                 val jarPath = JarHandle::class.java.protectionDomain.codeSource.location.path
@@ -49,7 +49,7 @@ public abstract class SpecgenBaseTask : DefaultTask() {
                     executable.setExecutable(true)
                 }
                 executable(executable)
-                args(*args)
+                args(args)
             }.assertNormalExitValue()
         } catch (error: Exception) {
             throw SpecgenException("Source generation failed.", error)
