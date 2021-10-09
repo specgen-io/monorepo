@@ -18,6 +18,7 @@ public open class SpecgenModelsJavaTask public constructor() : SpecgenBaseTask()
         project.objects.property<File>().convention(project.projectDir.resolve("spec.yaml"))
 
     @Input
+    @Optional
     public val packageName: Property<String?> = project.objects.property()
 
     @TaskAction
