@@ -19,7 +19,7 @@ public open class SpecgenModelsJavaTask public constructor() : SpecgenBaseTask()
 
     @Input
     @Optional
-    public val packageName: Property<String?> = project.objects.property()
+    public val packageName: Property<String> = project.objects.property()
 
     @TaskAction
     public fun execute() {
@@ -31,7 +31,7 @@ public open class SpecgenModelsJavaTask public constructor() : SpecgenBaseTask()
             outputDirectory.get().absolutePath,
         )
 
-        if (packageName.get() != null) {
+        if (packageName.isPresent) {
             args.add("--package-name")
             args.add(packageName.get())
         }
