@@ -17,12 +17,23 @@ public open class SpecgenModelsJavaTask public constructor() : SpecgenBaseTask()
     public val specFile: Property<File> =
         project.objects.property<File>().convention(project.projectDir.resolve("spec.yaml"))
 
+    public val packageName: Property<String?> = project.objects.property()
+
     @TaskAction
-    public fun execute(): Unit = runSpecgen(
-        "models-java",
-        "--spec-file",
-        specFile.get().absolutePath,
-        "--generate-path",
-        outputDirectory.get().absolutePath,
-    )
+    public fun execute() {
+        val args = mutableListOf(
+            "models-java",
+            "--spec-file",
+            specFile.get().absolutePath,
+            "--generate-path",
+            outputDirectory.get().absolutePath,
+        )
+
+        if (packageName.get() != null) {
+            args.add("--package-name")
+            args.add(packageName.get())
+        }
+
+        runSpecgen(args)
+    }
 }

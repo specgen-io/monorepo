@@ -10,6 +10,9 @@ public class ModelsJavaMojo extends SpecgenAbstractMojo {
 	@Parameter(property = "specFile", defaultValue = "${project.basedir}/spec.yaml", required = true)
 	String specFile;
 
+	@Parameter(property = "packageName")
+	String packageName;
+
 	@Parameter(property = "generatePath", defaultValue = "${project.build.directory}/generated-sources/java", required = true)
 	String generatePath;
 
@@ -24,6 +27,10 @@ public class ModelsJavaMojo extends SpecgenAbstractMojo {
 			"--spec-file", specFile,
 			"--generate-path", generatePath
 		));
+		if (packageName != null) {
+			commandlineArgs.add("--package-name");
+			commandlineArgs.add(packageName);
+		}
 
 		try {
 			runSpecgen(commandlineArgs);

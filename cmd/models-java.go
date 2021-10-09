@@ -8,6 +8,7 @@ import (
 
 func init() {
 	modelsJava.Flags().String(SpecFile, "", SpecFileDescription)
+	modelsJava.Flags().String(PackageName, "", PackageNameDescription)
 	modelsJava.Flags().String(GeneratePath, "", GeneratePathDescription)
 
 	modelsJava.MarkFlagRequired(SpecFile)
@@ -23,12 +24,15 @@ var modelsJava = &cobra.Command{
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)
 
+		packageName, err := cmd.Flags().GetString(PackageName)
+		fail.IfError(err)
+
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
 		specification := readSpecFile(specFile)
 
-		err = genjava.GenerateModels(specification, generatePath)
+		err = genjava.GenerateModels(specification, packageName, generatePath)
 		fail.IfErrorF(err, "Failed to generate models code")
 	},
 }

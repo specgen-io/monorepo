@@ -7,9 +7,12 @@ import (
 	"strings"
 )
 
-func GenerateModels(specification *spec.Spec, generatePath string) error {
-	packageName := fmt.Sprintf("%s.models", specification.Name.SnakeCase())
-	modelsPackage := Package(generatePath, packageName)
+func GenerateModels(specification *spec.Spec, packageName string, generatePath string) error {
+	if packageName == "" {
+		packageName = specification.Name.SnakeCase()
+	}
+	mainPackage := Package(generatePath, packageName)
+	modelsPackage := mainPackage.Subpackage("models")
 	files := generateModels(specification, modelsPackage)
 	return gen.WriteFiles(files, true)
 }

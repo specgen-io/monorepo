@@ -14,7 +14,6 @@ func init() {
 	cmdServiceJavaSpring.Flags().String(ServicesPath, "", ServicesPathDescription)
 
 	cmdServiceJavaSpring.MarkFlagRequired(SpecFile)
-	cmdServiceJavaSpring.MarkFlagRequired(PackageName)
 	cmdServiceJavaSpring.MarkFlagRequired(GeneratePath)
 
 	rootCmd.AddCommand(cmdServiceJavaSpring)
