@@ -23,11 +23,15 @@ func checkType(fieldType *spec.TypeDef, typ string) bool {
 	return true
 }
 
-func isArrayField(typ *spec.TypeDef) bool {
-	if typ.Node == spec.ArrayType {
+func isJavaArrayType(typ *spec.TypeDef) bool {
+	switch typ.Node {
+	case spec.ArrayType:
 		return true
+	case spec.NullableType:
+		return isJavaArrayType(typ.Child)
+	default:
+		return false
 	}
-	return false
 }
 
 func equalsExpression(typ *spec.TypeDef, left string, right string) string {
@@ -76,10 +80,9 @@ func equalsExpressionPlainType(typ string, left string, right string, canBePrimi
 }
 
 func toStringExpression(typ *spec.TypeDef, value string) string {
-	switch typ.Node {
-	case spec.ArrayType:
+	if isJavaArrayType(typ) {
 		return fmt.Sprintf(`Arrays.toString(%s)`, value)
-	default:
+	} else {
 		return fmt.Sprintf(`%s`, value)
 	}
 }
