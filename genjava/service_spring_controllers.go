@@ -40,12 +40,15 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 	w.Line(`public class %s {`, className)
 	w.Line(`  final %s %s;`, serviceInterfaceName(api), serviceVarName(api))
 	w.EmptyLine()
+	w.Line(`  ObjectMapper objectMapper;`)
+	w.EmptyLine()
 	w.Line(`  public %s(%s %s) {`, controllerName(api), serviceInterfaceName(api), serviceVarName(api))
 	w.Line(`    this.%s = %s;`, serviceVarName(api), serviceVarName(api))
+	w.Line(`    this.objectMapper = new ObjectMapper();`)
+	w.Line(`    Jsoner.setupObjectMapper(this.objectMapper);`)
 	w.Line(`  }`)
-	w.EmptyLine()
-	w.Line(`  ObjectMapper objectMapper = new ObjectMapper();`)
 	for _, operation := range api.Operations {
+		w.EmptyLine()
 		generateMethod(w.Indented(), version, api, operation)
 	}
 	w.Line(`}`)
@@ -59,7 +62,6 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 }
 
 func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operation spec.NamedOperation) {
-	w.EmptyLine()
 	w.Line(`@%sMapping("%s")`, ToPascalCase(operation.Endpoint.Method), versionUrl(version, operation.Endpoint.Url))
 	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), JoinParams(addMethodParams(operation)))
 	if operation.Body != nil {

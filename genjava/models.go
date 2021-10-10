@@ -38,19 +38,16 @@ import java.io.*;
 
 public class Jsoner {
 
-	public static <T> String serialize(ObjectMapper objectMapper, T data) throws IOException {
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		objectMapper.registerModule(new JavaTimeModule())
-			.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-			.writeValue(byteArrayOutputStream, data);
+	public static void setupObjectMapper(ObjectMapper objectMapper) {
+		objectMapper.registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+	}
 
-		return byteArrayOutputStream.toString();
+	public static <T> String serialize(ObjectMapper objectMapper, T data) throws IOException {
+		return objectMapper.writeValueAsString(data);
 	}
 
 	public static <T> T deserialize(ObjectMapper objectMapper, String jsonStr, Class<T> tClass) throws IOException {
-		InputStream inputStream = new ByteArrayInputStream(jsonStr.getBytes());
-
-		return objectMapper.readValue(inputStream, tClass);
+		return objectMapper.readValue(jsonStr, tClass);
 	}
 }
 `
@@ -182,7 +179,7 @@ func addObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
 	hashParams := []string{}
 	var arrayFieldCount, nonArrayFieldCount int
 	for _, field := range model.Object.Fields {
-		if isArrayField(&field.Type.Definition) {
+		if isJavaArrayType(&field.Type.Definition) {
 			hashCodeParams = append(hashCodeParams, fmt.Sprintf(`%s()`, getterName(&field)))
 			arrayFieldCount++
 		} else {
