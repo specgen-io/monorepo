@@ -23,11 +23,11 @@ func generateModels(specification *spec.Spec, thePackage Module) []gen.TextFile 
 		versionPackage := thePackage.Subpackage(version.Version.FlatCase())
 		files = append(files, generateVersionModels(&version, versionPackage)...)
 	}
-	files = append(files, *generateJsoner(thePackage))
+	files = append(files, *generateJson(thePackage))
 	return files
 }
 
-func generateJsoner(thePackage Module) *gen.TextFile {
+func generateJson(thePackage Module) *gen.TextFile {
 	code := `
 package [[.PackageName]];
 
@@ -36,25 +36,16 @@ import com.fasterxml.jackson.datatype.jsr310.*;
 
 import java.io.*;
 
-public class Jsoner {
-
+public class Json {
 	public static void setupObjectMapper(ObjectMapper objectMapper) {
 		objectMapper.registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-	}
-
-	public static <T> String serialize(ObjectMapper objectMapper, T data) throws IOException {
-		return objectMapper.writeValueAsString(data);
-	}
-
-	public static <T> T deserialize(ObjectMapper objectMapper, String jsonStr, Class<T> tClass) throws IOException {
-		return objectMapper.readValue(jsonStr, tClass);
 	}
 }
 `
 
 	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
 	return &gen.TextFile{
-		Path:    thePackage.GetPath("Jsoner.java"),
+		Path:    thePackage.GetPath("Json.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
@@ -82,6 +73,7 @@ func generateImports(w *gen.Writer) {
 	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
 }
 
+//TODO: Strange logic here
 func addType(field spec.NamedDefinition) string {
 	if checkType(&field.Type.Definition, spec.TypeJson) {
 		return `String`
@@ -89,6 +81,7 @@ func addType(field spec.NamedDefinition) string {
 	return JavaType(&field.Type.Definition)
 }
 
+//TODO: Strange logic here
 func addGetterBody(field spec.NamedDefinition) string {
 	if checkType(&field.Type.Definition, spec.TypeJson) {
 		return fmt.Sprintf(` %s == null ? null : %s.toString()`, field.Name.CamelCase(), field.Name.CamelCase())
@@ -96,13 +89,15 @@ func addGetterBody(field spec.NamedDefinition) string {
 	return field.Name.CamelCase()
 }
 
+//TODO: Strange logic here
 func addFieldName(field spec.NamedDefinition) string {
 	if checkType(&field.Type.Definition, spec.TypeJson) {
-		return `node`
+		return `node` //TODO: Really fishy - hardcoded name
 	}
 	return field.Name.CamelCase()
 }
 
+//TODO: Strange logic here
 func addSetterParams(field spec.NamedDefinition) string {
 	if checkType(&field.Type.Definition, spec.TypeJson) {
 		return fmt.Sprintf(`JsonNode %s`, addFieldName(field))
@@ -119,20 +114,22 @@ func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFil
 	className := model.Name.PascalCase()
 	w.Line(`public class %s {`, className)
 
-	constructParams := []string{}
 	for _, field := range model.Object.Fields {
 		w.Line(`  @JsonProperty("%s")`, field.Name.SnakeCase())
 		if checkType(&field.Type.Definition, spec.TypeJson) {
 			w.Line(`  @JsonRawValue`)
 		}
 		w.Line(`  private %s %s;`, JavaType(&field.Type.Definition), field.Name.CamelCase())
-		constructParams = append(constructParams, fmt.Sprintf(`%s %s`, addType(field), field.Name.CamelCase()))
 	}
 
 	w.EmptyLine()
 	w.Line(`  public %s() {`, model.Name.PascalCase())
 	w.Line(`  }`)
 	w.EmptyLine()
+	constructParams := []string{}
+	for _, field := range model.Object.Fields {
+		constructParams = append(constructParams, fmt.Sprintf(`%s %s`, addType(field), field.Name.CamelCase()))
+	}
 	w.Line(`  public %s(%s) {`, model.Name.PascalCase(), JoinParams(constructParams))
 	for _, field := range model.Object.Fields {
 		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())

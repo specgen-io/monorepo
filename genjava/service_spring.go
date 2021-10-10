@@ -16,7 +16,7 @@ func GenerateService(specification *spec.Spec, packageName string, swaggerPath s
 	mainPackage := Package(generatePath, packageName)
 
 	modelsPackage := mainPackage.Subpackage("models")
-	sourcesOverride = append(sourcesOverride, *generateJsoner(modelsPackage))
+	sourcesOverride = append(sourcesOverride, *generateJson(modelsPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
