@@ -73,38 +73,6 @@ func generateImports(w *gen.Writer) {
 	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
 }
 
-//TODO: Strange logic here
-func addType(field spec.NamedDefinition) string {
-	if checkType(&field.Type.Definition, spec.TypeJson) {
-		return `String`
-	}
-	return JavaType(&field.Type.Definition)
-}
-
-//TODO: Strange logic here
-func addGetterBody(field spec.NamedDefinition) string {
-	if checkType(&field.Type.Definition, spec.TypeJson) {
-		return fmt.Sprintf(` %s == null ? null : %s.toString()`, field.Name.CamelCase(), field.Name.CamelCase())
-	}
-	return field.Name.CamelCase()
-}
-
-//TODO: Strange logic here
-func addFieldName(field spec.NamedDefinition) string {
-	if checkType(&field.Type.Definition, spec.TypeJson) {
-		return `node` //TODO: Really fishy - hardcoded name
-	}
-	return field.Name.CamelCase()
-}
-
-//TODO: Strange logic here
-func addSetterParams(field spec.NamedDefinition) string {
-	if checkType(&field.Type.Definition, spec.TypeJson) {
-		return fmt.Sprintf(`JsonNode %s`, addFieldName(field))
-	}
-	return fmt.Sprintf(`%s %s`, addType(field), addFieldName(field))
-}
-
 func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
@@ -126,11 +94,12 @@ func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFil
 	w.Line(`  public %s() {`, model.Name.PascalCase())
 	w.Line(`  }`)
 	w.EmptyLine()
-	constructParams := []string{}
+	ctorParams := []string{}
 	for _, field := range model.Object.Fields {
-		constructParams = append(constructParams, fmt.Sprintf(`%s %s`, addType(field), field.Name.CamelCase()))
+		ctorParam := fmt.Sprintf(`%s %s`, JavaType(&field.Type.Definition), field.Name.CamelCase())
+		ctorParams = append(ctorParams, ctorParam)
 	}
-	w.Line(`  public %s(%s) {`, model.Name.PascalCase(), JoinParams(constructParams))
+	w.Line(`  public %s(%s) {`, model.Name.PascalCase(), JoinParams(ctorParams))
 	for _, field := range model.Object.Fields {
 		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
 	}
@@ -138,12 +107,12 @@ func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFil
 
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
-		w.Line(`  public %s %s() {`, addType(field), getterName(&field))
-		w.Line(`    return %s;`, addGetterBody(field))
+		w.Line(`  public %s %s() {`, JavaType(&field.Type.Definition), getterName(&field))
+		w.Line(`    return %s;`, field.Name.CamelCase())
 		w.Line(`  }`)
 		w.EmptyLine()
-		w.Line(`  public void %s(%s) {`, setterName(&field), addSetterParams(field))
-		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), addFieldName(field))
+		w.Line(`  public void %s(%s value) {`, setterName(&field), JavaType(&field.Type.Definition))
+		w.Line(`    this.%s = value;`, field.Name.CamelCase())
 		w.Line(`  }`)
 	}
 	w.EmptyLine()
