@@ -53,7 +53,7 @@ func TestPlainTypeDateTime(t *testing.T) {
 }
 
 func TestPlainTypeJson(t *testing.T) {
-	CheckPlainType(t, spec.TypeJson, "Object")
+	CheckPlainType(t, spec.TypeJson, "JsonNode")
 }
 
 func TestPlainTypeEmpty(t *testing.T) {
