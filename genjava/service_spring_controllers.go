@@ -6,16 +6,16 @@ import (
 	"github.com/specgen-io/specgen/v2/gen"
 )
 
-func generateServicesControllers(version *spec.Version, thePackage Module, modelsPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []gen.TextFile {
+func generateServicesControllers(version *spec.Version, thePackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, generateController(version, &api, thePackage, modelsPackage, modelsVersionPackage, serviceVersionSubpackage)...)
+		files = append(files, generateController(version, &api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
 	}
 	return files
 }
 
-func generateController(version *spec.Version, api *spec.Api, apiPackage Module, modelsPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []gen.TextFile {
+func generateController(version *spec.Version, api *spec.Api, apiPackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -31,7 +31,7 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 	w.EmptyLine()
 	w.Line(`import static org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE;`)
 	w.EmptyLine()
-	w.Line(`import %s.Jsoner;`, modelsPackage.PackageName)
+	w.Line(`import %s.Json;`, jsonPackage.PackageName)
 	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
 	w.Line(`import %s;`, serviceVersionPackage.PackageStar)
 	w.EmptyLine()
@@ -45,7 +45,7 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 	w.Line(`  public %s(%s %s) {`, controllerName(api), serviceInterfaceName(api), serviceVarName(api))
 	w.Line(`    this.%s = %s;`, serviceVarName(api), serviceVarName(api))
 	w.Line(`    this.objectMapper = new ObjectMapper();`)
-	w.Line(`    Jsoner.setupObjectMapper(this.objectMapper);`)
+	w.Line(`    Json.setupObjectMapper(this.objectMapper);`)
 	w.Line(`  }`)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
@@ -65,7 +65,7 @@ func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operati
 	w.Line(`@%sMapping("%s")`, ToPascalCase(operation.Endpoint.Method), versionUrl(version, operation.Endpoint.Url))
 	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), JoinParams(addMethodParams(operation)))
 	if operation.Body != nil {
-		w.Line(`  var requestBody = Jsoner.deserialize(objectMapper, jsonStr, %s.class);`, JavaType(&operation.Body.Type.Definition))
+		w.Line(`  var requestBody = objectMapper.readValue(jsonStr, %s.class);`, JavaType(&operation.Body.Type.Definition))
 	}
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(api), operation.Name.CamelCase(), JoinParams(addServiceMethodParams(operation)))
 	if len(operation.Responses) == 1 {
@@ -79,7 +79,7 @@ func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operati
 				w.EmptyLine()
 				w.Line(`  HttpHeaders headers = new HttpHeaders();`)
 				w.Line(`  headers.add(CONTENT_TYPE, "application/json");`)
-				w.Line(`  String responseJson = Jsoner.serialize(objectMapper, result);`)
+				w.Line(`  String responseJson = objectMapper.writeValueAsString(result);`)
 				w.EmptyLine()
 				w.Line(`  return new ResponseEntity<>(responseJson, headers, HttpStatus.%s);`, resp.Name.UpperCase())
 			}

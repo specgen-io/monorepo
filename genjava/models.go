@@ -23,11 +23,11 @@ func generateModels(specification *spec.Spec, thePackage Module) []gen.TextFile 
 		versionPackage := thePackage.Subpackage(version.Version.FlatCase())
 		files = append(files, generateVersionModels(&version, versionPackage)...)
 	}
-	files = append(files, *generateJsoner(thePackage))
+	files = append(files, *generateJson(thePackage))
 	return files
 }
 
-func generateJsoner(thePackage Module) *gen.TextFile {
+func generateJson(thePackage Module) *gen.TextFile {
 	code := `
 package [[.PackageName]];
 
@@ -36,25 +36,16 @@ import com.fasterxml.jackson.datatype.jsr310.*;
 
 import java.io.*;
 
-public class Jsoner {
-
+public class Json {
 	public static void setupObjectMapper(ObjectMapper objectMapper) {
 		objectMapper.registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-	}
-
-	public static <T> String serialize(ObjectMapper objectMapper, T data) throws IOException {
-		return objectMapper.writeValueAsString(data);
-	}
-
-	public static <T> T deserialize(ObjectMapper objectMapper, String jsonStr, Class<T> tClass) throws IOException {
-		return objectMapper.readValue(jsonStr, tClass);
 	}
 }
 `
 
 	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
 	return &gen.TextFile{
-		Path:    thePackage.GetPath("Jsoner.java"),
+		Path:    thePackage.GetPath("Json.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
@@ -82,34 +73,6 @@ func generateImports(w *gen.Writer) {
 	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
 }
 
-func addType(field spec.NamedDefinition) string {
-	if checkType(&field.Type.Definition, spec.TypeJson) {
-		return `String`
-	}
-	return JavaType(&field.Type.Definition)
-}
-
-func addGetterBody(field spec.NamedDefinition) string {
-	if checkType(&field.Type.Definition, spec.TypeJson) {
-		return fmt.Sprintf(` %s == null ? null : %s.toString()`, field.Name.CamelCase(), field.Name.CamelCase())
-	}
-	return field.Name.CamelCase()
-}
-
-func addFieldName(field spec.NamedDefinition) string {
-	if checkType(&field.Type.Definition, spec.TypeJson) {
-		return `node`
-	}
-	return field.Name.CamelCase()
-}
-
-func addSetterParams(field spec.NamedDefinition) string {
-	if checkType(&field.Type.Definition, spec.TypeJson) {
-		return fmt.Sprintf(`JsonNode %s`, addFieldName(field))
-	}
-	return fmt.Sprintf(`%s %s`, addType(field), addFieldName(field))
-}
-
 func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
@@ -119,21 +82,24 @@ func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFil
 	className := model.Name.PascalCase()
 	w.Line(`public class %s {`, className)
 
-	constructParams := []string{}
 	for _, field := range model.Object.Fields {
 		w.Line(`  @JsonProperty("%s")`, field.Name.SnakeCase())
 		if checkType(&field.Type.Definition, spec.TypeJson) {
 			w.Line(`  @JsonRawValue`)
 		}
 		w.Line(`  private %s %s;`, JavaType(&field.Type.Definition), field.Name.CamelCase())
-		constructParams = append(constructParams, fmt.Sprintf(`%s %s`, addType(field), field.Name.CamelCase()))
 	}
 
 	w.EmptyLine()
 	w.Line(`  public %s() {`, model.Name.PascalCase())
 	w.Line(`  }`)
 	w.EmptyLine()
-	w.Line(`  public %s(%s) {`, model.Name.PascalCase(), JoinParams(constructParams))
+	ctorParams := []string{}
+	for _, field := range model.Object.Fields {
+		ctorParam := fmt.Sprintf(`%s %s`, JavaType(&field.Type.Definition), field.Name.CamelCase())
+		ctorParams = append(ctorParams, ctorParam)
+	}
+	w.Line(`  public %s(%s) {`, model.Name.PascalCase(), JoinParams(ctorParams))
 	for _, field := range model.Object.Fields {
 		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
 	}
@@ -141,12 +107,12 @@ func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFil
 
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
-		w.Line(`  public %s %s() {`, addType(field), getterName(&field))
-		w.Line(`    return %s;`, addGetterBody(field))
+		w.Line(`  public %s %s() {`, JavaType(&field.Type.Definition), getterName(&field))
+		w.Line(`    return %s;`, field.Name.CamelCase())
 		w.Line(`  }`)
 		w.EmptyLine()
-		w.Line(`  public void %s(%s) {`, setterName(&field), addSetterParams(field))
-		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), addFieldName(field))
+		w.Line(`  public void %s(%s value) {`, setterName(&field), JavaType(&field.Type.Definition))
+		w.Line(`    this.%s = value;`, field.Name.CamelCase())
 		w.Line(`  }`)
 	}
 	w.EmptyLine()
