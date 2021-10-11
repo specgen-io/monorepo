@@ -72,7 +72,7 @@ func PlainJavaType(typ string, referenceTypesOnly bool) string {
 	case spec.TypeDateTime:
 		return "LocalDateTime"
 	case spec.TypeJson:
-		return "Object"
+		return "JsonNode"
 	case spec.TypeEmpty:
 		return "void"
 	default:
