@@ -84,9 +84,6 @@ func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFil
 
 	for _, field := range model.Object.Fields {
 		w.Line(`  @JsonProperty("%s")`, field.Name.SnakeCase())
-		if checkType(&field.Type.Definition, spec.TypeJson) {
-			w.Line(`  @JsonRawValue`)
-		}
 		w.Line(`  private %s %s;`, JavaType(&field.Type.Definition), field.Name.CamelCase())
 	}
 
@@ -101,6 +98,9 @@ func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFil
 	}
 	w.Line(`  public %s(%s) {`, model.Name.PascalCase(), JoinParams(ctorParams))
 	for _, field := range model.Object.Fields {
+		if !field.Type.Definition.IsNullable() && JavaIsReferenceType(&field.Type.Definition) {
+			w.Line(`    if (%s == null) { throw new IllegalArgumentException("null value is not allowed"); }`, field.Name.CamelCase());
+		}
 		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
 	}
 	w.Line(`  }`)
@@ -111,8 +111,11 @@ func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFil
 		w.Line(`    return %s;`, field.Name.CamelCase())
 		w.Line(`  }`)
 		w.EmptyLine()
-		w.Line(`  public void %s(%s value) {`, setterName(&field), JavaType(&field.Type.Definition))
-		w.Line(`    this.%s = value;`, field.Name.CamelCase())
+		w.Line(`  public void %s(%s %s) {`, setterName(&field), JavaType(&field.Type.Definition), field.Name.CamelCase())
+		if !field.Type.Definition.IsNullable() && JavaIsReferenceType(&field.Type.Definition) {
+			w.Line(`    if (%s == null) { throw new IllegalArgumentException("null value is not allowed"); }`, field.Name.CamelCase());
+		}
+		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
 		w.Line(`  }`)
 	}
 	w.EmptyLine()

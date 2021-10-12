@@ -6,77 +6,83 @@ import (
 )
 
 func JavaType(typ *spec.TypeDef) string {
-	return javaType(typ, false)
+	javaType, _ := javaType(typ, false)
+	return javaType
 }
 
-func javaType(typ *spec.TypeDef, referenceTypesOnly bool) string {
+func JavaIsReferenceType(typ *spec.TypeDef) bool {
+	_, isReference := javaType(typ, false)
+	return isReference
+}
+
+func javaType(typ *spec.TypeDef, referenceTypesOnly bool) (string, bool) {
 	switch typ.Node {
 	case spec.PlainType:
 		return PlainJavaType(typ.Plain, referenceTypesOnly)
 	case spec.NullableType:
-		result := javaType(typ.Child, true)
-		return result
+		return javaType(typ.Child, true)
 	case spec.ArrayType:
-		child := javaType(typ.Child, false)
+		child, _ := javaType(typ.Child, false)
 		result := child + "[]"
-		return result
+		return result, true
 	case spec.MapType:
-		child := javaType(typ.Child, true)
+		child, _ := javaType(typ.Child, true)
 		result := "Map<String, " + child + ">"
-		return result
+		return result, true
 	default:
 		panic(fmt.Sprintf("Unknown type: %v", typ))
 	}
 }
 
-func PlainJavaType(typ string, referenceTypesOnly bool) string {
+// PlainJavaType Returns Java type name and boolean indicating if the type is reference or value type
+func PlainJavaType(typ string, referenceTypesOnly bool) (string, bool) {
 	switch typ {
 	case spec.TypeInt32:
 		if referenceTypesOnly {
-			return "Integer"
+			return "Integer", true
 		} else {
-			return "int"
+			return "int", false
 		}
 	case spec.TypeInt64:
 		if referenceTypesOnly {
-			return "Long"
+			return "Long", true
 		} else {
-			return "long"
+			return "long", false
 		}
 	case spec.TypeFloat:
 		if referenceTypesOnly {
-			return "Float"
+			return "Float", true
 		} else {
-			return "float"
+			return "float", false
 		}
 	case spec.TypeDouble:
 		if referenceTypesOnly {
-			return "Double"
+			return "Double", true
 		} else {
-			return "double"
+			return "double", false
 		}
 	case spec.TypeDecimal:
-		return "BigDecimal"
+		return "BigDecimal", true
 	case spec.TypeBoolean:
 		if referenceTypesOnly {
-			return "Boolean"
+			return "Boolean", true
 		} else {
-			return "boolean"
+			return "boolean", false
 		}
 	case spec.TypeString:
-		return "String"
+		return "String", true
 	case spec.TypeUuid:
-		return "UUID"
+		return "UUID", true
 	case spec.TypeDate:
-		return "LocalDate"
+		return "LocalDate", true
 	case spec.TypeDateTime:
-		return "LocalDateTime"
+		return "LocalDateTime", true
 	case spec.TypeJson:
-		return "JsonNode"
+		return "JsonNode", true
 	case spec.TypeEmpty:
-		return "void"
+		return "void", false
 	default:
-		return typ
+		return typ, true
 	}
 }
 
