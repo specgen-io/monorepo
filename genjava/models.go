@@ -64,7 +64,7 @@ func generateVersionModels(version *spec.Version, thePackage Module) []gen.TextF
 	return files
 }
 
-func generateImports(w *gen.Writer) {
+func addImports(w *gen.Writer) {
 	w.Line(`import java.time.*;`)
 	w.Line(`import java.util.*;`)
 	w.Line(`import java.math.BigDecimal;`)
@@ -73,58 +73,43 @@ func generateImports(w *gen.Writer) {
 	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
 }
 
-func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFile {
-	w := NewJavaWriter()
-	w.Line(`package %s;`, thePackage.PackageName)
-	w.EmptyLine()
-	generateImports(w)
-	w.EmptyLine()
-	className := model.Name.PascalCase()
-	w.Line(`public class %s {`, className)
-
-	for _, field := range model.Object.Fields {
-		w.Line(`  @JsonProperty("%s")`, field.Name.SnakeCase())
-		w.Line(`  private %s %s;`, JavaType(&field.Type.Definition), field.Name.CamelCase())
-	}
-
-	w.EmptyLine()
-	w.Line(`  public %s() {`, model.Name.PascalCase())
-	w.Line(`  }`)
+func addObjectModelCtors(w *gen.Writer, model *spec.NamedModel) {
+	w.Line(`public %s() {`, model.Name.PascalCase())
+	w.Line(`}`)
 	w.EmptyLine()
 	ctorParams := []string{}
 	for _, field := range model.Object.Fields {
 		ctorParam := fmt.Sprintf(`%s %s`, JavaType(&field.Type.Definition), field.Name.CamelCase())
 		ctorParams = append(ctorParams, ctorParam)
 	}
-	w.Line(`  public %s(%s) {`, model.Name.PascalCase(), JoinParams(ctorParams))
+	w.Line(`public %s(%s) {`, model.Name.PascalCase(), JoinParams(ctorParams))
 	for _, field := range model.Object.Fields {
 		if !field.Type.Definition.IsNullable() && JavaIsReferenceType(&field.Type.Definition) {
-			w.Line(`    if (%s == null) { throw new IllegalArgumentException("null value is not allowed"); }`, field.Name.CamelCase());
+			w.Line(`  if (%s == null) { throw new IllegalArgumentException("null value is not allowed"); }`, field.Name.CamelCase())
 		}
-		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
+		w.Line(`  this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
 	}
-	w.Line(`  }`)
-
-	for _, field := range model.Object.Fields {
-		w.EmptyLine()
-		w.Line(`  public %s %s() {`, JavaType(&field.Type.Definition), getterName(&field))
-		w.Line(`    return %s;`, field.Name.CamelCase())
-		w.Line(`  }`)
-		w.EmptyLine()
-		w.Line(`  public void %s(%s %s) {`, setterName(&field), JavaType(&field.Type.Definition), field.Name.CamelCase())
-		if !field.Type.Definition.IsNullable() && JavaIsReferenceType(&field.Type.Definition) {
-			w.Line(`    if (%s == null) { throw new IllegalArgumentException("null value is not allowed"); }`, field.Name.CamelCase());
-		}
-		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
-		w.Line(`  }`)
-	}
-	w.EmptyLine()
-	addObjectModelMethods(w.Indented(), model)
 	w.Line(`}`)
+}
 
-	return &gen.TextFile{
-		Path:    thePackage.GetPath(className + ".java"),
-		Content: w.String(),
+func addObjectModelFields(w *gen.Writer, model *spec.NamedModel) {
+	for _, field := range model.Object.Fields {
+		w.EmptyLine()
+		w.Line(`@JsonProperty("%s")`, field.Name.SnakeCase())
+		w.Line(`private %s %s;`, JavaType(&field.Type.Definition), field.Name.CamelCase())
+	}
+	for _, field := range model.Object.Fields {
+		w.EmptyLine()
+		w.Line(`public %s %s() {`, JavaType(&field.Type.Definition), getterName(&field))
+		w.Line(`  return %s;`, field.Name.CamelCase())
+		w.Line(`}`)
+		w.EmptyLine()
+		w.Line(`public void %s(%s %s) {`, setterName(&field), JavaType(&field.Type.Definition), field.Name.CamelCase())
+		if !field.Type.Definition.IsNullable() && JavaIsReferenceType(&field.Type.Definition) {
+			w.Line(`  if (%s == null) { throw new IllegalArgumentException("null value is not allowed"); }`, field.Name.CamelCase())
+		}
+		w.Line(`  this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
+		w.Line(`}`)
 	}
 }
 
@@ -185,11 +170,31 @@ func addObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
+func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFile {
+	w := NewJavaWriter()
+	w.Line(`package %s;`, thePackage.PackageName)
+	w.EmptyLine()
+	addImports(w)
+	w.EmptyLine()
+	className := model.Name.PascalCase()
+	w.Line(`public class %s {`, className)
+	addObjectModelCtors(w.Indented(), model)
+	addObjectModelFields(w.Indented(), model)
+	w.EmptyLine()
+	addObjectModelMethods(w.Indented(), model)
+	w.Line(`}`)
+
+	return &gen.TextFile{
+		Path:    thePackage.GetPath(className + ".java"),
+		Content: w.String(),
+	}
+}
+
 func generateEnumModel(model *spec.NamedModel, thePackage Module) *gen.TextFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	generateImports(w)
+	addImports(w)
 	w.EmptyLine()
 	enumName := model.Name.PascalCase()
 	w.Line(`public enum %s {`, enumName)
@@ -209,7 +214,7 @@ func generateOneOfModels(model *spec.NamedModel, thePackage Module) []gen.TextFi
 	w := NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
-	generateImports(w)
+	addImports(w)
 	w.EmptyLine()
 	if model.OneOf.Discriminator != nil {
 		w.Line(`@JsonTypeInfo(`)
@@ -248,7 +253,7 @@ func generateOneOfImplementation(item spec.NamedDefinition, model *spec.NamedMod
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	generateImports(w)
+	addImports(w)
 	w.EmptyLine()
 	w.Line(`public class %s implements %s {`, className, model.Name.PascalCase())
 	w.Line(`  @JsonUnwrapped`)
@@ -258,6 +263,9 @@ func generateOneOfImplementation(item spec.NamedDefinition, model *spec.NamedMod
 	w.Line(`  }`)
 	w.EmptyLine()
 	w.Line(`  public %s(%s data) {`, className, JavaType(&item.Type.Definition))
+	if !item.Type.Definition.IsNullable() && JavaIsReferenceType(&item.Type.Definition) {
+		w.Line(`    if (data == null) { throw new IllegalArgumentException("null value is not allowed"); }`)
+	}
 	w.Line(`  	this.data = data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
@@ -266,6 +274,9 @@ func generateOneOfImplementation(item spec.NamedDefinition, model *spec.NamedMod
 	w.Line(`  }`)
 	w.EmptyLine()
 	w.Line(`  public void setData(%s data) {`, JavaType(&item.Type.Definition))
+	if !item.Type.Definition.IsNullable() && JavaIsReferenceType(&item.Type.Definition) {
+		w.Line(`    if (data == null) { throw new IllegalArgumentException("null value is not allowed"); }`)
+	}
 	w.Line(`    this.data = data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
