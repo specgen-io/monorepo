@@ -86,22 +86,22 @@ func PlainJavaType(typ string, referenceTypesOnly bool) (string, bool) {
 	}
 }
 
-func checkDateType(typ *spec.TypeDef) string {
+func dateFormatAnnotation(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return addDateFormatAnnotation(typ.Plain)
+		return dateFormatAnnotationPlain(typ.Plain)
 	case spec.NullableType:
-		return checkDateType(typ.Child)
+		return dateFormatAnnotation(typ.Child)
 	case spec.ArrayType:
-		return checkDateType(typ.Child)
+		return dateFormatAnnotation(typ.Child)
 	case spec.MapType:
-		return checkDateType(typ.Child)
+		return dateFormatAnnotation(typ.Child)
 	default:
 		panic(fmt.Sprintf("Unknown type: %v", typ))
 	}
 }
 
-func addDateFormatAnnotation(typ string) string {
+func dateFormatAnnotationPlain(typ string) string {
 	switch typ {
 	case spec.TypeDate:
 		return "@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)"
