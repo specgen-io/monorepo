@@ -12,12 +12,19 @@ public class SpecgenPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = target.run {
         apply<JavaLibraryPlugin>()
         val generateModelsJava by tasks.creating(SpecgenModelsJavaTask::class)
+        val generateServiceSpringJava by tasks.creating(SpecgenServiceSpringJavaTask::class)
 
         afterEvaluate {
             project.configure<JavaPluginExtension> {
                 sourceSets.all {
                     java.srcDir(generateModelsJava.outputDirectory.get())
                     tasks[compileJavaTaskName]?.dependsOn(generateModelsJava)
+                }
+            }
+            project.configure<JavaPluginExtension> {
+                sourceSets.all {
+                    java.srcDir(generateServiceSpringJava.outputDirectory.get())
+                    tasks[compileJavaTaskName]?.dependsOn(generateServiceSpringJava)
                 }
             }
         }
