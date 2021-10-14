@@ -29,7 +29,7 @@ func generateServiceImplementation(version *spec.Version, api *spec.Api, thePack
 	w.Line(`import %s;`, serviceVersionSubpackage.PackageStar)
 	w.EmptyLine()
 	w.Line(`@Service("%s")`, versionServiceName(serviceName(api), version))
-	w.Line(`public class %s implements %s {`, serviceName(api), serviceInterfaceName(api))
+	w.Line(`public class %s implements %s {`, serviceImplName(api), serviceInterfaceName(api))
 	for _, operation := range api.Operations {
 		w.Line(`  @Override`)
 		w.Line(`  public %s {`, generateResponsesSignatures(operation))
@@ -39,7 +39,7 @@ func generateServiceImplementation(version *spec.Version, api *spec.Api, thePack
 	w.Line(`}`)
 
 	return &gen.TextFile{
-		Path:    thePackage.GetPath(fmt.Sprintf("%s.java", serviceName(api))),
+		Path:    thePackage.GetPath(fmt.Sprintf("%s.java", serviceImplName(api))),
 		Content: w.String(),
 	}
 }
