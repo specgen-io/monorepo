@@ -38,7 +38,7 @@ func GenerateService(specification *spec.Spec, packageName string, swaggerPath s
 	if servicesPath != "" {
 		servicesImplPackage := Package(servicesPath, packageName)
 		for _, version := range specification.Versions {
-			servicesImplVersionPath := servicesImplPackage.Subpackage("services_implementations")
+			servicesImplVersionPath := servicesImplPackage.Subpackage("services")
 			serviceImplVersionPackage := servicesImplVersionPath.Subpackage(version.Version.FlatCase())
 
 			versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
