@@ -104,9 +104,14 @@ func generateMethodParam(namedParams []spec.NamedParam, paramAnnotationName stri
 
 	if namedParams != nil && len(namedParams) > 0 {
 		for _, param := range namedParams {
-			paramAnnotation := fmt.Sprintf(`@%s("%s")`, paramAnnotationName, param.Name.Source)
-			paramType := fmt.Sprintf(`%s %s`, JavaType(&param.Type.Definition), param.Name.CamelCase())
-			dateFormatAnnotation := dateFormatAnnotation(&param.Type.Definition)
+			typ := param.Type.Definition
+			paramAnnotationParams := fmt.Sprintf(`name = "%s"`, param.Name.Source)
+			if typ.IsNullable() {
+				paramAnnotationParams = fmt.Sprintf(`name = "%s", required = false`, param.Name.Source)
+			}
+			paramAnnotation := fmt.Sprintf(`@%s(%s)`, paramAnnotationName, paramAnnotationParams)
+			paramType := fmt.Sprintf(`%s %s`, JavaType(&typ), param.Name.CamelCase())
+			dateFormatAnnotation := dateFormatAnnotation(&typ)
 			if dateFormatAnnotation != "" {
 				params = append(params, fmt.Sprintf(`%s %s %s`, paramAnnotation, dateFormatAnnotation, paramType))
 			} else {
