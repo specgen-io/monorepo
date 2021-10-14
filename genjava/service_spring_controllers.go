@@ -99,12 +99,25 @@ func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operati
 	w.Line(`}`)
 }
 
+func addAnnotationParams(param spec.NamedParam) []string {
+	params := []string{fmt.Sprintf(`name = "%s"`, param.Name.Source)}
+
+	if param.Type.Definition.IsNullable() {
+		params = append(params, `required = false`)
+	}
+	if param.DefinitionDefault.Default != nil {
+		params = append(params, fmt.Sprintf(`defaultValue = "%s"`, *param.DefinitionDefault.Default))
+	}
+
+	return params
+}
+
 func generateMethodParam(namedParams []spec.NamedParam, paramAnnotationName string) []string {
 	params := []string{}
 
 	if namedParams != nil && len(namedParams) > 0 {
 		for _, param := range namedParams {
-			paramAnnotation := fmt.Sprintf(`@%s("%s")`, paramAnnotationName, param.Name.Source)
+			paramAnnotation := fmt.Sprintf(`@%s(%s)`, paramAnnotationName, JoinParams(addAnnotationParams(param)))
 			paramType := fmt.Sprintf(`%s %s`, JavaType(&param.Type.Definition), param.Name.CamelCase())
 			dateFormatAnnotation := dateFormatAnnotation(&param.Type.Definition)
 			if dateFormatAnnotation != "" {
