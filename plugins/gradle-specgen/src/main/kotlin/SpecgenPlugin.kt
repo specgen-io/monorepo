@@ -21,12 +21,6 @@ public class SpecgenPlugin : Plugin<Project> {
                     tasks[compileJavaTaskName]?.dependsOn(generateModelsJava)
                 }
             }
-            project.configure<JavaPluginExtension> {
-                sourceSets.all {
-                    java.srcDir(generateServiceSpringJava.outputDirectory.get())
-                    tasks[compileJavaTaskName]?.dependsOn(generateServiceSpringJava)
-                }
-            }
         }
     }
 
