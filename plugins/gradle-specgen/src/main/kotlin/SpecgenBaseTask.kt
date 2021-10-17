@@ -52,7 +52,7 @@ public abstract class SpecgenBaseTask : DefaultTask() {
                 args(args)
             }.assertNormalExitValue()
         } catch (error: Exception) {
-            throw SpecgenException("Source generation failed.", error)
+            throw SpecgenException("Source generation failed: ${error.message}", error)
         }
     }
 

@@ -1,12 +1,13 @@
 package io.specgen.gradle
 
+import org.gradle.api.Project
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
 import org.gradle.kotlin.dsl.property
 import java.io.File
+import javax.inject.Inject
 
-@CacheableTask
-public open class SpecgenServiceSpringJavaTask public constructor() : SpecgenBaseTask() {
+public open class ServiceJavaSpringConfig @Inject constructor(project: Project) {
     @OutputDirectory
     public val outputDirectory: Property<File> =
         project.objects.property<File>().convention(project.buildDir.resolve("generated-src/specgen"))
@@ -27,28 +28,37 @@ public open class SpecgenServiceSpringJavaTask public constructor() : SpecgenBas
     @OutputFile
     @Optional
     public val swaggerPath: Property<File> = project.objects.property()
+}
+
+
+@CacheableTask
+public open class SpecgenServiceJavaSpringTask public constructor() : SpecgenBaseTask() {
+    @Internal
+    public var config: ServiceJavaSpringConfig? = null
 
     @TaskAction
     public fun execute() {
+        val config = this.config!!
+
         val commandlineArgs = mutableListOf(
             "service-java-spring",
             "--spec-file",
-            specFile.get().absolutePath,
+            config.specFile.get().absolutePath,
             "--generate-path",
-            outputDirectory.get().absolutePath
+            config.outputDirectory.get().absolutePath
         )
 
-        if (packageName.isPresent) {
+        if (config.packageName.isPresent) {
             commandlineArgs.add("--package-name")
-            commandlineArgs.add(packageName.get())
+            commandlineArgs.add(config.packageName.get())
         }
-        if (servicesPath.isPresent) {
+        if (config.servicesPath.isPresent) {
             commandlineArgs.add("--services-path")
-            commandlineArgs.add(servicesPath.get().absolutePath)
+            commandlineArgs.add(config.servicesPath.get().absolutePath)
         }
-        if (swaggerPath.isPresent) {
+        if (config.swaggerPath.isPresent) {
             commandlineArgs.add("--swagger-path")
-            commandlineArgs.add(swaggerPath.get().absolutePath)
+            commandlineArgs.add(config.swaggerPath.get().absolutePath)
         }
 
         runSpecgen(commandlineArgs)
