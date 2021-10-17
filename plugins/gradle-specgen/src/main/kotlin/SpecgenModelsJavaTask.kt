@@ -3,7 +3,7 @@ package io.specgen.gradle
 import org.gradle.api.Project
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
-import org.gradle.kotlin.dsl.property
+import org.gradle.kotlin.dsl.*
 import java.io.File
 import javax.inject.Inject
 
@@ -22,14 +22,12 @@ public open class ModelsJavaConfig @Inject constructor(project: Project) {
     public val packageName: Property<String> = project.objects.property()
 }
 
-@CacheableTask
 public open class SpecgenModelsJavaTask public constructor() : SpecgenBaseTask() {
-    @Internal
-    public var config: ModelsJavaConfig? = null
-
     @TaskAction
     public fun execute() {
-        val config = this.config!!
+        val extension = project.extensions.findByType<SpecgenPluginExtension>()
+        // TODO: Check if there are nulls below
+        val config = extension!!.configModelsJava!!
 
         val commandlineArgs = mutableListOf(
             "models-java",

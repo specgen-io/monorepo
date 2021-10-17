@@ -3,7 +3,7 @@ package io.specgen.gradle
 import org.gradle.api.Project
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
-import org.gradle.kotlin.dsl.property
+import org.gradle.kotlin.dsl.*
 import java.io.File
 import javax.inject.Inject
 
@@ -30,15 +30,12 @@ public open class ServiceJavaSpringConfig @Inject constructor(project: Project) 
     public val swaggerPath: Property<File> = project.objects.property()
 }
 
-
-@CacheableTask
 public open class SpecgenServiceJavaSpringTask public constructor() : SpecgenBaseTask() {
-    @Internal
-    public var config: ServiceJavaSpringConfig? = null
-
     @TaskAction
     public fun execute() {
-        val config = this.config!!
+        val extension = project.extensions.findByType<SpecgenPluginExtension>()
+        // TODO: Check if there are nulls below
+        val config = extension!!.configServiceJavaSpring!!
 
         val commandlineArgs = mutableListOf(
             "service-java-spring",
