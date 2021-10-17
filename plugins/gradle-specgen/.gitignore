@@ -1,3 +1,7 @@
 build/
+bin/
 .gradle/
 /src/main/resources/
+.settings/
+.classpath
+.project
