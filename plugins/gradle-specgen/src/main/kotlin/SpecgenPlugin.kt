@@ -33,28 +33,25 @@ public class SpecgenPlugin : Plugin<Project> {
     override fun apply(project: Project): Unit {
         project.apply<JavaLibraryPlugin>()
 
-        val extension = project.extensions.create<SpecgenPluginExtension>("specgen")
+        val extension = project.extensions.create<SpecgenPluginExtension>(SPECGEN_EXTENSION)
+
+        val specgenModelsJava by project.tasks.registering(SpecgenModelsJavaTask::class)
+        val specgenServiceJavaSpring by project.tasks.registering(SpecgenServiceJavaSpringTask::class)
 
         project.afterEvaluate {
-            if (extension.configModelsJava != null) {
-                val task by project.tasks.creating(SpecgenModelsJavaTask::class) {
-                    config = extension.configModelsJava
-                }
+            extension.configModelsJava?.let { config ->
                 project.configure<JavaPluginExtension> {
                     sourceSets.all {
-                        java.srcDir(task.config!!.outputDirectory.get())
-                        tasks[compileJavaTaskName]?.dependsOn(task)
+                        java.srcDir(config.outputDirectory.get())
+                        tasks[compileJavaTaskName]?.dependsOn(specgenModelsJava)
                     }
                 }
             }
-            if (extension.configServiceJavaSpring != null) {
-                val task by project.tasks.creating(SpecgenServiceJavaSpringTask::class) {
-                    config = extension.configServiceJavaSpring
-                }
+            extension.configServiceJavaSpring?.let { config ->
                 project.configure<JavaPluginExtension> {
                     sourceSets.all {
-                        java.srcDir(task.config!!.outputDirectory.get())
-                        tasks[compileJavaTaskName]?.dependsOn(task)
+                        java.srcDir(config.outputDirectory.get())
+                        tasks[compileJavaTaskName]?.dependsOn(specgenServiceJavaSpring)
                     }
                 }
             }
@@ -63,5 +60,6 @@ public class SpecgenPlugin : Plugin<Project> {
 
     public companion object {
         public const val SPECGEN_GROUP: String = "specgen"
+        public const val SPECGEN_EXTENSION: String = "specgen"
     }
 }
