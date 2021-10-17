@@ -2,23 +2,57 @@
 
 package io.specgen.gradle
 
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-import org.gradle.api.plugins.JavaLibraryPlugin
-import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.*
+import org.gradle.api.model.*
+import org.gradle.api.plugins.*
+import org.gradle.api.tasks.*
 import org.gradle.kotlin.dsl.*
 
-public class SpecgenPlugin : Plugin<Project> {
-    override fun apply(target: Project): Unit = target.run {
-        apply<JavaLibraryPlugin>()
-        val generateModelsJava by tasks.creating(SpecgenModelsJavaTask::class)
-        val generateServiceSpringJava by tasks.creating(SpecgenServiceSpringJavaTask::class)
+import javax.inject.Inject
 
-        afterEvaluate {
-            project.configure<JavaPluginExtension> {
-                sourceSets.all {
-                    java.srcDir(generateModelsJava.outputDirectory.get())
-                    tasks[compileJavaTaskName]?.dependsOn(generateModelsJava)
+public open class SpecgenPluginExtension @Inject constructor(private val objectFactory: ObjectFactory) {
+    public var configModelsJava: ModelsJavaConfig? = null
+    public var configServiceJavaSpring: ServiceJavaSpringConfig? = null
+
+    @Nested
+    public fun modelsJava(action: Action<in ModelsJavaConfig>) {
+        val config = objectFactory.newInstance(ModelsJavaConfig::class.java)
+        action.execute(config)
+        configModelsJava = config
+    }
+
+    @Nested
+    public fun serviceJavaSpring(action: Action<in ServiceJavaSpringConfig>) {
+        val config = objectFactory.newInstance(ServiceJavaSpringConfig::class.java)
+        action.execute(config)
+        configServiceJavaSpring = config
+    }
+}
+
+public class SpecgenPlugin : Plugin<Project> {
+    override fun apply(project: Project): Unit {
+        project.apply<JavaLibraryPlugin>()
+
+        val extension = project.extensions.create<SpecgenPluginExtension>(SPECGEN_EXTENSION)
+
+        val specgenModelsJava by project.tasks.registering(SpecgenModelsJavaTask::class)
+        val specgenServiceJavaSpring by project.tasks.registering(SpecgenServiceJavaSpringTask::class)
+
+        project.afterEvaluate {
+            extension.configModelsJava?.let { config ->
+                project.configure<JavaPluginExtension> {
+                    sourceSets.all {
+                        java.srcDir(config.outputDirectory.get())
+                        tasks[compileJavaTaskName]?.dependsOn(specgenModelsJava)
+                    }
+                }
+            }
+            extension.configServiceJavaSpring?.let { config ->
+                project.configure<JavaPluginExtension> {
+                    sourceSets.all {
+                        java.srcDir(config.outputDirectory.get())
+                        tasks[compileJavaTaskName]?.dependsOn(specgenServiceJavaSpring)
+                    }
                 }
             }
         }
@@ -26,5 +60,6 @@ public class SpecgenPlugin : Plugin<Project> {
 
     public companion object {
         public const val SPECGEN_GROUP: String = "specgen"
+        public const val SPECGEN_EXTENSION: String = "specgen"
     }
 }
