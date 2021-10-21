@@ -74,15 +74,21 @@ func addImports(w *gen.Writer) {
 }
 
 func addObjectModelCtors(w *gen.Writer, model *spec.NamedModel) {
-	w.Line(`public %s() {`, model.Name.PascalCase())
-	w.Line(`}`)
-	w.EmptyLine()
-	ctorParams := []string{}
-	for _, field := range model.Object.Fields {
-		ctorParam := fmt.Sprintf(`%s %s`, JavaType(&field.Type.Definition), field.Name.CamelCase())
-		ctorParams = append(ctorParams, ctorParam)
+	if len(model.Object.Fields) == 0 {
+		w.Line(`public %s() {`, model.Name.PascalCase())
+	} else {
+		w.Line(`@JsonCreator`)
+		w.Line(`public %s(`, model.Name.PascalCase())
+		for i, field := range model.Object.Fields {
+			w.Line(`  %s`, getJsonPropertyAnnotation(&field))
+			if i == len(model.Object.Fields)-1 {
+				w.Line(`  %s %s`, JavaType(&field.Type.Definition), field.Name.CamelCase())
+			} else {
+				w.Line(`  %s %s,`, JavaType(&field.Type.Definition), field.Name.CamelCase())
+			}
+		}
+		w.Line(`) {`)
 	}
-	w.Line(`public %s(%s) {`, model.Name.PascalCase(), JoinParams(ctorParams))
 	for _, field := range model.Object.Fields {
 		if !field.Type.Definition.IsNullable() && JavaIsReferenceType(&field.Type.Definition) {
 			w.Line(`  if (%s == null) { throw new IllegalArgumentException("null value is not allowed"); }`, field.Name.CamelCase())
@@ -92,10 +98,18 @@ func addObjectModelCtors(w *gen.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
+func getJsonPropertyAnnotation(field *spec.NamedDefinition) string {
+	required := "false"
+	if !field.Type.Definition.IsNullable() {
+		required = "true"
+	}
+	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.SnakeCase(), required)
+}
+
 func addObjectModelFields(w *gen.Writer, model *spec.NamedModel) {
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
-		w.Line(`@JsonProperty("%s")`, field.Name.SnakeCase())
+		w.Line(getJsonPropertyAnnotation(&field))
 		w.Line(`private %s %s;`, JavaType(&field.Type.Definition), field.Name.CamelCase())
 	}
 	for _, field := range model.Object.Fields {
