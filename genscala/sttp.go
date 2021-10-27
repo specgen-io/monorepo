@@ -207,6 +207,10 @@ func generateClientOperationImplementation(w *gen.Writer, operation spec.NamedOp
 			responseParam = fmt.Sprintf(`Jsoner.readThrowing[%s](body)`, ScalaType(&response.Type.Definition))
 		}
 		w.Line(`          case %s => %s.%s(%s)`, spec.HttpStatusCode(response.Name), responseType(operation), response.Name.PascalCase(), responseParam)
+		w.Line(`          case _ => `)
+		w.Line(`            val errorMessage = s"Request returned unexpected status code: ${response.code}, body: ${new String(body)}"`)
+		w.Line(`            logger.error(errorMessage)`)
+		w.Line(`            throw new RuntimeException(errorMessage)`)
 	}
 	w.Line(`        }`)
 	w.Line(`      case Left(errorData) =>`)
