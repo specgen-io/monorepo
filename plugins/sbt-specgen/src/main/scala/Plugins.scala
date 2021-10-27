@@ -11,10 +11,10 @@ object SpecKeys {
   lazy val specServicesPath = settingKey[File]("Path to scaffold services code")
 
   lazy val specgenServicePlay = taskKey[Seq[File]]("Run service Play code generation for spec")
-  lazy val specgenModels = taskKey[Seq[File]]("Run service models code generation for spec")
+  lazy val specgenModelsCirce = taskKey[Seq[File]]("Run circe models code generation for spec")
   lazy val specgenClientSttp = taskKey[Seq[File]]("Run client Sttp code generation for spec")
 
-  lazy val specModelDependencies = Seq(
+  lazy val specCirceDependencies = Seq(
     "io.circe" %% "circe-core" % "0.12.3",
     "io.circe" %% "circe-generic-extras" % "0.12.2",
     "io.circe" %% "circe-parser" % "0.12.3",
@@ -89,9 +89,9 @@ object SpecCirce extends AutoPlugin {
   override val projectSettings = Seq(
     specFile := file("spec.yaml"),
     specGeneratePath := (sourceManaged in Compile).value / "spec",
-    specgenModels := specgenTask.value,
-    sourceGenerators in Compile += specgenModels,
-    mappings in (Compile, packageSrc) ++= {(specgenModels in Compile) map { sourceFiles =>
+    specgenModelsCirce := specgenTask.value,
+    sourceGenerators in Compile += specgenModelsCirce,
+    mappings in (Compile, packageSrc) ++= {(specgenModelsCirce in Compile) map { sourceFiles =>
       sourceFiles map { sourceFile => (sourceFile, sourceFile.getName)}
     }}.value
   )
