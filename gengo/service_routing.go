@@ -146,10 +146,10 @@ func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`}`)
 
 	for _, response := range operation.Responses {
-		w.Line(`if response.%s != nil {`, response.Name.PascalCase())
+		w.Line(`if %s != nil {`, responseName(operation, &response))
 		w.Line(`  res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
 		if !response.Type.Definition.IsEmpty() {
-			w.Line(`  json.NewEncoder(res).Encode(response.%s)`, response.Name.PascalCase())
+			w.Line(`  json.NewEncoder(res).Encode(%s)`, responseName(operation, &response))
 		}
 		w.Line(`  log.WithFields(%s).WithField("status", %s).Info("Completed request")`, logFieldsName(operation), spec.HttpStatusCode(response.Name))
 		w.Line(`  return`)
@@ -159,6 +159,16 @@ func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`res.WriteHeader(500)`)
 	w.Line(`log.WithFields(%s).WithField("status", 500).Info("Completed request")`, logFieldsName(operation))
 	w.Line(`return`)
+}
+
+func responseName(operation *spec.NamedOperation, response *spec.NamedResponse) string {
+	if len(operation.Responses) == 1 {
+		return "response"
+	}
+	if len(operation.Responses) > 1 {
+		return fmt.Sprintf("response.%s", response.Name.PascalCase())
+	}
+	return ""
 }
 
 func addOperationMethodParams(operation *spec.NamedOperation) []string {
