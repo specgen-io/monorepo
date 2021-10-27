@@ -9,7 +9,7 @@ import (
 )
 
 func GenerateSttpClient(specification *spec.Spec, generatePath string) error {
-	clientPackage := clientPackageName(specification.Name)
+	clientPackage := modelsPackageName(specification.Name)
 
 	scalaCirceFile := generateJson("spec", filepath.Join(generatePath, "Json.scala"))
 	scalaHttpStaticFile := generateStringParams("spec", filepath.Join(generatePath, "StringParams.scala"))
