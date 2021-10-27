@@ -106,7 +106,7 @@ func generateExpressOperationRouting(w *gen.Writer, operation *spec.NamedOperati
 	w.Line("  let result = await service.%s(%s)", operation.Name.CamelCase(), apiCallParamsObject)
 	w.Line("  switch (result.status) {")
 	for _, response := range operation.Responses {
-		w.Line("    case '%s':", response.Name.FlatCase())
+		w.Line("    case '%s':", response.Name.SnakeCase())
 		responseBody := ".send()"
 		if !response.Type.Definition.IsEmpty() {
 			responseBody = fmt.Sprintf(".type('json').send(JSON.stringify(t.encode(%s.%s, result.data)))", modelsPackage, runtimeType(validation, &response.Type.Definition))
