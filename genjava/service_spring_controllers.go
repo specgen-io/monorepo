@@ -20,15 +20,17 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
-	w.Line(`import com.fasterxml.jackson.databind.ObjectMapper;`)
 	w.Line(`import java.math.BigDecimal;`)
 	w.Line(`import java.io.IOException;`)
 	w.Line(`import java.time.*;`)
 	w.Line(`import java.util.UUID;`)
+	w.EmptyLine()
+	w.Line(`import org.apache.logging.log4j.*;`)
 	w.Line(`import org.springframework.beans.factory.annotation.Autowired;`)
 	w.Line(`import org.springframework.format.annotation.DateTimeFormat;`)
 	w.Line(`import org.springframework.http.*;`)
 	w.Line(`import org.springframework.web.bind.annotation.*;`)
+	w.Line(`import com.fasterxml.jackson.databind.ObjectMapper;`)
 	w.EmptyLine()
 	w.Line(`import static org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE;`)
 	w.EmptyLine()
@@ -39,6 +41,7 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), version))
 	className := controllerName(api)
 	w.Line(`public class %s {`, className)
+	w.Line(`  private static final Logger logger = LogManager.getLogger(%s.class);`, className)
 	w.EmptyLine()
 	w.Line(`  @Autowired`)
 	w.Line(`  private %s %s;`, serviceInterfaceName(api), serviceVarName(api))
@@ -60,10 +63,22 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 }
 
 func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operation spec.NamedOperation) {
-	w.Line(`@%sMapping("%s")`, ToPascalCase(operation.Endpoint.Method), versionUrl(version, operation.Endpoint.Url))
+	methodName := operation.Endpoint.Method
+	url := operation.FullUrl()
+	w.Line(`@%sMapping("%s")`, ToPascalCase(methodName), url)
 	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), JoinParams(addMethodParams(operation)))
+	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
+	w.Line(`  HttpHeaders headers = new HttpHeaders();`)
+	w.Line(`  headers.add(CONTENT_TYPE, "application/json");`)
+	w.EmptyLine()
 	if operation.Body != nil {
-		w.Line(`  var requestBody = objectMapper.readValue(jsonStr, %s.class);`, JavaType(&operation.Body.Type.Definition))
+		w.Line(`  Message requestBody;`)
+		w.Line(`  try {`)
+		w.Line(`    requestBody = objectMapper.readValue(jsonStr, %s.class);`, JavaType(&operation.Body.Type.Definition))
+		w.Line(`  } catch (Exception e) {`)
+		w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
+		w.Line(`    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);`)
+		w.Line(`  }`)
 	}
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(api), operation.Name.CamelCase(), JoinParams(addServiceMethodParams(operation)))
 	if len(operation.Responses) == 1 {
@@ -71,14 +86,13 @@ func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operati
 			if resp.Type.Definition.IsEmpty() {
 				w.Line(`  %s;`, serviceCall)
 				w.EmptyLine()
+				w.Line(`  logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
 				w.Line(`  return new ResponseEntity<>(HttpStatus.%s);`, resp.Name.UpperCase())
 			} else {
 				w.Line(`  var result = %s;`, serviceCall)
-				w.EmptyLine()
-				w.Line(`  HttpHeaders headers = new HttpHeaders();`)
-				w.Line(`  headers.add(CONTENT_TYPE, "application/json");`)
 				w.Line(`  String responseJson = objectMapper.writeValueAsString(result);`)
 				w.EmptyLine()
+				w.Line(`  logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
 				w.Line(`  return new ResponseEntity<>(responseJson, headers, HttpStatus.%s);`, resp.Name.UpperCase())
 			}
 		}
@@ -88,10 +102,12 @@ func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operati
 		w.EmptyLine()
 		for _, resp := range operation.Responses {
 			w.Line(`  if (result instanceof %s) {`, serviceResponseImplName(operation, resp))
+			w.Line(`    logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
 			w.Line(`    return new ResponseEntity<>(HttpStatus.%s);`, resp.Name.UpperCase())
 			w.Line(`  }`)
 		}
 		w.EmptyLine()
+		w.Line(`  logger.error("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
 		w.Line(`  return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);`)
 	}
 	w.Line(`}`)
