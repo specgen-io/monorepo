@@ -52,7 +52,3 @@ func versionControllerName(controllerName string, version *spec.Version) string 
 func controllerMethodName(operation spec.NamedOperation) string {
 	return fmt.Sprintf(`%sController`, operation.Name.CamelCase())
 }
-
-func versionUrl(version *spec.Version, url string) string {
-	return fmt.Sprintf(`%s%s`, version.Version.FlatCase(), url)
-}
