@@ -64,7 +64,7 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 
 func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operation spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
-	url := versionUrl(version, operation.Endpoint.Url)
+	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, ToPascalCase(methodName), url)
 	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), JoinParams(addMethodParams(operation)))
 	w.Line(`  LOG.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
