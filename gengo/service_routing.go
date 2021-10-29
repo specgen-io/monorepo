@@ -108,7 +108,7 @@ func generateOperationParametersParsing(w *gen.Writer, operation *spec.NamedOper
 			w.Line(`%s := %s`, param.Name.CamelCase(), parserParameterCall(operation, &param, paramsParserName))
 		}
 		w.Line(`if len(%s.Errors) > 0 {`, paramsParserName)
-		w.Line(`  log.Warnf("Can't parse %s: %%s", %s.Errors)`, paramsParserName, paramsParserName)
+		w.Line(`  log.WithFields(%s).Warnf("Can't parse %s: %%s", %s.Errors)`, logFieldsName(operation), paramsParserName, paramsParserName)
 		w.Line(`  res.WriteHeader(400)`)
 		w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
 		w.Line(`  return`)
@@ -117,12 +117,12 @@ func generateOperationParametersParsing(w *gen.Writer, operation *spec.NamedOper
 }
 
 func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
-	w.Line(  `log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
+	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	if operation.Body != nil {
 		w.Line(`var body %s`, GoType(&operation.Body.Type.Definition))
 		w.Line(`err := json.NewDecoder(req.Body).Decode(&body)`)
 		w.Line(`if err != nil {`)
-		w.Line(`  log.Warnf("Decoding body JSON failed: %%s", err.Error())`)
+		w.Line(`  log.WithFields(%s).Warnf("Decoding body JSON failed: %%s", err.Error())`, logFieldsName(operation))
 		w.Line(`  res.WriteHeader(400)`)
 		w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
 		w.Line(`  return`)
@@ -136,9 +136,9 @@ func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 
 	w.Line(`if response == nil || err != nil {`)
 	w.Line(`  if err != nil {`)
-	w.Line(`    log.Errorf("Error returned from service implementation: %%s", err.Error())`)
+	w.Line(`    log.WithFields(%s).Errorf("Error returned from service implementation: %%s", err.Error())`, logFieldsName(operation))
 	w.Line(`  } else {`)
-	w.Line(`    log.Errorf("No result returned from service implementation")`)
+	w.Line(`    log.WithFields(%s).Errorf("No result returned from service implementation")`, logFieldsName(operation))
 	w.Line(`  }`)
 	w.Line(`  res.WriteHeader(500)`)
 	w.Line(`  log.WithFields(%s).WithField("status", 500).Info("Completed request")`, logFieldsName(operation))
@@ -155,7 +155,7 @@ func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 		w.Line(`  return`)
 		w.Line(`}`)
 	}
-	w.Line(`log.Error("Result from service implementation does not have anything in it")`)
+	w.Line(`log.WithFields(%s).Error("Result from service implementation does not have anything in it")`, logFieldsName(operation))
 	w.Line(`res.WriteHeader(500)`)
 	w.Line(`log.WithFields(%s).WithField("status", 500).Info("Completed request")`, logFieldsName(operation))
 	w.Line(`return`)

@@ -26,7 +26,8 @@ func generateClientImplementation(api *spec.Api, versionModule module, modelsMod
 		Add("errors").
 		Add("io/ioutil").
 		Add("net/http").
-		Add("encoding/json")
+		Add("encoding/json").
+		AddAlias("github.com/sirupsen/logrus", "log")
 	if apiHasBody(api) {
 		imports.Add("bytes")
 	}
@@ -68,6 +69,7 @@ func generateClientWithCtor(w *gen.Writer) {
 }
 
 func generateClientFunction(w *gen.Writer, operation spec.NamedOperation) {
+	w.Line(`var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
 	w.Line(`func (client *%s) %s(%s) (*%s, error) {`, clientTypeName(), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), responseTypeName(&operation))
 	var body = "nil"
 	if operation.Body != nil {
@@ -75,21 +77,26 @@ func generateClientFunction(w *gen.Writer, operation spec.NamedOperation) {
 		body = "bytes.NewBuffer(bodyJSON)"
 	}
 	w.Line(`  req, err := http.NewRequest("%s", client.baseUrl+%s, %s)`, operation.Endpoint.Method, addRequestUrlParams(operation), body)
-	addCheckError(w)
+	w.Line(`  if err != nil {`)
+	w.Line(`    log.WithFields(%s).Error("Failed to create HTTP request", err.Error())`, logFieldsName(&operation))
+	w.Line(`    return nil, err`)
+	w.Line(`  }`)
 	w.EmptyLine()
 	parseParams(w, operation)
+	w.Line(`  log.WithFields(%s).Info("Sending request")`, logFieldsName(&operation))
 	w.Line(`  resp, err := http.DefaultClient.Do(req)`)
-	addCheckError(w)
+	w.Line(`  if err != nil {`)
+	w.Line(`    log.WithFields(%s).Error("Request failed", err.Error())`, logFieldsName(&operation))
+	w.Line(`    return nil, err`)
+	w.Line(`  }`)
 	w.Indent()
-	addResponse(w, operation)
+	addResponses(w, operation)
 	w.Unindent()
 	w.EmptyLine()
-	w.Line(`  return nil, errors.New(fmt.Sprintf("Unexpected status code received: %s", resp.StatusCode))`, "%d")
+	w.Line(`  msg := fmt.Sprintf("Unexpected status code received: %s", resp.StatusCode)`, "%d")
+	w.Line(`  log.WithFields(%s).Error(msg)`, logFieldsName(&operation))
+	w.Line(`  return nil, errors.New(msg)`)
 	w.Line(`}`)
-}
-
-func addCheckError(w *gen.Writer) {
-	w.Line(`  if err != nil { return nil, err }`)
 }
 
 func getUrl(operation spec.NamedOperation) []string {
@@ -147,21 +154,23 @@ func addParsedParams(w *gen.Writer, namedParams []spec.NamedParam, paramsConvert
 	}
 }
 
-func addResponse(w *gen.Writer, operation spec.NamedOperation) {
+func addResponses(w *gen.Writer, operation spec.NamedOperation) {
 	for _, response := range operation.Responses {
 		w.EmptyLine()
 		w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
+		w.Line(`  log.WithFields(%s).WithField("status", %s).Info("Received response")`, logFieldsName(&operation), spec.HttpStatusCode(response.Name))
 		if !response.Type.Definition.IsEmpty() {
-			if spec.HttpStatusCode(response.Name) == "200" {
-				w.Line(`  responseBody, err := ioutil.ReadAll(resp.Body)`)
-				w.Line(`  err = resp.Body.Close()`)
-				w.EmptyLine()
-				if operation.Body == nil {
-					w.Line(`  var body *%s.%s`, modelsPackage, ToPascalCase(response.Type.Definition.Name))
-				}
-				w.Line(`  err = json.Unmarshal(responseBody, &body)`)
-				addCheckError(w)
+			w.Line(`  responseBody, err := ioutil.ReadAll(resp.Body)`)
+			w.Line(`  err = resp.Body.Close()`)
+			w.EmptyLine()
+			if operation.Body == nil {
+				w.Line(`  var body *%s.%s`, modelsPackage, ToPascalCase(response.Type.Definition.Name))
 			}
+			w.Line(`  err = json.Unmarshal(responseBody, &body)`)
+			w.Line(`  if err != nil {`)
+			w.Line(`    log.WithFields(%s).Error("Failed to parse response JSON", err.Error())`, logFieldsName(&operation))
+			w.Line(`    return nil, err`)
+			w.Line(`  }`)
 		} else {
 			w.Line(`  body := &%s`, ToPascalCase(response.Type.Definition.Name))
 		}
