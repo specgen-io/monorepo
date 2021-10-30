@@ -9,7 +9,7 @@ import (
 func init() {
 	cmdModelsTs.Flags().String(SpecFile, "", SpecFileDescription)
 	cmdModelsTs.Flags().String(GeneratePath, "", GeneratePathDescription)
-	cmdModelsTs.Flags().String(Validation, "superstruct", ValidationDescription)
+	cmdModelsTs.Flags().String(Validation, "", ValidationDescription)
 
 	cmdModelsTs.MarkFlagRequired(SpecFile)
 	cmdModelsTs.MarkFlagRequired(GeneratePath)
