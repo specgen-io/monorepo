@@ -1,6 +1,6 @@
 package genopenapi
 
-import "github.com/specgen-io/spec"
+import "github.com/specgen-io/specgen/v2/spec"
 
 type UrlOperations struct {
 	Url        string

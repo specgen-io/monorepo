@@ -1,7 +1,7 @@
 package genscala
 
 import (
-	"github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/v2/spec"
 	"gotest.tools/assert"
 	"testing"
 )

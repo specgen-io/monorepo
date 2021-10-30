@@ -2,7 +2,7 @@ package genopenapi
 
 import (
 	"fmt"
-	"github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/v2/spec"
 	"strconv"
 )
 

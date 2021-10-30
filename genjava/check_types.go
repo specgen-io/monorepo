@@ -2,7 +2,7 @@ package genjava
 
 import (
 	"fmt"
-	"github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func checkType(fieldType *spec.TypeDef, typ string) bool {

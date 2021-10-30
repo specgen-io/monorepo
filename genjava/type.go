@@ -2,7 +2,7 @@ package genjava
 
 import (
 	"fmt"
-	"github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func JavaType(typ *spec.TypeDef) string {
