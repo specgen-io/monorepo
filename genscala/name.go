@@ -2,7 +2,7 @@ package genscala
 
 import (
 	"fmt"
-	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/spec"
 )
 
 func scalaCamelCase(name spec.Name) string {

@@ -3,7 +3,7 @@ package genruby
 import (
 	"fmt"
 	"github.com/pinzolo/casee"
-	spec "github.com/specgen-io/spec"
+	"github.com/specgen-io/spec"
 )
 
 func DefaultValue(typ *spec.TypeDef, value string) string {
