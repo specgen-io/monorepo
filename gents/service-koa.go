@@ -3,7 +3,7 @@ package gents
 import (
 	"fmt"
 	"github.com/pinzolo/casee"
-	"github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"strings"
 )

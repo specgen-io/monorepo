@@ -2,7 +2,7 @@ package genruby
 
 import (
 	"fmt"
-	"github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func versionedModule(moduleName string, version spec.Name) string {

@@ -1,7 +1,7 @@
 package genruby
 
 import (
-	"github.com/specgen-io/spec"
+	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"path/filepath"
 )
