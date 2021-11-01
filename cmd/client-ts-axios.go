@@ -9,7 +9,7 @@ import (
 func init() {
 	cmdClientTsAxios.Flags().String(SpecFile, "", SpecFileDescription)
 	cmdClientTsAxios.Flags().String(GeneratePath, "", GeneratePathDescription)
-	cmdClientTsAxios.Flags().String(Validation, "superstruct", ValidationDescription)
+	cmdClientTsAxios.Flags().String(Validation, "", ValidationDescription)
 
 	cmdClientTsAxios.MarkFlagRequired(SpecFile)
 	cmdClientTsAxios.MarkFlagRequired(GeneratePath)
