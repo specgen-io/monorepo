@@ -17,7 +17,7 @@ export const decode = <T>(struct: t.Struct<T, unknown>, value: unknown): T => {
     return t.create(value, struct)
 }
 
-export const encode = <T>(struct: t.Struct<T, unknown>, value: T): unknown => {
+export const encode = <T>(_struct: t.Struct<T, unknown>, value: T): unknown => {
     return JSON.parse(JSON.stringify(value))
 }
 
