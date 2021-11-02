@@ -5,63 +5,55 @@ import (
 	yaml "gopkg.in/specgen-io/yaml.v3"
 )
 
-type MapItem struct {
-	key   string
-	value interface{}
-}
-
 type YamlMap struct {
-	Items []MapItem
+	Node yaml.Node
 }
 
 func (self *YamlMap) MarshalYAML() (interface{}, error) {
-	var nodes = []*yaml.Node{}
-
-	for _, item := range self.Items {
-		var keyNode yaml.Node
-		err := keyNode.Encode(item.key)
-		if err != nil {
-			return nil, err
-		}
-		var valueNode yaml.Node
-		err = valueNode.Encode(item.value)
-		if err != nil {
-			return nil, err
-		}
-		nodes = append(nodes, &keyNode, &valueNode)
-	}
-
-	node := yaml.Node {
-		Kind: yaml.MappingNode,
-		Tag:  "!!map",
-		Content: nodes,
-	}
-	return &node, nil
+	return &self.Node, nil
 }
 
 func Map() *YamlMap {
-	return &YamlMap{make([]MapItem, 0)}
+	return &YamlMap{yaml.Node{Kind: yaml.MappingNode, Content: []*yaml.Node{}}}
 }
 
-func (self *YamlMap) Set(name string, value interface{}) *YamlMap {
-	self.Items = append(self.Items, MapItem{name, value})
-	return self
+func encodeKeyValue(key interface{}, value interface{}) (*yaml.Node, *yaml.Node, error) {
+	keyNode := yaml.Node{}
+	err := keyNode.Encode(key)
+	if err != nil {
+		return nil, nil, err
+	}
+	valueNode := yaml.Node{}
+	err = valueNode.Encode(value)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &keyNode, &valueNode, nil
+}
+
+func (yamlMap *YamlMap) Add(key interface{}, value interface{}) error {
+	keyNode, valueNode, err := encodeKeyValue(key, value)
+	if err != nil {
+		return err
+	}
+	yamlMap.Node.Content = append(yamlMap.Node.Content, keyNode, valueNode)
+	return nil
 }
 
 func (self *YamlMap) Length() int {
-	return len(self.Items)/2
+	return len(self.Node.Content)/2
 }
 
 type YamlArray struct {
-	Items []interface{}
+	Node yaml.Node
 }
 
 func Array() *YamlArray {
-	return &YamlArray{make([]interface{}, 0)}
+	return &YamlArray{yaml.Node{Kind: yaml.SequenceNode, Content: []*yaml.Node{}}}
 }
 
 func (self *YamlArray) MarshalYAML() (interface{}, error) {
-	return self.Items, nil
+	return self.Node, nil
 }
 
 func (self *YamlArray) Add(value interface{}) *YamlArray {
@@ -70,7 +62,7 @@ func (self *YamlArray) Add(value interface{}) *YamlArray {
 }
 
 func (self *YamlArray) Length() int {
-	return len(self.Items)
+	return len(self.Node.Content)
 }
 
 func ToYamlString(data interface{}) (string, error) {

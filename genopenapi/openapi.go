@@ -2,8 +2,8 @@ package genopenapi
 
 import (
 	"github.com/pinzolo/casee"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
@@ -30,28 +30,29 @@ func generateSpecification(spec *spec.Spec) *YamlMap {
 	if spec.Title != nil {
 		title = *spec.Title
 	}
-	info.Set("title", title)
+	info.Add("title", title)
 	if spec.Description != nil {
-		info.Set("description", spec.Description)
+		info.Add("description", spec.Description)
 	}
-	info.Set("version", spec.Version)
+	info.Add("version", spec.Version)
 
-	openapi :=
-		Map().
-			Set("openapi", "3.0.0").
-			Set("info", info)
+	openapi := Map()
+	openapi.Add("openapi", "3.0.0")
+	openapi.Add("info", info)
 
 	paths := generateApis(spec)
-	openapi.Set("paths", paths)
+	openapi.Add("paths", paths)
 
 	schemas := Map()
 
 	for _, version := range spec.Versions {
 		for _, model := range version.Models {
-			schemas.Set(versionedModelName(version.Version.Source, model.Name.Source), generateModel(model.Model))
+			schemas.Add(versionedModelName(version.Version.Source, model.Name.Source), generateModel(model.Model))
 		}
 	}
-	openapi.Set("components", Map().Set("schemas", schemas))
+	schemans := Map()
+	schemans.Add("schemas", schemas)
+	openapi.Add("components", schemans)
 
 	return openapi
 }
@@ -69,9 +70,9 @@ func generateApis(spec *spec.Spec) *YamlMap {
 	for _, group := range groups {
 		path := Map()
 		for _, o := range group.Operations {
-			path.Set(strings.ToLower(o.Operation.Endpoint.Method), generateOperation(o))
+			path.Add(strings.ToLower(o.Operation.Endpoint.Method), generateOperation(o))
 		}
-		paths.Set(group.Url, path)
+		paths.Add(group.Url, path)
 	}
 	return paths
 }
@@ -79,20 +80,26 @@ func generateApis(spec *spec.Spec) *YamlMap {
 func generateOperation(o *spec.NamedOperation) *YamlMap {
 	version := o.Api.Apis.Version.Version
 	operationId := casee.ToCamelCase(version.PascalCase() + o.Api.Name.PascalCase() + o.Name.PascalCase())
-	operation := Map().Set("operationId", operationId).Set("tags", Array().Add(o.Api.Name.Source))
+	operation := Map()
+	operation.Add("operationId", operationId)
+	operation.Add("tags", Array().Add(o.Api.Name.Source))
 
 	if o.Operation.Description != nil {
-		operation.Set("description", o.Operation.Description)
+		operation.Add("description", o.Operation.Description)
 	}
 	if o.Operation.Body != nil {
 		body := o.Operation.Body
 		request := Map()
 		if body.Description != nil {
-			request.Set("description", body.Description)
+			request.Add("description", body.Description)
 		}
-		request.Set("required", !body.Type.Definition.IsNullable())
-		request.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&body.Type.Definition, nil))))
-		operation.Set("requestBody", request)
+		request.Add("required", !body.Type.Definition.IsNullable())
+		schema := Map()
+		schema.Add("schema", OpenApiType(&body.Type.Definition, nil))
+		content := Map()
+		content.Add("application/json", schema)
+		request.Add("content", content)
+		operation.Add("requestBody", request)
 	}
 
 	parameters := Array()
@@ -102,28 +109,27 @@ func generateOperation(o *spec.NamedOperation) *YamlMap {
 	addParameters(parameters, "query", o.Operation.QueryParams)
 
 	if parameters.Length() > 0 {
-		operation.Set("parameters", parameters)
+		operation.Add("parameters", parameters)
 	}
 
 	responses := Map()
 	allResponses := addSpecialResponses(&o.Operation)
 	for _, r := range allResponses {
-		responses.Set(spec.HttpStatusCode(r.Name), generateResponse(r.Definition))
+		responses.Add(spec.HttpStatusCode(r.Name), generateResponse(r.Definition))
 	}
-	operation.Set("responses", responses)
+	operation.Add("responses", responses)
 	return operation
 }
 
 func addParameters(parameters *YamlArray, in string, params []spec.NamedParam) {
 	for _, p := range params {
-		param :=
-			Map().
-				Set("in", in).
-				Set("name", p.Name.Source).
-				Set("required", !p.Type.Definition.IsNullable()).
-				Set("schema", OpenApiType(&p.Type.Definition, p.Default))
+		param := Map()
+		param.Add("in", in)
+		param.Add("name", p.Name.Source)
+		param.Add("required", !p.Type.Definition.IsNullable())
+		param.Add("schema", OpenApiType(&p.Type.Definition, p.Default))
 		if p.Description != nil {
-			param.Set("description", *p.Description)
+			param.Add("description", *p.Description)
 		}
 		parameters.Add(param)
 	}
@@ -135,9 +141,13 @@ func generateResponse(r spec.Definition) *YamlMap {
 	if r.Description != nil {
 		description = *r.Description
 	}
-	response.Set("description", description)
+	response.Add("description", description)
 	if !r.Type.Definition.IsEmpty() {
-		response.Set("content", Map().Set("application/json", Map().Set("schema", OpenApiType(&r.Type.Definition, nil))))
+		jsonContent := Map()
+		jsonContent.Add("schema", OpenApiType(&r.Type.Definition, nil))
+		content := Map()
+		content.Add("application/json", jsonContent)
+		response.Add("content", content)
 	}
 	return response
 }
@@ -153,30 +163,32 @@ func generateModel(model spec.Model) *YamlMap {
 }
 
 func generateUnionModel(model spec.Model) *YamlMap {
-	schema := Map().Set("type", "object")
+	schema := Map()
+	schema.Add("type", "object")
 
 	if model.Description() != nil {
-		schema.Set("description", model.Description())
+		schema.Add("description", model.Description())
 	}
 
 	properties := Map()
 	for _, item := range model.OneOf.Items {
 		property := OpenApiType(&item.Type.Definition, nil)
 		if item.Description != nil {
-			property.Set("description", item.Description)
+			property.Add("description", item.Description)
 		}
-		properties.Set(item.Name.Source, property)
+		properties.Add(item.Name.Source, property)
 	}
-	schema.Set("properties", properties)
+	schema.Add("properties", properties)
 
 	return schema
 }
 
 func generateObjectModel(model spec.Model) *YamlMap {
-	schema := Map().Set("type", "object")
+	schema := Map()
+	schema.Add("type", "object")
 
 	if model.Description() != nil {
-		schema.Set("description", model.Description())
+		schema.Add("description", model.Description())
 	}
 
 	required := Array()
@@ -187,34 +199,35 @@ func generateObjectModel(model spec.Model) *YamlMap {
 	}
 
 	if required.Length() > 0 {
-		schema.Set("required", required)
+		schema.Add("required", required)
 	}
 
 	properties := Map()
 	for _, field := range model.Object.Fields {
 		property := OpenApiType(&field.Type.Definition, nil)
 		if field.Description != nil {
-			property.Set("description", field.Description)
+			property.Add("description", field.Description)
 		}
-		properties.Set(field.Name.Source, property)
+		properties.Add(field.Name.Source, property)
 	}
-	schema.Set("properties", properties)
+	schema.Add("properties", properties)
 
 	return schema
 }
 
 func generateEnumModel(model spec.Model) *YamlMap {
-	schema := Map().Set("type", "string")
+	schema := Map()
+	schema.Add("type", "string")
 
 	if model.Description() != nil {
-		schema.Set("description", model.Description())
+		schema.Add("description", model.Description())
 	}
 
 	openApiItems := Array()
 	for _, item := range model.Enum.Items {
 		openApiItems.Add(item.Name.Source)
 	}
-	schema.Set("enum", openApiItems)
+	schema.Add("enum", openApiItems)
 
 	return schema
 }
