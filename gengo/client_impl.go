@@ -37,14 +37,12 @@ func generateClientImplementation(api *spec.Api, versionModule module, modelsMod
 
 	w.EmptyLine()
 	w.Line(`type EmptyDef struct{}`)
-	w.EmptyLine()
-	w.Line(`var Empty = EmptyDef{}`)
-
 	for _, operation := range api.Operations {
-		w.EmptyLine()
-		generateOperationResponseStruct(w, operation)
+		if len(operation.Responses) > 1 {
+			w.EmptyLine()
+			generateOperationResponseStruct(w, operation)
+		}
 	}
-
 	w.EmptyLine()
 	generateClientWithCtor(w)
 	for _, operation := range api.Operations {
@@ -70,7 +68,7 @@ func generateClientWithCtor(w *gen.Writer) {
 
 func generateClientFunction(w *gen.Writer, operation spec.NamedOperation) {
 	w.Line(`var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
-	w.Line(`func (client *%s) %s(%s) (*%s, error) {`, clientTypeName(), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), responseTypeName(&operation))
+	w.Line(`func (client *%s) %s(%s) %s {`, clientTypeName(), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), responsesSignature(&operation))
 	var body = "nil"
 	if operation.Body != nil {
 		w.Line(`  bodyJSON, err := json.Marshal(body)`)
@@ -79,7 +77,7 @@ func generateClientFunction(w *gen.Writer, operation spec.NamedOperation) {
 	w.Line(`  req, err := http.NewRequest("%s", client.baseUrl+%s, %s)`, operation.Endpoint.Method, addRequestUrlParams(operation), body)
 	w.Line(`  if err != nil {`)
 	w.Line(`    log.WithFields(%s).Error("Failed to create HTTP request", err.Error())`, logFieldsName(&operation))
-	w.Line(`    return nil, err`)
+	w.Line(`    %s`, returnErr(&operation))
 	w.Line(`  }`)
 	w.EmptyLine()
 	parseParams(w, operation)
@@ -87,16 +85,24 @@ func generateClientFunction(w *gen.Writer, operation spec.NamedOperation) {
 	w.Line(`  resp, err := http.DefaultClient.Do(req)`)
 	w.Line(`  if err != nil {`)
 	w.Line(`    log.WithFields(%s).Error("Request failed", err.Error())`, logFieldsName(&operation))
-	w.Line(`    return nil, err`)
+	w.Line(`    %s`, returnErr(&operation))
 	w.Line(`  }`)
 	w.Indent()
-	addResponses(w, operation)
+	addClientResponses(w, operation)
 	w.Unindent()
 	w.EmptyLine()
 	w.Line(`  msg := fmt.Sprintf("Unexpected status code received: %s", resp.StatusCode)`, "%d")
 	w.Line(`  log.WithFields(%s).Error(msg)`, logFieldsName(&operation))
-	w.Line(`  return nil, errors.New(msg)`)
+	w.Line(`  err = errors.New(msg)`)
+	w.Line(`  %s`, returnErr(&operation))
 	w.Line(`}`)
+}
+
+func returnErr(operation *spec.NamedOperation) string {
+	if len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty() {
+		return `return err`
+	}
+	return `return nil, err`
 }
 
 func getUrl(operation spec.NamedOperation) []string {
@@ -154,7 +160,7 @@ func addParsedParams(w *gen.Writer, namedParams []spec.NamedParam, paramsConvert
 	}
 }
 
-func addResponses(w *gen.Writer, operation spec.NamedOperation) {
+func addClientResponses(w *gen.Writer, operation spec.NamedOperation) {
 	for _, response := range operation.Responses {
 		w.EmptyLine()
 		w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
@@ -171,11 +177,22 @@ func addResponses(w *gen.Writer, operation spec.NamedOperation) {
 			w.Line(`    log.WithFields(%s).Error("Failed to parse response JSON", err.Error())`, logFieldsName(&operation))
 			w.Line(`    return nil, err`)
 			w.Line(`  }`)
-		} else {
-			w.Line(`  body := &%s`, ToPascalCase(response.Type.Definition.Name))
 		}
-		w.EmptyLine()
-		w.Line(`  return &%s{%s: body}, nil`, responseTypeName(&operation), response.Name.PascalCase())
+		w.Line(`  return %s`, addReturnBody(&operation, &response))
 		w.Line(`}`)
+	}
+}
+
+func addReturnBody(operation *spec.NamedOperation, response *spec.NamedResponse) string {
+	if len(operation.Responses) == 1 {
+		if response.Type.Definition.IsEmpty() {
+			return `nil`
+		}
+		return fmt.Sprintf(`body, nil`)
+	} else {
+		if response.Type.Definition.IsEmpty() {
+			return fmt.Sprintf(`&%s{%s: &%s{}}, nil`, responseTypeName(operation), response.Name.PascalCase(), GoType(&response.Type.Definition))
+		}
+		return fmt.Sprintf(`&%s{%s: body}, nil`, responseTypeName(operation), response.Name.PascalCase())
 	}
 }
