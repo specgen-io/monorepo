@@ -11,7 +11,7 @@ func OpenApiType(typ *spec.TypeDef, defaultValue *string) *YamlMap {
 	case spec.PlainType:
 		result := PlainOpenApiType(typ.Info, typ.Plain)
 		if defaultValue != nil {
-			result.Set("default", DefaultValue(typ, *defaultValue))
+			result.Add("default", DefaultValue(typ, *defaultValue))
 		}
 		return result
 	case spec.NullableType:
@@ -19,11 +19,15 @@ func OpenApiType(typ *spec.TypeDef, defaultValue *string) *YamlMap {
 		return child
 	case spec.ArrayType:
 		child := OpenApiType(typ.Child, nil)
-		result := Map().Set("type", "array").Set("items", child)
+		result := Map()
+		result.Add("type", "array")
+		result.Add("items", child)
 		return result
 	case spec.MapType:
 		child := OpenApiType(typ.Child, nil)
-		result := Map().Set("type", "object").Set("additionalProperties", child)
+		result := Map()
+		result.Add("type", "object")
+		result.Add("additionalProperties", child)
 		return result
 	default:
 		panic(fmt.Sprintf("Unknown type: %v", typ))
@@ -111,28 +115,60 @@ func failDefaultParse(typ *spec.TypeDef, defaultValue string, err error) {
 func PlainOpenApiType(typeInfo *spec.TypeInfo, typ string) *YamlMap {
 	switch typ {
 	case spec.TypeInt32:
-		return Map().Set("type", "integer").Set("format", "int32")
+		result := Map()
+		result.Add("type", "integer")
+		result.Add("format", "int32")
+		return result
 	case spec.TypeInt64:
-		return Map().Set("type", "integer").Set("format", "int64")
+		result := Map()
+		result.Add("type", "integer")
+		result.Add("format", "int64")
+		return result
 	case spec.TypeFloat:
-		return Map().Set("type", "number").Set("format", "float")
+		result := Map()
+		result.Add("type", "number")
+		result.Add("format", "float")
+		return result
 	case spec.TypeDouble:
-		return Map().Set("type", "number").Set("format", "double")
+		result := Map()
+		result.Add("type", "number")
+		result.Add("format", "double")
+		return result
 	case spec.TypeDecimal:
-		return Map().Set("type", "number").Set("format", "decimal")
+		result := Map()
+		result.Add("type", "number")
+		result.Add("format", "decimal")
+		return result
 	case spec.TypeBoolean:
-		return Map().Set("type", "boolean")
+		result := Map()
+		result.Add("type", "boolean")
+		return result
 	case spec.TypeString:
-		return Map().Set("type", "string")
+		result := Map()
+		result.Add("type", "string")
+		return result
 	case spec.TypeUuid:
-		return Map().Set("type", "string").Set("format", "uuid")
+		result := Map()
+		result.Add("type", "string")
+		result.Add("format", "uuid")
+		return result
 	case spec.TypeDate:
-		return Map().Set("type", "string").Set("format", "date")
+		result := Map()
+		result.Add("type", "string")
+		result.Add("format", "date")
+		return result
 	case spec.TypeDateTime:
-		return Map().Set("type", "string").Set("format", "datetime")
+		result := Map()
+		result.Add("type", "string")
+		result.Add("format", "datetime")
+		return result
 	case spec.TypeJson:
-		return Map().Set("type", "object")
+		result := Map()
+		result.Add("type", "object")
+		return result
 	default:
-		return Map().Set("$ref", "#/components/schemas/"+versionedModelName(typeInfo.Model.Version.Version.Source, typ))
+		result := Map()
+		result.Add("$ref", "#/components/schemas/"+versionedModelName(typeInfo.Model.Version.Version.Source, typ))
+		return result
 	}
 }
