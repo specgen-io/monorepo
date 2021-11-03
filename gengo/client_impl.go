@@ -2,8 +2,8 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
@@ -68,7 +68,7 @@ func generateClientWithCtor(w *gen.Writer) {
 
 func generateClientFunction(w *gen.Writer, operation spec.NamedOperation) {
 	w.Line(`var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
-	w.Line(`func (client *%s) %s(%s) %s {`, clientTypeName(), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), responsesSignature(&operation))
+	w.Line(`func (client *%s) %s(%s) %s {`, clientTypeName(), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), operationReturn(&operation))
 	var body = "nil"
 	if operation.Body != nil {
 		w.Line(`  bodyJSON, err := json.Marshal(body)`)
@@ -178,21 +178,22 @@ func addClientResponses(w *gen.Writer, operation spec.NamedOperation) {
 			w.Line(`    return nil, err`)
 			w.Line(`  }`)
 		}
-		w.Line(`  return %s`, addReturnBody(&operation, &response))
+		w.Line(`  %s`, returnStatement(&response))
 		w.Line(`}`)
 	}
 }
 
-func addReturnBody(operation *spec.NamedOperation, response *spec.NamedResponse) string {
+func returnStatement(response *spec.NamedResponse) string {
+	operation := response.Operation
 	if len(operation.Responses) == 1 {
 		if response.Type.Definition.IsEmpty() {
-			return `nil`
+			return `return nil`
 		}
-		return fmt.Sprintf(`body, nil`)
+		return fmt.Sprintf(`return body, nil`)
 	} else {
 		if response.Type.Definition.IsEmpty() {
-			return fmt.Sprintf(`&%s{%s: &%s{}}, nil`, responseTypeName(operation), response.Name.PascalCase(), GoType(&response.Type.Definition))
+			return fmt.Sprintf(`return &%s{%s: &%s{}}, nil`, responseTypeName(operation), response.Name.PascalCase(), GoType(&response.Type.Definition))
 		}
-		return fmt.Sprintf(`&%s{%s: body}, nil`, responseTypeName(operation), response.Name.PascalCase())
+		return fmt.Sprintf(`return &%s{%s: body}, nil`, responseTypeName(operation), response.Name.PascalCase())
 	}
 }
