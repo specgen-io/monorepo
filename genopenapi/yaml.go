@@ -31,17 +31,28 @@ func encodeKeyValue(key interface{}, value interface{}) (*yaml.Node, *yaml.Node,
 	return &keyNode, &valueNode, nil
 }
 
+type Pair struct {
+	Key   interface{}
+	Value interface{}
+}
+
 func (yamlMap *YamlMap) Add(key interface{}, value interface{}) error {
-	keyNode, valueNode, err := encodeKeyValue(key, value)
-	if err != nil {
-		return err
+	return yamlMap.AddAll(Pair{key, value})
+}
+
+func (yamlMap *YamlMap) AddAll(pairs ...Pair) error {
+	for _, pair := range pairs {
+		keyNode, valueNode, err := encodeKeyValue(pair.Key, pair.Value)
+		if err != nil {
+			return err
+		}
+		yamlMap.Node.Content = append(yamlMap.Node.Content, keyNode, valueNode)
 	}
-	yamlMap.Node.Content = append(yamlMap.Node.Content, keyNode, valueNode)
 	return nil
 }
 
 func (self *YamlMap) Length() int {
-	return len(self.Node.Content)/2
+	return len(self.Node.Content) / 2
 }
 
 type YamlArray struct {
