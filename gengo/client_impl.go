@@ -68,7 +68,7 @@ func generateClientWithCtor(w *gen.Writer) {
 
 func generateClientFunction(w *gen.Writer, operation spec.NamedOperation) {
 	w.Line(`var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
-	w.Line(`func (client *%s) %s(%s) %s {`, clientTypeName(), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), operationReturn(&operation))
+	w.Line(`func (client *%s) %s(%s) %s {`, clientTypeName(), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), operationReturn(&operation, nil))
 	var body = "nil"
 	if operation.Body != nil {
 		w.Line(`  bodyJSON, err := json.Marshal(body)`)
