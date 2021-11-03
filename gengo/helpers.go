@@ -45,14 +45,13 @@ func getShortPackageName(path string) string {
 	return parts[len(parts)-1]
 }
 
-func responsesSignature(operation *spec.NamedOperation) string {
+func operationReturn(operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]
 		if response.Type.Definition.IsEmpty() {
-			return fmt.Sprintf(`error`)
-		} else {
-			return fmt.Sprintf(`(*%s, error)`, GoType(&response.Type.Definition))
+			return `error`
 		}
+		return fmt.Sprintf(`(*%s, error)`, GoType(&response.Type.Definition))
 	}
 	return fmt.Sprintf(`(*%s, error)`, responseTypeName(operation))
 }

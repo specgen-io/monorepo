@@ -2,8 +2,8 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
@@ -116,6 +116,40 @@ func generateOperationParametersParsing(w *gen.Writer, operation *spec.NamedOper
 	}
 }
 
+func generateServiceCall(w *gen.Writer, operation *spec.NamedOperation) {
+	singleEmptyResponse := len(operation.Responses) == 1  && operation.Responses[0].Type.Definition.IsEmpty()
+	serviceCallResult := "response, err"
+	if singleEmptyResponse {
+		serviceCallResult = "err"
+	}
+	w.Line(`%s := %s.%s(%s)`, serviceCallResult, serviceInterfaceTypeVar(operation.Api), operation.Name.PascalCase(), JoinDelimParams(addOperationMethodParams(operation)))
+
+	w.Line(`if err != nil {`)
+	w.Line(`  log.WithFields(%s).Errorf("Error returned from service implementation: %%s", err.Error())`, logFieldsName(operation))
+	w.Line(`  res.WriteHeader(500)`)
+	w.Line(`  log.WithFields(%s).WithField("status", 500).Info("Completed request")`, logFieldsName(operation))
+	w.Line(`  return`)
+	w.Line(`}`)
+
+	if !singleEmptyResponse {
+		w.Line(`if response == nil {`)
+		w.Line(`  log.WithFields(%s).Errorf("No result returned from service implementation")`, logFieldsName(operation))
+		w.Line(`  res.WriteHeader(500)`)
+		w.Line(`  log.WithFields(%s).WithField("status", 500).Info("Completed request")`, logFieldsName(operation))
+		w.Line(`  return`)
+		w.Line(`}`)
+	}
+}
+
+func generateResponseWriting(w *gen.Writer, response *spec.NamedResponse, responseVar string) {
+	w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
+	if !response.Type.Definition.IsEmpty() {
+		w.Line(`json.NewEncoder(res).Encode(%s)`, responseVar)
+	}
+	w.Line(`log.WithFields(%s).WithField("status", %s).Info("Completed request")`, logFieldsName(response.Operation), spec.HttpStatusCode(response.Name))
+	w.Line(`return`)
+}
+
 func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	if operation.Body != nil {
@@ -132,43 +166,22 @@ func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	generateOperationParametersParsing(w, operation, operation.HeaderParams, "headerParams", "req.Header")
 	generateOperationParametersParsing(w, operation, operation.Endpoint.UrlParams, "urlParams", "req.URL.Query()")
 
-	w.Line(`response, err := %s.%s(%s)`, serviceInterfaceTypeVar(operation.Api), operation.Name.PascalCase(), JoinDelimParams(addOperationMethodParams(operation)))
+	generateServiceCall(w, operation)
 
-	w.Line(`if response == nil || err != nil {`)
-	w.Line(`  if err != nil {`)
-	w.Line(`    log.WithFields(%s).Errorf("Error returned from service implementation: %%s", err.Error())`, logFieldsName(operation))
-	w.Line(`  } else {`)
-	w.Line(`    log.WithFields(%s).Errorf("No result returned from service implementation")`, logFieldsName(operation))
-	w.Line(`  }`)
-	w.Line(`  res.WriteHeader(500)`)
-	w.Line(`  log.WithFields(%s).WithField("status", 500).Info("Completed request")`, logFieldsName(operation))
-	w.Line(`  return`)
-	w.Line(`}`)
-
-	for _, response := range operation.Responses {
-		w.Line(`if %s != nil {`, responseName(operation, &response))
-		w.Line(`  res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
-		if !response.Type.Definition.IsEmpty() {
-			w.Line(`  json.NewEncoder(res).Encode(%s)`, responseName(operation, &response))
-		}
-		w.Line(`  log.WithFields(%s).WithField("status", %s).Info("Completed request")`, logFieldsName(operation), spec.HttpStatusCode(response.Name))
-		w.Line(`  return`)
-		w.Line(`}`)
-	}
-	w.Line(`log.WithFields(%s).Error("Result from service implementation does not have anything in it")`, logFieldsName(operation))
-	w.Line(`res.WriteHeader(500)`)
-	w.Line(`log.WithFields(%s).WithField("status", 500).Info("Completed request")`, logFieldsName(operation))
-	w.Line(`return`)
-}
-
-func responseName(operation *spec.NamedOperation, response *spec.NamedResponse) string {
 	if len(operation.Responses) == 1 {
-		return "response"
+		generateResponseWriting(w, &operation.Responses[0], "response")
+	} else {
+		for _, response := range operation.Responses {
+			responseVar := fmt.Sprintf("response.%s", response.Name.PascalCase())
+			w.Line(`if %s != nil {`, responseVar)
+			generateResponseWriting(w.Indented(), &response, responseVar)
+			w.Line(`}`)
+		}
+		w.Line(`log.WithFields(%s).Error("Result from service implementation does not have anything in it")`, logFieldsName(operation))
+		w.Line(`res.WriteHeader(500)`)
+		w.Line(`log.WithFields(%s).WithField("status", 500).Info("Completed request")`, logFieldsName(operation))
+		w.Line(`return`)
 	}
-	if len(operation.Responses) > 1 {
-		return fmt.Sprintf("response.%s", response.Name.PascalCase())
-	}
-	return ""
 }
 
 func addOperationMethodParams(operation *spec.NamedOperation) []string {

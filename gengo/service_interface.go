@@ -2,8 +2,8 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func generateServicesInterfaces(version *spec.Version, versionModule module, modelsModule module) []gen.TextFile {
@@ -37,25 +37,13 @@ func generateInterface(api *spec.Api, apiModule module, modelsModule module) *ge
 	w.EmptyLine()
 	w.Line(`type Service interface {`)
 	for _, operation := range api.Operations {
-		w.Line(`  %s(%s) (*%s, error)`, operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), generateResponsesSignatures(&operation))
+		w.Line(`  %s(%s) %s`, operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), operationReturn(&operation))
 	}
 	w.Line(`}`)
 	return &gen.TextFile{
 		Path:    apiModule.GetPath("service.go"),
 		Content: w.String(),
 	}
-}
-
-func generateResponsesSignatures(operation *spec.NamedOperation) string {
-	if len(operation.Responses) == 1 {
-		for _, response := range operation.Responses {
-			return GoType(&response.Type.Definition)
-		}
-	}
-	if len(operation.Responses) > 1 {
-		return responseTypeName(operation)
-	}
-	return ""
 }
 
 func generateOperationResponseStruct(w *gen.Writer, operation spec.NamedOperation) {
