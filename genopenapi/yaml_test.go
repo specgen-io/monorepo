@@ -8,7 +8,8 @@ import (
 )
 
 func TestYamlArray(t *testing.T) {
-	array := Array().Add("one").Add("two")
+	array := Array()
+	array.Add("one", "two")
 	yamlData, _ := yaml.Marshal(array)
 	expectedYaml := `
 - one
@@ -30,7 +31,8 @@ key2: two
 }
 
 func TestYamlMapNestedValues(t *testing.T) {
-	array := Array().Add("one").Add("two")
+	array := Array()
+	array.Add("one", "two")
 	theMap := Map()
 	theMap.Add("string", "the string")
 	theMap.Add("array", array)

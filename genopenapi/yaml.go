@@ -56,9 +56,16 @@ func (self *YamlArray) MarshalYAML() (interface{}, error) {
 	return self.Node, nil
 }
 
-func (self *YamlArray) Add(value interface{}) *YamlArray {
-	self.Items = append(self.Items, value)
-	return self
+func (self *YamlArray) Add(values ...interface{}) error {
+	for _, value := range values {
+		valueNode := yaml.Node{}
+		err := valueNode.Encode(value)
+		if err != nil {
+			return err
+		}
+		self.Node.Content = append(self.Node.Content, &valueNode)
+	}
+	return nil
 }
 
 func (self *YamlArray) Length() int {
