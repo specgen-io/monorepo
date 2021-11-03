@@ -82,7 +82,9 @@ func generateOperation(o *spec.NamedOperation) *YamlMap {
 	operationId := casee.ToCamelCase(version.PascalCase() + o.Api.Name.PascalCase() + o.Name.PascalCase())
 	operation := Map()
 	operation.Add("operationId", operationId)
-	operation.Add("tags", Array().Add(o.Api.Name.Source))
+	tags := Array()
+	tags.Add(o.Api.Name.Source)
+	operation.Add("tags", tags)
 
 	if o.Operation.Description != nil {
 		operation.Add("description", o.Operation.Description)
