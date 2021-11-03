@@ -45,7 +45,7 @@ func getShortPackageName(path string) string {
 	return parts[len(parts)-1]
 }
 
-func operationReturn(operation *spec.NamedOperation) string {
+func operationReturn(operation *spec.NamedOperation, responsePackageName *string) string {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]
 		if response.Type.Definition.IsEmpty() {
@@ -53,5 +53,9 @@ func operationReturn(operation *spec.NamedOperation) string {
 		}
 		return fmt.Sprintf(`(*%s, error)`, GoType(&response.Type.Definition))
 	}
-	return fmt.Sprintf(`(*%s, error)`, responseTypeName(operation))
+	responseType := responseTypeName(operation)
+	if responsePackageName != nil {
+		responseType = *responsePackageName + "." + responseType
+	}
+	return fmt.Sprintf(`(*%s, error)`, responseType)
 }

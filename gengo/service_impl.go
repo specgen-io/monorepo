@@ -2,8 +2,8 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"path/filepath"
 )
 
@@ -33,13 +33,18 @@ func generateServiceImplementation(moduleName string, versionModulePath string, 
 	w.EmptyLine()
 	apiPackage := api.Name.SnakeCase()
 	for _, operation := range api.Operations {
-		w.Line(`func (service *%s) %s(%s) (*%s.%s, error) {`,
+		w.Line(`func (service *%s) %s(%s) %s {`,
 			serviceTypeName(api),
 			operation.Name.PascalCase(),
 			JoinDelimParams(addVersionedMethodParams(operation)),
-			apiPackage,
-			responseTypeName(&operation))
-		w.Line(`  return nil, errors.New("implementation has not added yet")`)
+			operationReturn(&operation, &apiPackage),
+		)
+		singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
+		if singleEmptyResponse {
+			w.Line(`  return errors.New("implementation has not added yet")`)
+		} else {
+			w.Line(`  return nil, errors.New("implementation has not added yet")`)
+		}
 		w.Line(`}`)
 	}
 

@@ -37,7 +37,7 @@ func generateInterface(api *spec.Api, apiModule module, modelsModule module) *ge
 	w.EmptyLine()
 	w.Line(`type Service interface {`)
 	for _, operation := range api.Operations {
-		w.Line(`  %s(%s) %s`, operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), operationReturn(&operation))
+		w.Line(`  %s(%s) %s`, operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), operationReturn(&operation, nil))
 	}
 	w.Line(`}`)
 	return &gen.TextFile{
