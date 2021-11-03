@@ -13,8 +13,13 @@ func (self *YamlMap) MarshalYAML() (interface{}, error) {
 	return &self.Node, nil
 }
 
-func Map() *YamlMap {
-	return &YamlMap{yaml.Node{Kind: yaml.MappingNode, Content: []*yaml.Node{}}}
+func Map(pairs ...Pair) *YamlMap {
+	self :=  &YamlMap{yaml.Node{Kind: yaml.MappingNode, Content: []*yaml.Node{}}}
+	err := self.AddAll(pairs...)
+	if err != nil {
+		panic(err)
+	}
+	return self
 }
 
 func encodeKeyValue(key interface{}, value interface{}) (*yaml.Node, *yaml.Node, error) {
@@ -59,8 +64,10 @@ type YamlArray struct {
 	Node yaml.Node
 }
 
-func Array() *YamlArray {
-	return &YamlArray{yaml.Node{Kind: yaml.SequenceNode, Content: []*yaml.Node{}}}
+func Array(items ...interface{}) *YamlArray {
+	self := &YamlArray{yaml.Node{Kind: yaml.SequenceNode, Content: []*yaml.Node{}}}
+	self.Add(items...)
+	return self
 }
 
 func (self *YamlArray) MarshalYAML() (interface{}, error) {
