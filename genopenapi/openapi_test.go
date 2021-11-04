@@ -26,15 +26,9 @@ models:
   Model:
     description: The description
     enum:
-      first:
-        value: FIRST
-        description: First option
-      second:
-        value: SECOND
-        description: Second option
-      third:
-        value: THIRD
-        description: Third option
+      first: FIRST  # First option
+      second: SECOND  # Second option
+      third: THIRD  # Third option
 `
 
 	expectedOpenApiYaml := `
@@ -63,14 +57,10 @@ spec: 2
 name: bla-api
 models:
   Model:
-    fields:
-      field1: 
-        type: string
-      field2:
-        type: string
-        description: the description
-      field3:
-        type: string[]
+    object:
+      field1: string
+      field2: string  # the description
+      field3: string[]
 `
 
 	expectedOpenApiYaml := `
@@ -112,9 +102,11 @@ models:
       one: Model1
       two: Model2
   Model1:
-    field1: string
+    object:
+      field1: string
   Model2:
-    field1: string
+    object:
+      field1: string
 `
 
 	expectedOpenApiYaml := `
@@ -160,24 +152,18 @@ http:
         create:
             endpoint: POST /create/{id:uuid}
             description: the description
-            body:
-                description: the description
-                type: MyModel
+            body: MyModel  # the description
             header:
                 Authorization: string
             query:
-                uuid_param:
-                    type: uuid
-                    description: the description
-                str_param:
-                    type: string
-                    default: the default value
-                    description: the description
+                uuid_param: uuid  # the description
+                str_param: string = the default value  # the description
             response:
                 ok: MyModel
 models:
     MyModel:
-        field1: string
+        object:
+            field1: string
 `
 
 	expectedOpenApiYaml := `
@@ -296,10 +282,12 @@ http:
 
 models:
   Model1:
-    prop1: string
+    object:
+      prop1: string
   Model2:
-    prop1: string
-    prop2: int32
+    object:
+      prop1: string
+      prop2: int32
 `
 
 	expectedOpenApiYaml := `
@@ -384,7 +372,8 @@ v2:
 
   models:
     Message:
-      prop1: string
+      object:
+        prop1: string
 `
 
 	expectedOpenApiYaml := `
