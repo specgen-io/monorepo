@@ -2,6 +2,7 @@ package genopenapi
 
 import (
 	"github.com/specgen-io/specgen/v2/spec"
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
@@ -46,7 +47,7 @@ components:
 	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
+	openapiYaml, err := yamlx.ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -97,7 +98,7 @@ components:
 	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
+	openapiYaml, err := yamlx.ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -152,7 +153,7 @@ components:
 	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
+	openapiYaml, err := yamlx.ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -257,7 +258,7 @@ components:
 	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
+	openapiYaml, err := yamlx.ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -286,7 +287,7 @@ components:
 	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
+	openapiYaml, err := yamlx.ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -385,7 +386,7 @@ components:
 	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
+	openapiYaml, err := yamlx.ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
@@ -447,9 +448,8 @@ components:
 	result, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
+	openapiYaml, err := yamlx.ToYamlString(generateSpecification(result.Spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
 }
-

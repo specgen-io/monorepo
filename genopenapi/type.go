@@ -3,10 +3,11 @@ package genopenapi
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/spec"
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"strconv"
 )
 
-func OpenApiType(typ *spec.TypeDef, defaultValue *string) *YamlMap {
+func OpenApiType(typ *spec.TypeDef, defaultValue *string) *yamlx.YamlMap {
 	switch typ.Node {
 	case spec.PlainType:
 		result := PlainOpenApiType(typ.Info, typ.Plain)
@@ -19,13 +20,13 @@ func OpenApiType(typ *spec.TypeDef, defaultValue *string) *YamlMap {
 		return child
 	case spec.ArrayType:
 		child := OpenApiType(typ.Child, nil)
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "array")
 		result.Add("items", child)
 		return result
 	case spec.MapType:
 		child := OpenApiType(typ.Child, nil)
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "object")
 		result.Add("additionalProperties", child)
 		return result
@@ -112,62 +113,62 @@ func failDefaultParse(typ *spec.TypeDef, defaultValue string, err error) {
 	panic(fmt.Sprintf("Parsing default value %s for type %s failed, message: %s", defaultValue, typ.Name, err.Error()))
 }
 
-func PlainOpenApiType(typeInfo *spec.TypeInfo, typ string) *YamlMap {
+func PlainOpenApiType(typeInfo *spec.TypeInfo, typ string) *yamlx.YamlMap {
 	switch typ {
 	case spec.TypeInt32:
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "integer")
 		result.Add("format", "int32")
 		return result
 	case spec.TypeInt64:
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "integer")
 		result.Add("format", "int64")
 		return result
 	case spec.TypeFloat:
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "number")
 		result.Add("format", "float")
 		return result
 	case spec.TypeDouble:
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "number")
 		result.Add("format", "double")
 		return result
 	case spec.TypeDecimal:
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "number")
 		result.Add("format", "decimal")
 		return result
 	case spec.TypeBoolean:
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "boolean")
 		return result
 	case spec.TypeString:
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "string")
 		return result
 	case spec.TypeUuid:
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "string")
 		result.Add("format", "uuid")
 		return result
 	case spec.TypeDate:
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "string")
 		result.Add("format", "date")
 		return result
 	case spec.TypeDateTime:
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "string")
 		result.Add("format", "datetime")
 		return result
 	case spec.TypeJson:
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("type", "object")
 		return result
 	default:
-		result := Map()
+		result := yamlx.NewYamlMap()
 		result.Add("$ref", "#/components/schemas/"+versionedModelName(typeInfo.Model.Version.Version.Source, typ))
 		return result
 	}

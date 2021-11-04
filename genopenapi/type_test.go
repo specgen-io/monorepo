@@ -2,6 +2,7 @@ package genopenapi
 
 import (
 	"github.com/specgen-io/specgen/v2/spec"
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
@@ -9,7 +10,7 @@ import (
 
 func checkType(t *testing.T, typ *spec.TypeDef, expected string) {
 	openApiType := OpenApiType(typ, nil)
-	openApiTypeYaml, err := ToYamlString(openApiType)
+	openApiTypeYaml, err := yamlx.ToYamlString(openApiType)
 	assert.NilError(t, err)
 	assert.Equal(t, strings.TrimSpace(openApiTypeYaml), strings.TrimSpace(expected))
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/pinzolo/casee"
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/spec"
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ func GenerateAndWriteOpenapi(specification *spec.Spec, outFile string) (err erro
 func GenerateOpenapi(spec *spec.Spec, outFile string) *gen.TextFile {
 	openapi := generateSpecification(spec)
 
-	data, err := ToYamlString(openapi)
+	data, err := yamlx.ToYamlString(openapi)
 	if err != nil {
 		panic(err)
 	}
@@ -24,8 +25,8 @@ func GenerateOpenapi(spec *spec.Spec, outFile string) *gen.TextFile {
 	return &gen.TextFile{outFile, data}
 }
 
-func generateSpecification(spec *spec.Spec) *YamlMap {
-	info := Map()
+func generateSpecification(spec *spec.Spec) *yamlx.YamlMap {
+	info := yamlx.NewYamlMap()
 	title := spec.Name.Source
 	if spec.Title != nil {
 		title = *spec.Title
@@ -36,21 +37,21 @@ func generateSpecification(spec *spec.Spec) *YamlMap {
 	}
 	info.Add("version", spec.Version)
 
-	openapi := Map()
+	openapi := yamlx.NewYamlMap()
 	openapi.Add("openapi", "3.0.0")
 	openapi.Add("info", info)
 
 	paths := generateApis(spec)
 	openapi.Add("paths", paths)
 
-	schemas := Map()
+	schemas := yamlx.NewYamlMap()
 
 	for _, version := range spec.Versions {
 		for _, model := range version.Models {
 			schemas.Add(versionedModelName(version.Version.Source, model.Name.Source), generateModel(model.Model))
 		}
 	}
-	schemans := Map()
+	schemans := yamlx.NewYamlMap()
 	schemans.Add("schemas", schemas)
 	openapi.Add("components", schemans)
 
@@ -64,11 +65,11 @@ func versionedModelName(version string, modelName string) string {
 	return modelName
 }
 
-func generateApis(spec *spec.Spec) *YamlMap {
-	paths := Map()
+func generateApis(spec *spec.Spec) *yamlx.YamlMap {
+	paths := yamlx.NewYamlMap()
 	groups := OperationsByUrl(spec)
 	for _, group := range groups {
-		path := Map()
+		path := yamlx.NewYamlMap()
 		for _, o := range group.Operations {
 			path.Add(strings.ToLower(o.Operation.Endpoint.Method), generateOperation(o))
 		}
@@ -77,12 +78,12 @@ func generateApis(spec *spec.Spec) *YamlMap {
 	return paths
 }
 
-func generateOperation(o *spec.NamedOperation) *YamlMap {
+func generateOperation(o *spec.NamedOperation) *yamlx.YamlMap {
 	version := o.Api.Apis.Version.Version
 	operationId := casee.ToCamelCase(version.PascalCase() + o.Api.Name.PascalCase() + o.Name.PascalCase())
-	operation := Map()
+	operation := yamlx.NewYamlMap()
 	operation.Add("operationId", operationId)
-	tags := Array()
+	tags := yamlx.Array()
 	tags.Add(o.Api.Name.Source)
 	operation.Add("tags", tags)
 
@@ -91,20 +92,20 @@ func generateOperation(o *spec.NamedOperation) *YamlMap {
 	}
 	if o.Operation.Body != nil {
 		body := o.Operation.Body
-		request := Map()
+		request := yamlx.NewYamlMap()
 		if body.Description != nil {
 			request.Add("description", body.Description)
 		}
 		request.Add("required", !body.Type.Definition.IsNullable())
-		schema := Map()
+		schema := yamlx.NewYamlMap()
 		schema.Add("schema", OpenApiType(&body.Type.Definition, nil))
-		content := Map()
+		content := yamlx.NewYamlMap()
 		content.Add("application/json", schema)
 		request.Add("content", content)
 		operation.Add("requestBody", request)
 	}
 
-	parameters := Array()
+	parameters := yamlx.Array()
 
 	addParameters(parameters, "path", o.Operation.Endpoint.UrlParams)
 	addParameters(parameters, "header", o.Operation.HeaderParams)
@@ -114,7 +115,7 @@ func generateOperation(o *spec.NamedOperation) *YamlMap {
 		operation.Add("parameters", parameters)
 	}
 
-	responses := Map()
+	responses := yamlx.NewYamlMap()
 	allResponses := addSpecialResponses(&o.Operation)
 	for _, r := range allResponses {
 		responses.Add(spec.HttpStatusCode(r.Name), generateResponse(r.Definition))
@@ -123,9 +124,9 @@ func generateOperation(o *spec.NamedOperation) *YamlMap {
 	return operation
 }
 
-func addParameters(parameters *YamlArray, in string, params []spec.NamedParam) {
+func addParameters(parameters *yamlx.YamlArray, in string, params []spec.NamedParam) {
 	for _, p := range params {
-		param := Map()
+		param := yamlx.NewYamlMap()
 		param.Add("in", in)
 		param.Add("name", p.Name.Source)
 		param.Add("required", !p.Type.Definition.IsNullable())
@@ -137,24 +138,24 @@ func addParameters(parameters *YamlArray, in string, params []spec.NamedParam) {
 	}
 }
 
-func generateResponse(r spec.Definition) *YamlMap {
-	response := Map()
+func generateResponse(r spec.Definition) *yamlx.YamlMap {
+	response := yamlx.NewYamlMap()
 	description := ""
 	if r.Description != nil {
 		description = *r.Description
 	}
 	response.Add("description", description)
 	if !r.Type.Definition.IsEmpty() {
-		jsonContent := Map()
+		jsonContent := yamlx.NewYamlMap()
 		jsonContent.Add("schema", OpenApiType(&r.Type.Definition, nil))
-		content := Map()
+		content := yamlx.NewYamlMap()
 		content.Add("application/json", jsonContent)
 		response.Add("content", content)
 	}
 	return response
 }
 
-func generateModel(model spec.Model) *YamlMap {
+func generateModel(model spec.Model) *yamlx.YamlMap {
 	if model.IsObject() {
 		return generateObjectModel(model)
 	} else if model.IsEnum() {
@@ -164,15 +165,15 @@ func generateModel(model spec.Model) *YamlMap {
 	}
 }
 
-func generateUnionModel(model spec.Model) *YamlMap {
-	schema := Map()
+func generateUnionModel(model spec.Model) *yamlx.YamlMap {
+	schema := yamlx.NewYamlMap()
 	schema.Add("type", "object")
 
 	if model.Description() != nil {
 		schema.Add("description", model.Description())
 	}
 
-	properties := Map()
+	properties := yamlx.NewYamlMap()
 	for _, item := range model.OneOf.Items {
 		property := OpenApiType(&item.Type.Definition, nil)
 		if item.Description != nil {
@@ -185,15 +186,15 @@ func generateUnionModel(model spec.Model) *YamlMap {
 	return schema
 }
 
-func generateObjectModel(model spec.Model) *YamlMap {
-	schema := Map()
+func generateObjectModel(model spec.Model) *yamlx.YamlMap {
+	schema := yamlx.NewYamlMap()
 	schema.Add("type", "object")
 
 	if model.Description() != nil {
 		schema.Add("description", model.Description())
 	}
 
-	required := Array()
+	required := yamlx.Array()
 	for _, field := range model.Object.Fields {
 		if !field.Type.Definition.IsNullable() {
 			required.Add(field.Name.Source)
@@ -204,7 +205,7 @@ func generateObjectModel(model spec.Model) *YamlMap {
 		schema.Add("required", required)
 	}
 
-	properties := Map()
+	properties := yamlx.NewYamlMap()
 	for _, field := range model.Object.Fields {
 		property := OpenApiType(&field.Type.Definition, nil)
 		if field.Description != nil {
@@ -217,15 +218,15 @@ func generateObjectModel(model spec.Model) *YamlMap {
 	return schema
 }
 
-func generateEnumModel(model spec.Model) *YamlMap {
-	schema := Map()
+func generateEnumModel(model spec.Model) *yamlx.YamlMap {
+	schema := yamlx.NewYamlMap()
 	schema.Add("type", "string")
 
 	if model.Description() != nil {
 		schema.Add("description", model.Description())
 	}
 
-	openApiItems := Array()
+	openApiItems := yamlx.Array()
 	for _, item := range model.Enum.Items {
 		openApiItems.Add(item.Name.Source)
 	}
