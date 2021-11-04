@@ -1,4 +1,4 @@
-package spec
+package old
 
 import (
 	"github.com/specgen-io/specgen/v2/yamlx"
@@ -6,8 +6,8 @@ import (
 )
 
 type EnumItem struct {
-	Value       string
-	Description *string
+	Value       string  `yaml:"value"`
+	Description *string `yaml:"description"`
 }
 
 type NamedEnumItem struct {
@@ -56,10 +56,20 @@ func (value *EnumItems) UnmarshalYAML(node *yaml.Node) error {
 			if err != nil {
 				return err
 			}
-			if valueNode.Kind != yaml.ScalarNode {
-				return yamlError(valueNode, "enum item has to be scalar value")
+			item := &EnumItem{}
+			if valueNode.Kind == yaml.ScalarNode {
+				item.Value = valueNode.Value
+				item.Description = getDescription(valueNode)
+			} else {
+				err = valueNode.DecodeWith(decodeStrict, item)
+				if err != nil {
+					return err
+				}
 			}
-			array[index] = NamedEnumItem{Name: itemName, EnumItem: EnumItem{valueNode.Value, getDescription(valueNode)}}
+			if item.Value == "" {
+				item.Value = itemName.Source
+			}
+			array[index] = NamedEnumItem{Name: itemName, EnumItem: *item}
 		}
 		*value = array
 	}
@@ -68,7 +78,8 @@ func (value *EnumItems) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type Enum struct {
-	Items EnumItems `yaml:"enum"`
+	Items       EnumItems `yaml:"enum"`
+	Description *string   `yaml:"description"`
 }
 
 func itemsSameAsValues(value EnumItems) bool {

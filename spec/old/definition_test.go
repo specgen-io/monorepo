@@ -1,4 +1,4 @@
-package spec
+package old
 
 import (
 	"gopkg.in/specgen-io/yaml.v3"
@@ -20,8 +20,36 @@ func Test_DefinitionDefault_Unmarshal_Short(t *testing.T) {
 	assert.Equal(t, *definition.Description, "something here")
 }
 
+func Test_DefinitionDefault_Unmarshal_Long(t *testing.T) {
+	data := `
+type: string
+default: the value
+description: something here
+`
+	var definition DefinitionDefault
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &definition)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, reflect.DeepEqual(definition.Type.Definition, ParseType("string")), true)
+	assert.Equal(t, definition.Default != nil, true)
+	assert.Equal(t, *definition.Default, "the value")
+	assert.Equal(t, definition.Description != nil, true)
+	assert.Equal(t, *definition.Description, "something here")
+}
+
 func Test_Definition_Unmarshal_Short(t *testing.T) {
 	data := "MyType    # some description"
+	var definition Definition
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &definition)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, reflect.DeepEqual(definition.Type.Definition, ParseType("MyType")), true)
+	assert.Equal(t, *definition.Description, "some description")
+}
+
+func Test_Definition_Unmarshal_Long(t *testing.T) {
+	data := `
+type: MyType
+description: some description
+`
 	var definition Definition
 	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &definition)
 	assert.Equal(t, err, nil)
