@@ -2,6 +2,7 @@ package spec
 
 import (
 	"errors"
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
@@ -140,7 +141,7 @@ func (value *Models) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (value Models) MarshalYAML() (interface{}, error) {
-	yamlMap := NewYamlMap()
+	yamlMap := yamlx.Map()
 	for index := 0; index < len(value); index++ {
 		model := value[index]
 		err := yamlMap.AddWithComment(model.Name, model.Model, model.Description())

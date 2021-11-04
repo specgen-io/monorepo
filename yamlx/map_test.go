@@ -1,24 +1,16 @@
-package genopenapi
+package yamlx
 
 import (
-	yaml "gopkg.in/specgen-io/yaml.v3"
+	"gopkg.in/specgen-io/yaml.v3"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
 )
 
-func TestYamlArray(t *testing.T) {
-	array := Array().Add("one").Add("two")
-	yamlData, _ := yaml.Marshal(array)
-	expectedYaml := `
-- one
-- two
-`
-	assert.Equal(t, strings.TrimSpace(expectedYaml), strings.TrimSpace(string(yamlData)))
-}
-
 func TestYamlMap(t *testing.T) {
-	theMap := Map().Set("key1", "one").Set("key2", "two")
+	theMap := Map()
+	theMap.Add("key1", "one")
+	theMap.Add("key2", "two")
 	yamlData, _ := yaml.Marshal(theMap)
 	expectedYaml := `
 key1: one
@@ -28,8 +20,11 @@ key2: two
 }
 
 func TestYamlMapNestedValues(t *testing.T) {
-	array := Array().Add("one").Add("two")
-	theMap := Map().Set("string", "the string").Set("array", array)
+	array := Array()
+	array.Add("one", "two")
+	theMap := Map()
+	theMap.Add("string", "the string")
+	theMap.Add("array", array)
 	yamlData, _ := yaml.Marshal(theMap)
 	expectedYaml := `
 string: the string

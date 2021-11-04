@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
@@ -44,7 +45,7 @@ func (value *NamedDefinitions) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (value NamedDefinitions) MarshalYAML() (interface{}, error) {
-	yamlMap := NewYamlMap()
+	yamlMap := yamlx.Map()
 	for index := 0; index < len(value); index++ {
 		definition := value[index]
 		err := yamlMap.AddWithComment(definition.Name, definition.Definition, definition.Description)
