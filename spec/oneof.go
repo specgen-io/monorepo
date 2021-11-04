@@ -9,7 +9,7 @@ type OneOf struct {
 }
 
 func (value OneOf) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.NewYamlMap()
+	yamlMap := yamlx.Map()
 	yamlMap.AddOmitNil("discriminator", value.Discriminator)
 	yamlMap.Add("oneOf", value.Items)
 	return yamlMap.Node, nil

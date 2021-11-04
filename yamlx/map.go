@@ -9,7 +9,7 @@ type YamlMap struct {
 	Node yaml.Node
 }
 
-func NewYamlMap(pairs ...Pair) *YamlMap {
+func Map(pairs ...Pair) *YamlMap {
 	self := &YamlMap{yaml.Node{Kind: yaml.MappingNode, Content: []*yaml.Node{}}}
 	err := self.AddAll(pairs...)
 	if err != nil {

@@ -46,7 +46,7 @@ func (value *Object) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (value Object) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.NewYamlMap()
+	yamlMap := yamlx.Map()
 	yamlMap.Add("object", value.Fields)
 	return yamlMap.Node, nil
 }

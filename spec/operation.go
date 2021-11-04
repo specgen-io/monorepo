@@ -88,7 +88,7 @@ func (operation *Operation) HasParams() bool {
 }
 
 func (value Operation) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.NewYamlMap()
+	yamlMap := yamlx.Map()
 	yamlMap.Add("endpoint", value.Endpoint)
 	yamlMap.AddOmitNil("description", value.Description)
 	if len(value.HeaderParams) > 0 {
@@ -103,7 +103,7 @@ func (value Operation) MarshalYAML() (interface{}, error) {
 }
 
 func (value Operations) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.NewYamlMap()
+	yamlMap := yamlx.Map()
 	for index := 0; index < len(value); index++ {
 		operation := value[index]
 		yamlMap.Add(operation.Name, operation.Operation)
