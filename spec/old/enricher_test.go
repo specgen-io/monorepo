@@ -1,4 +1,4 @@
-package spec
+package old
 
 import (
 	"gotest.tools/assert"
@@ -19,10 +19,10 @@ http:
             response:
                 ok: empty
 `
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 
 	assert.Equal(t, len(errors), 0)
 }
@@ -40,10 +40,10 @@ http:
             response:
                 ok: empty
 `
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 
 	assert.Equal(t, len(errors), 3)
 	assert.Equal(t, strings.Contains(errors[0].Message, "nonexisting1"), true)
@@ -62,16 +62,14 @@ http:
                 ok: Custom2
 models:
     Custom1:
-        object:
-            field: string
+        field: string
     Custom2:
-        object:
-            field: string
+        field: string
 `
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 
 	assert.Equal(t, len(errors), 0)
 }
@@ -80,21 +78,19 @@ func Test_ResolveTypes_ObjectField_Pass(t *testing.T) {
 	data := `
 models:
   Custom1:
-    object:
-      field1: string
-      field2: Custom2
+    field1: string
+    field2: Custom2
   Custom2:
-    object:
-      field: Custom3
+    field: Custom3
   Custom3:
     enum:
     - first
     - second
 `
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 
 	assert.Equal(t, len(errors), 0)
 }
@@ -103,13 +99,12 @@ func Test_ResolveTypes_ObjectField_Fail(t *testing.T) {
 	data := `
 models:
   Custom:
-    object:
-      field1: NonExisting
+    field1: NonExisting
 `
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 
 	assert.Equal(t, len(errors), 1)
 	assert.Equal(t, strings.Contains(errors[0].Message, "NonExisting"), true)
@@ -119,19 +114,18 @@ func Test_ResolveTypes_UnionItem_Pass(t *testing.T) {
 	data := `
 models:
   Custom1:
-    object:
-      field1: string
-      field2: Custom2
+    field1: string
+    field2: Custom2
   Custom2:
     oneOf:
       one: string
       two: boolean[]
       three: int?
 `
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 
 	assert.Equal(t, len(errors), 0)
 }
@@ -143,10 +137,10 @@ models:
     oneOf:
       nope: NonExisting
 `
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 
 	assert.Equal(t, len(errors), 1)
 	assert.Equal(t, strings.Contains(errors[0].Message, "NonExisting"), true)
@@ -156,19 +150,17 @@ func Test_Resolve_Models_Normal_Order(t *testing.T) {
 	data := `
 models:
   Model1:
-    object:
-      field: string
+    field: string
   Model2:
-    object:
-      field: string
+    field: string
 `
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	enrichSpec(spec)
+	enrichSpec(old)
 
-	assert.Equal(t, len(spec.Versions), 1)
-	models := spec.Versions[0].ResolvedModels
+	assert.Equal(t, len(old.Versions), 1)
+	models := old.Versions[0].ResolvedModels
 	assert.Equal(t, len(models), 2)
 	assert.Equal(t, models[0].Name.Source, "Model1")
 	assert.Equal(t, models[1].Name.Source, "Model2")
@@ -179,22 +171,19 @@ func Test_Resolve_Models_Reversed_Order(t *testing.T) {
 	data := `
 models:
   Model1:
-    object:
-      field: Model2
+    field: Model2
   Model2:
-    object:
-      field: Model3
+    field: Model3
   Model3:
-    object:
-      field: string
+    field: string
 `
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	enrichSpec(spec)
+	enrichSpec(old)
 
-	assert.Equal(t, len(spec.Versions), 1)
-	version := &spec.Versions[0]
+	assert.Equal(t, len(old.Versions), 1)
+	version := &old.Versions[0]
 	models := version.ResolvedModels
 	assert.Equal(t, len(models), 3)
 	assert.Equal(t, models[0].Name.Source, "Model3")
@@ -209,23 +198,21 @@ func Test_Resolve_Models_Reversed_Order_With_Enum(t *testing.T) {
 	data := `
 models:
   Model1:
-    object:
-      field1: Model3
-      field2: Model2
+    field1: Model3
+    field2: Model2
   Model2:
-    object:
-      field: string
+    field: string
   Model3:
     enum:
       - some_item
 `
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	enrichSpec(spec)
+	enrichSpec(old)
 
-	assert.Equal(t, len(spec.Versions), 1)
-	models := spec.Versions[0].ResolvedModels
+	assert.Equal(t, len(old.Versions), 1)
+	models := old.Versions[0].ResolvedModels
 	assert.Equal(t, len(models), 3)
 	assert.Equal(t, models[0].Name.Source, "Model3")
 	assert.Equal(t, models[1].Name.Source, "Model2")
@@ -241,13 +228,13 @@ http:
             response:
                 ok: empty
 `
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 	assert.Equal(t, len(errors), 0)
 
-	version := &spec.Versions[0]
+	version := &old.Versions[0]
 	apis := &version.Http
 	api := &apis.Apis[0]
 	operation := &api.Operations[0]
@@ -262,15 +249,14 @@ func Test_Enrich_Models(t *testing.T) {
 	data := `
 models:
   Model1:
-    object:
-      field1: Model3
-      field2: Model2
+    field1: Model3
+    field2: Model2
 `
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	enrichSpec(spec)
+	enrichSpec(old)
 
-	ver := &spec.Versions[0]
+	ver := &old.Versions[0]
 	assert.Equal(t, ver.Models[0].Version, ver)
 }

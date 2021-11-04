@@ -163,8 +163,8 @@ func generateUnionModel(model spec.Model) *yamlx.YamlMap {
 	schema := yamlx.Map()
 	schema.Add("type", "object")
 
-	if model.Description() != nil {
-		schema.Add("description", model.Description())
+	if model.Description != nil {
+		schema.Add("description", model.Description)
 	}
 
 	properties := yamlx.Map()
@@ -184,8 +184,8 @@ func generateObjectModel(model spec.Model) *yamlx.YamlMap {
 	schema := yamlx.Map()
 	schema.Add("type", "object")
 
-	if model.Description() != nil {
-		schema.Add("description", model.Description())
+	if model.Description != nil {
+		schema.Add("description", model.Description)
 	}
 
 	required := yamlx.Array()
@@ -216,8 +216,8 @@ func generateEnumModel(model spec.Model) *yamlx.YamlMap {
 	schema := yamlx.Map()
 	schema.Add("type", "string")
 
-	if model.Description() != nil {
-		schema.Add("description", model.Description())
+	if model.Description != nil {
+		schema.Add("description", model.Description)
 	}
 
 	openApiItems := yamlx.Array()

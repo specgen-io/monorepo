@@ -1,4 +1,4 @@
-package spec
+package old
 
 import (
 	"gotest.tools/assert"
@@ -17,13 +17,13 @@ http:
           ok: empty
 `
 
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 	assert.Equal(t, len(errors), 0)
 
-	warnings, errors := validate(spec)
+	warnings, errors := validate(old)
 	assert.Equal(t, len(warnings), 0)
 	assert.Equal(t, len(errors), 1)
 	assert.Equal(t, strings.Contains(errors[0].Message, "body"), true)
@@ -39,13 +39,13 @@ http:
           ok: string
 `
 
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 	assert.Equal(t, len(errors), 0)
 
-	warnings, errors := validate(spec)
+	warnings, errors := validate(old)
 	assert.Equal(t, len(warnings), 0)
 	assert.Equal(t, len(errors), 1)
 	assert.Equal(t, strings.Contains(errors[0].Message, "response"), true)
@@ -63,13 +63,13 @@ http:
           bad_request: string{}
 `
 
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 	assert.Equal(t, len(errors), 0)
 
-	warnings, errors := validate(spec)
+	warnings, errors := validate(old)
 	assert.Equal(t, len(warnings), 3)
 	assert.Equal(t, len(errors), 0)
 	assert.Equal(t, strings.Contains(warnings[0].Message, "internal_server_error"), true)
@@ -89,13 +89,13 @@ http:
           ok: empty
 `
 
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 	assert.Equal(t, len(errors), 0)
 
-	warnings, errors := validate(spec)
+	warnings, errors := validate(old)
 	assert.Equal(t, len(warnings), 0)
 	assert.Equal(t, len(errors), 0)
 }
@@ -113,17 +113,16 @@ http:
           ok: empty
 models:
  TheModel:
-   object:
-     field: string
+   field: string
 `
 
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 	assert.Equal(t, len(errors), 0)
 
-	warnings, errors := validate(spec)
+	warnings, errors := validate(old)
 	assert.Equal(t, len(warnings), 0)
 	assert.Equal(t, len(errors), 2)
 	assert.Equal(t, strings.Contains(errors[0].Message, "param1"), true)
@@ -144,13 +143,13 @@ http:
           ok: empty
 `
 
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 	assert.Equal(t, len(errors), 0)
 
-	warnings, errors := validate(spec)
+	warnings, errors := validate(old)
 	assert.Equal(t, len(warnings), 0)
 	assert.Equal(t, len(errors), 1)
 	assert.Equal(t, strings.Contains(errors[0].Message, "the_param"), true)
@@ -170,13 +169,13 @@ http:
           ok: empty
 `
 
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 	assert.Equal(t, len(errors), 0)
 
-	warnings, errors := validate(spec)
+	warnings, errors := validate(old)
 	assert.Equal(t, len(warnings), 0)
 	assert.Equal(t, len(errors), 2)
 	assert.Equal(t, strings.Contains(errors[0].Message, "string?"), true)
@@ -210,13 +209,13 @@ models:
       - second
 `
 
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 	assert.Equal(t, len(errors), 0)
 
-	warnings, errors := validate(spec)
+	warnings, errors := validate(old)
 	assert.Equal(t, len(warnings), 0)
 	assert.Equal(t, len(errors), 0)
 }
@@ -248,13 +247,13 @@ models:
       - second
 `
 
-	spec, err := unmarshalSpec([]byte(data))
+	old, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 	assert.Equal(t, len(errors), 0)
 
-	warnings, errors := validate(spec)
+	warnings, errors := validate(old)
 	assert.Equal(t, len(warnings), 0)
 	assert.Equal(t, len(errors), 10)
 }

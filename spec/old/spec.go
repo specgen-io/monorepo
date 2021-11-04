@@ -1,4 +1,4 @@
-package spec
+package old
 
 import (
 	"bytes"
@@ -26,7 +26,7 @@ type Version struct {
 }
 
 type Meta struct {
-	SpecVersion string  `yaml:"spec"`
+	SpecVersion string  `yaml:"old"`
 	Name        Name    `yaml:"name"`
 	Title       *string `yaml:"title,omitempty"`
 	Description *string `yaml:"description,omitempty"`
@@ -105,7 +105,7 @@ func (value Spec) MarshalYAML() (interface{}, error) {
 
 func (value Meta) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
-	yamlMap.Add("spec", yamlx.String(value.SpecVersion))
+	yamlMap.Add("old", yamlx.String(value.SpecVersion))
 	yamlMap.Add("name", value.Name)
 	yamlMap.AddOmitNil("title", value.Title)
 	yamlMap.AddOmitNil("description", value.Description)
@@ -114,11 +114,11 @@ func (value Meta) MarshalYAML() (interface{}, error) {
 }
 
 func unmarshalSpec(data []byte) (*Spec, error) {
-	var spec Spec
-	if err := yaml.UnmarshalWith(decodeStrict, data, &spec); err != nil {
+	var old Spec
+	if err := yaml.UnmarshalWith(decodeStrict, data, &old); err != nil {
 		return nil, err
 	}
-	return &spec, nil
+	return &old, nil
 }
 
 type SpecParseResult struct {
@@ -133,33 +133,33 @@ func specError(errs Messages) error {
 		for _, error := range errs {
 			message = message + fmt.Sprintf("%s\n", error)
 		}
-		return errors.New("spec errors: \n" + message)
+		return errors.New("old errors: \n" + message)
 	}
 	return nil
 }
 
 func ReadSpec(data []byte) (*SpecParseResult, error) {
-	err := checkSpecVersion(data)
+	data, err := checkSpecVersion(data)
 	if err != nil {
 		return nil, err
 	}
 
-	spec, err := unmarshalSpec(data)
+	old, err := unmarshalSpec(data)
 	if err != nil {
 		return nil, err
 	}
 
-	errors := enrichSpec(spec)
+	errors := enrichSpec(old)
 	if len(errors) > 0 {
 		return &SpecParseResult{Errors: errors}, specError(errors)
 	}
 
-	warnings, errors := validate(spec)
+	warnings, errors := validate(old)
 	if len(errors) > 0 {
 		return &SpecParseResult{Spec: nil, Warnings: warnings, Errors: errors}, specError(errors)
 	}
 
-	return &SpecParseResult{Spec: spec, Warnings: warnings, Errors: errors}, nil
+	return &SpecParseResult{Spec: old, Warnings: warnings, Errors: errors}, nil
 }
 
 func ReadSpecFile(filepath string) (*SpecParseResult, error) {
@@ -173,19 +173,19 @@ func ReadSpecFile(filepath string) (*SpecParseResult, error) {
 	return result, err
 }
 
-func WriteSpec(spec *Spec) ([]byte, error) {
+func WriteSpec(old *Spec) ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := yaml.NewEncoder(&buf)
 	encoder.SetIndent(2)
-	err := encoder.Encode(spec)
+	err := encoder.Encode(old)
 	if err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func WriteSpecFile(spec *Spec, filepath string) error {
-	data, err := WriteSpec(spec)
+func WriteSpecFile(old *Spec, filepath string) error {
+	data, err := WriteSpec(old)
 	if err != nil {
 		return err
 	}
@@ -197,7 +197,7 @@ func WriteSpecFile(spec *Spec, filepath string) error {
 }
 
 func ReadMeta(data []byte) (*Meta, error) {
-	err := checkSpecVersion(data)
+	data, err := checkSpecVersion(data)
 	if err != nil {
 		return nil, err
 	}
@@ -221,4 +221,13 @@ func ReadMetaFile(filepath string) (*Meta, error) {
 	}
 
 	return meta, nil
+}
+
+func FormatSpec(inSpecFile, outSpecFile, newSpecVersion string) error {
+	result, err := ReadSpecFile(inSpecFile)
+	if err != nil { return err }
+	result.Spec.Version = newSpecVersion
+	err = WriteSpecFile(result.Spec, outSpecFile)
+	if err != nil { return err }
+	return nil
 }

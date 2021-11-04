@@ -7,9 +7,9 @@ import (
 )
 import "gopkg.in/specgen-io/yaml.v3"
 
-var SpecVersion = "2"
+var SpecVersion = "2.1"
 
-func GetSpecVersion(data []byte) (*string, error) {
+func getSpecVersion(data []byte) (*string, error) {
 	var node yaml.Node
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	err := decoder.Decode(&node)
@@ -18,49 +18,24 @@ func GetSpecVersion(data []byte) (*string, error) {
 	}
 
 	rootNode := node.Content[0]
-	idlVersion := getMappingValue(rootNode, "idl_version")
-	if idlVersion != nil {
-		return &idlVersion.Value, nil
-	}
-	specVersion := getMappingValue(rootNode, "spec")
-	if specVersion != nil {
-		return &specVersion.Value, nil
-	}
-	return nil, errors.New(`Can't find spec version field, should be either "idl_version" for spec v1 or "spec" for later spec versions`)
-}
-
-func checkSpecVersion(data []byte) ([]byte, error) {
-	specVersion, err := GetSpecVersion(data)
+	specVersion, err := decodeStringOptional(rootNode, "spec")
 	if err != nil {
 		return nil, err
 	}
 
-	if *specVersion == "0" || *specVersion == "1" {
-		var node yaml.Node
-		decoder := yaml.NewDecoder(bytes.NewReader(data))
-		err = decoder.Decode(&node)
-		if err != nil {
-			return nil, err
-		}
-
-		rootNode := node.Content[0]
-		idlVersionKey := getMappingKey(rootNode, "idl_version")
-		idlVersionValue := getMappingValue(rootNode, "idl_version")
-		idlVersionKey.Value = "spec"
-		idlVersionValue.Value = "2"
-		operations := getMappingKey(rootNode, "operations")
-		if operations != nil {
-			operations.Value = "http"
-		}
-		serviceName := getMappingKey(rootNode, "service_name")
-		serviceName.Value = "name"
-		data, err = yaml.Marshal(&node)
-		if err != nil {
-			return nil, err
-		}
-		return data, nil
-	} else if *specVersion != SpecVersion {
-		return nil, fmt.Errorf("unexpected spec version, expected: %s, found: %s", SpecVersion, *specVersion)
+	if specVersion == nil {
+		return nil, errors.New(`Can't find "spec" field with spec version`)
 	}
-	return data, nil
+	return specVersion, nil
+}
+
+func checkSpecVersion(data []byte) error {
+	specVersion, err := getSpecVersion(data)
+	if err != nil {
+		return err
+	}
+	if *specVersion != SpecVersion {
+		return fmt.Errorf("unexpected spec version, expected: %s, found: %s", SpecVersion, *specVersion)
+	}
+	return nil
 }
