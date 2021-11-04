@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
@@ -110,7 +111,7 @@ func (value EnumItems) MarshalYAML() (interface{}, error) {
 		}
 		return node, nil
 	} else {
-		yamlMap := NewYamlMap()
+		yamlMap := yamlx.NewYamlMap()
 		for index := 0; index < len(value); index++ {
 			item := value[index]
 			err := yamlMap.AddWithComment(item.Name, item.Value, item.Description)
@@ -123,7 +124,7 @@ func (value EnumItems) MarshalYAML() (interface{}, error) {
 }
 
 func (value Enum) MarshalYAML() (interface{}, error) {
-	yamlMap := NewYamlMap()
+	yamlMap := yamlx.NewYamlMap()
 	yamlMap.Add("enum", value.Items)
 	return yamlMap.Node, nil
 }
