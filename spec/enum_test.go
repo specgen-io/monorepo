@@ -9,7 +9,6 @@ import (
 
 func Test_Enum_SameValues_Unmarshal(t *testing.T) {
 	data := `
-description: Enum description
 enum:
 - the_first  # First option
 - the_second # Second option
@@ -18,7 +17,6 @@ enum:
 	var enum = Enum{}
 	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &enum)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, *enum.Description, "Enum description")
 	assert.Equal(t, len(enum.Items), 3)
 	item1 := enum.Items[0]
 	item2 := enum.Items[1]

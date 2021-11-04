@@ -40,10 +40,10 @@ Model4:
 
 	assert.Equal(t, model1.Name.Source, "Model1")
 	assert.Equal(t, model1.IsObject(), true)
-	assert.Equal(t, *model1.Object.Description, "first model")
+	assert.Equal(t, *model1.Description, "first model")
 	assert.Equal(t, model2.Name.Source, "Model2")
 	assert.Equal(t, model2.IsObject(), true)
-	assert.Equal(t, *model2.Object.Description, "second model")
+	assert.Equal(t, *model2.Description, "second model")
 	assert.Equal(t, model3.Name.Source, "Model3")
 	assert.Equal(t, model3.IsEnum(), true)
 	assert.Equal(t, model4.Name.Source, "Model4")

@@ -5,8 +5,7 @@ import (
 )
 
 type Object struct {
-	Fields      NamedDefinitions `yaml:"object"`
-	Description *string          `yaml:"description"`
+	Fields NamedDefinitions `yaml:"object"`
 }
 
 func (value Object) MarshalYAML() (interface{}, error) {

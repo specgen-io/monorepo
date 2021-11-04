@@ -68,8 +68,7 @@ func (value *EnumItems) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type Enum struct {
-	Items       EnumItems `yaml:"enum"`
-	Description *string   `yaml:"description"`
+	Items EnumItems `yaml:"enum"`
 }
 
 func itemsSameAsValues(value EnumItems) bool {

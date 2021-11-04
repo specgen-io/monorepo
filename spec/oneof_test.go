@@ -9,7 +9,6 @@ import (
 
 func Test_Union_Unmarshal(t *testing.T) {
 	data := `
-description: OneOf description
 oneOf:
   first: TheFirst
   second: TheSecond
@@ -18,7 +17,6 @@ oneOf:
 	var oneOf = OneOf{}
 	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &oneOf)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, *oneOf.Description, "OneOf description")
 	assert.Equal(t, oneOf.Discriminator == nil, true)
 	assert.Equal(t, len(oneOf.Items), 3)
 	item1 := oneOf.Items[0]
@@ -34,7 +32,6 @@ oneOf:
 
 func Test_Union_Unmarshal_With_Discriminator(t *testing.T) {
 	data := `
-description: OneOf description
 discriminator: type
 oneOf:
   first: TheFirst
@@ -44,7 +41,6 @@ oneOf:
 	var oneOf = OneOf{}
 	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &oneOf)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, *oneOf.Description, "OneOf description")
 	assert.Equal(t, *oneOf.Discriminator, "type")
 	assert.Equal(t, len(oneOf.Items), 3)
 	item1 := oneOf.Items[0]
