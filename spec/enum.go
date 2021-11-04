@@ -111,7 +111,7 @@ func (value EnumItems) MarshalYAML() (interface{}, error) {
 		}
 		return node, nil
 	} else {
-		yamlMap := yamlx.NewYamlMap()
+		yamlMap := yamlx.Map()
 		for index := 0; index < len(value); index++ {
 			item := value[index]
 			err := yamlMap.AddWithComment(item.Name, item.Value, item.Description)
@@ -124,7 +124,7 @@ func (value EnumItems) MarshalYAML() (interface{}, error) {
 }
 
 func (value Enum) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.NewYamlMap()
+	yamlMap := yamlx.Map()
 	yamlMap.Add("enum", value.Items)
 	return yamlMap.Node, nil
 }

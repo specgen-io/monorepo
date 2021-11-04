@@ -47,7 +47,7 @@ func (value *Responses) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (value Responses) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.NewYamlMap()
+	yamlMap := yamlx.Map()
 	for index := 0; index < len(value); index++ {
 		response := value[index]
 		err := yamlMap.AddWithComment(response.Name, response.Definition, response.Description)

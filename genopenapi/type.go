@@ -20,13 +20,13 @@ func OpenApiType(typ *spec.TypeDef, defaultValue *string) *yamlx.YamlMap {
 		return child
 	case spec.ArrayType:
 		child := OpenApiType(typ.Child, nil)
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "array")
 		result.Add("items", child)
 		return result
 	case spec.MapType:
 		child := OpenApiType(typ.Child, nil)
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "object")
 		result.Add("additionalProperties", child)
 		return result
@@ -116,59 +116,59 @@ func failDefaultParse(typ *spec.TypeDef, defaultValue string, err error) {
 func PlainOpenApiType(typeInfo *spec.TypeInfo, typ string) *yamlx.YamlMap {
 	switch typ {
 	case spec.TypeInt32:
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "integer")
 		result.Add("format", "int32")
 		return result
 	case spec.TypeInt64:
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "integer")
 		result.Add("format", "int64")
 		return result
 	case spec.TypeFloat:
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "number")
 		result.Add("format", "float")
 		return result
 	case spec.TypeDouble:
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "number")
 		result.Add("format", "double")
 		return result
 	case spec.TypeDecimal:
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "number")
 		result.Add("format", "decimal")
 		return result
 	case spec.TypeBoolean:
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "boolean")
 		return result
 	case spec.TypeString:
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "string")
 		return result
 	case spec.TypeUuid:
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "string")
 		result.Add("format", "uuid")
 		return result
 	case spec.TypeDate:
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "string")
 		result.Add("format", "date")
 		return result
 	case spec.TypeDateTime:
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "string")
 		result.Add("format", "datetime")
 		return result
 	case spec.TypeJson:
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("type", "object")
 		return result
 	default:
-		result := yamlx.NewYamlMap()
+		result := yamlx.Map()
 		result.Add("$ref", "#/components/schemas/"+versionedModelName(typeInfo.Model.Version.Version.Source, typ))
 		return result
 	}

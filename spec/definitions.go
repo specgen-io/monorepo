@@ -45,7 +45,7 @@ func (value *NamedDefinitions) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (value NamedDefinitions) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.NewYamlMap()
+	yamlMap := yamlx.Map()
 	for index := 0; index < len(value); index++ {
 		definition := value[index]
 		err := yamlMap.AddWithComment(definition.Name, definition.Definition, definition.Description)

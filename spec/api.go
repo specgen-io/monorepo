@@ -66,7 +66,7 @@ func (value *Apis) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (value Apis) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.NewYamlMap()
+	yamlMap := yamlx.Map()
 	yamlMap.AddOmitNil("url", value.Url)
 	for index := 0; index < len(value.Apis); index++ {
 		api := value.Apis[index]

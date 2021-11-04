@@ -78,7 +78,7 @@ func (value *Spec) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (value specification) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.NewYamlMap()
+	yamlMap := yamlx.Map()
 	if len(value.Http.Apis) > 0 {
 		yamlMap.Add("http", value.Http)
 	}
@@ -89,7 +89,7 @@ func (value specification) MarshalYAML() (interface{}, error) {
 }
 
 func (value Spec) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.NewYamlMap()
+	yamlMap := yamlx.Map()
 	yamlMap.Merge(value.Meta)
 	for index := 0; index < len(value.Versions); index++ {
 		version := value.Versions[index]
@@ -104,12 +104,12 @@ func (value Spec) MarshalYAML() (interface{}, error) {
 }
 
 func (value Meta) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.NewYamlMap()
-	yamlMap.Add("spec", yamlx.YamlString(value.SpecVersion))
+	yamlMap := yamlx.Map()
+	yamlMap.Add("spec", yamlx.String(value.SpecVersion))
 	yamlMap.Add("name", value.Name)
 	yamlMap.AddOmitNil("title", value.Title)
 	yamlMap.AddOmitNil("description", value.Description)
-	yamlMap.Add("version", yamlx.YamlString(value.Version))
+	yamlMap.Add("version", yamlx.String(value.Version))
 	return yamlMap.Node, nil
 }
 
@@ -122,9 +122,9 @@ func unmarshalSpec(data []byte) (*Spec, error) {
 }
 
 type SpecParseResult struct {
-	Spec *Spec
+	Spec     *Spec
 	Warnings Messages
-	Errors Messages
+	Errors   Messages
 }
 
 func specError(errs Messages) error {

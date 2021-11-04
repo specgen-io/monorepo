@@ -66,7 +66,7 @@ func (value *HeaderParams) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func paramsMarshalYAML(params []NamedParam) (interface{}, error) {
-	yamlMap := yamlx.NewYamlMap()
+	yamlMap := yamlx.Map()
 	for index := 0; index < len(params); index++ {
 		param := params[index]
 		err := yamlMap.AddWithComment(param.Name, param.DefinitionDefault, param.Description)
