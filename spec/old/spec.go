@@ -1,0 +1,233 @@
+package old
+
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"github.com/specgen-io/specgen/v2/yamlx"
+	"gopkg.in/specgen-io/yaml.v3"
+	"io/ioutil"
+)
+
+type Spec struct {
+	Meta
+	Versions []Version
+}
+
+type specification struct {
+	Http   Apis   `yaml:"http"`
+	Models Models `yaml:"models"`
+}
+
+type Version struct {
+	Version Name
+	specification
+	ResolvedModels []*NamedModel
+}
+
+type Meta struct {
+	SpecVersion string  `yaml:"old"`
+	Name        Name    `yaml:"name"`
+	Title       *string `yaml:"title,omitempty"`
+	Description *string `yaml:"description,omitempty"`
+	Version     string  `yaml:"version"`
+}
+
+func isVersionNode(node *yaml.Node) bool {
+	return VersionFormat.Check(node.Value) == nil
+}
+
+func (value *Spec) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.MappingNode {
+		return yamlError(node, "http should be YAML mapping")
+	}
+	versions := []Version{}
+	count := len(node.Content) / 2
+	for index := 0; index < count; index++ {
+		keyNode := node.Content[index*2]
+		valueNode := node.Content[index*2+1]
+
+		if isVersionNode(keyNode) {
+			version := Name{}
+			err := keyNode.DecodeWith(decodeStrict, &version)
+			if err != nil {
+				return err
+			}
+			err = version.Check(VersionFormat)
+			if err != nil {
+				return err
+			}
+
+			theSpec := specification{}
+			valueNode.DecodeWith(decodeStrict, &theSpec)
+			versions = append(versions, Version{version, theSpec, nil})
+		}
+	}
+	theSpec := specification{}
+	err := node.DecodeWith(decodeLooze, &theSpec)
+	if err != nil {
+		return err
+	}
+	versions = append(versions, Version{Name{}, theSpec, nil})
+
+	meta := Meta{}
+	node.DecodeWith(decodeStrict, &meta)
+
+	*value = Spec{meta, versions}
+	return nil
+}
+
+func (value specification) MarshalYAML() (interface{}, error) {
+	yamlMap := yamlx.Map()
+	if len(value.Http.Apis) > 0 {
+		yamlMap.Add("http", value.Http)
+	}
+	if len(value.Models) > 0 {
+		yamlMap.Add("models", value.Models)
+	}
+	return yamlMap.Node, nil
+}
+
+func (value Spec) MarshalYAML() (interface{}, error) {
+	yamlMap := yamlx.Map()
+	yamlMap.Merge(value.Meta)
+	for index := 0; index < len(value.Versions); index++ {
+		version := value.Versions[index]
+
+		if version.Version.Source != "" {
+			yamlMap.Add(version.Version.Source, version.specification)
+		} else {
+			yamlMap.Merge(version.specification)
+		}
+	}
+	return yamlMap.Node, nil
+}
+
+func (value Meta) MarshalYAML() (interface{}, error) {
+	yamlMap := yamlx.Map()
+	yamlMap.Add("old", yamlx.String(value.SpecVersion))
+	yamlMap.Add("name", value.Name)
+	yamlMap.AddOmitNil("title", value.Title)
+	yamlMap.AddOmitNil("description", value.Description)
+	yamlMap.Add("version", yamlx.String(value.Version))
+	return yamlMap.Node, nil
+}
+
+func unmarshalSpec(data []byte) (*Spec, error) {
+	var old Spec
+	if err := yaml.UnmarshalWith(decodeStrict, data, &old); err != nil {
+		return nil, err
+	}
+	return &old, nil
+}
+
+type SpecParseResult struct {
+	Spec     *Spec
+	Warnings Messages
+	Errors   Messages
+}
+
+func specError(errs Messages) error {
+	if len(errs) > 0 {
+		message := ""
+		for _, error := range errs {
+			message = message + fmt.Sprintf("%s\n", error)
+		}
+		return errors.New("old errors: \n" + message)
+	}
+	return nil
+}
+
+func ReadSpec(data []byte) (*SpecParseResult, error) {
+	data, err := checkSpecVersion(data)
+	if err != nil {
+		return nil, err
+	}
+
+	old, err := unmarshalSpec(data)
+	if err != nil {
+		return nil, err
+	}
+
+	errors := enrichSpec(old)
+	if len(errors) > 0 {
+		return &SpecParseResult{Errors: errors}, specError(errors)
+	}
+
+	warnings, errors := validate(old)
+	if len(errors) > 0 {
+		return &SpecParseResult{Spec: nil, Warnings: warnings, Errors: errors}, specError(errors)
+	}
+
+	return &SpecParseResult{Spec: old, Warnings: warnings, Errors: errors}, nil
+}
+
+func ReadSpecFile(filepath string) (*SpecParseResult, error) {
+	yamlFile, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := ReadSpec(yamlFile)
+
+	return result, err
+}
+
+func WriteSpec(old *Spec) ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := yaml.NewEncoder(&buf)
+	encoder.SetIndent(2)
+	err := encoder.Encode(old)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func WriteSpecFile(old *Spec, filepath string) error {
+	data, err := WriteSpec(old)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(filepath, data, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func ReadMeta(data []byte) (*Meta, error) {
+	data, err := checkSpecVersion(data)
+	if err != nil {
+		return nil, err
+	}
+	var meta Meta
+	if err := yaml.UnmarshalWith(decodeLooze, data, &meta); err != nil {
+		return nil, err
+	}
+	return &meta, nil
+}
+
+func ReadMetaFile(filepath string) (*Meta, error) {
+	yamlFile, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	meta, err := ReadMeta(yamlFile)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return meta, nil
+}
+
+func FormatSpec(inSpecFile, outSpecFile, newSpecVersion string) error {
+	result, err := ReadSpecFile(inSpecFile)
+	if err != nil { return err }
+	result.Spec.Version = newSpecVersion
+	err = WriteSpecFile(result.Spec, outSpecFile)
+	if err != nil { return err }
+	return nil
+}
