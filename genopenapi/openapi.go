@@ -37,23 +37,21 @@ func generateSpecification(spec *spec.Spec) *yamlx.YamlMap {
 	}
 	info.Add("version", spec.Version)
 
-	openapi := yamlx.Map()
-	openapi.Add("openapi", "3.0.0")
-	openapi.Add("info", info)
-
-	paths := generateApis(spec)
-	openapi.Add("paths", paths)
-
 	schemas := yamlx.Map()
-
 	for _, version := range spec.Versions {
 		for _, model := range version.Models {
 			schemas.Add(versionedModelName(version.Version.Source, model.Name.Source), generateModel(model.Model))
 		}
 	}
-	schemans := yamlx.Map()
-	schemans.Add("schemas", schemas)
-	openapi.Add("components", schemans)
+
+	components := yamlx.Map(yamlx.Pair{"schemas", schemas})
+
+	openapi := yamlx.Map(
+		yamlx.Pair{"openapi", "3.0.0"},
+		yamlx.Pair{"info", info},
+		yamlx.Pair{"paths", generateApis(spec)},
+		yamlx.Pair{"components", components},
+	)
 
 	return openapi
 }
@@ -83,9 +81,7 @@ func generateOperation(o *spec.NamedOperation) *yamlx.YamlMap {
 	operationId := casee.ToCamelCase(version.PascalCase() + o.Api.Name.PascalCase() + o.Name.PascalCase())
 	operation := yamlx.Map()
 	operation.Add("operationId", operationId)
-	tags := yamlx.Array()
-	tags.Add(o.Api.Name.Source)
-	operation.Add("tags", tags)
+	operation.Add("tags", yamlx.Array(o.Api.Name.Source))
 
 	if o.Operation.Description != nil {
 		operation.Add("description", o.Operation.Description)
@@ -97,11 +93,7 @@ func generateOperation(o *spec.NamedOperation) *yamlx.YamlMap {
 			request.Add("description", body.Description)
 		}
 		request.Add("required", !body.Type.Definition.IsNullable())
-		schema := yamlx.Map()
-		schema.Add("schema", OpenApiType(&body.Type.Definition, nil))
-		content := yamlx.Map()
-		content.Add("application/json", schema)
-		request.Add("content", content)
+		request.Add("content", generateJsonContent(&body.Type.Definition))
 		operation.Add("requestBody", request)
 	}
 
@@ -138,6 +130,12 @@ func addParameters(parameters *yamlx.YamlArray, in string, params []spec.NamedPa
 	}
 }
 
+func generateJsonContent(typ *spec.TypeDef) *yamlx.YamlMap {
+	schema := yamlx.Map(yamlx.Pair{"schema", OpenApiType(typ, nil)})
+	content := yamlx.Map(yamlx.Pair{"application/json", schema})
+	return content
+}
+
 func generateResponse(r spec.Definition) *yamlx.YamlMap {
 	response := yamlx.Map()
 	description := ""
@@ -146,11 +144,7 @@ func generateResponse(r spec.Definition) *yamlx.YamlMap {
 	}
 	response.Add("description", description)
 	if !r.Type.Definition.IsEmpty() {
-		jsonContent := yamlx.Map()
-		jsonContent.Add("schema", OpenApiType(&r.Type.Definition, nil))
-		content := yamlx.Map()
-		content.Add("application/json", jsonContent)
-		response.Add("content", content)
+		response.Add("content", generateJsonContent(&r.Type.Definition))
 	}
 	return response
 }
