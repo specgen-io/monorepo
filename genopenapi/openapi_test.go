@@ -2,10 +2,21 @@ package genopenapi
 
 import (
 	"github.com/specgen-io/specgen/v2/spec"
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
 )
+
+func checkOpenApi(t *testing.T, specYaml, expectedOpenApiYaml string) {
+	result, err := spec.ReadSpec([]byte(specYaml))
+	assert.Equal(t, err, nil)
+
+	openapiYaml, err := yamlx.ToYamlString(generateSpecification(result.Spec))
+	assert.NilError(t, err)
+
+	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
+}
 
 func TestEnumModel(t *testing.T) {
 	specYaml := `
@@ -43,13 +54,7 @@ components:
         - third
 `
 
-	result, err := spec.ReadSpec([]byte(specYaml))
-	assert.Equal(t, err, nil)
-
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
-	assert.NilError(t, err)
-
-	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
+	checkOpenApi(t, specYaml, expectedOpenApiYaml)
 }
 
 func TestObjectModel(t *testing.T) {
@@ -94,13 +99,7 @@ components:
             type: string
 `
 
-	result, err := spec.ReadSpec([]byte(specYaml))
-	assert.Equal(t, err, nil)
-
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
-	assert.NilError(t, err)
-
-	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
+	checkOpenApi(t, specYaml, expectedOpenApiYaml)
 }
 
 func TestUnionModel(t *testing.T) {
@@ -149,13 +148,7 @@ components:
           type: string
 `
 
-	result, err := spec.ReadSpec([]byte(specYaml))
-	assert.Equal(t, err, nil)
-
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
-	assert.NilError(t, err)
-
-	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
+	checkOpenApi(t, specYaml, expectedOpenApiYaml)
 }
 
 func TestApis(t *testing.T) {
@@ -253,14 +246,8 @@ components:
         field1:
           type: string
 `
-	//assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(openapiYaml))
-	result, err := spec.ReadSpec([]byte(specYaml))
-	assert.Equal(t, err, nil)
 
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
-	assert.NilError(t, err)
-
-	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
+	checkOpenApi(t, specYaml, expectedOpenApiYaml)
 }
 
 func TestSpecification(t *testing.T) {
@@ -283,13 +270,7 @@ components:
   schemas: {}
 `
 
-	result, err := spec.ReadSpec([]byte(specYaml))
-	assert.Equal(t, err, nil)
-
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
-	assert.NilError(t, err)
-
-	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
+	checkOpenApi(t, specYaml, expectedOpenApiYaml)
 }
 
 func TestFullSpecificationNoVersions(t *testing.T) {
@@ -382,13 +363,7 @@ components:
           format: int32
 `
 
-	result, err := spec.ReadSpec([]byte(specYaml))
-	assert.Equal(t, err, nil)
-
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
-	assert.NilError(t, err)
-
-	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
+	checkOpenApi(t, specYaml, expectedOpenApiYaml)
 }
 
 func TestFullSpecificationWithVersions(t *testing.T) {
@@ -444,12 +419,5 @@ components:
           type: string
 `
 
-	result, err := spec.ReadSpec([]byte(specYaml))
-	assert.Equal(t, err, nil)
-
-	openapiYaml, err := ToYamlString(generateSpecification(result.Spec))
-	assert.NilError(t, err)
-
-	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
+	checkOpenApi(t, specYaml, expectedOpenApiYaml)
 }
-

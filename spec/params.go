@@ -2,6 +2,7 @@ package spec
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
@@ -65,7 +66,7 @@ func (value *HeaderParams) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func paramsMarshalYAML(params []NamedParam) (interface{}, error) {
-	yamlMap := NewYamlMap()
+	yamlMap := yamlx.Map()
 	for index := 0; index < len(params); index++ {
 		param := params[index]
 		err := yamlMap.AddWithComment(param.Name, param.DefinitionDefault, param.Description)
