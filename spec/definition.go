@@ -5,14 +5,12 @@ import (
 	"strings"
 )
 
-type definitionDefault struct {
-	Type        Type    `yaml:"type"`
-	Default     *string `yaml:"default"`
-	Description *string `yaml:"description"`
+type DefinitionDefault struct {
+	Type        Type
+	Default     *string
+	Description *string
 	Location    *yaml.Node
 }
-
-type DefinitionDefault definitionDefault
 
 func parseDefaultedType(str string) (string, *string) {
 	if strings.Contains(str, "=") {
@@ -26,28 +24,20 @@ func parseDefaultedType(str string) (string, *string) {
 }
 
 func (value *DefinitionDefault) UnmarshalYAML(node *yaml.Node) error {
-	if node.Kind == yaml.ScalarNode {
-		typeStr, defaultValue := parseDefaultedType(node.Value)
-		typ, err := parseType(typeStr)
-		if err != nil {
-			return yamlError(node, err.Error())
-		}
-		internal := DefinitionDefault{
-			Type:        Type{*typ, node},
-			Default:     defaultValue,
-			Description: getDescription(node),
-		}
-		*value = internal
-	} else {
-		internal := definitionDefault{}
-		err := node.DecodeWith(decodeStrict, &internal)
-		if err != nil {
-			return err
-		}
-		definition := DefinitionDefault(internal)
-		definition.Location = node
-		*value = definition
+	if node.Kind != yaml.ScalarNode {
+		return yamlError(node, "definition with default has to be scalar value")
 	}
+	typeStr, defaultValue := parseDefaultedType(node.Value)
+	typ, err := parseType(typeStr)
+	if err != nil {
+		return yamlError(node, err.Error())
+	}
+	internal := DefinitionDefault{
+		Type:        Type{*typ, node},
+		Default:     defaultValue,
+		Description: getDescription(node),
+	}
+	*value = internal
 	return nil
 }
 
@@ -66,36 +56,26 @@ func (value DefinitionDefault) MarshalYAML() (interface{}, error) {
 	return node, nil
 }
 
-type definition struct {
-	Type        Type    `yaml:"type"`
-	Description *string `yaml:"description"`
+type Definition struct {
+	Type        Type
+	Description *string
 	Location    *yaml.Node
 }
 
-type Definition definition
-
 func (value *Definition) UnmarshalYAML(node *yaml.Node) error {
-	if node.Kind == yaml.ScalarNode {
-		typ, err := parseType(node.Value)
-		if err != nil {
-			return yamlError(node, err.Error())
-		}
-		parsed := Definition{
-			Type:        Type{*typ, node},
-			Description: getDescription(node),
-			Location:    node,
-		}
-		*value = parsed
-	} else {
-		internal := definition{}
-		err := node.DecodeWith(decodeStrict, &internal)
-		if err != nil {
-			return err
-		}
-		definition := Definition(internal)
-		definition.Location = node
-		*value = definition
+	if node.Kind != yaml.ScalarNode {
+		return yamlError(node, "definition has to be scalar value")
 	}
+	typ, err := parseType(node.Value)
+	if err != nil {
+		return yamlError(node, err.Error())
+	}
+	parsed := Definition{
+		Type:        Type{*typ, node},
+		Description: getDescription(node),
+		Location:    node,
+	}
+	*value = parsed
 	return nil
 }
 

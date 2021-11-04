@@ -13,10 +13,12 @@ name: bla-api
 
 models:
   Model1:
-    prop1: string
+    object:
+      prop1: string
   Model2:
-    prop1: string
-    prop2: int32
+    object:
+      prop1: string
+      prop2: int32
 `
 
 	result, err := ReadSpec([]byte(data))
@@ -35,13 +37,15 @@ name: bla-api
 v2:
   models:
     TheModel:
-      prop1: string
-      prop2: int32
+      object:
+        prop1: string
+        prop2: int32
 
 models:
   TheModel:
-    prop1: string
-    prop2: int32
+    object:
+      prop1: string
+      prop2: int32
 `
 
 	result, err := ReadSpec([]byte(data))
@@ -102,7 +106,8 @@ v2:
                    ok: empty
    models:
        MyModel:
-           field: string
+           object:
+               field: string
 
 http:
     test:
@@ -188,10 +193,12 @@ operations:
 
 models:
   Model1:
-    prop1: string
+    object:
+      prop1: string
   Model2:
-    prop1: string
-    prop2: int32
+    object:
+      prop1: string
+      prop2: int32
 `
 
 	result, err := ReadSpec([]byte(data))

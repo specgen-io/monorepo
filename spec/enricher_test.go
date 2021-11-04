@@ -62,9 +62,11 @@ http:
                 ok: Custom2
 models:
     Custom1:
-        field: string
+        object:
+            field: string
     Custom2:
-        field: string
+        object:
+            field: string
 `
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
@@ -78,10 +80,12 @@ func Test_ResolveTypes_ObjectField_Pass(t *testing.T) {
 	data := `
 models:
   Custom1:
-    field1: string
-    field2: Custom2
+    object:
+      field1: string
+      field2: Custom2
   Custom2:
-    field: Custom3
+    object:
+      field: Custom3
   Custom3:
     enum:
     - first
@@ -99,7 +103,8 @@ func Test_ResolveTypes_ObjectField_Fail(t *testing.T) {
 	data := `
 models:
   Custom:
-    field1: NonExisting
+    object:
+      field1: NonExisting
 `
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
@@ -114,8 +119,9 @@ func Test_ResolveTypes_UnionItem_Pass(t *testing.T) {
 	data := `
 models:
   Custom1:
-    field1: string
-    field2: Custom2
+    object:
+      field1: string
+      field2: Custom2
   Custom2:
     oneOf:
       one: string
@@ -150,9 +156,11 @@ func Test_Resolve_Models_Normal_Order(t *testing.T) {
 	data := `
 models:
   Model1:
-    field: string
+    object:
+      field: string
   Model2:
-    field: string
+    object:
+      field: string
 `
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
@@ -171,11 +179,14 @@ func Test_Resolve_Models_Reversed_Order(t *testing.T) {
 	data := `
 models:
   Model1:
-    field: Model2
+    object:
+      field: Model2
   Model2:
-    field: Model3
+    object:
+      field: Model3
   Model3:
-    field: string
+    object:
+      field: string
 `
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
@@ -198,10 +209,12 @@ func Test_Resolve_Models_Reversed_Order_With_Enum(t *testing.T) {
 	data := `
 models:
   Model1:
-    field1: Model3
-    field2: Model2
+    object:
+      field1: Model3
+      field2: Model2
   Model2:
-    field: string
+    object:
+      field: string
   Model3:
     enum:
       - some_item
@@ -249,8 +262,9 @@ func Test_Enrich_Models(t *testing.T) {
 	data := `
 models:
   Model1:
-    field1: Model3
-    field2: Model2
+    object:
+      field1: Model3
+      field2: Model2
 `
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)

@@ -113,7 +113,8 @@ http:
           ok: empty
 models:
  TheModel:
-   field: string
+   object:
+     field: string
 `
 
 	spec, err := unmarshalSpec([]byte(data))

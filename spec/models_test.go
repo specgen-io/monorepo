@@ -11,12 +11,13 @@ func Test_Models_Unmarshal(t *testing.T) {
 	data := `
 Model1:
   description: first model
-  fields:
+  object:
     prop1: string
     prop2: int32
 Model2:      # second model
-  prop1: string
-  prop2: int32
+  object:
+    prop1: string
+    prop2: int32
 Model3:
   enum:
   - first
@@ -53,7 +54,7 @@ func Test_Models_Unmarshal_WrongNameFormat(t *testing.T) {
 	data := `
 model_one:
   description: some model
-  fields:
+  object:
     prop1: string
     prop2: int32
 `

@@ -6,8 +6,8 @@ import (
 )
 
 type EnumItem struct {
-	Value       string  `yaml:"value"`
-	Description *string `yaml:"description"`
+	Value       string
+	Description *string
 }
 
 type NamedEnumItem struct {
@@ -56,20 +56,10 @@ func (value *EnumItems) UnmarshalYAML(node *yaml.Node) error {
 			if err != nil {
 				return err
 			}
-			item := &EnumItem{}
-			if valueNode.Kind == yaml.ScalarNode {
-				item.Value = valueNode.Value
-				item.Description = getDescription(valueNode)
-			} else {
-				err = valueNode.DecodeWith(decodeStrict, item)
-				if err != nil {
-					return err
-				}
+			if valueNode.Kind != yaml.ScalarNode {
+				return yamlError(valueNode, "enum item has to be scalar value")
 			}
-			if item.Value == "" {
-				item.Value = itemName.Source
-			}
-			array[index] = NamedEnumItem{Name: itemName, EnumItem: *item}
+			array[index] = NamedEnumItem{Name: itemName, EnumItem: EnumItem{valueNode.Value, getDescription(valueNode)}}
 		}
 		*value = array
 	}
