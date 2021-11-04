@@ -2,6 +2,7 @@ package spec
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
@@ -46,7 +47,7 @@ func (value *Responses) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (value Responses) MarshalYAML() (interface{}, error) {
-	yamlMap := NewYamlMap()
+	yamlMap := yamlx.NewYamlMap()
 	for index := 0; index < len(value); index++ {
 		response := value[index]
 		err := yamlMap.AddWithComment(response.Name, response.Definition, response.Description)

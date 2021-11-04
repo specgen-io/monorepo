@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
@@ -65,7 +66,7 @@ func (value *Apis) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (value Apis) MarshalYAML() (interface{}, error) {
-	yamlMap := NewYamlMap()
+	yamlMap := yamlx.NewYamlMap()
 	yamlMap.AddOmitNil("url", value.Url)
 	for index := 0; index < len(value.Apis); index++ {
 		api := value.Apis[index]

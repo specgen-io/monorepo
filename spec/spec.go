@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
 	"io/ioutil"
 )
@@ -77,7 +78,7 @@ func (value *Spec) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (value specification) MarshalYAML() (interface{}, error) {
-	yamlMap := NewYamlMap()
+	yamlMap := yamlx.NewYamlMap()
 	if len(value.Http.Apis) > 0 {
 		yamlMap.Add("http", value.Http)
 	}
@@ -88,7 +89,7 @@ func (value specification) MarshalYAML() (interface{}, error) {
 }
 
 func (value Spec) MarshalYAML() (interface{}, error) {
-	yamlMap := NewYamlMap()
+	yamlMap := yamlx.NewYamlMap()
 	yamlMap.Merge(value.Meta)
 	for index := 0; index < len(value.Versions); index++ {
 		version := value.Versions[index]
@@ -103,12 +104,12 @@ func (value Spec) MarshalYAML() (interface{}, error) {
 }
 
 func (value Meta) MarshalYAML() (interface{}, error) {
-	yamlMap := NewYamlMap()
-	yamlMap.Add("spec", YamlString(value.SpecVersion))
+	yamlMap := yamlx.NewYamlMap()
+	yamlMap.Add("spec", yamlx.YamlString(value.SpecVersion))
 	yamlMap.Add("name", value.Name)
 	yamlMap.AddOmitNil("title", value.Title)
 	yamlMap.AddOmitNil("description", value.Description)
-	yamlMap.Add("version", YamlString(value.Version))
+	yamlMap.Add("version", yamlx.YamlString(value.Version))
 	return yamlMap.Node, nil
 }
 

@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
@@ -45,7 +46,7 @@ func (value *Object) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (value Object) MarshalYAML() (interface{}, error) {
-	yamlMap := NewYamlMap()
+	yamlMap := yamlx.NewYamlMap()
 	yamlMap.Add("object", value.Fields)
 	return yamlMap.Node, nil
 }
