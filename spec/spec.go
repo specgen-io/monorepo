@@ -139,7 +139,7 @@ func specError(errs Messages) error {
 }
 
 func ReadSpec(data []byte) (*SpecParseResult, error) {
-	data, err := checkSpecVersion(data)
+	err := checkSpecVersion(data)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func WriteSpecFile(spec *Spec, filepath string) error {
 }
 
 func ReadMeta(data []byte) (*Meta, error) {
-	data, err := checkSpecVersion(data)
+	err := checkSpecVersion(data)
 	if err != nil {
 		return nil, err
 	}
