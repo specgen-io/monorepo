@@ -5,6 +5,10 @@ import (
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
+type Enum struct {
+	Items EnumItems `yaml:"enum"`
+}
+
 type EnumItem struct {
 	Value       string
 	Description *string
@@ -67,10 +71,6 @@ func (value *EnumItems) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
-type Enum struct {
-	Items EnumItems `yaml:"enum"`
-}
-
 func itemsSameAsValues(value EnumItems) bool {
 	for _, item := range value {
 		if item.Name.Source != item.Value {
@@ -82,23 +82,15 @@ func itemsSameAsValues(value EnumItems) bool {
 
 func (value EnumItems) MarshalYAML() (interface{}, error) {
 	if itemsSameAsValues(value) {
-		node := yaml.Node{
-			Kind:    yaml.SequenceNode,
-			Content: make([]*yaml.Node, len(value)),
-		}
+		yamlArray := yamlx.Array()
 		for index := 0; index < len(value); index++ {
 			item := value[index]
-			itemNode := yaml.Node{}
-			err := itemNode.Encode(item.Name)
+			err := yamlArray.AddWithComment(item.Name, item.Description)
 			if err != nil {
 				return nil, err
 			}
-			if item.Description != nil {
-				itemNode.LineComment = *item.Description
-			}
-			node.Content[index] = &itemNode
 		}
-		return node, nil
+		return yamlArray.Node, nil
 	} else {
 		yamlMap := yamlx.Map()
 		for index := 0; index < len(value); index++ {
@@ -110,10 +102,4 @@ func (value EnumItems) MarshalYAML() (interface{}, error) {
 		}
 		return yamlMap.Node, nil
 	}
-}
-
-func (value Enum) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.Map()
-	yamlMap.Add("enum", value.Items)
-	return yamlMap.Node, nil
 }

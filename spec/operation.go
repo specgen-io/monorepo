@@ -8,13 +8,26 @@ import (
 type operation struct {
 	Endpoint     Endpoint     `yaml:"endpoint"`
 	Description  *string      `yaml:"description,omitempty"`
+	HeaderParams HeaderParams `yaml:"header,omitempty"`
+	QueryParams  QueryParams  `yaml:"query,omitempty"`
 	Body         *Definition  `yaml:"body,omitempty"`
-	HeaderParams HeaderParams `yaml:"header"`
-	QueryParams  QueryParams  `yaml:"query"`
 	Responses    Responses    `yaml:"response"`
 }
 
 type Operation operation
+
+func (operation *Operation) GetResponse(status string) *NamedResponse {
+	for _, response := range operation.Responses {
+		if response.Name.Source == status {
+			return &response
+		}
+	}
+	return nil
+}
+
+func (operation *Operation) HasParams() bool {
+	return len(operation.QueryParams) > 0 || len(operation.HeaderParams) > 0 || len(operation.Endpoint.UrlParams) > 0
+}
 
 func (value *Operation) UnmarshalYAML(node *yaml.Node) error {
 	internal := operation{}
@@ -28,6 +41,21 @@ func (value *Operation) UnmarshalYAML(node *yaml.Node) error {
 	}
 	*value = operation
 	return nil
+}
+
+func (value Operation) MarshalYAML() (interface{}, error) {
+	yamlMap := yamlx.Map()
+	yamlMap.Add("endpoint", value.Endpoint)
+	yamlMap.AddOmitNil("description", value.Description)
+	if len(value.HeaderParams) > 0 {
+		yamlMap.Add("header", value.HeaderParams)
+	}
+	if len(value.QueryParams) > 0 {
+		yamlMap.Add("query", value.QueryParams)
+	}
+	yamlMap.AddOmitNil("body", value.Body)
+	yamlMap.Add("response", value.Responses)
+	return yamlMap.Node, nil
 }
 
 type NamedOperation struct {
@@ -72,34 +100,6 @@ func (value *Operations) UnmarshalYAML(node *yaml.Node) error {
 	}
 	*value = array
 	return nil
-}
-
-func (operation *Operation) GetResponse(status string) *NamedResponse {
-	for _, response := range operation.Responses {
-		if response.Name.Source == status {
-			return &response
-		}
-	}
-	return nil
-}
-
-func (operation *Operation) HasParams() bool {
-	return len(operation.QueryParams) > 0 || len(operation.HeaderParams) > 0 || len(operation.Endpoint.UrlParams) > 0
-}
-
-func (value Operation) MarshalYAML() (interface{}, error) {
-	yamlMap := yamlx.Map()
-	yamlMap.Add("endpoint", value.Endpoint)
-	yamlMap.AddOmitNil("description", value.Description)
-	if len(value.HeaderParams) > 0 {
-		yamlMap.Add("header", value.HeaderParams)
-	}
-	if len(value.QueryParams) > 0 {
-		yamlMap.Add("query", value.QueryParams)
-	}
-	yamlMap.AddOmitNil("body", value.Body)
-	yamlMap.Add("response", value.Responses)
-	return yamlMap.Node, nil
 }
 
 func (value Operations) MarshalYAML() (interface{}, error) {
