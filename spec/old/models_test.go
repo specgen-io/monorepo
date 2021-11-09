@@ -64,25 +64,30 @@ model_one:
 
 func Test_Models_Marshal(t *testing.T) {
 	expectedYaml := strings.TrimLeft(`
-Model1: # first model
+Model1:
+  description: first model
   object:
     prop1: string
     prop2: int
-Model2: # second model
+Model2:
+  description: second model
   enum:
     - first
     - second
     - third
-Model3: # third model
+Model3:
+  description: third model
   enum:
     first: FIRST
     second: SECOND
     third: THIRD
-Model4: # forth model
+Model4:
+  description: forth model
   oneOf:
     one: Model1
     two: Model2
 Model5:
+  description: fifth model
   discriminator: type
   oneOf:
     one: Model1
