@@ -35,9 +35,6 @@ func (value *NamedDefinitions) UnmarshalYAML(node *yaml.Node) error {
 		if err != nil {
 			return err
 		}
-		if definition.Description == nil {
-			definition.Description = getDescription(keyNode)
-		}
 		array[index] = NamedDefinition{Name: name, Definition: definition}
 	}
 	*value = array

@@ -40,7 +40,7 @@ func (value *EnumItems) UnmarshalYAML(node *yaml.Node) error {
 			if err != nil {
 				return err
 			}
-			array[index] = NamedEnumItem{Name: itemName, EnumItem: EnumItem{Value: itemName.Source, Description: getDescription(itemNode)}}
+			array[index] = NamedEnumItem{Name: itemName, EnumItem: EnumItem{itemName.Source, getDescriptionFromComment(itemNode)}}
 		}
 		*value = array
 	}
@@ -63,7 +63,7 @@ func (value *EnumItems) UnmarshalYAML(node *yaml.Node) error {
 			if valueNode.Kind != yaml.ScalarNode {
 				return yamlError(valueNode, "enum item has to be scalar value")
 			}
-			array[index] = NamedEnumItem{Name: itemName, EnumItem: EnumItem{valueNode.Value, getDescription(valueNode)}}
+			array[index] = NamedEnumItem{Name: itemName, EnumItem: EnumItem{valueNode.Value, getDescriptionFromComment(valueNode)}}
 		}
 		*value = array
 	}

@@ -40,7 +40,7 @@ func decodeStringOptional(node *yaml.Node, key string) (*string, error) {
 	return &str, err
 }
 
-func getDescription(node *yaml.Node) *string {
+func getDescriptionFromComment(node *yaml.Node) *string {
 	if node == nil {
 		return nil
 	}
