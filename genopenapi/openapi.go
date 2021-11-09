@@ -122,7 +122,11 @@ func addParameters(parameters *yamlx.YamlArray, in string, params []spec.NamedPa
 		param.Add("in", in)
 		param.Add("name", p.Name.Source)
 		param.Add("required", !p.Type.Definition.IsNullable())
-		param.Add("schema", OpenApiType(&p.Type.Definition, p.Default))
+		schema := OpenApiType(&p.Type.Definition)
+		if p.Default != nil {
+			schema.AddRaw("default", *p.Default)
+		}
+		param.Add("schema", schema)
 		if p.Description != nil {
 			param.Add("description", *p.Description)
 		}
@@ -131,7 +135,7 @@ func addParameters(parameters *yamlx.YamlArray, in string, params []spec.NamedPa
 }
 
 func generateJsonContent(typ *spec.TypeDef) *yamlx.YamlMap {
-	schema := yamlx.Map(yamlx.Pair{"schema", OpenApiType(typ, nil)})
+	schema := yamlx.Map(yamlx.Pair{"schema", OpenApiType(typ)})
 	content := yamlx.Map(yamlx.Pair{"application/json", schema})
 	return content
 }
@@ -169,7 +173,7 @@ func generateUnionModel(model spec.Model) *yamlx.YamlMap {
 
 	properties := yamlx.Map()
 	for _, item := range model.OneOf.Items {
-		property := OpenApiType(&item.Type.Definition, nil)
+		property := OpenApiType(&item.Type.Definition)
 		if item.Description != nil {
 			property.Add("description", item.Description)
 		}
@@ -201,7 +205,7 @@ func generateObjectModel(model spec.Model) *yamlx.YamlMap {
 
 	properties := yamlx.Map()
 	for _, field := range model.Object.Fields {
-		property := OpenApiType(&field.Type.Definition, nil)
+		property := OpenApiType(&field.Type.Definition)
 		if field.Description != nil {
 			property.Add("description", field.Description)
 		}

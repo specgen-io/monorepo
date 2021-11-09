@@ -9,7 +9,7 @@ import (
 )
 
 func checkType(t *testing.T, typ *spec.TypeDef, expected string) {
-	openApiType := OpenApiType(typ, nil)
+	openApiType := OpenApiType(typ)
 	openApiTypeYaml, err := yamlx.ToYamlString(openApiType)
 	assert.NilError(t, err)
 	assert.Equal(t, strings.TrimSpace(openApiTypeYaml), strings.TrimSpace(expected))
