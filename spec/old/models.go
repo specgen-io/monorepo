@@ -86,12 +86,18 @@ func (value Model) MarshalYAML() (interface{}, error) {
 	} else {
 		return nil, errors.New("Unknown model type")
 	}
-	node := yaml.Node{}
-	err := node.Encode(modelValue)
+	modelMap := yamlx.Map()
+	if value.Description() != nil {
+		err := modelMap.Add("description", *value.Description())
+		if err != nil {
+			return nil, err
+		}
+	}
+	err := modelMap.Merge(modelValue)
 	if err != nil {
 		return nil, err
 	}
-	return node, nil
+	return modelMap.Node, nil
 }
 
 func unmarshalModel(keyNode *yaml.Node, valueNode *yaml.Node) (*NamedModel, error) {
@@ -144,7 +150,7 @@ func (value Models) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
 	for index := 0; index < len(value); index++ {
 		model := value[index]
-		err := yamlMap.AddWithComment(model.Name, model.Model, model.Description())
+		err := yamlMap.Add(model.Name, model.Model)
 		if err != nil {
 			return nil, err
 		}
