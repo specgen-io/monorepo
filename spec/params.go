@@ -35,9 +35,6 @@ func (params *Params) paramsUnmarshalYAML(node *yaml.Node, paramsName string) er
 		if err != nil {
 			return err
 		}
-		if definition.Description == nil {
-			definition.Description = getDescription(keyNode)
-		}
 		array[index] = NamedParam{Name: name, DefinitionDefault: definition}
 	}
 	*params = array

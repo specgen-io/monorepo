@@ -35,7 +35,7 @@ func (value *DefinitionDefault) UnmarshalYAML(node *yaml.Node) error {
 	internal := DefinitionDefault{
 		Type:        Type{*typ, node},
 		Default:     defaultValue,
-		Description: getDescription(node),
+		Description: getDescriptionFromComment(node),
 	}
 	*value = internal
 	return nil
@@ -72,7 +72,7 @@ func (value *Definition) UnmarshalYAML(node *yaml.Node) error {
 	}
 	parsed := Definition{
 		Type:        Type{*typ, node},
-		Description: getDescription(node),
+		Description: getDescriptionFromComment(node),
 		Location:    node,
 	}
 	*value = parsed

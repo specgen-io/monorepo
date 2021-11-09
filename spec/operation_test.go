@@ -63,55 +63,6 @@ response:
 	assert.Equal(t, *operation.Body.Description, "body description")
 }
 
-func Test_Operations_Unmarshal(t *testing.T) {
-	data := `
-some_url:
-  endpoint: GET /some/url
-  response:
-    ok: empty
-ping:
-  endpoint: GET /ping
-  response:
-    ok: empty
-`
-
-	var operations Operations
-	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &operations)
-	assert.Equal(t, err, nil)
-
-	assert.Equal(t, len(operations), 2)
-	operation1 := operations[0]
-	operation2 := operations[1]
-	assert.Equal(t, operation1.Name.Source, "some_url")
-	assert.Equal(t, operation2.Name.Source, "ping")
-}
-
-func Test_Operations_Unmarshal_Description(t *testing.T) {
-	data := `
-some_url:     # some url description
-  endpoint: GET /some/url
-  response:
-    ok: empty
-ping:         # ping description
-  endpoint: GET /ping
-  response:
-    ok: empty
-`
-
-	var operations Operations
-	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &operations)
-	assert.Equal(t, err, nil)
-
-	assert.Equal(t, len(operations), 2)
-	operation1 := operations[0]
-	operation2 := operations[1]
-
-	assert.Equal(t, operation1.Name.Source, "some_url")
-	assert.Equal(t, *operation1.Description, "some url description")
-	assert.Equal(t, operation2.Name.Source, "ping")
-	assert.Equal(t, *operation2.Description, "ping description")
-}
-
 func Test_Operation_Marshal(t *testing.T) {
 	expectedYaml := strings.TrimLeft(`
 endpoint: GET /some/url

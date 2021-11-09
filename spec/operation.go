@@ -37,7 +37,7 @@ func (value *Operation) UnmarshalYAML(node *yaml.Node) error {
 	}
 	operation := Operation(internal)
 	if operation.Body != nil && operation.Body.Description == nil {
-		operation.Body.Description = getDescription(getMappingKey(node, "body"))
+		operation.Body.Description = getDescriptionFromComment(getMappingKey(node, "body"))
 	}
 	*value = operation
 	return nil
@@ -92,9 +92,6 @@ func (value *Operations) UnmarshalYAML(node *yaml.Node) error {
 		err = valueNode.DecodeWith(decodeStrict, &operation)
 		if err != nil {
 			return err
-		}
-		if operation.Description == nil {
-			operation.Description = getDescription(keyNode)
 		}
 		array[index] = NamedOperation{Name: name, Operation: operation}
 	}
