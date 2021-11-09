@@ -30,6 +30,19 @@ func (self *YamlArray) Add(values ...interface{}) error {
 	return nil
 }
 
+func (self *YamlArray) AddWithComment(value interface{}, comment *string) error {
+	valueNode := yaml.Node{}
+	err := valueNode.Encode(value)
+	if err != nil {
+		return err
+	}
+	if comment != nil {
+		valueNode.LineComment = *comment
+	}
+	self.Node.Content = append(self.Node.Content, &valueNode)
+	return nil
+}
+
 func (self *YamlArray) Length() int {
 	return len(self.Node.Content)
 }

@@ -56,6 +56,17 @@ func (yamlMap *YamlMap) Add(key interface{}, value interface{}) error {
 	return yamlMap.AddAll(Pair{key, value})
 }
 
+func (yamlMap *YamlMap) AddRaw(key interface{}, value string) error {
+	keyNode := yaml.Node{}
+	err := keyNode.Encode(key)
+	if err != nil {
+		return err
+	}
+	valueNode := String(value)
+	yamlMap.Node.Content = append(yamlMap.Node.Content, &keyNode, &valueNode)
+	return nil
+}
+
 func (yamlMap *YamlMap) AddOmitNil(key interface{}, value interface{}) error {
 	if !reflect.ValueOf(value).IsNil() {
 		yamlMap.Add(key, value)

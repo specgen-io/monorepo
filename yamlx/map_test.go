@@ -34,3 +34,15 @@ array:
 `
 	assert.Equal(t, strings.TrimSpace(expectedYaml), strings.TrimSpace(string(yamlData)))
 }
+
+func TestYamlMapRawValue(t *testing.T) {
+	theMap := Map()
+	theMap.Add("key1", 1)
+	theMap.AddRaw("key2", "2")
+	yamlData, _ := yaml.Marshal(theMap)
+	expectedYaml := `
+key1: 1
+key2: 2
+`
+	assert.Equal(t, strings.TrimSpace(expectedYaml), strings.TrimSpace(string(yamlData)))
+}
