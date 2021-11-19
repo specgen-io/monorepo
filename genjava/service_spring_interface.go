@@ -2,8 +2,8 @@ package genjava
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func generateServicesInterfaces(version *spec.Version, thePackage Module, modelsVersionPackage Module) []gen.TextFile {
@@ -16,8 +16,8 @@ func generateServicesInterfaces(version *spec.Version, thePackage Module, models
 }
 
 func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Module) []gen.TextFile {
-
 	files := []gen.TextFile{}
+
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
