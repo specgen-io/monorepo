@@ -12,7 +12,8 @@ func GenerateModels(specification *spec.Spec, packageName string, generatePath s
 		packageName = specification.Name.SnakeCase()
 	}
 	mainPackage := Package(generatePath, packageName)
-	files := generateModels(specification, mainPackage)
+	modelsPackage := mainPackage.Subpackage("models")
+	files := generateModels(specification, modelsPackage)
 	return gen.WriteFiles(files, true)
 }
 

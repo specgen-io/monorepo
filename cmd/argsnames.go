@@ -21,8 +21,11 @@ const ServicesPathDescription = "Path to scaffold services code"
 const TsServer = "server"
 const TsServerDescription = "TypeScript server library: express, koa"
 
-const Validation = "validation"
-const ValidationDescription = "TypeScript validation library: superstruct, io-ts"
+const TsValidation = "validation"
+const TsValidationDescription = "TypeScript validation library: superstruct, io-ts"
+
+const KotlinJsonLib = "jsonlib"
+const KotlinJsonLibDescription = "Kotlin JSON library: jackson"
 
 const OutFile = "out-file"
 const OutFileDescription = "Path to output file"

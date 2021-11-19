@@ -9,6 +9,7 @@ import (
 func init() {
 	modelsKotlin.Flags().String(SpecFile, "", SpecFileDescription)
 	modelsKotlin.Flags().String(PackageName, "", PackageNameDescription)
+	modelsKotlin.Flags().String(KotlinJsonLib, "jackson", KotlinJsonLibDescription)
 	modelsKotlin.Flags().String(GeneratePath, "", GeneratePathDescription)
 
 	modelsKotlin.MarkFlagRequired(SpecFile)
