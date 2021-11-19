@@ -2,8 +2,8 @@ package genjava
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func generateServicesControllers(version *spec.Version, thePackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []gen.TextFile {
@@ -50,19 +50,19 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 	w.Line(`  private ObjectMapper objectMapper;`)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		generateMethod(w.Indented(), version, api, operation)
+		generateMethod(w.Indented(), api, operation)
 	}
 	w.Line(`}`)
 
 	files = append(files, gen.TextFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", controllerName(api))),
+		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
 	})
 
 	return files
 }
 
-func generateMethod(w *gen.Writer, version *spec.Version, api *spec.Api, operation spec.NamedOperation) {
+func generateMethod(w *gen.Writer, api *spec.Api, operation spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, ToPascalCase(methodName), url)

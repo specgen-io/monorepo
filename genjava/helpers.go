@@ -52,3 +52,7 @@ func versionControllerName(controllerName string, version *spec.Version) string 
 func controllerMethodName(operation spec.NamedOperation) string {
 	return fmt.Sprintf(`%sController`, operation.Name.CamelCase())
 }
+
+func clientName(api *spec.Api) string {
+	return fmt.Sprintf(`%sClient`, api.Name.PascalCase())
+}
