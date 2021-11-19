@@ -2,8 +2,8 @@ package genjava
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
@@ -105,7 +105,7 @@ func getJsonPropertyAnnotation(field *spec.NamedDefinition) string {
 	if !field.Type.Definition.IsNullable() {
 		required = "true"
 	}
-	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.SnakeCase(), required)
+	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.Source, required)
 }
 
 func addObjectModelFields(w *gen.Writer, model *spec.NamedModel) {
