@@ -9,7 +9,7 @@ import (
 func init() {
 	cmdClientTsAxios.Flags().String(SpecFile, "", SpecFileDescription)
 	cmdClientTsAxios.Flags().String(GeneratePath, "", GeneratePathDescription)
-	cmdClientTsAxios.Flags().String(Validation, "", ValidationDescription)
+	cmdClientTsAxios.Flags().String(TsValidation, "", TsValidationDescription)
 
 	cmdClientTsAxios.MarkFlagRequired(SpecFile)
 	cmdClientTsAxios.MarkFlagRequired(GeneratePath)
@@ -27,7 +27,7 @@ var cmdClientTsAxios = &cobra.Command{
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		validation, err := cmd.Flags().GetString(Validation)
+		validation, err := cmd.Flags().GetString(TsValidation)
 		fail.IfError(err)
 
 		specification := readSpecFile(specFile)

@@ -20,6 +20,10 @@ kotlin {
 
 repositories.mavenCentral()
 
+dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.0")
+}
+
 gradlePlugin {
     val specgen by plugins.creating {
         id = "io.specgen.gradle"
