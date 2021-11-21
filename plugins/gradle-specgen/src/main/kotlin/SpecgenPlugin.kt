@@ -8,11 +8,14 @@ import org.gradle.api.plugins.*
 import org.gradle.api.tasks.*
 import org.gradle.kotlin.dsl.*
 
+import org.jetbrains.kotlin.gradle.dsl.*
+
 import javax.inject.Inject
 
 public open class SpecgenPluginExtension @Inject constructor(private val objectFactory: ObjectFactory) {
     public var configModelsJava: ModelsJavaConfig? = null
     public var configServiceJavaSpring: ServiceJavaSpringConfig? = null
+    public var configModelsKotlin: ModelsKotlinConfig? = null
 
     @Nested
     public fun modelsJava(action: Action<in ModelsJavaConfig>) {
@@ -27,6 +30,14 @@ public open class SpecgenPluginExtension @Inject constructor(private val objectF
         action.execute(config)
         configServiceJavaSpring = config
     }
+
+    @Nested
+    public fun modelsKotlin(action: Action<in ModelsKotlinConfig>) {
+        val config = objectFactory.newInstance(ModelsKotlinConfig::class.java)
+        action.execute(config)
+        configModelsKotlin = config
+    }
+
 }
 
 public class SpecgenPlugin : Plugin<Project> {
@@ -37,6 +48,7 @@ public class SpecgenPlugin : Plugin<Project> {
 
         val specgenModelsJava by project.tasks.registering(SpecgenModelsJavaTask::class)
         val specgenServiceJavaSpring by project.tasks.registering(SpecgenServiceJavaSpringTask::class)
+        val specgenModelsKotlin by project.tasks.registering(SpecgenModelsKotlinTask::class)
 
         project.afterEvaluate {
             extension.configModelsJava?.let { config ->
@@ -55,6 +67,16 @@ public class SpecgenPlugin : Plugin<Project> {
                     }
                 }
             }
+
+            extension.configModelsKotlin?.let { config ->
+                project.configure<KotlinProjectExtension> {
+                    sourceSets.all {
+                        kotlin.srcDir(config.outputDirectory.get())
+                        tasks["compileKotlin"]?.dependsOn(specgenModelsKotlin)
+                    }
+                }
+            }
+
         }
     }
 
