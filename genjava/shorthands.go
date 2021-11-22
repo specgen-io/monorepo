@@ -6,8 +6,11 @@ import (
 )
 
 var ToPascalCase = casee.ToPascalCase
-var ToUpperCase = casee.ToUpperCase
+
+func JoinDelimParams(params []string) string {
+	return strings.Join(params, ", ")
+}
 
 func JoinParams(params []string) string {
-	return strings.Join(params, ", ")
+	return strings.Join(params, "")
 }

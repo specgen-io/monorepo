@@ -2,8 +2,8 @@ package genjava
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func generateServicesInterfaces(version *spec.Version, thePackage Module, modelsVersionPackage Module) []gen.TextFile {
@@ -16,8 +16,8 @@ func generateServicesInterfaces(version *spec.Version, thePackage Module, models
 }
 
 func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Module) []gen.TextFile {
-
 	files := []gen.TextFile{}
+
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -29,13 +29,13 @@ func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Mo
 	w.EmptyLine()
 	w.Line(`public interface %s {`, serviceInterfaceName(api))
 	for _, operation := range api.Operations {
-		w.Line(`  %s;`, generateResponsesSignatures(operation))
+		w.Line(`  %s;`, generateResponsesSignatures(&operation))
 	}
 	w.Line(`}`)
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, generateResponseInterface(operation, apiPackage, modelsVersionPackage)...)
+			files = append(files, generateResponseInterface(&operation, apiPackage, modelsVersionPackage)...)
 		}
 	}
 
@@ -47,19 +47,19 @@ func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Mo
 	return files
 }
 
-func generateResponsesSignatures(operation spec.NamedOperation) string {
+func generateResponsesSignatures(operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
-			return fmt.Sprintf(`%s %s(%s)`, JavaType(&response.Type.Definition), operation.Name.CamelCase(), JoinParams(addOperationResponseParams(operation)))
+			return fmt.Sprintf(`%s %s(%s)`, JavaType(&response.Type.Definition), operation.Name.CamelCase(), JoinDelimParams(addOperationResponseParams(operation)))
 		}
 	}
 	if len(operation.Responses) > 1 {
-		return fmt.Sprintf(`%s %s(%s)`, serviceResponseInterfaceName(operation), operation.Name.CamelCase(), JoinParams(addOperationResponseParams(operation)))
+		return fmt.Sprintf(`%s %s(%s)`, serviceResponseInterfaceName(operation), operation.Name.CamelCase(), JoinDelimParams(addOperationResponseParams(operation)))
 	}
 	return ""
 }
 
-func addOperationResponseParams(operation spec.NamedOperation) []string {
+func addOperationResponseParams(operation *spec.NamedOperation) []string {
 	params := []string{}
 	if operation.Body != nil {
 		params = append(params, fmt.Sprintf("%s body", JavaType(&operation.Body.Type.Definition)))
@@ -76,7 +76,7 @@ func addOperationResponseParams(operation spec.NamedOperation) []string {
 	return params
 }
 
-func generateResponseInterface(operation spec.NamedOperation, apiPackage Module, modelsVersionPackage Module) []gen.TextFile {
+func generateResponseInterface(operation *spec.NamedOperation, apiPackage Module, modelsVersionPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -85,7 +85,7 @@ func generateResponseInterface(operation spec.NamedOperation, apiPackage Module,
 	w.Line(`}`)
 
 	for _, response := range operation.Responses {
-		files = append(files, *generateResponsesImplementations(operation, response, apiPackage, modelsVersionPackage))
+		files = append(files, *generateResponsesImplementations(&response, apiPackage, modelsVersionPackage))
 	}
 
 	files = append(files, gen.TextFile{
@@ -95,27 +95,28 @@ func generateResponseInterface(operation spec.NamedOperation, apiPackage Module,
 	return files
 }
 
-func generateResponsesImplementations(operation spec.NamedOperation, response spec.NamedResponse, apiPackage Module, modelsVersionPackage Module) *gen.TextFile {
+func generateResponsesImplementations(response *spec.NamedResponse, apiPackage Module, modelsVersionPackage Module) *gen.TextFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
 	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
 	w.EmptyLine()
-	w.Line(`public class %s implements %s {`, serviceResponseImplName(operation, response), serviceResponseInterfaceName(operation))
+	serviceResponseImplementationName := serviceResponseImplName(response)
+	w.Line(`public class %s implements %s {`, serviceResponseImplementationName, serviceResponseInterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {
 		w.Line(`  public %s %s;`, JavaType(&response.Type.Definition), response.Name.Source)
 		w.EmptyLine()
-		w.Line(`  public %s() {`, serviceResponseImplName(operation, response))
+		w.Line(`  public %s() {`, serviceResponseImplementationName)
 		w.Line(`  }`)
 		w.EmptyLine()
-		w.Line(`  public %s(%s %s) {`, serviceResponseImplName(operation, response), JavaType(&response.Type.Definition), response.Name.Source)
+		w.Line(`  public %s(%s %s) {`, serviceResponseImplementationName, JavaType(&response.Type.Definition), response.Name.Source)
 		w.Line(`    this.%s = %s;`, response.Name.Source, response.Name.Source)
 		w.Line(`  }`)
 	}
 	w.Line(`}`)
 
 	return &gen.TextFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", serviceResponseImplName(operation, response))),
+		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", serviceResponseImplementationName)),
 		Content: w.String(),
 	}
 }
