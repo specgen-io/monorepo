@@ -71,6 +71,7 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 func generateClientMethod(w *gen.Writer, operation spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
+	requestBody := "null"
 
 	w.Line(`public %s {`, generateResponsesSignatures(operation))
 	if operation.Body != nil {
@@ -84,11 +85,14 @@ func generateClientMethod(w *gen.Writer, operation spec.NamedOperation) {
 		w.Line(`  }`)
 		w.EmptyLine()
 		w.Line(`  var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
+		requestBody = "requestBody"
 	}
-	w.Line(`  var request = new RequestBuilder(baseUrl);`)
-	w.Line(`  request.method("%s");`, methodName)
-	w.Line(`  request.addPathSegment("%s");`, strings.TrimPrefix(operation.Endpoint.Url, "/"))
-	requestBuilding(w, operation)
+	w.Line(`  var url = new UrlBuilder(baseUrl);`)
+	w.Line(`  url.addPathSegment("%s");`, addRequestUrlParams(operation))
+	generateUrlBuilding(w, operation)
+	w.EmptyLine()
+	w.Line(`  var request = new RequestBuilder("%s", url.build(), %s);`, methodName, requestBody)
+	generateRequestBuilding(w, operation)
 	w.EmptyLine()
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  Response response;`)
@@ -132,19 +136,46 @@ func generateClientMethod(w *gen.Writer, operation spec.NamedOperation) {
 	w.Line(`    var errorMessage = "Unexpected status code received: " + response.code();`)
 	w.Line(`    logger.error(errorMessage);`)
 	w.Line(`    throw new ClientException(errorMessage);`)
-	w.Unindent()
 	w.Line(`  }`)
 	w.Line(`}`)
 }
 
-func requestBuilding(w *gen.Writer, operation spec.NamedOperation) {
-	for _, param := range operation.QueryParams {
-		w.Line(`request.addQueryParameter("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
+func addRequestUrlParams(operation spec.NamedOperation) string {
+	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
+		return strings.Join(getUrl(operation), "")
+	} else {
+		return strings.TrimPrefix(operation.Endpoint.Url, "/")
 	}
+}
+
+func getUrl(operation spec.NamedOperation) []string {
+	reminder := strings.TrimPrefix(operation.Endpoint.Url, "/")
+	urlParams := []string{}
+	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
+		for _, param := range operation.Endpoint.UrlParams {
+			parts := strings.Split(reminder, spec.UrlParamStr(param.Name.Source))
+			urlParams = append(urlParams, strings.TrimSuffix(parts[0], "/"))
+			reminder = parts[1]
+		}
+	}
+	return urlParams
+}
+
+func generateUrlBuilding(w *gen.Writer, operation spec.NamedOperation) {
+	w.Indent()
+	for _, param := range operation.QueryParams {
+		w.Line(`url.addQueryParameter("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
+	}
+	for _, param := range operation.Endpoint.UrlParams {
+		w.Line(`url.addPathSegment(%s);`, param.Name.CamelCase())
+	}
+	w.Unindent()
+}
+
+func generateRequestBuilding(w *gen.Writer, operation spec.NamedOperation) {
+	w.Indent()
 	for _, param := range operation.HeaderParams {
 		w.Line(`request.addHeaderParameter("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
 	}
-	for _, param := range operation.Endpoint.UrlParams {
-		w.Line(`request.addPathSegment(%s);`, param.Name.CamelCase())
-	}
+	w.Unindent()
 }
