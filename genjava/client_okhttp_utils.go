@@ -5,6 +5,17 @@ import (
 	"strings"
 )
 
+func generateUtils(thePackage Module) []gen.TextFile {
+	files := []gen.TextFile{}
+
+	files = append(files, *generateRequestBuilder(thePackage))
+	files = append(files, *generateUrlBuilder(thePackage))
+	files = append(files, *generateStringify(thePackage))
+	files = append(files, *generateClientException(thePackage))
+
+	return files
+}
+
 func generateRequestBuilder(thePackage Module) *gen.TextFile {
 	code := `
 package [[.PackageName]];
@@ -12,59 +23,29 @@ package [[.PackageName]];
 import okhttp3.*;
 
 public class RequestBuilder {
-	private final HttpUrl.Builder urlBuilder;
 	private final Request.Builder requestBuilder;
 
-	public RequestBuilder(String url) {
-		this.requestBuilder = new Request.Builder();
-		this.urlBuilder = HttpUrl.get(url).newBuilder();
+	public RequestBuilder(String method, HttpUrl url, RequestBody body) {
+		this.requestBuilder = new Request.Builder().url(url).method(method, body);
 	}
 
-	public void post(RequestBody requestBody) {
-		this.requestBuilder.post(requestBody);
-	}
-
-	public static String paramToString(Object value) {
-		if (value == null) {
-			return null;
-		}
-		return String.valueOf(value);
-	}
-
-	public void addQueryParameter(String name, Object value) {
-		var valueStr = paramToString(value);
-		if (valueStr != null) {
-			this.urlBuilder.addQueryParameter(name, valueStr);
-		}
-	}
-
-	public <T> void addQueryParameter(String name, T[] values) {
-		for (T val : values) {
-			this.addQueryParameter(name, val);
-		}
-	}
-
-	public void addHeaderParameter(String name, Object value) {
-		var valueStr = paramToString(value);
+	public RequestBuilder addHeaderParameter(String name, Object value) {
+		var valueStr = Stringify.paramToString(value);
 		if (valueStr != null) {
 			this.requestBuilder.addHeader(name, valueStr);
 		}
+		return this;
 	}
 
-	public <T> void addHeaderParameter(String name, T[] values) {
+	public <T> RequestBuilder addHeaderParameter(String name, T[] values) {
 		for (T val : values) {
 			this.addHeaderParameter(name, val);
 		}
-	}
-
-	public void addPathSegment(Object value) {
-		var valueStr = paramToString(value);
-		this.urlBuilder.addPathSegment(valueStr);
+		return this;
 	}
 
 	public Request build() {
-		var url = this.urlBuilder.build();
-		return this.requestBuilder.url(url).build();
+		return this.requestBuilder.build();
 	}
 }
 `
@@ -102,6 +83,74 @@ public class ClientException extends RuntimeException {
 	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
 	return &gen.TextFile{
 		Path:    thePackage.GetPath("ClientException.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func generateStringify(thePackage Module) *gen.TextFile {
+	code := `
+package [[.PackageName]];
+
+public class Stringify {
+    public static String paramToString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        return String.valueOf(value);
+    }
+}
+`
+
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &gen.TextFile{
+		Path:    thePackage.GetPath("Stringify.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func generateUrlBuilder(thePackage Module) *gen.TextFile {
+	code := `
+package [[.PackageName]];
+
+import okhttp3.HttpUrl;
+
+public class UrlBuilder {
+    private final HttpUrl.Builder urlBuilder;
+
+    public UrlBuilder(String baseUrl) {
+        this.urlBuilder = HttpUrl.get(baseUrl).newBuilder();
+    }
+
+    public UrlBuilder addQueryParameter(String name, Object value) {
+        var valueStr = Stringify.paramToString(value);
+        if (valueStr != null) {
+            this.urlBuilder.addQueryParameter(name, valueStr);
+        }
+        return this;
+    }
+
+    public <T> UrlBuilder addQueryParameter(String name, T[] values) {
+        for (T val : values) {
+            this.addQueryParameter(name, val);
+        }
+        return this;
+    }
+
+    public UrlBuilder addPathSegment(Object value) {
+        var valueStr = Stringify.paramToString(value);
+        this.urlBuilder.addPathSegment(valueStr);
+        return this;
+    }
+
+    public HttpUrl build() {
+        return this.urlBuilder.build();
+    }
+}
+`
+
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &gen.TextFile{
+		Path:    thePackage.GetPath("UrlBuilder.java"),
 		Content: strings.TrimSpace(code),
 	}
 }

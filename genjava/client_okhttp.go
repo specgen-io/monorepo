@@ -14,8 +14,7 @@ func GenerateClient(specification *spec.Spec, packageName string, generatePath s
 	generatedFiles = append(generatedFiles, *generateJson(modelsPackage))
 
 	utilsPackage := mainPackage.Subpackage("utils")
-	generatedFiles = append(generatedFiles, *generateRequestBuilder(utilsPackage))
-	generatedFiles = append(generatedFiles, *generateClientException(utilsPackage))
+	generatedFiles = append(generatedFiles, generateUtils(utilsPackage)...)
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
