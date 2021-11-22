@@ -50,11 +50,11 @@ func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Mo
 func generateResponsesSignatures(operation spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
-			return fmt.Sprintf(`%s %s(%s)`, JavaType(&response.Type.Definition), operation.Name.CamelCase(), JoinParams(addOperationResponseParams(operation)))
+			return fmt.Sprintf(`%s %s(%s)`, JavaType(&response.Type.Definition), operation.Name.CamelCase(), JoinDelimParams(addOperationResponseParams(operation)))
 		}
 	}
 	if len(operation.Responses) > 1 {
-		return fmt.Sprintf(`%s %s(%s)`, serviceResponseInterfaceName(operation), operation.Name.CamelCase(), JoinParams(addOperationResponseParams(operation)))
+		return fmt.Sprintf(`%s %s(%s)`, serviceResponseInterfaceName(operation), operation.Name.CamelCase(), JoinDelimParams(addOperationResponseParams(operation)))
 	}
 	return ""
 }

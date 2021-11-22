@@ -79,9 +79,7 @@ func generateClientMethod(w *gen.Writer, operation spec.NamedOperation) {
 		w.Line(`  try {`)
 		w.Line(`    bodyJson = objectMapper.writeValueAsString(body);`)
 		w.Line(`  } catch (JsonProcessingException e) {`)
-		w.Line(`    var errorMessage = "Failed to serialize JSON ";`)
-		w.Line(`    logger.error(errorMessage);`)
-		w.Line(`    throw new ClientException(errorMessage + e.getMessage(), e);`)
+		generateErrorMessage(w, `"Failed to serialize JSON "`, ` + e.getMessage(), e`)
 		w.Line(`  }`)
 		w.EmptyLine()
 		w.Line(`  var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
@@ -99,9 +97,7 @@ func generateClientMethod(w *gen.Writer, operation spec.NamedOperation) {
 	w.Line(`  try {`)
 	w.Line(`    response = client.newCall(request.build()).execute();`)
 	w.Line(`  } catch (IOException e) {`)
-	w.Line(`    var errorMessage = "Failed to execute the request ";`)
-	w.Line(`    logger.error(errorMessage);`)
-	w.Line(`    throw new ClientException(errorMessage + e.getMessage(), e);`)
+	generateErrorMessage(w, `"Failed to execute the request "`, ` + e.getMessage(), e`)
 	w.Line(`  }`)
 	w.EmptyLine()
 	w.Line(`  switch (response.code()) {`)
@@ -118,9 +114,7 @@ func generateClientMethod(w *gen.Writer, operation spec.NamedOperation) {
 				w.Line(`    return objectMapper.readValue(response.body().string(), %s.class);`, JavaType(&response.Type.Definition))
 			}
 			w.Line(`  } catch (IOException e) {`)
-			w.Line(`    var errorMessage = "Failed to deserialize response body ";`)
-			w.Line(`    logger.error(errorMessage);`)
-			w.Line(`    throw new ClientException(errorMessage + e.getMessage(), e);`)
+			generateErrorMessage(w, `"Failed to deserialize response body "`, ` + e.getMessage(), e`)
 			w.Line(`  }`)
 		} else {
 			w.Line(`  logger.info("Received response with status code {}", response.code());`)
@@ -133,16 +127,22 @@ func generateClientMethod(w *gen.Writer, operation spec.NamedOperation) {
 	}
 	w.Unindent()
 	w.Line(`  default:`)
-	w.Line(`    var errorMessage = "Unexpected status code received: " + response.code();`)
-	w.Line(`    logger.error(errorMessage);`)
-	w.Line(`    throw new ClientException(errorMessage);`)
+	generateErrorMessage(w, `"Unexpected status code received: " + response.code()`)
 	w.Line(`  }`)
 	w.Line(`}`)
 }
 
+func generateErrorMessage(w *gen.Writer, messages ...string) {
+	w.Indent()
+	w.Line(`  var errorMessage = %s;`, messages[0])
+	w.Line(`  logger.error(errorMessage);`)
+	w.Line(`  throw new ClientException(%s);`, JoinParams(messages))
+	w.Unindent()
+}
+
 func addRequestUrlParams(operation spec.NamedOperation) string {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		return strings.Join(getUrl(operation), "")
+		return JoinParams(getUrl(operation))
 	} else {
 		return strings.TrimPrefix(operation.Endpoint.Url, "/")
 	}

@@ -66,7 +66,7 @@ func generateMethod(w *gen.Writer, api *spec.Api, operation spec.NamedOperation)
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, ToPascalCase(methodName), url)
-	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), JoinParams(addMethodParams(operation)))
+	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), JoinDelimParams(addMethodParams(operation)))
 	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  HttpHeaders headers = new HttpHeaders();`)
 	w.Line(`  headers.add(CONTENT_TYPE, "application/json");`)
@@ -80,7 +80,7 @@ func generateMethod(w *gen.Writer, api *spec.Api, operation spec.NamedOperation)
 		w.Line(`    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);`)
 		w.Line(`  }`)
 	}
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(api), operation.Name.CamelCase(), JoinParams(addServiceMethodParams(operation)))
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(api), operation.Name.CamelCase(), JoinDelimParams(addServiceMethodParams(operation)))
 	if len(operation.Responses) == 1 {
 		for _, resp := range operation.Responses {
 			if resp.Type.Definition.IsEmpty() {
@@ -123,7 +123,7 @@ func getSpringParameterAnnotation(paramAnnotationName string, param *spec.NamedP
 		annotationParams = append(annotationParams, fmt.Sprintf(`defaultValue = "%s"`, *param.DefinitionDefault.Default))
 	}
 
-	return fmt.Sprintf(`@%s(%s)`, paramAnnotationName, JoinParams(annotationParams))
+	return fmt.Sprintf(`@%s(%s)`, paramAnnotationName, JoinDelimParams(annotationParams))
 }
 
 func generateMethodParam(namedParams []spec.NamedParam, paramAnnotationName string) []string {
