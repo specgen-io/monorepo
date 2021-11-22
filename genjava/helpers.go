@@ -33,12 +33,12 @@ func serviceInterfaceName(api *spec.Api) string {
 	return fmt.Sprintf(`%sService`, api.Name.PascalCase())
 }
 
-func serviceResponseInterfaceName(operation spec.NamedOperation) string {
+func serviceResponseInterfaceName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
 }
 
-func serviceResponseImplName(operation spec.NamedOperation, response spec.NamedResponse) string {
-	return fmt.Sprintf(`%s%s`, serviceResponseInterfaceName(operation), response.Name.PascalCase())
+func serviceResponseImplName(response *spec.NamedResponse) string {
+	return fmt.Sprintf(`%s%s`, serviceResponseInterfaceName(response.Operation), response.Name.PascalCase())
 }
 
 func controllerName(api *spec.Api) string {
@@ -49,7 +49,7 @@ func versionControllerName(controllerName string, version *spec.Version) string 
 	return fmt.Sprintf(`%s%s`, controllerName, version.Version.PascalCase())
 }
 
-func controllerMethodName(operation spec.NamedOperation) string {
+func controllerMethodName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sController`, operation.Name.CamelCase())
 }
 

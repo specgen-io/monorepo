@@ -10,12 +10,12 @@ func generateServicesControllers(version *spec.Version, thePackage Module, jsonP
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, generateController(version, &api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
+		files = append(files, generateController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
 	}
 	return files
 }
 
-func generateController(version *spec.Version, api *spec.Api, apiPackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []gen.TextFile {
+func generateController(api *spec.Api, apiPackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -38,7 +38,7 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
 	w.Line(`import %s;`, serviceVersionPackage.PackageStar)
 	w.EmptyLine()
-	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), version))
+	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.Apis.Version))
 	className := controllerName(api)
 	w.Line(`public class %s {`, className)
 	w.Line(`  private static final Logger logger = LogManager.getLogger(%s.class);`, className)
@@ -50,7 +50,7 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 	w.Line(`  private ObjectMapper objectMapper;`)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		generateMethod(w.Indented(), api, operation)
+		generateMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 
@@ -62,7 +62,7 @@ func generateController(version *spec.Version, api *spec.Api, apiPackage Module,
 	return files
 }
 
-func generateMethod(w *gen.Writer, api *spec.Api, operation spec.NamedOperation) {
+func generateMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, ToPascalCase(methodName), url)
@@ -80,7 +80,7 @@ func generateMethod(w *gen.Writer, api *spec.Api, operation spec.NamedOperation)
 		w.Line(`    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);`)
 		w.Line(`  }`)
 	}
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(api), operation.Name.CamelCase(), JoinDelimParams(addServiceMethodParams(operation)))
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), JoinDelimParams(addServiceMethodParams(operation)))
 	if len(operation.Responses) == 1 {
 		for _, resp := range operation.Responses {
 			if resp.Type.Definition.IsEmpty() {
@@ -101,7 +101,7 @@ func generateMethod(w *gen.Writer, api *spec.Api, operation spec.NamedOperation)
 		w.Line(`  var result = %s;`, serviceCall)
 		w.EmptyLine()
 		for _, resp := range operation.Responses {
-			w.Line(`  if (result instanceof %s) {`, serviceResponseImplName(operation, resp))
+			w.Line(`  if (result instanceof %s) {`, serviceResponseImplName(&resp))
 			w.Line(`    logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
 			w.Line(`    return new ResponseEntity<>(HttpStatus.%s);`, resp.Name.UpperCase())
 			w.Line(`  }`)
@@ -145,7 +145,7 @@ func generateMethodParam(namedParams []spec.NamedParam, paramAnnotationName stri
 	return params
 }
 
-func addMethodParams(operation spec.NamedOperation) []string {
+func addMethodParams(operation *spec.NamedOperation) []string {
 	methodParams := []string{}
 
 	if operation.Body != nil {
@@ -158,7 +158,7 @@ func addMethodParams(operation spec.NamedOperation) []string {
 	return methodParams
 }
 
-func addServiceMethodParams(operation spec.NamedOperation) []string {
+func addServiceMethodParams(operation *spec.NamedOperation) []string {
 	methodParams := []string{}
 	if operation.Body != nil {
 		methodParams = append(methodParams, "requestBody")

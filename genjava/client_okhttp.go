@@ -10,11 +10,13 @@ func GenerateClient(specification *spec.Spec, packageName string, generatePath s
 
 	mainPackage := Package(generatePath, packageName)
 
-	modelsPackage := mainPackage.Subpackage("models")
-	generatedFiles = append(generatedFiles, *generateJson(modelsPackage))
+	generatedFiles = append(generatedFiles, *generateClientException(mainPackage))
 
 	utilsPackage := mainPackage.Subpackage("utils")
 	generatedFiles = append(generatedFiles, generateUtils(utilsPackage)...)
+
+	modelsPackage := mainPackage.Subpackage("models")
+	generatedFiles = append(generatedFiles, *generateJson(modelsPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
@@ -23,7 +25,7 @@ func GenerateClient(specification *spec.Spec, packageName string, generatePath s
 		generatedFiles = append(generatedFiles, generateVersionModels(&version, modelsVersionPackage)...)
 
 		clientVersionPackage := versionPackage.Subpackage("clients")
-		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, clientVersionPackage, modelsVersionPackage, utilsPackage)...)
+		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, clientVersionPackage, modelsVersionPackage, utilsPackage, mainPackage)...)
 	}
 	err := gen.WriteFiles(generatedFiles, true)
 

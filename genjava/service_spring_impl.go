@@ -2,20 +2,20 @@ package genjava
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func generateServicesImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, servicesVersionPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := servicesVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, *generateServiceImplementation(version, &api, thePackage, modelsVersionPackage, serviceVersionSubpackage))
+		files = append(files, *generateServiceImplementation(&api, thePackage, modelsVersionPackage, serviceVersionSubpackage))
 	}
 	return files
 }
 
-func generateServiceImplementation(version *spec.Version, api *spec.Api, thePackage Module, modelsVersionPackage Module, serviceVersionSubpackage Module) *gen.TextFile {
+func generateServiceImplementation(api *spec.Api, thePackage Module, modelsVersionPackage Module, serviceVersionSubpackage Module) *gen.TextFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -28,11 +28,11 @@ func generateServiceImplementation(version *spec.Version, api *spec.Api, thePack
 	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
 	w.Line(`import %s;`, serviceVersionSubpackage.PackageStar)
 	w.EmptyLine()
-	w.Line(`@Service("%s")`, versionServiceName(serviceName(api), version))
+	w.Line(`@Service("%s")`, versionServiceName(serviceName(api), api.Apis.Version))
 	w.Line(`public class %s implements %s {`, serviceImplName(api), serviceInterfaceName(api))
 	for _, operation := range api.Operations {
 		w.Line(`  @Override`)
-		w.Line(`  public %s {`, generateResponsesSignatures(operation))
+		w.Line(`  public %s {`, generateResponsesSignatures(&operation))
 		w.Line(`    throw new UnsupportedOperationException("Implementation has not added yet");`)
 		w.Line(`  }`)
 	}

@@ -7,16 +7,16 @@ import (
 	"strings"
 )
 
-func generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, utilsPackage Module) []gen.TextFile {
+func generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, utilsPackage Module, mainPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, generateClient(&api, apiPackage, modelsVersionPackage, utilsPackage)...)
+		files = append(files, generateClient(&api, apiPackage, modelsVersionPackage, utilsPackage, mainPackage)...)
 	}
 	return files
 }
 
-func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Module, utilsPackage Module) []gen.TextFile {
+func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Module, utilsPackage Module, mainPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 
 	w := NewJavaWriter()
@@ -31,6 +31,7 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 	w.Line(`import java.time.*;`)
 	w.Line(`import java.util.*;`)
 	w.EmptyLine()
+	w.Line(`import %s;`, mainPackage.PackageStar)
 	w.Line(`import %s;`, utilsPackage.PackageStar)
 	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
 	w.EmptyLine()
@@ -50,13 +51,13 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 	w.Line(`  }`)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		generateClientMethod(w.Indented(), operation)
+		generateClientMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, generateResponseInterface(operation, apiPackage, modelsVersionPackage)...)
+			files = append(files, generateResponseInterface(&operation, apiPackage, modelsVersionPackage)...)
 		}
 	}
 
@@ -68,7 +69,7 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 	return files
 }
 
-func generateClientMethod(w *gen.Writer, operation spec.NamedOperation) {
+func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	requestBody := "null"
@@ -108,10 +109,11 @@ func generateClientMethod(w *gen.Writer, operation spec.NamedOperation) {
 			w.Indent()
 			w.Line(`  try {`)
 			w.Line(`    logger.info("Received response with status code {}", response.code());`)
+			readValueCall := fmt.Sprintf("objectMapper.readValue(response.body().string(), %s.class)", JavaType(&response.Type.Definition))
 			if len(operation.Responses) > 1 {
-				w.Line(`    return new %s(objectMapper.readValue(response.body().string(), %s.class));`, serviceResponseImplName(operation, response), JavaType(&response.Type.Definition))
+				w.Line(`    return new %s(%s);`, serviceResponseImplName(&response), readValueCall)
 			} else {
-				w.Line(`    return objectMapper.readValue(response.body().string(), %s.class);`, JavaType(&response.Type.Definition))
+				w.Line(`    return %s;`, readValueCall)
 			}
 			w.Line(`  } catch (IOException e) {`)
 			generateErrorMessage(w, `"Failed to deserialize response body "`, ` + e.getMessage(), e`)
@@ -119,7 +121,7 @@ func generateClientMethod(w *gen.Writer, operation spec.NamedOperation) {
 		} else {
 			w.Line(`  logger.info("Received response with status code {}", response.code());`)
 			if len(operation.Responses) > 1 {
-				w.Line(`  return new %s();`, serviceResponseImplName(operation, response))
+				w.Line(`  return new %s();`, serviceResponseImplName(&response))
 			} else {
 				w.Line(`  return;`)
 			}
@@ -128,6 +130,7 @@ func generateClientMethod(w *gen.Writer, operation spec.NamedOperation) {
 	w.Unindent()
 	w.Line(`  default:`)
 	generateErrorMessage(w, `"Unexpected status code received: " + response.code()`)
+	w.Unindent()
 	w.Line(`  }`)
 	w.Line(`}`)
 }
@@ -136,19 +139,19 @@ func generateErrorMessage(w *gen.Writer, messages ...string) {
 	w.Indent()
 	w.Line(`  var errorMessage = %s;`, messages[0])
 	w.Line(`  logger.error(errorMessage);`)
-	w.Line(`  throw new ClientException(%s);`, JoinParams(messages))
+	w.Line(`  throw new ClientException(errorMessage%s);`, JoinParams(messages[1:]))
 	w.Unindent()
 }
 
-func addRequestUrlParams(operation spec.NamedOperation) string {
+func addRequestUrlParams(operation *spec.NamedOperation) string {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		return JoinParams(getUrl(operation))
 	} else {
-		return strings.TrimPrefix(operation.Endpoint.Url, "/")
+		return strings.TrimPrefix(operation.FullUrl(), "/")
 	}
 }
 
-func getUrl(operation spec.NamedOperation) []string {
+func getUrl(operation *spec.NamedOperation) []string {
 	reminder := strings.TrimPrefix(operation.Endpoint.Url, "/")
 	urlParams := []string{}
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
@@ -161,7 +164,7 @@ func getUrl(operation spec.NamedOperation) []string {
 	return urlParams
 }
 
-func generateUrlBuilding(w *gen.Writer, operation spec.NamedOperation) {
+func generateUrlBuilding(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Indent()
 	for _, param := range operation.QueryParams {
 		w.Line(`url.addQueryParameter("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
@@ -172,10 +175,10 @@ func generateUrlBuilding(w *gen.Writer, operation spec.NamedOperation) {
 	w.Unindent()
 }
 
-func generateRequestBuilding(w *gen.Writer, operation spec.NamedOperation) {
+func generateRequestBuilding(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Indent()
 	for _, param := range operation.HeaderParams {
-		w.Line(`request.addHeaderParameter("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
+		w.Line(`request.addHeaderParameter("%s", %s);`, param.Name.Source, param.Name.CamelCase())
 	}
 	w.Unindent()
 }

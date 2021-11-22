@@ -11,7 +11,6 @@ func generateUtils(thePackage Module) []gen.TextFile {
 	files = append(files, *generateRequestBuilder(thePackage))
 	files = append(files, *generateUrlBuilder(thePackage))
 	files = append(files, *generateStringify(thePackage))
-	files = append(files, *generateClientException(thePackage))
 
 	return files
 }
@@ -53,57 +52,6 @@ public class RequestBuilder {
 	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
 	return &gen.TextFile{
 		Path:    thePackage.GetPath("RequestBuilder.java"),
-		Content: strings.TrimSpace(code),
-	}
-}
-
-func generateClientException(thePackage Module) *gen.TextFile {
-	code := `
-package [[.PackageName]];
-
-public class ClientException extends RuntimeException {
-	public ClientException() {
-		super();
-	}
-
-	public ClientException(String message) {
-		super(message);
-	}
-
-	public ClientException(String message, Throwable cause) {
-		super(message, cause);
-	}
-
-	public ClientException(Throwable cause) {
-		super(cause);
-	}
-}
-`
-
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &gen.TextFile{
-		Path:    thePackage.GetPath("ClientException.java"),
-		Content: strings.TrimSpace(code),
-	}
-}
-
-func generateStringify(thePackage Module) *gen.TextFile {
-	code := `
-package [[.PackageName]];
-
-public class Stringify {
-    public static String paramToString(Object value) {
-        if (value == null) {
-            return null;
-        }
-        return String.valueOf(value);
-    }
-}
-`
-
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &gen.TextFile{
-		Path:    thePackage.GetPath("Stringify.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
@@ -151,6 +99,27 @@ public class UrlBuilder {
 	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
 	return &gen.TextFile{
 		Path:    thePackage.GetPath("UrlBuilder.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func generateStringify(thePackage Module) *gen.TextFile {
+	code := `
+package [[.PackageName]];
+
+public class Stringify {
+    public static String paramToString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        return String.valueOf(value);
+    }
+}
+`
+
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &gen.TextFile{
+		Path:    thePackage.GetPath("Stringify.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
