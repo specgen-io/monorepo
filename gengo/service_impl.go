@@ -36,7 +36,7 @@ func generateServiceImplementation(moduleName string, versionModulePath string, 
 		w.Line(`func (service *%s) %s(%s) %s {`,
 			serviceTypeName(api),
 			operation.Name.PascalCase(),
-			JoinDelimParams(addVersionedMethodParams(operation)),
+			JoinDelimParams(addVersionedMethodParams(&operation)),
 			operationReturn(&operation, &apiPackage),
 		)
 		singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
@@ -54,7 +54,7 @@ func generateServiceImplementation(moduleName string, versionModulePath string, 
 	}
 }
 
-func addVersionedMethodParams(operation spec.NamedOperation) []string {
+func addVersionedMethodParams(operation *spec.NamedOperation) []string {
 	params := []string{}
 
 	if operation.Body != nil {
