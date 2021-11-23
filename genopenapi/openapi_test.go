@@ -92,7 +92,7 @@ components:
 	checkOpenApi(t, specYaml, expectedOpenApiYaml)
 }
 
-func TestUnionModel(t *testing.T) {
+func TestOneOfWrapperModel(t *testing.T) {
 	specYaml := `
 spec: 2.1
 name: bla-api
@@ -118,12 +118,91 @@ paths: {}
 components:
   schemas:
     Model:
+      oneOf:
+        - type: object
+          required:
+            - one
+          properties:
+            one:
+              $ref: '#/components/schemas/Model1'
+        - type: object
+          required:
+            - two
+          properties:
+            two:
+              $ref: '#/components/schemas/Model2'
+    Model1:
       type: object
+      required:
+        - field1
       properties:
-        one:
-          $ref: '#/components/schemas/Model1'
-        two:
-          $ref: '#/components/schemas/Model2'
+        field1:
+          type: string
+    Model2:
+      type: object
+      required:
+        - field1
+      properties:
+        field1:
+          type: string
+`
+
+	checkOpenApi(t, specYaml, expectedOpenApiYaml)
+}
+
+func TestOneOfDiscriminatorModel(t *testing.T) {
+	specYaml := `
+spec: 2.1
+name: bla-api
+models:
+  Model:
+    discriminator: kind
+    oneOf:
+      one: Model1
+      two: Model2
+  Model1:
+    object:
+      field1: string
+  Model2:
+    object:
+      field1: string
+`
+
+	expectedOpenApiYaml := `
+openapi: 3.0.0
+info:
+  title: bla-api
+  version: ""
+paths: {}
+components:
+  schemas:
+    Model:
+      anyOf:
+        - $ref: '#/components/schemas/ModelOne'
+        - $ref: '#/components/schemas/ModelTwo'
+      discriminator:
+        propertyName: kind
+        mapping:
+          one: '#/components/schemas/ModelOne'
+          two: '#/components/schemas/ModelTwo'
+    ModelOne:
+      allOf:
+        - $ref: '#/components/schemas/Model1'
+        - type: object
+          required:
+            - kind
+          properties:
+            kind:
+              type: string
+    ModelTwo:
+      allOf:
+        - $ref: '#/components/schemas/Model2'
+        - type: object
+          required:
+            - kind
+          properties:
+            kind:
+              type: string
     Model1:
       type: object
       required:
