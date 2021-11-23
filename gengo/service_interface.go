@@ -31,13 +31,13 @@ func generateInterface(api *spec.Api, apiModule module, modelsModule module) *ge
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
 			w.EmptyLine()
-			generateOperationResponseStruct(w, operation)
+			generateOperationResponseStruct(w, &operation)
 		}
 	}
 	w.EmptyLine()
 	w.Line(`type Service interface {`)
 	for _, operation := range api.Operations {
-		w.Line(`  %s(%s) %s`, operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), operationReturn(&operation, nil))
+		w.Line(`  %s(%s) %s`, operation.Name.PascalCase(), JoinDelimParams(addMethodParams(&operation)), operationReturn(&operation, nil))
 	}
 	w.Line(`}`)
 	return &gen.TextFile{
@@ -46,15 +46,15 @@ func generateInterface(api *spec.Api, apiModule module, modelsModule module) *ge
 	}
 }
 
-func generateOperationResponseStruct(w *gen.Writer, operation spec.NamedOperation) {
-	w.Line(`type %s struct {`, responseTypeName(&operation))
+func generateOperationResponseStruct(w *gen.Writer, operation *spec.NamedOperation) {
+	w.Line(`type %s struct {`, responseTypeName(operation))
 	for _, response := range operation.Responses {
 		w.Line(`  %s *%s`, response.Name.PascalCase(), GoType(&response.Type.Definition))
 	}
 	w.Line(`}`)
 }
 
-func addMethodParams(operation spec.NamedOperation) []string {
+func addMethodParams(operation *spec.NamedOperation) []string {
 	params := []string{}
 	if operation.Body != nil {
 		params = append(params, fmt.Sprintf("body *%s", GoType(&operation.Body.Type.Definition)))

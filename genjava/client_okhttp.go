@@ -25,7 +25,7 @@ func GenerateClient(specification *spec.Spec, packageName string, generatePath s
 		generatedFiles = append(generatedFiles, generateVersionModels(&version, modelsVersionPackage)...)
 
 		clientVersionPackage := versionPackage.Subpackage("clients")
-		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, clientVersionPackage, modelsVersionPackage, utilsPackage, mainPackage)...)
+		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, clientVersionPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage)...)
 	}
 	err := gen.WriteFiles(generatedFiles, true)
 
