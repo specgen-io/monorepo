@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"strconv"
+	"test-client/spec/models"
 )
 
 func convertInt(value int) string {
@@ -51,6 +52,10 @@ func convertDate(value civil.Date) string {
 
 func convertDateTime(value civil.DateTime) string {
 	return value.String()
+}
+
+func convertStringEnum(value models.Choice) string {
+	return string(value)
 }
 
 type ParamsSetter interface {
