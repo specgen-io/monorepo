@@ -133,7 +133,7 @@ func addUrlParam(operation spec.NamedOperation) []string {
 		if GoType(&param.Type.Definition) != "string" {
 			urlParams = append(urlParams, fmt.Sprintf("convert%s(%s)", parserMethodName(&param.Type.Definition), param.Name.CamelCase()))
 		} else {
-			urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+			urlParams = append(urlParams, param.Name.CamelCase())
 		}
 	}
 	return urlParams
