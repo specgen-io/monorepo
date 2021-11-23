@@ -7,16 +7,16 @@ import (
 	"strings"
 )
 
-func generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, utilsPackage Module, mainPackage Module) []gen.TextFile {
+func generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, generateClient(&api, apiPackage, modelsVersionPackage, utilsPackage, mainPackage)...)
+		files = append(files, generateClient(&api, apiPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage)...)
 	}
 	return files
 }
 
-func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Module, utilsPackage Module, mainPackage Module) []gen.TextFile {
+func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []gen.TextFile {
 	files := []gen.TextFile{}
 
 	w := NewJavaWriter()
@@ -34,6 +34,7 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 	w.Line(`import %s;`, mainPackage.PackageStar)
 	w.Line(`import %s;`, utilsPackage.PackageStar)
 	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
+	w.Line(`import %s.Json;`, modelsPackage.PackageName)
 	w.EmptyLine()
 	className := clientName(api)
 	w.Line(`public class %s {`, className)
