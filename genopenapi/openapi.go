@@ -40,7 +40,7 @@ func generateSpecification(spec *spec.Spec) *yamlx.YamlMap {
 	schemas := yamlx.Map()
 	for _, version := range spec.Versions {
 		for _, model := range version.Models {
-			schemas.Add(versionedModelName(version.Version.Source, model.Name.Source), generateModel(model.Model))
+			schemas.Merge(generateModel(&model).Node)
 		}
 	}
 
@@ -153,38 +153,105 @@ func generateResponse(r spec.Definition) *yamlx.YamlMap {
 	return response
 }
 
-func generateModel(model spec.Model) *yamlx.YamlMap {
+func generateModel(model *spec.NamedModel) *yamlx.YamlMap {
+	result := yamlx.Map()
 	if model.IsObject() {
 		return generateObjectModel(model)
 	} else if model.IsEnum() {
 		return generateEnumModel(model)
-	} else {
-		return generateUnionModel(model)
+	} else if model.IsOneOf() {
+		if model.OneOf.Discriminator != nil {
+			return generateOneOfDiscriminatorModel(model)
+		} else {
+			return generateOneOfWrapperModel(model)
+		}
 	}
+	return result
 }
 
-func generateUnionModel(model spec.Model) *yamlx.YamlMap {
+func generateOneOfWrapperModel(model *spec.NamedModel) *yamlx.YamlMap {
+	oneOfItems := yamlx.Array()
+
+	for _, item := range model.OneOf.Items {
+		itemSchema := yamlx.Map()
+		itemSchema.Add("type", "object")
+		if item.Description != nil {
+			itemSchema.Add("description", item.Description)
+		}
+		itemSchema.Add("required", yamlx.Array(item.Name.Source))
+		itemSchema.Add("properties", yamlx.Map(yamlx.Pair{item.Name.Source, OpenApiType(&item.Type.Definition)}))
+		oneOfItems.Add(itemSchema)
+	}
+
 	schema := yamlx.Map()
-	schema.Add("type", "object")
+	if model.Description != nil {
+		schema.Add("description", model.Description)
+	}
+	schema.Add("oneOf", oneOfItems)
+	result := yamlx.Map()
+	result.Add(versionedModelName(model.Version.Version.Source, model.Name.Source), schema)
+	return result
+}
+
+func itemTypeName(model *spec.NamedModel, item *spec.NamedDefinition) string {
+	return versionedModelName(model.Version.Version.Source, model.Name.Source+item.Name.PascalCase())
+}
+
+func generateOneOfDiscriminatorModel(model *spec.NamedModel) *yamlx.YamlMap {
+	schema := yamlx.Map()
 
 	if model.Description != nil {
 		schema.Add("description", model.Description)
 	}
 
-	properties := yamlx.Map()
+	anyOfItems := yamlx.Array()
 	for _, item := range model.OneOf.Items {
-		property := OpenApiType(&item.Type.Definition)
-		if item.Description != nil {
-			property.Add("description", item.Description)
-		}
-		properties.Add(item.Name.Source, property)
+		anyOfItems.Add(yamlx.Map(yamlx.Pair{"$ref", componentSchemas(itemTypeName(model, &item))}))
 	}
-	schema.Add("properties", properties)
+	schema.Add("anyOf", anyOfItems)
 
+	discriminator := yamlx.Map()
+	discriminator.Add("propertyName", *model.OneOf.Discriminator)
+
+	mapping := yamlx.Map()
+	for _, item := range model.OneOf.Items {
+		mapping.Add(item.Name.Source, componentSchemas(itemTypeName(model, &item)))
+	}
+	discriminator.Add("mapping", mapping)
+
+	schema.Add("discriminator", discriminator)
+
+	result := yamlx.Map()
+	result.Add(versionedModelName(model.Version.Version.Source, model.Name.Source), schema)
+	for _, item := range model.OneOf.Items {
+		result.Add(itemTypeName(model, &item), generateOneOfDiscriminatorItemModel(model, &item))
+	}
+	return result
+}
+
+func generateOneOfDiscriminatorItemModel(model *spec.NamedModel, item *spec.NamedDefinition) *yamlx.YamlMap {
+	allOfItems := yamlx.Array()
+	allOfItems.Add(OpenApiType(&item.Type.Definition))
+
+	discriminatorField := yamlx.Map()
+	discriminatorField.Add("type", "object")
+	discriminatorField.Add("required", yamlx.Array(model.OneOf.Discriminator))
+	discriminatorField.Add("properties", yamlx.Map(yamlx.Pair{
+		model.OneOf.Discriminator, yamlx.Map(yamlx.Pair{
+			"type", "string",
+		}),
+	}))
+	allOfItems.Add(discriminatorField)
+
+	schema := yamlx.Map()
+	if item.Description != nil {
+		schema.Add("description", item.Description)
+	}
+	schema.Add("allOf", allOfItems)
 	return schema
 }
 
-func generateObjectModel(model spec.Model) *yamlx.YamlMap {
+func generateObjectModel(model *spec.NamedModel) *yamlx.YamlMap {
 	schema := yamlx.Map()
 	schema.Add("type", "object")
 
@@ -213,10 +280,12 @@ func generateObjectModel(model spec.Model) *yamlx.YamlMap {
 	}
 	schema.Add("properties", properties)
 
-	return schema
+	result := yamlx.Map()
+	result.Add(versionedModelName(model.Version.Version.Source, model.Name.Source), schema)
+	return result
 }
 
-func generateEnumModel(model spec.Model) *yamlx.YamlMap {
+func generateEnumModel(model *spec.NamedModel) *yamlx.YamlMap {
 	schema := yamlx.Map()
 	schema.Add("type", "string")
 
@@ -230,5 +299,7 @@ func generateEnumModel(model spec.Model) *yamlx.YamlMap {
 	}
 	schema.Add("enum", openApiItems)
 
-	return schema
+	result := yamlx.Map()
+	result.Add(versionedModelName(model.Version.Version.Source, model.Name.Source), schema)
+	return result
 }
