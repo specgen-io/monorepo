@@ -2,8 +2,8 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
@@ -97,8 +97,10 @@ func generateApiClient(api spec.Api, validation string, validationModule module,
 	w.Line(`  }`)
 	w.Line(`}`)
 	for _, operation := range api.Operations {
-		w.EmptyLine()
-		generateOperationResponse(w, &operation)
+		if len(operation.Responses) > 1 {
+			w.EmptyLine()
+			generateOperationResponse(w, &operation)
+		}
 	}
 	return &gen.TextFile{module.GetPath(), w.String()}
 }
@@ -108,7 +110,7 @@ func generateOperation(w *gen.Writer, operation *spec.NamedOperation, validation
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0
 	w.EmptyLine()
-	w.Line(`%s: async (%s): Promise<%s> => {`, operation.Name.CamelCase(), createOperationParams(operation), responseTypeName(operation))
+	w.Line(`%s: async (%s): Promise<%s> => {`, operation.Name.CamelCase(), createOperationParams(operation), responseType(operation, ""))
 	if hasQueryParams {
 		w.Line(`  const params = {`)
 		for _, p := range operation.QueryParams {
@@ -140,15 +142,26 @@ func generateOperation(w *gen.Writer, operation *spec.NamedOperation, validation
 	}
 	w.Line(`  switch (response.status) {`)
 	for _, response := range operation.Responses {
-		dataParam := ``
-		if !response.Type.Definition.IsEmpty() {
-			dataParam = fmt.Sprintf(`, data: t.decode(%s.%s, response.data)`, modelsPackage, runtimeType(validation, &response.Type.Definition))
-		}
 		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
-		w.Line(`      return Promise.resolve({ status: "%s"%s })`, response.Name.Source, dataParam)
+		w.Line(`      return Promise.resolve(%s)`, clientResponseResult(&response, validation))
 	}
 	w.Line(`    default:`)
 	w.Line("      throw new Error(`Unexpected status code ${ response.status }`)")
 	w.Line(`  }`)
 	w.Line(`},`)
+}
+
+func clientResponseResult(response *spec.NamedResponse, validation string) string {
+	if response.Type.Definition.IsEmpty() {
+		if len(response.Operation.Responses) == 1 {
+			return ""
+		}
+		return fmt.Sprintf(`{ status: "%s" }`, response.Name.Source)
+	} else {
+		data := fmt.Sprintf(`t.decode(%s.%s, response.data)`, modelsPackage, runtimeType(validation, &response.Type.Definition))
+		if len(response.Operation.Responses) == 1 {
+			return data
+		}
+		return fmt.Sprintf(`{ status: "%s", data: %s }`, response.Name.Source, data)
+	}
 }

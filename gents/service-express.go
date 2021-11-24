@@ -2,8 +2,8 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
@@ -15,8 +15,8 @@ func generateExpressSpecRouter(specification *spec.Spec, rootModule module, modu
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
 			versionModule := rootModule.Submodule(version.Version.FlatCase())
-			apiModule := versionModule.Submodule(serviceName(&api))   //TODO: This logic is repeated here, it also exists where api module is created
-			routerModule := versionModule.Submodule("routing") //TODO: This logic is repeated here, it also exists where router module is created
+			apiModule := versionModule.Submodule(serviceName(&api)) //TODO: This logic is repeated here, it also exists where api module is created
+			routerModule := versionModule.Submodule("routing")      //TODO: This logic is repeated here, it also exists where router module is created
 			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), apiModule.GetImport(module))
 			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), routerModule.GetImport(module))
 		}
@@ -56,7 +56,7 @@ func generateExpressVersionRouting(version *spec.Version, validation string, val
 
 	w.Line("import {Router} from 'express'")
 	w.Line("import {Request, Response} from 'express'") //TODO: Join with above
-	w.Line(`import * as t from '%s'`,  validationModule.GetImport(module))
+	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
 	w.Line("import * as models from './models'")
 	for _, api := range version.Http.Apis {
 		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), serviceName(&api))
@@ -96,6 +96,14 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
+func generateExpressResponse(w *gen.Writer, response *spec.NamedResponse, validation string, dataParam string) {
+	if response.Type.Definition.IsEmpty() {
+		w.Line("response.status(%s).send()", spec.HttpStatusCode(response.Name))
+	} else {
+		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s.%s, %s)))", spec.HttpStatusCode(response.Name), modelsPackage, runtimeType(validation, &response.Type.Definition), dataParam)
+	}
+}
+
 func generateExpressOperationRouting(w *gen.Writer, operation *spec.NamedOperation, validation string) {
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
 	w.Indent()
@@ -103,17 +111,17 @@ func generateExpressOperationRouting(w *gen.Writer, operation *spec.NamedOperati
 	apiCallParamsObject := generateParametersParsing(w, validation, operation, "request.body", "request.headers", "request.params", "request.query", "response.status(400).send()")
 
 	w.Line("try {")
-	w.Line("  let result = await service.%s(%s)", operation.Name.CamelCase(), apiCallParamsObject)
-	w.Line("  switch (result.status) {")
-	for _, response := range operation.Responses {
-		w.Line("    case '%s':", response.Name.SnakeCase())
-		responseBody := ".send()"
-		if !response.Type.Definition.IsEmpty() {
-			responseBody = fmt.Sprintf(".type('json').send(JSON.stringify(t.encode(%s.%s, result.data)))", modelsPackage, runtimeType(validation, &response.Type.Definition))
+	w.Line("  %s", serviceCall(operation, apiCallParamsObject))
+	if len(operation.Responses) == 1 {
+		generateExpressResponse(w.IndentedWith(1), &operation.Responses[0], validation, "result")
+	} else {
+		w.Line("  switch (result.status) {")
+		for _, response := range operation.Responses {
+			w.Line("    case '%s':", response.Name.SnakeCase())
+			generateExpressResponse(w.IndentedWith(3), &response, validation, "result.data")
 		}
-		w.Line("      response.status(%s)%s", spec.HttpStatusCode(response.Name), responseBody)
+		w.Line("  }")
 	}
-	w.Line("  }")
 	w.Line("} catch (error) {")
 	w.Line("  response.status(500).send()")
 	w.Line("}")

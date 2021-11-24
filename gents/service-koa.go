@@ -3,8 +3,8 @@ package gents
 import (
 	"fmt"
 	"github.com/pinzolo/casee"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
@@ -16,8 +16,8 @@ func generateKoaSpecRouter(specification *spec.Spec, rootModule module, module m
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
 			versionModule := rootModule.Submodule(version.Version.FlatCase())
-			apiModule := versionModule.Submodule(serviceName(&api))   //TODO: This logic is repeated here, it also exists where api module is created
-			routerModule := versionModule.Submodule("routing") //TODO: This logic is repeated here, it also exists where router module is created
+			apiModule := versionModule.Submodule(serviceName(&api)) //TODO: This logic is repeated here, it also exists where api module is created
+			routerModule := versionModule.Submodule("routing")      //TODO: This logic is repeated here, it also exists where router module is created
 			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), apiModule.GetImport(module))
 			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), routerModule.GetImport(module))
 		}
@@ -94,23 +94,31 @@ func getKoaUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
+func generateKoaResponse(w *gen.Writer, response *spec.NamedResponse, validation string, dataParam string) {
+	w.Line("ctx.status = %s", spec.HttpStatusCode(response.Name))
+	if !response.Type.Definition.IsEmpty() {
+		w.Line("ctx.body = t.encode(%s.%s, %s)", modelsPackage, runtimeType(validation, &response.Type.Definition), dataParam)
+	}
+}
+
 func generateKoaOperationRouting(w *gen.Writer, operation *spec.NamedOperation, validation string) {
 	w.Line("router.%s('%s', async (ctx) => {", strings.ToLower(operation.Endpoint.Method), getKoaUrl(operation.Endpoint))
 	w.Indent()
 
-	apiCallParamsObject := generateParametersParsing(w, validation, operation, "ctx.request.body", "ctx.request.headers", "ctx.params", "ctx.request.query", "ctx.throw(400, error)")
+	apiCallParamsObject := generateParametersParsing(w, validation, operation, "ctx.request.body", "ctx.request.headers", "ctx.params", "ctx.request.query", "ctx.throw(400)")
 
 	w.Line("try {")
-	w.Line("  let result = await service.%s(%s)", operation.Name.CamelCase(), apiCallParamsObject)
-	w.Line("  switch (result.status) {")
-	for _, response := range operation.Responses {
-		w.Line("    case '%s':", response.Name.FlatCase())
-		w.Line("      ctx.status = %s", spec.HttpStatusCode(response.Name))
-		if !response.Type.Definition.IsEmpty() {
-			w.Line("ctx.body = t.encode(models.TMessage, result.data)")
+	w.Line("  %s", serviceCall(operation, apiCallParamsObject))
+	if len(operation.Responses) == 1 {
+		generateKoaResponse(w.IndentedWith(1), &operation.Responses[0], validation, "result")
+	} else {
+		w.Line("  switch (result.status) {")
+		for _, response := range operation.Responses {
+			w.Line("    case '%s':", response.Name.FlatCase())
+			generateKoaResponse(w.IndentedWith(3), &response, validation, "result.data")
 		}
+		w.Line("  }")
 	}
-	w.Line("  }")
 	w.Line("} catch (error) {")
 	w.Line("  ctx.throw(500)")
 	w.Line("}")

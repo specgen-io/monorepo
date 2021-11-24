@@ -2,8 +2,8 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
@@ -25,8 +25,10 @@ func generateApiService(api *spec.Api, modelsModule module, module module) *gen.
 			w.EmptyLine()
 			generateOperationParams(w, &operation)
 		}
-		w.EmptyLine()
-		generateOperationResponse(w, &operation)
+		if len(operation.Responses) > 1 {
+			w.EmptyLine()
+			generateOperationResponse(w, &operation)
+		}
 	}
 	w.EmptyLine()
 	w.Line("export interface %s {", serviceInterfaceName(api))
@@ -35,7 +37,7 @@ func generateApiService(api *spec.Api, modelsModule module, module module) *gen.
 		if operation.Body != nil || operation.HasParams() {
 			params = fmt.Sprintf(`params: %s`, operationParamsTypeName(&operation))
 		}
-		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, responseTypeName(&operation))
+		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, responseType(&operation, ""))
 	}
 	w.Line("}")
 	return &gen.TextFile{module.GetPath(), w.String()}
@@ -56,10 +58,6 @@ func serviceInterfaceNameVersioned(api *spec.Api) string {
 
 func serviceName(api *spec.Api) string {
 	return api.Name.SnakeCase() + "_service"
-}
-
-func serviceFileName(api *spec.Api) string {
-	return serviceName(api) + ".ts"
 }
 
 func operationParamsTypeName(operation *spec.NamedOperation) string {
