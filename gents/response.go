@@ -1,8 +1,8 @@
 package gents
 
 import (
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func generateOperationResponse(w *gen.Writer, operation *spec.NamedOperation) {
@@ -14,4 +14,19 @@ func generateOperationResponse(w *gen.Writer, operation *spec.NamedOperation) {
 			w.Line(`  | { status: "%s" }`, response.Name.Source)
 		}
 	}
+}
+
+func responseType(operation *spec.NamedOperation, servicePackage string) string {
+	if len(operation.Responses) == 1 {
+		response := operation.Responses[0]
+		if response.Definition.Type.Definition.IsEmpty() {
+			return "void"
+		}
+		return TsType(&response.Definition.Type.Definition)
+	}
+	result := responseTypeName(operation)
+	if servicePackage != "" {
+		result = "service." + result
+	}
+	return result
 }
