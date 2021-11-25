@@ -85,8 +85,11 @@ func (validator *validator) Operation(operation *NamedOperation) {
 	validator.Params(operation.HeaderParams, false)
 
 	if operation.Body != nil && !operation.Body.Type.Definition.IsEmpty() {
-		if operation.Body.Type.Definition.Info.Structure != StructureObject && operation.Body.Type.Definition.Info.Structure != StructureArray {
-			message := fmt.Sprintf("body should be of a type with structure of an object or array, found %s", operation.Body.Type.Definition.Name)
+		bodyType := operation.Body.Type
+		if bodyType.Definition.Info.Structure != StructureObject &&
+			bodyType.Definition.Info.Structure != StructureArray &&
+			bodyType.Definition.String() != TypeString {
+			message := fmt.Sprintf("body should be object, array or string type, found %s", bodyType.Definition.Name)
 			validator.AddError(operation.Body.Location, message)
 		}
 		validator.Definition(operation.Body)
@@ -104,7 +107,10 @@ func (validator *validator) Response(response *NamedResponse) {
 			validator.AddWarning(response.Type.Location, message)
 		}
 	}
-	if !response.Type.Definition.IsEmpty() && response.Type.Definition.Info.Structure != StructureObject && response.Type.Definition.Info.Structure != StructureArray {
+	if !response.Type.Definition.IsEmpty() &&
+		response.Type.Definition.Info.Structure != StructureObject &&
+		response.Type.Definition.Info.Structure != StructureArray &&
+		response.Type.Definition.String() != TypeString {
 		message := fmt.Sprintf("response %s should be either empty or some type with structure of an object or array, found %s", response.Name.Source, response.Type.Definition.Name)
 		validator.AddError(response.Type.Location, message)
 	}
