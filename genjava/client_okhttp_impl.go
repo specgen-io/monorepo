@@ -78,11 +78,11 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`public %s {`, generateResponsesSignatures(operation))
 	if operation.Body != nil {
 		w.Line(`  String bodyJson;`)
-		w.Line(`  try {`)
-		w.Line(`    bodyJson = objectMapper.writeValueAsString(body);`)
-		w.Line(`  } catch (JsonProcessingException e) {`)
-		generateErrorMessage(w, `"Failed to serialize JSON "`, ` + e.getMessage(), e`)
-		w.Line(`  }`)
+		generateTryCatch(w, `JsonProcessingException e`, func() {
+			w.Line(`  bodyJson = objectMapper.writeValueAsString(body);`)
+		}, func() {
+			generateErrorMessage(w, `"Failed to serialize JSON "`, ` + e.getMessage(), e`)
+		})
 		w.EmptyLine()
 		w.Line(`  var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
 		requestBody = "requestBody"
@@ -96,11 +96,11 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.EmptyLine()
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  Response response;`)
-	w.Line(`  try {`)
-	w.Line(`    response = client.newCall(request.build()).execute();`)
-	w.Line(`  } catch (IOException e) {`)
-	generateErrorMessage(w, `"Failed to execute the request "`, ` + e.getMessage(), e`)
-	w.Line(`  }`)
+	generateTryCatch(w, `IOException e`, func() {
+		w.Line(`  response = client.newCall(request.build()).execute();`)
+	}, func() {
+		generateErrorMessage(w, `"Failed to execute the request "`, ` + e.getMessage(), e`)
+	})
 	w.EmptyLine()
 	w.Line(`  switch (response.code()) {`)
 	w.Indent()
@@ -108,17 +108,17 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 		w.Line(`  case %s:`, spec.HttpStatusCode(response.Name))
 		if !response.Type.Definition.IsEmpty() {
 			w.Indent()
-			w.Line(`  try {`)
-			w.Line(`    logger.info("Received response with status code {}", response.code());`)
-			readValueCall := fmt.Sprintf("objectMapper.readValue(response.body().string(), %s.class)", JavaType(&response.Type.Definition))
-			if len(operation.Responses) > 1 {
-				w.Line(`    return new %s(%s);`, serviceResponseImplName(&response), readValueCall)
-			} else {
-				w.Line(`    return %s;`, readValueCall)
-			}
-			w.Line(`  } catch (IOException e) {`)
-			generateErrorMessage(w, `"Failed to deserialize response body "`, ` + e.getMessage(), e`)
-			w.Line(`  }`)
+			generateTryCatch(w, `IOException e`, func() {
+				w.Line(`  logger.info("Received response with status code {}", response.code());`)
+				readValueCall := fmt.Sprintf("objectMapper.readValue(response.body().string(), %s.class)", JavaType(&response.Type.Definition))
+				if len(operation.Responses) > 1 {
+					w.Line(`  return new %s(%s);`, serviceResponseImplName(&response), readValueCall)
+				} else {
+					w.Line(`  return %s;`, readValueCall)
+				}
+			}, func() {
+				generateErrorMessage(w, `"Failed to deserialize response body "`, ` + e.getMessage(), e`)
+			})
 		} else {
 			w.Line(`  logger.info("Received response with status code {}", response.code());`)
 			if len(operation.Responses) > 1 {
@@ -128,19 +128,28 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 			}
 		}
 	}
-	w.Unindent()
-	w.Line(`  default:`)
+	w.Line(`default:`)
 	generateErrorMessage(w, `"Unexpected status code received: " + response.code()`)
 	w.Unindent()
 	w.Line(`  }`)
 	w.Line(`}`)
 }
 
+func generateTryCatch(w *gen.Writer, exceptionObject string, codeBlock func(), exceptionHandler func()) {
+	w.Indent()
+	w.Line(`try {`)
+	codeBlock()
+	w.Line(`} catch (%s) {`, exceptionObject)
+	exceptionHandler()
+	w.Line(`}`)
+	w.Unindent()
+}
+
 func generateErrorMessage(w *gen.Writer, messages ...string) {
 	w.Indent()
-	w.Line(`  var errorMessage = %s;`, messages[0])
-	w.Line(`  logger.error(errorMessage);`)
-	w.Line(`  throw new ClientException(errorMessage%s);`, JoinParams(messages[1:]))
+	w.Line(`var errorMessage = %s;`, messages[0])
+	w.Line(`logger.error(errorMessage);`)
+	w.Line(`throw new ClientException(errorMessage%s);`, JoinParams(messages[1:]))
 	w.Unindent()
 }
 
