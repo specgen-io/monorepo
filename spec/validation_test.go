@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func Test_Body_NonObject_Error(t *testing.T) {
+func Test_Body_String(t *testing.T) {
 	data := `
 http:
     test:
@@ -25,8 +25,51 @@ http:
 
 	warnings, errors := validate(spec)
 	assert.Equal(t, len(warnings), 0)
+	assert.Equal(t, len(errors), 0)
+}
+
+func Test_Body_NonObject_Error(t *testing.T) {
+	data := `
+http:
+    test:
+      some_url:
+        endpoint: GET /some/url
+        body: int
+        response:
+          ok: empty
+`
+
+	spec, err := unmarshalSpec([]byte(data))
+	assert.Equal(t, err, nil)
+
+	errors := enrichSpec(spec)
+	assert.Equal(t, len(errors), 0)
+
+	warnings, errors := validate(spec)
+	assert.Equal(t, len(warnings), 0)
 	assert.Equal(t, len(errors), 1)
 	assert.Equal(t, strings.Contains(errors[0].Message, "body"), true)
+}
+
+func Test_Response_String(t *testing.T) {
+	data := `
+http:
+    test:
+      some_url:
+        endpoint: GET /some/url
+        response:
+          ok: string
+`
+
+	spec, err := unmarshalSpec([]byte(data))
+	assert.Equal(t, err, nil)
+
+	errors := enrichSpec(spec)
+	assert.Equal(t, len(errors), 0)
+
+	warnings, errors := validate(spec)
+	assert.Equal(t, len(warnings), 0)
+	assert.Equal(t, len(errors), 0)
 }
 
 func Test_Response_NonObject_Error(t *testing.T) {
@@ -36,7 +79,7 @@ http:
       some_url:
         endpoint: GET /some/url
         response:
-          ok: string
+          ok: int
 `
 
 	spec, err := unmarshalSpec([]byte(data))
