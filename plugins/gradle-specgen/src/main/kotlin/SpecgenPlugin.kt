@@ -14,6 +14,7 @@ import javax.inject.Inject
 
 public open class SpecgenPluginExtension @Inject constructor(private val objectFactory: ObjectFactory) {
     public var configModelsJava: ModelsJavaConfig? = null
+    public var configClientJavaOkHttp: ClientJavaOkHttpConfig? = null
     public var configServiceJavaSpring: ServiceJavaSpringConfig? = null
     public var configModelsKotlin: ModelsKotlinConfig? = null
 
@@ -22,6 +23,13 @@ public open class SpecgenPluginExtension @Inject constructor(private val objectF
         val config = objectFactory.newInstance(ModelsJavaConfig::class.java)
         action.execute(config)
         configModelsJava = config
+    }
+
+    @Nested
+    public fun clientJavaOkHttp(action: Action<in ClientJavaOkHttpConfig>) {
+        val config = objectFactory.newInstance(ClientJavaOkHttpConfig::class.java)
+        action.execute(config)
+        configClientJavaOkHttp = config
     }
 
     @Nested
@@ -47,11 +55,20 @@ public class SpecgenPlugin : Plugin<Project> {
         val extension = project.extensions.create<SpecgenPluginExtension>(SPECGEN_EXTENSION)
 
         val specgenModelsJava by project.tasks.registering(SpecgenModelsJavaTask::class)
+        val specgenClientJavaOkHttp by project.tasks.registering(SpecgenClientJavaOkHttpTask::class)
         val specgenServiceJavaSpring by project.tasks.registering(SpecgenServiceJavaSpringTask::class)
         val specgenModelsKotlin by project.tasks.registering(SpecgenModelsKotlinTask::class)
 
         project.afterEvaluate {
             extension.configModelsJava?.let { config ->
+                project.configure<JavaPluginExtension> {
+                    sourceSets.all {
+                        java.srcDir(config.outputDirectory.get())
+                        tasks[compileJavaTaskName]?.dependsOn(specgenModelsJava)
+                    }
+                }
+            }
+            extension.configClientJavaOkHttp?.let { config ->
                 project.configure<JavaPluginExtension> {
                     sourceSets.all {
                         java.srcDir(config.outputDirectory.get())
