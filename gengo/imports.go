@@ -1,8 +1,8 @@
 package gengo
 
 import (
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"sort"
 )
 

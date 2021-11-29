@@ -18,6 +18,9 @@ func generateRouting(version *spec.Version, versionModule module, modelsModule m
 	imports.Add("net/http")
 
 	for _, api := range version.Http.Apis {
+		if bodyHasType(&api, spec.TypeString) {
+			imports.Add("io/ioutil")
+		}
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
 		imports.Add(apiModule.Package)
 	}
@@ -117,7 +120,7 @@ func generateOperationParametersParsing(w *gen.Writer, operation *spec.NamedOper
 }
 
 func generateServiceCall(w *gen.Writer, operation *spec.NamedOperation) {
-	singleEmptyResponse := len(operation.Responses) == 1  && operation.Responses[0].Type.Definition.IsEmpty()
+	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
 	serviceCallResult := "response, err"
 	if singleEmptyResponse {
 		serviceCallResult = "err"
@@ -144,7 +147,11 @@ func generateServiceCall(w *gen.Writer, operation *spec.NamedOperation) {
 func generateResponseWriting(w *gen.Writer, response *spec.NamedResponse, responseVar string) {
 	w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
 	if !response.Type.Definition.IsEmpty() {
-		w.Line(`json.NewEncoder(res).Encode(%s)`, responseVar)
+		if response.Type.Definition.Plain == spec.TypeString {
+			w.Line(`res.Write([]byte(*response))`)
+		} else {
+			w.Line(`json.NewEncoder(res).Encode(%s)`, responseVar)
+		}
 	}
 	w.Line(`log.WithFields(%s).WithField("status", %s).Info("Completed request")`, logFieldsName(response.Operation), spec.HttpStatusCode(response.Name))
 	w.Line(`return`)
@@ -153,14 +160,25 @@ func generateResponseWriting(w *gen.Writer, response *spec.NamedResponse, respon
 func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	if operation.Body != nil {
-		w.Line(`var body %s`, GoType(&operation.Body.Type.Definition))
-		w.Line(`err := json.NewDecoder(req.Body).Decode(&body)`)
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
+		} else {
+			w.Line(`var body %s`, GoType(&operation.Body.Type.Definition))
+			w.Line(`err := json.NewDecoder(req.Body).Decode(&body)`)
+		}
 		w.Line(`if err != nil {`)
-		w.Line(`  log.WithFields(%s).Warnf("Decoding body JSON failed: %%s", err.Error())`, logFieldsName(operation))
+		errorMessage := `Decoding body JSON failed: %s`
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			errorMessage = `Reading request body failed: %s`
+		}
+		w.Line(`  log.WithFields(%s).Warnf("%s", err.Error())`, logFieldsName(operation), errorMessage)
 		w.Line(`  res.WriteHeader(400)`)
 		w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
 		w.Line(`  return`)
 		w.Line(`}`)
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			w.Line(`body := string(bodyData)`)
+		}
 	}
 	generateOperationParametersParsing(w, operation, operation.QueryParams, "queryParams", "req.URL.Query()")
 	generateOperationParametersParsing(w, operation, operation.HeaderParams, "headerParams", "req.Header")
