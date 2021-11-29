@@ -79,11 +79,9 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	if operation.Body != nil {
 		w.Line(`  String bodyJson;`)
 		generateClientTryCatch(w.Indented(),
+			`bodyJson = objectMapper.writeValueAsString(body);`,
 			`JsonProcessingException`, `e`,
-			`"Failed to serialize JSON " + e.getMessage()`,
-			func(w *gen.Writer) {
-				w.Line(`bodyJson = objectMapper.writeValueAsString(body);`)
-			})
+			`"Failed to serialize JSON " + e.getMessage()`)
 		w.EmptyLine()
 		w.Line(`  var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
 		requestBody = "requestBody"
@@ -98,11 +96,9 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  Response response;`)
 	generateClientTryCatch(w.Indented(),
+		`response = client.newCall(request.build()).execute();`,
 		`IOException`, `e`,
-		`"Failed to execute the request " + e.getMessage()`,
-		func(w *gen.Writer) {
-			w.Line(`response = client.newCall(request.build()).execute();`)
-		})
+		`"Failed to execute the request " + e.getMessage()`)
 	w.EmptyLine()
 	w.Line(`  switch (response.code()) {`)
 	for _, response := range operation.Responses {
@@ -113,11 +109,9 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 			responseJavaType := JavaType(&response.Type.Definition)
 			w.Line(`%s responseBody;`, responseJavaType)
 			generateClientTryCatch(w,
+				fmt.Sprintf(`responseBody = objectMapper.readValue(response.body().string(), %s.class);`, responseJavaType),
 				`IOException`, `e`,
-				`"Failed to deserialize response body " + e.getMessage()`,
-				func(w *gen.Writer) {
-					w.Line(`responseBody = objectMapper.readValue(response.body().string(), %s.class);`, responseJavaType)
-				})
+				`"Failed to deserialize response body " + e.getMessage()`)
 			if len(operation.Responses) > 1 {
 				w.Line(`return new %s(responseBody);`, serviceResponseImplName(&response))
 			} else {
@@ -146,9 +140,11 @@ func generateTryCatch(w *gen.Writer, exceptionObject string, codeBlock func(w *g
 	w.Line(`}`)
 }
 
-func generateClientTryCatch(w *gen.Writer, exceptionType, exceptionVar, errorMessage string, codeBlock func(w *gen.Writer)) {
+func generateClientTryCatch(w *gen.Writer, statement string, exceptionType, exceptionVar, errorMessage string) {
 	generateTryCatch(w, exceptionType+` `+exceptionVar,
-		codeBlock,
+		func(w *gen.Writer) {
+			w.Line(statement)
+		},
 		func(w *gen.Writer) {
 			generateThrowClientException(w, errorMessage, exceptionVar)
 		})
