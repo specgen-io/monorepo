@@ -14,6 +14,26 @@ func versionHasType(version *spec.Version, typ string) bool {
 	return false
 }
 
+func apiHasBody(api *spec.Api) bool {
+	for _, operation := range api.Operations {
+		if operation.Body != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func bodyHasType(api *spec.Api, typ string) bool {
+	for _, operation := range api.Operations {
+		if operation.Body != nil {
+			if checkType(&operation.Body.Type.Definition, typ) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func apiHasType(api *spec.Api, typ string) bool {
 	for _, operation := range api.Operations {
 		if paramHasType(operation.QueryParams, typ) {
@@ -23,15 +43,6 @@ func apiHasType(api *spec.Api, typ string) bool {
 			return true
 		}
 		if paramHasType(operation.Endpoint.UrlParams, typ) {
-			return true
-		}
-	}
-	return false
-}
-
-func apiHasBody(api *spec.Api) bool {
-	for _, operation := range api.Operations {
-		if operation.Body != nil {
 			return true
 		}
 	}
