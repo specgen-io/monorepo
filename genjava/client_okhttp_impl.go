@@ -78,11 +78,10 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`public %s {`, generateResponsesSignatures(operation))
 	if operation.Body != nil {
 		w.Line(`  String bodyJson;`)
-		w.Line(`  try {`)
-		w.Line(`    bodyJson = objectMapper.writeValueAsString(body);`)
-		w.Line(`  } catch (JsonProcessingException e) {`)
-		generateErrorMessage(w, `"Failed to serialize JSON "`, ` + e.getMessage(), e`)
-		w.Line(`  }`)
+		generateClientTryCatch(w.Indented(),
+			`bodyJson = objectMapper.writeValueAsString(body);`,
+			`JsonProcessingException`, `e`,
+			`"Failed to serialize JSON " + e.getMessage()`)
 		w.EmptyLine()
 		w.Line(`  var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
 		requestBody = "requestBody"
@@ -96,52 +95,69 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.EmptyLine()
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  Response response;`)
-	w.Line(`  try {`)
-	w.Line(`    response = client.newCall(request.build()).execute();`)
-	w.Line(`  } catch (IOException e) {`)
-	generateErrorMessage(w, `"Failed to execute the request "`, ` + e.getMessage(), e`)
-	w.Line(`  }`)
+	generateClientTryCatch(w.Indented(),
+		`response = client.newCall(request.build()).execute();`,
+		`IOException`, `e`,
+		`"Failed to execute the request " + e.getMessage()`)
 	w.EmptyLine()
 	w.Line(`  switch (response.code()) {`)
-	w.Indent()
 	for _, response := range operation.Responses {
-		w.Line(`  case %s:`, spec.HttpStatusCode(response.Name))
+		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
+		w.IndentWith(3)
+		w.Line(`logger.info("Received response with status code {}", response.code());`)
 		if !response.Type.Definition.IsEmpty() {
-			w.Indent()
-			w.Line(`  try {`)
-			w.Line(`    logger.info("Received response with status code {}", response.code());`)
-			readValueCall := fmt.Sprintf("objectMapper.readValue(response.body().string(), %s.class)", JavaType(&response.Type.Definition))
+			responseJavaType := JavaType(&response.Type.Definition)
+			w.Line(`%s responseBody;`, responseJavaType)
+			generateClientTryCatch(w,
+				fmt.Sprintf(`responseBody = objectMapper.readValue(response.body().string(), %s.class);`, responseJavaType),
+				`IOException`, `e`,
+				`"Failed to deserialize response body " + e.getMessage()`)
 			if len(operation.Responses) > 1 {
-				w.Line(`    return new %s(%s);`, serviceResponseImplName(&response), readValueCall)
+				w.Line(`return new %s(responseBody);`, serviceResponseImplName(&response))
 			} else {
-				w.Line(`    return %s;`, readValueCall)
+				w.Line(`return responseBody;`)
 			}
-			w.Line(`  } catch (IOException e) {`)
-			generateErrorMessage(w, `"Failed to deserialize response body "`, ` + e.getMessage(), e`)
-			w.Line(`  }`)
 		} else {
-			w.Line(`  logger.info("Received response with status code {}", response.code());`)
 			if len(operation.Responses) > 1 {
-				w.Line(`  return new %s();`, serviceResponseImplName(&response))
+				w.Line(`return new %s();`, serviceResponseImplName(&response))
 			} else {
-				w.Line(`  return;`)
+				w.Line(`return;`)
 			}
 		}
+		w.UnindentWith(3)
 	}
-	w.Unindent()
-	w.Line(`  default:`)
-	generateErrorMessage(w, `"Unexpected status code received: " + response.code()`)
-	w.Unindent()
+	w.Line(`    default:`)
+	generateThrowClientException(w.IndentedWith(3), `"Unexpected status code received: " + response.code()`, ``)
 	w.Line(`  }`)
 	w.Line(`}`)
 }
 
-func generateErrorMessage(w *gen.Writer, messages ...string) {
-	w.Indent()
-	w.Line(`  var errorMessage = %s;`, messages[0])
-	w.Line(`  logger.error(errorMessage);`)
-	w.Line(`  throw new ClientException(errorMessage%s);`, JoinParams(messages[1:]))
-	w.Unindent()
+func generateTryCatch(w *gen.Writer, exceptionObject string, codeBlock func(w *gen.Writer), exceptionHandler func(w *gen.Writer)) {
+	w.Line(`try {`)
+	codeBlock(w.Indented())
+	w.Line(`} catch (%s) {`, exceptionObject)
+	exceptionHandler(w.Indented())
+	w.Line(`}`)
+}
+
+func generateClientTryCatch(w *gen.Writer, statement string, exceptionType, exceptionVar, errorMessage string) {
+	generateTryCatch(w, exceptionType+` `+exceptionVar,
+		func(w *gen.Writer) {
+			w.Line(statement)
+		},
+		func(w *gen.Writer) {
+			generateThrowClientException(w, errorMessage, exceptionVar)
+		})
+}
+
+func generateThrowClientException(w *gen.Writer, errorMessage string, wrapException string) {
+	w.Line(`var errorMessage = %s;`, errorMessage)
+	w.Line(`logger.error(errorMessage);`)
+	params := "errorMessage"
+	if wrapException != "" {
+		params += ", " + wrapException
+	}
+	w.Line(`throw new ClientException(%s);`, params)
 }
 
 func addRequestUrlParams(operation *spec.NamedOperation) string {
