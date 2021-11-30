@@ -97,7 +97,11 @@ func getKoaUrl(endpoint spec.Endpoint) string {
 func generateKoaResponse(w *gen.Writer, response *spec.NamedResponse, validation string, dataParam string) {
 	w.Line("ctx.status = %s", spec.HttpStatusCode(response.Name))
 	if !response.Type.Definition.IsEmpty() {
-		w.Line("ctx.body = t.encode(%s.%s, %s)", modelsPackage, runtimeType(validation, &response.Type.Definition), dataParam)
+		if response.Type.Definition.Plain == spec.TypeString {
+			w.Line("ctx.body = %s", dataParam)
+		} else {
+			w.Line("ctx.body = t.encode(%s.%s, %s)", modelsPackage, runtimeType(validation, &response.Type.Definition), dataParam)
+		}
 	}
 }
 
@@ -105,7 +109,7 @@ func generateKoaOperationRouting(w *gen.Writer, operation *spec.NamedOperation, 
 	w.Line("router.%s('%s', async (ctx) => {", strings.ToLower(operation.Endpoint.Method), getKoaUrl(operation.Endpoint))
 	w.Indent()
 
-	apiCallParamsObject := generateParametersParsing(w, validation, operation, "ctx.request.body", "ctx.request.headers", "ctx.params", "ctx.request.query", "ctx.throw(400)")
+	apiCallParamsObject := generateParametersParsing(w, validation, operation, "ctx.request.body", "ctx.request.rawBody", "ctx.request.headers", "ctx.params", "ctx.request.query", "ctx.throw(400)")
 
 	w.Line("try {")
 	w.Line("  %s", serviceCall(operation, apiCallParamsObject))
