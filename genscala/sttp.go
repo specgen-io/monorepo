@@ -2,8 +2,8 @@ package genscala
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"path/filepath"
 	"strings"
 )
@@ -176,8 +176,12 @@ func generateClientOperationImplementation(w *gen.Writer, operation spec.NamedOp
 
 	addParamsWriting(w, operation.HeaderParams, "headers")
 	if operation.Body != nil {
-		w.Line(`val bodyJson = Jsoner.write(body)`)
-		w.Line(`logger.debug(s"Request to url: ${url}, body: ${bodyJson}")`)
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			w.Line(`logger.debug(s"Request to url: ${url}, body: ${body}")`)
+		} else {
+			w.Line(`val bodyJson = Jsoner.write(body)`)
+			w.Line(`logger.debug(s"Request to url: ${url}, body: ${bodyJson}")`)
+		}
 	} else {
 		w.Line(`logger.debug(s"Request to url: ${url}")`)
 	}
@@ -189,8 +193,13 @@ func generateClientOperationImplementation(w *gen.Writer, operation spec.NamedOp
 		w.Line(`    .headers(headers.params:_*)`)
 	}
 	if operation.Body != nil {
-		w.Line(`    .header("Content-Type", "application/json")`)
-		w.Line(`    .body(bodyJson)`)
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			w.Line(`    .header("Content-Type", "application/text")`)
+			w.Line(`    .body(body)`)
+		} else {
+			w.Line(`    .header("Content-Type", "application/json")`)
+			w.Line(`    .body(bodyJson)`)
+		}
 	}
 	w.Line(`    .parseResponseIf { status => status < 500 }`)
 	w.Line(`    .send()`)
@@ -204,7 +213,11 @@ func generateClientOperationImplementation(w *gen.Writer, operation spec.NamedOp
 	for _, response := range operation.Responses {
 		responseParam := ``
 		if !response.Type.Definition.IsEmpty() {
-			responseParam = fmt.Sprintf(`Jsoner.readThrowing[%s](body)`, ScalaType(&response.Type.Definition))
+			if response.Type.Definition.Plain == spec.TypeString {
+				responseParam = `body`
+			} else {
+				responseParam = fmt.Sprintf(`Jsoner.readThrowing[%s](body)`, ScalaType(&response.Type.Definition))
+			}
 		}
 		w.Line(`          case %s => %s.%s(%s)`, spec.HttpStatusCode(response.Name), responseType(operation), response.Name.PascalCase(), responseParam)
 		w.Line(`          case _ => `)
