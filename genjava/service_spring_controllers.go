@@ -72,13 +72,15 @@ func generateMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`  headers.add(CONTENT_TYPE, "application/json");`)
 	w.EmptyLine()
 	if operation.Body != nil {
-		w.Line(`  Message requestBody;`)
-		w.Line(`  try {`)
-		w.Line(`    requestBody = objectMapper.readValue(jsonStr, %s.class);`, JavaType(&operation.Body.Type.Definition))
-		w.Line(`  } catch (Exception e) {`)
-		w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
-		w.Line(`    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);`)
-		w.Line(`  }`)
+		if operation.Body.Type.Definition.Plain != spec.TypeString {
+			w.Line(`  Message requestBody;`)
+			w.Line(`  try {`)
+			w.Line(`    requestBody = objectMapper.readValue(bodyStr, %s.class);`, JavaType(&operation.Body.Type.Definition))
+			w.Line(`  } catch (Exception e) {`)
+			w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
+			w.Line(`    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);`)
+			w.Line(`  }`)
+		}
 	}
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), JoinDelimParams(addServiceMethodParams(operation)))
 	if len(operation.Responses) == 1 {
@@ -90,10 +92,14 @@ func generateMethod(w *gen.Writer, operation *spec.NamedOperation) {
 				w.Line(`  return new ResponseEntity<>(HttpStatus.%s);`, resp.Name.UpperCase())
 			} else {
 				w.Line(`  var result = %s;`, serviceCall)
-				w.Line(`  String responseJson = objectMapper.writeValueAsString(result);`)
+				responseVar := "result"
+				if resp.Type.Definition.Plain != spec.TypeString {
+					responseVar = "responseJson"
+					w.Line(`  String %s = objectMapper.writeValueAsString(result);`, responseVar)
+				}
 				w.EmptyLine()
 				w.Line(`  logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
-				w.Line(`  return new ResponseEntity<>(responseJson, headers, HttpStatus.%s);`, resp.Name.UpperCase())
+				w.Line(`  return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, responseVar, resp.Name.UpperCase())
 			}
 		}
 	}
@@ -149,7 +155,7 @@ func addMethodParams(operation *spec.NamedOperation) []string {
 	methodParams := []string{}
 
 	if operation.Body != nil {
-		methodParams = append(methodParams, "@RequestBody String jsonStr")
+		methodParams = append(methodParams, "@RequestBody String bodyStr")
 	}
 	methodParams = append(methodParams, generateMethodParam(operation.QueryParams, "RequestParam")...)
 	methodParams = append(methodParams, generateMethodParam(operation.HeaderParams, "RequestHeader")...)
@@ -161,7 +167,11 @@ func addMethodParams(operation *spec.NamedOperation) []string {
 func addServiceMethodParams(operation *spec.NamedOperation) []string {
 	methodParams := []string{}
 	if operation.Body != nil {
-		methodParams = append(methodParams, "requestBody")
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			methodParams = append(methodParams, "bodyStr")
+		} else {
+			methodParams = append(methodParams, "requestBody")
+		}
 	}
 	for _, param := range operation.QueryParams {
 		methodParams = append(methodParams, param.Name.CamelCase())

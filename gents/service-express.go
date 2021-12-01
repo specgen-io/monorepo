@@ -100,7 +100,11 @@ func generateExpressResponse(w *gen.Writer, response *spec.NamedResponse, valida
 	if response.Type.Definition.IsEmpty() {
 		w.Line("response.status(%s).send()", spec.HttpStatusCode(response.Name))
 	} else {
-		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s.%s, %s)))", spec.HttpStatusCode(response.Name), modelsPackage, runtimeType(validation, &response.Type.Definition), dataParam)
+		if response.Type.Definition.Plain == spec.TypeString {
+			w.Line("response.status(%s).type('text').send(%s)", spec.HttpStatusCode(response.Name), dataParam)
+		} else {
+			w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s.%s, %s)))", spec.HttpStatusCode(response.Name), modelsPackage, runtimeType(validation, &response.Type.Definition), dataParam)
+		}
 	}
 }
 
@@ -108,7 +112,7 @@ func generateExpressOperationRouting(w *gen.Writer, operation *spec.NamedOperati
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
 	w.Indent()
 
-	apiCallParamsObject := generateParametersParsing(w, validation, operation, "request.body", "request.headers", "request.params", "request.query", "response.status(400).send()")
+	apiCallParamsObject := generateParametersParsing(w, validation, operation, "request.body", "request.body", "request.headers", "request.params", "request.query", "response.status(400).send()")
 
 	w.Line("try {")
 	w.Line("  %s", serviceCall(operation, apiCallParamsObject))

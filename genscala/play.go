@@ -2,9 +2,9 @@ package genscala
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/genopenapi"
+	"github.com/specgen-io/specgen/v2/spec"
 	"path/filepath"
 	"strings"
 )
@@ -257,7 +257,11 @@ func generateControllerMethod(w *gen.Writer, operation spec.NamedOperation) {
 		w.Line(`val params = Try {`)
 		addParamsParsing(w.Indented(), operation.HeaderParams, "header", "request.headers.get")
 		if operation.Body != nil {
-			w.Line(`  val body = Jsoner.readThrowing[%s](request.body.utf8String)`, ScalaType(&operation.Body.Type.Definition))
+			if operation.Body.Type.Definition.Plain == spec.TypeString {
+				w.Line(`  val body = request.body.utf8String`)
+			} else {
+				w.Line(`  val body = Jsoner.readThrowing[%s](request.body.utf8String)`, ScalaType(&operation.Body.Type.Definition))
+			}
 		}
 		w.Line(`  (%s)`, JoinParams(parseParams))
 		w.Line(`}`)
@@ -285,7 +289,11 @@ func generateControllerMethod(w *gen.Writer, operation spec.NamedOperation) {
 func genResponseCases(w *gen.Writer, operation spec.NamedOperation) {
 	for _, r := range operation.Responses {
 		if !r.Type.Definition.IsEmpty() {
-			w.Line(`case %s.%s(body) => new Status(%s)(Jsoner.write(body))`, responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name))
+			body := `body`
+			if r.Type.Definition.Plain != spec.TypeString {
+				body = `Jsoner.write(body)`
+			}
+			w.Line(`case %s.%s(body) => new Status(%s)(%s)`, responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name), body)
 		} else {
 			w.Line(`case %s.%s() => new Status(%s)`, responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name))
 		}

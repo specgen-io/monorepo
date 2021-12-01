@@ -7,14 +7,18 @@ import (
 	"strings"
 )
 
-func generateParametersParsing(w *gen.Writer, validation string, operation *spec.NamedOperation, body string, headers string, urlParams string, query string, badRequestStatement string) string {
+func generateParametersParsing(w *gen.Writer, validation string, operation *spec.NamedOperation, body, rawBody string, headers string, urlParams string, query string, badRequestStatement string) string {
 	if operation.Body == nil && !operation.HasParams() {
 		return ""
 	}
 
 	apiCallParams := []string{}
 	if operation.Body != nil {
-		w.Line("var body: %s", TsType(&operation.Body.Type.Definition))
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			w.Line(`const body: string = %s`, rawBody)
+		} else {
+			w.Line("var body: %s", TsType(&operation.Body.Type.Definition))
+		}
 	}
 	if len(operation.Endpoint.UrlParams) > 0 {
 		w.Line("var urlParams: %s", paramsTypeName(operation, "UrlParams"))
@@ -27,7 +31,9 @@ func generateParametersParsing(w *gen.Writer, validation string, operation *spec
 	}
 	w.Line("try {")
 	if operation.Body != nil {
-		w.Line("  body = t.decode(%s.%s, %s)", modelsPackage, runtimeType(validation, &operation.Body.Type.Definition), body)
+		if operation.Body.Type.Definition.Plain != spec.TypeString {
+			w.Line("  body = t.decode(%s.%s, %s)", modelsPackage, runtimeType(validation, &operation.Body.Type.Definition), body)
+		}
 		apiCallParams = append(apiCallParams, "body")
 	}
 	if len(operation.Endpoint.UrlParams) > 0 {
