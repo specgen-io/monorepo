@@ -162,22 +162,22 @@ func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	if operation.Body != nil {
 		if operation.Body.Type.Definition.Plain == spec.TypeString {
 			w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
+			w.Line(`if err != nil {`)
+			w.Line(`  log.WithFields(%s).Warnf("%s", err.Error())`, logFieldsName(operation), `Reading request body failed: %s`)
+			w.Line(`  res.WriteHeader(400)`)
+			w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
+			w.Line(`  return`)
+			w.Line(`}`)
+			w.Line(`body := string(bodyData)`)
 		} else {
 			w.Line(`var body %s`, GoType(&operation.Body.Type.Definition))
 			w.Line(`err := json.NewDecoder(req.Body).Decode(&body)`)
-		}
-		w.Line(`if err != nil {`)
-		errorMessage := `Decoding body JSON failed: %s`
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			errorMessage = `Reading request body failed: %s`
-		}
-		w.Line(`  log.WithFields(%s).Warnf("%s", err.Error())`, logFieldsName(operation), errorMessage)
-		w.Line(`  res.WriteHeader(400)`)
-		w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
-		w.Line(`  return`)
-		w.Line(`}`)
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`body := string(bodyData)`)
+			w.Line(`if err != nil {`)
+			w.Line(`  log.WithFields(%s).Warnf("%s", err.Error())`, logFieldsName(operation), `Decoding body JSON failed: %s`)
+			w.Line(`  res.WriteHeader(400)`)
+			w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
+			w.Line(`  return`)
+			w.Line(`}`)
 		}
 	}
 	generateOperationParametersParsing(w, operation, operation.QueryParams, "queryParams", "req.URL.Query()")
