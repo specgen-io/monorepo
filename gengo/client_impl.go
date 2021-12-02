@@ -204,6 +204,6 @@ func returnStatement(response *spec.NamedResponse) string {
 		if response.Type.Definition.IsEmpty() {
 			return fmt.Sprintf(`return &%s{%s: &%s{}}, nil`, responseTypeName(operation), response.Name.PascalCase(), GoType(&response.Type.Definition))
 		}
-		return fmt.Sprintf(`return &%s{%s: result}, nil`, responseTypeName(operation), response.Name.PascalCase())
+		return fmt.Sprintf(`return &%s{%s: &result}, nil`, responseTypeName(operation), response.Name.PascalCase())
 	}
 }
