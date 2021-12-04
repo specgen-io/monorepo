@@ -21,6 +21,9 @@ const ServicesPathDescription = "Path to scaffold services code"
 const TsServer = "server"
 const TsServerDescription = "TypeScript server library: express, koa"
 
+const TsClient = "client"
+const TsClientDescription = "TypeScript client library: axios, node-fetch"
+
 const TsValidation = "validation"
 const TsValidationDescription = "TypeScript validation library: superstruct, io-ts"
 
