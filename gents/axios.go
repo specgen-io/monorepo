@@ -135,8 +135,12 @@ func generateOperation(w *gen.Writer, operation *spec.NamedOperation, validation
 	}
 	w.Line(`  const config: AxiosRequestConfig = {%s%s}`, params, headers)
 	if body != nil {
-		w.Line(`  const bodyJson = t.encode(%s.%s, parameters.body)`, modelsPackage, runtimeType(validation, &body.Type.Definition))
-		w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
+		if body.Type.Definition.Plain == spec.TypeString {
+			w.Line("  const response = await axiosInstance.%s(`%s`, parameters.body, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
+		} else {
+			w.Line(`  const bodyJson = t.encode(%s.%s, parameters.body)`, modelsPackage, runtimeType(validation, &body.Type.Definition))
+			w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
+		}
 	} else {
 		w.Line("  const response = await axiosInstance.%s(`%s`, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
 	}
@@ -158,7 +162,10 @@ func clientResponseResult(response *spec.NamedResponse, validation string) strin
 		}
 		return fmt.Sprintf(`{ status: "%s" }`, response.Name.Source)
 	} else {
-		data := fmt.Sprintf(`t.decode(%s.%s, response.data)`, modelsPackage, runtimeType(validation, &response.Type.Definition))
+		data := `response.data`
+		if response.Type.Definition.Plain != spec.TypeString {
+			data = fmt.Sprintf(`t.decode(%s.%s, response.data)`, modelsPackage, runtimeType(validation, &response.Type.Definition))
+		}
 		if len(response.Operation.Responses) == 1 {
 			return data
 		}

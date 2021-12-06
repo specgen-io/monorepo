@@ -57,7 +57,11 @@ func generateOperationResponseStruct(w *gen.Writer, operation *spec.NamedOperati
 func addMethodParams(operation *spec.NamedOperation) []string {
 	params := []string{}
 	if operation.Body != nil {
-		params = append(params, fmt.Sprintf("body *%s", GoType(&operation.Body.Type.Definition)))
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			params = append(params, fmt.Sprintf("body %s", GoType(&operation.Body.Type.Definition)))
+		} else {
+			params = append(params, fmt.Sprintf("body *%s", GoType(&operation.Body.Type.Definition)))
+		}
 	}
 	for _, param := range operation.QueryParams {
 		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))

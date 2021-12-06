@@ -205,16 +205,20 @@ func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 func addOperationMethodParams(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
 	if operation.Body != nil {
-		urlParams = append(urlParams, fmt.Sprintf("%s", "&body"))
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			urlParams = append(urlParams, "body")
+		} else {
+			urlParams = append(urlParams, "&body")
+		}
 	}
 	for _, param := range operation.QueryParams {
-		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+		urlParams = append(urlParams, param.Name.CamelCase())
 	}
 	for _, param := range operation.HeaderParams {
-		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+		urlParams = append(urlParams, param.Name.CamelCase())
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		urlParams = append(urlParams, fmt.Sprintf("%s", param.Name.CamelCase()))
+		urlParams = append(urlParams, param.Name.CamelCase())
 	}
 	return urlParams
 }

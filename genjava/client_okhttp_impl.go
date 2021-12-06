@@ -77,13 +77,20 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 
 	w.Line(`public %s {`, generateResponsesSignatures(operation))
 	if operation.Body != nil {
-		w.Line(`  String bodyJson;`)
-		generateClientTryCatch(w.Indented(),
-			`bodyJson = objectMapper.writeValueAsString(body);`,
-			`JsonProcessingException`, `e`,
-			`"Failed to serialize JSON " + e.getMessage()`)
-		w.EmptyLine()
-		w.Line(`  var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
+		bodyDataVar := "bodyJson"
+		mediaType := "application/json"
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			bodyDataVar = "body"
+			mediaType = "text/plain"
+		} else {
+			w.Line(`  String bodyJson;`)
+			generateClientTryCatch(w.Indented(),
+				`bodyJson = objectMapper.writeValueAsString(body);`,
+				`JsonProcessingException`, `e`,
+				`"Failed to serialize JSON " + e.getMessage()`)
+			w.EmptyLine()
+		}
+		w.Line(`  var requestBody = RequestBody.create(%s, MediaType.parse("%s"));`, bodyDataVar, mediaType)
 		requestBody = "requestBody"
 	}
 	w.Line(`  var url = new UrlBuilder(baseUrl);`)
@@ -108,8 +115,12 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 		if !response.Type.Definition.IsEmpty() {
 			responseJavaType := JavaType(&response.Type.Definition)
 			w.Line(`%s responseBody;`, responseJavaType)
+			responseBody := fmt.Sprintf(`objectMapper.readValue(response.body().string(), %s.class);`, responseJavaType)
+			if response.Type.Definition.Plain == spec.TypeString {
+				responseBody = `response.body().string();`
+			}
 			generateClientTryCatch(w,
-				fmt.Sprintf(`responseBody = objectMapper.readValue(response.body().string(), %s.class);`, responseJavaType),
+				fmt.Sprintf(`responseBody = %s`, responseBody),
 				`IOException`, `e`,
 				`"Failed to deserialize response body " + e.getMessage()`)
 			if len(operation.Responses) > 1 {
@@ -169,7 +180,7 @@ func addRequestUrlParams(operation *spec.NamedOperation) string {
 }
 
 func getUrl(operation *spec.NamedOperation) []string {
-	reminder := strings.TrimPrefix(operation.Endpoint.Url, "/")
+	reminder := strings.TrimPrefix(operation.FullUrl(), "/")
 	urlParams := []string{}
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		for _, param := range operation.Endpoint.UrlParams {
