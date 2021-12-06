@@ -71,8 +71,12 @@ func generateClientFunction(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`func (client *%s) %s(%s) %s {`, clientTypeName(), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), operationReturn(operation, nil))
 	var body = "nil"
 	if operation.Body != nil {
-		w.Line(`  bodyJSON, err := json.Marshal(body)`)
-		body = "bytes.NewBuffer(bodyJSON)"
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			w.Line(`  bodyData := []byte(body)`)
+		} else {
+			w.Line(`  bodyData, err := json.Marshal(body)`)
+		}
+		body = "bytes.NewBuffer(bodyData)"
 	}
 	w.Line(`  req, err := http.NewRequest("%s", client.baseUrl+%s, %s)`, operation.Endpoint.Method, addRequestUrlParams(operation), body)
 	w.Line(`  if err != nil {`)
@@ -123,7 +127,7 @@ func addRequestUrlParams(operation *spec.NamedOperation) string {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		return fmt.Sprintf(`fmt.Sprintf("%s", %s)`, JoinParams(getUrl(operation)), JoinDelimParams(addUrlParam(operation)))
 	} else {
-		return fmt.Sprintf(`"%s"`, operation.Endpoint.Url)
+		return fmt.Sprintf(`"%s"`, operation.FullUrl())
 	}
 }
 
@@ -168,15 +172,21 @@ func addClientResponses(w *gen.Writer, operation *spec.NamedOperation) {
 		if !response.Type.Definition.IsEmpty() {
 			w.Line(`  responseBody, err := ioutil.ReadAll(resp.Body)`)
 			w.Line(`  err = resp.Body.Close()`)
-			w.EmptyLine()
-			if operation.Body == nil {
-				w.Line(`  var body *%s.%s`, modelsPackage, ToPascalCase(response.Type.Definition.Name))
+			if response.Type.Definition.Plain != spec.TypeString {
+				w.EmptyLine()
+				w.Line(`  var result %s.%s`, modelsPackage, ToPascalCase(response.Type.Definition.Name))
+				w.Line(`  err = json.Unmarshal(responseBody, &result)`)
+				w.Line(`  if err != nil {`)
+				w.Line(`    log.WithFields(%s).Error("%s", err.Error())`, logFieldsName(operation), `Failed to parse response JSON`)
+				w.Line(`    return nil, err`)
+				w.Line(`  }`)
+			} else {
+				w.Line(`  if err != nil {`)
+				w.Line(`    log.WithFields(%s).Error("%s", err.Error())`, logFieldsName(operation), `Reading request body failed`)
+				w.Line(`    return nil, err`)
+				w.Line(`  }`)
+				w.Line(`  result := string(responseBody)`)
 			}
-			w.Line(`  err = json.Unmarshal(responseBody, &body)`)
-			w.Line(`  if err != nil {`)
-			w.Line(`    log.WithFields(%s).Error("Failed to parse response JSON", err.Error())`, logFieldsName(operation))
-			w.Line(`    return nil, err`)
-			w.Line(`  }`)
 		}
 		w.Line(`  %s`, returnStatement(&response))
 		w.Line(`}`)
@@ -189,11 +199,11 @@ func returnStatement(response *spec.NamedResponse) string {
 		if response.Type.Definition.IsEmpty() {
 			return `return nil`
 		}
-		return fmt.Sprintf(`return body, nil`)
+		return fmt.Sprintf(`return &result, nil`)
 	} else {
 		if response.Type.Definition.IsEmpty() {
 			return fmt.Sprintf(`return &%s{%s: &%s{}}, nil`, responseTypeName(operation), response.Name.PascalCase(), GoType(&response.Type.Definition))
 		}
-		return fmt.Sprintf(`return &%s{%s: body}, nil`, responseTypeName(operation), response.Name.PascalCase())
+		return fmt.Sprintf(`return &%s{%s: &result}, nil`, responseTypeName(operation), response.Name.PascalCase())
 	}
 }
