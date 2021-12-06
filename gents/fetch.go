@@ -6,10 +6,12 @@ import (
 	"strings"
 )
 
-func generateFetchApiClient(api spec.Api, validation string, validationModule module, modelsModule module, module module) *gen.TextFile {
+func generateFetchApiClient(api spec.Api, node bool, validation string, validationModule module, modelsModule module, module module) *gen.TextFile {
 	w := NewTsWriter()
-	w.Line(`import { URL, URLSearchParams } from 'url'`)
-	w.Line(`import fetch from 'node-fetch'`)
+	if node {
+		w.Line(`import { URL, URLSearchParams } from 'url'`)
+		w.Line(`import fetch from 'node-fetch'`)
+	}
 	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
 	w.Line(`import * as %s from '%s'`, modelsPackage, modelsModule.GetImport(module))
 	w.EmptyLine()
