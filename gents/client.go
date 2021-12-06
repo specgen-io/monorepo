@@ -26,7 +26,10 @@ func GenerateClient(specification *spec.Spec, generatePath string, client string
 				sources = append(sources, *generateAxiosApiClient(api, validation, validationModule, modelsModule, apiModule))
 			}
 			if client == "node-fetch" {
-				sources = append(sources, *generateFetchApiClient(api, validation, validationModule, modelsModule, apiModule))
+				sources = append(sources, *generateFetchApiClient(api, true, validation, validationModule, modelsModule, apiModule))
+			}
+			if client == "browser-fetch" {
+				sources = append(sources, *generateFetchApiClient(api, false, validation, validationModule, modelsModule, apiModule))
 			}
 		}
 	}

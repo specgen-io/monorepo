@@ -22,7 +22,7 @@ const TsServer = "server"
 const TsServerDescription = "TypeScript server library: express, koa"
 
 const TsClient = "client"
-const TsClientDescription = "TypeScript client library: axios, node-fetch"
+const TsClientDescription = "TypeScript client library: axios, node-fetch, browser-fetch"
 
 const TsValidation = "validation"
 const TsValidationDescription = "TypeScript validation library: superstruct, io-ts"
