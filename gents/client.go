@@ -15,7 +15,8 @@ func GenerateClient(specification *spec.Spec, generatePath string, client string
 	validationModule := module.Submodule(validation)
 	validationFile := generateValidation(validation, validationModule)
 	sources = append(sources, *validationFile)
-
+	paramsModule := module.Submodule("params")
+	generateParamsBuilder(paramsModule)
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
@@ -23,13 +24,13 @@ func GenerateClient(specification *spec.Spec, generatePath string, client string
 		for _, api := range version.Http.Apis {
 			apiModule := versionModule.Submodule(api.Name.SnakeCase())
 			if client == "axios" {
-				sources = append(sources, *generateAxiosApiClient(api, validation, validationModule, modelsModule, apiModule))
+				sources = append(sources, *generateAxiosApiClient(api, validation, validationModule, modelsModule, paramsModule, apiModule))
 			}
 			if client == "node-fetch" {
-				sources = append(sources, *generateFetchApiClient(api, true, validation, validationModule, modelsModule, apiModule))
+				sources = append(sources, *generateFetchApiClient(api, true, validation, validationModule, modelsModule, paramsModule, apiModule))
 			}
 			if client == "browser-fetch" {
-				sources = append(sources, *generateFetchApiClient(api, false, validation, validationModule, modelsModule, apiModule))
+				sources = append(sources, *generateFetchApiClient(api, false, validation, validationModule, modelsModule, paramsModule, apiModule))
 			}
 		}
 	}
@@ -46,7 +47,7 @@ func GenerateClient(specification *spec.Spec, generatePath string, client string
 func getUrl(endpoint spec.Endpoint) string {
 	url := endpoint.Url
 	for _, param := range endpoint.UrlParams {
-		url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), "${parameters."+param.Name.CamelCase()+"}", -1)
+		url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), "${stringify(parameters."+param.Name.CamelCase()+")}", -1)
 	}
 	return url
 }
@@ -103,4 +104,34 @@ func clientResponseResult(response *spec.NamedResponse, validation string, respo
 		}
 		return fmt.Sprintf(`{ status: "%s", data: %s }`, response.Name.Source, data)
 	}
+}
+
+func generateParamsBuilder(module module) *gen.TextFile {
+	code := `
+export function stringify(value: ScalarParam): string {
+  if (value instanceof Date) {
+      return value.toISOString()
+  }
+  return String(value)
+}
+
+type ScalarParam = string | number | boolean | Date
+type ParamType = undefined | ScalarParam | ScalarParam[]
+
+type ParamItem = [string, string]
+
+export function params(params: Record<string, ParamType>): ParamItem[] {
+  return Object.entries(params)
+      .filter(([key, value]) => value != undefined)
+      .map(([key, value]): ParamItem[] => {
+        if (Array.isArray(value)) {
+          return value.map(item => [key, stringify(item)])
+        } else {
+          return [[key, stringify(value!)]]
+        }
+      })
+      .flat()
+}`
+
+	return &gen.TextFile{module.GetPath(), strings.TrimSpace(code)}
 }

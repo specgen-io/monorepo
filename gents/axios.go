@@ -6,9 +6,10 @@ import (
 	"strings"
 )
 
-func generateAxiosApiClient(api spec.Api, validation string, validationModule module, modelsModule module, module module) *gen.TextFile {
+func generateAxiosApiClient(api spec.Api, validation string, validationModule, modelsModule, paramsModule, module module) *gen.TextFile {
 	w := NewTsWriter()
 	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
+	w.Line(`import { params, stringify } from '%s'`, paramsModule.GetImport(module))
 	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
 	w.Line(`import * as %s from '%s'`, modelsPackage, modelsModule.GetImport(module))
 	w.EmptyLine()
