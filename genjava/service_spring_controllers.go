@@ -69,7 +69,11 @@ func generateMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), JoinDelimParams(addMethodParams(operation)))
 	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  HttpHeaders headers = new HttpHeaders();`)
-	w.Line(`  headers.add(CONTENT_TYPE, "application/json");`)
+	contentType := "application/json"
+	if operation.Body != nil && operation.Body.Type.Definition.Plain == spec.TypeString {
+		contentType = "text/plain"
+	}
+	w.Line(`  headers.add(CONTENT_TYPE, "%s");`, contentType)
 	w.EmptyLine()
 	if operation.Body != nil {
 		if operation.Body.Type.Definition.Plain != spec.TypeString {

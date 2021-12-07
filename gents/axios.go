@@ -60,8 +60,12 @@ func generateAxiosOperation(w *gen.Writer, operation *spec.NamedOperation, valid
 	}
 	w.Line(`  const config: AxiosRequestConfig = {%s%s}`, params, headers)
 	if body != nil {
-		w.Line(`  const bodyJson = t.encode(%s.%s, parameters.body)`, modelsPackage, runtimeType(validation, &body.Type.Definition))
-		w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
+		if body.Type.Definition.Plain == spec.TypeString {
+			w.Line("  const response = await axiosInstance.%s(`%s`, parameters.body, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
+		} else {
+			w.Line(`  const bodyJson = t.encode(%s.%s, parameters.body)`, modelsPackage, runtimeType(validation, &body.Type.Definition))
+			w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
+		}
 	} else {
 		w.Line("  const response = await axiosInstance.%s(`%s`, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
 	}
