@@ -91,14 +91,17 @@ func createOperationParams(operation *spec.NamedOperation) string {
 	return fmt.Sprintf("parameters: {%s}", strings.Join(operationParams, ", "))
 }
 
-func clientResponseResult(response *spec.NamedResponse, validation string, responseJson string) string {
+func clientResponseResult(response *spec.NamedResponse, validation string) string {
 	if response.Type.Definition.IsEmpty() {
 		if len(response.Operation.Responses) == 1 {
 			return ""
 		}
 		return fmt.Sprintf(`{ status: "%s" }`, response.Name.Source)
 	} else {
-		data := fmt.Sprintf(`t.decode(%s.%s, %s)`, modelsPackage, runtimeType(validation, &response.Type.Definition), responseJson)
+		data := `response.data`
+		if response.Type.Definition.Plain != spec.TypeString {
+			data = fmt.Sprintf(`t.decode(%s.%s, response.data)`, modelsPackage, runtimeType(validation, &response.Type.Definition))
+		}
 		if len(response.Operation.Responses) == 1 {
 			return data
 		}
