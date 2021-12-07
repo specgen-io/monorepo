@@ -58,7 +58,7 @@ func generateVersionModels(version *spec.Version, thePackage Module) []gen.TextF
 		if model.IsObject() {
 			files = append(files, *generateObjectModel(model, thePackage))
 		} else if model.IsOneOf() {
-			files = append(files, generateOneOfModels(model, thePackage)...)
+			files = append(files, *generateOneOfModels(model, thePackage))
 		} else if model.IsEnum() {
 			files = append(files, *generateEnumModel(model, thePackage))
 		}
@@ -225,8 +225,8 @@ func generateEnumModel(model *spec.NamedModel, thePackage Module) *gen.TextFile 
 	}
 }
 
-func generateOneOfModels(model *spec.NamedModel, thePackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateOneOfModels(model *spec.NamedModel, thePackage Module) *gen.TextFile {
+	interfaceName := model.Name.PascalCase()
 	w := NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
@@ -246,39 +246,37 @@ func generateOneOfModels(model *spec.NamedModel, thePackage Module) []gen.TextFi
 	}
 	w.Line(`@JsonSubTypes({`)
 	for _, item := range model.OneOf.Items {
-		w.Line(`  @Type(value = %s%s.class, name = "%s"),`, model.Name.PascalCase(), item.Name.PascalCase(), item.Name.Source)
+		w.Line(`  @Type(value = %s.%s.class, name = "%s"),`, interfaceName, oneOfItemClassName(&item), item.Name.Source)
 	}
 	w.Line(`})`)
-	interfaceName := model.Name.PascalCase()
 	w.Line(`public interface %s {`, interfaceName)
+	for index, item := range model.OneOf.Items {
+		if index > 0 {
+			w.EmptyLine()
+		}
+		generateOneOfImplementation(w.Indented(), &item, model)
+	}
 	w.Line(`}`)
 
-	for _, item := range model.OneOf.Items {
-		files = append(files, *generateOneOfImplementation(item, model, thePackage))
-	}
-
-	files = append(files, gen.TextFile{
+	return &gen.TextFile{
 		Path:    thePackage.GetPath(interfaceName + ".java"),
 		Content: w.String(),
-	})
-	return files
+	}
 }
 
-func generateOneOfImplementation(item spec.NamedDefinition, model *spec.NamedModel, thePackage Module) *gen.TextFile {
-	className := model.Name.PascalCase() + item.Name.PascalCase()
-	w := NewJavaWriter()
-	w.Line(`package %s;`, thePackage.PackageName)
-	w.EmptyLine()
-	addImports(w)
-	w.EmptyLine()
-	w.Line(`public class %s implements %s {`, className, model.Name.PascalCase())
+func oneOfItemClassName(item *spec.NamedDefinition) string {
+	return item.Name.PascalCase()
+}
+
+func generateOneOfImplementation(w *gen.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
+	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
 	w.Line(`  @JsonUnwrapped`)
 	w.Line(`  public %s data;`, JavaType(&item.Type.Definition))
 	w.EmptyLine()
-	w.Line(`  public %s() {`, className)
+	w.Line(`  public %s() {`, oneOfItemClassName(item))
 	w.Line(`  }`)
 	w.EmptyLine()
-	w.Line(`  public %s(%s data) {`, className, JavaType(&item.Type.Definition))
+	w.Line(`  public %s(%s data) {`, oneOfItemClassName(item), JavaType(&item.Type.Definition))
 	if !item.Type.Definition.IsNullable() && JavaIsReferenceType(&item.Type.Definition) {
 		w.Line(`    if (data == null) { throw new IllegalArgumentException("null value is not allowed"); }`)
 	}
@@ -297,23 +295,17 @@ func generateOneOfImplementation(item spec.NamedDefinition, model *spec.NamedMod
 	w.Line(`  }`)
 	w.EmptyLine()
 	w.Indent()
-	addOneOfModelMethods(w, item, model)
+	addOneOfModelMethods(w, item)
 	w.Unindent()
 	w.Line(`}`)
-
-	return &gen.TextFile{
-		Path:    thePackage.GetPath(className + ".java"),
-		Content: w.String(),
-	}
 }
 
-func addOneOfModelMethods(w *gen.Writer, item spec.NamedDefinition, model *spec.NamedModel) {
-	modelItemName := model.Name.PascalCase() + item.Name.PascalCase()
+func addOneOfModelMethods(w *gen.Writer, item *spec.NamedDefinition) {
 	w.Line(`@Override`)
 	w.Line(`public boolean equals(Object o) {`)
 	w.Line(`  if (this == o) return true;`)
-	w.Line(`  if (!(o instanceof %s)) return false;`, modelItemName)
-	w.Line(`  %s that = (%s) o;`, modelItemName, modelItemName)
+	w.Line(`  if (!(o instanceof %s)) return false;`, oneOfItemClassName(item))
+	w.Line(`  %s that = (%s) o;`, oneOfItemClassName(item), oneOfItemClassName(item))
 	w.Line(`  return Objects.equals(getData(), that.getData());`)
 	w.Line(`}`)
 	w.EmptyLine()
