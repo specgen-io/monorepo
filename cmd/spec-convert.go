@@ -1,16 +1,18 @@
 package cmd
 
 import (
+	"github.com/specgen-io/specgen/v2/conoldspec"
 	"github.com/specgen-io/specgen/v2/console"
 	"github.com/specgen-io/specgen/v2/fail"
-	"github.com/specgen-io/specgen/v2/spec/old"
 	"github.com/spf13/cobra"
 )
 
 func init() {
-	cmdSpecConvert.Flags().String(SpecFile, "", SpecFileDescription)
-	cmdSpecConvert.MarkFlagRequired(SpecFile)
-	cmdSpecConvert.Flags().String(OutFile, "", OutFileDescription)
+	cmdSpecConvert.Flags().String(InFile, "", InFileDescription)
+	cmdSpecConvert.MarkFlagRequired(InFile)
+	cmdSpecConvert.Flags().String(Format, "", FormatDescription)
+	cmdSpecConvert.MarkFlagRequired(Format)
+	cmdSpecConvert.Flags().String(OutFile, "spec.yaml", OutFileDescription)
 	rootCmd.AddCommand(cmdSpecConvert)
 }
 
@@ -18,18 +20,19 @@ var cmdSpecConvert = &cobra.Command{
 	Use:   "spec-convert",
 	Short: "Convert spec from older versions to latest",
 	Run: func(cmd *cobra.Command, args []string) {
-		specFile, err := cmd.Flags().GetString(SpecFile)
+		inFile, err := cmd.Flags().GetString(InFile)
+		fail.IfError(err)
+
+		specFormat, err := cmd.Flags().GetString(Format)
 		fail.IfError(err)
 
 		outFile, err := cmd.Flags().GetString(OutFile)
 		fail.IfError(err)
 
-		if outFile == "" {
-			outFile = specFile
+		if specFormat == "spec-2.0" {
+			err = conoldspec.ConvertFromOldSpec(inFile, outFile)
+			fail.IfError(err)
 		}
-
-		err = old.FormatSpec(specFile, outFile, "2.1")
-		fail.IfError(err)
 
 		console.PrintLnF(`Spec %s was successfully converted`, outFile)
 	},
