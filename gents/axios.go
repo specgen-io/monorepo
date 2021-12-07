@@ -36,12 +36,14 @@ func generateAxiosOperation(w *gen.Writer, operation *spec.NamedOperation, valid
 	hasHeaderParams := len(operation.HeaderParams) > 0
 	w.EmptyLine()
 	w.Line(`%s: async (%s): Promise<%s> => {`, operation.Name.CamelCase(), createOperationParams(operation), responseType(operation, ""))
+	axiosConfigParts := []string{}
 	if hasQueryParams {
 		w.Line(`  const params = {`)
 		for _, p := range operation.QueryParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
 		w.Line(`  }`)
+		axiosConfigParts = append(axiosConfigParts, `params: params`)
 	}
 	if hasHeaderParams {
 		w.Line(`  const headers = {`)
@@ -49,30 +51,23 @@ func generateAxiosOperation(w *gen.Writer, operation *spec.NamedOperation, valid
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
 		w.Line(`  }`)
+		axiosConfigParts = append(axiosConfigParts, `headers: headers`)
 	}
-	params := ``
-	if hasQueryParams {
-		params = `params: params,`
-	}
-	headers := ``
-	if hasHeaderParams {
-		headers = `headers: headers,`
-	}
-	w.Line(`  const config: AxiosRequestConfig = {%s%s}`, params, headers)
+	axiosConfig := strings.Join(axiosConfigParts, `, `)
 	if body != nil {
 		if body.Type.Definition.Plain == spec.TypeString {
-			w.Line("  const response = await axiosInstance.%s(`%s`, parameters.body, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
+			w.Line("  const response = await axiosInstance.%s(`%s`, parameters.body, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 		} else {
 			w.Line(`  const bodyJson = t.encode(%s.%s, parameters.body)`, modelsPackage, runtimeType(validation, &body.Type.Definition))
-			w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
+			w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 		}
 	} else {
-		w.Line("  const response = await axiosInstance.%s(`%s`, config)", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint))
+		w.Line("  const response = await axiosInstance.%s(`%s`, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 	}
 	w.Line(`  switch (response.status) {`)
 	for _, response := range operation.Responses {
 		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
-		w.Line(`      return Promise.resolve(%s)`, clientResponseResult(&response, validation, `response.data`))
+		w.Line(`      return Promise.resolve(%s)`, clientResponseResult(&response, validation, `response.data`, `response.data`))
 	}
 	w.Line(`    default:`)
 	w.Line("      throw new Error(`Unexpected status code ${ response.status }`)")

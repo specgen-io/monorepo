@@ -1,6 +1,7 @@
 package gents
 
 import (
+	"fmt"
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
@@ -49,26 +50,29 @@ func generateFetchOperation(w *gen.Writer, operation *spec.NamedOperation, valid
 		w.Line(`  })`)
 		params = `?${new URLSearchParams(query)}`
 	}
-	headers := ``
+	fetchConfig := fmt.Sprintf(`method: '%s'`, strings.ToUpper(operation.Endpoint.Method))
 	if hasHeaderParams {
 		w.Line(`  const headers = params({`)
 		for _, p := range operation.HeaderParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
 		w.Line(`  })`)
-		headers = `, headers: headers`
+		fetchConfig += `, headers: headers`
 	}
 	w.Line("  const url = config.baseURL+`%s%s`", getUrl(operation.Endpoint), params)
-	fetchBody := ``
 	if body != nil {
-		w.Line(`  const bodyJson = t.encode(%s.%s, parameters.body)`, modelsPackage, runtimeType(validation, &body.Type.Definition))
-		fetchBody = `, body: JSON.stringify(bodyJson)`
+		if body.Type.Definition.Plain == spec.TypeString {
+			fetchConfig += `, body: parameters.body`
+		} else {
+			w.Line(`  const bodyJson = t.encode(%s.%s, parameters.body)`, modelsPackage, runtimeType(validation, &body.Type.Definition))
+			fetchConfig += `, body: JSON.stringify(bodyJson)`
+		}
 	}
-	w.Line("  const response = await fetch(url, {method: '%s'%s%s})", strings.ToUpper(operation.Endpoint.Method), headers, fetchBody)
+	w.Line("  const response = await fetch(url, {%s})", fetchConfig)
 	w.Line(`  switch (response.status) {`)
 	for _, response := range operation.Responses {
 		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
-		w.Line(`      return Promise.resolve(%s)`, clientResponseResult(&response, validation, `await response.json()`))
+		w.Line(`      return Promise.resolve(%s)`, clientResponseResult(&response, validation, `await response.text()`, `await response.json()`))
 	}
 	w.Line(`    default:`)
 	w.Line("      throw new Error(`Unexpected status code ${ response.status }`)")
