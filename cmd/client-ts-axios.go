@@ -7,19 +7,20 @@ import (
 )
 
 func init() {
-	cmdClientTsAxios.Flags().String(SpecFile, "", SpecFileDescription)
-	cmdClientTsAxios.Flags().String(GeneratePath, "", GeneratePathDescription)
-	cmdClientTsAxios.Flags().String(TsValidation, "", TsValidationDescription)
+	cmdClientTs.Flags().String(SpecFile, "", SpecFileDescription)
+	cmdClientTs.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdClientTs.Flags().String(TsClient, "", TsClientDescription)
+	cmdClientTs.Flags().String(TsValidation, "", TsValidationDescription)
 
-	cmdClientTsAxios.MarkFlagRequired(SpecFile)
-	cmdClientTsAxios.MarkFlagRequired(GeneratePath)
+	cmdClientTs.MarkFlagRequired(SpecFile)
+	cmdClientTs.MarkFlagRequired(GeneratePath)
 
-	rootCmd.AddCommand(cmdClientTsAxios)
+	rootCmd.AddCommand(cmdClientTs)
 }
 
-var cmdClientTsAxios = &cobra.Command{
-	Use:   "client-ts-axios",
-	Short: "Generate TypeScript Axios client source code",
+var cmdClientTs = &cobra.Command{
+	Use:   "client-ts",
+	Short: "Generate TypeScript client source code",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)
@@ -27,12 +28,15 @@ var cmdClientTsAxios = &cobra.Command{
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
+		client, err := cmd.Flags().GetString(TsClient)
+		fail.IfError(err)
+
 		validation, err := cmd.Flags().GetString(TsValidation)
 		fail.IfError(err)
 
 		specification := readSpecFile(specFile)
 
-		err = gents.GenerateAxiosClient(specification, generatePath, validation)
+		err = gents.GenerateClient(specification, generatePath, client, validation)
 		fail.IfErrorF(err, "Failed to generate code")
 	},
 }
