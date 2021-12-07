@@ -16,7 +16,7 @@ func GenerateClient(specification *spec.Spec, generatePath string, client string
 	validationFile := generateValidation(validation, validationModule)
 	sources = append(sources, *validationFile)
 	paramsModule := module.Submodule("params")
-	generateParamsBuilder(paramsModule)
+	sources = append(sources, *generateParamsBuilder(paramsModule))
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
