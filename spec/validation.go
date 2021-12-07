@@ -82,7 +82,7 @@ func (validator *validator) Operation(operation *NamedOperation) {
 
 	validator.Params(operation.Endpoint.UrlParams, false)
 	validator.Params(operation.QueryParams, true)
-	validator.Params(operation.HeaderParams, false)
+	validator.Params(operation.HeaderParams, true)
 
 	if operation.Body != nil && !operation.Body.Type.Definition.IsEmpty() {
 		bodyType := operation.Body.Type
