@@ -6,12 +6,13 @@ import (
 	"strings"
 )
 
-func generateFetchApiClient(api spec.Api, node bool, validation string, validationModule module, modelsModule module, module module) *gen.TextFile {
+func generateFetchApiClient(api spec.Api, node bool, validation string, validationModule, modelsModule, paramsModule, module module) *gen.TextFile {
 	w := NewTsWriter()
 	if node {
 		w.Line(`import { URL, URLSearchParams } from 'url'`)
 		w.Line(`import fetch from 'node-fetch'`)
 	}
+	w.Line(`import { params, stringify } from '%s'`, paramsModule.GetImport(module))
 	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
 	w.Line(`import * as %s from '%s'`, modelsPackage, modelsModule.GetImport(module))
 	w.EmptyLine()
@@ -41,20 +42,20 @@ func generateFetchOperation(w *gen.Writer, operation *spec.NamedOperation, valid
 	w.Line(`%s: async (%s): Promise<%s> => {`, operation.Name.CamelCase(), createOperationParams(operation), responseType(operation, ""))
 	params := ``
 	if hasQueryParams {
-		w.Line(`  const params = {`)
+		w.Line(`  const query = params({`)
 		for _, p := range operation.QueryParams {
-			w.Line(`    "%s": String(parameters.%s),`, p.Name.Source, p.Name.CamelCase())
+			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
-		w.Line(`  }`)
-		params = `?${new URLSearchParams(params)}`
+		w.Line(`  })`)
+		params = `?${new URLSearchParams(query)}`
 	}
 	headers := ``
 	if hasHeaderParams {
-		w.Line(`  const headers = {`)
+		w.Line(`  const headers = params({`)
 		for _, p := range operation.HeaderParams {
-			w.Line(`    "%s": String(parameters.%s),`, p.Name.Source, p.Name.CamelCase())
+			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
-		w.Line(`  }`)
+		w.Line(`  })`)
 		headers = `, headers: headers`
 	}
 	w.Line("  const url = config.baseURL+`%s%s`", getUrl(operation.Endpoint), params)
