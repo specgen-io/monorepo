@@ -9,6 +9,12 @@ const PackageNameDescription = "Package name"
 const SpecFile = "spec-file"
 const SpecFileDescription = "Path to specification file"
 
+const Format = "format"
+const FormatDescription = "Specification format to convert specification from: spec-2.0, openapi"
+
+const InFile = "in-file"
+const InFileDescription = "Path for input specification file"
+
 const SwaggerPath = "swagger-path"
 const SwaggerPathDescription = "Path of generated OpenAPI (Swagger) specification file"
 
