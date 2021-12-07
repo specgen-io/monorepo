@@ -3,8 +3,8 @@ package genruby
 import (
 	"fmt"
 	"github.com/pinzolo/casee"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"path/filepath"
 	"strings"
 )
@@ -71,7 +71,11 @@ func generateVersionClientModule(w *gen.Writer, version *spec.Version, moduleNam
 func operationResult(operation *spec.NamedOperation, response *spec.NamedResponse) string {
 	body := "nil"
 	if !response.Type.Definition.IsEmpty() {
-		body = fmt.Sprintf("Jsoner.from_json(%s, response.body)", RubyType(&response.Type.Definition))
+		if response.Type.Definition.Plain == spec.TypeString {
+			body = "response.body"
+		} else {
+			body = fmt.Sprintf("Jsoner.from_json(%s, response.body)", RubyType(&response.Type.Definition))
+		}
 	}
 	flags := ""
 	for _, r := range operation.Responses {
@@ -120,9 +124,13 @@ func generateClientOperation(w *gen.Writer, moduleName string, operation *spec.N
 	}
 
 	if operation.Body != nil {
-		bodyRubyType := RubyType(&operation.Body.Type.Definition)
-		w.Line(fmt.Sprintf("body_json = Jsoner.to_json(%s, T.check_var('body', %s, body))", bodyRubyType, bodyRubyType))
-		w.Line("request.body = body_json")
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			w.Line("request.body = T.check_var('body', String, body)")
+		} else {
+			bodyRubyType := RubyType(&operation.Body.Type.Definition)
+			w.Line(fmt.Sprintf("body_json = Jsoner.to_json(%s, T.check_var('body', %s, body))", bodyRubyType, bodyRubyType))
+			w.Line("request.body = body_json")
+		}
 	}
 	w.Line("response = @client.request(request)")
 	w.Line("case response.code")
