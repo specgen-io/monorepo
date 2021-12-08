@@ -14,14 +14,14 @@ type Spec struct {
 	Versions []Version
 }
 
-type specification struct {
+type VersionSpecification struct {
 	Http   Apis   `yaml:"http"`
 	Models Models `yaml:"models"`
 }
 
 type Version struct {
 	Version Name
-	specification
+	VersionSpecification
 	ResolvedModels []*NamedModel
 }
 
@@ -58,12 +58,12 @@ func (value *Spec) UnmarshalYAML(node *yaml.Node) error {
 				return err
 			}
 
-			theSpec := specification{}
+			theSpec := VersionSpecification{}
 			valueNode.DecodeWith(decodeStrict, &theSpec)
 			versions = append(versions, Version{version, theSpec, nil})
 		}
 	}
-	theSpec := specification{}
+	theSpec := VersionSpecification{}
 	err := node.DecodeWith(decodeLooze, &theSpec)
 	if err != nil {
 		return err
@@ -77,7 +77,7 @@ func (value *Spec) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
-func (value specification) MarshalYAML() (interface{}, error) {
+func (value VersionSpecification) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
 	if len(value.Http.Apis) > 0 {
 		yamlMap.Add("http", value.Http)
@@ -95,9 +95,9 @@ func (value Spec) MarshalYAML() (interface{}, error) {
 		version := value.Versions[index]
 
 		if version.Version.Source != "" {
-			yamlMap.Add(version.Version.Source, version.specification)
+			yamlMap.Add(version.Version.Source, version.VersionSpecification)
 		} else {
-			yamlMap.Merge(version.specification)
+			yamlMap.Merge(version.VersionSpecification)
 		}
 	}
 	return yamlMap.Node, nil
