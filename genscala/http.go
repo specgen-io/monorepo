@@ -17,6 +17,8 @@ import enumeratum.values.{StringEnum, StringEnumEntry}
 
 import scala.collection.mutable.ListBuffer
 
+import scala.collection.immutable.List
+
 trait Codec[T] {
   def decode(s: String): T
   def encode(v: T): String
@@ -98,9 +100,11 @@ object ParamsTypesBindings {
     def encode(v: T): String = v.value
   }
 
-  class StringParamsReader(val reader: String => Option[String]) {
+  class StringParamsReader(val values: Map[String, Seq[String]]) {
     def read[T](name: String)(implicit codec: Codec[T]): Option[T] =
-      reader(name).map(codec.decode)
+      values.get(name).flatMap(_.headOption).map(codec.decode)
+    def readList[T](name: String)(implicit codec: Codec[T]): Option[List[T]] =
+      values.get(name).map(_.map(codec.decode).toList)
   }
 
   class StringParamsWriter {
@@ -124,6 +128,6 @@ object ParamsTypesBindings {
     }
   }
 }`
-	code, _ = gen.ExecuteTemplate(code, struct { PackageName string } {packageName })
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
 	return &gen.TextFile{path, strings.TrimSpace(code)}
 }
