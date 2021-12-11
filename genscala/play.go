@@ -179,16 +179,16 @@ func generateApiClass(api spec.Api, packageName string, outPath string) *gen.Tex
 	}
 }
 
-func addParamsParsing(w *gen.Writer, params []spec.NamedParam, paramsName string, readingFun string) {
+func addParamsParsing(w *gen.Writer, params []spec.NamedParam, paramsName string, values string) {
 	if params != nil && len(params) > 0 {
-		w.Line(`val %s = new StringParamsReader(%s)`, paramsName, readingFun)
+		w.Line(`val %s = new StringParamsReader(%s)`, paramsName, values)
 		for _, param := range params {
 			paramBaseType := param.Type.Definition.BaseType()
-			method := "read"
-			if paramBaseType.Info.Model != nil && paramBaseType.Info.Model.IsEnum() {
-				method = "readEnum"
+			paramLine := fmt.Sprintf(`val %s = %s.read[%s]("%s")`, param.Name.CamelCase(), paramsName, ScalaType(paramBaseType), param.Name.Source)
+			if paramBaseType.Node == spec.ArrayType {
+				paramItemType := paramBaseType.Child
+				paramLine = fmt.Sprintf(`val %s = %s.readList[%s]("%s")`, param.Name.CamelCase(), paramsName, ScalaType(paramItemType), param.Name.Source)
 			}
-			paramLine := fmt.Sprintf(`val %s = %s.%s[%s]("%s")`, param.Name.CamelCase(), paramsName, method, ScalaType(paramBaseType), param.Name.Source)
 			if !param.Type.Definition.IsNullable() {
 				if param.Default != nil {
 					paramLine += fmt.Sprintf(`.getOrElse(%s)`, DefaultValue(&param.Type.Definition, *param.Default))
@@ -255,7 +255,7 @@ func generateControllerMethod(w *gen.Writer, operation spec.NamedOperation) {
 	w.IndentWith(2)
 	if len(parseParams) > 0 {
 		w.Line(`val params = Try {`)
-		addParamsParsing(w.Indented(), operation.HeaderParams, "header", "request.headers.get")
+		addParamsParsing(w.Indented(), operation.HeaderParams, "header", "request.headers.toMap")
 		if operation.Body != nil {
 			if operation.Body.Type.Definition.Plain == spec.TypeString {
 				w.Line(`  val body = request.body.utf8String`)
