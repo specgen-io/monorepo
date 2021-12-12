@@ -46,3 +46,13 @@ key2: 2
 `
 	assert.Equal(t, strings.TrimSpace(expectedYaml), strings.TrimSpace(string(yamlData)))
 }
+
+func TestYamlMapVeryLongKey(t *testing.T) {
+	theMap := Map()
+	theMap.Add("adfaklsdjfksadfkasjdkflasgdfuagsdfiyuguysagfiuyasgdfuysagdfuysadgfuiyasdgfuyasdgfuyasgdfuasygdfuysadgfyuasgdfyuasdfguyadgdfhfsfdt", "value")
+	yamlData, _ := yaml.Marshal(theMap)
+	expectedYaml := `
+adfaklsdjfksadfkasjdkflasgdfuagsdfiyuguysagfiuyasgdfuysagdfuysadgfuiyasdgfuyasdgfuyasgdfuasygdfuysadgfyuasgdfyuasdfguyadgdfhfsfdt: value
+`
+	assert.Equal(t, strings.TrimSpace(expectedYaml), strings.TrimSpace(string(yamlData)))
+}

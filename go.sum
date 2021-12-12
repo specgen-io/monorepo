@@ -562,8 +562,8 @@ gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 h1:qIbj1fsPNlZgppZ+VLlY7N33
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/errgo.v2 v2.1.0/go.mod h1:hNsd1EY+bozCKY1Ytp96fpM3vjJbqLJn88ws8XvfDNI=
 gopkg.in/ini.v1 v1.62.0/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
-gopkg.in/specgen-io/yaml.v3 v3.0.0-20210927015345-ce94b6a67092 h1:i/tTVftgyREGvhylazV/o9QXPhQKnodP/hLACh1fT0A=
-gopkg.in/specgen-io/yaml.v3 v3.0.0-20210927015345-ce94b6a67092/go.mod h1:mQJ85cvpYaRvYyFXeSaIzJCII7yRNofFLXzoMrvq4jE=
+gopkg.in/specgen-io/yaml.v3 v3.0.0-20211212030207-33c98a79c251 h1:3JodOc/F3vzazjO4Qxr6+jFk2NRMPs7NyymV0ZmuLZc=
+gopkg.in/specgen-io/yaml.v3 v3.0.0-20211212030207-33c98a79c251/go.mod h1:mQJ85cvpYaRvYyFXeSaIzJCII7yRNofFLXzoMrvq4jE=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.3/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.8/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
