@@ -82,9 +82,9 @@ func generateApiRouter(w *gen.Writer, api *spec.Api) {
 	w.Line(`}`)
 }
 
-func parserParameterCall(operation *spec.NamedOperation, param *spec.NamedParam, paramsParserName string) string {
+func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserName string) string {
 	paramNameSource := param.Name.Source
-	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
+	if isUrlParam {
 		paramNameSource = ":" + paramNameSource
 	}
 	parserParams := []string{fmt.Sprintf(`"%s"`, paramNameSource)}
@@ -104,11 +104,11 @@ func parserParameterCall(operation *spec.NamedOperation, param *spec.NamedParam,
 	return call
 }
 
-func generateOperationParametersParsing(w *gen.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramName string) {
+func generateOperationParametersParsing(w *gen.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, isUrlParam bool, paramsParserName string, paramName string) {
 	if namedParams != nil && len(namedParams) > 0 {
 		w.Line(`%s := NewParamsParser(%s)`, paramsParserName, paramName)
 		for _, param := range namedParams {
-			w.Line(`%s := %s`, param.Name.CamelCase(), parserParameterCall(operation, &param, paramsParserName))
+			w.Line(`%s := %s`, param.Name.CamelCase(), parserParameterCall(isUrlParam, &param, paramsParserName))
 		}
 		w.Line(`if len(%s.Errors) > 0 {`, paramsParserName)
 		w.Line(`  log.WithFields(%s).Warnf("Can't parse %s: %%s", %s.Errors)`, logFieldsName(operation), paramsParserName, paramsParserName)
@@ -180,9 +180,9 @@ func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 			w.Line(`}`)
 		}
 	}
-	generateOperationParametersParsing(w, operation, operation.QueryParams, "queryParams", "req.URL.Query()")
-	generateOperationParametersParsing(w, operation, operation.HeaderParams, "headerParams", "req.Header")
-	generateOperationParametersParsing(w, operation, operation.Endpoint.UrlParams, "urlParams", "req.URL.Query()")
+	generateOperationParametersParsing(w, operation, operation.QueryParams, false, "queryParams", "req.URL.Query()")
+	generateOperationParametersParsing(w, operation, operation.HeaderParams, false, "headerParams", "req.Header")
+	generateOperationParametersParsing(w, operation, operation.Endpoint.UrlParams, true, "urlParams", "req.URL.Query()")
 
 	generateServiceCall(w, operation)
 
