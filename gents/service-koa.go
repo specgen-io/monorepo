@@ -50,21 +50,22 @@ func generateKoaSpecRouter(specification *spec.Spec, rootModule module, module m
 	return &gen.TextFile{module.GetPath(), w.String()}
 }
 
-func generateKoaVersionRouting(version *spec.Version, validation string, validationModule module, module module) *gen.TextFile {
+func generateKoaVersionRouting(version *spec.Version, validation string, validationModule, paramsModule, module module) *gen.TextFile {
 	w := NewTsWriter()
 
-	w.Line("import Router from '@koa/router'")
+	w.Line(`import Router from '@koa/router'`)
+	w.Line(`import {zipHeaders} from '%s'`, paramsModule.GetImport(module))
 	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
-	w.Line("import * as models from './models'")
+	w.Line(`import * as models from './models'`)
 	for _, api := range version.Http.Apis {
 		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), serviceName(&api))
 	}
 
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
-			generateParams(w, paramsTypeName(&operation, "HeaderParams"), true, operation.HeaderParams, validation)
-			generateParams(w, paramsTypeName(&operation, "UrlParams"), false, operation.Endpoint.UrlParams, validation)
-			generateParams(w, paramsTypeName(&operation, "QueryParams"), false, operation.QueryParams, validation)
+			generateParams(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams, validation)
+			generateParams(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams, validation)
+			generateParams(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams, validation)
 		}
 
 		generateKoaApiRouting(w, &api, validation)
@@ -109,7 +110,7 @@ func generateKoaOperationRouting(w *gen.Writer, operation *spec.NamedOperation, 
 	w.Line("router.%s('%s', async (ctx) => {", strings.ToLower(operation.Endpoint.Method), getKoaUrl(operation.Endpoint))
 	w.Indent()
 
-	apiCallParamsObject := generateParametersParsing(w, validation, operation, "ctx.request.body", "ctx.request.rawBody", "ctx.request.headers", "ctx.params", "ctx.request.query", "ctx.throw(400)")
+	apiCallParamsObject := generateParametersParsing(w, validation, operation, "ctx.request.body", "ctx.request.rawBody", "zipHeaders(ctx.req.rawHeaders)", "ctx.params", "ctx.request.query", "ctx.throw(400)")
 
 	w.Line("try {")
 	w.Line("  %s", serviceCall(operation, apiCallParamsObject))
