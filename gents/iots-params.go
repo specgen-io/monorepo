@@ -2,21 +2,16 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"strings"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateIoTsParams(w *gen.Writer, typeName string, isHeader bool, params []spec.NamedParam) {
+func generateIoTsParams(w *gen.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		w.Line("const %s = t.type({", paramsRuntimeTypeName(typeName))
 		for _, param := range params {
-			paramName := param.Name.Source
-			if isHeader {
-				paramName = strings.ToLower(param.Name.Source)
-			}
-			w.Line("  %s: %s,", tsIdentifier(paramName), ParamIoTsTypeDefaulted(&param))
+			w.Line("  %s: %s,", tsIdentifier(param.Name.Source), ParamIoTsTypeDefaulted(&param))
 		}
 		w.Line("})")
 		w.EmptyLine()

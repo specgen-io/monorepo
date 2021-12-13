@@ -2,9 +2,9 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/genopenapi"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validation string) error {
@@ -16,13 +16,15 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 	validationModule := generateModule.Submodule(validation)
 	validationFile := generateValidation(validation, validationModule)
 	sourcesOverwrite = append(sourcesOverwrite, *validationFile)
+	paramsModule := generateModule.Submodule("params")
+	sourcesOverwrite = append(sourcesOverwrite, *generateParamsStaticCode(paramsModule))
 
 	for _, version := range specification.Versions {
 		versionModule := generateModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
 		sourcesOverwrite = append(sourcesOverwrite, *generateVersionModels(&version, validation, validationModule, modelsModule))
 		sourcesOverwrite = append(sourcesOverwrite, generateServiceApis(&version, modelsModule, versionModule)...)
-		sourcesOverwrite = append(sourcesOverwrite, *generateVersionRouting(&version, validation, server, validationModule, versionModule))
+		sourcesOverwrite = append(sourcesOverwrite, *generateVersionRouting(&version, validation, server, validationModule, paramsModule, versionModule))
 	}
 	sourcesOverwrite = append(sourcesOverwrite, *generateSpecRouter(specification, server, generateModule, generateModule.Submodule("spec_router")))
 
@@ -47,13 +49,13 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 	return nil
 }
 
-func generateVersionRouting(version *spec.Version, validation string, server string, validationModule module, module module) *gen.TextFile {
+func generateVersionRouting(version *spec.Version, validation string, server string, validationModule, paramsModule, module module) *gen.TextFile {
 	routingModule := module.Submodule("routing")
 	if server == express {
-		return generateExpressVersionRouting(version, validation, validationModule, routingModule)
+		return generateExpressVersionRouting(version, validation, validationModule, paramsModule, routingModule)
 	}
 	if server == koa {
-		return generateKoaVersionRouting(version, validation, validationModule, routingModule)
+		return generateKoaVersionRouting(version, validation, validationModule, paramsModule, routingModule)
 	}
 	panic(fmt.Sprintf("Unknown server: %s", server))
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/spec"
-	"strings"
 )
 
 func generateServiceApis(version *spec.Version, modelsModule module, module module) []gen.TextFile {
@@ -71,13 +70,9 @@ func addServiceParam(w *gen.Writer, paramName string, typ *spec.TypeDef) {
 	w.Line("  %s: %s,", paramName, TsType(typ))
 }
 
-func generateServiceParams(w *gen.Writer, params []spec.NamedParam, isHeader bool) {
+func generateServiceParams(w *gen.Writer, params []spec.NamedParam) {
 	for _, param := range params {
-		paramName := param.Name.Source
-		if isHeader {
-			paramName = strings.ToLower(param.Name.Source)
-		}
-		addServiceParam(w, tsIdentifier(paramName), &param.Type.Definition)
+		addServiceParam(w, tsIdentifier(param.Name.Source), &param.Type.Definition)
 	}
 }
 
@@ -90,9 +85,9 @@ func tsIdentifier(name string) string {
 
 func generateOperationParams(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line("export interface %s {", operationParamsTypeName(operation))
-	generateServiceParams(w, operation.HeaderParams, true)
-	generateServiceParams(w, operation.Endpoint.UrlParams, false)
-	generateServiceParams(w, operation.QueryParams, false)
+	generateServiceParams(w, operation.HeaderParams)
+	generateServiceParams(w, operation.Endpoint.UrlParams)
+	generateServiceParams(w, operation.QueryParams)
 	if operation.Body != nil {
 		addServiceParam(w, "body", &operation.Body.Type.Definition)
 	}

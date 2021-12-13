@@ -51,22 +51,24 @@ func expressVersionUrl(version *spec.Version) string {
 	return url
 }
 
-func generateExpressVersionRouting(version *spec.Version, validation string, validationModule module, module module) *gen.TextFile {
+func generateExpressVersionRouting(version *spec.Version, validation string, validationModule, paramsModule, module module) *gen.TextFile {
 	w := NewTsWriter()
 
 	w.Line("import {Router} from 'express'")
 	w.Line("import {Request, Response} from 'express'") //TODO: Join with above
+	w.Line(`import {zipHeaders} from '%s'`, paramsModule.GetImport(module))
 	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
 	w.Line("import * as models from './models'")
+
 	for _, api := range version.Http.Apis {
 		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), serviceName(&api))
 	}
 
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
-			generateParams(w, paramsTypeName(&operation, "HeaderParams"), true, operation.HeaderParams, validation)
-			generateParams(w, paramsTypeName(&operation, "UrlParams"), false, operation.Endpoint.UrlParams, validation)
-			generateParams(w, paramsTypeName(&operation, "QueryParams"), false, operation.QueryParams, validation)
+			generateParams(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams, validation)
+			generateParams(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams, validation)
+			generateParams(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams, validation)
 		}
 
 		generateExpressApiRouting(w, &api, validation)
@@ -112,7 +114,7 @@ func generateExpressOperationRouting(w *gen.Writer, operation *spec.NamedOperati
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
 	w.Indent()
 
-	apiCallParamsObject := generateParametersParsing(w, validation, operation, "request.body", "request.body", "request.headers", "request.params", "request.query", "response.status(400).send()")
+	apiCallParamsObject := generateParametersParsing(w, validation, operation, "request.body", "request.body", "zipHeaders(request.rawHeaders)", "request.params", "request.query", "response.status(400).send()")
 
 	w.Line("try {")
 	w.Line("  %s", serviceCall(operation, apiCallParamsObject))
