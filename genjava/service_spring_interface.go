@@ -81,12 +81,16 @@ func generateResponseInterface(operation *spec.NamedOperation, apiPackage Module
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
+	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
+	w.EmptyLine()
 	w.Line(`public interface %s {`, serviceResponseInterfaceName(operation))
-	w.Line(`}`)
-
-	for _, response := range operation.Responses {
-		files = append(files, *generateResponsesImplementations(&response, apiPackage, modelsVersionPackage))
+	for index, response := range operation.Responses {
+		if index > 0 {
+			w.EmptyLine()
+		}
+		generateResponsesImplementations(w.Indented(), &response)
 	}
+	w.Line(`}`)
 
 	files = append(files, gen.TextFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", serviceResponseInterfaceName(operation))),
@@ -95,28 +99,18 @@ func generateResponseInterface(operation *spec.NamedOperation, apiPackage Module
 	return files
 }
 
-func generateResponsesImplementations(response *spec.NamedResponse, apiPackage Module, modelsVersionPackage Module) *gen.TextFile {
-	w := NewJavaWriter()
-	w.Line(`package %s;`, apiPackage.PackageName)
-	w.EmptyLine()
-	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
-	w.EmptyLine()
-	serviceResponseImplementationName := serviceResponseImplName(response)
-	w.Line(`public class %s implements %s {`, serviceResponseImplementationName, serviceResponseInterfaceName(response.Operation))
+func generateResponsesImplementations(w *gen.Writer, response *spec.NamedResponse) {
+	serviceResponseImplementationName := response.Name.PascalCase()
+	w.Line(`class %s implements %s {`, serviceResponseImplementationName, serviceResponseInterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {
-		w.Line(`  public %s %s;`, JavaType(&response.Type.Definition), response.Name.Source)
+		w.Line(`  public %s body;`, JavaType(&response.Type.Definition))
 		w.EmptyLine()
 		w.Line(`  public %s() {`, serviceResponseImplementationName)
 		w.Line(`  }`)
 		w.EmptyLine()
-		w.Line(`  public %s(%s %s) {`, serviceResponseImplementationName, JavaType(&response.Type.Definition), response.Name.Source)
-		w.Line(`    this.%s = %s;`, response.Name.Source, response.Name.Source)
+		w.Line(`  public %s(%s body) {`, serviceResponseImplementationName, JavaType(&response.Type.Definition))
+		w.Line(`    this.body = body;`)
 		w.Line(`  }`)
 	}
 	w.Line(`}`)
-
-	return &gen.TextFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", serviceResponseImplementationName)),
-		Content: w.String(),
-	}
 }
