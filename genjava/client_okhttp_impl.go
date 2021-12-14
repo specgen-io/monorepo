@@ -124,13 +124,13 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 				`IOException`, `e`,
 				`"Failed to deserialize response body " + e.getMessage()`)
 			if len(operation.Responses) > 1 {
-				w.Line(`return new %s(responseBody);`, serviceResponseImplName(&response))
+				w.Line(`return new %s.%s(responseBody);`, serviceResponseInterfaceName(operation), response.Name.PascalCase())
 			} else {
 				w.Line(`return responseBody;`)
 			}
 		} else {
 			if len(operation.Responses) > 1 {
-				w.Line(`return new %s();`, serviceResponseImplName(&response))
+				w.Line(`return new %s.%s();`, serviceResponseInterfaceName(operation), response.Name.PascalCase())
 			} else {
 				w.Line(`return;`)
 			}
