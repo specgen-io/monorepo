@@ -47,7 +47,7 @@ func PlainIoTsType(typ string) string {
 	case spec.TypeDate:
 		return "t.string"
 	case spec.TypeDateTime:
-		return "t.DateFromISOString"
+		return "t.DateISOStringNoTimezone"
 	case spec.TypeJson:
 		return "t.unknown"
 	default:

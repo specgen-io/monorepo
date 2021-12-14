@@ -15,7 +15,7 @@ export * from 'io-ts-types'
 import * as t from 'io-ts'
 
 import { pipe, identity } from 'fp-ts/lib/function'
-import { fold, map } from 'fp-ts/lib/Either'
+import { fold, map, chain } from 'fp-ts/lib/Either'
 
 
 enum Enum {}
@@ -44,6 +44,34 @@ export class EnumType<E extends typeof Enum> extends t.Type<E[keyof E]> {
 const enumType = <E extends typeof Enum>(e: E, name?: string) => new EnumType<E>(e, name)
 
 export { enumType as enum }
+
+function datetimeToString(datetime: Date): string {
+  return datetime.toISOString().slice(0, -5) //removing ending postfix .000Z
+}
+
+function stringToDatetime(str: string): Date {
+  if (str.endsWith("Z")) {
+      return new Date(str)
+  } else {
+      return new Date(str+"Z") // adding UTC symbol
+  }
+}
+
+export interface DateISOStringNoTimezoneC extends t.Type<Date, string, unknown> {}
+
+export const DateISOStringNoTimezone: DateISOStringNoTimezoneC = new t.Type<Date, string, unknown>(
+  'DateISOStringNoTimezone',
+  (u): u is Date => u instanceof Date,
+  (u, c) =>
+    pipe(
+      t.string.validate(u, c),
+      chain(s => {
+        const d = stringToDatetime(s)
+        return isNaN(d.getTime()) ? t.failure(u, c) : t.success(d)
+      })
+    ),
+  a => datetimeToString(a)
+)
 
 export class WithDefault<RT extends t.Any, A = any, O = A, I = unknown> extends t.Type<A, O, I> {
   readonly _tag: 'WithDefault' = 'WithDefault'
