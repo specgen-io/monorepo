@@ -109,11 +109,17 @@ func generateMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	}
 	if len(operation.Responses) > 1 {
 		w.Line(`  var result = %s;`, serviceCall)
-		w.EmptyLine()
 		for _, resp := range operation.Responses {
+			w.EmptyLine()
 			w.Line(`  if (result instanceof %s) {`, serviceResponseImplName(&resp))
-			w.Line(`    logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
-			w.Line(`    return new ResponseEntity<>(HttpStatus.%s);`, resp.Name.UpperCase())
+			if !resp.Type.Definition.IsEmpty() {
+				w.Line(`    String responseJson = objectMapper.writeValueAsString(((%s) result).%s);`, serviceResponseImplName(&resp), resp.Name.Source)
+				w.Line(`    logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
+				w.Line(`    return new ResponseEntity<>(responseJson, headers, HttpStatus.%s);`, resp.Name.UpperCase())
+			} else {
+				w.Line(`    logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
+				w.Line(`    return new ResponseEntity<>(HttpStatus.%s);`, resp.Name.UpperCase())
+			}
 			w.Line(`  }`)
 		}
 		w.EmptyLine()
