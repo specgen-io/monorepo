@@ -69,7 +69,7 @@ func ParamPlainIoTsType(typ string) string {
 	case spec.TypeDate:
 		return "t.string"
 	case spec.TypeDateTime:
-		return "t.DateFromISOString"
+		return "t.DateISOStringNoTimezone"
 	default:
 		return fmt.Sprintf("%s.T"+typ, modelsPackage)
 	}
