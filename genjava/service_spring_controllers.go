@@ -96,6 +96,10 @@ func generateMethod(w *gen.Writer, operation *spec.NamedOperation) {
 				w.Line(`  return new ResponseEntity<>(HttpStatus.%s);`, resp.Name.UpperCase())
 			} else {
 				w.Line(`  var result = %s;`, serviceCall)
+				w.Line(`  if (result == null) {`)
+				w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
+				w.Line(`    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);`)
+				w.Line(`  }`)
 				responseVar := "result"
 				if resp.Type.Definition.Plain != spec.TypeString {
 					responseVar = "responseJson"
@@ -109,6 +113,10 @@ func generateMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	}
 	if len(operation.Responses) > 1 {
 		w.Line(`  var result = %s;`, serviceCall)
+		w.Line(`  if (result == null) {`)
+		w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
+		w.Line(`    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);`)
+		w.Line(`  }`)
 		for _, resp := range operation.Responses {
 			w.EmptyLine()
 			w.Line(`  if (result instanceof %s) {`, serviceResponseImplName(&resp))
