@@ -104,6 +104,7 @@ func generateKoaResponse(w *gen.Writer, response *spec.NamedResponse, validation
 			w.Line("ctx.body = t.encode(%s.%s, %s)", modelsPackage, runtimeType(validation, &response.Type.Definition), dataParam)
 		}
 	}
+	w.Line("return")
 }
 
 func generateKoaOperationRouting(w *gen.Writer, operation *spec.NamedOperation, validation string) {
