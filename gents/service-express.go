@@ -108,6 +108,7 @@ func generateExpressResponse(w *gen.Writer, response *spec.NamedResponse, valida
 			w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s.%s, %s)))", spec.HttpStatusCode(response.Name), modelsPackage, runtimeType(validation, &response.Type.Definition), dataParam)
 		}
 	}
+	w.Line("return")
 }
 
 func generateExpressOperationRouting(w *gen.Writer, operation *spec.NamedOperation, validation string) {
