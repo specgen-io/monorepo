@@ -7,7 +7,15 @@ import (
 	"strings"
 )
 
-func generateRouting(version *spec.Version, versionModule module, modelsModule module) *gen.TextFile {
+func generateRoutings(version *spec.Version, versionModule module, modelsModule module) []gen.TextFile {
+	files := []gen.TextFile{}
+	for _, api := range version.Http.Apis {
+		files = append(files, *generateRouting(modelsModule, versionModule, &api))
+	}
+	return files
+}
+
+func generateRouting(modelsModule module, versionModule module, api *spec.Api) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", versionModule.Name)
 
@@ -16,23 +24,37 @@ func generateRouting(version *spec.Version, versionModule module, modelsModule m
 	imports.Add("github.com/husobee/vestigo")
 	imports.AddAlias("github.com/sirupsen/logrus", "log")
 	imports.Add("net/http")
-
-	for _, api := range version.Http.Apis {
-		if bodyHasType(&api, spec.TypeString) {
-			imports.Add("io/ioutil")
-		}
-		apiModule := versionModule.Submodule(api.Name.SnakeCase())
-		imports.Add(apiModule.Package)
+	if bodyHasType(api, spec.TypeString) {
+		imports.Add("io/ioutil")
 	}
-	imports.Add(modelsModule.Package)
+	apiModule := versionModule.Submodule(api.Name.SnakeCase())
+	imports.Add(apiModule.Package)
+	if paramsContainsModel(api) {
+		imports.Add(modelsModule.Package)
+	}
 	imports.Write(w)
 
-	for _, api := range version.Http.Apis {
-		generateApiRouter(w, &api)
+	w.EmptyLine()
+	w.Line(`func %s(router *vestigo.Router, %s %s) {`, addRoutes(api), serviceInterfaceTypeVar(api), fmt.Sprintf("%s.Service", api.Name.SnakeCase()))
+	for i, operation := range api.Operations {
+		if i != 0 {
+			w.EmptyLine()
+		}
+		w.Indent()
+		url := getVestigoUrl(&operation)
+		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), url)
+		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, ToPascalCase(operation.Endpoint.Method), url)
+		generateOperationMethod(w.Indented(), &operation)
+		w.Line(`})`)
+		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
+			addSetCors(w, &operation)
+		}
+		w.Unindent()
 	}
+	w.Line(`}`)
 
 	return &gen.TextFile{
-		Path:    versionModule.GetPath("routing.go"),
+		Path:    versionModule.GetPath(fmt.Sprintf("%s_routing.go", api.Name.SnakeCase())),
 		Content: w.String(),
 	}
 }
@@ -59,27 +81,6 @@ func addSetCors(w *gen.Writer, operation *spec.NamedOperation) {
 
 func logFieldsName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf("log%s", operation.Name.PascalCase())
-}
-
-func generateApiRouter(w *gen.Writer, api *spec.Api) {
-	w.EmptyLine()
-	w.Line(`func %s(router *vestigo.Router, %s %s) {`, addRoutes(api), serviceInterfaceTypeVar(api), fmt.Sprintf("%s.Service", api.Name.SnakeCase()))
-	for i, operation := range api.Operations {
-		if i != 0 {
-			w.EmptyLine()
-		}
-		w.Indent()
-		url := getVestigoUrl(&operation)
-		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), url)
-		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, ToPascalCase(operation.Endpoint.Method), url)
-		generateOperationMethod(w.Indented(), &operation)
-		w.Line(`})`)
-		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
-			addSetCors(w, &operation)
-		}
-		w.Unindent()
-	}
-	w.Line(`}`)
 }
 
 func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserName string) string {
