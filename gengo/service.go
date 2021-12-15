@@ -1,9 +1,9 @@
 package gengo
 
 import (
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/genopenapi"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func GenerateService(specification *spec.Spec, moduleName string, swaggerPath string, generatePath string, servicesPath string) error {
@@ -17,7 +17,7 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 		modelsModule := Module(moduleName, createPath(generatePath, version.Version.FlatCase(), modelsPackage))
 
 		sourcesOverride = append(sourcesOverride, *generateParamsParser(versionModule))
-		sourcesOverride = append(sourcesOverride, *generateRouting(&version, versionModule, modelsModule))
+		sourcesOverride = append(sourcesOverride, generateRoutings(&version, versionModule, modelsModule)...)
 		sourcesOverride = append(sourcesOverride, generateServicesInterfaces(&version, versionModule, modelsModule)...)
 		sourcesOverride = append(sourcesOverride, generateVersionModels(&version, modelsModule)...)
 	}
