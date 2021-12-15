@@ -164,7 +164,7 @@ func generateClientOperationImplementation(w *gen.Writer, operation spec.NamedOp
 	httpMethod := strings.ToLower(operation.Endpoint.Method)
 	url := operation.FullUrl()
 	for _, param := range operation.Endpoint.UrlParams {
-		url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), "$"+param.Name.CamelCase(), -1)
+		url = strings.Replace(url, spec.UrlParamStr(&param), "$"+param.Name.CamelCase(), -1)
 	}
 
 	addParamsWriting(w, operation.QueryParams, "query")

@@ -93,7 +93,7 @@ func generateExpressApiRouting(w *gen.Writer, api *spec.Api, validation string) 
 func getExpressUrl(endpoint spec.Endpoint) string {
 	url := endpoint.Url
 	for _, param := range endpoint.UrlParams {
-		url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), ":"+param.Name.Source, -1)
+		url = strings.Replace(url, spec.UrlParamStr(&param), ":"+param.Name.Source, -1)
 	}
 	return url
 }

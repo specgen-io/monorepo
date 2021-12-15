@@ -114,7 +114,7 @@ func getUrl(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		for _, param := range operation.Endpoint.UrlParams {
-			parts := strings.Split(reminder, spec.UrlParamStr(param.Name.Source))
+			parts := strings.Split(reminder, spec.UrlParamStr(&param))
 			urlParams = append(urlParams, fmt.Sprintf("%s%s", parts[0], "%s"))
 			reminder = parts[1]
 		}

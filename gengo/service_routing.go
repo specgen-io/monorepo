@@ -41,7 +41,7 @@ func getVestigoUrl(operation *spec.NamedOperation) string {
 	url := operation.FullUrl()
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		for _, param := range operation.Endpoint.UrlParams {
-			url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), fmt.Sprintf(":%s", param.Name.Source), -1)
+			url = strings.Replace(url, spec.UrlParamStr(&param), fmt.Sprintf(":%s", param.Name.Source), -1)
 		}
 	}
 	return url

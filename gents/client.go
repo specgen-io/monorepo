@@ -47,7 +47,7 @@ func GenerateClient(specification *spec.Spec, generatePath string, client string
 func getUrl(endpoint spec.Endpoint) string {
 	url := endpoint.Url
 	for _, param := range endpoint.UrlParams {
-		url = strings.Replace(url, spec.UrlParamStr(param.Name.Source), "${stringify(parameters."+param.Name.CamelCase()+")}", -1)
+		url = strings.Replace(url, spec.UrlParamStr(&param), "${stringify(parameters."+param.Name.CamelCase()+")}", -1)
 	}
 	return url
 }

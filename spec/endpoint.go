@@ -8,10 +8,25 @@ import (
 	"strings"
 )
 
+type UrlPart struct {
+	Part  string
+	Param *NamedParam
+}
+
 type Endpoint struct {
 	Method    string
 	Url       string
 	UrlParams UrlParams
+	UrlParts  []UrlPart
+}
+
+func (value Endpoint) MarshalYAML() (interface{}, error) {
+	url := value.Url
+	for _, param := range value.UrlParams {
+		paramStr := fmt.Sprintf(`{%s:%s}`, param.Name.Source, param.Type.Definition.String())
+		url = strings.Replace(url, UrlParamStr(&param), paramStr, 1)
+	}
+	return fmt.Sprintf(`%s %s`, value.Method, url), nil
 }
 
 func (value *Endpoint) UnmarshalYAML(node *yaml.Node) error {
@@ -38,50 +53,68 @@ func parseEndpoint(endpoint string, node *yaml.Node) (*Endpoint, error) {
 		return nil, err
 	}
 	url := endpointParts[1]
+	cleanUrl, params, err := getCleanUrl(url, node)
+	if err != nil {
+		return nil, err
+	}
+	urlParts := getUrlParts(cleanUrl, params)
+	return &Endpoint{method, cleanUrl, params, urlParts}, nil
+}
+
+func parseUrlParam(paramStr string, node *yaml.Node) (*NamedParam, error) {
+	paramStr = strings.Replace(paramStr, "{", "", -1)
+	paramStr = strings.Replace(paramStr, "}", "", -1)
+	paramParts := strings.Split(paramStr, ":")
+	paramName := strings.TrimSpace(paramParts[0])
+	paramType := strings.TrimSpace(paramParts[1])
+
+	typ, err := parseType(paramType)
+	if err != nil {
+		return nil, err
+	}
+
+	return &NamedParam{
+		Name: Name{Source: paramName, Location: node},
+		DefinitionDefault: DefinitionDefault{
+			Type:     Type{*typ, node},
+			Location: node,
+		},
+	}, nil
+}
+
+func getUrlParts(url string, params UrlParams) []UrlPart {
+	urlParts := []UrlPart{}
+	reminder := url
+	for i, param := range params {
+		paramStr := UrlParamStr(&param)
+		parts := strings.SplitN(reminder, paramStr, 2)
+		urlParts = append(urlParts, UrlPart{Part: parts[0]})
+		urlParts = append(urlParts, UrlPart{Part: paramStr, Param: &params[i]})
+		reminder = parts[1]
+	}
+	if reminder != "" {
+		urlParts = append(urlParts, UrlPart{Part: reminder})
+	}
+	return urlParts
+}
+
+func getCleanUrl(url string, node *yaml.Node) (string, UrlParams, error) {
 	re := regexp.MustCompile(`\{[a-zA-Z][a-zA-Z0-9-_]*:[a-zA-Z][a-zA-Z0-9-_]*\}`)
 	matches := re.FindAllStringIndex(url, -1)
 	params := UrlParams{}
 	cleanUrl := url
 	for _, match := range matches {
-		start := match[0]
-		end := match[1]
-		originalParamStr := url[start:end]
-		paramStr := originalParamStr
-		paramStr = strings.Replace(paramStr, "{", "", -1)
-		paramStr = strings.Replace(paramStr, "}", "", -1)
-		paramParts := strings.Split(paramStr, ":")
-		paramName := strings.TrimSpace(paramParts[0])
-		paramType := strings.TrimSpace(paramParts[1])
-
-		typ, err := parseType(paramType)
+		paramStr := url[match[0]:match[1]]
+		param, err := parseUrlParam(paramStr, node)
 		if err != nil {
-			return nil, err
+			return "", nil, err
 		}
-
-		param := &NamedParam{
-			Name: Name{Source: paramName, Location: node},
-			DefinitionDefault: DefinitionDefault{
-				Type:     Type{*typ, node},
-				Location: node,
-			},
-		}
-
 		params = append(params, *param)
-
-		cleanUrl = strings.Replace(cleanUrl, originalParamStr, UrlParamStr(paramName), 1)
+		cleanUrl = strings.Replace(cleanUrl, paramStr, UrlParamStr(param), 1)
 	}
-	return &Endpoint{Method: method, Url: cleanUrl, UrlParams: params}, nil
+	return cleanUrl, params, nil
 }
 
-func UrlParamStr(paramName string) string {
-	return "{" + paramName + "}"
-}
-
-func (value Endpoint) MarshalYAML() (interface{}, error) {
-	url := value.Url
-	for _, param := range value.UrlParams {
-		paramStr := fmt.Sprintf(`{%s:%s}`, param.Name.Source, param.Type.Definition.String())
-		url = strings.Replace(url, UrlParamStr(param.Name.Source), paramStr, 1)
-	}
-	return fmt.Sprintf(`%s %s`, value.Method, url), nil
+func UrlParamStr(param *NamedParam) string {
+	return "{" + param.Name.Source + "}"
 }
