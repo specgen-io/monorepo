@@ -419,7 +419,7 @@ func generateApiRouter(w *gen.Writer, api spec.Api) {
 		w.Line(`  lazy val %s = Route("%s", PathPattern(List(`, routeName(operation.Name), operation.Endpoint.Method)
 		reminder := operation.FullUrl()
 		for _, param := range operation.Endpoint.UrlParams {
-			parts := strings.Split(reminder, spec.UrlParamStr(param.Name.Source))
+			parts := strings.Split(reminder, spec.UrlParamStr(&param))
 			w.Line(`    StaticPart("%s"),`, parts[0])
 			w.Line(`    DynamicPart("%s", """[^/]+""", true),`, param.Name.Source)
 			reminder = parts[1]
