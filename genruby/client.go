@@ -102,13 +102,17 @@ func generateClientOperation(w *gen.Writer, moduleName string, operation *spec.N
 
 	httpMethod := casee.ToPascalCase(operation.Endpoint.Method)
 
-	addParamsWriting(w, moduleName, operation.Endpoint.UrlParams, "url_params")
 	addParamsWriting(w, moduleName, operation.QueryParams, "query")
 	addParamsWriting(w, moduleName, operation.HeaderParams, "header")
 
 	url_compose := "url = @base_uri"
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		url_compose = url_compose + fmt.Sprintf(" + url_params.set_to_url('%s')", operation.FullUrl())
+		w.Line("url_params = {")
+		for _, p := range operation.Endpoint.UrlParams {
+			w.Line("  '%s' => T.check(%s, %s),", p.Name.Source, RubyType(&p.Type.Definition), p.Name.SnakeCase())
+		}
+		w.Line("}")
+		url_compose = url_compose + fmt.Sprintf(" + Stringify::set_params_to_url('%s', url_params)", operation.FullUrl())
 	} else {
 		url_compose = url_compose + fmt.Sprintf(" + '%s'", operation.FullUrl())
 	}

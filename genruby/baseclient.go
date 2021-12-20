@@ -35,9 +35,18 @@ module [[.ModuleName]]
     def Stringify.to_string(value)
       if T.instance_of?(DateTime, value)
         value.strftime('%Y-%m-%dT%H:%M:%S')
+      elsif T.instance_of?(Date, value)
+        value.strftime('%Y-%m-%d')
       else
         value.to_s
       end
+    end
+
+    def Stringify.set_params_to_url(url, parameters)
+      parameters.each do |param_name, value|
+        url = url.gsub("{#{param_name}}", CGI.escape(Stringify::to_string(value)))
+      end
+      url
     end
   end
 
@@ -45,29 +54,23 @@ module [[.ModuleName]]
     attr_reader :params
 
     def initialize
-      @params = {}
-    end
-
-    def []= (param_name, value)
-      if value != nil
-        @params[param_name] = Stringify::to_string(value)
-      end
+      @params = []
     end
 
     def set(param_name, typedef, value)
-      self[param_name] = T.check_var(param_name, typedef, value)
+      value = T.check_var(param_name, typedef, value)
+      if value != nil
+        if value.is_a? Array
+          value.each { |item_value| @params.push([param_name, Stringify::to_string(item_value)]) }
+        else
+          @params.push([param_name, Stringify::to_string(value)])
+        end
+      end
     end
 
     def query_str
-      parts = (@params || {}).map { |param_name, value| "%s=%s" % [param_name, CGI.escape(value)] }
+      parts = (@params || []).map { |param_name, value| "%s=%s" % [param_name, CGI.escape(value)] }
       parts.empty? ? "" : "?"+parts.join("&")
-    end
-
-    def set_to_url(url)
-      @params.each do |param_name, value|
-        url = url.gsub("{#{param_name}}", CGI.escape(value))
-      end
-      url
     end
   end
 end
