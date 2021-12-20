@@ -1,8 +1,8 @@
 package gents
 
 import (
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func generateIoTsVersionModels(version *spec.Version, iotsModule module, module module) *gen.TextFile {
@@ -43,7 +43,7 @@ func generateIoTsObjectModel(w *gen.Writer, model *spec.NamedModel) {
 		w.Line("  t.interface({")
 		for _, field := range model.Object.Fields {
 			if !field.Type.Definition.IsNullable() {
-				w.Line("    %s: %s", field.Name.Source, IoTsType(&field.Type.Definition))
+				w.Line("    %s: %s,", field.Name.Source, IoTsType(&field.Type.Definition))
 			}
 		}
 		w.Line("  }),")
