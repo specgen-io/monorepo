@@ -2,30 +2,27 @@ package genscala
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
+	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func GenerateCirceModels(spec *spec.Spec, packageName string, outPath string) []gen.TextFile {
+func GenerateCirceModels(spec *spec.Spec, thepackage Package) []gen.TextFile {
 	files := []gen.TextFile{}
+	jsonHelpers := generateJson(thepackage)
+	taggedUnion := generateTaggedUnion(thepackage)
+	files = append(files, *taggedUnion, *jsonHelpers)
 	for _, version := range spec.Versions {
-		versionFile := generateCirceModels(&version, packageName, outPath)
+		versionPackage := thepackage.Subpackage(version.Version.FlatCase())
+		versionFile := generateCirceModels(&version, versionPackage, thepackage)
 		files = append(files, *versionFile)
 	}
-	taggedUnion := generateTaggedUnion("spec", filepath.Join(outPath, "TaggedUnion.scala"))
-	files = append(files, *taggedUnion)
 	return files
 }
 
-func generateCirceModels(version *spec.Version, packageName string, outPath string) *gen.TextFile {
-	if version.Version.Source != "" {
-		packageName = fmt.Sprintf(`%s.%s`, packageName, version.Version.FlatCase())
-	}
-
+func generateCirceModels(version *spec.Version, thepackage, taggedUnionPackage Package) *gen.TextFile {
 	w := NewScalaWriter()
-	w.Line(`package %s`, packageName)
+	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
 	w.Line(`import enumeratum.values._`)
 	w.Line(`import java.time._`)
@@ -34,7 +31,7 @@ func generateCirceModels(version *spec.Version, packageName string, outPath stri
 	w.Line(`import io.circe.Codec`)
 	w.Line(`import io.circe.generic.extras.{Configuration, JsonKey}`)
 	w.Line(`import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveUnwrappedCodec}`)
-	w.Line(`import spec.taggedunion._`)
+	w.Line(`import %s.taggedunion._`, taggedUnionPackage.PackageName)
 
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
@@ -43,12 +40,12 @@ func generateCirceModels(version *spec.Version, packageName string, outPath stri
 		} else if model.IsEnum() {
 			generateCirceEnumModel(w, model)
 		} else if model.IsOneOf() {
-			generateCirceUnionModel(w, model, packageName)
+			generateCirceUnionModel(w, model)
 		}
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, fmt.Sprintf("%sModels.scala", version.Version.PascalCase())),
+		Path:    thepackage.GetPath("Models.scala"),
 		Content: w.String(),
 	}
 }
@@ -82,13 +79,13 @@ func generateCirceEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateCirceUnionModel(w *gen.Writer, model *spec.NamedModel, packageName string) {
+func generateCirceUnionModel(w *gen.Writer, model *spec.NamedModel) {
 	traitName := model.Name.PascalCase()
 	w.Line(`sealed trait %s`, traitName)
 	w.EmptyLine()
 	w.Line(`object %s {`, traitName)
 	for _, item := range model.OneOf.Items {
-		w.Line(`  case class %s(data: %s.%s) extends %s`, item.Name.PascalCase(), packageName, ScalaType(&item.Type.Definition), traitName)
+		w.Line(`  case class %s(data: %s) extends %s`, item.Name.PascalCase(), ScalaType(&item.Type.Definition), traitName)
 	}
 	w.EmptyLine()
 	for _, item := range model.OneOf.Items {
@@ -106,7 +103,7 @@ func generateCirceUnionModel(w *gen.Writer, model *spec.NamedModel, packageName 
 	w.Line(`}`)
 }
 
-func generateJson(packageName string, path string) *gen.TextFile {
+func generateJson(thepackage Package) *gen.TextFile {
 	code := `
 package [[.PackageName]]
 
@@ -139,12 +136,14 @@ object Jsoner {
     }
   }
 }`
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
-	return &gen.TextFile{path, strings.TrimSpace(code)}
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
+	return &gen.TextFile{
+		Path:    thepackage.GetPath("Json.scala"),
+		Content: strings.TrimSpace(code),
+	}
 }
 
-
-func generateTaggedUnion(packageName string, path string) *gen.TextFile {
+func generateTaggedUnion(thepackage Package) *gen.TextFile {
 	code := `
 package [[.PackageName]]
 
@@ -283,6 +282,9 @@ object taggedunion {
     }
   }
 }`
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
-	return &gen.TextFile{path, strings.TrimSpace(code)}
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
+	return &gen.TextFile{
+		Path:    thepackage.GetPath("TaggedUnion.scala"),
+		Content: strings.TrimSpace(code),
+	}
 }
