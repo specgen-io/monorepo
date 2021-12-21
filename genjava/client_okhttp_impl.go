@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/spec"
-	"strings"
 )
 
 func generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []gen.TextFile {
@@ -95,10 +94,10 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	}
 	w.Line(`  var url = new UrlBuilder(baseUrl);`)
 	if operation.Api.Apis.GetUrl() != "" {
-		w.Line(`  url.addPathSegment("%s");`, operation.Api.Apis.GetUrl())
+		w.Line(`  url.addPathSegment("%s");`, TrimSlash(operation.Api.Apis.GetUrl()))
 	}
 	for _, urlPart := range operation.Endpoint.UrlParts {
-		part := strings.Trim(urlPart.Part, "/")
+		part := TrimSlash(urlPart.Part)
 		if urlPart.Param != nil {
 			w.Line(`  url.addPathSegment(%s);`, urlPart.Param.Name.CamelCase())
 		} else if len(part) > 0 {
