@@ -8,7 +8,6 @@ import (
 )
 
 type Package struct {
-	RootPath    string
 	Path        string
 	PackageName string
 	PackageStar string
@@ -16,17 +15,22 @@ type Package struct {
 
 func NewPackage(rootPath, rootPackageName, packageName string) Package {
 	path := rootPath
-	if packageName == "" {
+	if packageName != "" {
 		packagePath := strings.Join(strings.Split(packageName, "."), string(os.PathSeparator))
 		path = fmt.Sprintf(`%s/%s`, rootPath, packagePath)
 	}
-	if rootPackageName != "" {
-		packageName = fmt.Sprintf(`%s.%s`, rootPackageName, packageName)
+	packageName = getFullPackageName(rootPackageName, packageName)
+	return Package{Path: path, PackageName: packageName, PackageStar: packageName + "._"}
+}
+
+func getFullPackageName(rootPackageName, packageName string) string {
+	if rootPackageName == "" {
+		return packageName
 	}
 	if packageName == "" {
-		packageName = rootPackageName
+		return rootPackageName
 	}
-	return Package{RootPath: rootPath, Path: path, PackageName: packageName, PackageStar: packageName + "._"}
+	return fmt.Sprintf(`%s.%s`, rootPackageName, packageName)
 }
 
 func (m Package) GetPath(filename string) string {
@@ -38,7 +42,7 @@ func (m Package) Subpackage(name string) Package {
 	if name != "" {
 		subpackageName := fmt.Sprintf(`%s.%s`, m.PackageName, name)
 		subpackagePath := fmt.Sprintf(`%s/%s`, m.Path, name)
-		return Package{RootPath: m.RootPath, Path: subpackagePath, PackageName: subpackageName, PackageStar: subpackageName + "._"}
+		return Package{Path: subpackagePath, PackageName: subpackageName, PackageStar: subpackageName + "._"}
 	}
 	return m
 }

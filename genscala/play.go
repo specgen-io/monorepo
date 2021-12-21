@@ -47,7 +47,7 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 	}
 
 	if servicesPath != "" {
-		servicesImplPackage := NewPackage(servicesPath, "", "services")
+		servicesImplPackage := NewPackage(servicesPath, "services", "")
 		for _, version := range specification.Versions {
 			versionServicesImplPackage := servicesImplPackage.Subpackage(version.Version.FlatCase())
 			versionModelsPackage := modelsPackage.Subpackage(version.Version.FlatCase())
