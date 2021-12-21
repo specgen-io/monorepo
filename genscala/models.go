@@ -1,28 +1,22 @@
 package genscala
 
 import (
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateServiceModels(specification *spec.Spec, generatePath string) error {
-	modelsPackage := modelsPackageName(specification.Name)
+func GenerateServiceModels(specification *spec.Spec, packageName string, generatePath string) error {
+	if packageName == "" {
+		packageName = specification.Name.FlatCase() + ".models"
+	}
+	modelsPackage := NewPackage(generatePath, packageName, "")
 
-	scalaCirceFile := generateJson("spec", filepath.Join(generatePath, "Json.scala"))
+	modelsFiles := GenerateCirceModels(specification, modelsPackage)
 
-	modelsFiles := GenerateCirceModels(specification, modelsPackage, generatePath)
-
-	sourceManaged := append(modelsFiles, *scalaCirceFile)
-
-	err := gen.WriteFiles(sourceManaged, true)
+	err := gen.WriteFiles(modelsFiles, true)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func modelsPackageName(name spec.Name) string {
-	return name.FlatCase() + ".models"
 }

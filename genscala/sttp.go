@@ -4,21 +4,22 @@ import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/spec"
-	"path/filepath"
 	"strings"
 )
 
-func GenerateSttpClient(specification *spec.Spec, generatePath string) error {
-	clientPackage := clientPackageName(specification.Name)
+func GenerateSttpClient(specification *spec.Spec, packageName string, generatePath string) error {
+	if packageName == "" {
+		packageName = specification.Name.FlatCase() + ".client"
+	}
+	clientPackage := NewPackage(generatePath, packageName, "")
 
-	scalaCirceFile := generateJson("spec", filepath.Join(generatePath, "Json.scala"))
-	scalaHttpStaticFile := generateStringParams("spec", filepath.Join(generatePath, "StringParams.scala"))
+	scalaHttpStaticFile := generateStringParams(clientPackage)
 
-	modelsFiles := GenerateCirceModels(specification, clientPackage, generatePath)
-	interfacesFiles := generateClientInterfaces(specification, clientPackage, generatePath)
-	implsFiles := generateClientImplementations(specification, clientPackage, generatePath)
+	modelsFiles := GenerateCirceModels(specification, clientPackage)
+	interfacesFiles := generateClientInterfaces(specification, clientPackage)
+	implsFiles := generateClientImplementations(specification, clientPackage, clientPackage, clientPackage)
 
-	sourceManaged := append(modelsFiles, *scalaCirceFile)
+	sourceManaged := modelsFiles
 	sourceManaged = append(sourceManaged, *scalaHttpStaticFile)
 	sourceManaged = append(sourceManaged, interfacesFiles...)
 	sourceManaged = append(sourceManaged, implsFiles...)
@@ -31,29 +32,28 @@ func GenerateSttpClient(specification *spec.Spec, generatePath string) error {
 	return nil
 }
 
-func clientPackageName(name spec.Name) string {
-	return name.FlatCase() + ".client"
-}
-
-func generateClientImplementations(specification *spec.Spec, packageName string, outPath string) []gen.TextFile {
+func generateClientImplementations(specification *spec.Spec, thepackage, jsonPackage, stringParamsPackage Package) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, version := range specification.Versions {
-		versionFile := generateClientApiImplementations(&version, packageName, outPath)
+		versionPackage := thepackage.Subpackage(version.Version.FlatCase())
+		versionFile := generateClientApiImplementations(&version, versionPackage, jsonPackage, stringParamsPackage)
 		files = append(files, *versionFile)
 	}
 	return files
 }
 
-func generateClientApiImplementations(version *spec.Version, packageName string, outPath string) *gen.TextFile {
+func generateClientApiImplementations(version *spec.Version, thepackage, jsonPackage, stringParamsPackage Package) *gen.TextFile {
 	w := NewScalaWriter()
 
-	w.Line(`package %s`, versionedPackage(version.Version, packageName))
+	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
 	w.Line(`import scala.concurrent._`)
 	w.Line(`import org.slf4j._`)
 	w.Line(`import com.softwaremill.sttp._`)
-	w.Line(`import spec.Jsoner`)
-	w.Line(`import spec.ParamsTypesBindings._`)
+	w.Line(`import %s.ParamsTypesBindings._`, stringParamsPackage.PackageName)
+	if jsonPackage.PackageName != thepackage.PackageName {
+		w.Line(`import %s.Jsoner`, jsonPackage.PackageName)
+	}
 
 	for _, api := range version.Http.Apis {
 		w.EmptyLine()
@@ -61,23 +61,24 @@ func generateClientApiImplementations(version *spec.Version, packageName string,
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, version.Version.PascalCase()+"Client.scala"),
+		Path:    thepackage.GetPath("Client.scala"),
 		Content: w.String(),
 	}
 }
 
-func generateClientInterfaces(specification *spec.Spec, packageName string, outPath string) []gen.TextFile {
+func generateClientInterfaces(specification *spec.Spec, thepackage Package) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, version := range specification.Versions {
-		versionFile := generateClientApisInterfaces(&version, packageName, outPath)
+		versionPackage := thepackage.Subpackage(version.Version.FlatCase())
+		versionFile := generateClientApisInterfaces(&version, versionPackage)
 		files = append(files, *versionFile)
 	}
 	return files
 }
 
-func generateClientApisInterfaces(version *spec.Version, packageName string, outPath string) *gen.TextFile {
+func generateClientApisInterfaces(version *spec.Version, thepackage Package) *gen.TextFile {
 	w := NewScalaWriter()
-	w.Line(`package %s`, versionedPackage(version.Version, packageName))
+	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
 	w.Line(`import scala.concurrent._`)
 
@@ -92,7 +93,7 @@ func generateClientApisInterfaces(version *spec.Version, packageName string, out
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, version.Version.PascalCase()+"Interfaces.scala"),
+		Path:    thepackage.GetPath("Interfaces.scala"),
 		Content: w.String(),
 	}
 }

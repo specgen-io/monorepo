@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func generateStringParams(packageName string, path string) *gen.TextFile {
+func generateStringParams(thepackage Package) *gen.TextFile {
 	code := `
 package [[.PackageName]]
 
@@ -130,6 +130,8 @@ object ParamsTypesBindings {
     }
   }
 }`
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{packageName})
-	return &gen.TextFile{path, strings.TrimSpace(code)}
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
+	return &gen.TextFile{
+		Path:    thepackage.GetPath("StringParams.scala"),
+		Content: strings.TrimSpace(code)}
 }
