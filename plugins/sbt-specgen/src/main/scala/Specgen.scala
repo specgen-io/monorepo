@@ -35,7 +35,7 @@ object Specgen {
   }
 
   def recursiveListFiles(path: File): Array[File] = {
-    val current = f.listFiles
+    val current = path.listFiles
     current.filterNot(_.isDirectory) ++ current.filter(_.isDirectory).flatMap(recursiveListFiles)
   }
 
