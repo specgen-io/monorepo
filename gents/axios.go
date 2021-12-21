@@ -9,7 +9,7 @@ import (
 func generateAxiosApiClient(api spec.Api, validation string, validationModule, modelsModule, paramsModule, module module) *gen.TextFile {
 	w := NewTsWriter()
 	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
-	w.Line(`import { params, stringify } from '%s'`, paramsModule.GetImport(module))
+	w.Line(`import { strParamsItems, strParamsObject, stringify } from '%s'`, paramsModule.GetImport(module))
 	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
 	w.Line(`import * as %s from '%s'`, modelsPackage, modelsModule.GetImport(module))
 	w.EmptyLine()
@@ -38,19 +38,19 @@ func generateAxiosOperation(w *gen.Writer, operation *spec.NamedOperation, valid
 	w.Line(`%s: async (%s): Promise<%s> => {`, operation.Name.CamelCase(), createOperationParams(operation), responseType(operation, ""))
 	axiosConfigParts := []string{}
 	if hasQueryParams {
-		w.Line(`  const params = {`)
+		w.Line(`  const query = strParamsItems({`)
 		for _, p := range operation.QueryParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
-		w.Line(`  }`)
-		axiosConfigParts = append(axiosConfigParts, `params: params`)
+		w.Line(`  })`)
+		axiosConfigParts = append(axiosConfigParts, `params: new URLSearchParams(query)`)
 	}
 	if hasHeaderParams {
-		w.Line(`  const headers = {`)
+		w.Line(`  const headers = strParamsObject({`)
 		for _, p := range operation.HeaderParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
-		w.Line(`  }`)
+		w.Line(`  })`)
 		axiosConfigParts = append(axiosConfigParts, `headers: headers`)
 	}
 	axiosConfig := strings.Join(axiosConfigParts, `, `)

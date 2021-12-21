@@ -13,7 +13,7 @@ func generateFetchApiClient(api spec.Api, node bool, validation string, validati
 		w.Line(`import { URL, URLSearchParams } from 'url'`)
 		w.Line(`import fetch from 'node-fetch'`)
 	}
-	w.Line(`import { params, stringify } from '%s'`, paramsModule.GetImport(module))
+	w.Line(`import { strParamsItems, stringify } from '%s'`, paramsModule.GetImport(module))
 	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
 	w.Line(`import * as %s from '%s'`, modelsPackage, modelsModule.GetImport(module))
 	w.EmptyLine()
@@ -43,7 +43,7 @@ func generateFetchOperation(w *gen.Writer, operation *spec.NamedOperation, valid
 	w.Line(`%s: async (%s): Promise<%s> => {`, operation.Name.CamelCase(), createOperationParams(operation), responseType(operation, ""))
 	params := ``
 	if hasQueryParams {
-		w.Line(`  const query = params({`)
+		w.Line(`  const query = strParamsItems({`)
 		for _, p := range operation.QueryParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
@@ -52,7 +52,7 @@ func generateFetchOperation(w *gen.Writer, operation *spec.NamedOperation, valid
 	}
 	fetchConfig := fmt.Sprintf(`method: '%s'`, strings.ToUpper(operation.Endpoint.Method))
 	if hasHeaderParams {
-		w.Line(`  const headers = params({`)
+		w.Line(`  const headers = strParamsItems({`)
 		for _, p := range operation.HeaderParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
