@@ -34,11 +34,6 @@ object Specgen {
     generatedFiles.toSeq
   }
 
-  def recursiveListFiles(path: File): Array[File] = {
-    val current = path.listFiles
-    current.filterNot(_.isDirectory) ++ current.filter(_.isDirectory).flatMap(recursiveListFiles)
-  }
-
   def modelsScalaCirce(
     log: Logger,
     specPath: File,
@@ -58,7 +53,7 @@ object Specgen {
 
     runSpecgen(log, specCommand)
 
-    val generatedFiles = generatePath.listFiles
+    val generatedFiles = recursiveListFiles(generatePath)
     generatedFiles.toSeq
   }
 
@@ -81,8 +76,13 @@ object Specgen {
 
     runSpecgen(log, specCommand)
 
-    val generatedFiles = generatePath.listFiles
+    val generatedFiles = recursiveListFiles(generatePath)
     generatedFiles.toSeq
+  }
+
+  def recursiveListFiles(path: File): Array[File] = {
+    val current = path.listFiles
+    current.filterNot(_.isDirectory) ++ current.filter(_.isDirectory).flatMap(recursiveListFiles)
   }
 
   def runSpecgen(log: Logger, specgenCommand: Seq[String]) = {
