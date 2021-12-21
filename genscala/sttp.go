@@ -16,12 +16,10 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 	scalaHttpStaticFile := generateStringParams(clientPackage)
 
 	modelsFiles := GenerateCirceModels(specification, clientPackage)
-	interfacesFiles := generateClientInterfaces(specification, clientPackage)
 	implsFiles := generateClientImplementations(specification, clientPackage, clientPackage, clientPackage)
 
 	sourceManaged := modelsFiles
 	sourceManaged = append(sourceManaged, *scalaHttpStaticFile)
-	sourceManaged = append(sourceManaged, interfacesFiles...)
 	sourceManaged = append(sourceManaged, implsFiles...)
 
 	err := gen.WriteFiles(sourceManaged, true)
@@ -36,13 +34,15 @@ func generateClientImplementations(specification *spec.Spec, thepackage, jsonPac
 	files := []gen.TextFile{}
 	for _, version := range specification.Versions {
 		versionPackage := thepackage.Subpackage(version.Version.FlatCase())
-		versionFile := generateClientApiImplementations(&version, versionPackage, jsonPackage, stringParamsPackage)
-		files = append(files, *versionFile)
+		for _, api := range version.Http.Apis {
+			apiClient := generateClientApiImplementations(&api, versionPackage, jsonPackage, stringParamsPackage)
+			files = append(files, *apiClient)
+		}
 	}
 	return files
 }
 
-func generateClientApiImplementations(version *spec.Version, thepackage, jsonPackage, stringParamsPackage Package) *gen.TextFile {
+func generateClientApiImplementations(api *spec.Api, thepackage, jsonPackage, stringParamsPackage Package) *gen.TextFile {
 	w := NewScalaWriter()
 
 	w.Line(`package %s`, thepackage.PackageName)
@@ -55,45 +55,17 @@ func generateClientApiImplementations(version *spec.Version, thepackage, jsonPac
 		w.Line(`import %s.Jsoner`, jsonPackage.PackageName)
 	}
 
-	for _, api := range version.Http.Apis {
-		w.EmptyLine()
-		generateClientApiClass(w, api)
-	}
-
-	return &gen.TextFile{
-		Path:    thepackage.GetPath("Client.scala"),
-		Content: w.String(),
-	}
-}
-
-func generateClientInterfaces(specification *spec.Spec, thepackage Package) []gen.TextFile {
-	files := []gen.TextFile{}
-	for _, version := range specification.Versions {
-		versionPackage := thepackage.Subpackage(version.Version.FlatCase())
-		versionFile := generateClientApisInterfaces(&version, versionPackage)
-		files = append(files, *versionFile)
-	}
-	return files
-}
-
-func generateClientApisInterfaces(version *spec.Version, thepackage Package) *gen.TextFile {
-	w := NewScalaWriter()
-	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
-	w.Line(`import scala.concurrent._`)
+	generateClientApiTrait(w, api)
 
-	for _, api := range version.Http.Apis {
-		w.EmptyLine()
-		generateClientApiTrait(w, api)
-	}
+	w.EmptyLine()
+	generateApiInterfaceResponse(w, api, clientTraitName(api.Name))
 
-	for _, api := range version.Http.Apis {
-		w.EmptyLine()
-		generateApiInterfaceResponse(w, api, clientTraitName(api.Name))
-	}
+	w.EmptyLine()
+	generateClientApiClass(w, api)
 
 	return &gen.TextFile{
-		Path:    thepackage.GetPath("Interfaces.scala"),
+		Path:    thepackage.GetPath(fmt.Sprintf("%sClient.scala", api.Name.PascalCase())),
 		Content: w.String(),
 	}
 }
@@ -134,7 +106,7 @@ func generateClientOperationSignature(operation spec.NamedOperation) string {
 	return fmt.Sprintf(`def %s(%s): Future[%s]`, operation.Name.CamelCase(), JoinParams(methodParams), responseType(operation))
 }
 
-func generateClientApiTrait(w *gen.Writer, api spec.Api) {
+func generateClientApiTrait(w *gen.Writer, api *spec.Api) {
 	apiTraitName := clientTraitName(api.Name)
 	w.Line(`trait %s {`, apiTraitName)
 	w.Line(`  import %s._`, apiTraitName)
@@ -235,7 +207,7 @@ func generateClientOperationImplementation(w *gen.Writer, operation spec.NamedOp
 	w.Line(`}`)
 }
 
-func generateClientApiClass(w *gen.Writer, api spec.Api) {
+func generateClientApiClass(w *gen.Writer, api *spec.Api) {
 	apiClassName := clientClassName(api.Name)
 	apiTraitName := clientTraitName(api.Name)
 
