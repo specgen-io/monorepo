@@ -107,7 +107,7 @@ func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserNa
 
 func generateOperationParametersParsing(w *gen.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, isUrlParam bool, paramsParserName string, paramName string, parseCommaSeparatedArray bool) {
 	if namedParams != nil && len(namedParams) > 0 {
-		w.Line(`%s := NewParamsParser(%s, %s)`, paramsParserName, paramName, parseCommaSeparatedArray)
+		w.Line(`%s := NewParamsParser(%s, %t)`, paramsParserName, paramName, parseCommaSeparatedArray)
 		for _, param := range namedParams {
 			w.Line(`%s := %s`, param.Name.CamelCase(), parserParameterCall(isUrlParam, &param, paramsParserName))
 		}
