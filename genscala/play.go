@@ -5,7 +5,6 @@ import (
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/genopenapi"
 	"github.com/specgen-io/specgen/v2/spec"
-	"path/filepath"
 	"strings"
 )
 
@@ -31,7 +30,7 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 		apiRoutersFile := generateRouter(&version, versionAppPackage, versionControllersPackage, versionModelsPackage, paramsPackage)
 		sourcesOverwrite = append(sourcesOverwrite, *apiRoutersFile)
 	}
-	routesFile := generateMainRouter(specification.Versions, "app", generatePath)
+	routesFile := generateMainRouter(specification.Versions, appPackage)
 	sourcesOverwrite = append(sourcesOverwrite, *routesFile)
 
 	scalaPlayParamsFile := generatePlayParams(paramsPackage)
@@ -72,7 +71,7 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 func generateApis(version *spec.Version, thepackage, modelsPackage Package) []gen.TextFile {
 	sourceManaged := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
-		apiTraitFile := generateApiInterface(api, thepackage, modelsPackage)
+		apiTraitFile := generateApiInterface(&api, thepackage, modelsPackage)
 		sourceManaged = append(sourceManaged, *apiTraitFile)
 	}
 	return sourceManaged
@@ -121,7 +120,7 @@ func operationSignature(operation spec.NamedOperation) string {
 	return fmt.Sprintf(`def %s(%s): Future[%s]`, controllerMethodName(operation), JoinParams(params), responseType(operation))
 }
 
-func generateApiInterface(api spec.Api, thepackage, modelsPackage Package) *gen.TextFile {
+func generateApiInterface(api *spec.Api, thepackage, modelsPackage Package) *gen.TextFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
@@ -144,7 +143,7 @@ func generateApiInterface(api spec.Api, thepackage, modelsPackage Package) *gen.
 	generateApiInterfaceResponse(w, api, apiTraitName)
 
 	return &gen.TextFile{
-		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", apiTraitName)),
+		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", apiClassType(api.Name))),
 		Content: w.String(),
 	}
 }
@@ -356,9 +355,9 @@ func generateRouter(version *spec.Version, thepackage, controllersPackage, model
 	}
 }
 
-func generateMainRouter(versions []spec.Version, packageName string, outPath string) *gen.TextFile {
+func generateMainRouter(versions []spec.Version, thepackage Package) *gen.TextFile {
 	w := NewScalaWriter()
-	w.Line(`package %s`, packageName)
+	w.Line(`package %s`, thepackage.PackageName)
 
 	w.EmptyLine()
 	w.Line(`import javax.inject._`)
@@ -367,7 +366,7 @@ func generateMainRouter(versions []spec.Version, packageName string, outPath str
 	generateSpecRouterMainClass(w, versions)
 
 	return &gen.TextFile{
-		Path:    filepath.Join(outPath, "SpecRouter.scala"),
+		Path:    thepackage.GetPath("SpecRouter.scala"),
 		Content: w.String(),
 	}
 }
