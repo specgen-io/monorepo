@@ -2,8 +2,8 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
@@ -75,12 +75,13 @@ import (
 )
 
 type ParamsParser struct {
-	values map[string][]string
-	Errors []error
+	values                   map[string][]string
+	parseCommaSeparatedArray bool
+	Errors                   []error
 }
 
-func NewParamsParser(values map[string][]string) *ParamsParser {
-	return &ParamsParser{values, []error{}}
+func NewParamsParser(values map[string][]string, parseCommaSeparatedArray bool) *ParamsParser {
+	return &ParamsParser{values, parseCommaSeparatedArray, []error{}}
 }
 
 func (parser *ParamsParser) parseInt(s string) int {
@@ -179,6 +180,15 @@ func (parser *ParamsParser) notMoreThenOneValue(name string) bool {
 	}
 }
 
+func (parser *ParamsParser) multipleValues(name string) []string {
+	nameValues := parser.values[name]
+	if parser.parseCommaSeparatedArray && len(nameValues) == 1 {
+		return strings.Split(nameValues[0], ",")
+	} else {
+		return nameValues
+	}
+}
+
 func (parser *ParamsParser) String(name string) string {
 	if !parser.exactlyOneValue(name) {
 		return ""
@@ -208,7 +218,7 @@ func (parser *ParamsParser) StringDefaulted(name string, defaultValue string) st
 }
 
 func (parser *ParamsParser) StringArray(name string) []string {
-	return parser.values[name]
+	return parser.multipleValues(name)
 }
 
 func (parser *ParamsParser) Int(name string) int {
