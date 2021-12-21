@@ -94,11 +94,25 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 		requestBody = "requestBody"
 	}
 	w.Line(`  var url = new UrlBuilder(baseUrl);`)
-	w.Line(`  url.addPathSegment("%s");`, addRequestUrlParams(operation))
-	generateUrlBuilding(w, operation)
+	if operation.Api.Apis.GetUrl() != "" {
+		w.Line(`  url.addPathSegment("%s");`, operation.Api.Apis.GetUrl())
+	}
+	for _, urlPart := range operation.Endpoint.UrlParts {
+		part := strings.Trim(urlPart.Part, "/")
+		if urlPart.Param != nil {
+			w.Line(`  url.addPathSegment(%s);`, urlPart.Param.Name.CamelCase())
+		} else if len(part) > 0 {
+			w.Line(`  url.addPathSegment("%s");`, part)
+		}
+	}
+	for _, param := range operation.QueryParams {
+		w.Line(`  url.addQueryParameter("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
+	}
 	w.EmptyLine()
 	w.Line(`  var request = new RequestBuilder("%s", url.build(), %s);`, methodName, requestBody)
-	generateRequestBuilding(w, operation)
+	for _, param := range operation.HeaderParams {
+		w.Line(`  request.addHeaderParameter("%s", %s);`, param.Name.Source, param.Name.CamelCase())
+	}
 	w.EmptyLine()
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  Response response;`)
@@ -169,44 +183,4 @@ func generateThrowClientException(w *gen.Writer, errorMessage string, wrapExcept
 		params += ", " + wrapException
 	}
 	w.Line(`throw new ClientException(%s);`, params)
-}
-
-func addRequestUrlParams(operation *spec.NamedOperation) string {
-	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		return JoinParams(getUrl(operation))
-	} else {
-		return strings.TrimPrefix(operation.FullUrl(), "/")
-	}
-}
-
-func getUrl(operation *spec.NamedOperation) []string {
-	reminder := strings.TrimPrefix(operation.FullUrl(), "/")
-	urlParams := []string{}
-	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		for _, param := range operation.Endpoint.UrlParams {
-			parts := strings.Split(reminder, spec.UrlParamStr(&param))
-			urlParams = append(urlParams, strings.TrimSuffix(parts[0], "/"))
-			reminder = parts[1]
-		}
-	}
-	return urlParams
-}
-
-func generateUrlBuilding(w *gen.Writer, operation *spec.NamedOperation) {
-	w.Indent()
-	for _, param := range operation.QueryParams {
-		w.Line(`url.addQueryParameter("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
-	}
-	for _, param := range operation.Endpoint.UrlParams {
-		w.Line(`url.addPathSegment(%s);`, param.Name.CamelCase())
-	}
-	w.Unindent()
-}
-
-func generateRequestBuilding(w *gen.Writer, operation *spec.NamedOperation) {
-	w.Indent()
-	for _, param := range operation.HeaderParams {
-		w.Line(`request.addHeaderParameter("%s", %s);`, param.Name.Source, param.Name.CamelCase())
-	}
-	w.Unindent()
 }
