@@ -50,6 +50,8 @@ func PlainScalaType(typ string) string {
 		return "java.time.LocalDateTime"
 	case spec.TypeJson:
 		return "io.circe.Json"
+	case spec.TypeEmpty:
+		return "Unit"
 	default:
 		return typ
 	}
