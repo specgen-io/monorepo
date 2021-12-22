@@ -28,7 +28,9 @@ var cmdServiceScalaModels = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = genscala.GenerateCirceModels(specification, "", generatePath)
+		sources := genscala.GenerateCirceModels(specification, "", generatePath)
+		err = sources.Write(false)
+
 		fail.IfErrorF(err, "Failed to generate models code")
 	},
 }

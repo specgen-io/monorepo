@@ -28,7 +28,9 @@ var cmdClientScalaHttps = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = genscala.GenerateSttpClient(specification, "", generatePath)
+		sources := genscala.GenerateSttpClient(specification, "", generatePath)
+		err = sources.Write(false)
+
 		fail.IfErrorF(err, "Failed to generate client code")
 	},
 }

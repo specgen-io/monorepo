@@ -37,7 +37,9 @@ var cmdServiceScalaPlay = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = genscala.GeneratePlayService(specification, swaggerPath, generatePath, servicesPath)
+		sources := genscala.GeneratePlayService(specification, swaggerPath, generatePath, servicesPath)
+		err = sources.Write(false)
+
 		fail.IfErrorF(err, "Failed to generate service code")
 	},
 }
