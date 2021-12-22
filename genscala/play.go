@@ -91,11 +91,11 @@ func apiClassType(apiName spec.Name) string {
 	return apiName.PascalCase() + "Service"
 }
 
-func controllerMethodName(operation spec.NamedOperation) string {
+func controllerMethodName(operation *spec.NamedOperation) string {
 	return operation.Name.CamelCase()
 }
 
-func operationSignature(operation spec.NamedOperation) string {
+func operationSignature(operation *spec.NamedOperation) string {
 	params := []string{}
 	for _, param := range operation.HeaderParams {
 		params = append(params, fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
@@ -127,13 +127,15 @@ func generateApiTrait(api *spec.Api, thepackage, modelsPackage, servicesImplPack
 	w.Line(`@ImplementedBy(classOf[%s.%s])`, servicesImplPackage.PackageName, apiClassType(api.Name))
 	w.Line(`trait %s {`, apiTraitName)
 	for _, operation := range api.Operations {
-		w.Line(`  %s`, operationSignature(operation))
+		w.Line(`  %s`, operationSignature(&operation))
 	}
 	w.Line(`}`)
 
 	for _, operation := range api.Operations {
-		w.EmptyLine()
-		generateResponse(w, responseType(operation), operation.Responses)
+		if len(operation.Responses) > 1 {
+			w.EmptyLine()
+			generateResponse(w, &operation)
+		}
 	}
 
 	return &gen.TextFile{
@@ -159,7 +161,7 @@ func generateApiImpl(api spec.Api, thepackage, apiPackage, modelsPackage Package
 	w.Line(`@Singleton`)
 	w.Line(`class %s @Inject()()(implicit ec: ExecutionContext) extends %s {`, apiClassName, apiTraitName)
 	for _, operation := range api.Operations {
-		w.Line(`  override %s = Future { ??? }`, operationSignature(operation))
+		w.Line(`  override %s = Future { ??? }`, operationSignature(&operation))
 	}
 	w.Line(`}`)
 
@@ -208,7 +210,7 @@ func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage,
 	w.Line(`@Singleton`)
 	w.Line(`class %s @Inject()(api: %s, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {`, controllerType(api.Name), apiTraitType(api.Name))
 	for _, operation := range api.Operations {
-		generateControllerMethod(w.Indented(), operation)
+		generateControllerMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 
@@ -218,7 +220,7 @@ func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage,
 	}
 }
 
-func generateControllerMethod(w *gen.Writer, operation spec.NamedOperation) {
+func generateControllerMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	parseParams := getParsedOperationParams(operation)
 	allParams := getOperationCallParams(operation)
 
@@ -271,21 +273,34 @@ func generateControllerMethod(w *gen.Writer, operation spec.NamedOperation) {
 	w.Line(`}`)
 }
 
-func genResponseCases(w *gen.Writer, operation spec.NamedOperation) {
-	for _, r := range operation.Responses {
+func genResponseCases(w *gen.Writer, operation *spec.NamedOperation) {
+	if len(operation.Responses) == 1 {
+		r := operation.Responses[0]
 		if !r.Type.Definition.IsEmpty() {
 			body := `body`
 			if r.Type.Definition.Plain != spec.TypeString {
 				body = `Jsoner.write(body)`
 			}
-			w.Line(`case %s.%s(body) => new Status(%s)(%s)`, responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name), body)
+			w.Line(`body => new Status(%s)(%s)`, spec.HttpStatusCode(r.Name), body)
 		} else {
-			w.Line(`case %s.%s() => new Status(%s)`, responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name))
+			w.Line(`_ => new Status(%s)`, spec.HttpStatusCode(r.Name))
+		}
+	} else {
+		for _, r := range operation.Responses {
+			if !r.Type.Definition.IsEmpty() {
+				body := `body`
+				if r.Type.Definition.Plain != spec.TypeString {
+					body = `Jsoner.write(body)`
+				}
+				w.Line(`case %s.%s(body) => new Status(%s)(%s)`, responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name), body)
+			} else {
+				w.Line(`case %s.%s() => new Status(%s)`, responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name))
+			}
 		}
 	}
 }
 
-func getOperationCallParams(operation spec.NamedOperation) []string {
+func getOperationCallParams(operation *spec.NamedOperation) []string {
 	params := []string{}
 	if operation.HeaderParams != nil {
 		for _, param := range operation.HeaderParams {
@@ -306,7 +321,7 @@ func getOperationCallParams(operation spec.NamedOperation) []string {
 	return params
 }
 
-func getParsedOperationParams(operation spec.NamedOperation) []string {
+func getParsedOperationParams(operation *spec.NamedOperation) []string {
 	params := []string{}
 	if operation.HeaderParams != nil {
 		for _, param := range operation.HeaderParams {
@@ -410,7 +425,7 @@ func generateApiRouterClass(w *gen.Writer, api *spec.Api) {
 
 	w.Line(`  def routes: Router.Routes = {`)
 	for _, operation := range api.Operations {
-		arguments := JoinParams(getControllerParams(operation))
+		arguments := JoinParams(getControllerParams(&operation))
 		w.Line(`    case %s(params@_) =>`, routeName(operation.Name))
 		if len(arguments) > 0 {
 			w.Line(`      val arguments =`)
@@ -429,17 +444,17 @@ func generateApiRouterClass(w *gen.Writer, api *spec.Api) {
 			w.Line(`        yield (%s)`, arguments)
 			w.Line(`      arguments match{`)
 			w.Line(`        case Left(_) => Action { Results.BadRequest }`)
-			w.Line(`        case Right((%s)) => controller.%s(%s)`, arguments, controllerMethodName(operation), arguments)
+			w.Line(`        case Right((%s)) => controller.%s(%s)`, arguments, controllerMethodName(&operation), arguments)
 			w.Line(`      }`)
 		} else {
-			w.Line(`      controller.%s(%s)`, controllerMethodName(operation), arguments)
+			w.Line(`      controller.%s(%s)`, controllerMethodName(&operation), arguments)
 		}
 	}
 	w.Line(`  }`)
 	w.Line(`}`)
 }
 
-func getControllerParams(operation spec.NamedOperation) []string {
+func getControllerParams(operation *spec.NamedOperation) []string {
 	params := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
 		params = append(params, param.Name.CamelCase())

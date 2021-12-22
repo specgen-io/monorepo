@@ -68,8 +68,10 @@ func generateApiClientApi(api *spec.Api, thepackage, modelsPackage, jsonPackage,
 	generateClientApiTrait(w, api)
 
 	for _, operation := range api.Operations {
-		w.EmptyLine()
-		generateResponse(w, responseType(operation), operation.Responses)
+		if len(operation.Responses) > 1 {
+			w.EmptyLine()
+			generateResponse(w, &operation)
+		}
 	}
 
 	w.EmptyLine()
@@ -103,7 +105,7 @@ func createUrlParams(urlParams []spec.NamedParam) []string {
 	return methodParams
 }
 
-func generateClientOperationSignature(operation spec.NamedOperation) string {
+func generateClientOperationSignature(operation *spec.NamedOperation) string {
 	methodParams := []string{}
 	methodParams = append(methodParams, createParams(operation.HeaderParams, false)...)
 	if operation.Body != nil {
@@ -121,7 +123,7 @@ func generateClientApiTrait(w *gen.Writer, api *spec.Api) {
 	apiTraitName := clientTraitName(api.Name)
 	w.Line(`trait %s {`, apiTraitName)
 	for _, operation := range api.Operations {
-		w.Line(`  %s`, generateClientOperationSignature(operation))
+		w.Line(`  %s`, generateClientOperationSignature(&operation))
 	}
 	w.Line(`}`)
 }
@@ -143,7 +145,7 @@ func addParamsWriting(w *gen.Writer, params []spec.NamedParam, paramsName string
 	}
 }
 
-func generateClientOperationImplementation(w *gen.Writer, operation spec.NamedOperation) {
+func generateClientOperationImplementation(w *gen.Writer, operation *spec.NamedOperation) {
 	httpMethod := strings.ToLower(operation.Endpoint.Method)
 	url := operation.FullUrl()
 	for _, param := range operation.Endpoint.UrlParams {
@@ -193,17 +195,7 @@ func generateClientOperationImplementation(w *gen.Writer, operation spec.NamedOp
 	w.Line(`      case Right(body) =>`)
 	w.Line(`        logger.debug(s"Response status: ${response.code}, body: ${body}")`)
 	w.Line(`        response.code match {`)
-	for _, response := range operation.Responses {
-		responseParam := ``
-		if !response.Type.Definition.IsEmpty() {
-			if response.Type.Definition.Plain == spec.TypeString {
-				responseParam = `body`
-			} else {
-				responseParam = fmt.Sprintf(`Jsoner.readThrowing[%s](body)`, ScalaType(&response.Type.Definition))
-			}
-		}
-		w.Line(`          case %s => %s.%s(%s)`, spec.HttpStatusCode(response.Name), responseType(operation), response.Name.PascalCase(), responseParam)
-	}
+	generateClientResponses(w.IndentedWith(5), operation)
 	w.Line(`          case _ => `)
 	w.Line(`            val errorMessage = s"Request returned unexpected status code: ${response.code}, body: ${new String(body)}"`)
 	w.Line(`            logger.error(errorMessage)`)
@@ -217,6 +209,33 @@ func generateClientOperationImplementation(w *gen.Writer, operation spec.NamedOp
 	w.Line(`}`)
 }
 
+func generateClientResponses(w *gen.Writer, operation *spec.NamedOperation) {
+	if len(operation.Responses) == 1 {
+		response := operation.Responses[0]
+		responseParam := `()`
+		if !response.Type.Definition.IsEmpty() {
+			if response.Type.Definition.Plain == spec.TypeString {
+				responseParam = `body`
+			} else {
+				responseParam = fmt.Sprintf(`Jsoner.readThrowing[%s](body)`, ScalaType(&response.Type.Definition))
+			}
+		}
+		w.Line(`case %s => %s`, spec.HttpStatusCode(response.Name), responseParam)
+	} else {
+		for _, response := range operation.Responses {
+			responseParam := ``
+			if !response.Type.Definition.IsEmpty() {
+				if response.Type.Definition.Plain == spec.TypeString {
+					responseParam = `body`
+				} else {
+					responseParam = fmt.Sprintf(`Jsoner.readThrowing[%s](body)`, ScalaType(&response.Type.Definition))
+				}
+			}
+			w.Line(`case %s => %s.%s(%s)`, spec.HttpStatusCode(response.Name), responseTypeName(operation), response.Name.PascalCase(), responseParam)
+		}
+	}
+}
+
 func generateClientApiClass(w *gen.Writer, api *spec.Api) {
 	apiClassName := clientClassName(api.Name)
 	apiTraitName := clientTraitName(api.Name)
@@ -225,8 +244,8 @@ func generateClientApiClass(w *gen.Writer, api *spec.Api) {
 	w.Line(`  import ExecutionContext.Implicits.global`)
 	w.Line(`  private val logger: Logger = LoggerFactory.getLogger(this.getClass)`)
 	for _, operation := range api.Operations {
-		w.Line(`  %s = {`, generateClientOperationSignature(operation))
-		generateClientOperationImplementation(w.IndentedWith(2), operation)
+		w.Line(`  %s = {`, generateClientOperationSignature(&operation))
+		generateClientOperationImplementation(w.IndentedWith(2), &operation)
 		w.Line(`  }`)
 	}
 	w.Line(`}`)
