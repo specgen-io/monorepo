@@ -54,10 +54,12 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 		implRootPackage := NewPackage(servicesPath, "", "")
 		for _, version := range specification.Versions {
 			servicesImplPackage := implRootPackage.Subpackage(version.Version.FlatCase()).Subpackage("services")
-			modelsPackage := rootPackage.Subpackage(version.Version.FlatCase()).Subpackage("models")
+			versionPackage := rootPackage.Subpackage(version.Version.FlatCase())
+			modelsPackage := versionPackage.Subpackage("models")
+			servicesPackage := versionPackage.Subpackage("services")
 			for _, api := range version.Http.Apis {
-				apiPackage := servicesImplPackage.Subpackage(api.Name.FlatCase())
-				apiImpl := generateApiImpl(api, apiPackage, modelsPackage)
+				apiPackage := servicesPackage.Subpackage(api.Name.FlatCase())
+				apiImpl := generateApiImpl(api, servicesImplPackage, apiPackage, modelsPackage)
 				sourcesScaffold = append(sourcesScaffold, *apiImpl)
 			}
 		}
@@ -139,13 +141,14 @@ func generateApiTrait(api *spec.Api, thepackage, modelsPackage Package) *gen.Tex
 	}
 }
 
-func generateApiImpl(api spec.Api, thepackage, modelsPackage Package) *gen.TextFile {
+func generateApiImpl(api spec.Api, thepackage, apiPackage, modelsPackage Package) *gen.TextFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 
 	w.EmptyLine()
 	w.Line(`import javax.inject._`)
 	w.Line(`import scala.concurrent._`)
+	w.Line(`import %s`, apiPackage.PackageStar)
 	w.Line(`import %s`, modelsPackage.PackageStar)
 
 	apiClassName := apiClassType(api.Name)
