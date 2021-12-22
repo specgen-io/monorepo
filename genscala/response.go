@@ -21,11 +21,3 @@ func generateResponse(w *gen.Writer, responseTypeName string, responses spec.Res
 	}
 	w.Line(`}`)
 }
-
-func generateApiInterfaceResponse(w *gen.Writer, api *spec.Api, apiTraitName string) {
-	w.Line(`object %s {`, apiTraitName)
-	for _, operation := range api.Operations {
-		generateResponse(w.Indented(), responseType(operation), operation.Responses)
-	}
-	w.Line(`}`)
-}
