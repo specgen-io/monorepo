@@ -10,6 +10,7 @@ import (
 
 func GeneratePlayService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string) (err error) {
 	rootPackage := NewPackage(generatePath, "", "")
+	implRootPackage := NewPackage(servicesPath, "", "")
 
 	appPackage := rootPackage.Subpackage("app")
 	jsonPackage := rootPackage.Subpackage("json")
@@ -33,9 +34,10 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 		servicesPackage := versionPackage.Subpackage("services")
 		modelsPackage := versionPackage.Subpackage("models")
 
+		servicesImplPackage := implRootPackage.Subpackage(version.Version.FlatCase()).Subpackage("services")
 		for _, api := range version.Http.Apis {
 			apiPackage := servicesPackage.Subpackage(api.Name.FlatCase())
-			apiTrait := generateApiTrait(&api, apiPackage, modelsPackage)
+			apiTrait := generateApiTrait(&api, apiPackage, modelsPackage, servicesImplPackage)
 			apiController := generateApiController(&api, controllersPackage, apiPackage, modelsPackage, jsonPackage, paramsPackage)
 			apiRouter := generateApiRouter(&api, routersPackage, controllersPackage, modelsPackage, paramsPackage)
 			sourcesOverwrite = append(sourcesOverwrite, *apiRouter, *apiController, *apiTrait)
@@ -51,7 +53,6 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 	}
 
 	if servicesPath != "" {
-		implRootPackage := NewPackage(servicesPath, "", "")
 		for _, version := range specification.Versions {
 			servicesImplPackage := implRootPackage.Subpackage(version.Version.FlatCase()).Subpackage("services")
 			versionPackage := rootPackage.Subpackage(version.Version.FlatCase())
@@ -112,7 +113,7 @@ func operationSignature(operation spec.NamedOperation) string {
 	return fmt.Sprintf(`def %s(%s): Future[%s]`, controllerMethodName(operation), JoinParams(params), responseType(operation))
 }
 
-func generateApiTrait(api *spec.Api, thepackage, modelsPackage Package) *gen.TextFile {
+func generateApiTrait(api *spec.Api, thepackage, modelsPackage, servicesImplPackage Package) *gen.TextFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
@@ -123,7 +124,7 @@ func generateApiTrait(api *spec.Api, thepackage, modelsPackage Package) *gen.Tex
 	apiTraitName := apiTraitType(api.Name)
 
 	w.EmptyLine()
-	w.Line(`@ImplementedBy(classOf[%s])`, apiClassType(api.Name))
+	w.Line(`@ImplementedBy(classOf[%s.%s])`, servicesImplPackage.PackageName, apiClassType(api.Name))
 	w.Line(`trait %s {`, apiTraitName)
 	for _, operation := range api.Operations {
 		w.Line(`  %s`, operationSignature(operation))
