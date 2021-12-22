@@ -13,41 +13,46 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 	controllersPackage := NewPackage(generatePath, "", "controllers")
 	servicesPackage := NewPackage(generatePath, "", "services")
 	appPackage := NewPackage(generatePath, "", "app")
+	jsonPackage := NewPackage(generatePath, "", "json")
 	paramsPackage := controllersPackage
 
 	sourcesOverwrite := []gen.TextFile{}
 	sourcesScaffold := []gen.TextFile{}
+
+	scalaPlayParamsFile := generatePlayParams(paramsPackage)
+	scalaHttpStaticFile := generateStringParams(paramsPackage)
+	sourcesOverwrite = append(sourcesOverwrite, *scalaHttpStaticFile, *scalaPlayParamsFile)
+	jsonHelpers := generateJson(jsonPackage)
+	taggedUnion := generateTaggedUnion(jsonPackage)
+	sourcesOverwrite = append(sourcesOverwrite, *taggedUnion, *jsonHelpers)
 
 	for _, version := range specification.Versions {
 		versionServicesPackage := servicesPackage.Subpackage(version.Version.FlatCase())
 		versionControllersPackage := controllersPackage.Subpackage(version.Version.FlatCase())
 		versionModelsPackage := modelsPackage.Subpackage(version.Version.FlatCase())
 		versionAppPackage := appPackage.Subpackage(version.Version.FlatCase())
+
 		apisSourceManaged := generateApis(&version, versionServicesPackage, versionModelsPackage)
 		sourcesOverwrite = append(sourcesOverwrite, apisSourceManaged...)
-		apiControllerFile := generateApiControllers(&version, versionControllersPackage, versionServicesPackage, versionModelsPackage, modelsPackage, paramsPackage)
-		sourcesOverwrite = append(sourcesOverwrite, *apiControllerFile)
+		for _, api := range version.Http.Apis {
+			apiController := generateApiControllers(&api, versionControllersPackage, versionServicesPackage, versionModelsPackage, jsonPackage, paramsPackage)
+			sourcesOverwrite = append(sourcesOverwrite, *apiController)
+		}
 		apiRoutersFile := generateRouter(&version, versionAppPackage, versionControllersPackage, versionModelsPackage, paramsPackage)
 		sourcesOverwrite = append(sourcesOverwrite, *apiRoutersFile)
+		versionModels := generateCirceModels(&version, versionModelsPackage, jsonPackage)
+		sourcesOverwrite = append(sourcesOverwrite, *versionModels)
 	}
 	routesFile := generateMainRouter(specification.Versions, appPackage)
 	sourcesOverwrite = append(sourcesOverwrite, *routesFile)
-
-	scalaPlayParamsFile := generatePlayParams(paramsPackage)
-	sourcesOverwrite = append(sourcesOverwrite, *scalaPlayParamsFile)
-	scalaHttpStaticFile := generateStringParams(paramsPackage)
-	sourcesOverwrite = append(sourcesOverwrite, *scalaHttpStaticFile)
-
-	modelsFiles := GenerateCirceModels(specification, modelsPackage)
-	sourcesOverwrite = append(sourcesOverwrite, modelsFiles...)
 
 	if swaggerPath != "" {
 		sourcesOverwrite = append(sourcesOverwrite, *genopenapi.GenerateOpenapi(specification, swaggerPath))
 	}
 
 	if servicesPath != "" {
-		servicesImplPackage := NewPackage(servicesPath, "services", "")
 		for _, version := range specification.Versions {
+			servicesImplPackage := NewPackage(servicesPath, "services", "")
 			versionServicesImplPackage := servicesImplPackage.Subpackage(version.Version.FlatCase())
 			versionModelsPackage := modelsPackage.Subpackage(version.Version.FlatCase())
 			servicesSource := generateApisServices(&version, versionServicesImplPackage, versionModelsPackage)
@@ -199,7 +204,7 @@ func addParamsParsing(w *gen.Writer, params []spec.NamedParam, paramsName string
 	}
 }
 
-func generateApiControllers(version *spec.Version, thepackage, servicesPackage, modelsPackage, jsonPackage, paramsPackage Package) *gen.TextFile {
+func generateApiControllers(api *spec.Api, thepackage, servicesPackage, modelsPackage, jsonPackage, paramsPackage Package) *gen.TextFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
@@ -212,19 +217,17 @@ func generateApiControllers(version *spec.Version, thepackage, servicesPackage, 
 	w.Line(`import %s`, servicesPackage.PackageStar)
 	w.Line(`import %s`, modelsPackage.PackageStar)
 
-	for _, api := range version.Http.Apis {
-		w.EmptyLine()
-		w.Line(`@Singleton`)
-		w.Line(`class %s @Inject()(api: %s, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {`, controllerType(api.Name), apiTraitType(api.Name))
-		w.Line(`  import %s._`, apiTraitType(api.Name))
-		for _, operation := range api.Operations {
-			generateControllerMethod(w.Indented(), operation)
-		}
-		w.Line(`}`)
+	w.EmptyLine()
+	w.Line(`@Singleton`)
+	w.Line(`class %s @Inject()(api: %s, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {`, controllerType(api.Name), apiTraitType(api.Name))
+	w.Line(`  import %s._`, apiTraitType(api.Name))
+	for _, operation := range api.Operations {
+		generateControllerMethod(w.Indented(), operation)
 	}
+	w.Line(`}`)
 
 	return &gen.TextFile{
-		Path:    thepackage.GetPath("Controllers.scala"),
+		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", controllerType(api.Name))),
 		Content: w.String(),
 	}
 }

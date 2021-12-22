@@ -7,17 +7,29 @@ import (
 	"strings"
 )
 
-func GenerateCirceModels(spec *spec.Spec, thepackage Package) []gen.TextFile {
-	files := []gen.TextFile{}
-	jsonHelpers := generateJson(thepackage)
-	taggedUnion := generateTaggedUnion(thepackage)
-	files = append(files, *taggedUnion, *jsonHelpers)
-	for _, version := range spec.Versions {
-		versionPackage := thepackage.Subpackage(version.Version.FlatCase())
-		versionFile := generateCirceModels(&version, versionPackage, thepackage)
-		files = append(files, *versionFile)
+func GenerateCirceModels(specification *spec.Spec, packageName string, generatePath string) error {
+	if packageName == "" {
+		packageName = specification.Name.FlatCase() + ".models"
 	}
-	return files
+	modelsPackage := NewPackage(generatePath, packageName, "")
+	jsonPackage := modelsPackage
+
+	sourcesOverwrite := []gen.TextFile{}
+	jsonHelpers := generateJson(jsonPackage)
+	taggedUnion := generateTaggedUnion(jsonPackage)
+	sourcesOverwrite = append(sourcesOverwrite, *taggedUnion, *jsonHelpers)
+	for _, version := range specification.Versions {
+		versionPackage := modelsPackage.Subpackage(version.Version.FlatCase())
+		versionFile := generateCirceModels(&version, versionPackage, jsonPackage)
+		sourcesOverwrite = append(sourcesOverwrite, *versionFile)
+	}
+
+	err := gen.WriteFiles(sourcesOverwrite, true)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func generateCirceModels(version *spec.Version, thepackage, taggedUnionPackage Package) *gen.TextFile {

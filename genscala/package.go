@@ -14,23 +14,9 @@ type Package struct {
 }
 
 func NewPackage(rootPath, rootPackageName, packageName string) Package {
-	path := rootPath
-	if packageName != "" {
-		packagePath := strings.Join(strings.Split(packageName, "."), string(os.PathSeparator))
-		path = fmt.Sprintf(`%s/%s`, rootPath, packagePath)
-	}
+	path := getFullPath(rootPath, packageNameToPath(packageName))
 	packageName = getFullPackageName(rootPackageName, packageName)
 	return Package{Path: path, PackageName: packageName, PackageStar: packageName + "._"}
-}
-
-func getFullPackageName(rootPackageName, packageName string) string {
-	if rootPackageName == "" {
-		return packageName
-	}
-	if packageName == "" {
-		return rootPackageName
-	}
-	return fmt.Sprintf(`%s.%s`, rootPackageName, packageName)
 }
 
 func (m Package) GetPath(filename string) string {
@@ -39,10 +25,31 @@ func (m Package) GetPath(filename string) string {
 }
 
 func (m Package) Subpackage(name string) Package {
-	if name != "" {
-		subpackageName := fmt.Sprintf(`%s.%s`, m.PackageName, name)
-		subpackagePath := fmt.Sprintf(`%s/%s`, m.Path, name)
-		return Package{Path: subpackagePath, PackageName: subpackageName, PackageStar: subpackageName + "._"}
+	subpackageName := getFullPackageName(m.PackageName, name)
+	subpackagePath := getFullPath(m.Path, packageNameToPath(name))
+	return Package{Path: subpackagePath, PackageName: subpackageName, PackageStar: subpackageName + "._"}
+}
+
+func packageNameToPath(packageName string) string {
+	return strings.Join(strings.Split(packageName, "."), string(os.PathSeparator))
+}
+
+func getFullPackageName(first, second string) string {
+	if first == "" {
+		return second
 	}
-	return m
+	if second == "" {
+		return first
+	}
+	return fmt.Sprintf(`%s.%s`, first, second)
+}
+
+func getFullPath(first, second string) string {
+	if first == "" {
+		return second
+	}
+	if second == "" {
+		return first
+	}
+	return fmt.Sprintf(`%s%s%s`, first, string(os.PathSeparator), second)
 }

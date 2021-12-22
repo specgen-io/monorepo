@@ -12,15 +12,25 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 		packageName = specification.Name.FlatCase() + ".client"
 	}
 	clientPackage := NewPackage(generatePath, packageName, "")
+	jsonPackage := clientPackage
+	paramsPackage := clientPackage
 
-	scalaHttpStaticFile := generateStringParams(clientPackage)
+	sourceManaged := []gen.TextFile{}
+	jsonHelpers := generateJson(jsonPackage)
+	taggedUnion := generateTaggedUnion(jsonPackage)
+	sourceManaged = append(sourceManaged, *taggedUnion, *jsonHelpers)
 
-	modelsFiles := GenerateCirceModels(specification, clientPackage)
-	implsFiles := generateClientImplementations(specification, clientPackage, clientPackage, clientPackage)
+	scalaHttpStaticFile := generateStringParams(paramsPackage)
+	for _, version := range specification.Versions {
+		versionClientPackage := clientPackage.Subpackage(version.Version.FlatCase())
+		versionModelsPackage := versionClientPackage.Subpackage("models")
+		clientImplementations := generateClientImplementations(&version, versionClientPackage, versionModelsPackage, jsonPackage, paramsPackage)
+		sourceManaged = append(sourceManaged, clientImplementations...)
+		models := generateCirceModels(&version, versionModelsPackage, jsonPackage)
+		sourceManaged = append(sourceManaged, *models)
+	}
 
-	sourceManaged := modelsFiles
 	sourceManaged = append(sourceManaged, *scalaHttpStaticFile)
-	sourceManaged = append(sourceManaged, implsFiles...)
 
 	err := gen.WriteFiles(sourceManaged, true)
 	if err != nil {
@@ -30,19 +40,17 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 	return nil
 }
 
-func generateClientImplementations(specification *spec.Spec, thepackage, jsonPackage, stringParamsPackage Package) []gen.TextFile {
+func generateClientImplementations(version *spec.Version, thepackage, modelsPackage, jsonPackage, paramsPackage Package) []gen.TextFile {
 	files := []gen.TextFile{}
-	for _, version := range specification.Versions {
-		versionPackage := thepackage.Subpackage(version.Version.FlatCase())
-		for _, api := range version.Http.Apis {
-			apiClient := generateClientApiImplementations(&api, versionPackage, jsonPackage, stringParamsPackage)
-			files = append(files, *apiClient)
-		}
+	for _, api := range version.Http.Apis {
+		apiPackage := thepackage.Subpackage(api.Name.FlatCase())
+		apiClient := generateApiClientApi(&api, apiPackage, modelsPackage, jsonPackage, paramsPackage)
+		files = append(files, *apiClient)
 	}
 	return files
 }
 
-func generateClientApiImplementations(api *spec.Api, thepackage, jsonPackage, stringParamsPackage Package) *gen.TextFile {
+func generateApiClientApi(api *spec.Api, thepackage, modelsPackage, jsonPackage, stringParamsPackage Package) *gen.TextFile {
 	w := NewScalaWriter()
 
 	w.Line(`package %s`, thepackage.PackageName)
@@ -54,18 +62,21 @@ func generateClientApiImplementations(api *spec.Api, thepackage, jsonPackage, st
 	if jsonPackage.PackageName != thepackage.PackageName {
 		w.Line(`import %s.Jsoner`, jsonPackage.PackageName)
 	}
+	w.Line(`import %s`, modelsPackage.PackageStar)
 
 	w.EmptyLine()
 	generateClientApiTrait(w, api)
 
-	w.EmptyLine()
-	generateApiInterfaceResponse(w, api, clientTraitName(api.Name))
+	for _, operation := range api.Operations {
+		w.EmptyLine()
+		generateResponse(w, responseType(operation), operation.Responses)
+	}
 
 	w.EmptyLine()
 	generateClientApiClass(w, api)
 
 	return &gen.TextFile{
-		Path:    thepackage.GetPath(fmt.Sprintf("%sClient.scala", api.Name.PascalCase())),
+		Path:    thepackage.GetPath("Client.scala"),
 		Content: w.String(),
 	}
 }
@@ -109,7 +120,6 @@ func generateClientOperationSignature(operation spec.NamedOperation) string {
 func generateClientApiTrait(w *gen.Writer, api *spec.Api) {
 	apiTraitName := clientTraitName(api.Name)
 	w.Line(`trait %s {`, apiTraitName)
-	w.Line(`  import %s._`, apiTraitName)
 	for _, operation := range api.Operations {
 		w.Line(`  %s`, generateClientOperationSignature(operation))
 	}
@@ -212,7 +222,6 @@ func generateClientApiClass(w *gen.Writer, api *spec.Api) {
 	apiTraitName := clientTraitName(api.Name)
 
 	w.Line(`class %s(baseUrl: String)(implicit backend: SttpBackend[Future, Nothing]) extends %s {`, apiClassName, apiTraitName)
-	w.Line(`  import %s._`, apiTraitName)
 	w.Line(`  import ExecutionContext.Implicits.global`)
 	w.Line(`  private val logger: Logger = LoggerFactory.getLogger(this.getClass)`)
 	for _, operation := range api.Operations {
