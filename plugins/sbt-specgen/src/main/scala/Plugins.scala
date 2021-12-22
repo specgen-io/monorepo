@@ -66,7 +66,7 @@ object SpecPlay extends AutoPlugin {
     specFile := file("spec.yaml"),
     specSwagger := baseDirectory.value / "public" / "swagger.yaml",
     specGeneratePath := (sourceManaged in Compile).value / "spec",
-    specServicesPath := (scalaSource in Compile).value / "services",
+    specServicesPath := (scalaSource in Compile).value,
     specgenServicePlay := specgenTask.value,
     sourceGenerators in Compile += specgenServicePlay,
     mappings in (Compile, packageSrc) ++= {(specgenServicePlay in Compile) map { sourceFiles =>

@@ -9,12 +9,11 @@ import (
 )
 
 func GeneratePlayService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string) (err error) {
-	modelsPackage := NewPackage(generatePath, "", "models")
-	controllersPackage := NewPackage(generatePath, "", "controllers")
-	servicesPackage := NewPackage(generatePath, "", "services")
-	appPackage := NewPackage(generatePath, "", "app")
-	jsonPackage := NewPackage(generatePath, "", "json")
-	paramsPackage := controllersPackage
+	rootPackage := NewPackage(generatePath, "", "")
+
+	appPackage := rootPackage.Subpackage("app")
+	jsonPackage := rootPackage.Subpackage("json")
+	paramsPackage := rootPackage.Subpackage("params")
 
 	sourcesOverwrite := []gen.TextFile{}
 	sourcesScaffold := []gen.TextFile{}
@@ -27,20 +26,21 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 	sourcesOverwrite = append(sourcesOverwrite, *taggedUnion, *jsonHelpers)
 
 	for _, version := range specification.Versions {
-		versionServicesPackage := servicesPackage.Subpackage(version.Version.FlatCase())
-		versionControllersPackage := controllersPackage.Subpackage(version.Version.FlatCase())
-		versionModelsPackage := modelsPackage.Subpackage(version.Version.FlatCase())
-		versionAppPackage := appPackage.Subpackage(version.Version.FlatCase())
+		versionPackage := rootPackage.Subpackage(version.Version.FlatCase())
 
-		apisSourceManaged := generateApis(&version, versionServicesPackage, versionModelsPackage)
-		sourcesOverwrite = append(sourcesOverwrite, apisSourceManaged...)
+		routersPackage := versionPackage.Subpackage("routers")
+		controllersPackage := versionPackage.Subpackage("controllers")
+		servicesPackage := versionPackage.Subpackage("services")
+		modelsPackage := versionPackage.Subpackage("models")
+
 		for _, api := range version.Http.Apis {
-			apiController := generateApiControllers(&api, versionControllersPackage, versionServicesPackage, versionModelsPackage, jsonPackage, paramsPackage)
-			sourcesOverwrite = append(sourcesOverwrite, *apiController)
+			apiPackage := servicesPackage.Subpackage(api.Name.FlatCase())
+			apiTrait := generateApiTrait(&api, apiPackage, modelsPackage)
+			apiController := generateApiController(&api, controllersPackage, apiPackage, modelsPackage, jsonPackage, paramsPackage)
+			apiRouter := generateApiRouter(&api, routersPackage, controllersPackage, modelsPackage, paramsPackage)
+			sourcesOverwrite = append(sourcesOverwrite, *apiRouter, *apiController, *apiTrait)
 		}
-		apiRoutersFile := generateRouter(&version, versionAppPackage, versionControllersPackage, versionModelsPackage, paramsPackage)
-		sourcesOverwrite = append(sourcesOverwrite, *apiRoutersFile)
-		versionModels := generateCirceModels(&version, versionModelsPackage, jsonPackage)
+		versionModels := generateCirceModels(&version, modelsPackage, jsonPackage)
 		sourcesOverwrite = append(sourcesOverwrite, *versionModels)
 	}
 	routesFile := generateMainRouter(specification.Versions, appPackage)
@@ -51,12 +51,15 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 	}
 
 	if servicesPath != "" {
+		implRootPackage := NewPackage(servicesPath, "", "")
 		for _, version := range specification.Versions {
-			servicesImplPackage := NewPackage(servicesPath, "services", "")
-			versionServicesImplPackage := servicesImplPackage.Subpackage(version.Version.FlatCase())
-			versionModelsPackage := modelsPackage.Subpackage(version.Version.FlatCase())
-			servicesSource := generateApisServices(&version, versionServicesImplPackage, versionModelsPackage)
-			sourcesScaffold = append(sourcesScaffold, servicesSource...)
+			servicesImplPackage := implRootPackage.Subpackage(version.Version.FlatCase()).Subpackage("services")
+			modelsPackage := rootPackage.Subpackage(version.Version.FlatCase()).Subpackage("models")
+			for _, api := range version.Http.Apis {
+				apiPackage := servicesImplPackage.Subpackage(api.Name.FlatCase())
+				apiImpl := generateApiImpl(api, apiPackage, modelsPackage)
+				sourcesScaffold = append(sourcesScaffold, *apiImpl)
+			}
 		}
 	}
 
@@ -71,24 +74,6 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 	}
 
 	return
-}
-
-func generateApis(version *spec.Version, thepackage, modelsPackage Package) []gen.TextFile {
-	sourceManaged := []gen.TextFile{}
-	for _, api := range version.Http.Apis {
-		apiTraitFile := generateApiInterface(&api, thepackage, modelsPackage)
-		sourceManaged = append(sourceManaged, *apiTraitFile)
-	}
-	return sourceManaged
-}
-
-func generateApisServices(version *spec.Version, thepackage, modelsPackage Package) []gen.TextFile {
-	source := []gen.TextFile{}
-	for _, api := range version.Http.Apis {
-		apiClassFile := generateApiClass(api, thepackage, modelsPackage)
-		source = append(source, *apiClassFile)
-	}
-	return source
 }
 
 func controllerType(apiName spec.Name) string {
@@ -125,7 +110,7 @@ func operationSignature(operation spec.NamedOperation) string {
 	return fmt.Sprintf(`def %s(%s): Future[%s]`, controllerMethodName(operation), JoinParams(params), responseType(operation))
 }
 
-func generateApiInterface(api *spec.Api, thepackage, modelsPackage Package) *gen.TextFile {
+func generateApiTrait(api *spec.Api, thepackage, modelsPackage Package) *gen.TextFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
@@ -138,14 +123,15 @@ func generateApiInterface(api *spec.Api, thepackage, modelsPackage Package) *gen
 	w.EmptyLine()
 	w.Line(`@ImplementedBy(classOf[%s])`, apiClassType(api.Name))
 	w.Line(`trait %s {`, apiTraitName)
-	w.Line(`  import %s._`, apiTraitName)
 	for _, operation := range api.Operations {
 		w.Line(`  %s`, operationSignature(operation))
 	}
 	w.Line(`}`)
 
-	w.EmptyLine()
-	generateApiInterfaceResponse(w, api, apiTraitName)
+	for _, operation := range api.Operations {
+		w.EmptyLine()
+		generateResponse(w, responseType(operation), operation.Responses)
+	}
 
 	return &gen.TextFile{
 		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", apiClassType(api.Name))),
@@ -153,7 +139,7 @@ func generateApiInterface(api *spec.Api, thepackage, modelsPackage Package) *gen
 	}
 }
 
-func generateApiClass(api spec.Api, thepackage, modelsPackage Package) *gen.TextFile {
+func generateApiImpl(api spec.Api, thepackage, modelsPackage Package) *gen.TextFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 
@@ -168,12 +154,9 @@ func generateApiClass(api spec.Api, thepackage, modelsPackage Package) *gen.Text
 	w.EmptyLine()
 	w.Line(`@Singleton`)
 	w.Line(`class %s @Inject()()(implicit ec: ExecutionContext) extends %s {`, apiClassName, apiTraitName)
-	w.Line(`  import %s._`, apiTraitName)
-
 	for _, operation := range api.Operations {
 		w.Line(`  override %s = Future { ??? }`, operationSignature(operation))
 	}
-
 	w.Line(`}`)
 
 	return &gen.TextFile{
@@ -204,7 +187,7 @@ func addParamsParsing(w *gen.Writer, params []spec.NamedParam, paramsName string
 	}
 }
 
-func generateApiControllers(api *spec.Api, thepackage, servicesPackage, modelsPackage, jsonPackage, paramsPackage Package) *gen.TextFile {
+func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage, jsonPackage, paramsPackage Package) *gen.TextFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
@@ -214,13 +197,12 @@ func generateApiControllers(api *spec.Api, thepackage, servicesPackage, modelsPa
 	w.Line(`import play.api.mvc._`)
 	w.Line(`import %s.ParamsTypesBindings._`, paramsPackage.PackageName)
 	w.Line(`import %s.Jsoner`, jsonPackage.PackageName)
-	w.Line(`import %s`, servicesPackage.PackageStar)
+	w.Line(`import %s`, apiPackage.PackageStar)
 	w.Line(`import %s`, modelsPackage.PackageStar)
 
 	w.EmptyLine()
 	w.Line(`@Singleton`)
 	w.Line(`class %s @Inject()(api: %s, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {`, controllerType(api.Name), apiTraitType(api.Name))
-	w.Line(`  import %s._`, apiTraitType(api.Name))
 	for _, operation := range api.Operations {
 		generateControllerMethod(w.Indented(), operation)
 	}
@@ -333,7 +315,7 @@ func getParsedOperationParams(operation spec.NamedOperation) []string {
 	return params
 }
 
-func generateRouter(version *spec.Version, thepackage, controllersPackage, modelsPackage, paramsPackage Package) *gen.TextFile {
+func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPackage, paramsPackage Package) *gen.TextFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 
@@ -347,13 +329,11 @@ func generateRouter(version *spec.Version, thepackage, controllersPackage, model
 	w.Line(`import %s`, controllersPackage.PackageStar)
 	w.Line(`import %s`, modelsPackage.PackageStar)
 
-	for _, api := range version.Http.Apis {
-		w.EmptyLine()
-		generateApiRouter(w, api)
-	}
+	w.EmptyLine()
+	generateApiRouterClass(w, api)
 
 	return &gen.TextFile{
-		Path:    thepackage.GetPath("Routers.scala"),
+		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", routerType(api.Name))),
 		Content: w.String(),
 	}
 }
@@ -379,8 +359,7 @@ func generateSpecRouterMainClass(w *gen.Writer, versions []spec.Version) {
 	for _, version := range versions {
 		for _, api := range version.Http.Apis {
 			apiParamName := api.Name.CamelCase() + version.Version.PascalCase()
-			apiTypeName := versionedTypeName(version.Version, routerType(api.Name))
-			params = append(params, fmt.Sprintf(`%s: %s`, apiParamName, apiTypeName))
+			params = append(params, fmt.Sprintf(`%s: %s`, apiParamName, routerTypeName(&api)))
 		}
 	}
 
@@ -407,7 +386,7 @@ func routeName(operationName spec.Name) string {
 	return fmt.Sprintf("route%s", operationName.PascalCase())
 }
 
-func generateApiRouter(w *gen.Writer, api spec.Api) {
+func generateApiRouterClass(w *gen.Writer, api *spec.Api) {
 	w.Line(`class %s @Inject()(Action: DefaultActionBuilder, controller: %s) extends SimpleRouter {`, routerType(api.Name), controllerType(api.Name))
 
 	for _, operation := range api.Operations {
@@ -469,12 +448,12 @@ func getControllerParams(operation spec.NamedOperation) []string {
 	return params
 }
 
-func versionedTypeName(version spec.Name, typeName string) string {
-	if version.Source != "" {
-		return fmt.Sprintf("%s.%s", version.FlatCase(), typeName)
-	} else {
-		return typeName
+func routerTypeName(api *spec.Api) string {
+	typeName := fmt.Sprintf(`routers.%s`, routerType(api.Name))
+	if api.Apis.Version.Version.Source != "" {
+		typeName = fmt.Sprintf(`%s.%s`, api.Apis.Version.Version.FlatCase(), typeName)
 	}
+	return typeName
 }
 
 func generatePlayParams(thepackage Package) *gen.TextFile {
