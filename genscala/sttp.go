@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GenerateSttpClient(specification *spec.Spec, packageName string, generatePath string) error {
+func GenerateSttpClient(specification *spec.Spec, packageName string, generatePath string) *gen.Sources {
 	if packageName == "" {
 		packageName = specification.Name.FlatCase() + ".client"
 	}
@@ -15,29 +15,24 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 	jsonPackage := clientPackage
 	paramsPackage := clientPackage
 
-	sourceManaged := []gen.TextFile{}
+	sources := gen.NewSources()
 	jsonHelpers := generateJson(jsonPackage)
 	taggedUnion := generateTaggedUnion(jsonPackage)
-	sourceManaged = append(sourceManaged, *taggedUnion, *jsonHelpers)
+	sources.AddGenerated(taggedUnion, jsonHelpers)
 
 	scalaHttpStaticFile := generateStringParams(paramsPackage)
+	sources.AddGenerated(scalaHttpStaticFile)
+
 	for _, version := range specification.Versions {
 		versionClientPackage := clientPackage.Subpackage(version.Version.FlatCase())
 		versionModelsPackage := versionClientPackage.Subpackage("models")
 		clientImplementations := generateClientImplementations(&version, versionClientPackage, versionModelsPackage, jsonPackage, paramsPackage)
-		sourceManaged = append(sourceManaged, clientImplementations...)
+		sources.AddGeneratedAll(clientImplementations)
 		models := generateCirceModels(&version, versionModelsPackage, jsonPackage)
-		sourceManaged = append(sourceManaged, *models)
+		sources.AddGenerated(models)
 	}
 
-	sourceManaged = append(sourceManaged, *scalaHttpStaticFile)
-
-	err := gen.WriteFiles(sourceManaged, true)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return sources
 }
 
 func generateClientImplementations(version *spec.Version, thepackage, modelsPackage, jsonPackage, paramsPackage Package) []gen.TextFile {

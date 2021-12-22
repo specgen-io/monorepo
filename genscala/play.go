@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func GeneratePlayService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string) (err error) {
+func GeneratePlayService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string) *gen.Sources {
 	rootPackage := NewPackage(generatePath, "", "")
 	implRootPackage := NewPackage(servicesPath, "", "")
 
@@ -16,15 +16,14 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 	jsonPackage := rootPackage.Subpackage("json")
 	paramsPackage := rootPackage.Subpackage("params")
 
-	sourcesOverwrite := []gen.TextFile{}
-	sourcesScaffold := []gen.TextFile{}
+	sources := gen.NewSources()
 
-	scalaPlayParamsFile := generatePlayParams(paramsPackage)
+	playParamsFile := generatePlayParams(paramsPackage)
 	scalaHttpStaticFile := generateStringParams(paramsPackage)
-	sourcesOverwrite = append(sourcesOverwrite, *scalaHttpStaticFile, *scalaPlayParamsFile)
+	sources.AddGenerated(scalaHttpStaticFile, playParamsFile)
 	jsonHelpers := generateJson(jsonPackage)
 	taggedUnion := generateTaggedUnion(jsonPackage)
-	sourcesOverwrite = append(sourcesOverwrite, *taggedUnion, *jsonHelpers)
+	sources.AddGenerated(taggedUnion, jsonHelpers)
 
 	for _, version := range specification.Versions {
 		versionPackage := rootPackage.Subpackage(version.Version.FlatCase())
@@ -40,16 +39,16 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 			apiTrait := generateApiTrait(&api, apiPackage, modelsPackage, servicesImplPackage)
 			apiController := generateApiController(&api, controllersPackage, apiPackage, modelsPackage, jsonPackage, paramsPackage)
 			apiRouter := generateApiRouter(&api, routersPackage, controllersPackage, modelsPackage, paramsPackage)
-			sourcesOverwrite = append(sourcesOverwrite, *apiRouter, *apiController, *apiTrait)
+			sources.AddGenerated(apiRouter, apiController, apiTrait)
 		}
 		versionModels := generateCirceModels(&version, modelsPackage, jsonPackage)
-		sourcesOverwrite = append(sourcesOverwrite, *versionModels)
+		sources.AddGenerated(versionModels)
 	}
 	routesFile := generateMainRouter(specification.Versions, appPackage)
-	sourcesOverwrite = append(sourcesOverwrite, *routesFile)
+	sources.AddGenerated(routesFile)
 
 	if swaggerPath != "" {
-		sourcesOverwrite = append(sourcesOverwrite, *genopenapi.GenerateOpenapi(specification, swaggerPath))
+		sources.AddGenerated(genopenapi.GenerateOpenapi(specification, swaggerPath))
 	}
 
 	if servicesPath != "" {
@@ -61,22 +60,12 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 			for _, api := range version.Http.Apis {
 				apiPackage := servicesPackage.Subpackage(api.Name.FlatCase())
 				apiImpl := generateApiImpl(api, servicesImplPackage, apiPackage, modelsPackage)
-				sourcesScaffold = append(sourcesScaffold, *apiImpl)
+				sources.AddScaffolded(apiImpl)
 			}
 		}
 	}
 
-	err = gen.WriteFiles(sourcesScaffold, false)
-	if err != nil {
-		return
-	}
-
-	err = gen.WriteFiles(sourcesOverwrite, true)
-	if err != nil {
-		return
-	}
-
-	return
+	return sources
 }
 
 func controllerType(apiName spec.Name) string {
