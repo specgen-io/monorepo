@@ -29,8 +29,7 @@ var cmdOpenapi = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		openapiFile, err := genopenapi.GenerateOpenapi(specification, outFile)
-		fail.IfErrorF(err, "Failed to generate OpeanAPI specifiction")
+		openapiFile := genopenapi.GenerateOpenapi(specification, outFile)
 
 		err = gen.WriteFile(openapiFile, true)
 		fail.IfErrorF(err, "Failed to write OpeanAPI specifiction file")
