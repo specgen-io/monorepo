@@ -85,6 +85,10 @@ func PlainOpenApiType(typeInfo *spec.TypeInfo, typ string) *yamlx.YamlMap {
 		result := yamlx.Map()
 		result.Add("type", "object")
 		return result
+	case spec.TypeEmpty:
+		result := yamlx.Map()
+		result.Add("type", "object")
+		return result
 	default:
 		result := yamlx.Map()
 		result.Add("$ref", componentSchemas(versionedModelName(typeInfo.Model.Version.Version.Source, typ)))
@@ -93,5 +97,5 @@ func PlainOpenApiType(typeInfo *spec.TypeInfo, typ string) *yamlx.YamlMap {
 }
 
 func componentSchemas(name string) string {
-	return "#/components/schemas/"+name
+	return "#/components/schemas/" + name
 }
