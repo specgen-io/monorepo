@@ -122,11 +122,12 @@ func generateOperationParametersParsing(w *gen.Writer, operation *spec.NamedOper
 
 func generateServiceCall(w *gen.Writer, operation *spec.NamedOperation) {
 	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
-	serviceCallResult := "response, err"
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceInterfaceTypeVar(operation.Api), operation.Name.PascalCase(), JoinDelimParams(addOperationMethodParams(operation)))
 	if singleEmptyResponse {
-		serviceCallResult = "err"
+		w.Line(`err = %s`, serviceCall)
+	} else {
+		w.Line(`response, err := %s`, serviceCall)
 	}
-	w.Line(`%s := %s.%s(%s)`, serviceCallResult, serviceInterfaceTypeVar(operation.Api), operation.Name.PascalCase(), JoinDelimParams(addOperationMethodParams(operation)))
 
 	w.Line(`if err != nil {`)
 	w.Line(`  log.WithFields(%s).Errorf("Error returned from service implementation: %%s", err.Error())`, logFieldsName(operation))
@@ -160,6 +161,7 @@ func generateResponseWriting(w *gen.Writer, response *spec.NamedResponse, respon
 
 func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
+	w.Line(`var err error`)
 	if operation.Body != nil {
 		if operation.Body.Type.Definition.Plain == spec.TypeString {
 			w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
@@ -172,7 +174,7 @@ func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
 			w.Line(`body := string(bodyData)`)
 		} else {
 			w.Line(`var body %s`, GoType(&operation.Body.Type.Definition))
-			w.Line(`err := json.NewDecoder(req.Body).Decode(&body)`)
+			w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
 			w.Line(`if err != nil {`)
 			w.Line(`  log.WithFields(%s).Warnf("%s", err.Error())`, logFieldsName(operation), `Decoding body JSON failed: %s`)
 			w.Line(`  res.WriteHeader(400)`)
