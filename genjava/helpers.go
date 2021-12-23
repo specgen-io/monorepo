@@ -37,10 +37,6 @@ func serviceResponseInterfaceName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
 }
 
-func serviceResponseImplName(response *spec.NamedResponse) string {
-	return fmt.Sprintf(`%s%s`, serviceResponseInterfaceName(response.Operation), response.Name.PascalCase())
-}
-
 func controllerName(api *spec.Api) string {
 	return fmt.Sprintf(`%sController`, api.Name.PascalCase())
 }

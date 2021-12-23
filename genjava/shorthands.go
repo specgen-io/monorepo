@@ -14,3 +14,7 @@ func JoinDelimParams(params []string) string {
 func JoinParams(params []string) string {
 	return strings.Join(params, "")
 }
+
+func TrimSlash(param string) string {
+	return strings.Trim(param, "/")
+}
