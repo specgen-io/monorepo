@@ -30,7 +30,7 @@ func generateVersionModelsCode(version *spec.Version, module, emptyModule module
 	w.Line("package %s", module.Name)
 
 	imports := Imports()
-	if versionHasType(version, "empty") {
+	if versionModelsHasType(version, "empty") {
 		imports.Add(emptyModule.Package)
 	}
 	imports.AddModelsTypes(version)

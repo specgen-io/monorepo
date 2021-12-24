@@ -75,7 +75,7 @@ func (self *imports) AddModelsTypes(version *spec.Version) *imports {
 	if versionModelsHasType(version, spec.TypeDecimal) {
 		self.Add("github.com/shopspring/decimal")
 	}
-	if isOneOfModel(version) {
+	if hasOneOfModels(version) {
 		self.Add("errors")
 		self.Add("fmt")
 	}
