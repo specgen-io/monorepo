@@ -1,18 +1,20 @@
 package gengo
 
 import (
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func GenerateGoClient(specification *spec.Spec, moduleName string, generatePath string) error {
 	generatedFiles := []gen.TextFile{}
 
+	emptyModule := Module(moduleName, "empty")
+
 	for _, version := range specification.Versions {
 		versionModule := Module(moduleName, createPath(generatePath, version.Version.FlatCase()))
 		modelsModule := Module(moduleName, createPath(generatePath, version.Version.FlatCase(), modelsPackage))
 
-		generatedFiles = append(generatedFiles, generateVersionModels(&version, modelsModule)...)
+		generatedFiles = append(generatedFiles, generateVersionModels(&version, modelsModule, emptyModule)...)
 		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, versionModule, modelsModule)...)
 	}
 	err := gen.WriteFiles(generatedFiles, true)

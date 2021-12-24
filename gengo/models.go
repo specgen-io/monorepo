@@ -2,32 +2,37 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func GenerateModels(specification *spec.Spec, moduleName string, generatePath string) error {
 	files := []gen.TextFile{}
 
+	emptyModule := Module(moduleName, "empty")
+
 	for _, version := range specification.Versions {
 		modelsModule := Module(moduleName, createPath(generatePath, version.Version.FlatCase(), modelsPackage))
-		files = append(files, generateVersionModels(&version, modelsModule)...)
+		files = append(files, generateVersionModels(&version, modelsModule, emptyModule)...)
 	}
 	return gen.WriteFiles(files, true)
 }
 
-func generateVersionModels(version *spec.Version, module module) []gen.TextFile {
+func generateVersionModels(version *spec.Version, module, emptyModule module) []gen.TextFile {
 	return []gen.TextFile{
-		*generateVersionModelsCode(version, module),
+		*generateVersionModelsCode(version, module, emptyModule),
 		*generateEnumsHelperFunctions(module),
 	}
 }
 
-func generateVersionModelsCode(version *spec.Version, module module) *gen.TextFile {
+func generateVersionModelsCode(version *spec.Version, module, emptyModule module) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", module.Name)
 
 	imports := Imports()
+	if versionHasType(version, "empty") {
+		imports.Add(emptyModule.Package)
+	}
 	imports.AddModelsTypes(version)
 	imports.Write(w)
 

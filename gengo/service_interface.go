@@ -6,28 +6,27 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServicesInterfaces(version *spec.Version, versionModule module, modelsModule module) []gen.TextFile {
+func generateServicesInterfaces(version *spec.Version, versionModule, modelsModule, emptyModule module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
-		files = append(files, *generateInterface(&api, apiModule, modelsModule))
+		files = append(files, *generateInterface(&api, apiModule, modelsModule, emptyModule))
 	}
 	return files
 }
 
-func generateInterface(api *spec.Api, apiModule module, modelsModule module) *gen.TextFile {
+func generateInterface(api *spec.Api, apiModule, modelsModule, emptyModule module) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", apiModule.Name)
 
 	imports := Imports()
 	imports.AddApiTypes(api)
+	if apiHasType(api, "empty") {
+		imports.Add(emptyModule.Package)
+	}
 	imports.Add(modelsModule.Package)
 	imports.Write(w)
 
-	w.EmptyLine()
-	w.Line(`type EmptyDef struct{}`)
-	w.EmptyLine()
-	w.Line(`var Empty = EmptyDef{}`)
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
 			w.EmptyLine()

@@ -36,7 +36,6 @@ func generateClientImplementation(api *spec.Api, versionModule module, modelsMod
 	imports.Write(w)
 
 	w.EmptyLine()
-	w.Line(`type EmptyDef struct{}`)
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
 			w.EmptyLine()

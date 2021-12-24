@@ -53,7 +53,7 @@ func TestPlainTypeString(t *testing.T) {
 }
 
 func TestPlainTypeEmpty(t *testing.T) {
-	CheckPlainType(t, spec.TypeEmpty, "EmptyDef")
+	CheckPlainType(t, spec.TypeEmpty, "empty.Type")
 }
 
 func TestNullableType(t *testing.T) {
