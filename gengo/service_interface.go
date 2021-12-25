@@ -21,7 +21,7 @@ func generateInterface(api *spec.Api, apiModule, modelsModule, emptyModule modul
 
 	imports := Imports()
 	imports.AddApiTypes(api)
-	if apiHasType(api, "empty") {
+	if apiHasType(api, spec.TypeEmpty) {
 		imports.Add(emptyModule.Package)
 	}
 	imports.Add(modelsModule.Package)
