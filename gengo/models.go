@@ -9,10 +9,14 @@ import (
 func GenerateModels(specification *spec.Spec, moduleName string, generatePath string) error {
 	files := []gen.TextFile{}
 
-	emptyModule := Module(moduleName, "empty")
+	rootModule := Module(moduleName, generatePath)
+
+	emptyModule := rootModule.Submodule("empty")
+	files = append(files, *generateEmpty(emptyModule))
 
 	for _, version := range specification.Versions {
-		modelsModule := Module(moduleName, createPath(generatePath, version.Version.FlatCase(), modelsPackage))
+		versionModule := rootModule.Submodule(version.Version.FlatCase())
+		modelsModule := versionModule.Submodule(modelsPackage)
 		files = append(files, generateVersionModels(&version, modelsModule, emptyModule)...)
 	}
 	return gen.WriteFiles(files, true)
@@ -30,7 +34,7 @@ func generateVersionModelsCode(version *spec.Version, module, emptyModule module
 	w.Line("package %s", module.Name)
 
 	imports := Imports()
-	if versionModelsHasType(version, "empty") {
+	if versionModelsHasType(version, spec.TypeEmpty) {
 		imports.Add(emptyModule.Package)
 	}
 	imports.AddModelsTypes(version)
