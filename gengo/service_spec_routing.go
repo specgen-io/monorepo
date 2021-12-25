@@ -2,23 +2,24 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
-	"path/filepath"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateSpecRouting(specification *spec.Spec, moduleName string, modulePath string) *gen.TextFile {
+func generateSpecRouting(specification *spec.Spec, module module) *gen.TextFile {
 	w := NewGoWriter()
-	w.Line("package %s", getShortPackageName(modulePath))
+	w.Line("package %s", module.Name)
 
 	imports := Imports()
 	imports.Add("github.com/husobee/vestigo")
 	for _, version := range specification.Versions {
+		versionModule := module.Submodule(version.Version.FlatCase())
 		if version.Version.Source != "" {
-			imports.Add(createPackageName(moduleName, modulePath, version.Version.FlatCase()))
+			imports.Add(versionModule.Package)
 		}
 		for _, api := range version.Http.Apis {
-			imports.AddAlias(createPackageName(moduleName, modulePath, version.Version.FlatCase(), api.Name.SnakeCase()), versionedApiImportAlias(&api))
+			apiModule := versionModule.Submodule(api.Name.SnakeCase())
+			imports.AddAlias(apiModule.Package, versionedApiImportAlias(&api))
 		}
 	}
 	imports.Write(w)
@@ -40,7 +41,7 @@ func generateSpecRouting(specification *spec.Spec, moduleName string, modulePath
 	w.Line(`}`)
 
 	return &gen.TextFile{
-		Path:    filepath.Join(modulePath, "spec_routing.go"),
+		Path:    module.GetPath("spec_routing.go"),
 		Content: w.String(),
 	}
 }
@@ -48,7 +49,7 @@ func generateSpecRouting(specification *spec.Spec, moduleName string, modulePath
 func versionedApiImportAlias(api *spec.Api) string {
 	version := api.Apis.Version.Version
 	if version.Source != "" {
-		return api.Name.CamelCase()+version.PascalCase()
+		return api.Name.CamelCase() + version.PascalCase()
 	}
 	return api.Name.CamelCase()
 }

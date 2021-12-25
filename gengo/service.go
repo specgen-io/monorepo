@@ -10,14 +10,16 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 	sourcesOverride := []gen.TextFile{}
 	sourcesScaffold := []gen.TextFile{}
 
-	emptyModule := Module(moduleName, "empty")
+	rootModule := Module(moduleName, generatePath)
+
+	emptyModule := rootModule.Submodule("empty")
 	sourcesOverride = append(sourcesOverride, *generateEmpty(emptyModule))
 
-	sourcesOverride = append(sourcesOverride, *generateSpecRouting(specification, moduleName, generatePath))
+	sourcesOverride = append(sourcesOverride, *generateSpecRouting(specification, rootModule))
 
 	for _, version := range specification.Versions {
-		versionModule := Module(moduleName, createPath(generatePath, version.Version.FlatCase()))
-		modelsModule := Module(moduleName, createPath(generatePath, version.Version.FlatCase(), modelsPackage))
+		versionModule := rootModule.Submodule(version.Version.FlatCase())
+		modelsModule := versionModule.Submodule(modelsPackage)
 
 		sourcesOverride = append(sourcesOverride, *generateParamsParser(versionModule))
 		sourcesOverride = append(sourcesOverride, generateRoutings(&version, versionModule, modelsModule)...)
