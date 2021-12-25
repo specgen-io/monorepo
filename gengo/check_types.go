@@ -5,18 +5,27 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func versionHasType(version *spec.Version, typ string) bool {
-	for _, api := range version.Http.Apis {
-		if apiHasType(&api, typ) {
+func apiHasBody(api *spec.Api) bool {
+	for _, operation := range api.Operations {
+		if operation.Body != nil {
 			return true
 		}
 	}
 	return false
 }
 
-func apiHasBody(api *spec.Api) bool {
-	for _, operation := range api.Operations {
-		if operation.Body != nil {
+func hasOneOfModels(version *spec.Version) bool {
+	for _, model := range version.ResolvedModels {
+		if model.IsOneOf() {
+			return true
+		}
+	}
+	return false
+}
+
+func versionHasType(version *spec.Version, typ string) bool {
+	for _, api := range version.Http.Apis {
+		if apiHasType(&api, typ) {
 			return true
 		}
 	}
@@ -36,13 +45,30 @@ func bodyHasType(api *spec.Api, typ string) bool {
 
 func apiHasType(api *spec.Api, typ string) bool {
 	for _, operation := range api.Operations {
-		if paramHasType(operation.QueryParams, typ) {
+		if operationHasType(&operation, typ) {
 			return true
 		}
-		if paramHasType(operation.HeaderParams, typ) {
+	}
+	return false
+}
+
+func operationHasType(operation *spec.NamedOperation, typ string) bool {
+	if paramHasType(operation.QueryParams, typ) {
+		return true
+	}
+	if paramHasType(operation.HeaderParams, typ) {
+		return true
+	}
+	if paramHasType(operation.Endpoint.UrlParams, typ) {
+		return true
+	}
+	if operation.Body != nil {
+		if checkType(&operation.Body.Type.Definition, typ) {
 			return true
 		}
-		if paramHasType(operation.Endpoint.UrlParams, typ) {
+	}
+	for _, response := range operation.Responses {
+		if checkType(&response.Type.Definition, typ) {
 			return true
 		}
 	}
@@ -58,24 +84,6 @@ func paramHasType(namedParams []spec.NamedParam, typ string) bool {
 		}
 	}
 	return false
-}
-
-func checkType(fieldType *spec.TypeDef, typ string) bool {
-	if fieldType.Plain != typ {
-		switch fieldType.Node {
-		case spec.PlainType:
-			return false
-		case spec.NullableType:
-			return checkType(fieldType.Child, typ)
-		case spec.ArrayType:
-			return checkType(fieldType.Child, typ)
-		case spec.MapType:
-			return checkType(fieldType.Child, typ)
-		default:
-			panic(fmt.Sprintf("Unknown type: %v", typ))
-		}
-	}
-	return true
 }
 
 func versionModelsHasType(version *spec.Version, typ string) bool {
@@ -98,11 +106,20 @@ func versionModelsHasType(version *spec.Version, typ string) bool {
 	return false
 }
 
-func isOneOfModel(version *spec.Version) bool {
-	for _, model := range version.ResolvedModels {
-		if model.IsOneOf() {
-			return true
+func checkType(typedef *spec.TypeDef, typ string) bool {
+	if typedef.Plain != typ {
+		switch typedef.Node {
+		case spec.PlainType:
+			return false
+		case spec.NullableType:
+			return checkType(typedef.Child, typ)
+		case spec.ArrayType:
+			return checkType(typedef.Child, typ)
+		case spec.MapType:
+			return checkType(typedef.Child, typ)
+		default:
+			panic(fmt.Sprintf("Unknown type: %v", typ))
 		}
 	}
-	return false
+	return true
 }

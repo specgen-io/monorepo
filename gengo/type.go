@@ -2,7 +2,9 @@ package gengo
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/spec"
+	"strings"
 )
 
 func GoType(typ *spec.TypeDef) string {
@@ -59,7 +61,7 @@ func PlainGoType(typ string, modelsPackage string) string {
 	case spec.TypeJson:
 		return "json.RawMessage"
 	case spec.TypeEmpty:
-		return "EmptyDef"
+		return "empty.Type"
 	default:
 		if modelsPackage != "" {
 			return fmt.Sprintf("%s.%s", modelsPackage, typ)
@@ -69,3 +71,15 @@ func PlainGoType(typ string, modelsPackage string) string {
 }
 
 var modelsPackage = "models"
+
+func generateEmpty(module module) *gen.TextFile {
+	code := `
+package empty
+
+type Type struct{}
+
+var Value = Type{}
+`
+	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
+	return &gen.TextFile{module.GetPath("empty.go"), strings.TrimSpace(code)}
+}

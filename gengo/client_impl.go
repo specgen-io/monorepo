@@ -7,17 +7,17 @@ import (
 	"strings"
 )
 
-func generateClientsImplementations(version *spec.Version, versionModule module, modelsModule module) []gen.TextFile {
+func generateClientsImplementations(version *spec.Version, versionModule, modelsModule, emptyModule module) []gen.TextFile {
 	files := []gen.TextFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
 		files = append(files, *generateConverter(apiModule))
-		files = append(files, *generateClientImplementation(&api, apiModule, modelsModule))
+		files = append(files, *generateClientImplementation(&api, apiModule, modelsModule, emptyModule))
 	}
 	return files
 }
 
-func generateClientImplementation(api *spec.Api, versionModule module, modelsModule module) *gen.TextFile {
+func generateClientImplementation(api *spec.Api, versionModule, modelsModule, emptyModule module) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", versionModule.Name)
 
@@ -31,12 +31,14 @@ func generateClientImplementation(api *spec.Api, versionModule module, modelsMod
 	if apiHasBody(api) {
 		imports.Add("bytes")
 	}
+	if apiHasType(api, spec.TypeEmpty) {
+		imports.Add(emptyModule.Package)
+	}
 	imports.AddApiTypes(api)
 	imports.Add(modelsModule.Package)
 	imports.Write(w)
 
 	w.EmptyLine()
-	w.Line(`type EmptyDef struct{}`)
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
 			w.EmptyLine()

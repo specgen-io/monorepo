@@ -25,5 +25,8 @@ func (m module) GetPath(filename string) string {
 }
 
 func (m module) Submodule(name string) module {
-	return Module(m.RootModule, filepath.Join(m.Path, name))
+	if name != "" {
+		return Module(m.RootModule, filepath.Join(m.Path, name))
+	}
+	return m
 }
