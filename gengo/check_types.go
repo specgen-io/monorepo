@@ -14,15 +14,6 @@ func apiHasBody(api *spec.Api) bool {
 	return false
 }
 
-func hasOneOfModels(version *spec.Version) bool {
-	for _, model := range version.ResolvedModels {
-		if model.IsOneOf() {
-			return true
-		}
-	}
-	return false
-}
-
 func versionHasType(version *spec.Version, typ string) bool {
 	for _, api := range version.Http.Apis {
 		if apiHasType(&api, typ) {
