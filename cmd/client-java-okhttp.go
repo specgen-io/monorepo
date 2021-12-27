@@ -33,7 +33,8 @@ var cmdClientJavaOkHttp = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = genjava.GenerateClient(specification, packageName, generatePath)
-		fail.IfErrorF(err, "Failed to generate client code")
+		sources := genjava.GenerateClient(specification, packageName, generatePath)
+		err = sources.Write(false)
+		fail.IfErrorF(err, "Failed to write client code")
 	},
 }
