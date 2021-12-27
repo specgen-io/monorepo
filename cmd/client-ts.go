@@ -36,7 +36,9 @@ var cmdClientTs = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = gents.GenerateClient(specification, generatePath, client, validation)
-		fail.IfErrorF(err, "Failed to generate code")
+		sources := gents.GenerateClient(specification, generatePath, client, validation)
+
+		err = sources.Write(false)
+		fail.IfErrorF(err, "Failed to write generate client code")
 	},
 }

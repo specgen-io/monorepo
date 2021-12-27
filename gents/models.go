@@ -2,22 +2,22 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateModels(specification *spec.Spec, validation string, generatePath string) error {
+func GenerateModels(specification *spec.Spec, validation string, generatePath string) *gen.Sources {
+	sources := gen.NewSources()
 	module := Module(generatePath)
-	sources := []gen.TextFile{}
 	validationModule := module.Submodule(validation)
 	validationFile := generateValidation(validation, validationModule)
-	sources = append(sources, *validationFile)
+	sources.AddGenerated(validationFile)
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
-		sources = append(sources, *generateVersionModels(&version, validation, validationModule, modelsModule))
+		sources.AddGenerated(generateVersionModels(&version, validation, validationModule, modelsModule))
 	}
-	return gen.WriteFiles(sources, true)
+	return sources
 }
 
 func generateVersionModels(version *spec.Version, validation string, validationModule module, module module) *gen.TextFile {
