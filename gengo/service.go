@@ -6,43 +6,36 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateService(specification *spec.Spec, moduleName string, swaggerPath string, generatePath string, servicesPath string) error {
-	sourcesOverride := []gen.TextFile{}
-	sourcesScaffold := []gen.TextFile{}
+func GenerateService(specification *spec.Spec, moduleName string, swaggerPath string, generatePath string, servicesPath string) *gen.Sources {
+	sources := gen.NewSources()
 
 	rootModule := Module(moduleName, generatePath)
 
 	emptyModule := rootModule.Submodule("empty")
-	sourcesOverride = append(sourcesOverride, *generateEmpty(emptyModule))
-
-	sourcesOverride = append(sourcesOverride, *generateSpecRouting(specification, rootModule))
+	sources.AddGenerated(generateEmpty(emptyModule))
+	sources.AddGenerated(generateSpecRouting(specification, rootModule))
 
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule(modelsPackage)
 
-		sourcesOverride = append(sourcesOverride, *generateParamsParser(versionModule))
-		sourcesOverride = append(sourcesOverride, generateRoutings(&version, versionModule, modelsModule)...)
-		sourcesOverride = append(sourcesOverride, generateServicesInterfaces(&version, versionModule, modelsModule, emptyModule)...)
-		sourcesOverride = append(sourcesOverride, generateVersionModels(&version, modelsModule)...)
+		sources.AddGenerated(generateParamsParser(versionModule))
+		sources.AddGeneratedAll(generateRoutings(&version, versionModule, modelsModule))
+		sources.AddGeneratedAll(generateServicesInterfaces(&version, versionModule, modelsModule, emptyModule))
+		sources.AddGeneratedAll(generateVersionModels(&version, modelsModule))
 	}
 
 	if swaggerPath != "" {
-		sourcesOverride = append(sourcesOverride, *genopenapi.GenerateOpenapi(specification, swaggerPath))
+		sources.AddGenerated(genopenapi.GenerateOpenapi(specification, swaggerPath))
 	}
 
 	if servicesPath != "" {
 		for _, version := range specification.Versions {
 			versionPath := createPath(generatePath, version.Version.FlatCase())
 			servicesVersionPath := createPath(servicesPath, version.Version.FlatCase())
-			sourcesScaffold = append(sourcesScaffold, generateServicesImplementations(moduleName, versionPath, &version, servicesVersionPath)...)
+			sources.AddScaffoldedAll(generateServicesImplementations(moduleName, versionPath, &version, servicesVersionPath))
 		}
 	}
 
-	err := gen.WriteFiles(sourcesOverride, true)
-	if err != nil {
-		return err
-	}
-	err = gen.WriteFiles(sourcesScaffold, false)
-	return err
+	return sources
 }
