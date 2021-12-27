@@ -17,7 +17,7 @@ func GenerateGoClient(specification *spec.Spec, moduleName string, generatePath 
 		versionModule := rootModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule(modelsPackage)
 
-		generatedFiles = append(generatedFiles, generateVersionModels(&version, modelsModule, emptyModule)...)
+		generatedFiles = append(generatedFiles, generateVersionModels(&version, modelsModule)...)
 		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, versionModule, modelsModule, emptyModule)...)
 	}
 	err := gen.WriteFiles(generatedFiles, true)
