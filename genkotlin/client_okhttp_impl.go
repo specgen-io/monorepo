@@ -23,6 +23,7 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 	w.EmptyLine()
 	w.Line(`import com.fasterxml.jackson.core.JsonProcessingException`)
 	w.Line(`import com.fasterxml.jackson.databind.ObjectMapper`)
+	w.Line(`import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper`)
 	w.Line(`import okhttp3.*`)
 	w.Line(`import okhttp3.MediaType.Companion.toMediaTypeOrNull`)
 	w.Line(`import okhttp3.RequestBody.Companion.toRequestBody`)
@@ -38,17 +39,12 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 	w.Line(`import %s.setupObjectMapper`, modelsPackage.PackageName)
 	w.EmptyLine()
 	className := clientName(api)
-	w.Line(`class %s(private var baseUrl: String) {`, className)
+	w.Line(`class %s(`, className)
+	w.Line(`  private val baseUrl: String,`)
+	w.Line(`  private val client: OkHttpClient = OkHttpClient(),`)
+	w.Line(`  private val objectMapper: ObjectMapper = setupObjectMapper(jacksonObjectMapper())`)
+	w.Line(`) {`)
 	w.Line(`  private val logger: Logger = LoggerFactory.getLogger(%s::class.java)`, className)
-	w.EmptyLine()
-	w.Line(`  private val objectMapper: ObjectMapper`)
-	w.Line(`  private val client: OkHttpClient`)
-	w.EmptyLine()
-	w.Line(`  init {`)
-	w.Line(`    this.objectMapper = ObjectMapper()`)
-	w.Line(`    setupObjectMapper(objectMapper)`)
-	w.Line(`    this.client = OkHttpClient()`)
-	w.Line(`  }`)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		generateClientMethod(w.Indented(), &operation)
@@ -102,7 +98,7 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 		}
 	}
 	for _, param := range operation.QueryParams {
-		w.Line(`  url.addQueryParameter("%s", %s)`, param.Name.SnakeCase(), callNullableParam(&param))
+		w.Line(`  url.addQueryParameter("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))
 	}
 	w.EmptyLine()
 	if operation.Body != nil {
@@ -111,7 +107,7 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	}
 	w.Line(`  val request = RequestBuilder("%s", url.build(), %s)`, methodName, requestBody)
 	for _, param := range operation.HeaderParams {
-		w.Line(`  request.addHeaderParameter("%s", %s)`, param.Name.Source, callNullableParam(&param))
+		w.Line(`  request.addHeaderParameter("%s", %s)`, param.Name.Source, addBuilderParam(&param))
 	}
 	w.EmptyLine()
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s")`, operation.Api.Name.Source, operation.Name.Source, methodName, url)

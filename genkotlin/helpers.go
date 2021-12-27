@@ -13,7 +13,7 @@ func clientName(api *spec.Api) string {
 	return fmt.Sprintf(`%sClient`, api.Name.PascalCase())
 }
 
-func callNullableParam(param *spec.NamedParam) string {
+func addBuilderParam(param *spec.NamedParam) string {
 	if param.Type.Definition.IsNullable() {
 		return fmt.Sprintf(`%s!!`, param.Name.CamelCase())
 	}
