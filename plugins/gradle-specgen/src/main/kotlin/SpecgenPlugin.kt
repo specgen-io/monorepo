@@ -17,6 +17,7 @@ public open class SpecgenPluginExtension @Inject constructor(private val objectF
     public var configClientJavaOkHttp: ClientJavaOkHttpConfig? = null
     public var configServiceJavaSpring: ServiceJavaSpringConfig? = null
     public var configModelsKotlin: ModelsKotlinConfig? = null
+    public var configClientKotlinOkHttp: ClientKotlinOkHttpConfig? = null
 
     @Nested
     public fun modelsJava(action: Action<in ModelsJavaConfig>) {
@@ -46,10 +47,16 @@ public open class SpecgenPluginExtension @Inject constructor(private val objectF
         configModelsKotlin = config
     }
 
+    @Nested
+    public fun clientKotlinOkHttp(action: Action<in ClientKotlinOkHttpConfig>) {
+        val config = objectFactory.newInstance(ClientKotlinOkHttpConfig::class.java)
+        action.execute(config)
+        configClientKotlinOkHttp = config
+    }
 }
 
 public class SpecgenPlugin : Plugin<Project> {
-    override fun apply(project: Project): Unit {
+    override fun apply(project: Project) {
         project.apply<JavaLibraryPlugin>()
 
         val extension = project.extensions.create<SpecgenPluginExtension>(SPECGEN_EXTENSION)
@@ -58,6 +65,7 @@ public class SpecgenPlugin : Plugin<Project> {
         val specgenClientJavaOkHttp by project.tasks.registering(SpecgenClientJavaOkHttpTask::class)
         val specgenServiceJavaSpring by project.tasks.registering(SpecgenServiceJavaSpringTask::class)
         val specgenModelsKotlin by project.tasks.registering(SpecgenModelsKotlinTask::class)
+        val specgenClientKotlinOkHttp by project.tasks.registering(SpecgenClientKotlinOkHttpTask::class)
 
         project.afterEvaluate {
             extension.configModelsJava?.let { config ->
@@ -72,7 +80,7 @@ public class SpecgenPlugin : Plugin<Project> {
                 project.configure<JavaPluginExtension> {
                     sourceSets.all {
                         java.srcDir(config.outputDirectory.get())
-                        tasks[compileJavaTaskName]?.dependsOn(specgenModelsJava)
+                        tasks[compileJavaTaskName]?.dependsOn(specgenClientJavaOkHttp)
                     }
                 }
             }
@@ -84,7 +92,6 @@ public class SpecgenPlugin : Plugin<Project> {
                     }
                 }
             }
-
             extension.configModelsKotlin?.let { config ->
                 project.configure<KotlinProjectExtension> {
                     sourceSets.all {
@@ -93,7 +100,14 @@ public class SpecgenPlugin : Plugin<Project> {
                     }
                 }
             }
-
+            extension.configClientKotlinOkHttp?.let { config ->
+                project.configure<KotlinProjectExtension> {
+                    sourceSets.all {
+                        kotlin.srcDir(config.outputDirectory.get())
+                        tasks["compileKotlin"]?.dependsOn(specgenClientKotlinOkHttp)
+                    }
+                }
+            }
         }
     }
 
