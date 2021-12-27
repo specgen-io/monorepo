@@ -28,7 +28,8 @@ var cmdClientRuby = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = genruby.GenerateClient(specification, generatePath)
-		fail.IfErrorF(err, "Failed to generate client code")
+		sources := genruby.GenerateClient(specification, generatePath)
+		err = sources.Write(false)
+		fail.IfErrorF(err, "Failed to write client code")
 	},
 }

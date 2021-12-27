@@ -1,19 +1,20 @@
 package genruby
 
 import (
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/spec"
 	"path/filepath"
 )
 
-func GenerateModels(specification *spec.Spec, generatePath string) error {
+func GenerateModels(specification *spec.Spec, generatePath string) *gen.Sources {
+	sources := gen.NewSources()
 	fileName := specification.Name.SnakeCase() + "_models.rb"
 	moduleName := specification.Name.PascalCase()
 	modelsPath := filepath.Join(generatePath, fileName)
 	models := generateModels(specification, moduleName, modelsPath)
 
-	err := gen.WriteFile(models, true)
-	return err
+	sources.AddGenerated(models)
+	return sources
 }
 
 func generateModels(specification *spec.Spec, moduleName string, generatePath string) *gen.TextFile {
