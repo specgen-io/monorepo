@@ -40,7 +40,8 @@ var cmdServiceJavaSpring = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = genjava.GenerateService(specification, packageName, swaggerPath, generatePath, servicesPath)
-		fail.IfErrorF(err, "Failed to generate service code")
+		sources := genjava.GenerateService(specification, packageName, swaggerPath, generatePath, servicesPath)
+		err = sources.Write(false)
+		fail.IfErrorF(err, "Failed to write service code")
 	},
 }

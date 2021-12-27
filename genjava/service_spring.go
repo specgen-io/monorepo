@@ -1,38 +1,38 @@
 package genjava
 
 import (
-	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/genopenapi"
+	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateService(specification *spec.Spec, packageName string, swaggerPath string, generatePath string, servicesPath string) error {
+func GenerateService(specification *spec.Spec, packageName string, swaggerPath string, generatePath string, servicesPath string) *gen.Sources {
+	sources := gen.NewSources()
+
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
 	}
-	sourcesOverride := []gen.TextFile{}
-	sourcesScaffold := []gen.TextFile{}
 
 	mainPackage := Package(generatePath, packageName)
 
 	modelsPackage := mainPackage.Subpackage("models")
-	sourcesOverride = append(sourcesOverride, *generateJson(modelsPackage))
+	sources.AddGenerated(generateJson(modelsPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		sourcesOverride = append(sourcesOverride, generateVersionModels(&version, modelsVersionPackage)...)
+		sources.AddGeneratedAll(generateVersionModels(&version, modelsVersionPackage))
 
 		serviceVersionPackage := versionPackage.Subpackage("services")
-		sourcesOverride = append(sourcesOverride, generateServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage)...)
+		sources.AddGeneratedAll(generateServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage))
 
 		controllerVersionPackage := versionPackage.Subpackage("controllers")
-		sourcesOverride = append(sourcesOverride, generateServicesControllers(&version, controllerVersionPackage, modelsPackage, modelsVersionPackage, serviceVersionPackage)...)
+		sources.AddGeneratedAll(generateServicesControllers(&version, controllerVersionPackage, modelsPackage, modelsVersionPackage, serviceVersionPackage))
 	}
 
 	if swaggerPath != "" {
-		sourcesOverride = append(sourcesOverride, *genopenapi.GenerateOpenapi(specification, swaggerPath))
+		sources.AddGenerated(genopenapi.GenerateOpenapi(specification, swaggerPath))
 	}
 
 	if servicesPath != "" {
@@ -45,14 +45,9 @@ func GenerateService(specification *spec.Spec, packageName string, swaggerPath s
 			modelsVersionPackage := versionPackage.Subpackage("models")
 			serviceVersionPackage := versionPackage.Subpackage("services")
 
-			sourcesScaffold = append(sourcesScaffold, generateServicesImplementations(&version, serviceImplVersionPackage, modelsVersionPackage, serviceVersionPackage)...)
+			sources.AddScaffoldedAll(generateServicesImplementations(&version, serviceImplVersionPackage, modelsVersionPackage, serviceVersionPackage))
 		}
 	}
 
-	err := gen.WriteFiles(sourcesOverride, true)
-	if err != nil {
-		return err
-	}
-	err = gen.WriteFiles(sourcesScaffold, false)
-	return err
+	return sources
 }
