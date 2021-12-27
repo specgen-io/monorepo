@@ -5,29 +5,28 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateClient(specification *spec.Spec, packageName string, generatePath string) error {
-	generatedFiles := []gen.TextFile{}
+func GenerateClient(specification *spec.Spec, packageName string, generatePath string) *gen.Sources {
+	sources := gen.NewSources()
 
 	mainPackage := Package(generatePath, packageName)
 
-	generatedFiles = append(generatedFiles, *generateClientException(mainPackage))
+	sources.AddGenerated(generateClientException(mainPackage))
 
 	utilsPackage := mainPackage.Subpackage("utils")
-	generatedFiles = append(generatedFiles, generateUtils(utilsPackage)...)
+	sources.AddGeneratedAll(generateUtils(utilsPackage))
 
 	modelsPackage := mainPackage.Subpackage("models")
-	generatedFiles = append(generatedFiles, *generateJson(modelsPackage))
+	sources.AddGenerated(generateJson(modelsPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		generatedFiles = append(generatedFiles, *generateVersionModels(&version, modelsVersionPackage))
+		sources.AddGenerated(generateVersionModels(&version, modelsVersionPackage))
 
 		clientVersionPackage := versionPackage.Subpackage("clients")
-		generatedFiles = append(generatedFiles, generateClientsImplementations(&version, clientVersionPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage)...)
+		sources.AddGeneratedAll(generateClientsImplementations(&version, clientVersionPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage))
 	}
-	err := gen.WriteFiles(generatedFiles, true)
 
-	return err
+	return sources
 }

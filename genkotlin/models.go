@@ -7,14 +7,17 @@ import (
 	"strings"
 )
 
-func GenerateModels(specification *spec.Spec, packageName string, generatePath string) error {
+func GenerateModels(specification *spec.Spec, packageName string, generatePath string) *gen.Sources {
+	sources := gen.NewSources()
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
 	}
 	mainPackage := Package(generatePath, packageName)
 	modelsPackage := mainPackage.Subpackage("models")
-	files := generateModels(specification, modelsPackage)
-	return gen.WriteFiles(files, true)
+
+	sources.AddGeneratedAll(generateModels(specification, modelsPackage))
+
+	return sources
 }
 
 func generateModels(specification *spec.Spec, thePackage Module) []gen.TextFile {

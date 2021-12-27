@@ -33,7 +33,8 @@ var modelsKotlin = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = genkotlin.GenerateModels(specification, packageName, generatePath)
-		fail.IfErrorF(err, "Failed to generate models code")
+		sources := genkotlin.GenerateModels(specification, packageName, generatePath)
+		err = sources.Write(false)
+		fail.IfErrorF(err, "Failed to write models code")
 	},
 }
