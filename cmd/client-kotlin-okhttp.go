@@ -33,7 +33,9 @@ var cmdClientKotlinOkHttp = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = genkotlin.GenerateClient(specification, packageName, generatePath)
-		fail.IfErrorF(err, "Failed to generate client code")
+		sources := genkotlin.GenerateClient(specification, packageName, generatePath)
+
+		err = sources.Write(false)
+		fail.IfErrorF(err, "Failed to write client code")
 	},
 }
