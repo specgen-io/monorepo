@@ -12,32 +12,26 @@ func GenerateModels(specification *spec.Spec, moduleName string, generatePath st
 
 	rootModule := Module(moduleName, generatePath)
 
-	emptyModule := rootModule.Submodule("empty")
-	files = append(files, *generateEmpty(emptyModule))
-
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule(modelsPackage)
-		files = append(files, generateVersionModels(&version, modelsModule, emptyModule)...)
+		files = append(files, generateVersionModels(&version, modelsModule)...)
 	}
 	return gen.WriteFiles(files, true)
 }
 
-func generateVersionModels(version *spec.Version, module, emptyModule module) []gen.TextFile {
+func generateVersionModels(version *spec.Version, module module) []gen.TextFile {
 	return []gen.TextFile{
-		*generateVersionModelsCode(version, module, emptyModule),
+		*generateVersionModelsCode(version, module),
 		*generateEnumsHelperFunctions(module),
 	}
 }
 
-func generateVersionModelsCode(version *spec.Version, module, emptyModule module) *gen.TextFile {
+func generateVersionModelsCode(version *spec.Version, module module) *gen.TextFile {
 	w := NewGoWriter()
 	w.Line("package %s", module.Name)
 
 	imports := Imports()
-	if versionModelsHasType(version, spec.TypeEmpty) {
-		imports.Add(emptyModule.Package)
-	}
 	imports.AddModelsTypes(version)
 	imports.Write(w)
 

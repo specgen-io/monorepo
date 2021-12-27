@@ -24,7 +24,7 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 		sourcesOverride = append(sourcesOverride, *generateParamsParser(versionModule))
 		sourcesOverride = append(sourcesOverride, generateRoutings(&version, versionModule, modelsModule)...)
 		sourcesOverride = append(sourcesOverride, generateServicesInterfaces(&version, versionModule, modelsModule, emptyModule)...)
-		sourcesOverride = append(sourcesOverride, generateVersionModels(&version, modelsModule, emptyModule)...)
+		sourcesOverride = append(sourcesOverride, generateVersionModels(&version, modelsModule)...)
 	}
 
 	if swaggerPath != "" {
