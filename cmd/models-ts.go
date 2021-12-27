@@ -32,7 +32,8 @@ var cmdModelsTs = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = gents.GenerateModels(specification, validation, generatePath)
-		fail.IfErrorF(err, "Failed to generate code")
+		sources := gents.GenerateModels(specification, validation, generatePath)
+		err = sources.Write(false)
+		fail.IfErrorF(err, "Failed to write models code")
 	},
 }

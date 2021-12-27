@@ -7,41 +7,33 @@ import (
 	"strings"
 )
 
-func GenerateClient(specification *spec.Spec, generatePath string, client string, validation string) error {
-	sources := []gen.TextFile{}
-
+func GenerateClient(specification *spec.Spec, generatePath string, client string, validation string) *gen.Sources {
+	sources := gen.NewSources()
 	module := Module(generatePath)
 
 	validationModule := module.Submodule(validation)
-	validationFile := generateValidation(validation, validationModule)
-	sources = append(sources, *validationFile)
+	sources.AddGenerated(generateValidation(validation, validationModule))
 	paramsModule := module.Submodule("params")
-	sources = append(sources, *generateParamsBuilder(paramsModule))
+	sources.AddGenerated(generateParamsBuilder(paramsModule))
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
-		sources = append(sources, *generateVersionModels(&version, validation, validationModule, modelsModule))
+		sources.AddGenerated(generateVersionModels(&version, validation, validationModule, modelsModule))
 		for _, api := range version.Http.Apis {
 			apiModule := versionModule.Submodule(api.Name.SnakeCase())
 			if client == "axios" {
-				sources = append(sources, *generateAxiosApiClient(api, validation, validationModule, modelsModule, paramsModule, apiModule))
+				sources.AddGenerated(generateAxiosApiClient(api, validation, validationModule, modelsModule, paramsModule, apiModule))
 			}
 			if client == "node-fetch" {
-				sources = append(sources, *generateFetchApiClient(api, true, validation, validationModule, modelsModule, paramsModule, apiModule))
+				sources.AddGenerated(generateFetchApiClient(api, true, validation, validationModule, modelsModule, paramsModule, apiModule))
 			}
 			if client == "browser-fetch" {
-				sources = append(sources, *generateFetchApiClient(api, false, validation, validationModule, modelsModule, paramsModule, apiModule))
+				sources.AddGenerated(generateFetchApiClient(api, false, validation, validationModule, modelsModule, paramsModule, apiModule))
 			}
 		}
 	}
 
-	err := gen.WriteFiles(sources, true)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return sources
 }
 
 func getUrl(endpoint spec.Endpoint) string {

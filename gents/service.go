@@ -7,46 +7,33 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validation string) error {
+func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validation string) *gen.Sources {
+	sources := gen.NewSources()
 	generateModule := Module(generatePath)
 
-	sourcesOverwrite := []gen.TextFile{}
-	sourcesScaffold := []gen.TextFile{}
-
 	validationModule := generateModule.Submodule(validation)
-	validationFile := generateValidation(validation, validationModule)
-	sourcesOverwrite = append(sourcesOverwrite, *validationFile)
+	sources.AddGenerated(generateValidation(validation, validationModule))
 	paramsModule := generateModule.Submodule("params")
-	sourcesOverwrite = append(sourcesOverwrite, *generateParamsStaticCode(paramsModule))
+	sources.AddGenerated(generateParamsStaticCode(paramsModule))
 
 	for _, version := range specification.Versions {
 		versionModule := generateModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
-		sourcesOverwrite = append(sourcesOverwrite, *generateVersionModels(&version, validation, validationModule, modelsModule))
-		sourcesOverwrite = append(sourcesOverwrite, generateServiceApis(&version, modelsModule, versionModule)...)
-		sourcesOverwrite = append(sourcesOverwrite, *generateVersionRouting(&version, validation, server, validationModule, paramsModule, versionModule))
+		sources.AddGenerated(generateVersionModels(&version, validation, validationModule, modelsModule))
+		sources.AddGeneratedAll(generateServiceApis(&version, modelsModule, versionModule))
+		sources.AddGenerated(generateVersionRouting(&version, validation, server, validationModule, paramsModule, versionModule))
 	}
-	sourcesOverwrite = append(sourcesOverwrite, *generateSpecRouter(specification, server, generateModule, generateModule.Submodule("spec_router")))
+	sources.AddGenerated(generateSpecRouter(specification, server, generateModule, generateModule.Submodule("spec_router")))
 
 	if swaggerPath != "" {
-		sourcesOverwrite = append(sourcesOverwrite, *genopenapi.GenerateOpenapi(specification, swaggerPath))
+		sources.AddGenerated(genopenapi.GenerateOpenapi(specification, swaggerPath))
 	}
 
 	if servicesPath != "" {
-		sourcesScaffold = generateServicesImplementations(specification, generateModule, Module(servicesPath))
+		sources.AddScaffoldedAll(generateServicesImplementations(specification, generateModule, Module(servicesPath)))
 	}
 
-	err := gen.WriteFiles(sourcesScaffold, false)
-	if err != nil {
-		return err
-	}
-
-	err = gen.WriteFiles(sourcesOverwrite, true)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return sources
 }
 
 func generateVersionRouting(version *spec.Version, validation string, server string, validationModule, paramsModule, module module) *gen.TextFile {
