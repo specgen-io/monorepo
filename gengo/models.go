@@ -7,17 +7,17 @@ import (
 	"strings"
 )
 
-func GenerateModels(specification *spec.Spec, moduleName string, generatePath string) error {
-	files := []gen.TextFile{}
+func GenerateModels(specification *spec.Spec, moduleName string, generatePath string) *gen.Sources {
+	sources := gen.NewSources()
 
 	rootModule := Module(moduleName, generatePath)
 
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule(modelsPackage)
-		files = append(files, generateVersionModels(&version, modelsModule)...)
+		sources.AddGeneratedAll(generateVersionModels(&version, modelsModule))
 	}
-	return gen.WriteFiles(files, true)
+	return sources
 }
 
 func generateVersionModels(version *spec.Version, module module) []gen.TextFile {

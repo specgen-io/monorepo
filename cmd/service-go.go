@@ -41,7 +41,8 @@ var cmdServiceGo = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = gengo.GenerateService(specification, moduleName, swaggerPath, generatePath, servicesPath)
-		fail.IfErrorF(err, "Failed to generate service code")
+		sources := gengo.GenerateService(specification, moduleName, swaggerPath, generatePath, servicesPath)
+		err = sources.Write(false)
+		fail.IfErrorF(err, "Failed to write service code")
 	},
 }

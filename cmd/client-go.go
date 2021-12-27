@@ -33,7 +33,8 @@ var cmdClientGo = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = gengo.GenerateGoClient(specification, moduleName, generatePath)
-		fail.IfErrorF(err, "Failed to generate client code")
+		sources := gengo.GenerateGoClient(specification, moduleName, generatePath)
+		err = sources.Write(false)
+		fail.IfErrorF(err, "Failed to write client source code")
 	},
 }
