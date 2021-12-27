@@ -49,7 +49,7 @@ func generateServiceImplementation(moduleName string, versionModulePath string, 
 	}
 
 	return &gen.TextFile{
-		Path:    filepath.Join(generatePath, fmt.Sprintf("%s_service.go", api.Name.SnakeCase())),
+		Path:    filepath.Join(generatePath, fmt.Sprintf("%s.go", api.Name.SnakeCase())),
 		Content: w.String(),
 	}
 }
