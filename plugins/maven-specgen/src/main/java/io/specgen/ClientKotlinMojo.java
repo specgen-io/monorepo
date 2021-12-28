@@ -5,8 +5,8 @@ import org.apache.maven.project.*;
 
 import java.util.*;
 
-@Mojo(name = "client-kotlin-okhttp", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
-public class ClientOkHttpKotlinMojo extends SpecgenAbstractMojo {
+@Mojo(name = "client-kotlin", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
+public class ClientKotlinMojo extends SpecgenAbstractMojo {
 	@Parameter(property = "specFile", defaultValue = "${project.basedir}/spec.yaml", required = true)
 	String specFile;
 
@@ -24,7 +24,7 @@ public class ClientOkHttpKotlinMojo extends SpecgenAbstractMojo {
 		getLog().info("Running codegen plugin");
 
 		List<String> commandlineArgs = new ArrayList<>(List.of(
-			"client-kotlin-okhttp",
+			"client-kotlin",
 			"--spec-file", specFile,
 			"--generate-path", generatePath
 		));
