@@ -7,21 +7,21 @@ import (
 )
 
 func init() {
-	cmdServiceScalaPlay.Flags().String(SpecFile, "", SpecFileDescription)
+	cmdServiceScala.Flags().String(SpecFile, "", SpecFileDescription)
 
-	cmdServiceScalaPlay.Flags().String(SwaggerPath, "", SwaggerPathDescription)
-	cmdServiceScalaPlay.Flags().String(GeneratePath, "", GeneratePathDescription)
-	cmdServiceScalaPlay.Flags().String(ServicesPath, "", ServicesPathDescription)
+	cmdServiceScala.Flags().String(SwaggerPath, "", SwaggerPathDescription)
+	cmdServiceScala.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdServiceScala.Flags().String(ServicesPath, "", ServicesPathDescription)
 
-	cmdServiceScalaPlay.MarkFlagRequired(SpecFile)
-	cmdServiceScalaPlay.MarkFlagRequired(GeneratePath)
+	cmdServiceScala.MarkFlagRequired(SpecFile)
+	cmdServiceScala.MarkFlagRequired(GeneratePath)
 
-	rootCmd.AddCommand(cmdServiceScalaPlay)
+	rootCmd.AddCommand(cmdServiceScala)
 }
 
-var cmdServiceScalaPlay = &cobra.Command{
-	Use:   "service-scala-play",
-	Short: "Generate Scala Play service source code",
+var cmdServiceScala = &cobra.Command{
+	Use:   "service-scala",
+	Short: "Generate Scala service source code",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)
