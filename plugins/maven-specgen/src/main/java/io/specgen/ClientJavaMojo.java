@@ -24,7 +24,7 @@ public class ClientJavaMojo extends SpecgenAbstractMojo {
 		getLog().info("Running codegen plugin");
 
 		List<String> commandlineArgs = new ArrayList<>(List.of(
-			"client-java-okhttp",
+			"client-java",
 			"--spec-file", specFile,
 			"--generate-path", generatePath
 		));
