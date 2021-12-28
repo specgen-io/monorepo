@@ -100,7 +100,39 @@ func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {
 		w.Line(`  %s`, getJsonPropertyAnnotation(&field))
 		w.Line(`  val %s: %s,`, field.Name.CamelCase(), KotlinType(&field.Type.Definition))
 	}
-	w.Line(`)`)
+
+	if isKotlinArrayType(model) {
+		w.Line(`) {`)
+		generateObjectModelMethods(w.Indented(), model)
+		w.Line(`}`)
+	} else {
+		w.Line(`)`)
+	}
+}
+
+func generateObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
+	w.Line(`override fun equals(other: Any?): Boolean {`)
+	w.Line(`  if (this === other) return true`)
+	w.Line(`  if (other !is %s) return false`, model.Name.PascalCase())
+	w.EmptyLine()
+	for _, field := range model.Object.Fields {
+		w.Line(`  if (!%s.contentEquals(other.%s)) return false`, field.Name.CamelCase(), field.Name.CamelCase())
+	}
+	w.EmptyLine()
+	w.Line(`  return true`)
+	w.Line(`}`)
+	w.EmptyLine()
+	w.Line(`override fun hashCode(): Int {`)
+	hashCodeParams := []string{}
+	for _, field := range model.Object.Fields {
+		hashCodeParams = append(hashCodeParams, field.Name.CamelCase())
+	}
+	w.Line(`  var result = %s.contentHashCode()`, hashCodeParams[0])
+	for _, param := range hashCodeParams[1:] {
+		w.Line(`  result = 31 * result + %s.contentHashCode()`, param)
+	}
+	w.Line(`  return result`)
+	w.Line(`}`)
 }
 
 func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
