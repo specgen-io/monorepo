@@ -69,7 +69,7 @@ func TestNullableType(t *testing.T) {
 func TestArrayType(t *testing.T) {
 	typ := spec.Array(spec.Plain(spec.TypeString))
 	javaType := KotlinType(typ)
-	assert.Equal(t, javaType, "List<String>")
+	assert.Equal(t, javaType, "Array<String>")
 }
 
 func TestMapType(t *testing.T) {
@@ -81,7 +81,7 @@ func TestMapType(t *testing.T) {
 func TestComplexType(t *testing.T) {
 	typ := spec.Array(spec.Nullable(spec.Plain(spec.TypeBoolean)))
 	javaType := KotlinType(typ)
-	assert.Equal(t, javaType, "List<Boolean?>")
+	assert.Equal(t, javaType, "Array<Boolean?>")
 }
 
 func TestMapScalarType(t *testing.T) {
