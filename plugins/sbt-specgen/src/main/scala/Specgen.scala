@@ -122,7 +122,7 @@ object Specgen {
     val specgenRelativePath = s"/dist/${osname}_${arch}/${getExeName("specgen")}"
 
     val specToolStream = getClass.getResourceAsStream(specgenRelativePath)
-    val jarPath = SpecPlay.getClass.getProtectionDomain.getCodeSource.getLocation.getPath
+    val jarPath = Specgen.getClass.getProtectionDomain.getCodeSource.getLocation.getPath
     val specgenPath = jarPath.substring(0, jarPath.lastIndexOf('.'))+specgenRelativePath
 
     val specgenFile = new File(specgenPath)

@@ -28,6 +28,8 @@ object SpecgenService extends AutoPlugin {
   private def specgenTask = Def.task {
     serviceScala(
       sLog.value,
+      specgenServer.value,
+      specgenJsonlib.value,
       specgenSpecFile.value,
       specgenSwaggerFile.value,
       specgenGeneratePath.value,
