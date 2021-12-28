@@ -7,18 +7,18 @@ import (
 )
 
 func init() {
-	cmdClientScalaHttps.Flags().String(SpecFile, "", SpecFileDescription)
-	cmdClientScalaHttps.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdClientScala.Flags().String(SpecFile, "", SpecFileDescription)
+	cmdClientScala.Flags().String(GeneratePath, "", GeneratePathDescription)
 
-	cmdClientScalaHttps.MarkFlagRequired(SpecFile)
-	cmdClientScalaHttps.MarkFlagRequired(GeneratePath)
+	cmdClientScala.MarkFlagRequired(SpecFile)
+	cmdClientScala.MarkFlagRequired(GeneratePath)
 
-	rootCmd.AddCommand(cmdClientScalaHttps)
+	rootCmd.AddCommand(cmdClientScala)
 }
 
-var cmdClientScalaHttps = &cobra.Command{
-	Use:   "client-scala-sttp",
-	Short: "Generate Scala Sttp client source code",
+var cmdClientScala = &cobra.Command{
+	Use:   "client-scala",
+	Short: "Generate Scala client source code",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)

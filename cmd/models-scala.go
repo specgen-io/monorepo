@@ -7,17 +7,17 @@ import (
 )
 
 func init() {
-	cmdServiceScalaModels.Flags().String(SpecFile, "", SpecFileDescription)
-	cmdServiceScalaModels.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdModelsScala.Flags().String(SpecFile, "", SpecFileDescription)
+	cmdModelsScala.Flags().String(GeneratePath, "", GeneratePathDescription)
 
-	cmdServiceScalaModels.MarkFlagRequired(SpecFile)
-	cmdServiceScalaModels.MarkFlagRequired(GeneratePath)
+	cmdModelsScala.MarkFlagRequired(SpecFile)
+	cmdModelsScala.MarkFlagRequired(GeneratePath)
 
-	rootCmd.AddCommand(cmdServiceScalaModels)
+	rootCmd.AddCommand(cmdModelsScala)
 }
 
-var cmdServiceScalaModels = &cobra.Command{
-	Use:   "models-scala-circe",
+var cmdModelsScala = &cobra.Command{
+	Use:   "models-scala",
 	Short: "Generate Scala models source code",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
