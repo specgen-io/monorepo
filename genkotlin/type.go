@@ -10,10 +10,10 @@ func KotlinType(typ *spec.TypeDef) string {
 	case spec.PlainType:
 		return PlainKotlinType(typ.Plain)
 	case spec.NullableType:
-		return KotlinType(typ.Child)+"?"
+		return KotlinType(typ.Child) + "?"
 	case spec.ArrayType:
 		child := KotlinType(typ.Child)
-		return "List<" + child + ">"
+		return "Array<" + child + ">"
 	case spec.MapType:
 		child := KotlinType(typ.Child)
 		result := "Map<String, " + child + ">"
