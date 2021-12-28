@@ -9,9 +9,9 @@ object SpecKeys {
   lazy val specgenSwaggerFile = settingKey[File]("Path to generated OpenAPI specification file")
   lazy val specgenGeneratePath = settingKey[File]("Path to generate source code into")
   lazy val specgenServicesPath = settingKey[File]("Path to scaffold services code")
-  lazy val specgenJsonlib = settingKey[String]("JSON library name")
-  lazy val specgenClient = settingKey[String]("HTTP client library name")
-  lazy val specgenServer = settingKey[String]("HTTP server framework name")
+  lazy val specgenJsonlib = settingKey[String]("JSON library name, supported: circe")
+  lazy val specgenClient = settingKey[String]("HTTP client library name, supported: sttp")
+  lazy val specgenServer = settingKey[String]("HTTP server framework name, supported: play")
 
   lazy val specgenServiceTask = taskKey[Seq[File]]("Run service Play code generation for spec")
   lazy val specgenModelsTask = taskKey[Seq[File]]("Run circe models code generation for spec")
@@ -38,6 +38,8 @@ object SpecgenService extends AutoPlugin {
   }
 
   override val projectSettings = Seq(
+    specgenServer := "play",
+    specgenJsonlib := "circe",
     specgenSpecFile := file("spec.yaml"),
     specgenSwaggerFile := baseDirectory.value / "public" / "swagger.yaml",
     specgenGeneratePath := (sourceManaged in Compile).value / "spec",
@@ -63,8 +65,8 @@ object SpecgenModels extends AutoPlugin {
   }
 
   override val projectSettings = Seq(
-    specgenSpecFile := file("spec.yaml"),
     specgenJsonlib := "circe",
+    specgenSpecFile := file("spec.yaml"),
     specgenGeneratePath := (sourceManaged in Compile).value / "spec",
     specgenModelsTask := specgenTask.value,
     sourceGenerators in Compile += specgenModelsTask,
@@ -88,9 +90,9 @@ object SpecgenClient extends AutoPlugin {
   }
 
   override val projectSettings = Seq(
-    specgenSpecFile := file("spec.yaml"),
     specgenClient := "sttp",
     specgenJsonlib := "circe",
+    specgenSpecFile := file("spec.yaml"),
     specgenGeneratePath := (sourceManaged in Compile).value / "spec",
     specgenClientTask := specgenTask.value,
     sourceGenerators in Compile += specgenClientTask,
