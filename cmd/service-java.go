@@ -7,21 +7,21 @@ import (
 )
 
 func init() {
-	cmdServiceJavaSpring.Flags().String(SpecFile, "", SpecFileDescription)
-	cmdServiceJavaSpring.Flags().String(PackageName, "", PackageNameDescription)
-	cmdServiceJavaSpring.Flags().String(SwaggerPath, "", SwaggerPathDescription)
-	cmdServiceJavaSpring.Flags().String(GeneratePath, "", GeneratePathDescription)
-	cmdServiceJavaSpring.Flags().String(ServicesPath, "", ServicesPathDescription)
+	cmdServiceJava.Flags().String(SpecFile, "", SpecFileDescription)
+	cmdServiceJava.Flags().String(PackageName, "", PackageNameDescription)
+	cmdServiceJava.Flags().String(SwaggerPath, "", SwaggerPathDescription)
+	cmdServiceJava.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdServiceJava.Flags().String(ServicesPath, "", ServicesPathDescription)
 
-	cmdServiceJavaSpring.MarkFlagRequired(SpecFile)
-	cmdServiceJavaSpring.MarkFlagRequired(GeneratePath)
+	cmdServiceJava.MarkFlagRequired(SpecFile)
+	cmdServiceJava.MarkFlagRequired(GeneratePath)
 
-	rootCmd.AddCommand(cmdServiceJavaSpring)
+	rootCmd.AddCommand(cmdServiceJava)
 }
 
-var cmdServiceJavaSpring = &cobra.Command{
-	Use:   "service-java-spring",
-	Short: "Generate Spring Java service source code",
+var cmdServiceJava = &cobra.Command{
+	Use:   "service-java",
+	Short: "Generate Java service source code",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)

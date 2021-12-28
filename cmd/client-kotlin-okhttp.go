@@ -7,20 +7,20 @@ import (
 )
 
 func init() {
-	cmdClientKotlinOkHttp.Flags().String(SpecFile, "", SpecFileDescription)
-	cmdClientKotlinOkHttp.Flags().String(PackageName, "", PackageNameDescription)
-	cmdClientKotlinOkHttp.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdClientKotlin.Flags().String(SpecFile, "", SpecFileDescription)
+	cmdClientKotlin.Flags().String(PackageName, "", PackageNameDescription)
+	cmdClientKotlin.Flags().String(GeneratePath, "", GeneratePathDescription)
 
-	cmdClientKotlinOkHttp.MarkFlagRequired(SpecFile)
-	cmdClientKotlinOkHttp.MarkFlagRequired(PackageName)
-	cmdClientKotlinOkHttp.MarkFlagRequired(GeneratePath)
+	cmdClientKotlin.MarkFlagRequired(SpecFile)
+	cmdClientKotlin.MarkFlagRequired(PackageName)
+	cmdClientKotlin.MarkFlagRequired(GeneratePath)
 
-	rootCmd.AddCommand(cmdClientKotlinOkHttp)
+	rootCmd.AddCommand(cmdClientKotlin)
 }
 
-var cmdClientKotlinOkHttp = &cobra.Command{
-	Use:   "client-kotlin-okhttp",
-	Short: "Generate OkHttp Kotlin client source code",
+var cmdClientKotlin = &cobra.Command{
+	Use:   "client-kotlin",
+	Short: "Generate Kotlin client source code",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)

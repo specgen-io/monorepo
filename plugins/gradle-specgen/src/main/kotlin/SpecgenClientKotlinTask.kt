@@ -7,7 +7,7 @@ import org.gradle.kotlin.dsl.*
 import java.io.File
 import javax.inject.Inject
 
-public open class ClientJavaOkHttpConfig @Inject constructor(project: Project) {
+public open class ClientKotlinConfig @Inject constructor(project: Project) {
     @OutputDirectory
     public val outputDirectory: Property<File> =
         project.objects.property<File>().convention(project.buildDir.resolve("generated-src/specgen"))
@@ -22,15 +22,15 @@ public open class ClientJavaOkHttpConfig @Inject constructor(project: Project) {
     public val packageName: Property<String> = project.objects.property()
 }
 
-public open class SpecgenClientJavaOkHttpTask public constructor() : SpecgenBaseTask() {
+public open class SpecgenClientKotlinTask public constructor() : SpecgenBaseTask() {
     @TaskAction
     public fun execute() {
         val extension = project.extensions.findByType<SpecgenPluginExtension>()
         // TODO: Check if there are nulls below
-        val config = extension!!.configClientJavaOkHttp!!
+        val config = extension!!.configClientKotlin!!
 
         val commandlineArgs = mutableListOf(
-            "client-java-okhttp",
+            "client-kotlin",
             "--spec-file",
             config.specFile.get().absolutePath,
             "--generate-path",

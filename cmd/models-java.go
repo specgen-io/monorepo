@@ -7,17 +7,17 @@ import (
 )
 
 func init() {
-	modelsJava.Flags().String(SpecFile, "", SpecFileDescription)
-	modelsJava.Flags().String(PackageName, "", PackageNameDescription)
-	modelsJava.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdModelsJava.Flags().String(SpecFile, "", SpecFileDescription)
+	cmdModelsJava.Flags().String(PackageName, "", PackageNameDescription)
+	cmdModelsJava.Flags().String(GeneratePath, "", GeneratePathDescription)
 
-	modelsJava.MarkFlagRequired(SpecFile)
-	modelsJava.MarkFlagRequired(GeneratePath)
+	cmdModelsJava.MarkFlagRequired(SpecFile)
+	cmdModelsJava.MarkFlagRequired(GeneratePath)
 
-	rootCmd.AddCommand(modelsJava)
+	rootCmd.AddCommand(cmdModelsJava)
 }
 
-var modelsJava = &cobra.Command{
+var cmdModelsJava = &cobra.Command{
 	Use:   "models-java",
 	Short: "Generate Java models source code",
 	Run: func(cmd *cobra.Command, args []string) {
