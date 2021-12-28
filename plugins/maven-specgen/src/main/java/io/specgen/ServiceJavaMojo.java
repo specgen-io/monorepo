@@ -30,7 +30,7 @@ public class ServiceJavaMojo extends SpecgenAbstractMojo {
 		getLog().info("Running codegen plugin");
 
 		List<String> commandlineArgs = new ArrayList<>(List.of(
-			"service-java-spring",
+			"service-java",
 			"--spec-file", specFile,
 			"--generate-path", generatePath
 		));
