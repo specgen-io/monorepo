@@ -5,8 +5,8 @@ import org.apache.maven.project.MavenProject;
 
 import java.util.*;
 
-@Mojo(name = "service-java-spring", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
-public class ServiceSpringJavaMojo extends SpecgenAbstractMojo {
+@Mojo(name = "service-java", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
+public class ServiceJavaMojo extends SpecgenAbstractMojo {
 	@Parameter(property = "specFile", defaultValue = "${project.basedir}/spec.yaml", required = true)
 	String specFile;
 

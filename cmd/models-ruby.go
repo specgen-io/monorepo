@@ -7,16 +7,16 @@ import (
 )
 
 func init() {
-	modelsRuby.Flags().String(SpecFile, "", SpecFileDescription)
-	modelsRuby.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdModelsRuby.Flags().String(SpecFile, "", SpecFileDescription)
+	cmdModelsRuby.Flags().String(GeneratePath, "", GeneratePathDescription)
 
-	modelsRuby.MarkFlagRequired(SpecFile)
-	modelsRuby.MarkFlagRequired(GeneratePath)
+	cmdModelsRuby.MarkFlagRequired(SpecFile)
+	cmdModelsRuby.MarkFlagRequired(GeneratePath)
 
-	rootCmd.AddCommand(modelsRuby)
+	rootCmd.AddCommand(cmdModelsRuby)
 }
 
-var modelsRuby = &cobra.Command{
+var cmdModelsRuby = &cobra.Command{
 	Use:   "models-ruby",
 	Short: "Generate Ruby models source code",
 	Run: func(cmd *cobra.Command, args []string) {

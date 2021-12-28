@@ -7,18 +7,18 @@ import (
 )
 
 func init() {
-	modelsKotlin.Flags().String(SpecFile, "", SpecFileDescription)
-	modelsKotlin.Flags().String(PackageName, "", PackageNameDescription)
-	modelsKotlin.Flags().String(KotlinJsonLib, "jackson", KotlinJsonLibDescription)
-	modelsKotlin.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdModelsKotlin.Flags().String(SpecFile, "", SpecFileDescription)
+	cmdModelsKotlin.Flags().String(PackageName, "", PackageNameDescription)
+	cmdModelsKotlin.Flags().String(KotlinJsonLib, "jackson", KotlinJsonLibDescription)
+	cmdModelsKotlin.Flags().String(GeneratePath, "", GeneratePathDescription)
 
-	modelsKotlin.MarkFlagRequired(SpecFile)
-	modelsKotlin.MarkFlagRequired(GeneratePath)
+	cmdModelsKotlin.MarkFlagRequired(SpecFile)
+	cmdModelsKotlin.MarkFlagRequired(GeneratePath)
 
-	rootCmd.AddCommand(modelsKotlin)
+	rootCmd.AddCommand(cmdModelsKotlin)
 }
 
-var modelsKotlin = &cobra.Command{
+var cmdModelsKotlin = &cobra.Command{
 	Use:   "models-kotlin",
 	Short: "Generate Kotlin models source code",
 	Run: func(cmd *cobra.Command, args []string) {

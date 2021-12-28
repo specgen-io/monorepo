@@ -7,18 +7,18 @@ import (
 )
 
 func init() {
-	modelsGo.Flags().String(SpecFile, "", SpecFileDescription)
-	modelsGo.Flags().String(ModuleName, "", ModuleNameDescription)
-	modelsGo.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdModelsGo.Flags().String(SpecFile, "", SpecFileDescription)
+	cmdModelsGo.Flags().String(ModuleName, "", ModuleNameDescription)
+	cmdModelsGo.Flags().String(GeneratePath, "", GeneratePathDescription)
 
-	modelsGo.MarkFlagRequired(SpecFile)
-	modelsGo.MarkFlagRequired(ModuleName)
-	modelsGo.MarkFlagRequired(GeneratePath)
+	cmdModelsGo.MarkFlagRequired(SpecFile)
+	cmdModelsGo.MarkFlagRequired(ModuleName)
+	cmdModelsGo.MarkFlagRequired(GeneratePath)
 
-	rootCmd.AddCommand(modelsGo)
+	rootCmd.AddCommand(cmdModelsGo)
 }
 
-var modelsGo = &cobra.Command{
+var cmdModelsGo = &cobra.Command{
 	Use:   "models-go",
 	Short: "Generate Go models source code",
 	Run: func(cmd *cobra.Command, args []string) {

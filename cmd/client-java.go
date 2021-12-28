@@ -7,20 +7,20 @@ import (
 )
 
 func init() {
-	cmdClientJavaOkHttp.Flags().String(SpecFile, "", SpecFileDescription)
-	cmdClientJavaOkHttp.Flags().String(PackageName, "", PackageNameDescription)
-	cmdClientJavaOkHttp.Flags().String(GeneratePath, "", GeneratePathDescription)
+	cmdClientJava.Flags().String(SpecFile, "", SpecFileDescription)
+	cmdClientJava.Flags().String(PackageName, "", PackageNameDescription)
+	cmdClientJava.Flags().String(GeneratePath, "", GeneratePathDescription)
 
-	cmdClientJavaOkHttp.MarkFlagRequired(SpecFile)
-	cmdClientJavaOkHttp.MarkFlagRequired(PackageName)
-	cmdClientJavaOkHttp.MarkFlagRequired(GeneratePath)
+	cmdClientJava.MarkFlagRequired(SpecFile)
+	cmdClientJava.MarkFlagRequired(PackageName)
+	cmdClientJava.MarkFlagRequired(GeneratePath)
 
-	rootCmd.AddCommand(cmdClientJavaOkHttp)
+	rootCmd.AddCommand(cmdClientJava)
 }
 
-var cmdClientJavaOkHttp = &cobra.Command{
-	Use:   "client-java-okhttp",
-	Short: "Generate OkHttp Java client source code",
+var cmdClientJava = &cobra.Command{
+	Use:   "client-java",
+	Short: "Generate Java client source code",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)

@@ -5,8 +5,8 @@ import org.apache.maven.project.*;
 
 import java.util.*;
 
-@Mojo(name = "client-java-okhttp", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
-public class ClientOkHttpJavaMojo extends SpecgenAbstractMojo {
+@Mojo(name = "client-java", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
+public class ClientJavaMojo extends SpecgenAbstractMojo {
 	@Parameter(property = "specFile", defaultValue = "${project.basedir}/spec.yaml", required = true)
 	String specFile;
 
