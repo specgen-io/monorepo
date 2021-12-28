@@ -7,22 +7,24 @@ import sys.process._
 import sbt.{File, Logger}
 
 object Specgen {
-  def serviceScalaPlay(
+  def serviceScala(
     log: Logger,
-    specPath: File,
+    server: String,
+    jsonlib: String,
+    specFile: File,
     swaggerPath: File,
     generatePath: File,
-    servicesPath: File
+    servicesPath: File,
   ): Seq[File] = {
 
-    log.info(s"Running sbt-spec code generation plugin")
+    log.info(s"Running sbt-specgen service code generation plugin")
 
-    val specToolPath: String = getSpecTool(log)
+    val specToolPath: String = getSpecgenTool(log)
 
     val specCommand: Seq[String] = Seq(
       specToolPath,
-      "service-scala-play",
-      "--spec-file", specPath.getPath,
+      "service-scala",
+      "--spec-file", specFile.getPath,
       "--swagger-path", swaggerPath.getPath,
       "--generate-path", generatePath.getPath,
       "--services-path", servicesPath.getPath
@@ -34,20 +36,21 @@ object Specgen {
     generatedFiles.toSeq
   }
 
-  def modelsScalaCirce(
+  def modelsScala(
     log: Logger,
-    specPath: File,
+    jsonlib: String,
+    specFile: File,
     generatePath: File,
   ): Seq[File] = {
 
-    log.info(s"Running sbt-spec code generation plugin")
+    log.info(s"Running sbt-specgen models code generation plugin")
 
-    val specToolPath: String = getSpecTool(log)
+    val specToolPath: String = getSpecgenTool(log)
 
     val specCommand: Seq[String] = Seq(
       specToolPath,
-      "models-scala-circe",
-      "--spec-file", specPath.getPath,
+      "models-scala",
+      "--spec-file", specFile.getPath,
       "--generate-path", generatePath.getPath,
     )
 
@@ -57,20 +60,22 @@ object Specgen {
     generatedFiles.toSeq
   }
 
-  def clientSttp(
+  def clientScala(
     log: Logger,
-    specPath: File,
+    client: String,
+    jsonlib: String,
+    specFile: File,
     generatePath: File,
   ): Seq[File] = {
 
-    log.info(s"Running sbt-spec code generation plugin")
+    log.info(s"Running sbt-specgen client code generation plugin")
 
-    val specToolPath: String = getSpecTool(log)
+    val specToolPath: String = getSpecgenTool(log)
 
     val specCommand: Seq[String] = Seq(
       specToolPath,
-      "client-scala-sttp",
-      "--spec-file", specPath.getPath,
+      "client-scala",
+      "--spec-file", specFile.getPath,
       "--generate-path", generatePath.getPath,
     )
 
@@ -110,28 +115,28 @@ object Specgen {
     (exitValue, stdoutStream.toString, stderrStream.toString)
   }
 
-  def getSpecTool(log: Logger): String = {
+  def getSpecgenTool(log: Logger): String = {
     val osname = getOsName()
     val arch = getArch()
 
-    val specToolPath = s"/dist/${osname}_${arch}/${getExeName("specgen")}"
+    val specgenRelativePath = s"/dist/${osname}_${arch}/${getExeName("specgen")}"
 
-    val specToolStream = getClass.getResourceAsStream(specToolPath)
+    val specToolStream = getClass.getResourceAsStream(specgenRelativePath)
     val jarPath = SpecPlay.getClass.getProtectionDomain.getCodeSource.getLocation.getPath
-    val specPath = jarPath.substring(0, jarPath.lastIndexOf('.'))+specToolPath
+    val specgenPath = jarPath.substring(0, jarPath.lastIndexOf('.'))+specgenRelativePath
 
-    val specPathFile = new File(specPath)
-    if (!specPathFile.exists()) {
-      log.info(s"Unpacking specgen tool into: ${specPathFile.getPath}")
-      val specPathParent = specPathFile.getParentFile
+    val specgenFile = new File(specgenPath)
+    if (!specgenFile.exists()) {
+      log.info(s"Unpacking specgen tool into: ${specgenFile.getPath}")
+      val specPathParent = specgenFile.getParentFile
       if (!specPathParent.exists()) {
         specPathParent.mkdirs()
       }
-      Files.copy(specToolStream, Paths.get(specPathFile.getPath), StandardCopyOption.REPLACE_EXISTING)
-      specPathFile.setExecutable(true)
+      Files.copy(specToolStream, Paths.get(specgenFile.getPath), StandardCopyOption.REPLACE_EXISTING)
+      specgenFile.setExecutable(true)
     }
 
-    specPathFile.getPath
+    specgenFile.getPath
   }
 
   def getExeName(toolName: String): String =
