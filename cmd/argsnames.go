@@ -1,40 +1,40 @@
 package cmd
 
 const ModuleName = "module-name"
-const ModuleNameDescription = "Module name"
+const ModuleNameDescription = "module name"
 
 const PackageName = "package-name"
-const PackageNameDescription = "Package name"
+const PackageNameDescription = "package name"
 
 const SpecFile = "spec-file"
-const SpecFileDescription = "Path to specification file"
+const SpecFileDescription = "path to specification file"
 
 const Format = "format"
-const FormatDescription = "Specification format to convert specification from: spec-2.0, openapi"
+const FormatDescription = "specification format to convert specification from: spec-2.0, openapi"
 
 const InFile = "in-file"
-const InFileDescription = "Path for input specification file"
+const InFileDescription = "path for input specification file"
 
 const SwaggerPath = "swagger-path"
-const SwaggerPathDescription = "Path of generated OpenAPI (Swagger) specification file"
+const SwaggerPathDescription = "path of generated OpenAPI (Swagger) specification file"
 
 const GeneratePath = "generate-path"
-const GeneratePathDescription = "Path to generate source code into"
+const GeneratePathDescription = "path to generate source code into"
 
 const ServicesPath = "services-path"
-const ServicesPathDescription = "Path to scaffold services code"
+const ServicesPathDescription = "path to scaffold services code"
 
 const TsServer = "server"
-const TsServerDescription = "TypeScript server library: express, koa"
+const TsServerDescription = "server TypeScript library: express, koa"
 
 const TsClient = "client"
-const TsClientDescription = "TypeScript client library: axios, node-fetch, browser-fetch"
+const TsClientDescription = "client TypeScript library: axios, node-fetch, browser-fetch"
 
 const TsValidation = "validation"
-const TsValidationDescription = "TypeScript validation library: superstruct, io-ts"
+const TsValidationDescription = "validation TypeScript library: superstruct, io-ts"
 
 const KotlinJsonLib = "jsonlib"
 const KotlinJsonLibDescription = "Kotlin JSON library: jackson"
 
 const OutFile = "out-file"
-const OutFileDescription = "Path to output file"
+const OutFileDescription = "path to output file"
