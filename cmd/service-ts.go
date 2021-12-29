@@ -26,7 +26,7 @@ func init() {
 
 var cmdServiceTs = &cobra.Command{
 	Use:   "service-ts",
-	Short: "Generate TypeScript Axios client source code",
+	Short: "Generate TypeScript client source code",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)

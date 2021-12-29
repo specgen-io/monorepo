@@ -19,7 +19,7 @@ func init() {
 
 var cmdModelsTs = &cobra.Command{
 	Use:   "models-ts",
-	Short: "Generate TypeScript models",
+	Short: "Generate TypeScript models source code",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		fail.IfError(err)

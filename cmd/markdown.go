@@ -1,136 +1,174 @@
 package cmd
 
 import (
-	"bytes"
-	"fmt"
 	"github.com/specgen-io/specgen/v2/fail"
+	"github.com/specgen-io/specgen/v2/markdown"
 	"github.com/spf13/cobra"
-	"io"
-	"os"
+	"github.com/spf13/pflag"
+	"io/ioutil"
 	"strings"
 )
 
 func init() {
-	markdown.Flags().String(OutFile, "", OutFileDescription)
-	markdown.MarkFlagRequired(OutFile)
+	cmdMarkdown.Flags().String(OutFile, "", OutFileDescription)
+	cmdMarkdown.MarkFlagRequired(OutFile)
 
-	rootCmd.AddCommand(markdown)
+	rootCmd.AddCommand(cmdMarkdown)
 }
 
-var markdown = &cobra.Command{
+var cmdMarkdown = &cobra.Command{
 	Use:   "markdown",
 	Short: "Generate markdown documentation",
 	Run: func(cmd *cobra.Command, args []string) {
 		outFile, err := cmd.Flags().GetString(OutFile)
 		fail.IfError(err)
 
-		GenMarkdownDocumentation(rootCmd, outFile)
+		err = GenMarkdownDocumentation(rootCmd, outFile, []string{"completion", "markdown"})
+		fail.IfError(err, "Failed to write markdown documentation")
 	},
 }
 
-func GenCommandMarkdown(cmdPath []string, cmd *cobra.Command, w io.Writer) error {
-	cmd.InitDefaultHelpCmd()
-	cmd.InitDefaultHelpFlag()
+func GenMarkdownDocumentation(cmd *cobra.Command, filePath string, skipCommands []string) error {
+	m := markdown.NewMarkdown()
+	GenRootCommandMarkdown(m, cmd, skipCommands)
+	GenCommandsMarkdown(m, make([]string, 0), cmd, skipCommands)
+	return ioutil.WriteFile(filePath, []byte(m.String()), 0644)
+}
 
-	buf := new(bytes.Buffer)
+func GenRootCommandMarkdown(m *markdown.Markdown, command *cobra.Command, skipCommands []string) {
+	command.InitDefaultHelpCmd()
+	command.InitDefaultHelpFlag()
+
+	name := command.CommandPath()
+
+	m.Header1(name)
+	m.Paragraph(command.Short)
+
+	if len(command.Commands()) > 0 {
+		m.Header2("Commands List")
+		for _, subcommand := range command.Commands() {
+			if !subcommand.IsAvailableCommand() || subcommand.IsAdditionalHelpTopicCommand() {
+				continue
+			}
+			if contains(skipCommands, subcommand.Name()) {
+				continue
+			}
+			m.ListItem(markdown.LinkHeader(subcommand.Name(), subcommand.Name()))
+		}
+		m.EmptyLine()
+	}
+}
+
+func GenCommandsMarkdown(m *markdown.Markdown, commandPath []string, command *cobra.Command, skipCommands []string) {
+	for _, subcommand := range command.Commands() {
+		subcommandPath := append(commandPath, subcommand.Name())
+		if !subcommand.IsAvailableCommand() || subcommand.IsAdditionalHelpTopicCommand() {
+			continue
+		}
+		if contains(skipCommands, strings.Join(subcommandPath, " ")) {
+			continue
+		}
+		GenCommandMarkdown(m, subcommandPath, subcommand)
+		GenCommandsMarkdown(m, subcommandPath, subcommand, skipCommands)
+	}
+}
+
+func GenCommandMarkdown(m *markdown.Markdown, cmdPath []string, command *cobra.Command) {
+	command.InitDefaultHelpCmd()
+	command.InitDefaultHelpFlag()
+
 	name := strings.Join(cmdPath, " ")
 
-	buf.WriteString("## " + name + "\n\n")
-	buf.WriteString(cmd.Short + "\n\n")
-	if len(cmd.Long) > 0 {
-		buf.WriteString("**Synopsis**\n\n")
-		buf.WriteString(cmd.Long + "\n\n")
+	m.Header2(name)
+	m.Paragraph(command.Short)
+
+	if len(command.Long) > 0 {
+		m.Paragraph(markdown.Bold(`Synopsis`))
+		m.Paragraph(command.Long)
 	}
 
-	if cmd.Runnable() {
-		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.UseLine()))
+	if command.Runnable() {
+		m.CodeBlock(command.UseLine())
 	}
 
-	if len(cmd.Example) > 0 {
-		buf.WriteString("**Examples**\n\n")
-		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.Example))
+	if len(command.Example) > 0 {
+		m.Paragraph(markdown.Bold(`Examples`))
+		m.CodeBlock(command.Example)
 	}
 
-	flags := cmd.NonInheritedFlags()
-	parentFlags := cmd.InheritedFlags()
+	directFlags := command.NonInheritedFlags()
+	parentFlags := command.InheritedFlags()
 
-	if flags.HasAvailableFlags() || parentFlags.HasAvailableFlags() {
-		buf.WriteString("**Options**\n\n")
-		buf.WriteString("```\n")
-		if flags.HasAvailableFlags() {
-			flags.SetOutput(buf)
-			flags.PrintDefaults()
+	if directFlags.HasAvailableFlags() || parentFlags.HasAvailableFlags() {
+		m.Paragraph(markdown.Bold(`Flags`))
+
+		flags := []*pflag.Flag{}
+		if directFlags.HasAvailableFlags() {
+			directFlags.VisitAll(func(flag *pflag.Flag) {
+				flags = append(flags, flag)
+			})
 		}
 
 		if parentFlags.HasAvailableFlags() {
-			parentFlags.SetOutput(buf)
-			parentFlags.PrintDefaults()
+			parentFlags.VisitAll(func(flag *pflag.Flag) {
+				flags = append(flags, flag)
+			})
 		}
-		buf.WriteString("```\n\n")
-	}
 
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-func GenCommandsMarkdown(cmdPath []string, cmd *cobra.Command, w io.Writer) error {
-	for _, c := range cmd.Commands() {
-		if !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {
-			continue
-		}
-		if c.Name() == "completion" || c.Name() == "markdown" { //TODO: This is hardcode to omit certain commands
-			continue
-		}
-		newCmdPath := append(cmdPath, c.Name())
-		if err := GenCommandMarkdown(newCmdPath, c, w); err != nil {
-			return err
-		}
-		if err := GenCommandsMarkdown(newCmdPath, c, w); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func GenRootCommandMarkdown(cmd *cobra.Command, w io.Writer) error {
-	cmd.InitDefaultHelpCmd()
-	cmd.InitDefaultHelpFlag()
-
-	buf := new(bytes.Buffer)
-	name := cmd.CommandPath()
-
-	buf.WriteString("# " + name + "\n\n")
-	buf.WriteString(cmd.Short + "\n\n")
-
-	if len(cmd.Commands()) > 0 {
-		buf.WriteString("## Commands List\n")
-		for _, c := range cmd.Commands() {
-			if !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {
-				continue
+		for _, flag := range flags {
+			if flagWithValue(flag) {
+				writeFlag(m, flag)
 			}
-			if c.Name() == "completion" || c.Name() == "markdown" { //TODO: This is hardcode to omit certain commands
-				continue
-			}
-			buf.WriteString("* [" + c.Name() + "](#" + c.Name() + ")\n")
 		}
-		buf.WriteString("\n")
+		for _, flag := range flags {
+			if !flagWithValue(flag) {
+				writeFlag(m, flag)
+			}
+		}
 	}
-
-	_, err := buf.WriteTo(w)
-	return err
+	m.EmptyLine()
 }
 
-func GenMarkdownDocumentation(cmd *cobra.Command, filename string) error {
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
+func writeFlag(m *markdown.Markdown, flag *pflag.Flag) {
+	command := markdown.Code("--" + flag.Name)
+	if flag.Shorthand != "" {
+		command = command + ", " + markdown.Code("-"+flag.Shorthand)
 	}
-	defer f.Close()
-	if err := GenRootCommandMarkdown(cmd, f); err != nil {
-		return err
+	if flag.Usage != "" {
+		command = command + " - " + firstLetterUpper(flag.Usage) + "."
 	}
-	if err := GenCommandsMarkdown(make([]string, 0), cmd, f); err != nil {
-		return err
+	m.ListItem(command)
+	config := "Not required."
+	if flagRequired(flag) {
+		config = "Required."
 	}
-	return nil
+	if flag.DefValue != "" {
+		config = config + " Default value: " + markdown.Code(flag.DefValue) + "."
+	}
+	m.Line("     " + config)
+	//if flag.Usage != "" {
+	//	m.Line("     " + firstLetterUpper(flag.Usage) + ".")
+	//}
+}
+
+func firstLetterUpper(value string) string {
+	return strings.ToUpper(value[0:1]) + value[1:]
+}
+
+func flagWithValue(flag *pflag.Flag) bool {
+	return flag.Value.Type() != "bool"
+}
+
+func flagRequired(flag *pflag.Flag) bool {
+	requiredAnnotation, found := flag.Annotations[cobra.BashCompOneRequiredFlag]
+	return found && requiredAnnotation[0] == "true"
+}
+
+func contains(array []string, that string) bool {
+	for _, item := range array {
+		if item == that {
+			return true
+		}
+	}
+	return false
 }

@@ -13,7 +13,7 @@ var verbose bool
 var rootCmd = &cobra.Command{
 	Use:     "specgen",
 	Version: version.Current,
-	Short:   "Code generation tool on spec",
+	Short:   "Code generation based on specification",
 }
 
 func Execute() {
