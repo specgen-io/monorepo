@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gopkg.in/specgen-io/yaml.v3"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -136,11 +137,60 @@ func (validator *validator) Params(params []NamedParam, allowArrayTypes bool) {
 	}
 }
 
+func (validator *validator) ItemsUniqueness(location *yaml.Node, items []NamedDefinition, errorMsg string) {
+	itemsMap := map[string][]string{}
+	for index := range items {
+		item := items[index]
+		itemId := item.Name.FlatCase()
+		itemsGroup, found := itemsMap[itemId]
+		if !found {
+			itemsGroup = []string{}
+			itemsMap[itemId] = itemsGroup
+		}
+		itemsMap[itemId] = append(itemsGroup, item.Name.Source)
+	}
+	for _, names := range itemsMap {
+		if len(names) > 1 {
+			validator.AddError(location, fmt.Sprintf(`%s: %s`, errorMsg, strings.Join(names, ", ")))
+		}
+	}
+}
+
+func (validator *validator) EnumItemsUniqueness(location *yaml.Node, items []NamedEnumItem, errorMsg string) {
+	itemsMap := map[string][]string{}
+	for index := range items {
+		item := items[index]
+		itemId := item.Name.FlatCase()
+		itemsGroup, found := itemsMap[itemId]
+		if !found {
+			itemsGroup = []string{}
+			itemsMap[itemId] = itemsGroup
+		}
+		itemsMap[itemId] = append(itemsGroup, item.Name.Source)
+	}
+	for _, names := range itemsMap {
+		if len(names) > 1 {
+			validator.AddError(location, fmt.Sprintf(`%s: %s`, errorMsg, strings.Join(names, ", ")))
+		}
+	}
+}
+
 func (validator *validator) Model(model *NamedModel) {
 	if model.IsObject() {
+		validator.ItemsUniqueness(model.Location, model.Object.Fields, fmt.Sprintf(`object model %s fields names are too similiar to each other`, model.Name.Source))
 		for index := range model.Object.Fields {
-			validator.Definition(&model.Object.Fields[index].Definition)
+			field := model.Object.Fields[index]
+			validator.Definition(&field.Definition)
 		}
+	}
+	if model.IsOneOf() {
+		validator.ItemsUniqueness(model.Location, model.OneOf.Items, fmt.Sprintf(`oneOf model %s items names are too similiar to each other`, model.Name.Source))
+		for index := range model.OneOf.Items {
+			validator.Definition(&model.OneOf.Items[index].Definition)
+		}
+	}
+	if model.IsEnum() {
+		validator.EnumItemsUniqueness(model.Location, model.Enum.Items, fmt.Sprintf(`enum model %s items names are too similiar to each other`, model.Name.Source))
 	}
 }
 
@@ -221,6 +271,4 @@ func enumContainsItem(enum *Enum, what string) bool {
 }
 
 func (validator *validator) Definition(definition *Definition) {
-	if definition != nil {
-	}
 }
