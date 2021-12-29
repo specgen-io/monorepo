@@ -11,6 +11,7 @@ type Model struct {
 	Enum        *Enum
 	OneOf       *OneOf
 	Description *string
+	Location    *yaml.Node
 }
 
 type NamedModel struct {
@@ -34,7 +35,7 @@ func (self *Model) IsOneOf() bool {
 }
 
 func (value *Model) UnmarshalYAML(node *yaml.Node) error {
-	model := Model{}
+	model := Model{Location: node}
 	if node.Kind != yaml.MappingNode {
 		return yamlError(node, "models should be mapping")
 	}
