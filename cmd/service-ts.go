@@ -13,10 +13,10 @@ func init() {
 	cmdServiceTs.Flags().String(SwaggerPath, "", SwaggerPathDescription)
 	cmdServiceTs.Flags().String(GeneratePath, "", GeneratePathDescription)
 	cmdServiceTs.Flags().String(ServicesPath, "", ServicesPathDescription)
-	cmdServiceTs.Flags().String(TsValidation, "", TsValidationDescription)
+	cmdServiceTs.Flags().String(Validation, "", ValidationDescription)
 
 	cmdServiceTs.MarkFlagRequired(Server)
-	cmdServiceTs.MarkFlagRequired(TsValidation)
+	cmdServiceTs.MarkFlagRequired(Validation)
 	cmdServiceTs.MarkFlagRequired(SpecFile)
 	cmdServiceTs.MarkFlagRequired(GeneratePath)
 
@@ -40,7 +40,7 @@ var cmdServiceTs = &cobra.Command{
 		servicesPath, err := cmd.Flags().GetString(ServicesPath)
 		fail.IfError(err)
 
-		validation, err := cmd.Flags().GetString(TsValidation)
+		validation, err := cmd.Flags().GetString(Validation)
 		fail.IfError(err)
 
 		server, err := cmd.Flags().GetString(Server)
