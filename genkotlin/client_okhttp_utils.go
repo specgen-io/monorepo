@@ -33,7 +33,7 @@ class RequestBuilder(method: String, url: HttpUrl, body: RequestBody?) {
         return this
     }
 
-    fun <T> addHeaderParameter(name: String, values: List<T>): RequestBuilder {
+    fun <T> addHeaderParameter(name: String, values: Array<T>): RequestBuilder {
         for (value in values) {
             this.addHeaderParameter(name, value!!)
         }
@@ -73,7 +73,7 @@ class UrlBuilder(baseUrl: String) {
         return this
     }
 
-    fun <T> addQueryParameter(name: String, values: List<T>): UrlBuilder {
+    fun <T> addQueryParameter(name: String, values: Array<T>): UrlBuilder {
         for (value in values) {
             this.addQueryParameter(name, value!!)
         }
