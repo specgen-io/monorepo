@@ -24,17 +24,17 @@ const GeneratePathDescription = "path to generate source code into"
 const ServicesPath = "services-path"
 const ServicesPathDescription = "path to scaffold services code"
 
-const TsServer = "server"
-const TsServerDescription = "server TypeScript library: express, koa"
+const Server = "server"
+const ServerDescription = "server TypeScript library: express, koa"
 
-const TsClient = "client"
-const TsClientDescription = "client TypeScript library: axios, node-fetch, browser-fetch"
+const Client = "client"
+const ClientDescription = "client TypeScript library: axios, node-fetch, browser-fetch"
 
 const TsValidation = "validation"
 const TsValidationDescription = "validation TypeScript library: superstruct, io-ts"
 
-const KotlinJsonLib = "jsonlib"
-const KotlinJsonLibDescription = "Kotlin JSON library: jackson"
+const Jsonlib = "jsonlib"
+const JsonlibDescription = "JSON library: jackson, moshi"
 
 const OutFile = "out-file"
 const OutFileDescription = "path to output file"
