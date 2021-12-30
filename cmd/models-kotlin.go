@@ -9,7 +9,7 @@ import (
 func init() {
 	cmdModelsKotlin.Flags().String(SpecFile, "", SpecFileDescription)
 	cmdModelsKotlin.Flags().String(PackageName, "", PackageNameDescription)
-	cmdModelsKotlin.Flags().String(KotlinJsonLib, "jackson", KotlinJsonLibDescription)
+	cmdModelsKotlin.Flags().String(Jsonlib, "jackson", JsonlibDescription)
 	cmdModelsKotlin.Flags().String(GeneratePath, "", GeneratePathDescription)
 
 	cmdModelsKotlin.MarkFlagRequired(SpecFile)

@@ -9,13 +9,13 @@ import (
 func init() {
 	cmdServiceTs.Flags().String(SpecFile, "", SpecFileDescription)
 
-	cmdServiceTs.Flags().String(TsServer, "", TsServerDescription)
+	cmdServiceTs.Flags().String(Server, "", ServerDescription)
 	cmdServiceTs.Flags().String(SwaggerPath, "", SwaggerPathDescription)
 	cmdServiceTs.Flags().String(GeneratePath, "", GeneratePathDescription)
 	cmdServiceTs.Flags().String(ServicesPath, "", ServicesPathDescription)
 	cmdServiceTs.Flags().String(TsValidation, "", TsValidationDescription)
 
-	cmdServiceTs.MarkFlagRequired(TsServer)
+	cmdServiceTs.MarkFlagRequired(Server)
 	cmdServiceTs.MarkFlagRequired(TsValidation)
 	cmdServiceTs.MarkFlagRequired(SpecFile)
 	cmdServiceTs.MarkFlagRequired(GeneratePath)
@@ -43,7 +43,7 @@ var cmdServiceTs = &cobra.Command{
 		validation, err := cmd.Flags().GetString(TsValidation)
 		fail.IfError(err)
 
-		server, err := cmd.Flags().GetString(TsServer)
+		server, err := cmd.Flags().GetString(Server)
 		fail.IfError(err)
 
 		specification := readSpecFile(specFile)
