@@ -38,3 +38,12 @@ const JsonlibDescription = "JSON library: jackson, moshi"
 
 const OutFile = "out-file"
 const OutFileDescription = "path to output file"
+
+type Arg struct {
+	Name        string
+	Description string
+}
+
+var ArgSpecFile = Arg{SpecFile, SpecFileDescription}
+var ArgModuleName = Arg{ModuleName, ModuleNameDescription}
+var ArgGeneratePath = Arg{GeneratePath, GeneratePathDescription}
