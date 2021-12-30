@@ -116,22 +116,47 @@ func generateObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
 	w.Line(`  if (other !is %s) return false`, model.Name.PascalCase())
 	w.EmptyLine()
 	for _, field := range model.Object.Fields {
-		w.Line(`  if (!%s.contentEquals(other.%s)) return false`, field.Name.CamelCase(), field.Name.CamelCase())
+		if _isKotlinArrayType(&field.Type.Definition) {
+			w.Line(`  if (!%s.contentEquals(other.%s)) return false`, field.Name.CamelCase(), field.Name.CamelCase())
+		} else {
+			w.Line(`  if (%s != other.%s) return false`, field.Name.CamelCase(), field.Name.CamelCase())
+		}
 	}
 	w.EmptyLine()
 	w.Line(`  return true`)
 	w.Line(`}`)
 	w.EmptyLine()
 	w.Line(`override fun hashCode(): Int {`)
-	hashCodeParams := []string{}
+	hashCodeArrayParams := []string{}
+	hashCodeNonArrayParams := []string{}
+	var arrayFieldCount, nonArrayFieldCount int
 	for _, field := range model.Object.Fields {
-		hashCodeParams = append(hashCodeParams, field.Name.CamelCase())
+		if _isKotlinArrayType(&field.Type.Definition) {
+			hashCodeArrayParams = append(hashCodeArrayParams, field.Name.CamelCase())
+			arrayFieldCount++
+		} else {
+			hashCodeNonArrayParams = append(hashCodeNonArrayParams, field.Name.CamelCase())
+			nonArrayFieldCount++
+		}
 	}
-	w.Line(`  var result = %s.contentHashCode()`, hashCodeParams[0])
-	for _, param := range hashCodeParams[1:] {
-		w.Line(`  result = 31 * result + %s.contentHashCode()`, param)
+	if arrayFieldCount == 1 && nonArrayFieldCount == 0 {
+		w.Line(`  return %s.contentHashCode()`, hashCodeArrayParams[0])
+	} else if arrayFieldCount > 1 && nonArrayFieldCount == 0 {
+		w.Line(`  var result = %s.contentHashCode()`, hashCodeArrayParams[0])
+		for _, param := range hashCodeArrayParams[1:] {
+			w.Line(`  result = 31 * result + %s.contentHashCode()`, param)
+		}
+		w.Line(`  return result`)
+	} else if arrayFieldCount > 0 && nonArrayFieldCount > 0 {
+		w.Line(`  var result = %s.contentHashCode()`, hashCodeArrayParams[0])
+		for _, param := range hashCodeArrayParams[1:] {
+			w.Line(`  result = 31 * result + %s.contentHashCode()`, param)
+		}
+		for _, param := range hashCodeNonArrayParams {
+			w.Line(`  result = 31 * result + %s.hashCode()`, param)
+		}
+		w.Line(`  return result`)
 	}
-	w.Line(`  return result`)
 	w.Line(`}`)
 }
 
