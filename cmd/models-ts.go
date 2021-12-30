@@ -9,7 +9,7 @@ import (
 func init() {
 	cmdModelsTs.Flags().String(SpecFile, "", SpecFileDescription)
 	cmdModelsTs.Flags().String(GeneratePath, "", GeneratePathDescription)
-	cmdModelsTs.Flags().String(TsValidation, "", TsValidationDescription)
+	cmdModelsTs.Flags().String(Validation, "", ValidationDescription)
 
 	cmdModelsTs.MarkFlagRequired(SpecFile)
 	cmdModelsTs.MarkFlagRequired(GeneratePath)
@@ -27,7 +27,7 @@ var cmdModelsTs = &cobra.Command{
 		generatePath, err := cmd.Flags().GetString(GeneratePath)
 		fail.IfError(err)
 
-		validation, err := cmd.Flags().GetString(TsValidation)
+		validation, err := cmd.Flags().GetString(Validation)
 		fail.IfError(err)
 
 		specification := readSpecFile(specFile)

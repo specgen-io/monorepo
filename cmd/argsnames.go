@@ -30,8 +30,8 @@ const ServerDescription = "server TypeScript library: express, koa"
 const Client = "client"
 const ClientDescription = "client TypeScript library: axios, node-fetch, browser-fetch"
 
-const TsValidation = "validation"
-const TsValidationDescription = "validation TypeScript library: superstruct, io-ts"
+const Validation = "validation"
+const ValidationDescription = "validation TypeScript library: superstruct, io-ts"
 
 const Jsonlib = "jsonlib"
 const JsonlibDescription = "JSON library: jackson, moshi"
