@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"github.com/specgen-io/specgen/v2/fail"
-	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/gengo"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/spf13/cobra"
 )
@@ -16,7 +16,7 @@ var ClientGo = Generator{
 		{Arg: ArgModuleName, Required: true},
 		{Arg: ArgGeneratePath, Required: true},
 	},
-	func(specification *spec.Spec, params map[string]string) *gen.Sources {
+	func(specification *spec.Spec, params map[string]string) *sources.Sources {
 		return gengo.GenerateGoClient(specification, params[ModuleName], params[GeneratePath])
 	},
 }

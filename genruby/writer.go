@@ -1,7 +1,7 @@
 package genruby
 
-import "github.com/specgen-io/specgen/v2/gen"
+import "github.com/specgen-io/specgen/v2/sources"
 
-func NewRubyWriter() *gen.Writer {
-	return gen.NewWriter("  ", 2)
+func NewRubyWriter() *sources.Writer {
+	return sources.NewWriter("  ", 2)
 }

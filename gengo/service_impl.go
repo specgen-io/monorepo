@@ -2,20 +2,20 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"path/filepath"
 )
 
-func generateServicesImplementations(moduleName string, versionModulePath string, version *spec.Version, generatePath string) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateServicesImplementations(moduleName string, versionModulePath string, version *spec.Version, generatePath string) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		files = append(files, *generateServiceImplementation(moduleName, versionModulePath, &api, generatePath))
 	}
 	return files
 }
 
-func generateServiceImplementation(moduleName string, versionModulePath string, api *spec.Api, generatePath string) *gen.TextFile {
+func generateServiceImplementation(moduleName string, versionModulePath string, api *spec.Api, generatePath string) *sources.CodeFile {
 	w := NewGoWriter()
 	w.Line("package %s", getShortPackageName(generatePath))
 
@@ -48,7 +48,7 @@ func generateServiceImplementation(moduleName string, versionModulePath string, 
 		w.Line(`}`)
 	}
 
-	return &gen.TextFile{
+	return &sources.CodeFile{
 		Path:    filepath.Join(generatePath, fmt.Sprintf("%s.go", api.Name.SnakeCase())),
 		Content: w.String(),
 	}

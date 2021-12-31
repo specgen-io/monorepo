@@ -2,24 +2,24 @@ package genjava
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func GenerateModels(specification *spec.Spec, packageName string, generatePath string) *gen.Sources {
+func GenerateModels(specification *spec.Spec, packageName string, generatePath string) *sources.Sources {
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
 	}
 	mainPackage := Package(generatePath, packageName)
 	modelsPackage := mainPackage.Subpackage("models")
-	sources := gen.NewSources()
+	sources := sources.NewSources()
 	sources.AddGeneratedAll(generateModels(specification, modelsPackage))
 	return sources
 }
 
-func generateModels(specification *spec.Spec, thePackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateModels(specification *spec.Spec, thePackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, version := range specification.Versions {
 		versionPackage := thePackage.Subpackage(version.Version.FlatCase())
 		files = append(files, generateVersionModels(&version, versionPackage)...)
@@ -28,7 +28,7 @@ func generateModels(specification *spec.Spec, thePackage Module) []gen.TextFile 
 	return files
 }
 
-func generateJson(thePackage Module) *gen.TextFile {
+func generateJson(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -46,15 +46,15 @@ public class Json {
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &gen.TextFile{
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath("Json.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func generateVersionModels(version *spec.Version, thePackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateVersionModels(version *spec.Version, thePackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
 			files = append(files, *generateObjectModel(model, thePackage))
@@ -67,7 +67,7 @@ func generateVersionModels(version *spec.Version, thePackage Module) []gen.TextF
 	return files
 }
 
-func addImports(w *gen.Writer) {
+func addImports(w *sources.Writer) {
 	w.Line(`import java.time.*;`)
 	w.Line(`import java.util.*;`)
 	w.Line(`import java.math.BigDecimal;`)
@@ -76,7 +76,7 @@ func addImports(w *gen.Writer) {
 	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
 }
 
-func addObjectModelCtors(w *gen.Writer, model *spec.NamedModel) {
+func addObjectModelCtors(w *sources.Writer, model *spec.NamedModel) {
 	if len(model.Object.Fields) == 0 {
 		w.Line(`public %s() {`, model.Name.PascalCase())
 	} else {
@@ -109,7 +109,7 @@ func getJsonPropertyAnnotation(field *spec.NamedDefinition) string {
 	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.Source, required)
 }
 
-func addObjectModelFields(w *gen.Writer, model *spec.NamedModel) {
+func addObjectModelFields(w *sources.Writer, model *spec.NamedModel) {
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
 		w.Line(getJsonPropertyAnnotation(&field))
@@ -130,7 +130,7 @@ func addObjectModelFields(w *gen.Writer, model *spec.NamedModel) {
 	}
 }
 
-func addObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
+func addObjectModelMethods(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`@Override`)
 	w.Line(`public boolean equals(Object o) {`)
 	w.Line(`  if (this == o) return true;`)
@@ -187,7 +187,7 @@ func addObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFile {
+func generateObjectModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -201,13 +201,13 @@ func generateObjectModel(model *spec.NamedModel, thePackage Module) *gen.TextFil
 	addObjectModelMethods(w.Indented(), model)
 	w.Line(`}`)
 
-	return &gen.TextFile{
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath(className + ".java"),
 		Content: w.String(),
 	}
 }
 
-func generateEnumModel(model *spec.NamedModel, thePackage Module) *gen.TextFile {
+func generateEnumModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -220,13 +220,13 @@ func generateEnumModel(model *spec.NamedModel, thePackage Module) *gen.TextFile 
 	}
 	w.Line(`}`)
 
-	return &gen.TextFile{
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath(enumName + ".java"),
 		Content: w.String(),
 	}
 }
 
-func generateOneOfModels(model *spec.NamedModel, thePackage Module) *gen.TextFile {
+func generateOneOfModels(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
 	interfaceName := model.Name.PascalCase()
 	w := NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
@@ -259,7 +259,7 @@ func generateOneOfModels(model *spec.NamedModel, thePackage Module) *gen.TextFil
 	}
 	w.Line(`}`)
 
-	return &gen.TextFile{
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath(interfaceName + ".java"),
 		Content: w.String(),
 	}
@@ -269,7 +269,7 @@ func oneOfItemClassName(item *spec.NamedDefinition) string {
 	return item.Name.PascalCase()
 }
 
-func generateOneOfImplementation(w *gen.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
+func generateOneOfImplementation(w *sources.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
 	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
 	w.Line(`  @JsonUnwrapped`)
 	w.Line(`  public %s data;`, JavaType(&item.Type.Definition))
@@ -301,7 +301,7 @@ func generateOneOfImplementation(w *gen.Writer, item *spec.NamedDefinition, mode
 	w.Line(`}`)
 }
 
-func addOneOfModelMethods(w *gen.Writer, item *spec.NamedDefinition) {
+func addOneOfModelMethods(w *sources.Writer, item *spec.NamedDefinition) {
 	w.Line(`@Override`)
 	w.Line(`public boolean equals(Object o) {`)
 	w.Line(`  if (this == o) return true;`)

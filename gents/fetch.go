@@ -2,12 +2,12 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateFetchApiClient(api spec.Api, node bool, validation string, validationModule, modelsModule, paramsModule, module module) *gen.TextFile {
+func generateFetchApiClient(api spec.Api, node bool, validation string, validationModule, modelsModule, paramsModule, module module) *sources.CodeFile {
 	w := NewTsWriter()
 	if node {
 		w.Line(`import { URL, URLSearchParams } from 'url'`)
@@ -33,10 +33,10 @@ func generateFetchApiClient(api spec.Api, node bool, validation string, validati
 			generateOperationResponse(w, &operation)
 		}
 	}
-	return &gen.TextFile{module.GetPath(), w.String()}
+	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func generateFetchOperation(w *gen.Writer, operation *spec.NamedOperation, validation string) {
+func generateFetchOperation(w *sources.Writer, operation *spec.NamedOperation, validation string) {
 	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0

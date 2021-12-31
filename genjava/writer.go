@@ -1,7 +1,7 @@
 package genjava
 
-import "github.com/specgen-io/specgen/v2/gen"
+import "github.com/specgen-io/specgen/v2/sources"
 
-func NewJavaWriter() *gen.Writer {
-	return gen.NewWriter("\t", 2)
+func NewJavaWriter() *sources.Writer {
+	return sources.NewWriter("\t", 2)
 }

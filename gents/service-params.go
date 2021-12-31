@@ -2,7 +2,7 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -15,7 +15,7 @@ func paramsTypeName(operation *spec.NamedOperation, namePostfix string) string {
 	return fmt.Sprintf("%s%s", operation.Name.PascalCase(), namePostfix)
 }
 
-func generateParams(w *gen.Writer, typeName string, params []spec.NamedParam, validation string) {
+func generateParams(w *sources.Writer, typeName string, params []spec.NamedParam, validation string) {
 	if validation == Superstruct {
 		generateSuperstructParams(w, typeName, params)
 		return
@@ -27,7 +27,7 @@ func generateParams(w *gen.Writer, typeName string, params []spec.NamedParam, va
 	panic(fmt.Sprintf("Unknown validation: %s", validation))
 }
 
-func generateParamsStaticCode(module module) *gen.TextFile {
+func generateParamsStaticCode(module module) *sources.CodeFile {
 	code := `
 export function zipHeaders(headers: string[]): Record<string, string | string[]> {
   let result: Record<string, string | string[]> = {}
@@ -50,5 +50,5 @@ export function zipHeaders(headers: string[]): Record<string, string | string[]>
   return result
 }`
 
-	return &gen.TextFile{module.GetPath(), strings.TrimSpace(code)}
+	return &sources.CodeFile{module.GetPath(), strings.TrimSpace(code)}
 }

@@ -2,12 +2,12 @@ package genjava
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServicesInterfaces(version *spec.Version, thePackage Module, modelsVersionPackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateServicesInterfaces(version *spec.Version, thePackage Module, modelsVersionPackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, generateInterface(&api, apiPackage, modelsVersionPackage)...)
@@ -15,8 +15,8 @@ func generateServicesInterfaces(version *spec.Version, thePackage Module, models
 	return files
 }
 
-func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -39,7 +39,7 @@ func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Mo
 		}
 	}
 
-	files = append(files, gen.TextFile{
+	files = append(files, sources.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", serviceInterfaceName(api))),
 		Content: w.String(),
 	})
@@ -76,8 +76,8 @@ func addOperationResponseParams(operation *spec.NamedOperation) []string {
 	return params
 }
 
-func generateResponseInterface(operation *spec.NamedOperation, apiPackage Module, modelsVersionPackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateResponseInterface(operation *spec.NamedOperation, apiPackage Module, modelsVersionPackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -92,14 +92,14 @@ func generateResponseInterface(operation *spec.NamedOperation, apiPackage Module
 	}
 	w.Line(`}`)
 
-	files = append(files, gen.TextFile{
+	files = append(files, sources.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", serviceResponseInterfaceName(operation))),
 		Content: w.String(),
 	})
 	return files
 }
 
-func generateResponsesImplementations(w *gen.Writer, response *spec.NamedResponse) {
+func generateResponsesImplementations(w *sources.Writer, response *spec.NamedResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
 	w.Line(`class %s implements %s {`, serviceResponseImplementationName, serviceResponseInterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {

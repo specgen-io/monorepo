@@ -1,12 +1,12 @@
 package genjava
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
-func generateUtils(thePackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateUtils(thePackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 
 	files = append(files, *generateRequestBuilder(thePackage))
 	files = append(files, *generateUrlBuilder(thePackage))
@@ -15,7 +15,7 @@ func generateUtils(thePackage Module) []gen.TextFile {
 	return files
 }
 
-func generateRequestBuilder(thePackage Module) *gen.TextFile {
+func generateRequestBuilder(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -49,14 +49,14 @@ public class RequestBuilder {
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &gen.TextFile{
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath("RequestBuilder.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func generateUrlBuilder(thePackage Module) *gen.TextFile {
+func generateUrlBuilder(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -96,14 +96,14 @@ public class UrlBuilder {
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &gen.TextFile{
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath("UrlBuilder.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func generateStringify(thePackage Module) *gen.TextFile {
+func generateStringify(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -117,8 +117,8 @@ public class Stringify {
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &gen.TextFile{
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath("Stringify.java"),
 		Content: strings.TrimSpace(code),
 	}

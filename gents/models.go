@@ -2,12 +2,12 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateModels(specification *spec.Spec, validation string, generatePath string) *gen.Sources {
-	sources := gen.NewSources()
+func GenerateModels(specification *spec.Spec, validation string, generatePath string) *sources.Sources {
+	sources := sources.NewSources()
 	module := Module(generatePath)
 	validationModule := module.Submodule(validation)
 	validationFile := generateValidation(validation, validationModule)
@@ -20,7 +20,7 @@ func GenerateModels(specification *spec.Spec, validation string, generatePath st
 	return sources
 }
 
-func generateVersionModels(version *spec.Version, validation string, validationModule module, module module) *gen.TextFile {
+func generateVersionModels(version *spec.Version, validation string, validationModule module, module module) *sources.CodeFile {
 	if validation == Superstruct {
 		return generateSuperstructVersionModels(version, validationModule, module)
 	}

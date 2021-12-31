@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
@@ -19,4 +19,4 @@ type Generator struct {
 	Generator GeneratorFunc
 }
 
-type GeneratorFunc func(specification *spec.Spec, params map[string]string) *gen.Sources
+type GeneratorFunc func(specification *spec.Spec, params map[string]string) *sources.Sources

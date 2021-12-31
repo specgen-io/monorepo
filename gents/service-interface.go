@@ -2,12 +2,12 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServiceApis(version *spec.Version, modelsModule module, module module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateServiceApis(version *spec.Version, modelsModule module, module module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := module.Submodule(serviceName(&api))
 		serviceFile := generateApiService(&api, modelsModule, apiModule)
@@ -16,7 +16,7 @@ func generateServiceApis(version *spec.Version, modelsModule module, module modu
 	return files
 }
 
-func generateApiService(api *spec.Api, modelsModule module, module module) *gen.TextFile {
+func generateApiService(api *spec.Api, modelsModule module, module module) *sources.CodeFile {
 	w := NewTsWriter()
 	w.Line("import * as %s from '%s'", modelsPackage, modelsModule.GetImport(module))
 	for _, operation := range api.Operations {
@@ -39,7 +39,7 @@ func generateApiService(api *spec.Api, modelsModule module, module module) *gen.
 		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, responseType(&operation, ""))
 	}
 	w.Line("}")
-	return &gen.TextFile{module.GetPath(), w.String()}
+	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
 func serviceInterfaceName(api *spec.Api) string {
@@ -63,14 +63,14 @@ func operationParamsTypeName(operation *spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Params"
 }
 
-func addServiceParam(w *gen.Writer, paramName string, typ *spec.TypeDef) {
+func addServiceParam(w *sources.Writer, paramName string, typ *spec.TypeDef) {
 	if typ.IsNullable() {
 		paramName = paramName + "?"
 	}
 	w.Line("  %s: %s,", paramName, TsType(typ))
 }
 
-func generateServiceParams(w *gen.Writer, params []spec.NamedParam) {
+func generateServiceParams(w *sources.Writer, params []spec.NamedParam) {
 	for _, param := range params {
 		addServiceParam(w, tsIdentifier(param.Name.Source), &param.Type.Definition)
 	}
@@ -83,7 +83,7 @@ func tsIdentifier(name string) string {
 	return name
 }
 
-func generateOperationParams(w *gen.Writer, operation *spec.NamedOperation) {
+func generateOperationParams(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line("export interface %s {", operationParamsTypeName(operation))
 	generateServiceParams(w, operation.HeaderParams)
 	generateServiceParams(w, operation.Endpoint.UrlParams)

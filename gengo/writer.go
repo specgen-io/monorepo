@@ -1,7 +1,7 @@
 package gengo
 
-import "github.com/specgen-io/specgen/v2/gen"
+import "github.com/specgen-io/specgen/v2/sources"
 
-func NewGoWriter() *gen.Writer {
-	return gen.NewWriter("\t", 2)
+func NewGoWriter() *sources.Writer {
+	return sources.NewWriter("\t", 2)
 }

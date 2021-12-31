@@ -2,12 +2,12 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateParametersParsing(w *gen.Writer, validation string, operation *spec.NamedOperation, body, rawBody string, headers string, urlParams string, query string, badRequestStatement string) string {
+func generateParametersParsing(w *sources.Writer, validation string, operation *spec.NamedOperation, body, rawBody string, headers string, urlParams string, query string, badRequestStatement string) string {
 	if operation.Body == nil && !operation.HasParams() {
 		return ""
 	}

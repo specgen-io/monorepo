@@ -2,14 +2,14 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
 var express = "express"
 
-func generateExpressSpecRouter(specification *spec.Spec, rootModule module, module module) *gen.TextFile {
+func generateExpressSpecRouter(specification *spec.Spec, rootModule module, module module) *sources.CodeFile {
 	w := NewTsWriter()
 	w.Line("import {Router} from 'express'")
 	for _, version := range specification.Versions {
@@ -40,7 +40,7 @@ func generateExpressSpecRouter(specification *spec.Spec, rootModule module, modu
 	w.Line("  return router")
 	w.Line("}")
 
-	return &gen.TextFile{module.GetPath(), w.String()}
+	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
 func expressVersionUrl(version *spec.Version) string {
@@ -51,7 +51,7 @@ func expressVersionUrl(version *spec.Version) string {
 	return url
 }
 
-func generateExpressVersionRouting(version *spec.Version, validation string, validationModule, paramsModule, module module) *gen.TextFile {
+func generateExpressVersionRouting(version *spec.Version, validation string, validationModule, paramsModule, module module) *sources.CodeFile {
 	w := NewTsWriter()
 
 	w.Line("import {Router} from 'express'")
@@ -74,10 +74,10 @@ func generateExpressVersionRouting(version *spec.Version, validation string, val
 		generateExpressApiRouting(w, &api, validation)
 	}
 
-	return &gen.TextFile{module.GetPath(), w.String()}
+	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func generateExpressApiRouting(w *gen.Writer, api *spec.Api, validation string) {
+func generateExpressApiRouting(w *sources.Writer, api *spec.Api, validation string) {
 	w.EmptyLine()
 	w.Line("export let %s = (service: %s) => {", apiRouterName(api), serviceInterfaceName(api))
 	w.Line("  let router = Router()")
@@ -98,7 +98,7 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
-func generateExpressResponse(w *gen.Writer, response *spec.NamedResponse, validation string, dataParam string) {
+func generateExpressResponse(w *sources.Writer, response *spec.NamedResponse, validation string, dataParam string) {
 	if response.Type.Definition.IsEmpty() {
 		w.Line("response.status(%s).send()", spec.HttpStatusCode(response.Name))
 	} else {
@@ -111,7 +111,7 @@ func generateExpressResponse(w *gen.Writer, response *spec.NamedResponse, valida
 	w.Line("return")
 }
 
-func generateExpressOperationRouting(w *gen.Writer, operation *spec.NamedOperation, validation string) {
+func generateExpressOperationRouting(w *sources.Writer, operation *spec.NamedOperation, validation string) {
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
 	w.Indent()
 

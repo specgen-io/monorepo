@@ -1,33 +1,37 @@
-package gen
+package sources
 
 type Sources struct {
-	Generated  []TextFile
-	Scaffolded []TextFile
+	Generated  []CodeFile
+	Scaffolded []CodeFile
 }
 
 func NewSources() *Sources {
-	return &Sources{[]TextFile{}, []TextFile{}}
+	return &Sources{[]CodeFile{}, []CodeFile{}}
 }
 
-func (sources *Sources) AddScaffolded(files ...*TextFile) {
+func (sources *Sources) AddScaffolded(files ...*CodeFile) {
 	for _, file := range files {
-		sources.Scaffolded = append(sources.Scaffolded, *file)
+		if file != nil {
+			sources.Scaffolded = append(sources.Scaffolded, *file)
+		}
 	}
 }
 
-func (sources *Sources) AddScaffoldedAll(files []TextFile) {
+func (sources *Sources) AddScaffoldedAll(files []CodeFile) {
 	for _, file := range files {
 		sources.Scaffolded = append(sources.Scaffolded, file)
 	}
 }
 
-func (sources *Sources) AddGenerated(files ...*TextFile) {
+func (sources *Sources) AddGenerated(files ...*CodeFile) {
 	for _, file := range files {
-		sources.Generated = append(sources.Generated, *file)
+		if file != nil {
+			sources.Generated = append(sources.Generated, *file)
+		}
 	}
 }
 
-func (sources *Sources) AddGeneratedAll(files []TextFile) {
+func (sources *Sources) AddGeneratedAll(files []CodeFile) {
 	for _, file := range files {
 		sources.Generated = append(sources.Generated, file)
 	}
@@ -43,6 +47,5 @@ func (sources *Sources) Write(overwriteAll bool) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }

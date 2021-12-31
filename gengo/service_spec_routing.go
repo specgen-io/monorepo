@@ -2,11 +2,11 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateSpecRouting(specification *spec.Spec, module module) *gen.TextFile {
+func generateSpecRouting(specification *spec.Spec, module module) *sources.CodeFile {
 	w := NewGoWriter()
 	w.Line("package %s", module.Name)
 
@@ -40,7 +40,7 @@ func generateSpecRouting(specification *spec.Spec, module module) *gen.TextFile 
 	}
 	w.Line(`}`)
 
-	return &gen.TextFile{
+	return &sources.CodeFile{
 		Path:    module.GetPath("spec_routing.go"),
 		Content: w.String(),
 	}
