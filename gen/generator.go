@@ -19,4 +19,4 @@ type Generator struct {
 	Generator GeneratorFunc
 }
 
-type GeneratorFunc func(specification *spec.Spec, params map[string]string) *sources.Sources
+type GeneratorFunc func(specification *spec.Spec, params map[Arg]string) *sources.Sources

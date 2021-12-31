@@ -160,12 +160,3 @@ func flagRequired(flag *pflag.Flag) bool {
 	requiredAnnotation, found := flag.Annotations[cobra.BashCompOneRequiredFlag]
 	return found && requiredAnnotation[0] == "true"
 }
-
-func contains(array []string, that string) bool {
-	for _, item := range array {
-		if item == that {
-			return true
-		}
-	}
-	return false
-}
