@@ -1,4 +1,4 @@
-package cmd
+package gen
 
 import (
 	"github.com/specgen-io/specgen/v2/sources"

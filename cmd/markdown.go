@@ -146,9 +146,6 @@ func writeFlag(m *markdown.Markdown, flag *pflag.Flag) {
 		config = config + " Default value: " + markdown.Code(flag.DefValue) + "."
 	}
 	m.Line("     " + config)
-	//if flag.Usage != "" {
-	//	m.Line("     " + firstLetterUpper(flag.Usage) + ".")
-	//}
 }
 
 func firstLetterUpper(value string) string {

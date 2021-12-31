@@ -2,30 +2,17 @@ package cmd
 
 import (
 	"github.com/specgen-io/specgen/v2/fail"
-	"github.com/specgen-io/specgen/v2/gengo"
-	"github.com/specgen-io/specgen/v2/sources"
-	"github.com/specgen-io/specgen/v2/spec"
+	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/spf13/cobra"
 )
 
-var ClientGo = Generator{
-	"client-go",
-	"Generate Go client source code",
-	[]GeneratorArg{
-		{Arg: ArgSpecFile, Required: true},
-		{Arg: ArgModuleName, Required: true},
-		{Arg: ArgGeneratePath, Required: true},
-	},
-	func(specification *spec.Spec, params map[string]string) *sources.Sources {
-		return gengo.GenerateGoClient(specification, params[ModuleName], params[GeneratePath])
-	},
+func init() {
+	for _, generator := range gen.Generators {
+		rootCmd.AddCommand(generatorCommand(&generator))
+	}
 }
 
-var Generators = []Generator{
-	ClientGo,
-}
-
-func createGeneratorCommand(generator *Generator) *cobra.Command {
+func generatorCommand(generator *gen.Generator) *cobra.Command {
 	command := &cobra.Command{
 		Use:   generator.Name,
 		Short: generator.Usage,
@@ -36,7 +23,7 @@ func createGeneratorCommand(generator *Generator) *cobra.Command {
 				fail.IfError(err)
 				params[arg.Name] = value
 			}
-			specification := readSpecFile(params[ArgSpecFile.Name])
+			specification := readSpecFile(params[gen.ArgSpecFile.Name])
 			sources := generator.Generator(specification, params)
 			err := sources.Write(false)
 			fail.IfErrorF(err, "Failed to write source code")
@@ -49,10 +36,4 @@ func createGeneratorCommand(generator *Generator) *cobra.Command {
 		}
 	}
 	return command
-}
-
-func init() {
-	for _, generator := range Generators {
-		rootCmd.AddCommand(createGeneratorCommand(&generator))
-	}
 }
