@@ -2,13 +2,13 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/genopenapi"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validation string) *gen.Sources {
-	sources := gen.NewSources()
+func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validation string) *sources.Sources {
+	sources := sources.NewSources()
 	generateModule := Module(generatePath)
 
 	validationModule := generateModule.Submodule(validation)
@@ -36,7 +36,7 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 	return sources
 }
 
-func generateVersionRouting(version *spec.Version, validation string, server string, validationModule, paramsModule, module module) *gen.TextFile {
+func generateVersionRouting(version *spec.Version, validation string, server string, validationModule, paramsModule, module module) *sources.CodeFile {
 	routingModule := module.Submodule("routing")
 	if server == express {
 		return generateExpressVersionRouting(version, validation, validationModule, paramsModule, routingModule)
@@ -47,7 +47,7 @@ func generateVersionRouting(version *spec.Version, validation string, server str
 	panic(fmt.Sprintf("Unknown server: %s", server))
 }
 
-func generateSpecRouter(specification *spec.Spec, server string, rootModule module, module module) *gen.TextFile {
+func generateSpecRouter(specification *spec.Spec, server string, rootModule module, module module) *sources.CodeFile {
 	if server == express {
 		return generateExpressSpecRouter(specification, rootModule, module)
 	}

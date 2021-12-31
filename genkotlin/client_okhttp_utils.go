@@ -1,12 +1,12 @@
 package genkotlin
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
-func generateUtils(thePackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateUtils(thePackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 
 	files = append(files, *generateRequestBuilder(thePackage))
 	files = append(files, *generateUrlBuilder(thePackage))
@@ -14,7 +14,7 @@ func generateUtils(thePackage Module) []gen.TextFile {
 	return files
 }
 
-func generateRequestBuilder(thePackage Module) *gen.TextFile {
+func generateRequestBuilder(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -46,14 +46,14 @@ class RequestBuilder(method: String, url: HttpUrl, body: RequestBody?) {
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &gen.TextFile{
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath("RequestBuilder.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func generateUrlBuilder(thePackage Module) *gen.TextFile {
+func generateUrlBuilder(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -92,8 +92,8 @@ class UrlBuilder(baseUrl: String) {
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &gen.TextFile{
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath("UrlBuilder.kt"),
 		Content: strings.TrimSpace(code),
 	}

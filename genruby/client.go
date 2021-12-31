@@ -3,14 +3,14 @@ package genruby
 import (
 	"fmt"
 	"github.com/pinzolo/casee"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"path/filepath"
 	"strings"
 )
 
-func GenerateClient(specification *spec.Spec, generatePath string) *gen.Sources {
-	sources := gen.NewSources()
+func GenerateClient(specification *spec.Spec, generatePath string) *sources.Sources {
+	sources := sources.NewSources()
 	gemName := specification.Name.SnakeCase() + "_client"
 	moduleName := clientModuleName(specification.Name)
 	libGemPath := filepath.Join(generatePath, gemName)
@@ -31,7 +31,7 @@ func clientModuleName(serviceName spec.Name) string {
 	return serviceName.PascalCase()
 }
 
-func generateClientApisClasses(specification *spec.Spec, generatePath string) *gen.TextFile {
+func generateClientApisClasses(specification *spec.Spec, generatePath string) *sources.CodeFile {
 	moduleName := clientModuleName(specification.Name)
 
 	w := NewRubyWriter()
@@ -54,10 +54,10 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 		}
 	}
 
-	return &gen.TextFile{Path: filepath.Join(generatePath, "client.rb"), Content: w.String()}
+	return &sources.CodeFile{Path: filepath.Join(generatePath, "client.rb"), Content: w.String()}
 }
 
-func generateVersionClientModule(w *gen.Writer, version *spec.Version, moduleName string) {
+func generateVersionClientModule(w *sources.Writer, version *spec.Version, moduleName string) {
 	w.Line("module %s", versionedModule(moduleName, version.Version))
 	for index, api := range version.Http.Apis {
 		if index != 0 {
@@ -88,7 +88,7 @@ func operationResult(operation *spec.NamedOperation, response *spec.NamedRespons
 	return fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags)
 }
 
-func generateClientOperation(w *gen.Writer, moduleName string, operation *spec.NamedOperation) {
+func generateClientOperation(w *sources.Writer, moduleName string, operation *spec.NamedOperation) {
 	args := []string{}
 	args = append(args, addParams(operation.HeaderParams)...)
 	if operation.Body != nil {
@@ -151,7 +151,7 @@ func generateClientOperation(w *gen.Writer, moduleName string, operation *spec.N
 	w.Line("end")
 }
 
-func generateClientApiClass(w *gen.Writer, moduleName string, api *spec.Api) {
+func generateClientApiClass(w *sources.Writer, moduleName string, api *spec.Api) {
 	w.Line("class %s < %s::BaseClient", clientClassName(api.Name), moduleName)
 	for index, operation := range api.Operations {
 		if index != 0 {
@@ -174,7 +174,7 @@ func addParams(params []spec.NamedParam) []string {
 	return args
 }
 
-func addParamsWriting(w *gen.Writer, moduleName string, params []spec.NamedParam, paramsName string) {
+func addParamsWriting(w *sources.Writer, moduleName string, params []spec.NamedParam, paramsName string) {
 	if params != nil && len(params) > 0 {
 		w.Line("%s = %s::StringParams.new", paramsName, moduleName)
 		for _, p := range params {

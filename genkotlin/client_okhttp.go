@@ -1,12 +1,12 @@
 package genkotlin
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateClient(specification *spec.Spec, packageName string, generatePath string) *gen.Sources {
-	sources := gen.NewSources()
+func GenerateClient(specification *spec.Spec, packageName string, generatePath string) *sources.Sources {
+	sources := sources.NewSources()
 
 	mainPackage := Package(generatePath, packageName)
 

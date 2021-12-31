@@ -1,11 +1,11 @@
 package genjava
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
-func generateClientException(thePackage Module) *gen.TextFile {
+func generateClientException(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -28,8 +28,8 @@ public class ClientException extends RuntimeException {
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &gen.TextFile{
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath("ClientException.java"),
 		Content: strings.TrimSpace(code),
 	}

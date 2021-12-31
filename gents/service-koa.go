@@ -3,14 +3,14 @@ package gents
 import (
 	"fmt"
 	"github.com/pinzolo/casee"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
 var koa = "koa"
 
-func generateKoaSpecRouter(specification *spec.Spec, rootModule module, module module) *gen.TextFile {
+func generateKoaSpecRouter(specification *spec.Spec, rootModule module, module module) *sources.CodeFile {
 	w := NewTsWriter()
 	w.Line("import Router from '@koa/router'")
 	for _, version := range specification.Versions {
@@ -47,10 +47,10 @@ func generateKoaSpecRouter(specification *spec.Spec, rootModule module, module m
 	w.Line("  return router")
 	w.Line("}")
 
-	return &gen.TextFile{module.GetPath(), w.String()}
+	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func generateKoaVersionRouting(version *spec.Version, validation string, validationModule, paramsModule, module module) *gen.TextFile {
+func generateKoaVersionRouting(version *spec.Version, validation string, validationModule, paramsModule, module module) *sources.CodeFile {
 	w := NewTsWriter()
 
 	w.Line(`import Router from '@koa/router'`)
@@ -71,10 +71,10 @@ func generateKoaVersionRouting(version *spec.Version, validation string, validat
 		generateKoaApiRouting(w, &api, validation)
 	}
 
-	return &gen.TextFile{module.GetPath(), w.String()}
+	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func generateKoaApiRouting(w *gen.Writer, api *spec.Api, validation string) {
+func generateKoaApiRouting(w *sources.Writer, api *spec.Api, validation string) {
 	w.EmptyLine()
 	w.Line("export let %s = (service: %s) => {", apiRouterName(api), serviceInterfaceName(api))
 	w.Line("  let router = new Router()")
@@ -95,7 +95,7 @@ func getKoaUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
-func generateKoaResponse(w *gen.Writer, response *spec.NamedResponse, validation string, dataParam string) {
+func generateKoaResponse(w *sources.Writer, response *spec.NamedResponse, validation string, dataParam string) {
 	w.Line("ctx.status = %s", spec.HttpStatusCode(response.Name))
 	if !response.Type.Definition.IsEmpty() {
 		if response.Type.Definition.Plain == spec.TypeString {
@@ -107,7 +107,7 @@ func generateKoaResponse(w *gen.Writer, response *spec.NamedResponse, validation
 	w.Line("return")
 }
 
-func generateKoaOperationRouting(w *gen.Writer, operation *spec.NamedOperation, validation string) {
+func generateKoaOperationRouting(w *sources.Writer, operation *spec.NamedOperation, validation string) {
 	w.Line("router.%s('%s', async (ctx) => {", strings.ToLower(operation.Endpoint.Method), getKoaUrl(operation.Endpoint))
 	w.Indent()
 

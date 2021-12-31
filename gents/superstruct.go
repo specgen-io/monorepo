@@ -1,13 +1,13 @@
 package gents
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
 var Superstruct = "superstruct"
 
-func generateSuperstructStaticCode(module module) *gen.TextFile {
+func generateSuperstructStaticCode(module module) *sources.CodeFile {
 	code := `
 export * from "superstruct"
 
@@ -50,5 +50,5 @@ export const StrBoolean = t.coerce<boolean, unknown, string>(t.boolean(), t.stri
     }
 })`
 
-	return &gen.TextFile{module.GetPath(), strings.TrimSpace(code)}
+	return &sources.CodeFile{module.GetPath(), strings.TrimSpace(code)}
 }

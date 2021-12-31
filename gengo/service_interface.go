@@ -2,12 +2,12 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServicesInterfaces(version *spec.Version, versionModule, modelsModule, emptyModule module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateServicesInterfaces(version *spec.Version, versionModule, modelsModule, emptyModule module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
 		files = append(files, *generateInterface(&api, apiModule, modelsModule, emptyModule))
@@ -15,7 +15,7 @@ func generateServicesInterfaces(version *spec.Version, versionModule, modelsModu
 	return files
 }
 
-func generateInterface(api *spec.Api, apiModule, modelsModule, emptyModule module) *gen.TextFile {
+func generateInterface(api *spec.Api, apiModule, modelsModule, emptyModule module) *sources.CodeFile {
 	w := NewGoWriter()
 	w.Line("package %s", apiModule.Name)
 
@@ -41,13 +41,13 @@ func generateInterface(api *spec.Api, apiModule, modelsModule, emptyModule modul
 		w.Line(`  %s(%s) %s`, operation.Name.PascalCase(), JoinDelimParams(addMethodParams(&operation)), operationReturn(&operation, nil))
 	}
 	w.Line(`}`)
-	return &gen.TextFile{
+	return &sources.CodeFile{
 		Path:    apiModule.GetPath("service.go"),
 		Content: w.String(),
 	}
 }
 
-func generateOperationResponseStruct(w *gen.Writer, operation *spec.NamedOperation) {
+func generateOperationResponseStruct(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`type %s struct {`, responseTypeName(operation))
 	for _, response := range operation.Responses {
 		w.Line(`  %s *%s`, response.Name.PascalCase(), GoType(&response.Type.Definition))

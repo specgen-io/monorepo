@@ -1,7 +1,7 @@
 package genkotlin
 
-import "github.com/specgen-io/specgen/v2/gen"
+import "github.com/specgen-io/specgen/v2/sources"
 
-func NewKotlinWriter() *gen.Writer {
-	return gen.NewWriter("\t", 2)
+func NewKotlinWriter() *sources.Writer {
+	return sources.NewWriter("\t", 2)
 }

@@ -1,4 +1,4 @@
-package gen
+package sources
 
 import (
 	"gotest.tools/assert"

@@ -1,11 +1,11 @@
 package gents
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateIoTsVersionModels(version *spec.Version, iotsModule module, module module) *gen.TextFile {
+func generateIoTsVersionModels(version *spec.Version, iotsModule module, module module) *sources.CodeFile {
 	w := NewTsWriter()
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
@@ -20,7 +20,7 @@ func generateIoTsVersionModels(version *spec.Version, iotsModule module, module 
 			generateIoTsUnionModel(w, model)
 		}
 	}
-	return &gen.TextFile{Path: module.GetPath(), Content: w.String()}
+	return &sources.CodeFile{Path: module.GetPath(), Content: w.String()}
 }
 
 func kindOfFields(objectModel *spec.NamedModel) (bool, bool) {
@@ -36,7 +36,7 @@ func kindOfFields(objectModel *spec.NamedModel) (bool, bool) {
 	return hasRequiredFields, hasOptionalFields
 }
 
-func generateIoTsObjectModel(w *gen.Writer, model *spec.NamedModel) {
+func generateIoTsObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	hasRequiredFields, hasOptionalFields := kindOfFields(model)
 	if hasRequiredFields && hasOptionalFields {
 		w.Line("export const T%s = t.intersection([", model.Name.PascalCase())
@@ -70,7 +70,7 @@ func generateIoTsObjectModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("export type %s = t.TypeOf<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func generateIoTsEnumModel(w *gen.Writer, model *spec.NamedModel) {
+func generateIoTsEnumModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("export enum %s {", model.Name.PascalCase())
 	for _, item := range model.Enum.Items {
 		w.Line(`  %s = "%s",`, item.Name.UpperCase(), item.Value)
@@ -80,7 +80,7 @@ func generateIoTsEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.enum(%s)", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func generateIoTsUnionModel(w *gen.Writer, model *spec.NamedModel) {
+func generateIoTsUnionModel(w *sources.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {

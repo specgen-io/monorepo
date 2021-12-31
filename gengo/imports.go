@@ -1,7 +1,7 @@
 package gengo
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"sort"
 )
@@ -24,7 +24,7 @@ func (self *imports) AddAlias(theImport string, alias string) *imports {
 	return self
 }
 
-func (self *imports) Write(w *gen.Writer) {
+func (self *imports) Write(w *sources.Writer) {
 	if len(self.imports) > 0 {
 		imports := make([]string, 0, len(self.imports))
 		for theImport := range self.imports {

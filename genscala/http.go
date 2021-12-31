@@ -1,11 +1,11 @@
 package genscala
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
-func generateStringParams(thepackage Package) *gen.TextFile {
+func generateStringParams(thepackage Package) *sources.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -130,8 +130,8 @@ object ParamsTypesBindings {
     }
   }
 }`
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
-	return &gen.TextFile{
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
+	return &sources.CodeFile{
 		Path:    thepackage.GetPath("StringParams.scala"),
 		Content: strings.TrimSpace(code)}
 }

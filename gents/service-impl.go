@@ -2,13 +2,13 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateServicesImplementations(specification *spec.Spec, generatedModule module, module module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateServicesImplementations(specification *spec.Spec, generatedModule module, module module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, version := range specification.Versions {
 		versionGeneratedModule := generatedModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionGeneratedModule.Submodule("models")
@@ -21,7 +21,7 @@ func generateServicesImplementations(specification *spec.Spec, generatedModule m
 	return files
 }
 
-func generateServiceImplementation(api *spec.Api, apiModule module, modelsModule module, module module) *gen.TextFile {
+func generateServiceImplementation(api *spec.Api, apiModule module, modelsModule module, module module) *sources.CodeFile {
 	w := NewTsWriter()
 
 	w.Line("import * as service from '%s'", apiModule.GetImport(module))
@@ -43,5 +43,5 @@ func generateServiceImplementation(api *spec.Api, apiModule module, modelsModule
 	}
 	w.Line("  return {%s}", strings.Join(operations, ", "))
 	w.Line("}")
-	return &gen.TextFile{module.GetPath(), w.String()}
+	return &sources.CodeFile{module.GetPath(), w.String()}
 }
