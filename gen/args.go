@@ -19,16 +19,16 @@ const PackageName = "package-name"
 const PackageNameDescription = "package name"
 
 const Jsonlib = "jsonlib"
-const JsonlibDescription = "JSON library: jackson, moshi"
+const JsonlibDescription = "json serialization/deserialization library"
 
 const Validation = "validation"
-const ValidationDescription = "validation TypeScript library: superstruct, io-ts"
+const ValidationDescription = "type validation library"
 
 const Client = "client"
-const ClientDescription = "client TypeScript library: axios, node-fetch, browser-fetch"
+const ClientDescription = "client HTTP library"
 
 const Server = "server"
-const ServerDescription = "server TypeScript library: express, koa"
+const ServerDescription = "server HTTP library/framework"
 
 type Arg struct {
 	Name        string
