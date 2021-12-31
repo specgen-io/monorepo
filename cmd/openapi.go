@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"github.com/specgen-io/specgen/v2/fail"
-	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/genopenapi"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +31,7 @@ var cmdOpenapi = &cobra.Command{
 
 		openapiFile := genopenapi.GenerateOpenapi(specification, outFile)
 
-		err = gen.WriteFile(openapiFile, true)
+		err = sources.WriteFile(openapiFile, true)
 		fail.IfErrorF(err, "Failed to write OpeanAPI specifiction file")
 
 		return

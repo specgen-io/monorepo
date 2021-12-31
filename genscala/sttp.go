@@ -2,12 +2,12 @@ package genscala
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func GenerateSttpClient(specification *spec.Spec, packageName string, generatePath string) *gen.Sources {
+func GenerateSttpClient(specification *spec.Spec, packageName string, generatePath string) *sources.Sources {
 	if packageName == "" {
 		packageName = specification.Name.FlatCase() + ".client"
 	}
@@ -15,7 +15,7 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 	jsonPackage := clientPackage
 	paramsPackage := clientPackage
 
-	sources := gen.NewSources()
+	sources := sources.NewSources()
 	jsonHelpers := generateJson(jsonPackage)
 	taggedUnion := generateTaggedUnion(jsonPackage)
 	sources.AddGenerated(taggedUnion, jsonHelpers)
@@ -35,8 +35,8 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 	return sources
 }
 
-func generateClientImplementations(version *spec.Version, thepackage, modelsPackage, jsonPackage, paramsPackage Package) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateClientImplementations(version *spec.Version, thepackage, modelsPackage, jsonPackage, paramsPackage Package) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thepackage.Subpackage(api.Name.FlatCase())
 		apiClient := generateApiClientApi(&api, apiPackage, modelsPackage, jsonPackage, paramsPackage)
@@ -45,7 +45,7 @@ func generateClientImplementations(version *spec.Version, thepackage, modelsPack
 	return files
 }
 
-func generateApiClientApi(api *spec.Api, thepackage, modelsPackage, jsonPackage, stringParamsPackage Package) *gen.TextFile {
+func generateApiClientApi(api *spec.Api, thepackage, modelsPackage, jsonPackage, stringParamsPackage Package) *sources.CodeFile {
 	w := NewScalaWriter()
 
 	w.Line(`package %s`, thepackage.PackageName)
@@ -72,7 +72,7 @@ func generateApiClientApi(api *spec.Api, thepackage, modelsPackage, jsonPackage,
 	w.EmptyLine()
 	generateClientApiClass(w, api)
 
-	return &gen.TextFile{
+	return &sources.CodeFile{
 		Path:    thepackage.GetPath("Client.scala"),
 		Content: w.String(),
 	}
@@ -114,7 +114,7 @@ func generateClientOperationSignature(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`def %s(%s): Future[%s]`, operation.Name.CamelCase(), JoinParams(methodParams), responseType(operation))
 }
 
-func generateClientApiTrait(w *gen.Writer, api *spec.Api) {
+func generateClientApiTrait(w *sources.Writer, api *spec.Api) {
 	apiTraitName := clientTraitName(api.Name)
 	w.Line(`trait %s {`, apiTraitName)
 	for _, operation := range api.Operations {
@@ -131,7 +131,7 @@ func clientClassName(apiName spec.Name) string {
 	return apiName.PascalCase() + "Client"
 }
 
-func addParamsWriting(w *gen.Writer, params []spec.NamedParam, paramsName string) {
+func addParamsWriting(w *sources.Writer, params []spec.NamedParam, paramsName string) {
 	if params != nil && len(params) > 0 {
 		w.Line(`val %s = new StringParamsWriter()`, paramsName)
 		for _, p := range params {
@@ -140,7 +140,7 @@ func addParamsWriting(w *gen.Writer, params []spec.NamedParam, paramsName string
 	}
 }
 
-func generateClientOperationImplementation(w *gen.Writer, operation *spec.NamedOperation) {
+func generateClientOperationImplementation(w *sources.Writer, operation *spec.NamedOperation) {
 	httpMethod := strings.ToLower(operation.Endpoint.Method)
 	url := operation.FullUrl()
 	for _, param := range operation.Endpoint.UrlParams {
@@ -204,7 +204,7 @@ func generateClientOperationImplementation(w *gen.Writer, operation *spec.NamedO
 	w.Line(`}`)
 }
 
-func generateClientResponses(w *gen.Writer, operation *spec.NamedOperation) {
+func generateClientResponses(w *sources.Writer, operation *spec.NamedOperation) {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]
 		responseParam := `()`
@@ -231,7 +231,7 @@ func generateClientResponses(w *gen.Writer, operation *spec.NamedOperation) {
 	}
 }
 
-func generateClientApiClass(w *gen.Writer, api *spec.Api) {
+func generateClientApiClass(w *sources.Writer, api *spec.Api) {
 	apiClassName := clientClassName(api.Name)
 	apiTraitName := clientTraitName(api.Name)
 

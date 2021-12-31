@@ -1,13 +1,13 @@
 package genruby
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"path/filepath"
 )
 
-func GenerateModels(specification *spec.Spec, generatePath string) *gen.Sources {
-	sources := gen.NewSources()
+func GenerateModels(specification *spec.Spec, generatePath string) *sources.Sources {
+	sources := sources.NewSources()
 	fileName := specification.Name.SnakeCase() + "_models.rb"
 	moduleName := specification.Name.PascalCase()
 	modelsPath := filepath.Join(generatePath, fileName)
@@ -17,7 +17,7 @@ func GenerateModels(specification *spec.Spec, generatePath string) *gen.Sources 
 	return sources
 }
 
-func generateModels(specification *spec.Spec, moduleName string, generatePath string) *gen.TextFile {
+func generateModels(specification *spec.Spec, moduleName string, generatePath string) *sources.CodeFile {
 	w := NewRubyWriter()
 	w.Line(`require "date"`)
 	w.Line(`require "emery"`)
@@ -34,10 +34,10 @@ func generateModels(specification *spec.Spec, moduleName string, generatePath st
 		}
 	}
 
-	return &gen.TextFile{Path: generatePath, Content: w.String()}
+	return &sources.CodeFile{Path: generatePath, Content: w.String()}
 }
 
-func generateVersionModelsModule(w *gen.Writer, version *spec.Version, moduleName string) {
+func generateVersionModelsModule(w *sources.Writer, version *spec.Version, moduleName string) {
 	w.EmptyLine()
 	w.Line(`module %s`, versionedModule(moduleName, version.Version))
 	for index, model := range version.ResolvedModels {
@@ -55,7 +55,7 @@ func generateVersionModelsModule(w *gen.Writer, version *spec.Version, moduleNam
 	w.Line(`end`)
 }
 
-func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {
+func generateObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`class %s`, model.Name.PascalCase())
 	w.Line(`  include DataClass`)
 	for _, field := range model.Object.Fields {
@@ -65,7 +65,7 @@ func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line(`end`)
 }
 
-func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
+func generateEnumModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`class %s`, model.Name.PascalCase())
 	w.Line(`  include Enum`)
 	for _, enumItem := range model.Enum.Items {
@@ -74,7 +74,7 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line(`end`)
 }
 
-func generateOneOfModel(w *gen.Writer, model *spec.NamedModel) {
+func generateOneOfModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`class %s`, model.Name.PascalCase())
 	w.Line(`  include TaggedUnion`)
 	if model.OneOf.Discriminator != nil {

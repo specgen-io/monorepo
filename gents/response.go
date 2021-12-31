@@ -1,11 +1,11 @@
 package gents
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateOperationResponse(w *gen.Writer, operation *spec.NamedOperation) {
+func generateOperationResponse(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line("export type %s =", responseTypeName(operation))
 	for _, response := range operation.Responses {
 		if !response.Type.Definition.IsEmpty() {

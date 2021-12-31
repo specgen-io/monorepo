@@ -1,4 +1,4 @@
-package gen
+package sources
 
 import (
 	"github.com/specgen-io/specgen/v2/console"
@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-type TextFile struct {
+type CodeFile struct {
 	Path    string
 	Content string
 }
@@ -21,7 +21,7 @@ func Exists(path string) bool {
 	return true
 }
 
-func WriteFile(file *TextFile, overwrite bool) error {
+func WriteFile(file *CodeFile, overwrite bool) error {
 	fullpath, err := filepath.Abs(file.Path)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func WriteFile(file *TextFile, overwrite bool) error {
 	return nil
 }
 
-func WriteFiles(files []TextFile, overwrite bool) error {
+func WriteFiles(files []CodeFile, overwrite bool) error {
 	for _, file := range files {
 		err := WriteFile(&file, overwrite)
 		if err != nil {

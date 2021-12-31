@@ -1,12 +1,12 @@
 package gents
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateAxiosApiClient(api spec.Api, validation string, validationModule, modelsModule, paramsModule, module module) *gen.TextFile {
+func generateAxiosApiClient(api spec.Api, validation string, validationModule, modelsModule, paramsModule, module module) *sources.CodeFile {
 	w := NewTsWriter()
 	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
 	w.Line(`import { strParamsItems, strParamsObject, stringify } from '%s'`, paramsModule.GetImport(module))
@@ -27,10 +27,10 @@ func generateAxiosApiClient(api spec.Api, validation string, validationModule, m
 			generateOperationResponse(w, &operation)
 		}
 	}
-	return &gen.TextFile{module.GetPath(), w.String()}
+	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func generateAxiosOperation(w *gen.Writer, operation *spec.NamedOperation, validation string) {
+func generateAxiosOperation(w *sources.Writer, operation *spec.NamedOperation, validation string) {
 	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0

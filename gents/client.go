@@ -2,13 +2,13 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func GenerateClient(specification *spec.Spec, generatePath string, client string, validation string) *gen.Sources {
-	sources := gen.NewSources()
+func GenerateClient(specification *spec.Spec, generatePath string, client string, validation string) *sources.Sources {
+	sources := sources.NewSources()
 	module := Module(generatePath)
 
 	validationModule := module.Submodule(validation)
@@ -101,7 +101,7 @@ func clientResponseResult(response *spec.NamedResponse, validation string, textR
 	}
 }
 
-func generateParamsBuilder(module module) *gen.TextFile {
+func generateParamsBuilder(module module) *sources.CodeFile {
 	code := `
 export function stringify(value: ScalarParam): string {
   if (value instanceof Date) {
@@ -142,5 +142,5 @@ export function strParamsObject(params: Record<string, ParamType>): Record<strin
       .reduce((obj, paramName) => ({...obj, [paramName]: stringifyX(params[paramName]!)}), {} as Record<string, string | string[]>)
 }`
 
-	return &gen.TextFile{module.GetPath(), strings.TrimSpace(code)}
+	return &sources.CodeFile{module.GetPath(), strings.TrimSpace(code)}
 }

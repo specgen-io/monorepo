@@ -2,7 +2,7 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -60,7 +60,7 @@ func parserMethodNamePlain(typ *spec.TypeDef) string {
 	}
 }
 
-func generateParamsParser(module module) *gen.TextFile {
+func generateParamsParser(module module) *sources.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -602,6 +602,6 @@ func (parser *ParamsParser) StringEnumArray(name string, values []string) []stri
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
-	return &gen.TextFile{module.GetPath("params_parsing.go"), strings.TrimSpace(code)}
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
+	return &sources.CodeFile{module.GetPath("params_parsing.go"), strings.TrimSpace(code)}
 }

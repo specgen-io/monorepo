@@ -2,13 +2,13 @@ package genkotlin
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func GenerateModels(specification *spec.Spec, packageName string, generatePath string) *gen.Sources {
-	sources := gen.NewSources()
+func GenerateModels(specification *spec.Spec, packageName string, generatePath string) *sources.Sources {
+	sources := sources.NewSources()
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
 	}
@@ -20,8 +20,8 @@ func GenerateModels(specification *spec.Spec, packageName string, generatePath s
 	return sources
 }
 
-func generateModels(specification *spec.Spec, thePackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateModels(specification *spec.Spec, thePackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, version := range specification.Versions {
 		versionPackage := thePackage.Subpackage(version.Version.FlatCase())
 		files = append(files, *generateVersionModels(&version, versionPackage))
@@ -30,7 +30,7 @@ func generateModels(specification *spec.Spec, thePackage Module) []gen.TextFile 
 	return files
 }
 
-func generateJson(thePackage Module) *gen.TextFile {
+func generateJson(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -47,14 +47,14 @@ fun setupObjectMapper(objectMapper: ObjectMapper): ObjectMapper {
 }
 `
 
-	code, _ = gen.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &gen.TextFile{
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath("Json.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func generateVersionModels(version *spec.Version, thePackage Module) *gen.TextFile {
+func generateVersionModels(version *spec.Version, thePackage Module) *sources.CodeFile {
 	w := NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -71,13 +71,13 @@ func generateVersionModels(version *spec.Version, thePackage Module) *gen.TextFi
 		}
 	}
 
-	return &gen.TextFile{
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath("models.kt"),
 		Content: w.String(),
 	}
 }
 
-func addImports(w *gen.Writer) {
+func addImports(w *sources.Writer) {
 	w.Line(`import java.time.*`)
 	w.Line(`import java.util.*`)
 	w.Line(`import java.math.BigDecimal`)
@@ -93,7 +93,7 @@ func getJsonPropertyAnnotation(field *spec.NamedDefinition) string {
 	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.Source, required)
 }
 
-func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {
+func generateObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	className := model.Name.PascalCase()
 	w.Line(`data class %s(`, className)
 	for _, field := range model.Object.Fields {
@@ -110,7 +110,7 @@ func generateObjectModel(w *gen.Writer, model *spec.NamedModel) {
 	}
 }
 
-func generateObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
+func generateObjectModelMethods(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`override fun equals(other: Any?): Boolean {`)
 	w.Line(`  if (this === other) return true`)
 	w.Line(`  if (other !is %s) return false`, model.Name.PascalCase())
@@ -164,7 +164,7 @@ func generateObjectModelMethods(w *gen.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
+func generateEnumModel(w *sources.Writer, model *spec.NamedModel) {
 	enumName := model.Name.PascalCase()
 	w.Line(`enum class %s {`, enumName)
 	for _, enumItem := range model.Enum.Items {
@@ -173,7 +173,7 @@ func generateEnumModel(w *gen.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateOneOfModels(w *gen.Writer, model *spec.NamedModel) {
+func generateOneOfModels(w *sources.Writer, model *spec.NamedModel) {
 	interfaceName := model.Name.PascalCase()
 	if model.OneOf.Discriminator != nil {
 		w.Line(`@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "%s")`, *model.OneOf.Discriminator)

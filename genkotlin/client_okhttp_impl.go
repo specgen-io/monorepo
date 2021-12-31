@@ -2,12 +2,12 @@ package genkotlin
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, generateClient(&api, apiPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage)...)
@@ -15,8 +15,8 @@ func generateClientsImplementations(version *spec.Version, thePackage Module, mo
 	return files
 }
 
-func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 
 	w := NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
@@ -57,7 +57,7 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 		}
 	}
 
-	files = append(files, gen.TextFile{
+	files = append(files, sources.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", className)),
 		Content: w.String(),
 	})
@@ -65,7 +65,7 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 	return files
 }
 
-func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
+func generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	requestBody := "null"
@@ -151,7 +151,7 @@ func generateClientMethod(w *gen.Writer, operation *spec.NamedOperation) {
 	w.Line(`}`)
 }
 
-func generateTryCatch(w *gen.Writer, valName string, exceptionObject string, codeBlock func(w *gen.Writer), exceptionHandler func(w *gen.Writer)) {
+func generateTryCatch(w *sources.Writer, valName string, exceptionObject string, codeBlock func(w *sources.Writer), exceptionHandler func(w *sources.Writer)) {
 	w.Line(`val %s = try {`, valName)
 	codeBlock(w.Indented())
 	w.Line(`} catch (%s) {`, exceptionObject)
@@ -159,17 +159,17 @@ func generateTryCatch(w *gen.Writer, valName string, exceptionObject string, cod
 	w.Line(`}`)
 }
 
-func generateClientTryCatch(w *gen.Writer, valName string, statement string, exceptionType, exceptionVar, errorMessage string) {
+func generateClientTryCatch(w *sources.Writer, valName string, statement string, exceptionType, exceptionVar, errorMessage string) {
 	generateTryCatch(w, valName, exceptionVar+`: `+exceptionType,
-		func(w *gen.Writer) {
+		func(w *sources.Writer) {
 			w.Line(statement)
 		},
-		func(w *gen.Writer) {
+		func(w *sources.Writer) {
 			generateThrowClientException(w, errorMessage, exceptionVar)
 		})
 }
 
-func generateThrowClientException(w *gen.Writer, errorMessage string, wrapException string) {
+func generateThrowClientException(w *sources.Writer, errorMessage string, wrapException string) {
 	w.Line(`val errorMessage = %s`, errorMessage)
 	w.Line(`logger.error(errorMessage)`)
 	params := "errorMessage"

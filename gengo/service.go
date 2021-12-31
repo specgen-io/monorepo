@@ -1,13 +1,13 @@
 package gengo
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/genopenapi"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateService(specification *spec.Spec, moduleName string, swaggerPath string, generatePath string, servicesPath string) *gen.Sources {
-	sources := gen.NewSources()
+func GenerateService(specification *spec.Spec, moduleName string, swaggerPath string, generatePath string, servicesPath string) *sources.Sources {
+	sources := sources.NewSources()
 
 	rootModule := Module(moduleName, generatePath)
 

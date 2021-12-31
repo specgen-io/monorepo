@@ -1,11 +1,11 @@
 package genruby
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
-func generateBaseClient(moduleName string, path string) *gen.TextFile {
+func generateBaseClient(moduleName string, path string) *sources.CodeFile {
 	code := `
 require "net/http"
 require "net/https"
@@ -75,16 +75,16 @@ module [[.ModuleName]]
   end
 end
 `
-	code, _ = gen.ExecuteTemplate(code, struct{ ModuleName string }{moduleName})
-	return &gen.TextFile{path, strings.TrimSpace(code)}
+	code, _ = sources.ExecuteTemplate(code, struct{ ModuleName string }{moduleName})
+	return &sources.CodeFile{path, strings.TrimSpace(code)}
 }
 
-func generateClientRoot(gemName string, path string) *gen.TextFile {
+func generateClientRoot(gemName string, path string) *sources.CodeFile {
 	code := `
 require "emery"
 require "[[.GemName]]/models"
 require "[[.GemName]]/baseclient"
 require "[[.GemName]]/client"`
-	code, _ = gen.ExecuteTemplate(code, struct{ GemName string }{gemName})
-	return &gen.TextFile{path, strings.TrimSpace(code)}
+	code, _ = sources.ExecuteTemplate(code, struct{ GemName string }{gemName})
+	return &sources.CodeFile{path, strings.TrimSpace(code)}
 }

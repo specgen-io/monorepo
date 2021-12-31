@@ -2,7 +2,7 @@ package genkotlin
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
@@ -39,8 +39,8 @@ func addOperationResponseParams(operation *spec.NamedOperation) []string {
 	return params
 }
 
-func generateResponseInterface(operation *spec.NamedOperation, apiPackage Module, modelsVersionPackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateResponseInterface(operation *spec.NamedOperation, apiPackage Module, modelsVersionPackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	w := NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -55,14 +55,14 @@ func generateResponseInterface(operation *spec.NamedOperation, apiPackage Module
 	}
 	w.Line(`}`)
 
-	files = append(files, gen.TextFile{
+	files = append(files, sources.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", serviceResponseInterfaceName(operation))),
 		Content: w.String(),
 	})
 	return files
 }
 
-func generateResponsesImplementations(w *gen.Writer, response *spec.NamedResponse) {
+func generateResponsesImplementations(w *sources.Writer, response *spec.NamedResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
 	w.Line(`class %s : %s {`, serviceResponseImplementationName, serviceResponseInterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {

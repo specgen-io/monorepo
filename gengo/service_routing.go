@@ -2,20 +2,20 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateRoutings(version *spec.Version, versionModule module, modelsModule module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateRoutings(version *spec.Version, versionModule module, modelsModule module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		files = append(files, *generateRouting(modelsModule, versionModule, &api))
 	}
 	return files
 }
 
-func generateRouting(modelsModule module, versionModule module, api *spec.Api) *gen.TextFile {
+func generateRouting(modelsModule module, versionModule module, api *spec.Api) *sources.CodeFile {
 	w := NewGoWriter()
 	w.Line("package %s", versionModule.Name)
 
@@ -53,7 +53,7 @@ func generateRouting(modelsModule module, versionModule module, api *spec.Api) *
 	}
 	w.Line(`}`)
 
-	return &gen.TextFile{
+	return &sources.CodeFile{
 		Path:    versionModule.GetPath(fmt.Sprintf("%s_routing.go", api.Name.SnakeCase())),
 		Content: w.String(),
 	}
@@ -69,7 +69,7 @@ func getVestigoUrl(operation *spec.NamedOperation) string {
 	return url
 }
 
-func addSetCors(w *gen.Writer, operation *spec.NamedOperation) {
+func addSetCors(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, getVestigoUrl(operation))
 	params := []string{}
 	for _, param := range operation.HeaderParams {
@@ -105,7 +105,7 @@ func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserNa
 	return call
 }
 
-func generateOperationParametersParsing(w *gen.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, isUrlParam bool, paramsParserName string, paramName string, parseCommaSeparatedArray bool) {
+func generateOperationParametersParsing(w *sources.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, isUrlParam bool, paramsParserName string, paramName string, parseCommaSeparatedArray bool) {
 	if namedParams != nil && len(namedParams) > 0 {
 		w.Line(`%s := NewParamsParser(%s, %t)`, paramsParserName, paramName, parseCommaSeparatedArray)
 		for _, param := range namedParams {
@@ -120,7 +120,7 @@ func generateOperationParametersParsing(w *gen.Writer, operation *spec.NamedOper
 	}
 }
 
-func generateServiceCall(w *gen.Writer, operation *spec.NamedOperation) {
+func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation) {
 	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceInterfaceTypeVar(operation.Api), operation.Name.PascalCase(), JoinDelimParams(addOperationMethodParams(operation)))
 	if singleEmptyResponse {
@@ -146,7 +146,7 @@ func generateServiceCall(w *gen.Writer, operation *spec.NamedOperation) {
 	}
 }
 
-func generateResponseWriting(w *gen.Writer, response *spec.NamedResponse, responseVar string) {
+func generateResponseWriting(w *sources.Writer, response *spec.NamedResponse, responseVar string) {
 	w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
 	if !response.Type.Definition.IsEmpty() {
 		if response.Type.Definition.Plain == spec.TypeString {
@@ -159,7 +159,7 @@ func generateResponseWriting(w *gen.Writer, response *spec.NamedResponse, respon
 	w.Line(`return`)
 }
 
-func generateOperationMethod(w *gen.Writer, operation *spec.NamedOperation) {
+func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	w.Line(`var err error`)
 	if operation.Body != nil {

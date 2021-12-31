@@ -2,13 +2,13 @@ package gengo
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateClientsImplementations(version *spec.Version, versionModule, modelsModule, emptyModule module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateClientsImplementations(version *spec.Version, versionModule, modelsModule, emptyModule module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
 		files = append(files, *generateConverter(apiModule))
@@ -17,7 +17,7 @@ func generateClientsImplementations(version *spec.Version, versionModule, models
 	return files
 }
 
-func generateClientImplementation(api *spec.Api, versionModule, modelsModule, emptyModule module) *gen.TextFile {
+func generateClientImplementation(api *spec.Api, versionModule, modelsModule, emptyModule module) *sources.CodeFile {
 	w := NewGoWriter()
 	w.Line("package %s", versionModule.Name)
 
@@ -52,13 +52,13 @@ func generateClientImplementation(api *spec.Api, versionModule, modelsModule, em
 		generateClientFunction(w, &operation)
 	}
 
-	return &gen.TextFile{
+	return &sources.CodeFile{
 		Path:    versionModule.GetPath("client.go"),
 		Content: w.String(),
 	}
 }
 
-func generateClientWithCtor(w *gen.Writer) {
+func generateClientWithCtor(w *sources.Writer) {
 	w.Line(`type %s struct {`, clientTypeName())
 	w.Line(`  baseUrl string`)
 	w.Line(`}`)
@@ -68,7 +68,7 @@ func generateClientWithCtor(w *gen.Writer) {
 	w.Line(`}`)
 }
 
-func generateClientFunction(w *gen.Writer, operation *spec.NamedOperation) {
+func generateClientFunction(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
 	w.Line(`func (client *%s) %s(%s) %s {`, clientTypeName(), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), operationReturn(operation, nil))
 	var body = "nil"
@@ -145,7 +145,7 @@ func addUrlParam(operation *spec.NamedOperation) []string {
 	return urlParams
 }
 
-func parseParams(w *gen.Writer, operation *spec.NamedOperation) {
+func parseParams(w *sources.Writer, operation *spec.NamedOperation) {
 	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		w.Line(`  query := req.URL.Query()`)
 		addParsedParams(w, operation.QueryParams, "q", "query")
@@ -159,14 +159,14 @@ func parseParams(w *gen.Writer, operation *spec.NamedOperation) {
 	}
 }
 
-func addParsedParams(w *gen.Writer, namedParams []spec.NamedParam, paramsConverterName string, paramsParserName string) {
+func addParsedParams(w *sources.Writer, namedParams []spec.NamedParam, paramsConverterName string, paramsParserName string) {
 	w.Line(`  %s := NewParamsConverter(%s)`, paramsConverterName, paramsParserName)
 	for _, param := range namedParams {
 		w.Line(`  %s.%s("%s", %s)`, paramsConverterName, parserMethodName(&param.Type.Definition), param.Name.Source, param.Name.CamelCase())
 	}
 }
 
-func addClientResponses(w *gen.Writer, operation *spec.NamedOperation) {
+func addClientResponses(w *sources.Writer, operation *spec.NamedOperation) {
 	for _, response := range operation.Responses {
 		w.EmptyLine()
 		w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))

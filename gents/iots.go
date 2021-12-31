@@ -1,13 +1,13 @@
 package gents
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
 var IoTs = "io-ts"
 
-func generateIoTsStaticCode(module module) *gen.TextFile {
+func generateIoTsStaticCode(module module) *sources.CodeFile {
 	code := `
 export * from 'io-ts'
 export * from 'io-ts-types'
@@ -123,5 +123,5 @@ export const encode = <A, O, I>(codec: t.Type<A, O, I>, value: A): O => {
     return codec.encode(value)
 }
 `
-	return &gen.TextFile{module.GetPath(), strings.TrimSpace(code)}
+	return &sources.CodeFile{module.GetPath(), strings.TrimSpace(code)}
 }

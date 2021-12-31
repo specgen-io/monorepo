@@ -2,11 +2,11 @@ package gents
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateSuperstructParams(w *gen.Writer, typeName string, params []spec.NamedParam) {
+func generateSuperstructParams(w *sources.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		w.Line("const %s = t.type({", paramsRuntimeTypeName(typeName))

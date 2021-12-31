@@ -2,12 +2,12 @@ package genjava
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServicesImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, servicesVersionPackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateServicesImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, servicesVersionPackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := servicesVersionPackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, *generateServiceImplementation(&api, thePackage, modelsVersionPackage, serviceVersionSubpackage))
@@ -15,7 +15,7 @@ func generateServicesImplementations(version *spec.Version, thePackage Module, m
 	return files
 }
 
-func generateServiceImplementation(api *spec.Api, thePackage Module, modelsVersionPackage Module, serviceVersionSubpackage Module) *gen.TextFile {
+func generateServiceImplementation(api *spec.Api, thePackage Module, modelsVersionPackage Module, serviceVersionSubpackage Module) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -38,7 +38,7 @@ func generateServiceImplementation(api *spec.Api, thePackage Module, modelsVersi
 	}
 	w.Line(`}`)
 
-	return &gen.TextFile{
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath(fmt.Sprintf("%s.java", serviceImplName(api))),
 		Content: w.String(),
 	}

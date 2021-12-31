@@ -2,12 +2,12 @@ package genjava
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServicesControllers(version *spec.Version, thePackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateServicesControllers(version *spec.Version, thePackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, generateController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
@@ -15,8 +15,8 @@ func generateServicesControllers(version *spec.Version, thePackage Module, jsonP
 	return files
 }
 
-func generateController(api *spec.Api, apiPackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []gen.TextFile {
-	files := []gen.TextFile{}
+func generateController(api *spec.Api, apiPackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -54,7 +54,7 @@ func generateController(api *spec.Api, apiPackage Module, jsonPackage Module, mo
 	}
 	w.Line(`}`)
 
-	files = append(files, gen.TextFile{
+	files = append(files, sources.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
 	})
@@ -62,7 +62,7 @@ func generateController(api *spec.Api, apiPackage Module, jsonPackage Module, mo
 	return files
 }
 
-func generateMethod(w *gen.Writer, operation *spec.NamedOperation) {
+func generateMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, ToPascalCase(methodName), url)

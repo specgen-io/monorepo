@@ -1,13 +1,13 @@
 package genjava
 
 import (
-	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/genopenapi"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateService(specification *spec.Spec, packageName string, swaggerPath string, generatePath string, servicesPath string) *gen.Sources {
-	sources := gen.NewSources()
+func GenerateService(specification *spec.Spec, packageName string, swaggerPath string, generatePath string, servicesPath string) *sources.Sources {
+	sources := sources.NewSources()
 
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()

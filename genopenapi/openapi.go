@@ -2,18 +2,18 @@ package genopenapi
 
 import (
 	"github.com/pinzolo/casee"
-	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/yamlx"
 	"strings"
 )
 
-func GenerateOpenapi(spec *spec.Spec, outFile string) *gen.TextFile {
+func GenerateOpenapi(spec *spec.Spec, outFile string) *sources.CodeFile {
 	openapi := generateSpecification(spec)
 
 	data, _ := yamlx.ToYamlString(openapi)
 
-	return &gen.TextFile{outFile, data}
+	return &sources.CodeFile{outFile, data}
 }
 
 func generateSpecification(spec *spec.Spec) *yamlx.YamlMap {

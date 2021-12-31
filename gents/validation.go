@@ -2,8 +2,8 @@ package gents
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
-	"github.com/specgen-io/specgen/v2/gen"
 )
 
 func runtimeType(validation string, typ *spec.TypeDef) string {
@@ -16,7 +16,7 @@ func runtimeType(validation string, typ *spec.TypeDef) string {
 	panic(fmt.Sprintf("Unknown validation: %s", validation))
 }
 
-func generateValidation(validation string, validationModule module) *gen.TextFile {
+func generateValidation(validation string, validationModule module) *sources.CodeFile {
 	if validation == Superstruct {
 		return generateSuperstructStaticCode(validationModule)
 	}
