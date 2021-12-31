@@ -33,7 +33,7 @@ var ClientGo = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[string]string) *sources.Sources {
-		return gengo.GenerateGoClient(specification, params[ModuleName], params[GeneratePath])
+		return gengo.GenerateClient(specification, params[ModuleName], params[GeneratePath])
 	},
 }
 
