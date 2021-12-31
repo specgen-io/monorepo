@@ -5,7 +5,7 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateGoClient(specification *spec.Spec, moduleName string, generatePath string) *sources.Sources {
+func GenerateClient(specification *spec.Spec, moduleName string, generatePath string) *sources.Sources {
 	sources := sources.NewSources()
 
 	rootModule := Module(moduleName, generatePath)
