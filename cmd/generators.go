@@ -7,8 +7,8 @@ import (
 )
 
 func init() {
-	for _, generator := range gen.Generators {
-		rootCmd.AddCommand(generatorCommand(&generator))
+	for index := range gen.Generators {
+		rootCmd.AddCommand(generatorCommand(&gen.Generators[index]))
 	}
 }
 
