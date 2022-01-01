@@ -77,7 +77,7 @@ func generateObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	w.EmptyLine()
 	w.Line(`var %s = []string{%s}`, requiredFields(model), requiredFieldsList(model.Object))
 	w.EmptyLine()
-	w.Line(`func (obj ArrayFields) MarshalJSON() ([]byte, error) {`)
+	w.Line(`func (obj %s) MarshalJSON() ([]byte, error) {`, model.Name.PascalCase())
 	w.Line(`	data, err := json.Marshal(%s(obj))`, model.Name.CamelCase())
 	w.Line(`	if err != nil {`)
 	w.Line(`		return nil, err`)
