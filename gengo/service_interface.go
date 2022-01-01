@@ -49,9 +49,14 @@ func generateInterface(api *spec.Api, apiModule, modelsModule, emptyModule modul
 
 func generateOperationResponseStruct(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`type %s struct {`, responseTypeName(operation))
+	responses := [][]string{}
 	for _, response := range operation.Responses {
-		w.Line(`  %s *%s`, response.Name.PascalCase(), GoType(&response.Type.Definition))
+		responses = append(responses, []string{
+			response.Name.PascalCase(),
+			GoType(spec.Nullable(&response.Type.Definition)),
+		})
 	}
+	WriteAlignedLines(w.Indented(), responses)
 	w.Line(`}`)
 }
 
