@@ -21,8 +21,10 @@ func goType(typ *spec.TypeDef, modelsPackage string) string {
 		return PlainGoType(typ.Plain, modelsPackage)
 	case spec.NullableType:
 		child := goType(typ.Child, modelsPackage)
-		result := "*" + child
-		return result
+		if typ.Child.Node == spec.PlainType {
+			return "*" + child
+		}
+		return child
 	case spec.ArrayType:
 		child := goType(typ.Child, modelsPackage)
 		result := "[]" + child
