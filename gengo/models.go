@@ -48,7 +48,7 @@ func generateVersionModelsCode(version *spec.Version, module module) *sources.Co
 	return &sources.CodeFile{Path: module.GetPath("models.go"), Content: w.String()}
 }
 
-func getRequiredFields(object *spec.Object) string {
+func requiredFieldsList(object *spec.Object) string {
 	requiredFields := []string{}
 	for _, field := range object.Fields {
 		if !field.Type.Definition.IsNullable() {
@@ -58,16 +58,43 @@ func getRequiredFields(object *spec.Object) string {
 	return strings.Join(requiredFields, ", ")
 }
 
+func requiredFields(model *spec.NamedModel) string {
+	return fmt.Sprintf(`%sRequiredFields`, model.Name.CamelCase())
+}
+
 func generateObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("type %s struct {", model.Name.PascalCase())
 	for _, field := range model.Object.Fields {
-		w.Line("  %s %s `json:\"%s\"`", field.Name.PascalCase(), GoTypeSamePackage(&field.Type.Definition), field.Name.Source)
+		jsonAttributes := []string{field.Name.Source}
+		if field.Type.Definition.IsNullable() {
+			jsonAttributes = append(jsonAttributes, "omitempty")
+		}
+		w.Line("  %s %s `json:\"%s\"`", field.Name.PascalCase(), GoTypeSamePackage(&field.Type.Definition), strings.Join(jsonAttributes, ","))
 	}
 	w.Line("}")
 	w.EmptyLine()
 	w.Line(`type %s %s`, model.Name.CamelCase(), model.Name.PascalCase())
 	w.EmptyLine()
-	w.Line(`var %sRequiredFields = []string{%s}`, model.Name.CamelCase(), getRequiredFields(model.Object))
+	w.Line(`var %s = []string{%s}`, requiredFields(model), requiredFieldsList(model.Object))
+	w.EmptyLine()
+	w.Line(`func (obj ArrayFields) MarshalJSON() ([]byte, error) {`)
+	w.Line(`	data, err := json.Marshal(%s(obj))`, model.Name.CamelCase())
+	w.Line(`	if err != nil {`)
+	w.Line(`		return nil, err`)
+	w.Line(`	}`)
+	w.Line(`	var rawMap map[string]json.RawMessage`)
+	w.Line(`	err = json.Unmarshal(data, &rawMap)`)
+	w.Line(`	for _, name := range %s {`, requiredFields(model))
+	w.Line(`		value, found := rawMap[name]`)
+	w.Line(`		if !found {`)
+	w.Line(`			return nil, errors.New("required field missing: " + name)`)
+	w.Line(`		}`)
+	w.Line(`		if string(value) == "null" {`)
+	w.Line(`			return nil, errors.New("required field doesn't have value: " + name)`)
+	w.Line(`		}`)
+	w.Line(`	}`)
+	w.Line(`	return data, nil`)
+	w.Line(`}`)
 	w.EmptyLine()
 	w.Line(`func (obj *%s) UnmarshalJSON(data []byte) error {`, model.Name.PascalCase())
 	w.Line(`	jsonObj := %s(*obj)`, model.Name.CamelCase())
@@ -80,9 +107,13 @@ func generateObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`	if err != nil {`)
 	w.Line(`		return errors.New("failed to check fields in json: " + err.Error())`)
 	w.Line(`	}`)
-	w.Line(`	for _, name := range %sRequiredFields {`, model.Name.CamelCase())
-	w.Line(`		if _, found := rawMap[name]; !found {`)
+	w.Line(`	for _, name := range %s {`, requiredFields(model))
+	w.Line(`		value, found := rawMap[name]`)
+	w.Line(`		if !found {`)
 	w.Line(`			return errors.New("required field missing: " + name)`)
+	w.Line(`		}`)
+	w.Line(`		if string(value) == "null" {`)
+	w.Line(`			return errors.New("required field doesn't have value: " + name)`)
 	w.Line(`		}`)
 	w.Line(`	}`)
 	w.Line(`	*obj = %s(jsonObj)`, model.Name.PascalCase())
