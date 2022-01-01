@@ -188,7 +188,7 @@ func generateOneOfModelWrapper(w *sources.Writer, model *spec.NamedModel) {
 	for _, item := range model.OneOf.Items {
 		items = append(items, []string{
 			item.Name.PascalCase(),
-			"*" + GoTypeSamePackage(&item.Type.Definition),
+			GoTypeSamePackage(spec.Nullable(&item.Type.Definition)),
 			fmt.Sprintf("`json:\"%s,omitempty\"`", item.Name.Source),
 		})
 	}
@@ -222,7 +222,10 @@ func generateOneOfModelDiscriminator(w *sources.Writer, model *spec.NamedModel) 
 	w.Line("type %s struct {", model.Name.PascalCase())
 	items := [][]string{}
 	for _, item := range model.OneOf.Items {
-		items = append(items, []string{item.Name.PascalCase(), "*" + GoTypeSamePackage(&item.Type.Definition)})
+		items = append(items, []string{
+			item.Name.PascalCase(),
+			GoTypeSamePackage(spec.Nullable(&item.Type.Definition)),
+		})
 	}
 	WriteAlignedLines(w.Indented(), items)
 	w.Line("}")
