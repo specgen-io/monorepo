@@ -64,13 +64,19 @@ func requiredFields(model *spec.NamedModel) string {
 
 func generateObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("type %s struct {", model.Name.PascalCase())
+	fields := [][]string{}
 	for _, field := range model.Object.Fields {
 		jsonAttributes := []string{field.Name.Source}
 		if field.Type.Definition.IsNullable() {
 			jsonAttributes = append(jsonAttributes, "omitempty")
 		}
-		w.Line("  %s %s `json:\"%s\"`", field.Name.PascalCase(), GoTypeSamePackage(&field.Type.Definition), strings.Join(jsonAttributes, ","))
+		fields = append(fields, []string{
+			field.Name.PascalCase(),
+			GoTypeSamePackage(&field.Type.Definition),
+			fmt.Sprintf("`json:\"%s\"`", strings.Join(jsonAttributes, ",")),
+		})
 	}
+	WriteAlignedLines(w.Indented(), fields)
 	w.Line("}")
 	w.EmptyLine()
 	w.Line(`type %s %s`, model.Name.CamelCase(), model.Name.PascalCase())
@@ -128,12 +134,14 @@ func generateEnumModel(w *sources.Writer, model *spec.NamedModel) {
 	modelName := model.Name.PascalCase()
 	choiceValuesStringsParams := []string{}
 	choiceValuesParams := []string{}
+	items := [][]string{}
 	for _, enumItem := range model.Enum.Items {
 		enumConstName := modelName + enumItem.Name.PascalCase()
-		w.Line("  %s %s = \"%s\"", enumConstName, modelName, enumItem.Value)
+		items = append(items, []string{enumConstName, fmt.Sprintf(`%s = "%s"`, modelName, enumItem.Value)})
 		choiceValuesStringsParams = append(choiceValuesStringsParams, fmt.Sprintf("string(%s)", enumConstName))
 		choiceValuesParams = append(choiceValuesParams, fmt.Sprintf("%s", enumConstName))
 	}
+	WriteAlignedLines(w.Indented(), items)
 	w.Line(")")
 	w.EmptyLine()
 	w.Line("var %s = []string{%s}", enumValuesStrings(model), JoinDelimParams(choiceValuesStringsParams))
@@ -141,7 +149,9 @@ func generateEnumModel(w *sources.Writer, model *spec.NamedModel) {
 	w.EmptyLine()
 	w.Line("func (self *%s) UnmarshalJSON(b []byte) error {", modelName)
 	w.Line("  str, err := readEnumStringValue(b, %sValuesStrings)", modelName)
-	w.Line("  if err != nil { return err }")
+	w.Line("  if err != nil {")
+	w.Line("    return err")
+	w.Line("  }")
 	w.Line("  *self = %s(str)", modelName)
 	w.Line("  return nil")
 	w.Line("}")
@@ -173,10 +183,16 @@ func getCaseChecks(oneof *spec.OneOf) string {
 
 func generateOneOfModelWrapper(w *sources.Writer, model *spec.NamedModel) {
 	caseChecks := getCaseChecks(model.OneOf)
+	items := [][]string{}
 	w.Line("type %s struct {", model.Name.PascalCase())
 	for _, item := range model.OneOf.Items {
-		w.Line("  %s *%s `json:\"%s,omitempty\"`", item.Name.PascalCase(), GoTypeSamePackage(&item.Type.Definition), item.Name.Source)
+		items = append(items, []string{
+			item.Name.PascalCase(),
+			"*" + GoTypeSamePackage(&item.Type.Definition),
+			fmt.Sprintf("`json:\"%s,omitempty\"`", item.Name.Source),
+		})
 	}
+	WriteAlignedLines(w.Indented(), items)
 	w.Line("}")
 	w.EmptyLine()
 	w.Line(`type %s %s`, model.Name.CamelCase(), model.Name.PascalCase())
@@ -204,21 +220,24 @@ func generateOneOfModelWrapper(w *sources.Writer, model *spec.NamedModel) {
 
 func generateOneOfModelDiscriminator(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("type %s struct {", model.Name.PascalCase())
+	items := [][]string{}
 	for _, item := range model.OneOf.Items {
-		w.Line("  %s *%s `json:\"%s,omitempty\"`", item.Name.PascalCase(), GoTypeSamePackage(&item.Type.Definition), item.Name.Source)
+		items = append(items, []string{item.Name.PascalCase(), "*" + GoTypeSamePackage(&item.Type.Definition)})
 	}
+	WriteAlignedLines(w.Indented(), items)
 	w.Line("}")
 	w.EmptyLine()
 	w.Line(`func (u %s) MarshalJSON() ([]byte, error) {`, model.Name.PascalCase())
 	for _, item := range model.OneOf.Items {
 		w.Line(`  if u.%s != nil {`, item.Name.PascalCase())
-		w.Line(`    return json.Marshal(&struct {`)
-		w.Line("      Discriminator string `json:\"%s\"`", *model.OneOf.Discriminator)
-		w.Line(`      *%s`, GoTypeSamePackage(&item.Type.Definition))
-		w.Line(`    }{`)
-		w.Line(`      Discriminator: "%s",`, item.Name.Source)
-		w.Line(`      %s: u.%s,`, GoTypeSamePackage(&item.Type.Definition), item.Name.PascalCase())
-		w.Line(`    })`)
+		w.Line(`    data, err := json.Marshal(u.%s)`, item.Name.PascalCase())
+		w.Line(`    if err != nil {`)
+		w.Line(`      return nil, err`)
+		w.Line(`    }`)
+		w.Line(`    var rawMap map[string]json.RawMessage`)
+		w.Line(`    json.Unmarshal(data, &rawMap)`)
+		w.Line("    rawMap[\"%s\"] = []byte(`\"%s\"`)", *model.OneOf.Discriminator, item.Name.Source)
+		w.Line(`    return json.Marshal(rawMap)`)
 		w.Line(`  }`)
 	}
 	w.Line(`  return nil, errors.New("union case is not set")`)
