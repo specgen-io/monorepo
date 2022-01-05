@@ -58,7 +58,7 @@ func generateAxiosOperation(w *sources.Writer, operation *spec.NamedOperation, v
 		if body.Type.Definition.Plain == spec.TypeString {
 			w.Line("  const response = await axiosInstance.%s(`%s`, parameters.body, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 		} else {
-			w.Line(`  const bodyJson = t.encode(%s.%s, parameters.body)`, modelsPackage, runtimeType(validation, &body.Type.Definition))
+			w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, runtimeTypeFromPackage(validation, modelsPackage, &body.Type.Definition))
 			w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 		}
 	} else {
