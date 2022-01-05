@@ -7,11 +7,15 @@ import (
 )
 
 func runtimeType(validation string, typ *spec.TypeDef) string {
+	return runtimeTypeFromPackage(validation, "", typ)
+}
+
+func runtimeTypeFromPackage(validation string, customTypesPackage string, typ *spec.TypeDef) string {
 	if validation == Superstruct {
-		return SuperstructType(typ)
+		return SuperstructTypeFromPackage(customTypesPackage, typ)
 	}
 	if validation == IoTs {
-		return IoTsType(typ)
+		return IoTsTypeFromPackage(customTypesPackage, typ)
 	}
 	panic(fmt.Sprintf("Unknown validation: %s", validation))
 }

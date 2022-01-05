@@ -92,7 +92,7 @@ func clientResponseResult(response *spec.NamedResponse, validation string, textR
 	} else {
 		data := textResposneData
 		if response.Type.Definition.Plain != spec.TypeString {
-			data = fmt.Sprintf(`t.decode(%s.%s, %s)`, modelsPackage, runtimeType(validation, &response.Type.Definition), jsonResponseData)
+			data = fmt.Sprintf(`t.decode(%s, %s)`, runtimeTypeFromPackage(validation, modelsPackage, &response.Type.Definition), jsonResponseData)
 		}
 		if len(response.Operation.Responses) == 1 {
 			return data

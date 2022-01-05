@@ -6,19 +6,23 @@ import (
 )
 
 func IoTsType(typ *spec.TypeDef) string {
+	return IoTsTypeFromPackage("", typ)
+}
+
+func IoTsTypeFromPackage(customTypesPackage string, typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainIoTsType(typ.Plain)
+		return plainIoTsType(customTypesPackage, typ.Plain)
 	case spec.NullableType:
-		child := IoTsType(typ.Child)
+		child := IoTsTypeFromPackage(customTypesPackage, typ.Child)
 		result := "t.union([" + child + ", t.null])"
 		return result
 	case spec.ArrayType:
-		child := IoTsType(typ.Child)
+		child := IoTsTypeFromPackage(customTypesPackage, typ.Child)
 		result := "t.array(" + child + ")"
 		return result
 	case spec.MapType:
-		child := IoTsType(typ.Child)
+		child := IoTsTypeFromPackage(customTypesPackage, typ.Child)
 		result := "t.record(t.string, " + child + ")"
 		return result
 	default:
@@ -26,7 +30,7 @@ func IoTsType(typ *spec.TypeDef) string {
 	}
 }
 
-func PlainIoTsType(typ string) string {
+func plainIoTsType(customTypesPackage string, typ string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "t.number"
@@ -51,6 +55,10 @@ func PlainIoTsType(typ string) string {
 	case spec.TypeJson:
 		return "t.unknown"
 	default:
-		return "T" + typ
+		if customTypesPackage == "" {
+			return "T" + typ
+		} else {
+			return customTypesPackage + ".T" + typ
+		}
 	}
 }
