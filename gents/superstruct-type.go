@@ -6,19 +6,23 @@ import (
 )
 
 func SuperstructType(typ *spec.TypeDef) string {
+	return SuperstructTypeFromPackage("", typ)
+}
+
+func SuperstructTypeFromPackage(customTypesPackage string, typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainSuperstructType(typ.Plain)
+		return plainSuperstructType(customTypesPackage, typ.Plain)
 	case spec.NullableType:
-		child := SuperstructType(typ.Child)
+		child := SuperstructTypeFromPackage(customTypesPackage, typ.Child)
 		result := "t.optional(t.nullable(" + child + "))"
 		return result
 	case spec.ArrayType:
-		child := SuperstructType(typ.Child)
+		child := SuperstructTypeFromPackage(customTypesPackage, typ.Child)
 		result := "t.array(" + child + ")"
 		return result
 	case spec.MapType:
-		child := SuperstructType(typ.Child)
+		child := SuperstructTypeFromPackage(customTypesPackage, typ.Child)
 		result := "t.record(t.string(), " + child + ")"
 		return result
 	default:
@@ -26,7 +30,7 @@ func SuperstructType(typ *spec.TypeDef) string {
 	}
 }
 
-func PlainSuperstructType(typ string) string {
+func plainSuperstructType(customTypesPackage string, typ string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "t.number()"
@@ -51,6 +55,10 @@ func PlainSuperstructType(typ string) string {
 	case spec.TypeJson:
 		return "t.unknown()"
 	default:
-		return "T" + typ
+		if customTypesPackage == "" {
+			return "T" + typ
+		} else {
+			return customTypesPackage + ".T" + typ
+		}
 	}
 }
