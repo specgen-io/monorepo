@@ -64,7 +64,7 @@ func generateFetchOperation(w *sources.Writer, operation *spec.NamedOperation, v
 		if body.Type.Definition.Plain == spec.TypeString {
 			fetchConfig += `, body: parameters.body`
 		} else {
-			w.Line(`  const bodyJson = t.encode(%s.%s, parameters.body)`, modelsPackage, runtimeType(validation, &body.Type.Definition))
+			w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, runtimeTypeFromPackage(validation, modelsPackage, &body.Type.Definition))
 			fetchConfig += `, body: JSON.stringify(bodyJson)`
 		}
 	}
