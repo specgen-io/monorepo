@@ -301,3 +301,29 @@ models:
 	assert.Equal(t, len(warnings), 0)
 	assert.Equal(t, len(errors), 10)
 }
+
+func Test_DuplicateUrl(t *testing.T) {
+	data := `
+http:
+    test:
+      first:
+        endpoint: GET /some/url
+        response:
+          ok: empty
+      second:
+        endpoint: GET /some/url
+        response:
+          ok: empty
+`
+
+	spec, err := unmarshalSpec([]byte(data))
+	assert.Equal(t, err, nil)
+
+	errors := enrichSpec(spec)
+	assert.Equal(t, len(errors), 0)
+
+	warnings, errors := validate(spec)
+	assert.Equal(t, len(warnings), 0)
+	assert.Equal(t, len(errors), 1)
+	assert.Equal(t, strings.Contains(errors[0].Message, "/some/url"), true)
+}
