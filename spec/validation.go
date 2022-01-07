@@ -175,18 +175,27 @@ func (validator *validator) EnumItemsUniqueness(location *yaml.Node, items []Nam
 	}
 }
 
+func (validator *validator) NonEmpty(definition *NamedDefinition) {
+	if definition.Type.Definition.IsEmpty() {
+		validator.AddError(definition.Location, "type empty can not be used in models")
+	}
+}
+
 func (validator *validator) Model(model *NamedModel) {
 	if model.IsObject() {
 		validator.ItemsUniqueness(model.Location, model.Object.Fields, fmt.Sprintf(`object model %s fields names are too similiar to each other`, model.Name.Source))
 		for index := range model.Object.Fields {
 			field := model.Object.Fields[index]
+			validator.NonEmpty(&field)
 			validator.Definition(&field.Definition)
 		}
 	}
 	if model.IsOneOf() {
 		validator.ItemsUniqueness(model.Location, model.OneOf.Items, fmt.Sprintf(`oneOf model %s items names are too similiar to each other`, model.Name.Source))
 		for index := range model.OneOf.Items {
-			validator.Definition(&model.OneOf.Items[index].Definition)
+			item := model.OneOf.Items[index]
+			validator.NonEmpty(&item)
+			validator.Definition(&item.Definition)
 		}
 	}
 	if model.IsEnum() {
