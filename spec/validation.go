@@ -50,6 +50,7 @@ func (validator *validator) AddWarning(node *yaml.Node, message string) {
 }
 
 func (validator *validator) Spec(spec *Spec) {
+	urlsMap := map[string][]*NamedOperation{}
 	for versionIndex := range spec.Versions {
 		models := spec.Versions[versionIndex].Models
 		for modelIndex := range models {
@@ -57,9 +58,24 @@ func (validator *validator) Spec(spec *Spec) {
 		}
 		apis := spec.Versions[versionIndex].Http.Apis
 		for apiIndex := range apis {
-			for operation := range apis[apiIndex].Operations {
-				validator.Operation(&apis[apiIndex].Operations[operation])
+			for operationIndex := range apis[apiIndex].Operations {
+				operation := apis[apiIndex].Operations[operationIndex]
+				url := operation.Endpoint.Method + " " + operation.FullUrl()
+				if _, found := urlsMap[url]; !found {
+					urlsMap[url] = []*NamedOperation{}
+				}
+				urlsMap[url] = append(urlsMap[url], &operation)
+				validator.Operation(&operation)
 			}
+		}
+	}
+	for url, operations := range urlsMap {
+		if len(operations) > 1 {
+			operationsStr := []string{}
+			for _, operation := range operations {
+				operationsStr = append(operationsStr, operation.FullName())
+			}
+			validator.AddError(operations[0].Location, fmt.Sprintf(`endpoint "%s" is used for %d operations: %s`, url, len(operationsStr), strings.Join(operationsStr, ", ")))
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"fmt"
 	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
 )
@@ -12,6 +13,7 @@ type operation struct {
 	QueryParams  QueryParams  `yaml:"query,omitempty"`
 	Body         *Definition  `yaml:"body,omitempty"`
 	Responses    Responses    `yaml:"response"`
+	Location     *yaml.Node
 }
 
 type Operation operation
@@ -35,6 +37,7 @@ func (value *Operation) UnmarshalYAML(node *yaml.Node) error {
 	if err != nil {
 		return err
 	}
+	internal.Location = node
 	operation := Operation(internal)
 	if operation.Body != nil && operation.Body.Description == nil {
 		operation.Body.Description = getDescriptionFromComment(getMappingKey(node, "body"))
@@ -66,6 +69,14 @@ type NamedOperation struct {
 
 func (op *NamedOperation) FullUrl() string {
 	return op.Api.Apis.GetUrl() + op.Endpoint.Url
+}
+
+func (op *NamedOperation) FullName() string {
+	fullName := fmt.Sprintf(`%s.%s`, op.Api.Name.Source, op.Name.Source)
+	if op.Api.Apis.Version.Version.Source != "" {
+		fullName = fmt.Sprintf(`%s.%s`, op.Api.Apis.Version.Version.Source, fullName)
+	}
+	return fullName
 }
 
 type Operations []NamedOperation
