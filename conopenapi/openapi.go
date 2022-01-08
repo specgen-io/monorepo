@@ -44,7 +44,7 @@ func generateSpecApi(api *Api) *spec.Api {
 }
 
 func generateSpecOperation(pathItem *PathItem) *spec.Operation {
-	endpoint := spec.Endpoint{pathItem.Method, pathItem.Path, []spec.NamedParam{}}
+	endpoint := spec.Endpoint{pathItem.Method, pathItem.Path, []spec.NamedParam{}, nil}
 	var description *string = nil
 	if pathItem.Operation.Description != "" {
 		description = &pathItem.Operation.Description
@@ -56,6 +56,7 @@ func generateSpecOperation(pathItem *PathItem) *spec.Operation {
 		[]spec.NamedParam{},
 		getBody(pathItem.Operation.RequestBody),
 		[]spec.NamedResponse{},
+		nil,
 	}
 	return &operation
 }
