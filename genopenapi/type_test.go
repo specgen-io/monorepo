@@ -71,7 +71,7 @@ format: date
 func TestPlainTypeDateTime(t *testing.T) {
 	expected := `
 type: string
-format: datetime
+format: date-time
 `
 	checkType(t, spec.Plain(spec.TypeDateTime), expected)
 }
