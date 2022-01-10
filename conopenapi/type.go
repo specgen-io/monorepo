@@ -7,25 +7,44 @@ import (
 	"strings"
 )
 
-func SpecTypeFromSchemaRef(schema *openapi3.SchemaRef) *spec.TypeDef {
-	if schema.Value == nil {
+func specType(schema *openapi3.SchemaRef, required bool) *spec.Type {
+	return &spec.Type{*specTypeDef(schema, required), nil}
+}
+
+func specTypeDef(schema *openapi3.SchemaRef, required bool) *spec.TypeDef {
+	if !required {
+		return spec.Nullable(specTypeDef(schema, true))
+	}
+	if schema.Ref != "" {
 		return spec.Plain(strings.TrimPrefix(schema.Ref, "#/components/schemas/"))
 	} else {
-		return spec.Plain("problem") //TODO: This is not correct
+		switch schema.Value.Type {
+		case TypeArray:
+			return spec.Array(specTypeDef(schema.Value.Items, true))
+		case TypeObject:
+			if schema.Value.AdditionalProperties != nil {
+				return spec.Map(specTypeDef(schema.Value.AdditionalProperties, true))
+			} else {
+				panic(fmt.Sprintf(`object schema is not supported yet`))
+			}
+			return spec.Plain("object")
+		default:
+			return specPlainType(schema.Value.Type, schema.Value.Format)
+		}
 	}
 }
 
-func SpecTypeFromSchema(schema *openapi3.Schema) *spec.TypeDef {
-	switch schema.Type {
+func specPlainType(typ string, format string) *spec.TypeDef {
+	switch typ {
 	case TypeBoolean:
-		switch schema.Format {
+		switch format {
 		case "":
 			return spec.Plain(spec.TypeBoolean)
 		default:
-			panic(fmt.Sprintf("Unknown format of boolean: %s", schema.Format))
+			panic(fmt.Sprintf("Unknown format of boolean: %s", format))
 		}
 	case TypeString:
-		switch schema.Format {
+		switch format {
 		case "":
 			return spec.Plain(spec.TypeString)
 		case FormatUuid:
@@ -35,10 +54,10 @@ func SpecTypeFromSchema(schema *openapi3.Schema) *spec.TypeDef {
 		case FormatDateTime:
 			return spec.Plain(spec.TypeDateTime)
 		default:
-			panic(fmt.Sprintf("Unknown format of string: %s", schema.Format))
+			panic(fmt.Sprintf("Unknown format of string: %s", format))
 		}
 	case TypeNumber:
-		switch schema.Format {
+		switch format {
 		case FormatFloat:
 			return spec.Plain(spec.TypeFloat)
 		case FormatDouble:
@@ -46,24 +65,26 @@ func SpecTypeFromSchema(schema *openapi3.Schema) *spec.TypeDef {
 		case FormatDecimal:
 			return spec.Plain(spec.TypeDecimal)
 		default:
-			panic(fmt.Sprintf("Unknown format of number: %s", schema.Format))
+			panic(fmt.Sprintf("Unknown format of number: %s", format))
 		}
 	case TypeInteger:
-		switch schema.Format {
+		switch format {
 		case FormatInt64:
 			return spec.Plain(spec.TypeInt64)
 		case FormatInt32:
 			return spec.Plain(spec.TypeInt32)
 		default:
-			panic(fmt.Sprintf("Unknown format of integer: %s", schema.Format))
+			panic(fmt.Sprintf("Unknown format of integer: %s", format))
 		}
 	default:
-		panic(fmt.Sprintf("Unknown type: %s", schema.Type))
+		panic(fmt.Sprintf("Unknown type: %s", typ))
 	}
 	return nil
 }
 
 const (
+	TypeArray   string = "array"
+	TypeObject  string = "object"
 	TypeInteger string = "integer"
 	TypeNumber  string = "number"
 	TypeString  string = "string"
@@ -78,5 +99,5 @@ const (
 	FormatDecimal  string = "decimal"
 	FormatUuid     string = "uuid"
 	FormatDate     string = "date"
-	FormatDateTime string = "datetime"
+	FormatDateTime string = "date-time"
 )
