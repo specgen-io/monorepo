@@ -1,5 +1,7 @@
 package spec
 
+import "fmt"
+
 var httpStatusCode = map[string]string{
 	"continue":           "100",
 	"switching_protocol": "101",
@@ -72,6 +74,15 @@ var httpStatusCode = map[string]string{
 
 func HttpStatusCode(statusName Name) string {
 	return httpStatusCode[statusName.SnakeCase()]
+}
+
+func HttpStatusName(statusCode string) string {
+	for name, code := range httpStatusCode {
+		if code == statusCode {
+			return name
+		}
+	}
+	panic(fmt.Sprintf(`unknown status code: %s`, statusCode))
 }
 
 const (
