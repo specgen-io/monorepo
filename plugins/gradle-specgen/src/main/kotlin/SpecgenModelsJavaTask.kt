@@ -12,6 +12,10 @@ public open class ModelsJavaConfig @Inject constructor(project: Project) {
     public val outputDirectory: Property<File> =
         project.objects.property<File>().convention(project.buildDir.resolve("generated-src/specgen"))
 
+    @Input
+    @Optional
+    public val jsonlib: Property<String> = project.objects.property()
+
     @InputFile
     @PathSensitive(value = PathSensitivity.RELATIVE)
     public val specFile: Property<File> =
@@ -31,10 +35,9 @@ public open class SpecgenModelsJavaTask public constructor() : SpecgenBaseTask()
 
         val commandlineArgs = mutableListOf(
             "models-java",
-            "--spec-file",
-            config.specFile.get().absolutePath,
-            "--generate-path",
-            config.outputDirectory.get().absolutePath,
+            "--jsonlib", config.jsonlib.get(),
+            "--spec-file", config.specFile.get().absolutePath,
+            "--generate-path", config.outputDirectory.get().absolutePath,
         )
 
         if (config.packageName.isPresent) {
