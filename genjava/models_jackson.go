@@ -51,7 +51,7 @@ func getJacksonJsonPropertyAnnotation(field *spec.NamedDefinition) string {
 	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.Source, required)
 }
 
-func generateJacksonObjectModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func generateJacksonObjectModel(model *spec.NamedModel, thePackage Module, jsonlib string) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -62,7 +62,7 @@ func generateJacksonObjectModel(model *spec.NamedModel, thePackage Module) *sour
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
 		w.Line(getJacksonJsonPropertyAnnotation(&field))
-		w.Line(`  private %s %s;`, JavaType(&field.Type.Definition), field.Name.CamelCase())
+		w.Line(`  private %s %s;`, JavaType(&field.Type.Definition, jsonlib), field.Name.CamelCase())
 	}
 	if len(model.Object.Fields) == 0 {
 		w.Line(`  public %s() {`, model.Name.PascalCase())
@@ -71,7 +71,7 @@ func generateJacksonObjectModel(model *spec.NamedModel, thePackage Module) *sour
 		w.Line(`  public %s(`, model.Name.PascalCase())
 		for i, field := range model.Object.Fields {
 			w.Line(`    %s`, getJacksonJsonPropertyAnnotation(&field))
-			ctorParam := fmt.Sprintf(`    %s %s`, JavaType(&field.Type.Definition), field.Name.CamelCase())
+			ctorParam := fmt.Sprintf(`    %s %s`, JavaType(&field.Type.Definition, jsonlib), field.Name.CamelCase())
 			if i == len(model.Object.Fields)-1 {
 				w.Line(`%s`, ctorParam)
 			} else {
@@ -81,13 +81,13 @@ func generateJacksonObjectModel(model *spec.NamedModel, thePackage Module) *sour
 		w.Line(`  ) {`)
 	}
 	for _, field := range model.Object.Fields {
-		if !field.Type.Definition.IsNullable() && JavaIsReferenceType(&field.Type.Definition) {
+		if !field.Type.Definition.IsNullable() && JavaIsReferenceType(&field.Type.Definition, jsonlib) {
 			w.Line(`    if (%s == null) { throw new IllegalArgumentException("null value is not allowed"); }`, field.Name.CamelCase())
 		}
 		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
 	}
 	w.Line(`  }`)
-	addObjectModelProperties(w.Indented(), model)
+	addObjectModelProperties(w.Indented(), jsonlib, model)
 	w.EmptyLine()
 	addObjectModelMethods(w.Indented(), model)
 	w.Line(`}`)
@@ -98,7 +98,7 @@ func generateJacksonObjectModel(model *spec.NamedModel, thePackage Module) *sour
 	}
 }
 
-func generateJacksonOneOfModels(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func generateJacksonOneOfModels(model *spec.NamedModel, thePackage Module, jsonlib string) *sources.CodeFile {
 	interfaceName := model.Name.PascalCase()
 	w := NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
@@ -127,7 +127,7 @@ func generateJacksonOneOfModels(model *spec.NamedModel, thePackage Module) *sour
 		if index > 0 {
 			w.EmptyLine()
 		}
-		generateJacksonOneOfImplementation(w.Indented(), &item, model)
+		generateJacksonOneOfImplementation(w.Indented(), jsonlib, &item, model)
 	}
 	w.Line(`}`)
 
@@ -137,34 +137,34 @@ func generateJacksonOneOfModels(model *spec.NamedModel, thePackage Module) *sour
 	}
 }
 
-func generateJacksonOneOfImplementation(w *sources.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
+func generateJacksonOneOfImplementation(w *sources.Writer, jsonlib string, item *spec.NamedDefinition, model *spec.NamedModel) {
 	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
 	w.Line(`  @JsonUnwrapped`)
-	w.Line(`  public %s data;`, JavaType(&item.Type.Definition))
+	w.Line(`  public %s data;`, JavaType(&item.Type.Definition, jsonlib))
 	w.EmptyLine()
 	w.Line(`  public %s() {`, oneOfItemClassName(item))
 	w.Line(`  }`)
 	w.EmptyLine()
-	w.Line(`  public %s(%s data) {`, oneOfItemClassName(item), JavaType(&item.Type.Definition))
-	if !item.Type.Definition.IsNullable() && JavaIsReferenceType(&item.Type.Definition) {
+	w.Line(`  public %s(%s data) {`, oneOfItemClassName(item), JavaType(&item.Type.Definition, jsonlib))
+	if !item.Type.Definition.IsNullable() && JavaIsReferenceType(&item.Type.Definition, jsonlib) {
 		w.Line(`    if (data == null) { throw new IllegalArgumentException("null value is not allowed"); }`)
 	}
 	w.Line(`  	this.data = data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
-	w.Line(`  public %s getData() {`, JavaType(&item.Type.Definition))
+	w.Line(`  public %s getData() {`, JavaType(&item.Type.Definition, jsonlib))
 	w.Line(`    return data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
-	w.Line(`  public void setData(%s data) {`, JavaType(&item.Type.Definition))
-	if !item.Type.Definition.IsNullable() && JavaIsReferenceType(&item.Type.Definition) {
+	w.Line(`  public void setData(%s data) {`, JavaType(&item.Type.Definition, jsonlib))
+	if !item.Type.Definition.IsNullable() && JavaIsReferenceType(&item.Type.Definition, jsonlib) {
 		w.Line(`    if (data == null) { throw new IllegalArgumentException("null value is not allowed"); }`)
 	}
 	w.Line(`    this.data = data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
 	w.Indent()
-	addOneOfModelMethods(w, item)
+	addOneOfModelMethods(w, jsonlib, item)
 	w.Unindent()
 	w.Line(`}`)
 }

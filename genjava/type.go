@@ -5,28 +5,28 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func JavaType(typ *spec.TypeDef) string {
-	javaType, _ := javaType(typ, false)
+func JavaType(typ *spec.TypeDef, jsonlib string) string {
+	javaType, _ := javaType(typ, false, jsonlib)
 	return javaType
 }
 
-func JavaIsReferenceType(typ *spec.TypeDef) bool {
-	_, isReference := javaType(typ, false)
+func JavaIsReferenceType(typ *spec.TypeDef, jsonlib string) bool {
+	_, isReference := javaType(typ, false, jsonlib)
 	return isReference
 }
 
-func javaType(typ *spec.TypeDef, referenceTypesOnly bool) (string, bool) {
+func javaType(typ *spec.TypeDef, referenceTypesOnly bool, jsonlib string) (string, bool) {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainJavaType(typ.Plain, referenceTypesOnly)
+		return PlainJavaType(typ.Plain, referenceTypesOnly, jsonlib)
 	case spec.NullableType:
-		return javaType(typ.Child, true)
+		return javaType(typ.Child, true, jsonlib)
 	case spec.ArrayType:
-		child, _ := javaType(typ.Child, false)
+		child, _ := javaType(typ.Child, false, jsonlib)
 		result := child + "[]"
 		return result, true
 	case spec.MapType:
-		child, _ := javaType(typ.Child, true)
+		child, _ := javaType(typ.Child, true, jsonlib)
 		result := "Map<String, " + child + ">"
 		return result, true
 	default:
@@ -35,7 +35,7 @@ func javaType(typ *spec.TypeDef, referenceTypesOnly bool) (string, bool) {
 }
 
 // PlainJavaType Returns Java type name and boolean indicating if the type is reference or value type
-func PlainJavaType(typ string, referenceTypesOnly bool) (string, bool) {
+func PlainJavaType(typ string, referenceTypesOnly bool, jsonlib string) (string, bool) {
 	switch typ {
 	case spec.TypeInt32:
 		if referenceTypesOnly {
@@ -78,7 +78,14 @@ func PlainJavaType(typ string, referenceTypesOnly bool) (string, bool) {
 	case spec.TypeDateTime:
 		return "LocalDateTime", true
 	case spec.TypeJson:
-		return "JsonNode", true
+		var result string
+		if jsonlib == Jackson {
+			result = "JsonNode"
+		}
+		if jsonlib == Moshi {
+			result = "Map<String, Object>"
+		}
+		return result, true
 	case spec.TypeEmpty:
 		return "void", false
 	default:
