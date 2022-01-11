@@ -1,4 +1,4 @@
-package conopenapi
+package openapi
 
 import "github.com/specgen-io/specgen/v2/spec"
 
