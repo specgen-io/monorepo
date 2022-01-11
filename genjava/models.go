@@ -7,59 +7,44 @@ import (
 	"strings"
 )
 
-func GenerateModels(specification *spec.Spec, packageName string, generatePath string) *sources.Sources {
+func GenerateModels(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *sources.Sources {
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
 	}
 	mainPackage := Package(generatePath, packageName)
 	modelsPackage := mainPackage.Subpackage("models")
-	sources := sources.NewSources()
-	sources.AddGeneratedAll(generateModels(specification, modelsPackage))
-	return sources
+	newSources := sources.NewSources()
+	newSources.AddGeneratedAll(generateModels(specification, jsonlib, modelsPackage))
+	return newSources
 }
 
-func generateModels(specification *spec.Spec, thePackage Module) []sources.CodeFile {
+func generateModels(specification *spec.Spec, jsonlib string, thePackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, version := range specification.Versions {
 		versionPackage := thePackage.Subpackage(version.Version.FlatCase())
-		files = append(files, generateVersionModels(&version, versionPackage)...)
+		files = append(files, generateVersionModels(&version, jsonlib, versionPackage)...)
 	}
 	files = append(files, *generateJson(thePackage))
 	return files
 }
 
-func generateJson(thePackage Module) *sources.CodeFile {
-	code := `
-package [[.PackageName]];
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.datatype.jsr310.*;
-
-public class Json {
-	public static void setupObjectMapper(ObjectMapper objectMapper) {
-		objectMapper
-				.registerModule(new JavaTimeModule())
-				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-				.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-	}
-}
-`
-
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
-		Path:    thePackage.GetPath("Json.java"),
-		Content: strings.TrimSpace(code),
-	}
-}
-
-func generateVersionModels(version *spec.Version, thePackage Module) []sources.CodeFile {
+func generateVersionModels(version *spec.Version, jsonlib string, thePackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
-			files = append(files, *generateObjectModel(model, thePackage))
+			if jsonlib == Jackson {
+				files = append(files, *generateJacksonObjectModel(model, thePackage))
+			}
+			if jsonlib == Moshi {
+				files = append(files, *generateMoshiObjectModel(model, thePackage))
+			}
 		} else if model.IsOneOf() {
-			files = append(files, *generateOneOfModels(model, thePackage))
+			if jsonlib == Jackson {
+				files = append(files, *generateJacksonOneOfModels(model, thePackage))
+			}
+			if jsonlib == Moshi {
+				files = append(files, *generateMoshiOneOfModels(model, thePackage))
+			}
 		} else if model.IsEnum() {
 			files = append(files, *generateEnumModel(model, thePackage))
 		}
@@ -67,54 +52,7 @@ func generateVersionModels(version *spec.Version, thePackage Module) []sources.C
 	return files
 }
 
-func addImports(w *sources.Writer) {
-	w.Line(`import java.time.*;`)
-	w.Line(`import java.util.*;`)
-	w.Line(`import java.math.BigDecimal;`)
-	w.Line(`import com.fasterxml.jackson.databind.JsonNode;`)
-	w.Line(`import com.fasterxml.jackson.annotation.*;`)
-	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
-}
-
-func addObjectModelCtors(w *sources.Writer, model *spec.NamedModel) {
-	if len(model.Object.Fields) == 0 {
-		w.Line(`public %s() {`, model.Name.PascalCase())
-	} else {
-		w.Line(`@JsonCreator`)
-		w.Line(`public %s(`, model.Name.PascalCase())
-		for i, field := range model.Object.Fields {
-			w.Line(`  %s`, getJsonPropertyAnnotation(&field))
-			if i == len(model.Object.Fields)-1 {
-				w.Line(`  %s %s`, JavaType(&field.Type.Definition), field.Name.CamelCase())
-			} else {
-				w.Line(`  %s %s,`, JavaType(&field.Type.Definition), field.Name.CamelCase())
-			}
-		}
-		w.Line(`) {`)
-	}
-	for _, field := range model.Object.Fields {
-		if !field.Type.Definition.IsNullable() && JavaIsReferenceType(&field.Type.Definition) {
-			w.Line(`  if (%s == null) { throw new IllegalArgumentException("null value is not allowed"); }`, field.Name.CamelCase())
-		}
-		w.Line(`  this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
-	}
-	w.Line(`}`)
-}
-
-func getJsonPropertyAnnotation(field *spec.NamedDefinition) string {
-	required := "false"
-	if !field.Type.Definition.IsNullable() {
-		required = "true"
-	}
-	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.Source, required)
-}
-
-func addObjectModelFields(w *sources.Writer, model *spec.NamedModel) {
-	for _, field := range model.Object.Fields {
-		w.EmptyLine()
-		w.Line(getJsonPropertyAnnotation(&field))
-		w.Line(`private %s %s;`, JavaType(&field.Type.Definition), field.Name.CamelCase())
-	}
+func addObjectModelProperties(w *sources.Writer, model *spec.NamedModel) {
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
 		w.Line(`public %s %s() {`, JavaType(&field.Type.Definition), getterName(&field))
@@ -122,9 +60,6 @@ func addObjectModelFields(w *sources.Writer, model *spec.NamedModel) {
 		w.Line(`}`)
 		w.EmptyLine()
 		w.Line(`public void %s(%s %s) {`, setterName(&field), JavaType(&field.Type.Definition), field.Name.CamelCase())
-		if !field.Type.Definition.IsNullable() && JavaIsReferenceType(&field.Type.Definition) {
-			w.Line(`  if (%s == null) { throw new IllegalArgumentException("null value is not allowed"); }`, field.Name.CamelCase())
-		}
 		w.Line(`  this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
 		w.Line(`}`)
 	}
@@ -187,31 +122,11 @@ func addObjectModelMethods(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateObjectModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
-	w := NewJavaWriter()
-	w.Line(`package %s;`, thePackage.PackageName)
-	w.EmptyLine()
-	addImports(w)
-	w.EmptyLine()
-	className := model.Name.PascalCase()
-	w.Line(`public class %s {`, className)
-	addObjectModelCtors(w.Indented(), model)
-	addObjectModelFields(w.Indented(), model)
-	w.EmptyLine()
-	addObjectModelMethods(w.Indented(), model)
-	w.Line(`}`)
-
-	return &sources.CodeFile{
-		Path:    thePackage.GetPath(className + ".java"),
-		Content: w.String(),
-	}
-}
-
 func generateEnumModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	addImports(w)
+	addJacksonImports(w)
 	w.EmptyLine()
 	enumName := model.Name.PascalCase()
 	w.Line(`public enum %s {`, enumName)
@@ -226,79 +141,8 @@ func generateEnumModel(model *spec.NamedModel, thePackage Module) *sources.CodeF
 	}
 }
 
-func generateOneOfModels(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
-	interfaceName := model.Name.PascalCase()
-	w := NewJavaWriter()
-	w.Line("package %s;", thePackage.PackageName)
-	w.EmptyLine()
-	addImports(w)
-	w.EmptyLine()
-	if model.OneOf.Discriminator != nil {
-		w.Line(`@JsonTypeInfo(`)
-		w.Line(`  use = JsonTypeInfo.Id.NAME,`)
-		w.Line(`  include = JsonTypeInfo.As.PROPERTY,`)
-		w.Line(`  property = "%s"`, *model.OneOf.Discriminator)
-		w.Line(`)`)
-	} else {
-		w.Line(`@JsonTypeInfo(`)
-		w.Line(`  use = JsonTypeInfo.Id.NAME,`)
-		w.Line(`  include = JsonTypeInfo.As.WRAPPER_OBJECT`)
-		w.Line(`)`)
-	}
-	w.Line(`@JsonSubTypes({`)
-	for _, item := range model.OneOf.Items {
-		w.Line(`  @Type(value = %s.%s.class, name = "%s"),`, interfaceName, oneOfItemClassName(&item), item.Name.Source)
-	}
-	w.Line(`})`)
-	w.Line(`public interface %s {`, interfaceName)
-	for index, item := range model.OneOf.Items {
-		if index > 0 {
-			w.EmptyLine()
-		}
-		generateOneOfImplementation(w.Indented(), &item, model)
-	}
-	w.Line(`}`)
-
-	return &sources.CodeFile{
-		Path:    thePackage.GetPath(interfaceName + ".java"),
-		Content: w.String(),
-	}
-}
-
 func oneOfItemClassName(item *spec.NamedDefinition) string {
 	return item.Name.PascalCase()
-}
-
-func generateOneOfImplementation(w *sources.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
-	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
-	w.Line(`  @JsonUnwrapped`)
-	w.Line(`  public %s data;`, JavaType(&item.Type.Definition))
-	w.EmptyLine()
-	w.Line(`  public %s() {`, oneOfItemClassName(item))
-	w.Line(`  }`)
-	w.EmptyLine()
-	w.Line(`  public %s(%s data) {`, oneOfItemClassName(item), JavaType(&item.Type.Definition))
-	if !item.Type.Definition.IsNullable() && JavaIsReferenceType(&item.Type.Definition) {
-		w.Line(`    if (data == null) { throw new IllegalArgumentException("null value is not allowed"); }`)
-	}
-	w.Line(`  	this.data = data;`)
-	w.Line(`  }`)
-	w.EmptyLine()
-	w.Line(`  public %s getData() {`, JavaType(&item.Type.Definition))
-	w.Line(`    return data;`)
-	w.Line(`  }`)
-	w.EmptyLine()
-	w.Line(`  public void setData(%s data) {`, JavaType(&item.Type.Definition))
-	if !item.Type.Definition.IsNullable() && JavaIsReferenceType(&item.Type.Definition) {
-		w.Line(`    if (data == null) { throw new IllegalArgumentException("null value is not allowed"); }`)
-	}
-	w.Line(`    this.data = data;`)
-	w.Line(`  }`)
-	w.EmptyLine()
-	w.Indent()
-	addOneOfModelMethods(w, item)
-	w.Unindent()
-	w.Line(`}`)
 }
 
 func addOneOfModelMethods(w *sources.Writer, item *spec.NamedDefinition) {

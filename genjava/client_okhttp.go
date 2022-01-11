@@ -22,7 +22,7 @@ func GenerateClient(specification *spec.Spec, packageName string, generatePath s
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		sources.AddGeneratedAll(generateVersionModels(&version, modelsVersionPackage))
+		sources.AddGeneratedAll(generateVersionModels(&version, "jackson", modelsVersionPackage))
 
 		clientVersionPackage := versionPackage.Subpackage("clients")
 		sources.AddGeneratedAll(generateClientsImplementations(&version, clientVersionPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage))

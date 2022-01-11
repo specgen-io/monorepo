@@ -22,7 +22,7 @@ func GenerateService(specification *spec.Spec, packageName string, swaggerPath s
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		sources.AddGeneratedAll(generateVersionModels(&version, modelsVersionPackage))
+		sources.AddGeneratedAll(generateVersionModels(&version, "jackson", modelsVersionPackage))
 
 		serviceVersionPackage := versionPackage.Subpackage("services")
 		sources.AddGeneratedAll(generateServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage))

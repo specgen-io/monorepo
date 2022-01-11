@@ -59,11 +59,12 @@ var ModelsJava = Generator{
 	"Generate Java models source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
+		{Arg: ArgJsonlib, Required: true, Values: JsonlibJavaValues},
 		{Arg: ArgPackageName, Required: false},
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genjava.GenerateModels(specification, params[ArgPackageName], params[ArgGeneratePath])
+		return genjava.GenerateModels(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgGeneratePath])
 	},
 }
 
