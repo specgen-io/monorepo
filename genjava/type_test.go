@@ -8,7 +8,7 @@ import (
 
 func CheckPlainType(t *testing.T, plainType string, expected string) {
 	typ := spec.Plain(plainType)
-	javaType := JavaType(typ)
+	javaType := JavaType(typ, "jackson")
 	assert.Equal(t, javaType, expected)
 }
 
@@ -62,30 +62,30 @@ func TestPlainTypeEmpty(t *testing.T) {
 
 func TestNullableType(t *testing.T) {
 	typ := spec.Nullable(spec.Plain(spec.TypeInt32))
-	javaType := JavaType(typ)
+	javaType := JavaType(typ, "jackson")
 	assert.Equal(t, javaType, "Integer")
 }
 
 func TestArrayType(t *testing.T) {
 	typ := spec.Array(spec.Plain(spec.TypeString))
-	javaType := JavaType(typ)
+	javaType := JavaType(typ, "jackson")
 	assert.Equal(t, javaType, "String[]")
 }
 
 func TestMapType(t *testing.T) {
 	typ := spec.Map(spec.Plain("Model"))
-	javaType := JavaType(typ)
+	javaType := JavaType(typ, "jackson")
 	assert.Equal(t, javaType, "Map<String, Model>")
 }
 
 func TestComplexType(t *testing.T) {
 	typ := spec.Array(spec.Nullable(spec.Plain(spec.TypeBoolean)))
-	javaType := JavaType(typ)
+	javaType := JavaType(typ, "jackson")
 	assert.Equal(t, javaType, "Boolean[]")
 }
 
 func TestMapScalarType(t *testing.T) {
 	typ := spec.Map(spec.Plain(spec.TypeInt32))
-	javaType := JavaType(typ)
+	javaType := JavaType(typ, "jackson")
 	assert.Equal(t, javaType, "Map<String, Integer>")
 }
