@@ -6,8 +6,8 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateService(specification *spec.Spec, packageName string, swaggerPath string, generatePath string, servicesPath string) *sources.Sources {
-	sources := sources.NewSources()
+func GenerateService(specification *spec.Spec, jsonlib string, packageName string, swaggerPath string, generatePath string, servicesPath string) *sources.Sources {
+	newSources := sources.NewSources()
 
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
@@ -16,23 +16,23 @@ func GenerateService(specification *spec.Spec, packageName string, swaggerPath s
 	mainPackage := Package(generatePath, packageName)
 
 	modelsPackage := mainPackage.Subpackage("models")
-	sources.AddGenerated(generateJson(modelsPackage))
+	newSources.AddGenerated(generateJson(modelsPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		sources.AddGeneratedAll(generateVersionModels(&version, "jackson", modelsVersionPackage))
+		newSources.AddGeneratedAll(generateVersionModels(&version, modelsVersionPackage, jsonlib))
 
 		serviceVersionPackage := versionPackage.Subpackage("services")
-		sources.AddGeneratedAll(generateServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage))
+		newSources.AddGeneratedAll(generateServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage, jsonlib))
 
 		controllerVersionPackage := versionPackage.Subpackage("controllers")
-		sources.AddGeneratedAll(generateServicesControllers(&version, controllerVersionPackage, modelsPackage, modelsVersionPackage, serviceVersionPackage))
+		newSources.AddGeneratedAll(generateServicesControllers(&version, controllerVersionPackage, modelsPackage, modelsVersionPackage, serviceVersionPackage, jsonlib))
 	}
 
 	if swaggerPath != "" {
-		sources.AddGenerated(genopenapi.GenerateOpenapi(specification, swaggerPath))
+		newSources.AddGenerated(genopenapi.GenerateOpenapi(specification, swaggerPath))
 	}
 
 	if servicesPath != "" {
@@ -45,9 +45,9 @@ func GenerateService(specification *spec.Spec, packageName string, swaggerPath s
 			modelsVersionPackage := versionPackage.Subpackage("models")
 			serviceVersionPackage := versionPackage.Subpackage("services")
 
-			sources.AddScaffoldedAll(generateServicesImplementations(&version, serviceImplVersionPackage, modelsVersionPackage, serviceVersionPackage))
+			newSources.AddScaffoldedAll(generateServicesImplementations(&version, serviceImplVersionPackage, modelsVersionPackage, serviceVersionPackage, jsonlib))
 		}
 	}
 
-	return sources
+	return newSources
 }

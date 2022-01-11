@@ -6,16 +6,16 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServicesControllers(version *spec.Version, thePackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []sources.CodeFile {
+func generateServicesControllers(version *spec.Version, thePackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module, jsonlib string) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, generateController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
+		files = append(files, generateController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage, jsonlib)...)
 	}
 	return files
 }
 
-func generateController(api *spec.Api, apiPackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []sources.CodeFile {
+func generateController(api *spec.Api, apiPackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module, jsonlib string) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -50,7 +50,7 @@ func generateController(api *spec.Api, apiPackage Module, jsonPackage Module, mo
 	w.Line(`  private ObjectMapper objectMapper;`)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		generateMethod(w.Indented(), &operation)
+		generateMethod(w.Indented(), &operation, jsonlib)
 	}
 	w.Line(`}`)
 
@@ -62,11 +62,11 @@ func generateController(api *spec.Api, apiPackage Module, jsonPackage Module, mo
 	return files
 }
 
-func generateMethod(w *sources.Writer, operation *spec.NamedOperation) {
+func generateMethod(w *sources.Writer, operation *spec.NamedOperation, jsonlib string) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, ToPascalCase(methodName), url)
-	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), JoinDelimParams(addMethodParams(operation)))
+	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), JoinDelimParams(addMethodParams(operation, jsonlib)))
 	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  HttpHeaders headers = new HttpHeaders();`)
 	contentType := "application/json"
@@ -79,7 +79,7 @@ func generateMethod(w *sources.Writer, operation *spec.NamedOperation) {
 		if operation.Body.Type.Definition.Plain != spec.TypeString {
 			w.Line(`  Message requestBody;`)
 			w.Line(`  try {`)
-			w.Line(`    requestBody = objectMapper.readValue(bodyStr, %s.class);`, JavaType(&operation.Body.Type.Definition))
+			w.Line(`    requestBody = objectMapper.readValue(bodyStr, %s.class);`, JavaType(&operation.Body.Type.Definition, jsonlib))
 			w.Line(`  } catch (Exception e) {`)
 			w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
 			w.Line(`    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);`)
@@ -150,13 +150,13 @@ func getSpringParameterAnnotation(paramAnnotationName string, param *spec.NamedP
 	return fmt.Sprintf(`@%s(%s)`, paramAnnotationName, JoinDelimParams(annotationParams))
 }
 
-func generateMethodParam(namedParams []spec.NamedParam, paramAnnotationName string) []string {
+func generateMethodParam(namedParams []spec.NamedParam, paramAnnotationName string, jsonlib string) []string {
 	params := []string{}
 
 	if namedParams != nil && len(namedParams) > 0 {
 		for _, param := range namedParams {
 			paramAnnotation := getSpringParameterAnnotation(paramAnnotationName, &param)
-			paramType := fmt.Sprintf(`%s %s`, JavaType(&param.Type.Definition), param.Name.CamelCase())
+			paramType := fmt.Sprintf(`%s %s`, JavaType(&param.Type.Definition, jsonlib), param.Name.CamelCase())
 			dateFormatAnnotation := dateFormatAnnotation(&param.Type.Definition)
 			if dateFormatAnnotation != "" {
 				params = append(params, fmt.Sprintf(`%s %s %s`, paramAnnotation, dateFormatAnnotation, paramType))
@@ -169,15 +169,15 @@ func generateMethodParam(namedParams []spec.NamedParam, paramAnnotationName stri
 	return params
 }
 
-func addMethodParams(operation *spec.NamedOperation) []string {
+func addMethodParams(operation *spec.NamedOperation, jsonlib string) []string {
 	methodParams := []string{}
 
 	if operation.Body != nil {
 		methodParams = append(methodParams, "@RequestBody String bodyStr")
 	}
-	methodParams = append(methodParams, generateMethodParam(operation.QueryParams, "RequestParam")...)
-	methodParams = append(methodParams, generateMethodParam(operation.HeaderParams, "RequestHeader")...)
-	methodParams = append(methodParams, generateMethodParam(operation.Endpoint.UrlParams, "PathVariable")...)
+	methodParams = append(methodParams, generateMethodParam(operation.QueryParams, "RequestParam", jsonlib)...)
+	methodParams = append(methodParams, generateMethodParam(operation.HeaderParams, "RequestHeader", jsonlib)...)
+	methodParams = append(methodParams, generateMethodParam(operation.Endpoint.UrlParams, "PathVariable", jsonlib)...)
 
 	return methodParams
 }

@@ -15,7 +15,7 @@ func addMoshiImports(w *sources.Writer) {
 	w.Line(`import java.util.*;`)
 }
 
-func generateMoshiObjectModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func generateMoshiObjectModel(model *spec.NamedModel, thePackage Module, jsonlib string) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -26,19 +26,19 @@ func generateMoshiObjectModel(model *spec.NamedModel, thePackage Module) *source
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
 		w.Line(`  @Json(name = "%s")`, field.Name.Source)
-		w.Line(`  private %s %s;`, JavaType(&field.Type.Definition), field.Name.CamelCase())
+		w.Line(`  private %s %s;`, JavaType(&field.Type.Definition, jsonlib), field.Name.CamelCase())
 	}
 	w.EmptyLine()
 	ctorParams := []string{}
 	for _, field := range model.Object.Fields {
-		ctorParams = append(ctorParams, fmt.Sprintf(`%s %s`, JavaType(&field.Type.Definition), field.Name.CamelCase()))
+		ctorParams = append(ctorParams, fmt.Sprintf(`%s %s`, JavaType(&field.Type.Definition, jsonlib), field.Name.CamelCase()))
 	}
 	w.Line(`  public %s(%s) {`, model.Name.PascalCase(), JoinDelimParams(ctorParams))
 	for _, field := range model.Object.Fields {
 		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
 	}
 	w.Line(`  }`)
-	addObjectModelProperties(w.Indented(), model)
+	addObjectModelProperties(w.Indented(), jsonlib, model)
 	w.EmptyLine()
 	addObjectModelMethods(w.Indented(), model)
 	w.Line(`}`)
@@ -49,7 +49,7 @@ func generateMoshiObjectModel(model *spec.NamedModel, thePackage Module) *source
 	}
 }
 
-func generateMoshiOneOfModels(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func generateMoshiOneOfModels(model *spec.NamedModel, thePackage Module, jsonlib string) *sources.CodeFile {
 	interfaceName := model.Name.PascalCase()
 	w := NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
@@ -61,7 +61,7 @@ func generateMoshiOneOfModels(model *spec.NamedModel, thePackage Module) *source
 		if index > 0 {
 			w.EmptyLine()
 		}
-		generateMoshiOneOfImplementation(w.Indented(), &item, model)
+		generateMoshiOneOfImplementation(w.Indented(), jsonlib, &item, model)
 	}
 	w.Line(`}`)
 
@@ -71,27 +71,27 @@ func generateMoshiOneOfModels(model *spec.NamedModel, thePackage Module) *source
 	}
 }
 
-func generateMoshiOneOfImplementation(w *sources.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
+func generateMoshiOneOfImplementation(w *sources.Writer, jsonlib string, item *spec.NamedDefinition, model *spec.NamedModel) {
 	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
-	w.Line(`  public %s data;`, JavaType(&item.Type.Definition))
+	w.Line(`  public %s data;`, JavaType(&item.Type.Definition, jsonlib))
 	w.EmptyLine()
 	w.Line(`  public %s() {`, oneOfItemClassName(item))
 	w.Line(`  }`)
 	w.EmptyLine()
-	w.Line(`  public %s(%s data) {`, oneOfItemClassName(item), JavaType(&item.Type.Definition))
+	w.Line(`  public %s(%s data) {`, oneOfItemClassName(item), JavaType(&item.Type.Definition, jsonlib))
 	w.Line(`  	this.data = data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
-	w.Line(`  public %s getData() {`, JavaType(&item.Type.Definition))
+	w.Line(`  public %s getData() {`, JavaType(&item.Type.Definition, jsonlib))
 	w.Line(`    return data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
-	w.Line(`  public void setData(%s data) {`, JavaType(&item.Type.Definition))
+	w.Line(`  public void setData(%s data) {`, JavaType(&item.Type.Definition, jsonlib))
 	w.Line(`    this.data = data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
 	w.Indent()
-	addOneOfModelMethods(w, item)
+	addOneOfModelMethods(w, jsonlib, item)
 	w.Unindent()
 	w.Line(`}`)
 }

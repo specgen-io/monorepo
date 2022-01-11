@@ -7,43 +7,45 @@ import (
 	"strings"
 )
 
-func GenerateModels(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *sources.Sources {
+func GenerateModels(specification *spec.Spec, packageName string, generatePath string, jsonlib string) *sources.Sources {
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
 	}
 	mainPackage := Package(generatePath, packageName)
 	modelsPackage := mainPackage.Subpackage("models")
+
 	newSources := sources.NewSources()
-	newSources.AddGeneratedAll(generateModels(specification, jsonlib, modelsPackage))
+	newSources.AddGeneratedAll(generateModels(specification, modelsPackage, jsonlib))
+
 	return newSources
 }
 
-func generateModels(specification *spec.Spec, jsonlib string, thePackage Module) []sources.CodeFile {
+func generateModels(specification *spec.Spec, thePackage Module, jsonlib string) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, version := range specification.Versions {
 		versionPackage := thePackage.Subpackage(version.Version.FlatCase())
-		files = append(files, generateVersionModels(&version, jsonlib, versionPackage)...)
+		files = append(files, generateVersionModels(&version, versionPackage, jsonlib)...)
 	}
 	files = append(files, *generateJson(thePackage))
 	return files
 }
 
-func generateVersionModels(version *spec.Version, jsonlib string, thePackage Module) []sources.CodeFile {
+func generateVersionModels(version *spec.Version, thePackage Module, jsonlib string) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
 			if jsonlib == Jackson {
-				files = append(files, *generateJacksonObjectModel(model, thePackage))
+				files = append(files, *generateJacksonObjectModel(model, thePackage, jsonlib))
 			}
 			if jsonlib == Moshi {
-				files = append(files, *generateMoshiObjectModel(model, thePackage))
+				files = append(files, *generateMoshiObjectModel(model, thePackage, jsonlib))
 			}
 		} else if model.IsOneOf() {
 			if jsonlib == Jackson {
-				files = append(files, *generateJacksonOneOfModels(model, thePackage))
+				files = append(files, *generateJacksonOneOfModels(model, thePackage, jsonlib))
 			}
 			if jsonlib == Moshi {
-				files = append(files, *generateMoshiOneOfModels(model, thePackage))
+				files = append(files, *generateMoshiOneOfModels(model, thePackage, jsonlib))
 			}
 		} else if model.IsEnum() {
 			files = append(files, *generateEnumModel(model, thePackage))
@@ -52,14 +54,14 @@ func generateVersionModels(version *spec.Version, jsonlib string, thePackage Mod
 	return files
 }
 
-func addObjectModelProperties(w *sources.Writer, model *spec.NamedModel) {
+func addObjectModelProperties(w *sources.Writer, jsonlib string, model *spec.NamedModel) {
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
-		w.Line(`public %s %s() {`, JavaType(&field.Type.Definition), getterName(&field))
+		w.Line(`public %s %s() {`, JavaType(&field.Type.Definition, jsonlib), getterName(&field))
 		w.Line(`  return %s;`, field.Name.CamelCase())
 		w.Line(`}`)
 		w.EmptyLine()
-		w.Line(`public void %s(%s %s) {`, setterName(&field), JavaType(&field.Type.Definition), field.Name.CamelCase())
+		w.Line(`public void %s(%s %s) {`, setterName(&field), JavaType(&field.Type.Definition, jsonlib), field.Name.CamelCase())
 		w.Line(`  this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
 		w.Line(`}`)
 	}
@@ -145,7 +147,7 @@ func oneOfItemClassName(item *spec.NamedDefinition) string {
 	return item.Name.PascalCase()
 }
 
-func addOneOfModelMethods(w *sources.Writer, item *spec.NamedDefinition) {
+func addOneOfModelMethods(w *sources.Writer, jsonlib string, item *spec.NamedDefinition) {
 	w.Line(`@Override`)
 	w.Line(`public boolean equals(Object o) {`)
 	w.Line(`  if (this == o) return true;`)
@@ -161,6 +163,6 @@ func addOneOfModelMethods(w *sources.Writer, item *spec.NamedDefinition) {
 	w.EmptyLine()
 	w.Line(`@Override`)
 	w.Line(`public String toString() {`)
-	w.Line(`  return String.format("%s{data=%s}", data);`, JavaType(&item.Type.Definition), "%s")
+	w.Line(`  return String.format("%s{data=%s}", data);`, JavaType(&item.Type.Definition, jsonlib), "%s")
 	w.Line(`}`)
 }
