@@ -1,4 +1,4 @@
-package conopenapi
+package openapi
 
 import (
 	"fmt"
