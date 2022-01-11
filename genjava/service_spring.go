@@ -16,7 +16,9 @@ func GenerateService(specification *spec.Spec, jsonlib string, packageName strin
 	mainPackage := Package(generatePath, packageName)
 
 	modelsPackage := mainPackage.Subpackage("models")
-	newSources.AddGenerated(generateJson(modelsPackage))
+	if jsonlib == Jackson {
+		newSources.AddGenerated(generateJson(modelsPackage))
+	}
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
