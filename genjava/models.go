@@ -29,6 +29,10 @@ func generateModels(specification *spec.Spec, thePackage Module, jsonlib string)
 	if jsonlib == Jackson {
 		files = append(files, *generateJson(thePackage))
 	}
+	if jsonlib == Moshi {
+		adaptersPackage := thePackage.Subpackage("adapters")
+		files = append(files, generateAdapters(adaptersPackage)...)
+	}
 	return files
 }
 
