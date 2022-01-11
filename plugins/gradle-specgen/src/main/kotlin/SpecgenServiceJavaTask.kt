@@ -12,6 +12,10 @@ public open class ServiceJavaConfig @Inject constructor(project: Project) {
     public val outputDirectory: Property<File> =
         project.objects.property<File>().convention(project.buildDir.resolve("generated-src/specgen"))
 
+    @Input
+    @Optional
+    public val jsonlib: Property<String> = project.objects.property()
+
     @InputFile
     @PathSensitive(value = PathSensitivity.RELATIVE)
     public val specFile: Property<File> =
@@ -39,10 +43,9 @@ public open class SpecgenServiceJavaTask public constructor() : SpecgenBaseTask(
 
         val commandlineArgs = mutableListOf(
             "service-java",
-            "--spec-file",
-            config.specFile.get().absolutePath,
-            "--generate-path",
-            config.outputDirectory.get().absolutePath
+            "--jsonlib", config.jsonlib.get(),
+            "--spec-file", config.specFile.get().absolutePath,
+            "--generate-path", config.outputDirectory.get().absolutePath
         )
 
         if (config.packageName.isPresent) {
