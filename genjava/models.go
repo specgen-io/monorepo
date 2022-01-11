@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GenerateModels(specification *spec.Spec, packageName string, generatePath string, jsonlib string) *sources.Sources {
+func GenerateModels(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *sources.Sources {
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
 	}
@@ -26,7 +26,9 @@ func generateModels(specification *spec.Spec, thePackage Module, jsonlib string)
 		versionPackage := thePackage.Subpackage(version.Version.FlatCase())
 		files = append(files, generateVersionModels(&version, versionPackage, jsonlib)...)
 	}
-	files = append(files, *generateJson(thePackage))
+	if jsonlib == Jackson {
+		files = append(files, *generateJson(thePackage))
+	}
 	return files
 }
 
