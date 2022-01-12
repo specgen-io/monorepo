@@ -54,7 +54,7 @@ func generateVersionModels(version *spec.Version, thePackage Module, jsonlib str
 				files = append(files, *generateMoshiOneOfModels(model, thePackage, jsonlib))
 			}
 		} else if model.IsEnum() {
-			files = append(files, *generateEnumModel(model, thePackage))
+			files = append(files, *generateEnumModel(model, thePackage, jsonlib))
 		}
 	}
 	return files
@@ -130,7 +130,7 @@ func addObjectModelMethods(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateEnumModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func generateEnumModel(model *spec.NamedModel, thePackage Module, jsonlib string) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -138,8 +138,15 @@ func generateEnumModel(model *spec.NamedModel, thePackage Module) *sources.CodeF
 	w.EmptyLine()
 	enumName := model.Name.PascalCase()
 	w.Line(`public enum %s {`, enumName)
+	var annotation string
+	if jsonlib == Jackson {
+		annotation = "JsonProperty"
+	}
+	if jsonlib == Moshi {
+		annotation = "Json"
+	}
 	for _, enumItem := range model.Enum.Items {
-		w.Line(`  @JsonProperty("%s") %s,`, enumItem.Value, enumItem.Name.UpperCase())
+		w.Line(`  @%s("%s") %s,`, annotation, enumItem.Value, enumItem.Name.UpperCase())
 	}
 	w.Line(`}`)
 
