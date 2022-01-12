@@ -54,7 +54,12 @@ func generateVersionModels(version *spec.Version, thePackage Module, jsonlib str
 				files = append(files, *generateMoshiOneOfModels(model, thePackage, jsonlib))
 			}
 		} else if model.IsEnum() {
-			files = append(files, *generateEnumModel(model, thePackage, jsonlib))
+			if jsonlib == Jackson {
+				files = append(files, *generateJacksonEnumModel(model, thePackage, jsonlib))
+			}
+			if jsonlib == Moshi {
+				files = append(files, *generateMoshiEnumModel(model, thePackage, jsonlib))
+			}
 		}
 	}
 	return files
@@ -128,32 +133,6 @@ func addObjectModelMethods(w *sources.Writer, model *spec.NamedModel) {
 	}
 	w.Line(`  return String.format("%s{%s}", %s);`, model.Name.PascalCase(), JoinDelimParams(formatParams), JoinDelimParams(formatArgs))
 	w.Line(`}`)
-}
-
-func generateEnumModel(model *spec.NamedModel, thePackage Module, jsonlib string) *sources.CodeFile {
-	w := NewJavaWriter()
-	w.Line(`package %s;`, thePackage.PackageName)
-	w.EmptyLine()
-	addJacksonImports(w)
-	w.EmptyLine()
-	enumName := model.Name.PascalCase()
-	w.Line(`public enum %s {`, enumName)
-	var annotation string
-	if jsonlib == Jackson {
-		annotation = "JsonProperty"
-	}
-	if jsonlib == Moshi {
-		annotation = "Json"
-	}
-	for _, enumItem := range model.Enum.Items {
-		w.Line(`  @%s("%s") %s,`, annotation, enumItem.Value, enumItem.Name.UpperCase())
-	}
-	w.Line(`}`)
-
-	return &sources.CodeFile{
-		Path:    thePackage.GetPath(enumName + ".java"),
-		Content: w.String(),
-	}
 }
 
 func oneOfItemClassName(item *spec.NamedDefinition) string {

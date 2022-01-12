@@ -49,6 +49,25 @@ func generateMoshiObjectModel(model *spec.NamedModel, thePackage Module, jsonlib
 	}
 }
 
+func generateMoshiEnumModel(model *spec.NamedModel, thePackage Module, jsonlib string) *sources.CodeFile {
+	w := NewJavaWriter()
+	w.Line(`package %s;`, thePackage.PackageName)
+	w.EmptyLine()
+	addMoshiImports(w)
+	w.EmptyLine()
+	enumName := model.Name.PascalCase()
+	w.Line(`public enum %s {`, enumName)
+	for _, enumItem := range model.Enum.Items {
+		w.Line(`  @Json("%s") %s,`, enumItem.Value, enumItem.Name.UpperCase())
+	}
+	w.Line(`}`)
+
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath(enumName + ".java"),
+		Content: w.String(),
+	}
+}
+
 func generateMoshiOneOfModels(model *spec.NamedModel, thePackage Module, jsonlib string) *sources.CodeFile {
 	interfaceName := model.Name.PascalCase()
 	w := NewJavaWriter()
