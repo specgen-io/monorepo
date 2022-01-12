@@ -58,7 +58,7 @@ func generateMoshiEnumModel(model *spec.NamedModel, thePackage Module, jsonlib s
 	enumName := model.Name.PascalCase()
 	w.Line(`public enum %s {`, enumName)
 	for _, enumItem := range model.Enum.Items {
-		w.Line(`  @Json("%s") %s,`, enumItem.Value, enumItem.Name.UpperCase())
+		w.Line(`  @Json(name = "%s") %s,`, enumItem.Value, enumItem.Name.UpperCase())
 	}
 	w.Line(`}`)
 
