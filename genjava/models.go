@@ -21,24 +21,6 @@ func GenerateModels(specification *spec.Spec, jsonlib string, packageName string
 	return newSources
 }
 
-type ModelsGenerator interface {
-	SetupLibrary(thePackage Module) []sources.CodeFile
-	ObjectModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile
-	OneOfModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile
-	EnumModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile
-}
-
-func NewModelsGenerator(jsonlib string) ModelsGenerator {
-	types := NewTypes(jsonlib)
-	if jsonlib == Jackson {
-		return NewJacksonGenerator(types)
-	}
-	if jsonlib == Moshi {
-		return NewMoshiGenerator(types)
-	}
-	return nil
-}
-
 func (g *Generator) generateModels(specification *spec.Spec, thePackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, version := range specification.Versions {
@@ -62,4 +44,22 @@ func (g *Generator) generateVersionModels(version *spec.Version, thePackage Modu
 		}
 	}
 	return files
+}
+
+type ModelsGenerator interface {
+	SetupLibrary(thePackage Module) []sources.CodeFile
+	ObjectModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile
+	OneOfModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile
+	EnumModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile
+}
+
+func NewModelsGenerator(jsonlib string) ModelsGenerator {
+	types := NewTypes(jsonlib)
+	if jsonlib == Jackson {
+		return NewJacksonGenerator(types)
+	}
+	if jsonlib == Moshi {
+		return NewMoshiGenerator(types)
+	}
+	return nil
 }
