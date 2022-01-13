@@ -32,6 +32,20 @@ func (g *MoshiGenerator) WriteJson(varData string) string {
 	panic("This is not implemented yet!!!")
 }
 
+func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
+	for _, model := range version.ResolvedModels {
+		if model.IsObject() {
+			files = append(files, *g.ObjectModel(model, thePackage))
+		} else if model.IsOneOf() {
+			files = append(files, *g.OneOfModel(model, thePackage))
+		} else if model.IsEnum() {
+			files = append(files, *g.EnumModel(model, thePackage))
+		}
+	}
+	return files
+}
+
 func (g *MoshiGenerator) ObjectModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)

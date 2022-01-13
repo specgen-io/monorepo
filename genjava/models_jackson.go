@@ -50,6 +50,20 @@ public class Json {
 	}}
 }
 
+func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage Module) []sources.CodeFile {
+	files := []sources.CodeFile{}
+	for _, model := range version.ResolvedModels {
+		if model.IsObject() {
+			files = append(files, *g.ObjectModel(model, thePackage))
+		} else if model.IsOneOf() {
+			files = append(files, *g.OneOfModel(model, thePackage))
+		} else if model.IsEnum() {
+			files = append(files, *g.EnumModel(model, thePackage))
+		}
+	}
+	return files
+}
+
 func addJacksonImports(w *sources.Writer) {
 	w.Line(`import java.time.*;`)
 	w.Line(`import java.util.*;`)
