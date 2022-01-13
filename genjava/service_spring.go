@@ -15,22 +15,22 @@ func GenerateService(specification *spec.Spec, jsonlib string, packageName strin
 
 	mainPackage := Package(generatePath, packageName)
 
+	generator := NewGenerator(jsonlib)
+
 	modelsPackage := mainPackage.Subpackage("models")
-	if jsonlib == Jackson {
-		newSources.AddGenerated(generateJson(modelsPackage))
-	}
+	generator.Models.SetupLibrary(modelsPackage)
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		newSources.AddGeneratedAll(generateVersionModels(&version, modelsVersionPackage, jsonlib))
+		newSources.AddGeneratedAll(generator.generateVersionModels(&version, modelsVersionPackage))
 
 		serviceVersionPackage := versionPackage.Subpackage("services")
-		newSources.AddGeneratedAll(generateServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage, jsonlib))
+		newSources.AddGeneratedAll(generator.generateServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage))
 
 		controllerVersionPackage := versionPackage.Subpackage("controllers")
-		newSources.AddGeneratedAll(generateServicesControllers(&version, controllerVersionPackage, modelsPackage, modelsVersionPackage, serviceVersionPackage, jsonlib))
+		newSources.AddGeneratedAll(generator.generateServicesControllers(&version, controllerVersionPackage, modelsPackage, modelsVersionPackage, serviceVersionPackage))
 	}
 
 	if swaggerPath != "" {
@@ -47,7 +47,7 @@ func GenerateService(specification *spec.Spec, jsonlib string, packageName strin
 			modelsVersionPackage := versionPackage.Subpackage("models")
 			serviceVersionPackage := versionPackage.Subpackage("services")
 
-			newSources.AddScaffoldedAll(generateServicesImplementations(&version, serviceImplVersionPackage, modelsVersionPackage, serviceVersionPackage, jsonlib))
+			newSources.AddScaffoldedAll(generator.generateServicesImplementations(&version, serviceImplVersionPackage, modelsVersionPackage, serviceVersionPackage))
 		}
 	}
 
