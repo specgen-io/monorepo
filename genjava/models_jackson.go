@@ -17,6 +17,14 @@ func NewJacksonGenerator(types *Types) *JacksonGenerator {
 	return &JacksonGenerator{types}
 }
 
+func (g *JacksonGenerator) ReadJson(varJson string, typeJava string) string {
+	return fmt.Sprintf(`objectMapper.readValue(%s, %s.class)`, varJson, typeJava)
+}
+
+func (g *JacksonGenerator) WriteJson(varData string) string {
+	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData)
+}
+
 func (g *JacksonGenerator) SetupLibrary(thePackage Module) []sources.CodeFile {
 	code := `
 package [[.PackageName]];
