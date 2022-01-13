@@ -6,11 +6,7 @@ import (
 )
 
 type Types struct {
-	Jsonlib string
-}
-
-func NewTypes(jsonlib string) *Types {
-	return &Types{jsonlib}
+	RawJsonType string
 }
 
 func (t *Types) JavaType(typ *spec.TypeDef) string {
@@ -86,14 +82,7 @@ func (t *Types) PlainJavaType(typ string, referenceTypesOnly bool) (string, bool
 	case spec.TypeDateTime:
 		return "LocalDateTime", true
 	case spec.TypeJson:
-		var result string
-		if t.Jsonlib == Jackson {
-			result = "JsonNode"
-		}
-		if t.Jsonlib == Moshi {
-			result = "Map<String, Object>"
-		}
-		return result, true
+		return t.RawJsonType, true
 	case spec.TypeEmpty:
 		return "void", false
 	default:

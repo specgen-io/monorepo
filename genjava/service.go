@@ -24,7 +24,7 @@ func GenerateService(specification *spec.Spec, jsonlib string, packageName strin
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		newSources.AddGeneratedAll(generator.generateVersionModels(&version, modelsVersionPackage))
+		newSources.AddGeneratedAll(generator.Models.VersionModels(&version, modelsVersionPackage))
 
 		serviceVersionPackage := versionPackage.Subpackage("services")
 		newSources.AddGeneratedAll(generator.generateServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage))
