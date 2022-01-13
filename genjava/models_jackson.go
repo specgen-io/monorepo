@@ -155,7 +155,7 @@ func (g *JacksonGenerator) OneOfModel(model *spec.NamedModel, thePackage Module)
 	}
 	w.Line(`@JsonSubTypes({`)
 	for _, item := range model.OneOf.Items {
-		w.Line(`  @Types(value = %s.%s.class, name = "%s"),`, interfaceName, oneOfItemClassName(&item), item.Name.Source)
+		w.Line(`  @Type(value = %s.%s.class, name = "%s"),`, interfaceName, oneOfItemClassName(&item), item.Name.Source)
 	}
 	w.Line(`})`)
 	w.Line(`public interface %s {`, interfaceName)
