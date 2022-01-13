@@ -45,10 +45,10 @@ func DefaultValue(typ *spec.TypeDef, value string) string {
 			if typ.Info.Model != nil && typ.Info.Model.IsEnum() {
 				return typ.Info.Model.Name.PascalCase() + `.` + casee.ToUpperCase(value)
 			} else {
-				panic(fmt.Sprintf("Type: %s does not support default value", typ.Name))
+				panic(fmt.Sprintf("Types: %s does not support default value", typ.Name))
 			}
 		}
 	default:
-		panic(fmt.Sprintf("Type: %s does not support default value", typ.Name))
+		panic(fmt.Sprintf("Types: %s does not support default value", typ.Name))
 	}
 }

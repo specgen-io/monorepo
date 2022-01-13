@@ -6,16 +6,16 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServicesInterfaces(version *spec.Version, thePackage Module, modelsVersionPackage Module, jsonlib string) []sources.CodeFile {
+func (g *Generator) generateServicesInterfaces(version *spec.Version, thePackage Module, modelsVersionPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, generateInterface(&api, apiPackage, modelsVersionPackage, jsonlib)...)
+		files = append(files, g.generateInterface(&api, apiPackage, modelsVersionPackage)...)
 	}
 	return files
 }
 
-func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Module, jsonlib string) []sources.CodeFile {
+func (g *Generator) generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
 	w := NewJavaWriter()
@@ -29,13 +29,13 @@ func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Mo
 	w.EmptyLine()
 	w.Line(`public interface %s {`, serviceInterfaceName(api))
 	for _, operation := range api.Operations {
-		w.Line(`  %s;`, generateResponsesSignatures(&operation, jsonlib))
+		w.Line(`  %s;`, g.generateResponsesSignatures(&operation))
 	}
 	w.Line(`}`)
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, generateResponseInterface(&operation, apiPackage, modelsVersionPackage, jsonlib)...)
+			files = append(files, g.generateResponseInterface(&operation, apiPackage, modelsVersionPackage)...)
 		}
 	}
 
@@ -47,36 +47,36 @@ func generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Mo
 	return files
 }
 
-func generateResponsesSignatures(operation *spec.NamedOperation, jsonlib string) string {
+func (g *Generator) generateResponsesSignatures(operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
-			return fmt.Sprintf(`%s %s(%s)`, JavaType(&response.Type.Definition, jsonlib), operation.Name.CamelCase(), JoinDelimParams(addOperationResponseParams(operation, jsonlib)))
+			return fmt.Sprintf(`%s %s(%s)`, g.Types.JavaType(&response.Type.Definition), operation.Name.CamelCase(), JoinDelimParams(addOperationResponseParams(operation, g.Types)))
 		}
 	}
 	if len(operation.Responses) > 1 {
-		return fmt.Sprintf(`%s %s(%s)`, serviceResponseInterfaceName(operation), operation.Name.CamelCase(), JoinDelimParams(addOperationResponseParams(operation, jsonlib)))
+		return fmt.Sprintf(`%s %s(%s)`, serviceResponseInterfaceName(operation), operation.Name.CamelCase(), JoinDelimParams(addOperationResponseParams(operation, g.Types)))
 	}
 	return ""
 }
 
-func addOperationResponseParams(operation *spec.NamedOperation, jsonlib string) []string {
+func addOperationResponseParams(operation *spec.NamedOperation, types *Types) []string {
 	params := []string{}
 	if operation.Body != nil {
-		params = append(params, fmt.Sprintf("%s body", JavaType(&operation.Body.Type.Definition, jsonlib)))
+		params = append(params, fmt.Sprintf("%s body", types.JavaType(&operation.Body.Type.Definition)))
 	}
 	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf("%s %s", JavaType(&param.Type.Definition, jsonlib), param.Name.CamelCase()))
+		params = append(params, fmt.Sprintf("%s %s", types.JavaType(&param.Type.Definition), param.Name.CamelCase()))
 	}
 	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf("%s %s", JavaType(&param.Type.Definition, jsonlib), param.Name.CamelCase()))
+		params = append(params, fmt.Sprintf("%s %s", types.JavaType(&param.Type.Definition), param.Name.CamelCase()))
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, fmt.Sprintf("%s %s", JavaType(&param.Type.Definition, jsonlib), param.Name.CamelCase()))
+		params = append(params, fmt.Sprintf("%s %s", types.JavaType(&param.Type.Definition), param.Name.CamelCase()))
 	}
 	return params
 }
 
-func generateResponseInterface(operation *spec.NamedOperation, apiPackage Module, modelsVersionPackage Module, jsonlib string) []sources.CodeFile {
+func (g *Generator) generateResponseInterface(operation *spec.NamedOperation, apiPackage Module, modelsVersionPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -88,7 +88,7 @@ func generateResponseInterface(operation *spec.NamedOperation, apiPackage Module
 		if index > 0 {
 			w.EmptyLine()
 		}
-		generateResponsesImplementations(w.Indented(), jsonlib, &response)
+		g.generateResponsesImplementations(w.Indented(), &response)
 	}
 	w.Line(`}`)
 
@@ -99,16 +99,16 @@ func generateResponseInterface(operation *spec.NamedOperation, apiPackage Module
 	return files
 }
 
-func generateResponsesImplementations(w *sources.Writer, jsonlib string, response *spec.NamedResponse) {
+func (g *Generator) generateResponsesImplementations(w *sources.Writer, response *spec.NamedResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
 	w.Line(`class %s implements %s {`, serviceResponseImplementationName, serviceResponseInterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {
-		w.Line(`  public %s body;`, JavaType(&response.Type.Definition, jsonlib))
+		w.Line(`  public %s body;`, g.Types.JavaType(&response.Type.Definition))
 		w.EmptyLine()
 		w.Line(`  public %s() {`, serviceResponseImplementationName)
 		w.Line(`  }`)
 		w.EmptyLine()
-		w.Line(`  public %s(%s body) {`, serviceResponseImplementationName, JavaType(&response.Type.Definition, jsonlib))
+		w.Line(`  public %s(%s body) {`, serviceResponseImplementationName, g.Types.JavaType(&response.Type.Definition))
 		w.Line(`    this.body = body;`)
 		w.Line(`  }`)
 	}
