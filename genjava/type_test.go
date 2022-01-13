@@ -6,86 +6,76 @@ import (
 	"testing"
 )
 
-func CheckPlainType(t *testing.T, plainType string, expected string) {
-	typ := spec.Plain(plainType)
-	javaType := JavaType(typ)
+func CheckJacksonType(t *testing.T, typ *spec.TypeDef, expected string) {
+	types := NewTypes(Jackson)
+	javaType := types.JavaType(typ)
 	assert.Equal(t, javaType, expected)
 }
 
 func TestPlainTypeInt(t *testing.T) {
-	CheckPlainType(t, spec.TypeInt32, "int")
+	CheckJacksonType(t, spec.Plain(spec.TypeInt32), "int")
 }
 
 func TestPlainTypeLong(t *testing.T) {
-	CheckPlainType(t, spec.TypeInt64, "long")
+	CheckJacksonType(t, spec.Plain(spec.TypeInt64), "long")
 }
 
 func TestPlainTypeFloat(t *testing.T) {
-	CheckPlainType(t, spec.TypeFloat, "float")
+	CheckJacksonType(t, spec.Plain(spec.TypeFloat), "float")
 }
 
 func TestPlainTypeDouble(t *testing.T) {
-	CheckPlainType(t, spec.TypeDouble, "double")
+	CheckJacksonType(t, spec.Plain(spec.TypeDouble), "double")
 }
 
 func TestPlainTypeDecimal(t *testing.T) {
-	CheckPlainType(t, spec.TypeDecimal, "BigDecimal")
+	CheckJacksonType(t, spec.Plain(spec.TypeDecimal), "BigDecimal")
 }
 
 func TestPlainTypeBoolean(t *testing.T) {
-	CheckPlainType(t, spec.TypeBoolean, "boolean")
+	CheckJacksonType(t, spec.Plain(spec.TypeBoolean), "boolean")
 }
 
 func TestPlainTypeString(t *testing.T) {
-	CheckPlainType(t, spec.TypeString, "String")
+	CheckJacksonType(t, spec.Plain(spec.TypeString), "String")
 }
 
 func TestPlainTypeUuid(t *testing.T) {
-	CheckPlainType(t, spec.TypeUuid, "UUID")
+	CheckJacksonType(t, spec.Plain(spec.TypeUuid), "UUID")
 }
 
 func TestPlainTypeDate(t *testing.T) {
-	CheckPlainType(t, spec.TypeDate, "LocalDate")
+	CheckJacksonType(t, spec.Plain(spec.TypeDate), "LocalDate")
 }
 
 func TestPlainTypeDateTime(t *testing.T) {
-	CheckPlainType(t, spec.TypeDateTime, "LocalDateTime")
+	CheckJacksonType(t, spec.Plain(spec.TypeDateTime), "LocalDateTime")
 }
 
 func TestPlainTypeJson(t *testing.T) {
-	CheckPlainType(t, spec.TypeJson, "JsonNode")
+	CheckJacksonType(t, spec.Plain(spec.TypeJson), "JsonNode")
 }
 
 func TestPlainTypeEmpty(t *testing.T) {
-	CheckPlainType(t, spec.TypeEmpty, "void")
+	CheckJacksonType(t, spec.Plain(spec.TypeEmpty), "void")
 }
 
 func TestNullableType(t *testing.T) {
-	typ := spec.Nullable(spec.Plain(spec.TypeInt32))
-	javaType := JavaType(typ)
-	assert.Equal(t, javaType, "Integer")
+	CheckJacksonType(t, spec.Nullable(spec.Plain(spec.TypeInt32)), "Integer")
 }
 
 func TestArrayType(t *testing.T) {
-	typ := spec.Array(spec.Plain(spec.TypeString))
-	javaType := JavaType(typ)
-	assert.Equal(t, javaType, "String[]")
+	CheckJacksonType(t, spec.Array(spec.Plain(spec.TypeString)), "String[]")
 }
 
 func TestMapType(t *testing.T) {
-	typ := spec.Map(spec.Plain("Model"))
-	javaType := JavaType(typ)
-	assert.Equal(t, javaType, "Map<String, Model>")
+	CheckJacksonType(t, spec.Map(spec.Plain("Model")), "Map<String, Model>")
 }
 
 func TestComplexType(t *testing.T) {
-	typ := spec.Array(spec.Nullable(spec.Plain(spec.TypeBoolean)))
-	javaType := JavaType(typ)
-	assert.Equal(t, javaType, "Boolean[]")
+	CheckJacksonType(t, spec.Array(spec.Nullable(spec.Plain(spec.TypeBoolean))), "Boolean[]")
 }
 
 func TestMapScalarType(t *testing.T) {
-	typ := spec.Map(spec.Plain(spec.TypeInt32))
-	javaType := JavaType(typ)
-	assert.Equal(t, javaType, "Map<String, Integer>")
+	CheckJacksonType(t, spec.Map(spec.Plain(spec.TypeInt32)), "Map<String, Integer>")
 }

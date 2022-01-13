@@ -10,6 +10,9 @@ public class ClientJavaMojo extends SpecgenAbstractMojo {
 	@Parameter(property = "specFile", defaultValue = "${project.basedir}/spec.yaml", required = true)
 	String specFile;
 
+	@Parameter(property = "jsonlib", required = true)
+	String jsonlib;
+
 	@Parameter(property = "packageName")
 	String packageName;
 
@@ -25,6 +28,7 @@ public class ClientJavaMojo extends SpecgenAbstractMojo {
 
 		List<String> commandlineArgs = new ArrayList<>(List.of(
 			"client-java",
+			"--jsonlib", jsonlib,
 			"--spec-file", specFile,
 			"--generate-path", generatePath
 		));
