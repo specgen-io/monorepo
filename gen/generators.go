@@ -59,11 +59,12 @@ var ModelsJava = Generator{
 	"Generate Java models source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
+		{Arg: ArgJsonlib, Required: true, Values: JsonlibJavaValues},
 		{Arg: ArgPackageName, Required: false},
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genjava.GenerateModels(specification, params[ArgPackageName], params[ArgGeneratePath])
+		return genjava.GenerateModels(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgGeneratePath])
 	},
 }
 
@@ -72,11 +73,12 @@ var ClientJava = Generator{
 	"Generate Java client source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
+		{Arg: ArgJsonlib, Required: true, Values: JsonlibJavaValues},
 		{Arg: ArgPackageName, Required: true},
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genjava.GenerateClient(specification, params[ArgPackageName], params[ArgGeneratePath])
+		return genjava.GenerateClient(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgGeneratePath])
 	},
 }
 
@@ -85,13 +87,14 @@ var ServiceJava = Generator{
 	"Generate Java service source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
+		{Arg: ArgJsonlib, Required: true, Values: JsonlibJavaValues},
 		{Arg: ArgPackageName, Required: false},
 		{Arg: ArgSwaggerPath, Required: false},
 		{Arg: ArgGeneratePath, Required: true},
 		{Arg: ArgServicesPath, Required: false},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genjava.GenerateService(specification, params[ArgPackageName], params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath])
+		return genjava.GenerateService(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath])
 	},
 }
 

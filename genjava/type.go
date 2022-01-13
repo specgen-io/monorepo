@@ -5,28 +5,36 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func JavaType(typ *spec.TypeDef) string {
-	javaType, _ := javaType(typ, false)
+type Types struct {
+	Jsonlib string
+}
+
+func NewTypes(jsonlib string) *Types {
+	return &Types{jsonlib}
+}
+
+func (t *Types) JavaType(typ *spec.TypeDef) string {
+	javaType, _ := t.javaType(typ, false)
 	return javaType
 }
 
-func JavaIsReferenceType(typ *spec.TypeDef) bool {
-	_, isReference := javaType(typ, false)
+func (t *Types) JavaIsReferenceType(typ *spec.TypeDef) bool {
+	_, isReference := t.javaType(typ, false)
 	return isReference
 }
 
-func javaType(typ *spec.TypeDef, referenceTypesOnly bool) (string, bool) {
+func (t *Types) javaType(typ *spec.TypeDef, referenceTypesOnly bool) (string, bool) {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainJavaType(typ.Plain, referenceTypesOnly)
+		return t.PlainJavaType(typ.Plain, referenceTypesOnly)
 	case spec.NullableType:
-		return javaType(typ.Child, true)
+		return t.javaType(typ.Child, true)
 	case spec.ArrayType:
-		child, _ := javaType(typ.Child, false)
+		child, _ := t.javaType(typ.Child, false)
 		result := child + "[]"
 		return result, true
 	case spec.MapType:
-		child, _ := javaType(typ.Child, true)
+		child, _ := t.javaType(typ.Child, true)
 		result := "Map<String, " + child + ">"
 		return result, true
 	default:
@@ -35,7 +43,7 @@ func javaType(typ *spec.TypeDef, referenceTypesOnly bool) (string, bool) {
 }
 
 // PlainJavaType Returns Java type name and boolean indicating if the type is reference or value type
-func PlainJavaType(typ string, referenceTypesOnly bool) (string, bool) {
+func (t *Types) PlainJavaType(typ string, referenceTypesOnly bool) (string, bool) {
 	switch typ {
 	case spec.TypeInt32:
 		if referenceTypesOnly {
@@ -78,7 +86,14 @@ func PlainJavaType(typ string, referenceTypesOnly bool) (string, bool) {
 	case spec.TypeDateTime:
 		return "LocalDateTime", true
 	case spec.TypeJson:
-		return "JsonNode", true
+		var result string
+		if t.Jsonlib == Jackson {
+			result = "JsonNode"
+		}
+		if t.Jsonlib == Moshi {
+			result = "Map<String, Object>"
+		}
+		return result, true
 	case spec.TypeEmpty:
 		return "void", false
 	default:

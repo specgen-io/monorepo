@@ -6,16 +6,16 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+func (g *Generator) generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, generateClient(&api, apiPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage)...)
+		files = append(files, g.generateClient(&api, apiPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage)...)
 	}
 	return files
 }
 
-func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+func (g *Generator) generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
 	w := NewJavaWriter()
@@ -51,13 +51,13 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 	w.Line(`  }`)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		generateClientMethod(w.Indented(), &operation)
+		g.generateClientMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, generateResponseInterface(&operation, apiPackage, modelsVersionPackage)...)
+			files = append(files, g.generateResponseInterface(&operation, apiPackage, modelsVersionPackage)...)
 		}
 	}
 
@@ -69,12 +69,12 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 	return files
 }
 
-func generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	requestBody := "null"
 
-	w.Line(`public %s {`, generateResponsesSignatures(operation))
+	w.Line(`public %s {`, g.generateResponsesSignatures(operation))
 	if operation.Body != nil {
 		bodyDataVar := "bodyJson"
 		mediaType := "application/json"
@@ -126,7 +126,7 @@ func generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
 		w.IndentWith(3)
 		w.Line(`logger.info("Received response with status code {}", response.code());`)
 		if !response.Type.Definition.IsEmpty() {
-			responseJavaType := JavaType(&response.Type.Definition)
+			responseJavaType := g.Types.JavaType(&response.Type.Definition)
 			w.Line(`%s responseBody;`, responseJavaType)
 			responseBody := fmt.Sprintf(`objectMapper.readValue(response.body().string(), %s.class);`, responseJavaType)
 			if response.Type.Definition.Plain == spec.TypeString {
