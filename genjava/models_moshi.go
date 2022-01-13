@@ -24,6 +24,14 @@ func NewMoshiGenerator(types *Types) *MoshiGenerator {
 	return &MoshiGenerator{types}
 }
 
+func (g *MoshiGenerator) ReadJson(varJson string, typeJava string) string {
+	panic("This is not implemented yet!!!")
+}
+
+func (g *MoshiGenerator) WriteJson(varData string) string {
+	panic("This is not implemented yet!!!")
+}
+
 func (g *MoshiGenerator) ObjectModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
