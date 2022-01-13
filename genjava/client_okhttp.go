@@ -16,18 +16,19 @@ func GenerateClient(specification *spec.Spec, jsonlib string, packageName string
 	newSources.AddGeneratedAll(generateUtils(utilsPackage))
 
 	modelsPackage := mainPackage.Subpackage("models")
-	if jsonlib == Jackson {
-		newSources.AddGenerated(generateJson(modelsPackage))
-	}
+
+	generator := NewGenerator(jsonlib)
+
+	generator.Models.SetupLibrary(modelsPackage)
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		newSources.AddGeneratedAll(generateVersionModels(&version, modelsVersionPackage, jsonlib))
+		newSources.AddGeneratedAll(generator.generateVersionModels(&version, modelsVersionPackage))
 
 		clientVersionPackage := versionPackage.Subpackage("clients")
-		newSources.AddGeneratedAll(generateClientsImplementations(&version, clientVersionPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage, jsonlib))
+		newSources.AddGeneratedAll(generator.generateClientsImplementations(&version, clientVersionPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage))
 	}
 
 	return newSources

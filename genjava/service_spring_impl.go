@@ -6,16 +6,16 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServicesImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, servicesVersionPackage Module, jsonlib string) []sources.CodeFile {
+func (g *Generator) generateServicesImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, servicesVersionPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := servicesVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, *generateServiceImplementation(&api, thePackage, modelsVersionPackage, serviceVersionSubpackage, jsonlib))
+		files = append(files, *g.generateServiceImplementation(&api, thePackage, modelsVersionPackage, serviceVersionSubpackage))
 	}
 	return files
 }
 
-func generateServiceImplementation(api *spec.Api, thePackage Module, modelsVersionPackage Module, serviceVersionSubpackage Module, jsonlib string) *sources.CodeFile {
+func (g *Generator) generateServiceImplementation(api *spec.Api, thePackage Module, modelsVersionPackage Module, serviceVersionSubpackage Module) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -32,7 +32,7 @@ func generateServiceImplementation(api *spec.Api, thePackage Module, modelsVersi
 	w.Line(`public class %s implements %s {`, serviceImplName(api), serviceInterfaceName(api))
 	for _, operation := range api.Operations {
 		w.Line(`  @Override`)
-		w.Line(`  public %s {`, generateResponsesSignatures(&operation, jsonlib))
+		w.Line(`  public %s {`, g.generateResponsesSignatures(&operation))
 		w.Line(`    throw new UnsupportedOperationException("Implementation has not added yet");`)
 		w.Line(`  }`)
 	}
