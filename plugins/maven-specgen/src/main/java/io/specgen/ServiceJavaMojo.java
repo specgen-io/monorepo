@@ -10,7 +10,7 @@ public class ServiceJavaMojo extends SpecgenAbstractMojo {
 	@Parameter(property = "specFile", defaultValue = "${project.basedir}/spec.yaml", required = true)
 	String specFile;
 
-	@Parameter(property = "jsonlib", required = true)
+	@Parameter(property = "jsonlib", defaultValue = "jackson", required = true)
 	String jsonlib;
 
 	@Parameter(property = "packageName")

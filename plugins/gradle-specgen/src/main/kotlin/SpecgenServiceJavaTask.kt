@@ -14,7 +14,8 @@ public open class ServiceJavaConfig @Inject constructor(project: Project) {
 
     @Input
     @Optional
-    public val jsonlib: Property<String> = project.objects.property()
+    public val jsonlib: Property<String> =
+        project.objects.property().convention("jackson")
 
     @InputFile
     @PathSensitive(value = PathSensitivity.RELATIVE)
