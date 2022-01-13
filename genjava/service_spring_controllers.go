@@ -79,7 +79,7 @@ func (g *Generator) generateMethod(w *sources.Writer, operation *spec.NamedOpera
 		if operation.Body.Type.Definition.Plain != spec.TypeString {
 			w.Line(`  Message requestBody;`)
 			w.Line(`  try {`)
-			w.Line(`    requestBody = objectMapper.readValue(bodyStr, %s.class);`, g.Types.JavaType(&operation.Body.Type.Definition))
+			w.Line(`    requestBody = %s;`, g.Models.ReadJson("bodyStr", g.Types.JavaType(&operation.Body.Type.Definition)))
 			w.Line(`  } catch (Exception e) {`)
 			w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
 			w.Line(`    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);`)
@@ -103,7 +103,7 @@ func (g *Generator) generateMethod(w *sources.Writer, operation *spec.NamedOpera
 				responseVar := "result"
 				if resp.Type.Definition.Plain != spec.TypeString {
 					responseVar = "responseJson"
-					w.Line(`  String %s = objectMapper.writeValueAsString(result);`, responseVar)
+					w.Line(`  String %s = %s;`, responseVar, g.Models.WriteJson("result"))
 				}
 				w.EmptyLine()
 				w.Line(`  logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
@@ -121,7 +121,8 @@ func (g *Generator) generateMethod(w *sources.Writer, operation *spec.NamedOpera
 			w.EmptyLine()
 			w.Line(`  if (result instanceof %s.%s) {`, serviceResponseInterfaceName(operation), resp.Name.PascalCase())
 			if !resp.Type.Definition.IsEmpty() {
-				w.Line(`    String responseJson = objectMapper.writeValueAsString(((%s.%s) result).body);`, serviceResponseInterfaceName(operation), resp.Name.PascalCase())
+				responseWrite := g.Models.WriteJson(fmt.Sprintf(`((%s.%s) result).body`, serviceResponseInterfaceName(operation), resp.Name.PascalCase()))
+				w.Line(`    String responseJson = %s;`, responseWrite)
 				w.Line(`    logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
 				w.Line(`    return new ResponseEntity<>(responseJson, headers, HttpStatus.%s);`, resp.Name.UpperCase())
 			} else {

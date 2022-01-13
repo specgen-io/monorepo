@@ -21,8 +21,7 @@ func (g *Generator) generateClient(api *spec.Api, apiPackage Module, modelsVersi
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
-	w.Line(`import com.fasterxml.jackson.core.*;`)
-	w.Line(`import com.fasterxml.jackson.databind.*;`)
+	w.Line(`import com.fasterxml.jackson.databind.ObjectMapper;`)
 	w.Line(`import okhttp3.*;`)
 	w.Line(`import org.slf4j.*;`)
 	w.Line(`import java.io.*;`)
@@ -84,8 +83,8 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		} else {
 			w.Line(`  String bodyJson;`)
 			generateClientTryCatch(w.Indented(),
-				`bodyJson = objectMapper.writeValueAsString(body);`,
-				`JsonProcessingException`, `e`,
+				fmt.Sprintf(`bodyJson = %s;`, g.Models.WriteJson("body")),
+				`IOException`, `e`,
 				`"Failed to serialize JSON " + e.getMessage()`)
 			w.EmptyLine()
 		}
@@ -128,12 +127,12 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		if !response.Type.Definition.IsEmpty() {
 			responseJavaType := g.Types.JavaType(&response.Type.Definition)
 			w.Line(`%s responseBody;`, responseJavaType)
-			responseBody := fmt.Sprintf(`objectMapper.readValue(response.body().string(), %s.class);`, responseJavaType)
+			responseBody := g.Models.ReadJson("response.body().string()", responseJavaType)
 			if response.Type.Definition.Plain == spec.TypeString {
-				responseBody = `response.body().string();`
+				responseBody = `response.body().string()`
 			}
 			generateClientTryCatch(w,
-				fmt.Sprintf(`responseBody = %s`, responseBody),
+				fmt.Sprintf(`responseBody = %s;`, responseBody),
 				`IOException`, `e`,
 				`"Failed to deserialize response body " + e.getMessage()`)
 			if len(operation.Responses) > 1 {

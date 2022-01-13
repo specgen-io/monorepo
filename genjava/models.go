@@ -51,6 +51,8 @@ type ModelsGenerator interface {
 	ObjectModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile
 	OneOfModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile
 	EnumModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile
+	ReadJson(jsonStr string, javaType string) string
+	WriteJson(varData string) string
 }
 
 func NewModelsGenerator(jsonlib string) ModelsGenerator {
