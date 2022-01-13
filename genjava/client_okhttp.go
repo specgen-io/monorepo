@@ -19,7 +19,7 @@ func GenerateClient(specification *spec.Spec, jsonlib string, packageName string
 
 	generator := NewGenerator(jsonlib)
 
-	generator.Models.SetupLibrary(modelsPackage)
+	newSources.AddGeneratedAll(generator.Models.SetupLibrary(modelsPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
