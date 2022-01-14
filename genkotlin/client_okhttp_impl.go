@@ -6,16 +6,16 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+func generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, jsonPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, generateClient(&api, apiPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage)...)
+		files = append(files, generateClient(&api, apiPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage)...)
 	}
 	return files
 }
 
-func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Module, jsonPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
 	w := NewKotlinWriter()
@@ -36,7 +36,7 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 	w.Line(`import %s`, mainPackage.PackageStar)
 	w.Line(`import %s`, utilsPackage.PackageStar)
 	w.Line(`import %s`, modelsVersionPackage.PackageStar)
-	w.Line(`import %s.setupObjectMapper`, modelsPackage.PackageName)
+	w.Line(`import %s.setupObjectMapper`, jsonPackage.PackageName)
 	w.EmptyLine()
 	className := clientName(api)
 	w.Line(`class %s(`, className)
