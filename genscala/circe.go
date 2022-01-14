@@ -9,19 +9,20 @@ import (
 
 func GenerateCirceModels(specification *spec.Spec, packageName string, generatePath string) *sources.Sources {
 	if packageName == "" {
-		packageName = specification.Name.FlatCase() + ".models"
+		packageName = specification.Name.FlatCase()
 	}
-	modelsPackage := NewPackage(generatePath, packageName, "")
-	jsonPackage := modelsPackage
+	mainPackage := NewPackage(generatePath, packageName, "")
+	jsonPackage := mainPackage
 
 	sources := sources.NewSources()
-
 	jsonHelpers := generateJson(jsonPackage)
 	taggedUnion := generateTaggedUnion(jsonPackage)
 	sources.AddGenerated(taggedUnion, jsonHelpers)
+
 	for _, version := range specification.Versions {
-		versionPackage := modelsPackage.Subpackage(version.Version.FlatCase())
-		versionFile := generateCirceModels(&version, versionPackage, jsonPackage)
+		versionClientPackage := mainPackage.Subpackage(version.Version.FlatCase())
+		versionModelsPackage := versionClientPackage.Subpackage("models")
+		versionFile := generateCirceModels(&version, versionModelsPackage, jsonPackage)
 		sources.AddGenerated(versionFile)
 	}
 

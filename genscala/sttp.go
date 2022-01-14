@@ -9,11 +9,11 @@ import (
 
 func GenerateSttpClient(specification *spec.Spec, packageName string, generatePath string) *sources.Sources {
 	if packageName == "" {
-		packageName = specification.Name.FlatCase() + ".client"
+		packageName = specification.Name.FlatCase()
 	}
-	clientPackage := NewPackage(generatePath, packageName, "")
-	jsonPackage := clientPackage
-	paramsPackage := clientPackage
+	mainPackage := NewPackage(generatePath, packageName, "")
+	jsonPackage := mainPackage
+	paramsPackage := mainPackage
 
 	sources := sources.NewSources()
 	jsonHelpers := generateJson(jsonPackage)
@@ -24,7 +24,7 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 	sources.AddGenerated(scalaHttpStaticFile)
 
 	for _, version := range specification.Versions {
-		versionClientPackage := clientPackage.Subpackage(version.Version.FlatCase())
+		versionClientPackage := mainPackage.Subpackage(version.Version.FlatCase())
 		versionModelsPackage := versionClientPackage.Subpackage("models")
 		clientImplementations := generateClientImplementations(&version, versionClientPackage, versionModelsPackage, jsonPackage, paramsPackage)
 		sources.AddGeneratedAll(clientImplementations)
