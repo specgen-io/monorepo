@@ -111,10 +111,11 @@ func generateKoaOperationRouting(w *sources.Writer, operation *spec.NamedOperati
 	w.Line("router.%s('%s', async (ctx) => {", strings.ToLower(operation.Endpoint.Method), getKoaUrl(operation.Endpoint))
 	w.Indent()
 
-	apiCallParamsObject := generateParametersParsing(w, validation, operation, "ctx.request.body", "ctx.request.rawBody", "zipHeaders(ctx.req.rawHeaders)", "ctx.params", "ctx.request.query", "ctx.throw(400)")
+	generateParametersParsing(w, operation, "zipHeaders(ctx.req.rawHeaders)", "ctx.params", "ctx.request.query", "ctx.throw(400)")
+	generateBodyParsing(w, validation, operation, "ctx.request.body", "ctx.request.rawBody", "response.status(400).send()")
 
 	w.Line("try {")
-	w.Line("  %s", serviceCall(operation, apiCallParamsObject))
+	w.Line("  %s", serviceCall(operation, getApiCallParamsObject(operation)))
 	if len(operation.Responses) == 1 {
 		generateKoaResponse(w.IndentedWith(1), &operation.Responses[0], validation, "result")
 	} else {

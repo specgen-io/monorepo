@@ -115,10 +115,11 @@ func generateExpressOperationRouting(w *sources.Writer, operation *spec.NamedOpe
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
 	w.Indent()
 
-	apiCallParamsObject := generateParametersParsing(w, validation, operation, "request.body", "request.body", "zipHeaders(request.rawHeaders)", "request.params", "request.query", "response.status(400).send()")
+	generateParametersParsing(w, operation, "zipHeaders(request.rawHeaders)", "request.params", "request.query", "response.status(400).send()")
+	generateBodyParsing(w, validation, operation, "request.body", "request.body", "response.status(400).send()")
 
 	w.Line("try {")
-	w.Line("  %s", serviceCall(operation, apiCallParamsObject))
+	w.Line("  %s", serviceCall(operation, getApiCallParamsObject(operation)))
 	if len(operation.Responses) == 1 {
 		generateExpressResponse(w.IndentedWith(1), &operation.Responses[0], validation, "result")
 	} else {
