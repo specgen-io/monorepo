@@ -8,6 +8,9 @@ import (
 func GenerateClient(specification *spec.Spec, packageName string, generatePath string) *sources.Sources {
 	sources := sources.NewSources()
 
+	if packageName == "" {
+		packageName = specification.Name.SnakeCase()
+	}
 	mainPackage := Package(generatePath, packageName)
 
 	sources.AddGenerated(generateClientException(mainPackage))
@@ -15,8 +18,8 @@ func GenerateClient(specification *spec.Spec, packageName string, generatePath s
 	utilsPackage := mainPackage.Subpackage("utils")
 	sources.AddGeneratedAll(generateUtils(utilsPackage))
 
-	modelsPackage := mainPackage.Subpackage("models")
-	sources.AddGenerated(generateJson(modelsPackage))
+	jsonPackage := mainPackage.Subpackage("json")
+	sources.AddGenerated(generateJson(jsonPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
@@ -25,7 +28,7 @@ func GenerateClient(specification *spec.Spec, packageName string, generatePath s
 		sources.AddGenerated(generateVersionModels(&version, modelsVersionPackage))
 
 		clientVersionPackage := versionPackage.Subpackage("clients")
-		sources.AddGeneratedAll(generateClientsImplementations(&version, clientVersionPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage))
+		sources.AddGeneratedAll(generateClientsImplementations(&version, clientVersionPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage))
 	}
 
 	return sources

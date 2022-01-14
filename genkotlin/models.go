@@ -13,21 +13,18 @@ func GenerateModels(specification *spec.Spec, packageName string, generatePath s
 		packageName = specification.Name.SnakeCase()
 	}
 	mainPackage := Package(generatePath, packageName)
-	modelsPackage := mainPackage.Subpackage("models")
 
-	sources.AddGeneratedAll(generateModels(specification, modelsPackage))
+	jsonPackage := mainPackage.Subpackage("json")
+	sources.AddGenerated(generateJson(jsonPackage))
+
+	for _, version := range specification.Versions {
+		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
+
+		modelsVersionPackage := versionPackage.Subpackage("models")
+		sources.AddGenerated(generateVersionModels(&version, modelsVersionPackage))
+	}
 
 	return sources
-}
-
-func generateModels(specification *spec.Spec, thePackage Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
-	for _, version := range specification.Versions {
-		versionPackage := thePackage.Subpackage(version.Version.FlatCase())
-		files = append(files, *generateVersionModels(&version, versionPackage))
-	}
-	files = append(files, *generateJson(thePackage))
-	return files
 }
 
 func generateJson(thePackage Module) *sources.CodeFile {
