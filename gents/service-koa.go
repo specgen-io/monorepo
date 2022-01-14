@@ -113,12 +113,12 @@ func generateKoaOperationRouting(w *sources.Writer, operation *spec.NamedOperati
 
 	if operation.Body != nil {
 		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`if (ctx.request.type == 'text/plain') {`)
+			w.Line(`if (ctx.request.type != 'text/plain') {`)
 			w.Line(`  ctx.throw(400)`)
 			w.Line(`  return`)
 			w.Line(`}`)
 		} else {
-			w.Line(`if (ctx.request.type == 'application/json') {`)
+			w.Line(`if (ctx.request.type != 'application/json') {`)
 			w.Line(`  ctx.throw(400)`)
 			w.Line(`  return`)
 			w.Line(`}`)
