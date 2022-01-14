@@ -54,17 +54,17 @@ func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage Modul
 	files := []sources.CodeFile{}
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
-			files = append(files, *g.ObjectModel(model, thePackage))
+			files = append(files, *g.modelObject(model, thePackage))
 		} else if model.IsOneOf() {
-			files = append(files, *g.OneOfModel(model, thePackage))
+			files = append(files, *g.modelOneOf(model, thePackage))
 		} else if model.IsEnum() {
-			files = append(files, *g.EnumModel(model, thePackage))
+			files = append(files, *g.modelEnum(model, thePackage))
 		}
 	}
 	return files
 }
 
-func addJacksonImports(w *sources.Writer) {
+func jacksonImports(w *sources.Writer) {
 	w.Line(`import java.time.*;`)
 	w.Line(`import java.util.*;`)
 	w.Line(`import java.math.BigDecimal;`)
@@ -73,7 +73,7 @@ func addJacksonImports(w *sources.Writer) {
 	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
 }
 
-func getJacksonJsonPropertyAnnotation(field *spec.NamedDefinition) string {
+func jacksonJsonPropertyAnnotation(field *spec.NamedDefinition) string {
 	required := "false"
 	if !field.Type.Definition.IsNullable() {
 		required = "true"
@@ -81,17 +81,17 @@ func getJacksonJsonPropertyAnnotation(field *spec.NamedDefinition) string {
 	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.Source, required)
 }
 
-func (g *JacksonGenerator) ObjectModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	addJacksonImports(w)
+	jacksonImports(w)
 	w.EmptyLine()
 	className := model.Name.PascalCase()
 	w.Line(`public class %s {`, className)
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
-		w.Line(getJacksonJsonPropertyAnnotation(&field))
+		w.Line(jacksonJsonPropertyAnnotation(&field))
 		w.Line(`  private %s %s;`, g.Type.JavaType(&field.Type.Definition), field.Name.CamelCase())
 	}
 	if len(model.Object.Fields) == 0 {
@@ -100,7 +100,7 @@ func (g *JacksonGenerator) ObjectModel(model *spec.NamedModel, thePackage Module
 		w.Line(`  @JsonCreator`)
 		w.Line(`  public %s(`, model.Name.PascalCase())
 		for i, field := range model.Object.Fields {
-			w.Line(`    %s`, getJacksonJsonPropertyAnnotation(&field))
+			w.Line(`    %s`, jacksonJsonPropertyAnnotation(&field))
 			ctorParam := fmt.Sprintf(`    %s %s`, g.Type.JavaType(&field.Type.Definition), field.Name.CamelCase())
 			if i == len(model.Object.Fields)-1 {
 				w.Line(`%s`, ctorParam)
@@ -137,11 +137,11 @@ func (g *JacksonGenerator) ObjectModel(model *spec.NamedModel, thePackage Module
 	}
 }
 
-func (g *JacksonGenerator) EnumModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	addJacksonImports(w)
+	jacksonImports(w)
 	w.EmptyLine()
 	enumName := model.Name.PascalCase()
 	w.Line(`public enum %s {`, enumName)
@@ -156,12 +156,12 @@ func (g *JacksonGenerator) EnumModel(model *spec.NamedModel, thePackage Module) 
 	}
 }
 
-func (g *JacksonGenerator) OneOfModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
 	interfaceName := model.Name.PascalCase()
 	w := NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
-	addJacksonImports(w)
+	jacksonImports(w)
 	w.EmptyLine()
 	if model.OneOf.Discriminator != nil {
 		w.Line(`@JsonTypeInfo(`)
@@ -185,7 +185,7 @@ func (g *JacksonGenerator) OneOfModel(model *spec.NamedModel, thePackage Module)
 		if index > 0 {
 			w.EmptyLine()
 		}
-		g.generateJacksonOneOfImplementation(w.Indented(), &item, model)
+		g.modelOneOfImplementation(w.Indented(), &item, model)
 	}
 	w.Line(`}`)
 
@@ -195,7 +195,7 @@ func (g *JacksonGenerator) OneOfModel(model *spec.NamedModel, thePackage Module)
 	}
 }
 
-func (g *JacksonGenerator) generateJacksonOneOfImplementation(w *sources.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
+func (g *JacksonGenerator) modelOneOfImplementation(w *sources.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
 	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
 	w.Line(`  @JsonUnwrapped`)
 	w.Line(`  public %s data;`, g.Type.JavaType(&item.Type.Definition))

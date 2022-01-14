@@ -6,14 +6,14 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (g *Generator) generateResponsesSignatures(operation *spec.NamedOperation) string {
+func generateResponsesSignatures(types *Types, operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
-			return fmt.Sprintf(`%s %s(%s)`, g.Types.JavaType(&response.Type.Definition), operation.Name.CamelCase(), JoinDelimParams(addOperationResponseParams(operation, g.Types)))
+			return fmt.Sprintf(`%s %s(%s)`, types.JavaType(&response.Type.Definition), operation.Name.CamelCase(), JoinDelimParams(addOperationResponseParams(operation, types)))
 		}
 	}
 	if len(operation.Responses) > 1 {
-		return fmt.Sprintf(`%s %s(%s)`, serviceResponseInterfaceName(operation), operation.Name.CamelCase(), JoinDelimParams(addOperationResponseParams(operation, g.Types)))
+		return fmt.Sprintf(`%s %s(%s)`, serviceResponseInterfaceName(operation), operation.Name.CamelCase(), JoinDelimParams(addOperationResponseParams(operation, types)))
 	}
 	return ""
 }
@@ -35,7 +35,7 @@ func addOperationResponseParams(operation *spec.NamedOperation, types *Types) []
 	return params
 }
 
-func (g *Generator) generateResponseInterface(operation *spec.NamedOperation, apiPackage Module, modelsVersionPackage Module) []sources.CodeFile {
+func (g *Generator) ResponsesInterfaces(operation *spec.NamedOperation, apiPackage Module, modelsVersionPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -47,7 +47,7 @@ func (g *Generator) generateResponseInterface(operation *spec.NamedOperation, ap
 		if index > 0 {
 			w.EmptyLine()
 		}
-		g.generateResponsesImplementations(w.Indented(), &response)
+		g.responseImplementation(w.Indented(), &response)
 	}
 	w.Line(`}`)
 
@@ -58,7 +58,7 @@ func (g *Generator) generateResponseInterface(operation *spec.NamedOperation, ap
 	return files
 }
 
-func (g *Generator) generateResponsesImplementations(w *sources.Writer, response *spec.NamedResponse) {
+func (g *Generator) responseImplementation(w *sources.Writer, response *spec.NamedResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
 	w.Line(`class %s implements %s {`, serviceResponseImplementationName, serviceResponseInterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {

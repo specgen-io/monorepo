@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func generateClientException(thePackage Module) *sources.CodeFile {
+func ClientException(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 

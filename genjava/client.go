@@ -10,7 +10,7 @@ func GenerateClient(specification *spec.Spec, jsonlib string, packageName string
 
 	mainPackage := Package(generatePath, packageName)
 
-	newSources.AddGenerated(generateClientException(mainPackage))
+	newSources.AddGenerated(ClientException(mainPackage))
 
 	utilsPackage := mainPackage.Subpackage("utils")
 	newSources.AddGeneratedAll(generateUtils(utilsPackage))
@@ -28,7 +28,7 @@ func GenerateClient(specification *spec.Spec, jsonlib string, packageName string
 		newSources.AddGeneratedAll(generator.Models.VersionModels(&version, modelsVersionPackage))
 
 		clientVersionPackage := versionPackage.Subpackage("clients")
-		newSources.AddGeneratedAll(generator.generateClientsImplementations(&version, clientVersionPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage))
+		newSources.AddGeneratedAll(generator.Clients(&version, clientVersionPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage))
 	}
 
 	return newSources
