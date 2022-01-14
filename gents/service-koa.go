@@ -111,6 +111,20 @@ func generateKoaOperationRouting(w *sources.Writer, operation *spec.NamedOperati
 	w.Line("router.%s('%s', async (ctx) => {", strings.ToLower(operation.Endpoint.Method), getKoaUrl(operation.Endpoint))
 	w.Indent()
 
+	if operation.Body != nil {
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			w.Line(`if (ctx.request.type == 'text/plain') {`)
+			w.Line(`  response.status(400).send()`)
+			w.Line(`  return`)
+			w.Line(`}`)
+		} else {
+			w.Line(`if (ctx.request.type == 'application/json') {`)
+			w.Line(`  response.status(400).send()`)
+			w.Line(`  return`)
+			w.Line(`}`)
+		}
+	}
+
 	generateParametersParsing(w, operation, "zipHeaders(ctx.req.rawHeaders)", "ctx.params", "ctx.request.query", "ctx.throw(400)")
 	generateBodyParsing(w, validation, operation, "ctx.request.body", "ctx.request.rawBody", "ctx.throw(400)")
 
