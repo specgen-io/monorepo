@@ -112,7 +112,7 @@ func generateKoaOperationRouting(w *sources.Writer, operation *spec.NamedOperati
 	w.Indent()
 
 	generateParametersParsing(w, operation, "zipHeaders(ctx.req.rawHeaders)", "ctx.params", "ctx.request.query", "ctx.throw(400)")
-	generateBodyParsing(w, validation, operation, "ctx.request.body", "ctx.request.rawBody", "response.status(400).send()")
+	generateBodyParsing(w, validation, operation, "ctx.request.body", "ctx.request.rawBody", "ctx.throw(400)")
 
 	w.Line("try {")
 	w.Line("  %s", serviceCall(operation, getApiCallParamsObject(operation)))
