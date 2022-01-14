@@ -7,53 +7,71 @@ import (
 	"strings"
 )
 
-func generateParametersParsing(w *sources.Writer, validation string, operation *spec.NamedOperation, body, rawBody string, headers string, urlParams string, query string, badRequestStatement string) string {
+func getApiCallParamsObject(operation *spec.NamedOperation) string {
 	if operation.Body == nil && !operation.HasParams() {
 		return ""
 	}
 
 	apiCallParams := []string{}
 	if operation.Body != nil {
+		apiCallParams = append(apiCallParams, "body")
+	}
+	if len(operation.Endpoint.UrlParams) > 0 {
+		apiCallParams = append(apiCallParams, "...urlParams")
+	}
+	if len(operation.HeaderParams) > 0 {
+		apiCallParams = append(apiCallParams, "...headerParams")
+	}
+	if len(operation.QueryParams) > 0 {
+		apiCallParams = append(apiCallParams, "...queryParams")
+	}
+
+	return fmt.Sprintf(`{%s}`, strings.Join(apiCallParams, ", "))
+
+}
+
+func generateParametersParsing(w *sources.Writer, operation *spec.NamedOperation, headers, urlParams, query string, badRequestStatement string) {
+	if operation.HasParams() {
+		if len(operation.Endpoint.UrlParams) > 0 {
+			w.Line("var urlParams: %s", paramsTypeName(operation, "UrlParams"))
+		}
+		if len(operation.HeaderParams) > 0 {
+			w.Line("var headerParams: %s", paramsTypeName(operation, "HeaderParams"))
+		}
+		if len(operation.QueryParams) > 0 {
+			w.Line("var queryParams: %s", paramsTypeName(operation, "QueryParams"))
+		}
+		w.Line("try {")
+		if len(operation.Endpoint.UrlParams) > 0 {
+			w.Line("  urlParams = t.decode(%s, %s)", paramsRuntimeTypeName(paramsTypeName(operation, "UrlParams")), urlParams)
+		}
+		if len(operation.HeaderParams) > 0 {
+			w.Line("  headerParams = t.decode(%s, %s)", paramsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")), headers)
+		}
+		if len(operation.QueryParams) > 0 {
+			w.Line("  queryParams = t.decode(%s, %s)", paramsRuntimeTypeName(paramsTypeName(operation, "QueryParams")), query)
+		}
+		w.Line("} catch (error) {")
+		w.Line("  %s", badRequestStatement)
+		w.Line("  return")
+		w.Line("}")
+	}
+}
+
+func generateBodyParsing(w *sources.Writer, validation string, operation *spec.NamedOperation, body, rawBody string, badRequestStatement string) {
+	if operation.Body != nil {
 		if operation.Body.Type.Definition.Plain == spec.TypeString {
 			w.Line(`const body: string = %s`, rawBody)
 		} else {
 			w.Line("var body: %s", TsType(&operation.Body.Type.Definition))
-		}
-	}
-	if len(operation.Endpoint.UrlParams) > 0 {
-		w.Line("var urlParams: %s", paramsTypeName(operation, "UrlParams"))
-	}
-	if len(operation.HeaderParams) > 0 {
-		w.Line("var headerParams: %s", paramsTypeName(operation, "HeaderParams"))
-	}
-	if len(operation.QueryParams) > 0 {
-		w.Line("var queryParams: %s", paramsTypeName(operation, "QueryParams"))
-	}
-	w.Line("try {")
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain != spec.TypeString {
+			w.Line("try {")
 			w.Line("  body = t.decode(%s.%s, %s)", modelsPackage, runtimeType(validation, &operation.Body.Type.Definition), body)
+			w.Line("} catch (error) {")
+			w.Line("  %s", badRequestStatement)
+			w.Line("  return")
+			w.Line("}")
 		}
-		apiCallParams = append(apiCallParams, "body")
 	}
-	if len(operation.Endpoint.UrlParams) > 0 {
-		w.Line("  urlParams = t.decode(%s, %s)", paramsRuntimeTypeName(paramsTypeName(operation, "UrlParams")), urlParams)
-		apiCallParams = append(apiCallParams, "...urlParams")
-	}
-	if len(operation.HeaderParams) > 0 {
-		w.Line("  headerParams = t.decode(%s, %s)", paramsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")), headers)
-		apiCallParams = append(apiCallParams, "...headerParams")
-	}
-	if len(operation.QueryParams) > 0 {
-		w.Line("  queryParams = t.decode(%s, %s)", paramsRuntimeTypeName(paramsTypeName(operation, "QueryParams")), query)
-		apiCallParams = append(apiCallParams, "...queryParams")
-	}
-	w.Line("} catch (error) {")
-	w.Line("  %s", badRequestStatement)
-	w.Line("  return")
-	w.Line("}")
-
-	return fmt.Sprintf(`{%s}`, strings.Join(apiCallParams, ", "))
 }
 
 func serviceCall(operation *spec.NamedOperation, paramsObject string) string {
