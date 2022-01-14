@@ -7,21 +7,24 @@ import (
 )
 
 func GenerateModels(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *sources.Sources {
+	newSources := sources.NewSources()
+
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
 	}
+
 	mainPackage := Package(generatePath, packageName)
 
 	generator := NewModelsGenerator(jsonlib)
 
-	modelsPackage := mainPackage.Subpackage("models")
+	jsonPackage := mainPackage.Subpackage("json")
+	newSources.AddGeneratedAll(generator.SetupLibrary(jsonPackage))
 
-	newSources := sources.NewSources()
-
-	newSources.AddGeneratedAll(generator.SetupLibrary(modelsPackage))
 	for _, version := range specification.Versions {
-		versionPackage := modelsPackage.Subpackage(version.Version.FlatCase())
-		newSources.AddGeneratedAll(generator.VersionModels(&version, versionPackage))
+		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
+
+		versionModelsPackage := versionPackage.Subpackage("models")
+		newSources.AddGeneratedAll(generator.VersionModels(&version, versionModelsPackage))
 	}
 
 	return newSources
