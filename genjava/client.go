@@ -8,18 +8,21 @@ import (
 func GenerateClient(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *sources.Sources {
 	newSources := sources.NewSources()
 
+	if packageName == "" {
+		packageName = specification.Name.SnakeCase()
+	}
+
 	mainPackage := Package(generatePath, packageName)
+
+	generator := NewGenerator(jsonlib)
 
 	newSources.AddGenerated(ClientException(mainPackage))
 
 	utilsPackage := mainPackage.Subpackage("utils")
 	newSources.AddGeneratedAll(generateUtils(utilsPackage))
 
-	modelsPackage := mainPackage.Subpackage("models")
-
-	generator := NewGenerator(jsonlib)
-
-	newSources.AddGeneratedAll(generator.Models.SetupLibrary(modelsPackage))
+	jsonPackage := mainPackage.Subpackage("json")
+	newSources.AddGeneratedAll(generator.Models.SetupLibrary(jsonPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
@@ -28,7 +31,7 @@ func GenerateClient(specification *spec.Spec, jsonlib string, packageName string
 		newSources.AddGeneratedAll(generator.Models.VersionModels(&version, modelsVersionPackage))
 
 		clientVersionPackage := versionPackage.Subpackage("clients")
-		newSources.AddGeneratedAll(generator.Clients(&version, clientVersionPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage))
+		newSources.AddGeneratedAll(generator.Clients(&version, clientVersionPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage))
 	}
 
 	return newSources
