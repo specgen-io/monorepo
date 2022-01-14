@@ -17,8 +17,8 @@ func GenerateService(specification *spec.Spec, jsonlib string, packageName strin
 
 	generator := NewGenerator(jsonlib)
 
-	modelsPackage := mainPackage.Subpackage("models")
-	newSources.AddGeneratedAll(generator.Models.SetupLibrary(modelsPackage))
+	jsonPackage := mainPackage.Subpackage("json")
+	newSources.AddGeneratedAll(generator.Models.SetupLibrary(jsonPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
@@ -30,7 +30,7 @@ func GenerateService(specification *spec.Spec, jsonlib string, packageName strin
 		newSources.AddGeneratedAll(generator.ServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage))
 
 		controllerVersionPackage := versionPackage.Subpackage("controllers")
-		newSources.AddGeneratedAll(generator.ServicesControllers(&version, controllerVersionPackage, modelsPackage, modelsVersionPackage, serviceVersionPackage))
+		newSources.AddGeneratedAll(generator.ServicesControllers(&version, controllerVersionPackage, jsonPackage, modelsVersionPackage, serviceVersionPackage))
 	}
 
 	if swaggerPath != "" {

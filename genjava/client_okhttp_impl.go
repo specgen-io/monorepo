@@ -6,16 +6,16 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (g *Generator) Clients(version *spec.Version, thePackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+func (g *Generator) Clients(version *spec.Version, thePackage Module, modelsVersionPackage Module, jsonPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage)...)
+		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage)...)
 	}
 	return files
 }
 
-func (g *Generator) client(api *spec.Api, apiPackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+func (g *Generator) client(api *spec.Api, apiPackage Module, modelsVersionPackage Module, jsonPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
 	w := NewJavaWriter()
@@ -32,7 +32,7 @@ func (g *Generator) client(api *spec.Api, apiPackage Module, modelsVersionPackag
 	w.Line(`import %s;`, mainPackage.PackageStar)
 	w.Line(`import %s;`, utilsPackage.PackageStar)
 	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
-	w.Line(`import %s.Json;`, modelsPackage.PackageName)
+	w.Line(`import %s.Json;`, jsonPackage.PackageName)
 	w.EmptyLine()
 	className := clientName(api)
 	w.Line(`public class %s {`, className)
