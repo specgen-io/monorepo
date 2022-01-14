@@ -6,16 +6,16 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (g *Generator) generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+func (g *Generator) Clients(version *spec.Version, thePackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.generateClient(&api, apiPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage)...)
+		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, modelsPackage, utilsPackage, mainPackage)...)
 	}
 	return files
 }
 
-func (g *Generator) generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+func (g *Generator) client(api *spec.Api, apiPackage Module, modelsVersionPackage Module, modelsPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
 	w := NewJavaWriter()
@@ -56,7 +56,7 @@ func (g *Generator) generateClient(api *spec.Api, apiPackage Module, modelsVersi
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, g.generateResponseInterface(&operation, apiPackage, modelsVersionPackage)...)
+			files = append(files, g.ResponsesInterfaces(&operation, apiPackage, modelsVersionPackage)...)
 		}
 	}
 
@@ -73,7 +73,7 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 	url := operation.FullUrl()
 	requestBody := "null"
 
-	w.Line(`public %s {`, g.generateResponsesSignatures(operation))
+	w.Line(`public %s {`, generateResponsesSignatures(g.Types, operation))
 	if operation.Body != nil {
 		bodyDataVar := "bodyJson"
 		mediaType := "application/json"

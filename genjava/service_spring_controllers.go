@@ -6,16 +6,16 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (g *Generator) generateServicesControllers(version *spec.Version, thePackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []sources.CodeFile {
+func (g *Generator) ServicesControllers(version *spec.Version, thePackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.generateController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
+		files = append(files, g.serviceController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
 	}
 	return files
 }
 
-func (g *Generator) generateController(api *spec.Api, apiPackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []sources.CodeFile {
+func (g *Generator) serviceController(api *spec.Api, apiPackage Module, jsonPackage Module, modelsVersionPackage Module, serviceVersionPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	w := NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -50,7 +50,7 @@ func (g *Generator) generateController(api *spec.Api, apiPackage Module, jsonPac
 	w.Line(`  private ObjectMapper objectMapper;`)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		g.generateMethod(w.Indented(), &operation)
+		g.controllerMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 
@@ -62,7 +62,7 @@ func (g *Generator) generateController(api *spec.Api, apiPackage Module, jsonPac
 	return files
 }
 
-func (g *Generator) generateMethod(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, ToPascalCase(methodName), url)

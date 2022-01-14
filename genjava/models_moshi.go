@@ -9,13 +9,6 @@ import (
 
 var Moshi = "moshi"
 
-func addMoshiImports(w *sources.Writer) {
-	w.Line(`import com.squareup.moshi.Json;`)
-	w.Line(`import java.math.BigDecimal;`)
-	w.Line(`import java.time.*;`)
-	w.Line(`import java.util.*;`)
-}
-
 type MoshiGenerator struct {
 	Type *Types
 }
@@ -36,21 +29,28 @@ func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage Module)
 	files := []sources.CodeFile{}
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
-			files = append(files, *g.ObjectModel(model, thePackage))
+			files = append(files, *g.modelObject(model, thePackage))
 		} else if model.IsOneOf() {
-			files = append(files, *g.OneOfModel(model, thePackage))
+			files = append(files, *g.modelOneOf(model, thePackage))
 		} else if model.IsEnum() {
-			files = append(files, *g.EnumModel(model, thePackage))
+			files = append(files, *g.modelEnum(model, thePackage))
 		}
 	}
 	return files
 }
 
-func (g *MoshiGenerator) ObjectModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func moshiImports(w *sources.Writer) {
+	w.Line(`import com.squareup.moshi.Json;`)
+	w.Line(`import java.math.BigDecimal;`)
+	w.Line(`import java.time.*;`)
+	w.Line(`import java.util.*;`)
+}
+
+func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	addMoshiImports(w)
+	moshiImports(w)
 	w.EmptyLine()
 	className := model.Name.PascalCase()
 	w.Line(`public class %s {`, className)
@@ -89,11 +89,11 @@ func (g *MoshiGenerator) ObjectModel(model *spec.NamedModel, thePackage Module) 
 	}
 }
 
-func (g *MoshiGenerator) EnumModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
 	w := NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	addMoshiImports(w)
+	moshiImports(w)
 	w.EmptyLine()
 	enumName := model.Name.PascalCase()
 	w.Line(`public enum %s {`, enumName)
@@ -108,19 +108,19 @@ func (g *MoshiGenerator) EnumModel(model *spec.NamedModel, thePackage Module) *s
 	}
 }
 
-func (g *MoshiGenerator) OneOfModel(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
 	interfaceName := model.Name.PascalCase()
 	w := NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
-	addMoshiImports(w)
+	moshiImports(w)
 	w.EmptyLine()
 	w.Line(`public interface %s {`, interfaceName)
 	for index, item := range model.OneOf.Items {
 		if index > 0 {
 			w.EmptyLine()
 		}
-		g.oneOfImplementation(w.Indented(), &item, model)
+		g.modelOneOfImplementation(w.Indented(), &item, model)
 	}
 	w.Line(`}`)
 
@@ -130,7 +130,7 @@ func (g *MoshiGenerator) OneOfModel(model *spec.NamedModel, thePackage Module) *
 	}
 }
 
-func (g *MoshiGenerator) oneOfImplementation(w *sources.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelOneOfImplementation(w *sources.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
 	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
 	w.Line(`  public %s data;`, g.Type.JavaType(&item.Type.Definition))
 	w.EmptyLine()
@@ -158,14 +158,14 @@ func (g *MoshiGenerator) oneOfImplementation(w *sources.Writer, item *spec.Named
 func (g *MoshiGenerator) SetupLibrary(thePackage Module) []sources.CodeFile {
 	adaptersPackage := thePackage.Subpackage("adapters")
 	files := []sources.CodeFile{}
-	files = append(files, *generateBigDecimalAdapter(adaptersPackage))
-	files = append(files, *generateLocalDateAdapter(adaptersPackage))
-	files = append(files, *generateLocalDateTimeAdapter(adaptersPackage))
-	files = append(files, *generateUuidAdapter(adaptersPackage))
+	files = append(files, *moshiBigDecimalAdapter(adaptersPackage))
+	files = append(files, *moshiLocalDateAdapter(adaptersPackage))
+	files = append(files, *moshiLocalDateTimeAdapter(adaptersPackage))
+	files = append(files, *moshiUuidAdapter(adaptersPackage))
 	return files
 }
 
-func generateBigDecimalAdapter(thePackage Module) *sources.CodeFile {
+func moshiBigDecimalAdapter(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -203,7 +203,7 @@ public class BigDecimalAdapter {
 	}
 }
 
-func generateLocalDateAdapter(thePackage Module) *sources.CodeFile {
+func moshiLocalDateAdapter(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -231,7 +231,7 @@ public class LocalDateAdapter {
 	}
 }
 
-func generateLocalDateTimeAdapter(thePackage Module) *sources.CodeFile {
+func moshiLocalDateTimeAdapter(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -259,7 +259,7 @@ public class LocalDateTimeAdapter {
 	}
 }
 
-func generateUuidAdapter(thePackage Module) *sources.CodeFile {
+func moshiUuidAdapter(thePackage Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 

@@ -6,16 +6,16 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (g *Generator) generateServicesInterfaces(version *spec.Version, thePackage Module, modelsVersionPackage Module) []sources.CodeFile {
+func (g *Generator) ServicesInterfaces(version *spec.Version, thePackage Module, modelsVersionPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.generateInterface(&api, apiPackage, modelsVersionPackage)...)
+		files = append(files, g.serviceInterface(&api, apiPackage, modelsVersionPackage)...)
 	}
 	return files
 }
 
-func (g *Generator) generateInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Module) []sources.CodeFile {
+func (g *Generator) serviceInterface(api *spec.Api, apiPackage Module, modelsVersionPackage Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
 	w := NewJavaWriter()
@@ -29,13 +29,13 @@ func (g *Generator) generateInterface(api *spec.Api, apiPackage Module, modelsVe
 	w.EmptyLine()
 	w.Line(`public interface %s {`, serviceInterfaceName(api))
 	for _, operation := range api.Operations {
-		w.Line(`  %s;`, g.generateResponsesSignatures(&operation))
+		w.Line(`  %s;`, generateResponsesSignatures(g.Types, &operation))
 	}
 	w.Line(`}`)
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, g.generateResponseInterface(&operation, apiPackage, modelsVersionPackage)...)
+			files = append(files, g.ResponsesInterfaces(&operation, apiPackage, modelsVersionPackage)...)
 		}
 	}
 
