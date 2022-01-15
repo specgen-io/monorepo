@@ -4,12 +4,25 @@ import (
 	"github.com/specgen-io/specgen/v2/gengo"
 	"github.com/specgen-io/specgen/v2/genjava"
 	"github.com/specgen-io/specgen/v2/genkotlin"
+	"github.com/specgen-io/specgen/v2/genopenapi"
 	"github.com/specgen-io/specgen/v2/genruby"
 	"github.com/specgen-io/specgen/v2/genscala"
 	"github.com/specgen-io/specgen/v2/gents"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
+
+var Openapi = Generator{
+	"openapi",
+	"Generate OpenAPI specification",
+	[]GeneratorArg{
+		{Arg: ArgSpecFile, Required: true},
+		{Arg: ArgOutFile, Required: true},
+	},
+	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
+		return genopenapi.GenerateOpenapi(specification, params[ArgOutFile])
+	},
+}
 
 var ModelsGo = Generator{
 	"models-go",

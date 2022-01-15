@@ -30,12 +30,16 @@ const ClientDescription = "client HTTP library"
 const Server = "server"
 const ServerDescription = "server HTTP library/framework"
 
+const OutFile = "out-file"
+const OutFileDescription = "path to output file"
+
 type Arg struct {
 	Name        string
 	Description string
 }
 
 var ArgSpecFile = Arg{SpecFile, SpecFileDescription}
+var ArgOutFile = Arg{OutFile, OutFileDescription}
 var ArgModuleName = Arg{ModuleName, ModuleNameDescription}
 var ArgGeneratePath = Arg{GeneratePath, GeneratePathDescription}
 var ArgSwaggerPath = Arg{SwaggerPath, SwaggerPathDescription}
