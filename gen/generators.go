@@ -267,4 +267,5 @@ var Generators = []Generator{
 	ModelsTs,
 	ClientTs,
 	ServiceTs,
+	Openapi,
 }
