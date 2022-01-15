@@ -8,17 +8,11 @@ import (
 	"strings"
 )
 
-func GenerateOpenapi(spec *spec.Spec, outFile string) *sources.Sources {
+func GenerateOpenapi(spec *spec.Spec, outFile string) *sources.CodeFile {
 	openapi := generateSpecification(spec)
-
 	data, _ := yamlx.ToYamlString(openapi)
-
 	openapiFile := &sources.CodeFile{outFile, data}
-
-	sources := sources.NewSources()
-	sources.AddGenerated(openapiFile)
-
-	return sources
+	return openapiFile
 }
 
 func generateSpecification(spec *spec.Spec) *yamlx.YamlMap {

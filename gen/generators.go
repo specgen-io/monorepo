@@ -20,7 +20,10 @@ var Openapi = Generator{
 		{Arg: ArgOutFile, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genopenapi.GenerateOpenapi(specification, params[ArgOutFile])
+		openapiFile := genopenapi.GenerateOpenapi(specification, params[ArgOutFile])
+		sources := sources.NewSources()
+		sources.AddGenerated(openapiFile)
+		return sources
 	},
 }
 
