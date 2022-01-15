@@ -210,9 +210,6 @@ func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage,
 }
 
 func generateControllerMethod(w *sources.Writer, operation *spec.NamedOperation) {
-	parseParams := getParsedOperationParams(operation)
-	allParams := getOperationCallParams(operation)
-
 	params := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
 		params = append(params, fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
@@ -228,7 +225,22 @@ func generateControllerMethod(w *sources.Writer, operation *spec.NamedOperation)
 
 	w.Line(`def %s(%s) = Action%s.async {`, operation.Name.CamelCase(), JoinParams(params), payload)
 	w.Line(`  implicit request =>`)
-	w.IndentWith(2)
+	if operation.Body != nil && operation.Body.Type.Definition.Plain == spec.TypeString {
+		w.Line(`    request.contentType match {`)
+		w.Line(`      case Some("text/plain") =>`)
+		generateControllerMethodRequest(w.IndentedWith(4), operation)
+		w.Line(`      case _ => Future { BadRequest }`)
+		w.Line(`    }`)
+	} else {
+		generateControllerMethodRequest(w.IndentedWith(2), operation)
+	}
+	w.Line(`}`)
+}
+
+func generateControllerMethodRequest(w *sources.Writer, operation *spec.NamedOperation) {
+	parseParams := getParsedOperationParams(operation)
+	allParams := getOperationCallParams(operation)
+
 	if len(parseParams) > 0 {
 		w.Line(`val params = Try {`)
 		addParamsParsing(w.Indented(), operation.HeaderParams, "header", "request.headers.toMap")
@@ -243,7 +255,7 @@ func generateControllerMethod(w *sources.Writer, operation *spec.NamedOperation)
 		w.Line(`}`)
 		w.Line(`params match {`)
 		w.Line(`  case Failure(ex) => Future { BadRequest }`)
-		w.Line(`  case Success(params) => `)
+		w.Line(`  case Success(params) =>`)
 		w.Line(`    val (%s) = params`, JoinParams(parseParams))
 		w.Line(`    val result = api.%s(%s)`, operation.Name.CamelCase(), JoinParams(allParams))
 		w.Line(`    val response = result.map {`)
@@ -258,32 +270,33 @@ func generateControllerMethod(w *sources.Writer, operation *spec.NamedOperation)
 		w.Line(`}`)
 		w.Line(`response.recover { case _: Exception => InternalServerError }`)
 	}
-	w.UnindentWith(2)
-	w.Line(`}`)
+}
+
+func getPlayStatus(r *spec.NamedResponse) string {
+	body := ``
+	if !r.Type.Definition.IsEmpty() {
+		body = `(body)`
+		if r.Type.Definition.Plain != spec.TypeString {
+			body = `(Jsoner.write(body)).as("application/json")`
+		}
+	}
+	return fmt.Sprintf(`new Status(%s)%s`, spec.HttpStatusCode(r.Name), body)
 }
 
 func genResponseCases(w *sources.Writer, operation *spec.NamedOperation) {
 	if len(operation.Responses) == 1 {
 		r := operation.Responses[0]
 		if !r.Type.Definition.IsEmpty() {
-			body := `body`
-			if r.Type.Definition.Plain != spec.TypeString {
-				body = `Jsoner.write(body)`
-			}
-			w.Line(`body => new Status(%s)(%s)`, spec.HttpStatusCode(r.Name), body)
+			w.Line(`body => %s`, getPlayStatus(&r))
 		} else {
-			w.Line(`_ => new Status(%s)`, spec.HttpStatusCode(r.Name))
+			w.Line(`_ => %s`, getPlayStatus(&r))
 		}
 	} else {
 		for _, r := range operation.Responses {
 			if !r.Type.Definition.IsEmpty() {
-				body := `body`
-				if r.Type.Definition.Plain != spec.TypeString {
-					body = `Jsoner.write(body)`
-				}
-				w.Line(`case %s.%s(body) => new Status(%s)(%s)`, responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name), body)
+				w.Line(`case %s.%s(body) => %s`, responseType(r.Operation), r.Name.PascalCase(), getPlayStatus(&r))
 			} else {
-				w.Line(`case %s.%s() => new Status(%s)`, responseType(operation), r.Name.PascalCase(), spec.HttpStatusCode(r.Name))
+				w.Line(`case %s.%s() => %s`, responseType(r.Operation), r.Name.PascalCase(), getPlayStatus(&r))
 			}
 		}
 	}
