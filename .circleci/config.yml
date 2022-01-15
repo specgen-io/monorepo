@@ -428,7 +428,7 @@ workflows:
       - circleci/start-pipeline:
           name: test-services
           repository: specgen-io/test-services
-          branch: main
+          branch: check-content-type
           pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
           context: specgen
           requires:
