@@ -1,11 +1,12 @@
-package genjava
+package client
 
 import (
+	"github.com/specgen-io/specgen/v2/genjava/packages"
 	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
-func generateUtils(thePackage Module) []sources.CodeFile {
+func generateUtils(thePackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
 	files = append(files, *generateRequestBuilder(thePackage))
@@ -15,7 +16,7 @@ func generateUtils(thePackage Module) []sources.CodeFile {
 	return files
 }
 
-func generateRequestBuilder(thePackage Module) *sources.CodeFile {
+func generateRequestBuilder(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -56,7 +57,7 @@ public class RequestBuilder {
 	}
 }
 
-func generateUrlBuilder(thePackage Module) *sources.CodeFile {
+func generateUrlBuilder(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -103,7 +104,7 @@ public class UrlBuilder {
 	}
 }
 
-func generateStringify(thePackage Module) *sources.CodeFile {
+func generateStringify(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 

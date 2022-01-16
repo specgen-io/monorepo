@@ -1,19 +1,20 @@
-package genjava
+package service
 
 import (
+	"github.com/specgen-io/specgen/v2/genjava/packages"
 	"github.com/specgen-io/specgen/v2/genopenapi"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateService(specification *spec.Spec, jsonlib string, packageName string, swaggerPath string, generatePath string, servicesPath string) *sources.Sources {
+func Generate(specification *spec.Spec, jsonlib string, packageName string, swaggerPath string, generatePath string, servicesPath string) *sources.Sources {
 	newSources := sources.NewSources()
 
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
 	}
 
-	mainPackage := Package(generatePath, packageName)
+	mainPackage := packages.New(generatePath, packageName)
 
 	generator := NewGenerator(jsonlib)
 
@@ -38,7 +39,7 @@ func GenerateService(specification *spec.Spec, jsonlib string, packageName strin
 	}
 
 	if servicesPath != "" {
-		servicesImplPackage := Package(servicesPath, packageName)
+		servicesImplPackage := packages.New(servicesPath, packageName)
 		for _, version := range specification.Versions {
 			servicesImplVersionPath := servicesImplPackage.Subpackage("services")
 			serviceImplVersionPackage := servicesImplVersionPath.Subpackage(version.Version.FlatCase())

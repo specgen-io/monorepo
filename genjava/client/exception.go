@@ -1,11 +1,12 @@
-package genjava
+package client
 
 import (
+	"github.com/specgen-io/specgen/v2/genjava/packages"
 	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
-func ClientException(thePackage Module) *sources.CodeFile {
+func clientException(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 

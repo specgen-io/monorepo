@@ -1,12 +1,16 @@
-package genjava
+package client
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genjava/packages"
+	"github.com/specgen-io/specgen/v2/genjava/responses"
+	"github.com/specgen-io/specgen/v2/genjava/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
+	"strings"
 )
 
-func (g *Generator) Clients(version *spec.Version, thePackage Module, modelsVersionPackage Module, jsonPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+func (g *Generator) Clients(version *spec.Version, thePackage packages.Module, modelsVersionPackage packages.Module, jsonPackage packages.Module, utilsPackage packages.Module, mainPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
@@ -15,10 +19,10 @@ func (g *Generator) Clients(version *spec.Version, thePackage Module, modelsVers
 	return files
 }
 
-func (g *Generator) client(api *spec.Api, apiPackage Module, modelsVersionPackage Module, jsonPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVersionPackage packages.Module, jsonPackage packages.Module, utilsPackage packages.Module, mainPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
-	w := NewJavaWriter()
+	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
 	w.Line(`import com.fasterxml.jackson.databind.ObjectMapper;`)
@@ -56,7 +60,7 @@ func (g *Generator) client(api *spec.Api, apiPackage Module, modelsVersionPackag
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, g.ResponsesInterfaces(&operation, apiPackage, modelsVersionPackage)...)
+			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage)...)
 		}
 	}
 
@@ -73,7 +77,7 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 	url := operation.FullUrl()
 	requestBody := "null"
 
-	w.Line(`public %s {`, generateResponsesSignatures(g.Types, operation))
+	w.Line(`public %s {`, responses.Signature(g.Types, operation))
 	if operation.Body != nil {
 		bodyDataVar := "bodyJson"
 		mediaType := "application/json"
@@ -93,10 +97,10 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 	}
 	w.Line(`  var url = new UrlBuilder(baseUrl);`)
 	if operation.Api.Apis.GetUrl() != "" {
-		w.Line(`  url.addPathSegment("%s");`, TrimSlash(operation.Api.Apis.GetUrl()))
+		w.Line(`  url.addPathSegment("%s");`, strings.Trim(operation.Api.Apis.GetUrl(), "/"))
 	}
 	for _, urlPart := range operation.Endpoint.UrlParts {
-		part := TrimSlash(urlPart.Part)
+		part := strings.Trim(urlPart.Part, "/")
 		if urlPart.Param != nil {
 			w.Line(`  url.addPathSegment(%s);`, urlPart.Param.Name.CamelCase())
 		} else if len(part) > 0 {
@@ -125,7 +129,7 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		w.IndentWith(3)
 		w.Line(`logger.info("Received response with status code {}", response.code());`)
 		if !response.Type.Definition.IsEmpty() {
-			responseJavaType := g.Types.JavaType(&response.Type.Definition)
+			responseJavaType := g.Types.Java(&response.Type.Definition)
 			w.Line(`%s responseBody;`, responseJavaType)
 			responseBody := g.Models.ReadJson("response.body().string()", responseJavaType)
 			if response.Type.Definition.Plain == spec.TypeString {
@@ -136,13 +140,13 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 				`IOException`, `e`,
 				`"Failed to deserialize response body " + e.getMessage()`)
 			if len(operation.Responses) > 1 {
-				w.Line(`return new %s.%s(responseBody);`, serviceResponseInterfaceName(operation), response.Name.PascalCase())
+				w.Line(`return new %s.%s(responseBody);`, responses.InterfaceName(operation), response.Name.PascalCase())
 			} else {
 				w.Line(`return responseBody;`)
 			}
 		} else {
 			if len(operation.Responses) > 1 {
-				w.Line(`return new %s.%s();`, serviceResponseInterfaceName(operation), response.Name.PascalCase())
+				w.Line(`return new %s.%s();`, responses.InterfaceName(operation), response.Name.PascalCase())
 			} else {
 				w.Line(`return;`)
 			}
