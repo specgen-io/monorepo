@@ -1,13 +1,14 @@
-package genjava
+package types
 
 import (
+	"github.com/specgen-io/specgen/v2/genjava/models"
 	"github.com/specgen-io/specgen/v2/spec"
 	"gotest.tools/assert"
 	"testing"
 )
 
 func CheckJacksonType(t *testing.T, typ *spec.TypeDef, expected string) {
-	types := NewTypes(Jackson)
+	types := models.NewTypes(models.Jackson)
 	javaType := types.JavaType(typ)
 	assert.Equal(t, javaType, expected)
 }

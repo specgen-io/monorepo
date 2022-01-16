@@ -1,22 +1,23 @@
-package genjava
+package client
 
 import (
+	"github.com/specgen-io/specgen/v2/genjava/packages"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateClient(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *sources.Sources {
+func Generate(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *sources.Sources {
 	newSources := sources.NewSources()
 
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
 	}
 
-	mainPackage := Package(generatePath, packageName)
+	mainPackage := packages.New(generatePath, packageName)
 
 	generator := NewGenerator(jsonlib)
 
-	newSources.AddGenerated(ClientException(mainPackage))
+	newSources.AddGenerated(clientException(mainPackage))
 
 	utilsPackage := mainPackage.Subpackage("utils")
 	newSources.AddGeneratedAll(generateUtils(utilsPackage))

@@ -1,7 +1,10 @@
-package genjava
+package models
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genjava/packages"
+	"github.com/specgen-io/specgen/v2/genjava/types"
+	"github.com/specgen-io/specgen/v2/genjava/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
@@ -10,10 +13,10 @@ import (
 var Jackson = "jackson"
 
 type JacksonGenerator struct {
-	Type *Types
+	Type *types.Types
 }
 
-func NewJacksonGenerator(types *Types) *JacksonGenerator {
+func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 	return &JacksonGenerator{types}
 }
 
@@ -25,7 +28,7 @@ func (g *JacksonGenerator) WriteJson(varData string) string {
 	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData)
 }
 
-func (g *JacksonGenerator) SetupLibrary(thePackage Module) []sources.CodeFile {
+func (g *JacksonGenerator) SetupLibrary(thePackage packages.Module) []sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -50,7 +53,7 @@ public class Json {
 	}}
 }
 
-func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage Module) []sources.CodeFile {
+func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
@@ -81,8 +84,8 @@ func jacksonJsonPropertyAnnotation(field *spec.NamedDefinition) string {
 	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.Source, required)
 }
 
-func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
-	w := NewJavaWriter()
+func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
+	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	jacksonImports(w)
@@ -137,8 +140,8 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage Module
 	}
 }
 
-func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
-	w := NewJavaWriter()
+func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
+	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	jacksonImports(w)
@@ -156,9 +159,9 @@ func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage Module) 
 	}
 }
 
-func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
 	interfaceName := model.Name.PascalCase()
-	w := NewJavaWriter()
+	w := writer.NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
 	jacksonImports(w)

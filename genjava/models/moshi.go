@@ -1,7 +1,10 @@
-package genjava
+package models
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genjava/packages"
+	"github.com/specgen-io/specgen/v2/genjava/types"
+	"github.com/specgen-io/specgen/v2/genjava/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
@@ -10,10 +13,10 @@ import (
 var Moshi = "moshi"
 
 type MoshiGenerator struct {
-	Type *Types
+	Type *types.Types
 }
 
-func NewMoshiGenerator(types *Types) *MoshiGenerator {
+func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
 	return &MoshiGenerator{types}
 }
 
@@ -25,7 +28,7 @@ func (g *MoshiGenerator) WriteJson(varData string) string {
 	panic("This is not implemented yet!!!")
 }
 
-func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage Module) []sources.CodeFile {
+func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
@@ -46,8 +49,8 @@ func moshiImports(w *sources.Writer) {
 	w.Line(`import java.util.*;`)
 }
 
-func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
-	w := NewJavaWriter()
+func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
+	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	moshiImports(w)
@@ -64,7 +67,7 @@ func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage Module) 
 	for _, field := range model.Object.Fields {
 		ctorParams = append(ctorParams, fmt.Sprintf(`%s %s`, g.Type.JavaType(&field.Type.Definition), field.Name.CamelCase()))
 	}
-	w.Line(`  public %s(%s) {`, model.Name.PascalCase(), JoinDelimParams(ctorParams))
+	w.Line(`  public %s(%s) {`, model.Name.PascalCase(), strings.Join(ctorParams, ", "))
 	for _, field := range model.Object.Fields {
 		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
 	}
@@ -89,8 +92,8 @@ func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage Module) 
 	}
 }
 
-func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
-	w := NewJavaWriter()
+func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
+	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	moshiImports(w)
@@ -108,9 +111,9 @@ func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage Module) *s
 	}
 }
 
-func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage Module) *sources.CodeFile {
+func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
 	interfaceName := model.Name.PascalCase()
-	w := NewJavaWriter()
+	w := writer.NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
 	moshiImports(w)
@@ -155,7 +158,7 @@ func (g *MoshiGenerator) modelOneOfImplementation(w *sources.Writer, item *spec.
 	w.Line(`}`)
 }
 
-func (g *MoshiGenerator) SetupLibrary(thePackage Module) []sources.CodeFile {
+func (g *MoshiGenerator) SetupLibrary(thePackage packages.Module) []sources.CodeFile {
 	adaptersPackage := thePackage.Subpackage("adapters")
 	files := []sources.CodeFile{}
 	files = append(files, *moshiBigDecimalAdapter(adaptersPackage))
@@ -165,7 +168,7 @@ func (g *MoshiGenerator) SetupLibrary(thePackage Module) []sources.CodeFile {
 	return files
 }
 
-func moshiBigDecimalAdapter(thePackage Module) *sources.CodeFile {
+func moshiBigDecimalAdapter(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -203,7 +206,7 @@ public class BigDecimalAdapter {
 	}
 }
 
-func moshiLocalDateAdapter(thePackage Module) *sources.CodeFile {
+func moshiLocalDateAdapter(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -231,7 +234,7 @@ public class LocalDateAdapter {
 	}
 }
 
-func moshiLocalDateTimeAdapter(thePackage Module) *sources.CodeFile {
+func moshiLocalDateTimeAdapter(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -259,7 +262,7 @@ public class LocalDateTimeAdapter {
 	}
 }
 
-func moshiUuidAdapter(thePackage Module) *sources.CodeFile {
+func moshiUuidAdapter(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 

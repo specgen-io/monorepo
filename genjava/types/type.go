@@ -1,4 +1,4 @@
-package genjava
+package types
 
 import (
 	"fmt"
@@ -87,31 +87,5 @@ func (t *Types) PlainJavaType(typ string, referenceTypesOnly bool) (string, bool
 		return "void", false
 	default:
 		return typ, true
-	}
-}
-
-func dateFormatAnnotation(typ *spec.TypeDef) string {
-	switch typ.Node {
-	case spec.PlainType:
-		return dateFormatAnnotationPlain(typ.Plain)
-	case spec.NullableType:
-		return dateFormatAnnotation(typ.Child)
-	case spec.ArrayType:
-		return dateFormatAnnotation(typ.Child)
-	case spec.MapType:
-		return dateFormatAnnotation(typ.Child)
-	default:
-		panic(fmt.Sprintf("Unknown type: %v", typ))
-	}
-}
-
-func dateFormatAnnotationPlain(typ string) string {
-	switch typ {
-	case spec.TypeDate:
-		return "@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)"
-	case spec.TypeDateTime:
-		return "@DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)"
-	default:
-		return ""
 	}
 }

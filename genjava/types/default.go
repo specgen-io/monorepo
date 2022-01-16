@@ -1,4 +1,4 @@
-package genjava
+package types
 
 import (
 	"fmt"
