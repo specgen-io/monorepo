@@ -9,12 +9,12 @@ type Types struct {
 	RawJsonType string
 }
 
-func (t *Types) JavaType(typ *spec.TypeDef) string {
+func (t *Types) Java(typ *spec.TypeDef) string {
 	javaType, _ := t.javaType(typ, false)
 	return javaType
 }
 
-func (t *Types) JavaIsReferenceType(typ *spec.TypeDef) bool {
+func (t *Types) IsReference(typ *spec.TypeDef) bool {
 	_, isReference := t.javaType(typ, false)
 	return isReference
 }
@@ -22,7 +22,7 @@ func (t *Types) JavaIsReferenceType(typ *spec.TypeDef) bool {
 func (t *Types) javaType(typ *spec.TypeDef, referenceTypesOnly bool) (string, bool) {
 	switch typ.Node {
 	case spec.PlainType:
-		return t.PlainJavaType(typ.Plain, referenceTypesOnly)
+		return t.plainJavaType(typ.Plain, referenceTypesOnly)
 	case spec.NullableType:
 		return t.javaType(typ.Child, true)
 	case spec.ArrayType:
@@ -39,7 +39,7 @@ func (t *Types) javaType(typ *spec.TypeDef, referenceTypesOnly bool) (string, bo
 }
 
 // PlainJavaType Returns Java type name and boolean indicating if the type is reference or value type
-func (t *Types) PlainJavaType(typ string, referenceTypesOnly bool) (string, bool) {
+func (t *Types) plainJavaType(typ string, referenceTypesOnly bool) (string, bool) {
 	switch typ {
 	case spec.TypeInt32:
 		if referenceTypesOnly {

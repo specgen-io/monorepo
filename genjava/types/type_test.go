@@ -8,7 +8,7 @@ import (
 
 func CheckJacksonType(t *testing.T, typ *spec.TypeDef, expected string) {
 	types := Types{"JsonNode"}
-	javaType := types.JavaType(typ)
+	javaType := types.Java(typ)
 	assert.Equal(t, javaType, expected)
 }
 

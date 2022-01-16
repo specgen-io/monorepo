@@ -42,13 +42,13 @@ func addObjectModelMethods(w *sources.Writer, model *spec.NamedModel) {
 		}
 		w.Line(`  return result;`)
 	} else if arrayFieldCount > 0 && nonArrayFieldCount > 0 {
-		w.Line(`  int result = Objects.hash(%s);`, JoinParams(hashParams))
+		w.Line(`  int result = Objects.hash(%s);`, joinParams(hashParams))
 		for _, param := range hashCodeParams {
 			w.Line(`  result = 31 * result + Arrays.hashCode(%s);`, param)
 		}
 		w.Line(`  return result;`)
 	} else if arrayFieldCount == 0 && nonArrayFieldCount > 0 {
-		w.Line(`  return Objects.hash(%s);`, JoinParams(hashParams))
+		w.Line(`  return Objects.hash(%s);`, joinParams(hashParams))
 	}
 	w.Line(`}`)
 	w.EmptyLine()
@@ -60,7 +60,7 @@ func addObjectModelMethods(w *sources.Writer, model *spec.NamedModel) {
 		formatParams = append(formatParams, fmt.Sprintf(`%s=%s`, field.Name.CamelCase(), "%s"))
 		formatArgs = append(formatArgs, toStringExpression(&field.Type.Definition, field.Name.CamelCase()))
 	}
-	w.Line(`  return String.format("%s{%s}", %s);`, model.Name.PascalCase(), JoinParams(formatParams), JoinParams(formatArgs))
+	w.Line(`  return String.format("%s{%s}", %s);`, model.Name.PascalCase(), joinParams(formatParams), joinParams(formatArgs))
 	w.Line(`}`)
 }
 

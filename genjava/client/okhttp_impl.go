@@ -129,7 +129,7 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		w.IndentWith(3)
 		w.Line(`logger.info("Received response with status code {}", response.code());`)
 		if !response.Type.Definition.IsEmpty() {
-			responseJavaType := g.Types.JavaType(&response.Type.Definition)
+			responseJavaType := g.Types.Java(&response.Type.Definition)
 			w.Line(`%s responseBody;`, responseJavaType)
 			responseBody := g.Models.ReadJson("response.body().string()", responseJavaType)
 			if response.Type.Definition.Plain == spec.TypeString {

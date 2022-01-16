@@ -14,6 +14,6 @@ func setterName(field *spec.NamedDefinition) string {
 	return fmt.Sprintf(`set%s`, field.Name.PascalCase())
 }
 
-func JoinParams(params []string) string {
+func joinParams(params []string) string {
 	return strings.Join(params, ", ")
 }

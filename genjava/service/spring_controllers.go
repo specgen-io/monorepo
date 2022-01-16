@@ -70,7 +70,7 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, ToPascalCase(methodName), url)
-	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), JoinParams(addMethodParams(operation, g.Types)))
+	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), joinParams(addMethodParams(operation, g.Types)))
 	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  HttpHeaders headers = new HttpHeaders();`)
 	contentType := "application/json"
@@ -83,14 +83,14 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 		if operation.Body.Type.Definition.Plain != spec.TypeString {
 			w.Line(`  Message requestBody;`)
 			w.Line(`  try {`)
-			w.Line(`    requestBody = %s;`, g.Models.ReadJson("bodyStr", g.Types.JavaType(&operation.Body.Type.Definition)))
+			w.Line(`    requestBody = %s;`, g.Models.ReadJson("bodyStr", g.Types.Java(&operation.Body.Type.Definition)))
 			w.Line(`  } catch (Exception e) {`)
 			w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
 			w.Line(`    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);`)
 			w.Line(`  }`)
 		}
 	}
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), JoinParams(addServiceMethodParams(operation)))
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation)))
 	if len(operation.Responses) == 1 {
 		for _, resp := range operation.Responses {
 			if resp.Type.Definition.IsEmpty() {
@@ -152,7 +152,7 @@ func getSpringParameterAnnotation(paramAnnotationName string, param *spec.NamedP
 		annotationParams = append(annotationParams, fmt.Sprintf(`defaultValue = "%s"`, *param.DefinitionDefault.Default))
 	}
 
-	return fmt.Sprintf(`@%s(%s)`, paramAnnotationName, JoinParams(annotationParams))
+	return fmt.Sprintf(`@%s(%s)`, paramAnnotationName, joinParams(annotationParams))
 }
 
 func generateMethodParam(namedParams []spec.NamedParam, paramAnnotationName string, types *types.Types) []string {
@@ -161,7 +161,7 @@ func generateMethodParam(namedParams []spec.NamedParam, paramAnnotationName stri
 	if namedParams != nil && len(namedParams) > 0 {
 		for _, param := range namedParams {
 			paramAnnotation := getSpringParameterAnnotation(paramAnnotationName, &param)
-			paramType := fmt.Sprintf(`%s %s`, types.JavaType(&param.Type.Definition), param.Name.CamelCase())
+			paramType := fmt.Sprintf(`%s %s`, types.Java(&param.Type.Definition), param.Name.CamelCase())
 			dateFormatAnnotation := dateFormatAnnotation(&param.Type.Definition)
 			if dateFormatAnnotation != "" {
 				params = append(params, fmt.Sprintf(`%s %s %s`, paramAnnotation, dateFormatAnnotation, paramType))

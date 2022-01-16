@@ -13,7 +13,7 @@ import (
 var Moshi = "moshi"
 
 type MoshiGenerator struct {
-	Type *types.Types
+	Types *types.Types
 }
 
 func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
@@ -60,12 +60,12 @@ func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
 		w.Line(`  @Json(name = "%s")`, field.Name.Source)
-		w.Line(`  private %s %s;`, g.Type.JavaType(&field.Type.Definition), field.Name.CamelCase())
+		w.Line(`  private %s %s;`, g.Types.Java(&field.Type.Definition), field.Name.CamelCase())
 	}
 	w.EmptyLine()
 	ctorParams := []string{}
 	for _, field := range model.Object.Fields {
-		ctorParams = append(ctorParams, fmt.Sprintf(`%s %s`, g.Type.JavaType(&field.Type.Definition), field.Name.CamelCase()))
+		ctorParams = append(ctorParams, fmt.Sprintf(`%s %s`, g.Types.Java(&field.Type.Definition), field.Name.CamelCase()))
 	}
 	w.Line(`  public %s(%s) {`, model.Name.PascalCase(), strings.Join(ctorParams, ", "))
 	for _, field := range model.Object.Fields {
@@ -74,11 +74,11 @@ func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages
 	w.Line(`  }`)
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
-		w.Line(`  public %s %s() {`, g.Type.JavaType(&field.Type.Definition), getterName(&field))
+		w.Line(`  public %s %s() {`, g.Types.Java(&field.Type.Definition), getterName(&field))
 		w.Line(`    return %s;`, field.Name.CamelCase())
 		w.Line(`  }`)
 		w.EmptyLine()
-		w.Line(`  public void %s(%s %s) {`, setterName(&field), g.Type.JavaType(&field.Type.Definition), field.Name.CamelCase())
+		w.Line(`  public void %s(%s %s) {`, setterName(&field), g.Types.Java(&field.Type.Definition), field.Name.CamelCase())
 		w.Line(`    this.%s = %s;`, field.Name.CamelCase(), field.Name.CamelCase())
 		w.Line(`  }`)
 	}
@@ -135,20 +135,20 @@ func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.
 
 func (g *MoshiGenerator) modelOneOfImplementation(w *sources.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
 	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
-	w.Line(`  public %s data;`, g.Type.JavaType(&item.Type.Definition))
+	w.Line(`  public %s data;`, g.Types.Java(&item.Type.Definition))
 	w.EmptyLine()
 	w.Line(`  public %s() {`, oneOfItemClassName(item))
 	w.Line(`  }`)
 	w.EmptyLine()
-	w.Line(`  public %s(%s data) {`, oneOfItemClassName(item), g.Type.JavaType(&item.Type.Definition))
+	w.Line(`  public %s(%s data) {`, oneOfItemClassName(item), g.Types.Java(&item.Type.Definition))
 	w.Line(`  	this.data = data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
-	w.Line(`  public %s getData() {`, g.Type.JavaType(&item.Type.Definition))
+	w.Line(`  public %s getData() {`, g.Types.Java(&item.Type.Definition))
 	w.Line(`    return data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
-	w.Line(`  public void setData(%s data) {`, g.Type.JavaType(&item.Type.Definition))
+	w.Line(`  public void setData(%s data) {`, g.Types.Java(&item.Type.Definition))
 	w.Line(`    this.data = data;`)
 	w.Line(`  }`)
 	w.EmptyLine()

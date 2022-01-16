@@ -13,7 +13,7 @@ import (
 func Signature(types *types.Types, operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
-			return fmt.Sprintf(`%s %s(%s)`, types.JavaType(&response.Type.Definition), operation.Name.CamelCase(), joinParams(parameters(operation, types)))
+			return fmt.Sprintf(`%s %s(%s)`, types.Java(&response.Type.Definition), operation.Name.CamelCase(), joinParams(parameters(operation, types)))
 		}
 	}
 	if len(operation.Responses) > 1 {
@@ -25,16 +25,16 @@ func Signature(types *types.Types, operation *spec.NamedOperation) string {
 func parameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
 	if operation.Body != nil {
-		params = append(params, fmt.Sprintf("%s body", types.JavaType(&operation.Body.Type.Definition)))
+		params = append(params, fmt.Sprintf("%s body", types.Java(&operation.Body.Type.Definition)))
 	}
 	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf("%s %s", types.JavaType(&param.Type.Definition), param.Name.CamelCase()))
+		params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
 	}
 	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf("%s %s", types.JavaType(&param.Type.Definition), param.Name.CamelCase()))
+		params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, fmt.Sprintf("%s %s", types.JavaType(&param.Type.Definition), param.Name.CamelCase()))
+		params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
 	}
 	return params
 }
@@ -66,12 +66,12 @@ func implementation(w *sources.Writer, types *types.Types, response *spec.NamedR
 	serviceResponseImplementationName := response.Name.PascalCase()
 	w.Line(`class %s implements %s {`, serviceResponseImplementationName, InterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {
-		w.Line(`  public %s body;`, types.JavaType(&response.Type.Definition))
+		w.Line(`  public %s body;`, types.Java(&response.Type.Definition))
 		w.EmptyLine()
 		w.Line(`  public %s() {`, serviceResponseImplementationName)
 		w.Line(`  }`)
 		w.EmptyLine()
-		w.Line(`  public %s(%s body) {`, serviceResponseImplementationName, types.JavaType(&response.Type.Definition))
+		w.Line(`  public %s(%s body) {`, serviceResponseImplementationName, types.Java(&response.Type.Definition))
 		w.Line(`    this.body = body;`)
 		w.Line(`  }`)
 	}
