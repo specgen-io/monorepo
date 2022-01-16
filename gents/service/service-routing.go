@@ -1,7 +1,9 @@
-package gents
+package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gents/types"
+	validation2 "github.com/specgen-io/specgen/v2/gents/validation"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
@@ -43,13 +45,13 @@ func generateParametersParsing(w *sources.Writer, operation *spec.NamedOperation
 		}
 		w.Line("try {")
 		if len(operation.Endpoint.UrlParams) > 0 {
-			w.Line("  urlParams = t.decode(%s, %s)", paramsRuntimeTypeName(paramsTypeName(operation, "UrlParams")), urlParams)
+			w.Line("  urlParams = t.decode(%s, %s)", validation2.ParamsRuntimeTypeName(paramsTypeName(operation, "UrlParams")), urlParams)
 		}
 		if len(operation.HeaderParams) > 0 {
-			w.Line("  headerParams = t.decode(%s, %s)", paramsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")), headers)
+			w.Line("  headerParams = t.decode(%s, %s)", validation2.ParamsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")), headers)
 		}
 		if len(operation.QueryParams) > 0 {
-			w.Line("  queryParams = t.decode(%s, %s)", paramsRuntimeTypeName(paramsTypeName(operation, "QueryParams")), query)
+			w.Line("  queryParams = t.decode(%s, %s)", validation2.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams")), query)
 		}
 		w.Line("} catch (error) {")
 		w.Line("  %s", badRequestStatement)
@@ -63,9 +65,9 @@ func generateBodyParsing(w *sources.Writer, validation string, operation *spec.N
 		if operation.Body.Type.Definition.Plain == spec.TypeString {
 			w.Line(`const body: string = %s`, rawBody)
 		} else {
-			w.Line("var body: %s", TsType(&operation.Body.Type.Definition))
+			w.Line("var body: %s", types.TsType(&operation.Body.Type.Definition))
 			w.Line("try {")
-			w.Line("  body = t.decode(%s.%s, %s)", modelsPackage, runtimeType(validation, &operation.Body.Type.Definition), body)
+			w.Line("  body = t.decode(%s.%s, %s)", types.ModelsPackage, validation2.RuntimeType(validation, &operation.Body.Type.Definition), body)
 			w.Line("} catch (error) {")
 			w.Line("  %s", badRequestStatement)
 			w.Line("  return")

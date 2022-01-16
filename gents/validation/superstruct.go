@@ -1,13 +1,14 @@
-package gents
+package validation
 
 import (
+	"github.com/specgen-io/specgen/v2/gents/modules"
 	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
 var Superstruct = "superstruct"
 
-func generateSuperstructStaticCode(module module) *sources.CodeFile {
+func generateSuperstructStaticCode(module modules.Module) *sources.CodeFile {
 	code := `
 export * from "superstruct"
 

@@ -1,33 +1,18 @@
-package gents
+package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gents/modules"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func paramsRuntimeTypeName(typeName string) string {
-	return fmt.Sprintf("T%s", typeName)
-}
-
 func paramsTypeName(operation *spec.NamedOperation, namePostfix string) string {
 	return fmt.Sprintf("%s%s", operation.Name.PascalCase(), namePostfix)
 }
 
-func generateParams(w *sources.Writer, typeName string, params []spec.NamedParam, validation string) {
-	if validation == Superstruct {
-		generateSuperstructParams(w, typeName, params)
-		return
-	}
-	if validation == IoTs {
-		generateIoTsParams(w, typeName, params)
-		return
-	}
-	panic(fmt.Sprintf("Unknown validation: %s", validation))
-}
-
-func generateParamsStaticCode(module module) *sources.CodeFile {
+func generateParamsStaticCode(module modules.Module) *sources.CodeFile {
 	code := `
 export function zipHeaders(headers: string[]): Record<string, string | string[]> {
   let result: Record<string, string | string[]> = {}

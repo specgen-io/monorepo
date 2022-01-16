@@ -1,7 +1,9 @@
-package gents
+package validation
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gents/common"
+	"github.com/specgen-io/specgen/v2/gents/types"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
@@ -9,20 +11,20 @@ import (
 func generateIoTsParams(w *sources.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
-		w.Line("const %s = t.type({", paramsRuntimeTypeName(typeName))
+		w.Line("const %s = t.type({", ParamsRuntimeTypeName(typeName))
 		for _, param := range params {
-			w.Line("  %s: %s,", tsIdentifier(param.Name.Source), ParamIoTsTypeDefaulted(&param))
+			w.Line("  %s: %s,", common.TSIdentifier(param.Name.Source), ParamIoTsTypeDefaulted(&param))
 		}
 		w.Line("})")
 		w.EmptyLine()
-		w.Line("type %s = t.TypeOf<typeof %s>", typeName, paramsRuntimeTypeName(typeName))
+		w.Line("type %s = t.TypeOf<typeof %s>", typeName, ParamsRuntimeTypeName(typeName))
 	}
 }
 
 func ParamIoTsTypeDefaulted(param *spec.NamedParam) string {
 	theType := ParamIoTsType(&param.Type.Definition)
 	if param.Default != nil {
-		theType = fmt.Sprintf("t.withDefault(%s, %s)", theType, DefaultValue(&param.Type.Definition, *param.Default))
+		theType = fmt.Sprintf("t.withDefault(%s, %s)", theType, types.DefaultValue(&param.Type.Definition, *param.Default))
 	}
 	return theType
 }
@@ -71,6 +73,6 @@ func ParamPlainIoTsType(typ string) string {
 	case spec.TypeDateTime:
 		return "t.DateISOStringNoTimezone"
 	default:
-		return fmt.Sprintf("%s.T"+typ, modelsPackage)
+		return fmt.Sprintf("%s.T"+typ, types.ModelsPackage)
 	}
 }

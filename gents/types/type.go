@@ -1,4 +1,4 @@
-package gents
+package types
 
 import (
 	"fmt"
@@ -51,9 +51,9 @@ func PlainTsType(typ string) string {
 	case spec.TypeJson:
 		return "unknown"
 	default:
-		return fmt.Sprintf("%s.%s", modelsPackage, typ)
+		return fmt.Sprintf("%s.%s", ModelsPackage, typ)
 	}
 }
 
 //TODO: Consider removing
-var modelsPackage = "models"
+var ModelsPackage = "models"

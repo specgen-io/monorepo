@@ -1,29 +1,29 @@
-package gents
+package modules
 
 import (
 	"fmt"
 	"strings"
 )
 
-type module struct {
-	path        string
+type Module struct {
+	path string
 }
 
-func Module(folderPath string) module {
-	return module{path: folderPath}
+func NewModule(folderPath string) Module {
+	return Module{path: folderPath}
 }
 
-func (m module) GetPath() string {
+func (m Module) GetPath() string {
 	return fmt.Sprintf(`%s.ts`, m.path)
 }
 
-func (m module) GetImport(toModule module) string {
+func (m Module) GetImport(toModule Module) string {
 	return importPath(m.GetPath(), toModule.GetPath())
 }
 
-func (m module) Submodule(name string) module {
+func (m Module) Submodule(name string) Module {
 	if name != "" {
-		return Module(fmt.Sprintf(`%s/%s`, m.path, name))
+		return NewModule(fmt.Sprintf(`%s/%s`, m.path, name))
 	}
 	return m
 }

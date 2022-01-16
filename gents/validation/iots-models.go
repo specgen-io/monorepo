@@ -1,12 +1,15 @@
-package gents
+package validation
 
 import (
+	"github.com/specgen-io/specgen/v2/gents/common"
+	"github.com/specgen-io/specgen/v2/gents/modules"
+	"github.com/specgen-io/specgen/v2/gents/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateIoTsVersionModels(version *spec.Version, iotsModule module, module module) *sources.CodeFile {
-	w := NewTsWriter()
+func generateIoTsVersionModels(version *spec.Version, iotsModule modules.Module, module modules.Module) *sources.CodeFile {
+	w := writer.NewTsWriter()
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
 	w.Line(`import * as t from '%s'`, iotsModule.GetImport(module))
@@ -84,7 +87,7 @@ func generateIoTsUnionModel(w *sources.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {
-			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", tsIdentifier(*model.OneOf.Discriminator), item.Name.Source, SuperstructType(&item.Type.Definition))
+			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", common.TSIdentifier(*model.OneOf.Discriminator), item.Name.Source, SuperstructType(&item.Type.Definition))
 		}
 		w.Line("])")
 	} else {

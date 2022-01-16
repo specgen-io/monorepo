@@ -1,21 +1,26 @@
-package gents
+package client
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gents/modules"
+	"github.com/specgen-io/specgen/v2/gents/responses"
+	"github.com/specgen-io/specgen/v2/gents/types"
+	validation2 "github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateFetchApiClient(api spec.Api, node bool, validation string, validationModule, modelsModule, paramsModule, module module) *sources.CodeFile {
-	w := NewTsWriter()
+func generateFetchApiClient(api spec.Api, node bool, validation string, validationModule, modelsModule, paramsModule, module modules.Module) *sources.CodeFile {
+	w := writer.NewTsWriter()
 	if node {
 		w.Line(`import { URL, URLSearchParams } from 'url'`)
 		w.Line(`import fetch from 'node-fetch'`)
 	}
 	w.Line(`import { strParamsItems, stringify } from '%s'`, paramsModule.GetImport(module))
 	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
-	w.Line(`import * as %s from '%s'`, modelsPackage, modelsModule.GetImport(module))
+	w.Line(`import * as %s from '%s'`, types.ModelsPackage, modelsModule.GetImport(module))
 	w.EmptyLine()
 	w.Line(`export const client = (config: {baseURL: string}) => {`)
 	w.Line(`  return {`)
@@ -30,7 +35,7 @@ func generateFetchApiClient(api spec.Api, node bool, validation string, validati
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
 			w.EmptyLine()
-			generateOperationResponse(w, &operation)
+			responses.GenerateOperationResponse(w, &operation)
 		}
 	}
 	return &sources.CodeFile{module.GetPath(), w.String()}
@@ -40,7 +45,7 @@ func generateFetchOperation(w *sources.Writer, operation *spec.NamedOperation, v
 	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0
-	w.Line(`%s: async (%s): Promise<%s> => {`, operation.Name.CamelCase(), createOperationParams(operation), responseType(operation, ""))
+	w.Line(`%s: async (%s): Promise<%s> => {`, operation.Name.CamelCase(), createOperationParams(operation), responses.ResponseType(operation, ""))
 	params := ``
 	if hasQueryParams {
 		w.Line(`  const query = strParamsItems({`)
@@ -64,7 +69,7 @@ func generateFetchOperation(w *sources.Writer, operation *spec.NamedOperation, v
 		if body.Type.Definition.Plain == spec.TypeString {
 			fetchConfig += `, body: parameters.body`
 		} else {
-			w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, runtimeTypeFromPackage(validation, modelsPackage, &body.Type.Definition))
+			w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, validation2.RuntimeTypeFromPackage(validation, types.ModelsPackage, &body.Type.Definition))
 			fetchConfig += `, body: JSON.stringify(bodyJson)`
 		}
 	}

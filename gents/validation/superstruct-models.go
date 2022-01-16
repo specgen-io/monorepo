@@ -1,12 +1,15 @@
-package gents
+package validation
 
 import (
+	"github.com/specgen-io/specgen/v2/gents/common"
+	"github.com/specgen-io/specgen/v2/gents/modules"
+	"github.com/specgen-io/specgen/v2/gents/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateSuperstructVersionModels(version *spec.Version, superstructModule module, module module) *sources.CodeFile {
-	w := NewTsWriter()
+func generateSuperstructVersionModels(version *spec.Version, superstructModule modules.Module, module modules.Module) *sources.CodeFile {
+	w := writer.NewTsWriter()
 	w.Line(`import * as t from '%s'`, superstructModule.GetImport(module))
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
@@ -51,7 +54,7 @@ func generateSuperstructUnionModel(w *sources.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {
-			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", tsIdentifier(*model.OneOf.Discriminator), item.Name.Source, SuperstructType(&item.Type.Definition))
+			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", common.TSIdentifier(*model.OneOf.Discriminator), item.Name.Source, SuperstructType(&item.Type.Definition))
 		}
 		w.Line("])")
 	} else {

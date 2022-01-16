@@ -1,13 +1,16 @@
-package gents
+package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gents/modules"
+	"github.com/specgen-io/specgen/v2/gents/responses"
+	"github.com/specgen-io/specgen/v2/gents/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateServicesImplementations(specification *spec.Spec, generatedModule module, module module) []sources.CodeFile {
+func generateServicesImplementations(specification *spec.Spec, generatedModule modules.Module, module modules.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, version := range specification.Versions {
 		versionGeneratedModule := generatedModule.Submodule(version.Version.FlatCase())
@@ -21,8 +24,8 @@ func generateServicesImplementations(specification *spec.Spec, generatedModule m
 	return files
 }
 
-func generateServiceImplementation(api *spec.Api, apiModule module, modelsModule module, module module) *sources.CodeFile {
-	w := NewTsWriter()
+func generateServiceImplementation(api *spec.Api, apiModule modules.Module, modelsModule modules.Module, module modules.Module) *sources.CodeFile {
+	w := writer.NewTsWriter()
 
 	w.Line("import * as service from '%s'", apiModule.GetImport(module))
 	w.Line("import * as models from '%s'", modelsModule.GetImport(module))
@@ -36,7 +39,7 @@ func generateServiceImplementation(api *spec.Api, apiModule module, modelsModule
 		if operation.Body != nil || operation.HasParams() {
 			params = fmt.Sprintf(`params: service.%s`, operationParamsTypeName(&operation))
 		}
-		w.Line("  let %s = async (%s): Promise<%s> => {", operation.Name.CamelCase(), params, responseType(&operation, "service"))
+		w.Line("  let %s = async (%s): Promise<%s> => {", operation.Name.CamelCase(), params, responses.ResponseType(&operation, "service"))
 		w.Line("    throw new Error('Not Implemented')")
 		w.Line("  }")
 		w.EmptyLine()

@@ -1,4 +1,4 @@
-package gents
+package types
 
 import (
 	"fmt"
@@ -48,4 +48,3 @@ func DefaultValue(typ *spec.TypeDef, value string) string {
 		panic(fmt.Sprintf("Type: %s does not support default value", typ.Name))
 	}
 }
-

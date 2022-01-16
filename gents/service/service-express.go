@@ -1,7 +1,11 @@
-package gents
+package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gents/modules"
+	"github.com/specgen-io/specgen/v2/gents/types"
+	validation2 "github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
@@ -9,8 +13,8 @@ import (
 
 var express = "express"
 
-func generateExpressSpecRouter(specification *spec.Spec, rootModule module, module module) *sources.CodeFile {
-	w := NewTsWriter()
+func generateExpressSpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *sources.CodeFile {
+	w := writer.NewTsWriter()
 	w.Line("import {Router} from 'express'")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
@@ -51,8 +55,8 @@ func expressVersionUrl(version *spec.Version) string {
 	return url
 }
 
-func generateExpressVersionRouting(version *spec.Version, validation string, validationModule, paramsModule, module module) *sources.CodeFile {
-	w := NewTsWriter()
+func generateExpressVersionRouting(version *spec.Version, validation string, validationModule, paramsModule, module modules.Module) *sources.CodeFile {
+	w := writer.NewTsWriter()
 
 	w.Line("import {Router} from 'express'")
 	w.Line("import {Request, Response} from 'express'") //TODO: Join with above
@@ -66,9 +70,9 @@ func generateExpressVersionRouting(version *spec.Version, validation string, val
 
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
-			generateParams(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams, validation)
-			generateParams(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams, validation)
-			generateParams(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams, validation)
+			validation2.GenerateParams(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams, validation)
+			validation2.GenerateParams(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams, validation)
+			validation2.GenerateParams(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams, validation)
 		}
 
 		generateExpressApiRouting(w, &api, validation)
@@ -105,7 +109,7 @@ func generateExpressResponse(w *sources.Writer, response *spec.NamedResponse, va
 		if response.Type.Definition.Plain == spec.TypeString {
 			w.Line("response.status(%s).type('text').send(%s)", spec.HttpStatusCode(response.Name), dataParam)
 		} else {
-			w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s.%s, %s)))", spec.HttpStatusCode(response.Name), modelsPackage, runtimeType(validation, &response.Type.Definition), dataParam)
+			w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s.%s, %s)))", spec.HttpStatusCode(response.Name), types.ModelsPackage, validation2.RuntimeType(validation, &response.Type.Definition), dataParam)
 		}
 	}
 	w.Line("return")

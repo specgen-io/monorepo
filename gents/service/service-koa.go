@@ -1,8 +1,12 @@
-package gents
+package service
 
 import (
 	"fmt"
 	"github.com/pinzolo/casee"
+	"github.com/specgen-io/specgen/v2/gents/modules"
+	"github.com/specgen-io/specgen/v2/gents/types"
+	validation2 "github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
@@ -10,8 +14,8 @@ import (
 
 var koa = "koa"
 
-func generateKoaSpecRouter(specification *spec.Spec, rootModule module, module module) *sources.CodeFile {
-	w := NewTsWriter()
+func generateKoaSpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *sources.CodeFile {
+	w := writer.NewTsWriter()
 	w.Line("import Router from '@koa/router'")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
@@ -50,8 +54,8 @@ func generateKoaSpecRouter(specification *spec.Spec, rootModule module, module m
 	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func generateKoaVersionRouting(version *spec.Version, validation string, validationModule, paramsModule, module module) *sources.CodeFile {
-	w := NewTsWriter()
+func generateKoaVersionRouting(version *spec.Version, validation string, validationModule, paramsModule, module modules.Module) *sources.CodeFile {
+	w := writer.NewTsWriter()
 
 	w.Line(`import Router from '@koa/router'`)
 	w.Line(`import {zipHeaders} from '%s'`, paramsModule.GetImport(module))
@@ -63,9 +67,9 @@ func generateKoaVersionRouting(version *spec.Version, validation string, validat
 
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
-			generateParams(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams, validation)
-			generateParams(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams, validation)
-			generateParams(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams, validation)
+			validation2.GenerateParams(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams, validation)
+			validation2.GenerateParams(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams, validation)
+			validation2.GenerateParams(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams, validation)
 		}
 
 		generateKoaApiRouting(w, &api, validation)
@@ -101,7 +105,7 @@ func generateKoaResponse(w *sources.Writer, response *spec.NamedResponse, valida
 		if response.Type.Definition.Plain == spec.TypeString {
 			w.Line("ctx.body = %s", dataParam)
 		} else {
-			w.Line("ctx.body = t.encode(%s.%s, %s)", modelsPackage, runtimeType(validation, &response.Type.Definition), dataParam)
+			w.Line("ctx.body = t.encode(%s.%s, %s)", types.ModelsPackage, validation2.RuntimeType(validation, &response.Type.Definition), dataParam)
 		}
 	}
 	w.Line("return")

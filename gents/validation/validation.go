@@ -1,16 +1,17 @@
-package gents
+package validation
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gents/modules"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func runtimeType(validation string, typ *spec.TypeDef) string {
-	return runtimeTypeFromPackage(validation, "", typ)
+func RuntimeType(validation string, typ *spec.TypeDef) string {
+	return RuntimeTypeFromPackage(validation, "", typ)
 }
 
-func runtimeTypeFromPackage(validation string, customTypesPackage string, typ *spec.TypeDef) string {
+func RuntimeTypeFromPackage(validation string, customTypesPackage string, typ *spec.TypeDef) string {
 	if validation == Superstruct {
 		return SuperstructTypeFromPackage(customTypesPackage, typ)
 	}
@@ -20,7 +21,7 @@ func runtimeTypeFromPackage(validation string, customTypesPackage string, typ *s
 	panic(fmt.Sprintf("Unknown validation: %s", validation))
 }
 
-func generateValidation(validation string, validationModule module) *sources.CodeFile {
+func GenerateValidation(validation string, validationModule modules.Module) *sources.CodeFile {
 	if validation == Superstruct {
 		return generateSuperstructStaticCode(validationModule)
 	}

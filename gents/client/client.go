@@ -1,7 +1,10 @@
-package gents
+package client
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gents/modules"
+	"github.com/specgen-io/specgen/v2/gents/types"
+	validation2 "github.com/specgen-io/specgen/v2/gents/validation"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
@@ -9,16 +12,16 @@ import (
 
 func GenerateClient(specification *spec.Spec, generatePath string, client string, validation string) *sources.Sources {
 	sources := sources.NewSources()
-	module := Module(generatePath)
+	module := modules.NewModule(generatePath)
 
 	validationModule := module.Submodule(validation)
-	sources.AddGenerated(generateValidation(validation, validationModule))
+	sources.AddGenerated(validation2.GenerateValidation(validation, validationModule))
 	paramsModule := module.Submodule("params")
 	sources.AddGenerated(generateParamsBuilder(paramsModule))
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
-		sources.AddGenerated(generateVersionModels(&version, validation, validationModule, modelsModule))
+		sources.AddGenerated(validation2.GenerateVersionModels(&version, validation, validationModule, modelsModule))
 		for _, api := range version.Http.Apis {
 			apiModule := versionModule.Submodule(api.Name.SnakeCase())
 			if client == "axios" {
@@ -44,10 +47,6 @@ func getUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
-func responseTypeName(operation *spec.NamedOperation) string {
-	return operation.Name.PascalCase() + "Response"
-}
-
 func createParams(params []spec.NamedParam, required bool) []string {
 	tsParams := []string{}
 	for _, param := range params {
@@ -61,7 +60,7 @@ func createParams(params []spec.NamedParam, required bool) []string {
 			if !isRequired && !paramType.IsNullable() {
 				paramType = spec.Nullable(paramType)
 			}
-			tsParams = append(tsParams, param.Name.CamelCase()+requiredSign+": "+TsType(paramType))
+			tsParams = append(tsParams, param.Name.CamelCase()+requiredSign+": "+types.TsType(paramType))
 		}
 	}
 	return tsParams
@@ -71,7 +70,7 @@ func createOperationParams(operation *spec.NamedOperation) string {
 	operationParams := []string{}
 	operationParams = append(operationParams, createParams(operation.HeaderParams, true)...)
 	if operation.Body != nil {
-		operationParams = append(operationParams, "body: "+TsType(&operation.Body.Type.Definition))
+		operationParams = append(operationParams, "body: "+types.TsType(&operation.Body.Type.Definition))
 	}
 	operationParams = append(operationParams, createParams(operation.Endpoint.UrlParams, true)...)
 	operationParams = append(operationParams, createParams(operation.QueryParams, true)...)
@@ -92,7 +91,7 @@ func clientResponseResult(response *spec.NamedResponse, validation string, textR
 	} else {
 		data := textResposneData
 		if response.Type.Definition.Plain != spec.TypeString {
-			data = fmt.Sprintf(`t.decode(%s, %s)`, runtimeTypeFromPackage(validation, modelsPackage, &response.Type.Definition), jsonResponseData)
+			data = fmt.Sprintf(`t.decode(%s, %s)`, validation2.RuntimeTypeFromPackage(validation, types.ModelsPackage, &response.Type.Definition), jsonResponseData)
 		}
 		if len(response.Operation.Responses) == 1 {
 			return data
@@ -101,7 +100,7 @@ func clientResponseResult(response *spec.NamedResponse, validation string, textR
 	}
 }
 
-func generateParamsBuilder(module module) *sources.CodeFile {
+func generateParamsBuilder(module modules.Module) *sources.CodeFile {
 	code := `
 export function stringify(value: ScalarParam): string {
   if (value instanceof Date) {

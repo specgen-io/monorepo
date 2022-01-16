@@ -1,13 +1,14 @@
-package gents
+package validation
 
 import (
+	"github.com/specgen-io/specgen/v2/gents/modules"
 	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
 var IoTs = "io-ts"
 
-func generateIoTsStaticCode(module module) *sources.CodeFile {
+func generateIoTsStaticCode(module modules.Module) *sources.CodeFile {
 	code := `
 export * from 'io-ts'
 export * from 'io-ts-types'

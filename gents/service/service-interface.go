@@ -1,12 +1,17 @@
-package gents
+package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gents/common"
+	"github.com/specgen-io/specgen/v2/gents/modules"
+	"github.com/specgen-io/specgen/v2/gents/responses"
+	"github.com/specgen-io/specgen/v2/gents/types"
+	"github.com/specgen-io/specgen/v2/gents/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServiceApis(version *spec.Version, modelsModule module, module module) []sources.CodeFile {
+func generateServiceApis(version *spec.Version, modelsModule modules.Module, module modules.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := module.Submodule(serviceName(&api))
@@ -16,9 +21,9 @@ func generateServiceApis(version *spec.Version, modelsModule module, module modu
 	return files
 }
 
-func generateApiService(api *spec.Api, modelsModule module, module module) *sources.CodeFile {
-	w := NewTsWriter()
-	w.Line("import * as %s from '%s'", modelsPackage, modelsModule.GetImport(module))
+func generateApiService(api *spec.Api, modelsModule modules.Module, module modules.Module) *sources.CodeFile {
+	w := writer.NewTsWriter()
+	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(module))
 	for _, operation := range api.Operations {
 		if operation.Body != nil || operation.HasParams() {
 			w.EmptyLine()
@@ -26,7 +31,7 @@ func generateApiService(api *spec.Api, modelsModule module, module module) *sour
 		}
 		if len(operation.Responses) > 1 {
 			w.EmptyLine()
-			generateOperationResponse(w, &operation)
+			responses.GenerateOperationResponse(w, &operation)
 		}
 	}
 	w.EmptyLine()
@@ -36,7 +41,7 @@ func generateApiService(api *spec.Api, modelsModule module, module module) *sour
 		if operation.Body != nil || operation.HasParams() {
 			params = fmt.Sprintf(`params: %s`, operationParamsTypeName(&operation))
 		}
-		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, responseType(&operation, ""))
+		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, responses.ResponseType(&operation, ""))
 	}
 	w.Line("}")
 	return &sources.CodeFile{module.GetPath(), w.String()}
@@ -67,20 +72,13 @@ func addServiceParam(w *sources.Writer, paramName string, typ *spec.TypeDef) {
 	if typ.IsNullable() {
 		paramName = paramName + "?"
 	}
-	w.Line("  %s: %s,", paramName, TsType(typ))
+	w.Line("  %s: %s,", paramName, types.TsType(typ))
 }
 
 func generateServiceParams(w *sources.Writer, params []spec.NamedParam) {
 	for _, param := range params {
-		addServiceParam(w, tsIdentifier(param.Name.Source), &param.Type.Definition)
+		addServiceParam(w, common.TSIdentifier(param.Name.Source), &param.Type.Definition)
 	}
-}
-
-func tsIdentifier(name string) string {
-	if !checkFormat(tsIdentifierFormat, name) {
-		return fmt.Sprintf("'%s'", name)
-	}
-	return name
 }
 
 func generateOperationParams(w *sources.Writer, operation *spec.NamedOperation) {

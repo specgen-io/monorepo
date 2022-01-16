@@ -1,25 +1,27 @@
-package gents
+package service
 
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/genopenapi"
+	"github.com/specgen-io/specgen/v2/gents/modules"
+	validation2 "github.com/specgen-io/specgen/v2/gents/validation"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validation string) *sources.Sources {
 	sources := sources.NewSources()
-	generateModule := Module(generatePath)
+	generateModule := modules.NewModule(generatePath)
 
 	validationModule := generateModule.Submodule(validation)
-	sources.AddGenerated(generateValidation(validation, validationModule))
+	sources.AddGenerated(validation2.GenerateValidation(validation, validationModule))
 	paramsModule := generateModule.Submodule("params")
 	sources.AddGenerated(generateParamsStaticCode(paramsModule))
 
 	for _, version := range specification.Versions {
 		versionModule := generateModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
-		sources.AddGenerated(generateVersionModels(&version, validation, validationModule, modelsModule))
+		sources.AddGenerated(validation2.GenerateVersionModels(&version, validation, validationModule, modelsModule))
 		sources.AddGeneratedAll(generateServiceApis(&version, modelsModule, versionModule))
 		sources.AddGenerated(generateVersionRouting(&version, validation, server, validationModule, paramsModule, versionModule))
 	}
@@ -30,13 +32,13 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 	}
 
 	if servicesPath != "" {
-		sources.AddScaffoldedAll(generateServicesImplementations(specification, generateModule, Module(servicesPath)))
+		sources.AddScaffoldedAll(generateServicesImplementations(specification, generateModule, modules.NewModule(servicesPath)))
 	}
 
 	return sources
 }
 
-func generateVersionRouting(version *spec.Version, validation string, server string, validationModule, paramsModule, module module) *sources.CodeFile {
+func generateVersionRouting(version *spec.Version, validation string, server string, validationModule, paramsModule, module modules.Module) *sources.CodeFile {
 	routingModule := module.Submodule("routing")
 	if server == express {
 		return generateExpressVersionRouting(version, validation, validationModule, paramsModule, routingModule)
@@ -47,7 +49,7 @@ func generateVersionRouting(version *spec.Version, validation string, server str
 	panic(fmt.Sprintf("Unknown server: %s", server))
 }
 
-func generateSpecRouter(specification *spec.Spec, server string, rootModule module, module module) *sources.CodeFile {
+func generateSpecRouter(specification *spec.Spec, server string, rootModule modules.Module, module modules.Module) *sources.CodeFile {
 	if server == express {
 		return generateExpressSpecRouter(specification, rootModule, module)
 	}
