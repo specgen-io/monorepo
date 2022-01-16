@@ -1,4 +1,4 @@
-package genjava
+package writer
 
 import "github.com/specgen-io/specgen/v2/sources"
 

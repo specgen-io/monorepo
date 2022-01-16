@@ -1,17 +1,9 @@
-package genjava
+package service
 
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/spec"
 )
-
-func getterName(field *spec.NamedDefinition) string {
-	return fmt.Sprintf(`get%s`, field.Name.PascalCase())
-}
-
-func setterName(field *spec.NamedDefinition) string {
-	return fmt.Sprintf(`set%s`, field.Name.PascalCase())
-}
 
 func serviceName(api *spec.Api) string {
 	return fmt.Sprintf(`%sService`, api.Name.PascalCase())
@@ -33,10 +25,6 @@ func serviceInterfaceName(api *spec.Api) string {
 	return fmt.Sprintf(`%sService`, api.Name.PascalCase())
 }
 
-func serviceResponseInterfaceName(operation *spec.NamedOperation) string {
-	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
-}
-
 func controllerName(api *spec.Api) string {
 	return fmt.Sprintf(`%sController`, api.Name.PascalCase())
 }
@@ -47,8 +35,4 @@ func versionControllerName(controllerName string, version *spec.Version) string 
 
 func controllerMethodName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sController`, operation.Name.CamelCase())
-}
-
-func clientName(api *spec.Api) string {
-	return fmt.Sprintf(`%sClient`, api.Name.PascalCase())
 }

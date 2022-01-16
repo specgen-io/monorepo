@@ -1,4 +1,4 @@
-package genjava
+package packages
 
 import (
 	"fmt"
@@ -8,15 +8,15 @@ import (
 )
 
 type Module struct {
-	RootPath     string
+	RootPath    string
 	Path        string
 	PackageName string
 	PackageStar string
 }
 
-func Package(rootPath string, packageName string) Module {
+func New(rootPath string, packageName string) Module {
 	path := fmt.Sprintf(`%s/%s`, rootPath, packageToPath(packageName))
-	return Module{RootPath: rootPath, Path: path, PackageName: packageName, PackageStar: packageName+".*"}
+	return Module{RootPath: rootPath, Path: path, PackageName: packageName, PackageStar: packageName + ".*"}
 }
 
 func (m Module) GetPath(filename string) string {
@@ -26,7 +26,7 @@ func (m Module) GetPath(filename string) string {
 
 func (m Module) Subpackage(name string) Module {
 	if name != "" {
-		return Package(m.RootPath, fmt.Sprintf(`%s.%s`, m.PackageName, name))
+		return New(m.RootPath, fmt.Sprintf(`%s.%s`, m.PackageName, name))
 	}
 	return m
 }

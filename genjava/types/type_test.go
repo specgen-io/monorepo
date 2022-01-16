@@ -1,4 +1,4 @@
-package genjava
+package types
 
 import (
 	"github.com/specgen-io/specgen/v2/spec"
@@ -7,8 +7,8 @@ import (
 )
 
 func CheckJacksonType(t *testing.T, typ *spec.TypeDef, expected string) {
-	types := NewTypes(Jackson)
-	javaType := types.JavaType(typ)
+	types := Types{"JsonNode"}
+	javaType := types.Java(typ)
 	assert.Equal(t, javaType, expected)
 }
 
