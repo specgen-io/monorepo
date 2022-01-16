@@ -1,31 +1,36 @@
 package service
 
 import (
-	"fmt"
 	"github.com/specgen-io/specgen/v2/genopenapi"
 	"github.com/specgen-io/specgen/v2/gents/modules"
-	validation2 "github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/validation"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validation string) *sources.Sources {
+func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validationName string) *sources.Sources {
+	validation := validation.New(validationName)
+	generator := newServiceGenerator(server, validation)
+
 	sources := sources.NewSources()
+
 	generateModule := modules.NewModule(generatePath)
 
-	validationModule := generateModule.Submodule(validation)
-	sources.AddGenerated(validation2.GenerateValidation(validation, validationModule))
+	validationModule := generateModule.Submodule(validationName)
+	sources.AddGenerated(validation.SetupLibrary(validationModule))
 	paramsModule := generateModule.Submodule("params")
 	sources.AddGenerated(generateParamsStaticCode(paramsModule))
 
 	for _, version := range specification.Versions {
 		versionModule := generateModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
-		sources.AddGenerated(validation2.GenerateVersionModels(&version, validation, validationModule, modelsModule))
+		sources.AddGenerated(validation.GenerateVersionModels(&version, validationModule, modelsModule))
 		sources.AddGeneratedAll(generateServiceApis(&version, modelsModule, versionModule))
-		sources.AddGenerated(generateVersionRouting(&version, validation, server, validationModule, paramsModule, versionModule))
+		routingModule := versionModule.Submodule("routing")
+		sources.AddGenerated(generator.generateVersionRouting(&version, validationModule, paramsModule, routingModule))
 	}
-	sources.AddGenerated(generateSpecRouter(specification, server, generateModule, generateModule.Submodule("spec_router")))
+	specRouterModule := generateModule.Submodule("spec_router")
+	sources.AddGenerated(generator.generateSpecRouter(specification, generateModule, specRouterModule))
 
 	if swaggerPath != "" {
 		sources.AddGenerated(genopenapi.GenerateOpenapi(specification, swaggerPath))
@@ -36,57 +41,4 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 	}
 
 	return sources
-}
-
-func generateVersionRouting(version *spec.Version, validation string, server string, validationModule, paramsModule, module modules.Module) *sources.CodeFile {
-	routingModule := module.Submodule("routing")
-	if server == express {
-		return generateExpressVersionRouting(version, validation, validationModule, paramsModule, routingModule)
-	}
-	if server == koa {
-		return generateKoaVersionRouting(version, validation, validationModule, paramsModule, routingModule)
-	}
-	panic(fmt.Sprintf("Unknown server: %s", server))
-}
-
-func generateSpecRouter(specification *spec.Spec, server string, rootModule modules.Module, module modules.Module) *sources.CodeFile {
-	if server == express {
-		return generateExpressSpecRouter(specification, rootModule, module)
-	}
-	if server == koa {
-		return generateKoaSpecRouter(specification, rootModule, module)
-	}
-	panic(fmt.Sprintf("Unknown server: %s", server))
-}
-
-func apiRouterName(api *spec.Api) string {
-	return api.Name.CamelCase() + "Router"
-}
-
-func apiRouterNameVersioned(api *spec.Api) string {
-	result := apiRouterName(api)
-	version := api.Apis.Version.Version
-	if version.Source != "" {
-		result = result + version.PascalCase()
-	}
-	return result
-}
-
-func apiServiceParamName(api *spec.Api) string {
-	version := api.Apis.Version
-	name := api.Name.CamelCase() + "Service"
-	if version.Version.Source != "" {
-		name = name + version.Version.PascalCase()
-	}
-	return name
-}
-
-//TODO: Same as above
-func apiVersionedRouterName(api *spec.Api) string {
-	version := api.Apis.Version
-	name := api.Name.CamelCase() + "Router"
-	if version.Version.Source != "" {
-		name = name + version.Version.PascalCase()
-	}
-	return name
 }

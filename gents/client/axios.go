@@ -4,14 +4,18 @@ import (
 	"github.com/specgen-io/specgen/v2/gents/modules"
 	"github.com/specgen-io/specgen/v2/gents/responses"
 	"github.com/specgen-io/specgen/v2/gents/types"
-	validation2 "github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/validation"
 	"github.com/specgen-io/specgen/v2/gents/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateAxiosApiClient(api spec.Api, validation string, validationModule, modelsModule, paramsModule, module modules.Module) *sources.CodeFile {
+type axiosGenerator struct {
+	validation validation.Validation
+}
+
+func (g *axiosGenerator) generateApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *sources.CodeFile {
 	w := writer.NewTsWriter()
 	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
 	w.Line(`import { strParamsItems, strParamsObject, stringify } from '%s'`, paramsModule.GetImport(module))
@@ -22,7 +26,7 @@ func generateAxiosApiClient(api spec.Api, validation string, validationModule, m
 	w.Line(`  return {`)
 	w.Line(`    axiosInstance,`)
 	for _, operation := range api.Operations {
-		generateAxiosOperation(w.IndentedWith(2), &operation, validation)
+		g.generateAxiosOperation(w.IndentedWith(2), &operation)
 	}
 	w.Line(`  }`)
 	w.Line(`}`)
@@ -35,7 +39,7 @@ func generateAxiosApiClient(api spec.Api, validation string, validationModule, m
 	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func generateAxiosOperation(w *sources.Writer, operation *spec.NamedOperation, validation string) {
+func (g *axiosGenerator) generateAxiosOperation(w *sources.Writer, operation *spec.NamedOperation) {
 	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0
@@ -63,7 +67,7 @@ func generateAxiosOperation(w *sources.Writer, operation *spec.NamedOperation, v
 		if body.Type.Definition.Plain == spec.TypeString {
 			w.Line("  const response = await axiosInstance.%s(`%s`, parameters.body, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 		} else {
-			w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, validation2.RuntimeTypeFromPackage(validation, types.ModelsPackage, &body.Type.Definition))
+			w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &body.Type.Definition))
 			w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 		}
 	} else {
@@ -72,7 +76,7 @@ func generateAxiosOperation(w *sources.Writer, operation *spec.NamedOperation, v
 	w.Line(`  switch (response.status) {`)
 	for _, response := range operation.Responses {
 		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
-		w.Line(`      return Promise.resolve(%s)`, clientResponseResult(&response, validation, `response.data`, `response.data`))
+		w.Line(`      return Promise.resolve(%s)`, clientResponseResult(g.validation, &response, `response.data`, `response.data`))
 	}
 	w.Line(`    default:`)
 	w.Line("      throw new Error(`Unexpected status code ${ response.status }`)")

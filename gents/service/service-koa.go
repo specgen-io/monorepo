@@ -5,7 +5,7 @@ import (
 	"github.com/pinzolo/casee"
 	"github.com/specgen-io/specgen/v2/gents/modules"
 	"github.com/specgen-io/specgen/v2/gents/types"
-	validation2 "github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/validation"
 	"github.com/specgen-io/specgen/v2/gents/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
@@ -14,7 +14,11 @@ import (
 
 var koa = "koa"
 
-func generateKoaSpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *sources.CodeFile {
+type koaGenerator struct {
+	validation validation.Validation
+}
+
+func (g *koaGenerator) generateSpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *sources.CodeFile {
 	w := writer.NewTsWriter()
 	w.Line("import Router from '@koa/router'")
 	for _, version := range specification.Versions {
@@ -39,7 +43,7 @@ func generateKoaSpecRouter(specification *spec.Spec, rootModule modules.Module, 
 	w.Line("  let router = new Router()")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			apiRouterNameConst := "the" + casee.ToPascalCase(apiVersionedRouterName(&api))
+			apiRouterNameConst := "the" + casee.ToPascalCase(apiRouterNameVersioned(&api))
 			w.Line("  const %s = %s(%s)", apiRouterNameConst, apiRouterNameVersioned(&api), apiServiceParamName(&api))
 			if version.Http.GetUrl() == "" {
 				w.Line("  router.use(%s.routes(), %s.allowedMethods())", apiRouterNameConst, apiRouterNameConst)
@@ -54,7 +58,7 @@ func generateKoaSpecRouter(specification *spec.Spec, rootModule modules.Module, 
 	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func generateKoaVersionRouting(version *spec.Version, validation string, validationModule, paramsModule, module modules.Module) *sources.CodeFile {
+func (g *koaGenerator) generateVersionRouting(version *spec.Version, validationModule, paramsModule, module modules.Module) *sources.CodeFile {
 	w := writer.NewTsWriter()
 
 	w.Line(`import Router from '@koa/router'`)
@@ -67,24 +71,24 @@ func generateKoaVersionRouting(version *spec.Version, validation string, validat
 
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
-			validation2.GenerateParams(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams, validation)
-			validation2.GenerateParams(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams, validation)
-			validation2.GenerateParams(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams, validation)
+			g.validation.GenerateParams(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams)
+			g.validation.GenerateParams(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams)
+			g.validation.GenerateParams(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams)
 		}
 
-		generateKoaApiRouting(w, &api, validation)
+		g.generateKoaApiRouting(w, &api)
 	}
 
 	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func generateKoaApiRouting(w *sources.Writer, api *spec.Api, validation string) {
+func (g *koaGenerator) generateKoaApiRouting(w *sources.Writer, api *spec.Api) {
 	w.EmptyLine()
 	w.Line("export let %s = (service: %s) => {", apiRouterName(api), serviceInterfaceName(api))
 	w.Line("  let router = new Router()")
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		generateKoaOperationRouting(w.Indented(), &operation, validation)
+		g.generateKoaOperationRouting(w.Indented(), &operation)
 	}
 	w.EmptyLine()
 	w.Line("  return router")
@@ -99,19 +103,19 @@ func getKoaUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
-func generateKoaResponse(w *sources.Writer, response *spec.NamedResponse, validation string, dataParam string) {
+func (g *koaGenerator) generateKoaResponse(w *sources.Writer, response *spec.NamedResponse, dataParam string) {
 	w.Line("ctx.status = %s", spec.HttpStatusCode(response.Name))
 	if !response.Type.Definition.IsEmpty() {
 		if response.Type.Definition.Plain == spec.TypeString {
 			w.Line("ctx.body = %s", dataParam)
 		} else {
-			w.Line("ctx.body = t.encode(%s.%s, %s)", types.ModelsPackage, validation2.RuntimeType(validation, &response.Type.Definition), dataParam)
+			w.Line("ctx.body = t.encode(%s.%s, %s)", types.ModelsPackage, g.validation.RuntimeType(&response.Type.Definition), dataParam)
 		}
 	}
 	w.Line("return")
 }
 
-func generateKoaOperationRouting(w *sources.Writer, operation *spec.NamedOperation, validation string) {
+func (g *koaGenerator) generateKoaOperationRouting(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line("router.%s('%s', async (ctx) => {", strings.ToLower(operation.Endpoint.Method), getKoaUrl(operation.Endpoint))
 	w.Indent()
 
@@ -130,17 +134,17 @@ func generateKoaOperationRouting(w *sources.Writer, operation *spec.NamedOperati
 	}
 
 	generateParametersParsing(w, operation, "zipHeaders(ctx.req.rawHeaders)", "ctx.params", "ctx.request.query", "ctx.throw(400)")
-	generateBodyParsing(w, validation, operation, "ctx.request.body", "ctx.request.rawBody", "ctx.throw(400)")
+	generateBodyParsing(w, g.validation, operation, "ctx.request.body", "ctx.request.rawBody", "ctx.throw(400)")
 
 	w.Line("try {")
 	w.Line("  %s", serviceCall(operation, getApiCallParamsObject(operation)))
 	if len(operation.Responses) == 1 {
-		generateKoaResponse(w.IndentedWith(1), &operation.Responses[0], validation, "result")
+		g.generateKoaResponse(w.IndentedWith(1), &operation.Responses[0], "result")
 	} else {
 		w.Line("  switch (result.status) {")
 		for _, response := range operation.Responses {
 			w.Line("    case '%s':", response.Name.FlatCase())
-			generateKoaResponse(w.IndentedWith(3), &response, validation, "result.data")
+			g.generateKoaResponse(w.IndentedWith(3), &response, "result.data")
 		}
 		w.Line("  }")
 	}

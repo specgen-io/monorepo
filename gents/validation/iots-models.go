@@ -8,19 +8,19 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateIoTsVersionModels(version *spec.Version, iotsModule modules.Module, module modules.Module) *sources.CodeFile {
+func (v *ioTsValidation) GenerateVersionModels(version *spec.Version, codecModule modules.Module, module modules.Module) *sources.CodeFile {
 	w := writer.NewTsWriter()
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
-	w.Line(`import * as t from '%s'`, iotsModule.GetImport(module))
+	w.Line(`import * as t from '%s'`, codecModule.GetImport(module))
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
 		if model.IsObject() {
-			generateIoTsObjectModel(w, model)
+			v.generateIoTsObjectModel(w, model)
 		} else if model.IsEnum() {
-			generateIoTsEnumModel(w, model)
+			v.generateIoTsEnumModel(w, model)
 		} else if model.IsOneOf() {
-			generateIoTsUnionModel(w, model)
+			v.generateIoTsUnionModel(w, model)
 		}
 	}
 	return &sources.CodeFile{Path: module.GetPath(), Content: w.String()}
@@ -39,33 +39,33 @@ func kindOfFields(objectModel *spec.NamedModel) (bool, bool) {
 	return hasRequiredFields, hasOptionalFields
 }
 
-func generateIoTsObjectModel(w *sources.Writer, model *spec.NamedModel) {
+func (v *ioTsValidation) generateIoTsObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	hasRequiredFields, hasOptionalFields := kindOfFields(model)
 	if hasRequiredFields && hasOptionalFields {
 		w.Line("export const T%s = t.intersection([", model.Name.PascalCase())
 		w.Line("  t.interface({")
 		for _, field := range model.Object.Fields {
 			if !field.Type.Definition.IsNullable() {
-				w.Line("    %s: %s,", field.Name.Source, IoTsType(&field.Type.Definition))
+				w.Line("    %s: %s,", field.Name.Source, v.RuntimeType(&field.Type.Definition))
 			}
 		}
 		w.Line("  }),")
 		w.Line("  t.partial({")
 		for _, field := range model.Object.Fields {
 			if field.Type.Definition.IsNullable() {
-				w.Line("    %s: %s,", field.Name.Source, IoTsType(&field.Type.Definition))
+				w.Line("    %s: %s,", field.Name.Source, v.RuntimeType(&field.Type.Definition))
 			}
 		}
 		w.Line("  })")
 		w.Line("])")
 	} else {
-		var ioTsType = "t.interface"
+		var modelTsType = "t.interface"
 		if hasOptionalFields {
-			ioTsType = "t.partial"
+			modelTsType = "t.partial"
 		}
-		w.Line("export const T%s = %s({", model.Name.PascalCase(), ioTsType)
+		w.Line("export const T%s = %s({", model.Name.PascalCase(), modelTsType)
 		for _, field := range model.Object.Fields {
-			w.Line("  %s: %s,", field.Name.Source, IoTsType(&field.Type.Definition))
+			w.Line("  %s: %s,", field.Name.Source, v.RuntimeType(&field.Type.Definition))
 		}
 		w.Line("})")
 	}
@@ -73,7 +73,7 @@ func generateIoTsObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("export type %s = t.TypeOf<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func generateIoTsEnumModel(w *sources.Writer, model *spec.NamedModel) {
+func (v *ioTsValidation) generateIoTsEnumModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("export enum %s {", model.Name.PascalCase())
 	for _, item := range model.Enum.Items {
 		w.Line(`  %s = "%s",`, item.Name.UpperCase(), item.Value)
@@ -83,17 +83,17 @@ func generateIoTsEnumModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.enum(%s)", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func generateIoTsUnionModel(w *sources.Writer, model *spec.NamedModel) {
+func (v *ioTsValidation) generateIoTsUnionModel(w *sources.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {
-			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", common.TSIdentifier(*model.OneOf.Discriminator), item.Name.Source, SuperstructType(&item.Type.Definition))
+			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", common.TSIdentifier(*model.OneOf.Discriminator), item.Name.Source, v.RuntimeType(&item.Type.Definition))
 		}
 		w.Line("])")
 	} else {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {
-			w.Line("  t.interface({%s: %s}),", item.Name.Source, IoTsType(&item.Type.Definition))
+			w.Line("  t.interface({%s: %s}),", item.Name.Source, v.RuntimeType(&item.Type.Definition))
 		}
 		w.Line("])")
 	}

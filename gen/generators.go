@@ -7,9 +7,7 @@ import (
 	"github.com/specgen-io/specgen/v2/genopenapi"
 	"github.com/specgen-io/specgen/v2/genruby"
 	"github.com/specgen-io/specgen/v2/genscala"
-	"github.com/specgen-io/specgen/v2/gents/client"
-	"github.com/specgen-io/specgen/v2/gents/service"
-	"github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
@@ -218,7 +216,7 @@ var ModelsTs = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return validation.GenerateModels(specification, params[ArgValidation], params[ArgGeneratePath])
+		return gents.GenerateModels(specification, params[ArgValidation], params[ArgGeneratePath])
 	},
 }
 
@@ -232,7 +230,7 @@ var ClientTs = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return client.GenerateClient(specification, params[ArgGeneratePath], params[ArgClient], params[ArgValidation])
+		return gents.GenerateClient(specification, params[ArgGeneratePath], params[ArgClient], params[ArgValidation])
 	},
 }
 
@@ -248,7 +246,7 @@ var ServiceTs = Generator{
 		{Arg: ArgSwaggerPath, Required: false},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return service.GenerateService(specification, params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath], params[ArgServer], params[ArgValidation])
+		return gents.GenerateService(specification, params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath], params[ArgServer], params[ArgValidation])
 	},
 }
 

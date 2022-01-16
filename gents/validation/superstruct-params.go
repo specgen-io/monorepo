@@ -8,12 +8,12 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateSuperstructParams(w *sources.Writer, typeName string, params []spec.NamedParam) {
+func (v *superstructValidation) GenerateParams(w *sources.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		w.Line("const %s = t.type({", ParamsRuntimeTypeName(typeName))
 		for _, param := range params {
-			w.Line("  %s: %s,", common.TSIdentifier(param.Name.Source), ParamSuperstructTypeDefaulted(&param))
+			w.Line("  %s: %s,", common.TSIdentifier(param.Name.Source), paramSuperstructTypeDefaulted(&param))
 		}
 		w.Line("})")
 		w.EmptyLine()
@@ -21,30 +21,30 @@ func generateSuperstructParams(w *sources.Writer, typeName string, params []spec
 	}
 }
 
-func ParamSuperstructTypeDefaulted(param *spec.NamedParam) string {
-	theType := ParamSuperstructType(&param.Type.Definition)
+func paramSuperstructTypeDefaulted(param *spec.NamedParam) string {
+	theType := paramSuperstructType(&param.Type.Definition)
 	if param.Default != nil {
 		theType = fmt.Sprintf("t.defaulted(%s, %s)", theType, types.DefaultValue(&param.Type.Definition, *param.Default))
 	}
 	return theType
 }
 
-func ParamSuperstructType(typ *spec.TypeDef) string {
+func paramSuperstructType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return ParamPlainSuperstructType(typ.Plain)
+		return paramPlainSuperstructType(typ.Plain)
 	case spec.NullableType:
 		if typ.Child.Node != spec.PlainType {
 			panic(fmt.Sprintf("Unsupported string type: %v", typ))
 		}
-		child := ParamPlainSuperstructType(typ.Child.Plain)
+		child := paramPlainSuperstructType(typ.Child.Plain)
 		result := "t.optional(" + child + ")"
 		return result
 	case spec.ArrayType:
 		if typ.Child.Node != spec.PlainType {
 			panic(fmt.Sprintf("Unsupported string type: %v", typ))
 		}
-		child := ParamPlainSuperstructType(typ.Child.Plain)
+		child := paramPlainSuperstructType(typ.Child.Plain)
 		result := "t.array(" + child + ")"
 		return result
 	default:
@@ -52,7 +52,7 @@ func ParamSuperstructType(typ *spec.TypeDef) string {
 	}
 }
 
-func ParamPlainSuperstructType(typ string) string {
+func paramPlainSuperstructType(typ string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "t.StrInteger"

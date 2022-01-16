@@ -5,16 +5,21 @@ import (
 	"github.com/specgen-io/specgen/v2/gents/modules"
 	"github.com/specgen-io/specgen/v2/gents/responses"
 	"github.com/specgen-io/specgen/v2/gents/types"
-	validation2 "github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/validation"
 	"github.com/specgen-io/specgen/v2/gents/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateFetchApiClient(api spec.Api, node bool, validation string, validationModule, modelsModule, paramsModule, module modules.Module) *sources.CodeFile {
+type fetchGenerator struct {
+	node       bool
+	validation validation.Validation
+}
+
+func (g *fetchGenerator) generateApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *sources.CodeFile {
 	w := writer.NewTsWriter()
-	if node {
+	if g.node {
 		w.Line(`import { URL, URLSearchParams } from 'url'`)
 		w.Line(`import fetch from 'node-fetch'`)
 	}
@@ -28,7 +33,7 @@ func generateFetchApiClient(api spec.Api, node bool, validation string, validati
 		if i > 0 {
 			w.EmptyLine()
 		}
-		generateFetchOperation(w.IndentedWith(2), &operation, validation)
+		g.generateFetchOperation(w.IndentedWith(2), &operation)
 	}
 	w.Line(`  }`)
 	w.Line(`}`)
@@ -41,7 +46,7 @@ func generateFetchApiClient(api spec.Api, node bool, validation string, validati
 	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func generateFetchOperation(w *sources.Writer, operation *spec.NamedOperation, validation string) {
+func (g *fetchGenerator) generateFetchOperation(w *sources.Writer, operation *spec.NamedOperation) {
 	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0
@@ -69,7 +74,7 @@ func generateFetchOperation(w *sources.Writer, operation *spec.NamedOperation, v
 		if body.Type.Definition.Plain == spec.TypeString {
 			fetchConfig += `, body: parameters.body`
 		} else {
-			w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, validation2.RuntimeTypeFromPackage(validation, types.ModelsPackage, &body.Type.Definition))
+			w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &body.Type.Definition))
 			fetchConfig += `, body: JSON.stringify(bodyJson)`
 		}
 	}
@@ -77,7 +82,7 @@ func generateFetchOperation(w *sources.Writer, operation *spec.NamedOperation, v
 	w.Line(`  switch (response.status) {`)
 	for _, response := range operation.Responses {
 		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
-		w.Line(`      return Promise.resolve(%s)`, clientResponseResult(&response, validation, `await response.text()`, `await response.json()`))
+		w.Line(`      return Promise.resolve(%s)`, clientResponseResult(g.validation, &response, `await response.text()`, `await response.json()`))
 	}
 	w.Line(`    default:`)
 	w.Line("      throw new Error(`Unexpected status code ${ response.status }`)")

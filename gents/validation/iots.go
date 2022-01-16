@@ -8,7 +8,7 @@ import (
 
 var IoTs = "io-ts"
 
-func generateIoTsStaticCode(module modules.Module) *sources.CodeFile {
+func (v *ioTsValidation) SetupLibrary(module modules.Module) *sources.CodeFile {
 	code := `
 export * from 'io-ts'
 export * from 'io-ts-types'

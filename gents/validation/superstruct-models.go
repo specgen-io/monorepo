@@ -8,33 +8,33 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateSuperstructVersionModels(version *spec.Version, superstructModule modules.Module, module modules.Module) *sources.CodeFile {
+func (v *superstructValidation) GenerateVersionModels(version *spec.Version, superstructModule modules.Module, module modules.Module) *sources.CodeFile {
 	w := writer.NewTsWriter()
 	w.Line(`import * as t from '%s'`, superstructModule.GetImport(module))
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
 		if model.IsObject() {
-			generateSuperstructObjectModel(w, model)
+			v.generateSuperstructObjectModel(w, model)
 		} else if model.IsEnum() {
-			generateSuperstructEnumModel(w, model)
+			v.generateSuperstructEnumModel(w, model)
 		} else if model.IsOneOf() {
-			generateSuperstructUnionModel(w, model)
+			v.generateSuperstructUnionModel(w, model)
 		}
 	}
 	return &sources.CodeFile{Path: module.GetPath(), Content: w.String()}
 }
 
-func generateSuperstructObjectModel(w *sources.Writer, model *spec.NamedModel) {
+func (v *superstructValidation) generateSuperstructObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.type({", model.Name.PascalCase())
 	for _, field := range model.Object.Fields {
-		w.Line("  %s: %s,", field.Name.Source, SuperstructType(&field.Type.Definition))
+		w.Line("  %s: %s,", field.Name.Source, v.RuntimeType(&field.Type.Definition))
 	}
 	w.Line("})")
 	w.Line("")
 	w.Line("export type %s = t.Infer<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func generateSuperstructEnumModel(w *sources.Writer, model *spec.NamedModel) {
+func (v *superstructValidation) generateSuperstructEnumModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.enums ([", model.Name.PascalCase())
 	for _, item := range model.Enum.Items {
 		w.Line(`  "%s",`, item.Value)
@@ -50,17 +50,17 @@ func generateSuperstructEnumModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("}")
 }
 
-func generateSuperstructUnionModel(w *sources.Writer, model *spec.NamedModel) {
+func (v *superstructValidation) generateSuperstructUnionModel(w *sources.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {
-			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", common.TSIdentifier(*model.OneOf.Discriminator), item.Name.Source, SuperstructType(&item.Type.Definition))
+			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", common.TSIdentifier(*model.OneOf.Discriminator), item.Name.Source, v.RuntimeType(&item.Type.Definition))
 		}
 		w.Line("])")
 	} else {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {
-			w.Line("  t.object({%s: %s}),", item.Name.Source, SuperstructType(&item.Type.Definition))
+			w.Line("  t.object({%s: %s}),", item.Name.Source, v.RuntimeType(&item.Type.Definition))
 		}
 		w.Line("])")
 	}

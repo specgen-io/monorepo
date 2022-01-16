@@ -7,26 +7,20 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func RuntimeType(validation string, typ *spec.TypeDef) string {
-	return RuntimeTypeFromPackage(validation, "", typ)
+type Validation interface {
+	RuntimeType(typ *spec.TypeDef) string
+	RuntimeTypeFromPackage(customTypesPackage string, typ *spec.TypeDef) string
+	SetupLibrary(validationModule modules.Module) *sources.CodeFile
+	GenerateVersionModels(version *spec.Version, validationModule modules.Module, module modules.Module) *sources.CodeFile
+	GenerateParams(w *sources.Writer, typeName string, params []spec.NamedParam)
 }
 
-func RuntimeTypeFromPackage(validation string, customTypesPackage string, typ *spec.TypeDef) string {
+func New(validation string) Validation {
 	if validation == Superstruct {
-		return SuperstructTypeFromPackage(customTypesPackage, typ)
+		return &superstructValidation{}
 	}
 	if validation == IoTs {
-		return IoTsTypeFromPackage(customTypesPackage, typ)
-	}
-	panic(fmt.Sprintf("Unknown validation: %s", validation))
-}
-
-func GenerateValidation(validation string, validationModule modules.Module) *sources.CodeFile {
-	if validation == Superstruct {
-		return generateSuperstructStaticCode(validationModule)
-	}
-	if validation == IoTs {
-		return generateIoTsStaticCode(validationModule)
+		return &ioTsValidation{}
 	}
 	panic(fmt.Sprintf("Unknown validation: %s", validation))
 }

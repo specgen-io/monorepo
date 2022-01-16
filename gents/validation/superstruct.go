@@ -8,7 +8,7 @@ import (
 
 var Superstruct = "superstruct"
 
-func generateSuperstructStaticCode(module modules.Module) *sources.CodeFile {
+func (v *superstructValidation) SetupLibrary(module modules.Module) *sources.CodeFile {
 	code := `
 export * from "superstruct"
 

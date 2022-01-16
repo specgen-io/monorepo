@@ -8,12 +8,12 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateIoTsParams(w *sources.Writer, typeName string, params []spec.NamedParam) {
+func (v *ioTsValidation) GenerateParams(w *sources.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		w.Line("const %s = t.type({", ParamsRuntimeTypeName(typeName))
 		for _, param := range params {
-			w.Line("  %s: %s,", common.TSIdentifier(param.Name.Source), ParamIoTsTypeDefaulted(&param))
+			w.Line("  %s: %s,", common.TSIdentifier(param.Name.Source), paramIoTsTypeDefaulted(&param))
 		}
 		w.Line("})")
 		w.EmptyLine()
@@ -21,28 +21,28 @@ func generateIoTsParams(w *sources.Writer, typeName string, params []spec.NamedP
 	}
 }
 
-func ParamIoTsTypeDefaulted(param *spec.NamedParam) string {
-	theType := ParamIoTsType(&param.Type.Definition)
+func paramIoTsTypeDefaulted(param *spec.NamedParam) string {
+	theType := paramIoTsType(&param.Type.Definition)
 	if param.Default != nil {
 		theType = fmt.Sprintf("t.withDefault(%s, %s)", theType, types.DefaultValue(&param.Type.Definition, *param.Default))
 	}
 	return theType
 }
 
-func ParamIoTsType(typ *spec.TypeDef) string {
+func paramIoTsType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return ParamPlainIoTsType(typ.Plain)
+		return paramPlainIoTsType(typ.Plain)
 	case spec.NullableType:
 		if typ.Child.Node != spec.PlainType {
 			panic(fmt.Sprintf("Unsupported string param type: %v", typ))
 		}
-		return ParamPlainIoTsType(typ.Child.Plain)
+		return paramPlainIoTsType(typ.Child.Plain)
 	case spec.ArrayType:
 		if typ.Child.Node != spec.PlainType {
 			panic(fmt.Sprintf("Unsupported string param type: %v", typ))
 		}
-		child := ParamPlainIoTsType(typ.Child.Plain)
+		child := paramPlainIoTsType(typ.Child.Plain)
 		result := "t.array(" + child + ")"
 		return result
 	default:
@@ -50,7 +50,7 @@ func ParamIoTsType(typ *spec.TypeDef) string {
 	}
 }
 
-func ParamPlainIoTsType(typ string) string {
+func paramPlainIoTsType(typ string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "t.IntFromString"
