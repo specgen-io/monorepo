@@ -1,4 +1,4 @@
-package validation
+package iots
 
 import (
 	"github.com/specgen-io/specgen/v2/gents/modules"
@@ -8,7 +8,7 @@ import (
 
 var IoTs = "io-ts"
 
-func (v *ioTsValidation) SetupLibrary(module modules.Module) *sources.CodeFile {
+func (g *Generator) SetupLibrary(module modules.Module) *sources.CodeFile {
 	code := `
 export * from 'io-ts'
 export * from 'io-ts-types'

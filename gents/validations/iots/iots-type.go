@@ -1,28 +1,28 @@
-package validation
+package iots
 
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (v *ioTsValidation) RuntimeType(typ *spec.TypeDef) string {
-	return v.RuntimeTypeFromPackage("", typ)
+func (g *Generator) RuntimeType(typ *spec.TypeDef) string {
+	return g.RuntimeTypeFromPackage("", typ)
 }
 
-func (v *ioTsValidation) RuntimeTypeFromPackage(customTypesPackage string, typ *spec.TypeDef) string {
+func (g *Generator) RuntimeTypeFromPackage(customTypesPackage string, typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return v.plainIoTsType(customTypesPackage, typ.Plain)
+		return g.plainIoTsType(customTypesPackage, typ.Plain)
 	case spec.NullableType:
-		child := v.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
+		child := g.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
 		result := "t.union([" + child + ", t.null])"
 		return result
 	case spec.ArrayType:
-		child := v.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
+		child := g.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
 		result := "t.array(" + child + ")"
 		return result
 	case spec.MapType:
-		child := v.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
+		child := g.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
 		result := "t.record(t.string, " + child + ")"
 		return result
 	default:
@@ -30,7 +30,7 @@ func (v *ioTsValidation) RuntimeTypeFromPackage(customTypesPackage string, typ *
 	}
 }
 
-func (v *ioTsValidation) plainIoTsType(customTypesPackage string, typ string) string {
+func (g *Generator) plainIoTsType(customTypesPackage string, typ string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "t.number"

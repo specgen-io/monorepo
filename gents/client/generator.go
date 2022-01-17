@@ -3,24 +3,30 @@ package client
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gents/modules"
-	"github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/validations"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-type clientGenerator interface {
-	generateApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *sources.CodeFile
+type ClientGenerator interface {
+	ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *sources.CodeFile
 }
 
-func newClientGenerator(client string, validation validation.Validation) clientGenerator {
-	if client == "axios" {
+func NewClientGenerator(client string, validation validations.Validation) ClientGenerator {
+	if client == Axios {
 		return &axiosGenerator{validation}
 	}
-	if client == "node-fetch" {
+	if client == NodeFetch {
 		return &fetchGenerator{true, validation}
 	}
-	if client == "browser-fetch" {
+	if client == BrowserFetch {
 		return &fetchGenerator{false, validation}
 	}
 	panic(fmt.Sprintf("Unknown client: %s", client))
 }
+
+var Axios = "axios"
+var NodeFetch = "node-fetch"
+var BrowserFetch = "browser-fetch"
+
+var Clients = []string{Axios, NodeFetch, BrowserFetch}

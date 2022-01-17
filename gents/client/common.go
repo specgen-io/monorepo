@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gents/modules"
 	"github.com/specgen-io/specgen/v2/gents/types"
-	"github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/validations"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
@@ -53,7 +53,7 @@ func createOperationParams(operation *spec.NamedOperation) string {
 	return fmt.Sprintf("parameters: {%s}", strings.Join(operationParams, ", "))
 }
 
-func clientResponseResult(validation validation.Validation, response *spec.NamedResponse, textResposneData, jsonResponseData string) string {
+func clientResponseResult(validation validations.Validation, response *spec.NamedResponse, textResposneData, jsonResponseData string) string {
 	if response.Type.Definition.IsEmpty() {
 		if len(response.Operation.Responses) == 1 {
 			return ""

@@ -4,20 +4,18 @@ import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gents/modules"
 	"github.com/specgen-io/specgen/v2/gents/types"
-	"github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/validations"
 	"github.com/specgen-io/specgen/v2/gents/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-var express = "express"
-
 type expressGenerator struct {
-	validation validation.Validation
+	validation validations.Validation
 }
 
-func (g *expressGenerator) generateSpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *sources.CodeFile {
+func (g *expressGenerator) SpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *sources.CodeFile {
 	w := writer.NewTsWriter()
 	w.Line("import {Router} from 'express'")
 	for _, version := range specification.Versions {
@@ -59,7 +57,7 @@ func expressVersionUrl(version *spec.Version) string {
 	return url
 }
 
-func (g *expressGenerator) generateVersionRouting(version *spec.Version, validationModule, paramsModule, module modules.Module) *sources.CodeFile {
+func (g *expressGenerator) VersionRouting(version *spec.Version, validationModule, paramsModule, module modules.Module) *sources.CodeFile {
 	w := writer.NewTsWriter()
 
 	w.Line("import {Router} from 'express'")
@@ -74,9 +72,9 @@ func (g *expressGenerator) generateVersionRouting(version *spec.Version, validat
 
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
-			g.validation.GenerateParams(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams)
-			g.validation.GenerateParams(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams)
-			g.validation.GenerateParams(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams)
+			g.validation.WriteParamsType(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams)
+			g.validation.WriteParamsType(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams)
+			g.validation.WriteParamsType(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams)
 		}
 
 		g.generateExpressApiRouting(w, &api)

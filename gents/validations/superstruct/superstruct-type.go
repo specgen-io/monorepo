@@ -1,28 +1,28 @@
-package validation
+package superstruct
 
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (v *superstructValidation) RuntimeType(typ *spec.TypeDef) string {
-	return v.RuntimeTypeFromPackage("", typ)
+func (g *Generator) RuntimeType(typ *spec.TypeDef) string {
+	return g.RuntimeTypeFromPackage("", typ)
 }
 
-func (v *superstructValidation) RuntimeTypeFromPackage(customTypesPackage string, typ *spec.TypeDef) string {
+func (g *Generator) RuntimeTypeFromPackage(customTypesPackage string, typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return v.plainSuperstructType(customTypesPackage, typ.Plain)
+		return g.plainSuperstructType(customTypesPackage, typ.Plain)
 	case spec.NullableType:
-		child := v.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
+		child := g.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
 		result := "t.optional(t.nullable(" + child + "))"
 		return result
 	case spec.ArrayType:
-		child := v.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
+		child := g.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
 		result := "t.array(" + child + ")"
 		return result
 	case spec.MapType:
-		child := v.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
+		child := g.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
 		result := "t.record(t.string(), " + child + ")"
 		return result
 	default:
@@ -30,7 +30,7 @@ func (v *superstructValidation) RuntimeTypeFromPackage(customTypesPackage string
 	}
 }
 
-func (v *superstructValidation) plainSuperstructType(customTypesPackage string, typ string) string {
+func (g *Generator) plainSuperstructType(customTypesPackage string, typ string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "t.number()"

@@ -3,14 +3,14 @@ package service
 import (
 	"github.com/specgen-io/specgen/v2/genopenapi"
 	"github.com/specgen-io/specgen/v2/gents/modules"
-	"github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/validations"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validationName string) *sources.Sources {
-	validation := validation.New(validationName)
-	generator := newServiceGenerator(server, validation)
+	validation := validations.New(validationName)
+	generator := NewServiceGenerator(server, validation)
 
 	sources := sources.NewSources()
 
@@ -24,13 +24,13 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 	for _, version := range specification.Versions {
 		versionModule := generateModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
-		sources.AddGenerated(validation.GenerateVersionModels(&version, validationModule, modelsModule))
+		sources.AddGenerated(validation.VersionModels(&version, validationModule, modelsModule))
 		sources.AddGeneratedAll(generateServiceApis(&version, modelsModule, versionModule))
 		routingModule := versionModule.Submodule("routing")
-		sources.AddGenerated(generator.generateVersionRouting(&version, validationModule, paramsModule, routingModule))
+		sources.AddGenerated(generator.VersionRouting(&version, validationModule, paramsModule, routingModule))
 	}
 	specRouterModule := generateModule.Submodule("spec_router")
-	sources.AddGenerated(generator.generateSpecRouter(specification, generateModule, specRouterModule))
+	sources.AddGenerated(generator.SpecRouter(specification, generateModule, specRouterModule))
 
 	if swaggerPath != "" {
 		sources.AddGenerated(genopenapi.GenerateOpenapi(specification, swaggerPath))

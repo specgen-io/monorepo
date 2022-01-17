@@ -1,23 +1,24 @@
-package validation
+package superstruct
 
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gents/common"
 	"github.com/specgen-io/specgen/v2/gents/types"
+	common2 "github.com/specgen-io/specgen/v2/gents/validations/common"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (v *superstructValidation) GenerateParams(w *sources.Writer, typeName string, params []spec.NamedParam) {
+func (g *Generator) WriteParamsType(w *sources.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
-		w.Line("const %s = t.type({", ParamsRuntimeTypeName(typeName))
+		w.Line("const %s = t.type({", common2.ParamsRuntimeTypeName(typeName))
 		for _, param := range params {
 			w.Line("  %s: %s,", common.TSIdentifier(param.Name.Source), paramSuperstructTypeDefaulted(&param))
 		}
 		w.Line("})")
 		w.EmptyLine()
-		w.Line("type %s = t.Infer<typeof %s>", typeName, ParamsRuntimeTypeName(typeName))
+		w.Line("type %s = t.Infer<typeof %s>", typeName, common2.ParamsRuntimeTypeName(typeName))
 	}
 }
 

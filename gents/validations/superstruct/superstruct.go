@@ -1,4 +1,4 @@
-package validation
+package superstruct
 
 import (
 	"github.com/specgen-io/specgen/v2/gents/modules"
@@ -8,7 +8,7 @@ import (
 
 var Superstruct = "superstruct"
 
-func (v *superstructValidation) SetupLibrary(module modules.Module) *sources.CodeFile {
+func (g *Generator) SetupLibrary(module modules.Module) *sources.CodeFile {
 	code := `
 export * from "superstruct"
 

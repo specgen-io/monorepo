@@ -4,7 +4,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gents/modules"
 	"github.com/specgen-io/specgen/v2/gents/responses"
 	"github.com/specgen-io/specgen/v2/gents/types"
-	"github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/validations"
 	"github.com/specgen-io/specgen/v2/gents/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
@@ -12,10 +12,10 @@ import (
 )
 
 type axiosGenerator struct {
-	validation validation.Validation
+	validation validations.Validation
 }
 
-func (g *axiosGenerator) generateApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *sources.CodeFile {
+func (g *axiosGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *sources.CodeFile {
 	w := writer.NewTsWriter()
 	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
 	w.Line(`import { strParamsItems, strParamsObject, stringify } from '%s'`, paramsModule.GetImport(module))
@@ -26,7 +26,7 @@ func (g *axiosGenerator) generateApiClient(api spec.Api, validationModule, model
 	w.Line(`  return {`)
 	w.Line(`    axiosInstance,`)
 	for _, operation := range api.Operations {
-		g.generateAxiosOperation(w.IndentedWith(2), &operation)
+		g.operation(w.IndentedWith(2), &operation)
 	}
 	w.Line(`  }`)
 	w.Line(`}`)
@@ -39,7 +39,7 @@ func (g *axiosGenerator) generateApiClient(api spec.Api, validationModule, model
 	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func (g *axiosGenerator) generateAxiosOperation(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *axiosGenerator) operation(w *sources.Writer, operation *spec.NamedOperation) {
 	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0

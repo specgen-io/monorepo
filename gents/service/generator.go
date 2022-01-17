@@ -3,22 +3,27 @@ package service
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gents/modules"
-	"github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/validations"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-type serviceGenerator interface {
-	generateVersionRouting(version *spec.Version, validationModule, paramsModule, module modules.Module) *sources.CodeFile
-	generateSpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *sources.CodeFile
+type ServiceGenerator interface {
+	VersionRouting(version *spec.Version, validationModule, paramsModule, module modules.Module) *sources.CodeFile
+	SpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *sources.CodeFile
 }
 
-func newServiceGenerator(server string, validation validation.Validation) serviceGenerator {
-	if server == "express" {
+func NewServiceGenerator(server string, validation validations.Validation) ServiceGenerator {
+	if server == Express {
 		return &expressGenerator{validation}
 	}
-	if server == "koa" {
+	if server == Koa {
 		return &koaGenerator{validation}
 	}
 	panic(fmt.Sprintf("Unknown server: %s", server))
 }
+
+var Express = "express"
+var Koa = "koa"
+
+var Servers = []string{Express, Koa}

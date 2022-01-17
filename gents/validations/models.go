@@ -1,4 +1,4 @@
-package validation
+package validations
 
 import (
 	"github.com/specgen-io/specgen/v2/gents/modules"
@@ -6,19 +6,19 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateModels(specification *spec.Spec, validationName string, generatePath string) *sources.Sources {
+func GenerateModels(specification *spec.Spec, validation string, generatePath string) *sources.Sources {
 	sources := sources.NewSources()
 
-	validation := New(validationName)
+	generator := New(validation)
 
 	module := modules.NewModule(generatePath)
-	validationModule := module.Submodule(validationName)
-	validationFile := validation.SetupLibrary(validationModule)
+	validationModule := module.Submodule(validation)
+	validationFile := generator.SetupLibrary(validationModule)
 	sources.AddGenerated(validationFile)
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
-		sources.AddGenerated(validation.GenerateVersionModels(&version, validationModule, modelsModule))
+		sources.AddGenerated(generator.VersionModels(&version, validationModule, modelsModule))
 	}
 	return sources
 }

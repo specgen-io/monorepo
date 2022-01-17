@@ -3,7 +3,8 @@ package service
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gents/types"
-	"github.com/specgen-io/specgen/v2/gents/validation"
+	"github.com/specgen-io/specgen/v2/gents/validations"
+	"github.com/specgen-io/specgen/v2/gents/validations/common"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
@@ -45,13 +46,13 @@ func generateParametersParsing(w *sources.Writer, operation *spec.NamedOperation
 		}
 		w.Line("try {")
 		if len(operation.Endpoint.UrlParams) > 0 {
-			w.Line("  urlParams = t.decode(%s, %s)", validation.ParamsRuntimeTypeName(paramsTypeName(operation, "UrlParams")), urlParams)
+			w.Line("  urlParams = t.decode(%s, %s)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "UrlParams")), urlParams)
 		}
 		if len(operation.HeaderParams) > 0 {
-			w.Line("  headerParams = t.decode(%s, %s)", validation.ParamsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")), headers)
+			w.Line("  headerParams = t.decode(%s, %s)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")), headers)
 		}
 		if len(operation.QueryParams) > 0 {
-			w.Line("  queryParams = t.decode(%s, %s)", validation.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams")), query)
+			w.Line("  queryParams = t.decode(%s, %s)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams")), query)
 		}
 		w.Line("} catch (error) {")
 		w.Line("  %s", badRequestStatement)
@@ -60,7 +61,7 @@ func generateParametersParsing(w *sources.Writer, operation *spec.NamedOperation
 	}
 }
 
-func generateBodyParsing(w *sources.Writer, validation validation.Validation, operation *spec.NamedOperation, body, rawBody string, badRequestStatement string) {
+func generateBodyParsing(w *sources.Writer, validation validations.Validation, operation *spec.NamedOperation, body, rawBody string, badRequestStatement string) {
 	if operation.Body != nil {
 		if operation.Body.Type.Definition.Plain == spec.TypeString {
 			w.Line(`const body: string = %s`, rawBody)
