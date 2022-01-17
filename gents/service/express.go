@@ -77,19 +77,19 @@ func (g *expressGenerator) VersionRouting(version *spec.Version, validationModul
 			g.validation.WriteParamsType(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams)
 		}
 
-		g.generateExpressApiRouting(w, &api)
+		g.apiRouting(w, &api)
 	}
 
 	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func (g *expressGenerator) generateExpressApiRouting(w *sources.Writer, api *spec.Api) {
+func (g *expressGenerator) apiRouting(w *sources.Writer, api *spec.Api) {
 	w.EmptyLine()
 	w.Line("export let %s = (service: %s) => {", apiRouterName(api), serviceInterfaceName(api))
 	w.Line("  let router = Router()")
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		g.generateExpressOperationRouting(w.Indented(), &operation)
+		g.operationRouting(w.Indented(), &operation)
 	}
 	w.EmptyLine()
 	w.Line("  return router")
@@ -104,7 +104,7 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
-func (g *expressGenerator) generateExpressResponse(w *sources.Writer, response *spec.NamedResponse, dataParam string) {
+func (g *expressGenerator) response(w *sources.Writer, response *spec.NamedResponse, dataParam string) {
 	if response.Type.Definition.IsEmpty() {
 		w.Line("response.status(%s).send()", spec.HttpStatusCode(response.Name))
 	} else {
@@ -117,7 +117,7 @@ func (g *expressGenerator) generateExpressResponse(w *sources.Writer, response *
 	w.Line("return")
 }
 
-func (g *expressGenerator) generateExpressOperationRouting(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) operationRouting(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
 	w.Indent()
 
@@ -141,12 +141,12 @@ func (g *expressGenerator) generateExpressOperationRouting(w *sources.Writer, op
 	w.Line("try {")
 	w.Line("  %s", serviceCall(operation, getApiCallParamsObject(operation)))
 	if len(operation.Responses) == 1 {
-		g.generateExpressResponse(w.IndentedWith(1), &operation.Responses[0], "result")
+		g.response(w.IndentedWith(1), &operation.Responses[0], "result")
 	} else {
 		w.Line("  switch (result.status) {")
 		for _, response := range operation.Responses {
 			w.Line("    case '%s':", response.Name.SnakeCase())
-			g.generateExpressResponse(w.IndentedWith(3), &response, "result.data")
+			g.response(w.IndentedWith(3), &response, "result.data")
 		}
 		w.Line("  }")
 	}

@@ -12,14 +12,14 @@ func GenerateClient(specification *spec.Spec, generatePath string, client string
 	generator := NewClientGenerator(client, validation)
 
 	sources := sources.NewSources()
-	module := modules.NewModule(generatePath)
+	rootModule := modules.New(generatePath)
 
-	validationModule := module.Submodule(validationName)
+	validationModule := rootModule.Submodule(validationName)
 	sources.AddGenerated(validation.SetupLibrary(validationModule))
-	paramsModule := module.Submodule("params")
+	paramsModule := rootModule.Submodule("params")
 	sources.AddGenerated(generateParamsBuilder(paramsModule))
 	for _, version := range specification.Versions {
-		versionModule := module.Submodule(version.Version.FlatCase())
+		versionModule := rootModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
 		sources.AddGenerated(validation.VersionModels(&version, validationModule, modelsModule))
 		for _, api := range version.Http.Apis {

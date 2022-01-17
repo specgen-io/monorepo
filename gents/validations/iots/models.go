@@ -16,11 +16,11 @@ func (g *Generator) VersionModels(version *spec.Version, codecModule modules.Mod
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
 		if model.IsObject() {
-			g.generateIoTsObjectModel(w, model)
+			g.objectModel(w, model)
 		} else if model.IsEnum() {
-			g.generateIoTsEnumModel(w, model)
+			g.enumModel(w, model)
 		} else if model.IsOneOf() {
-			g.generateIoTsUnionModel(w, model)
+			g.unionModel(w, model)
 		}
 	}
 	return &sources.CodeFile{Path: module.GetPath(), Content: w.String()}
@@ -39,7 +39,7 @@ func kindOfFields(objectModel *spec.NamedModel) (bool, bool) {
 	return hasRequiredFields, hasOptionalFields
 }
 
-func (g *Generator) generateIoTsObjectModel(w *sources.Writer, model *spec.NamedModel) {
+func (g *Generator) objectModel(w *sources.Writer, model *spec.NamedModel) {
 	hasRequiredFields, hasOptionalFields := kindOfFields(model)
 	if hasRequiredFields && hasOptionalFields {
 		w.Line("export const T%s = t.intersection([", model.Name.PascalCase())
@@ -73,7 +73,7 @@ func (g *Generator) generateIoTsObjectModel(w *sources.Writer, model *spec.Named
 	w.Line("export type %s = t.TypeOf<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func (g *Generator) generateIoTsEnumModel(w *sources.Writer, model *spec.NamedModel) {
+func (g *Generator) enumModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("export enum %s {", model.Name.PascalCase())
 	for _, item := range model.Enum.Items {
 		w.Line(`  %s = "%s",`, item.Name.UpperCase(), item.Value)
@@ -83,7 +83,7 @@ func (g *Generator) generateIoTsEnumModel(w *sources.Writer, model *spec.NamedMo
 	w.Line("export const T%s = t.enum(%s)", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func (g *Generator) generateIoTsUnionModel(w *sources.Writer, model *spec.NamedModel) {
+func (g *Generator) unionModel(w *sources.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {

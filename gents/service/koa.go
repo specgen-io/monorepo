@@ -74,19 +74,19 @@ func (g *koaGenerator) VersionRouting(version *spec.Version, validationModule, p
 			g.validation.WriteParamsType(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams)
 		}
 
-		g.generateKoaApiRouting(w, &api)
+		g.apiRouting(w, &api)
 	}
 
 	return &sources.CodeFile{module.GetPath(), w.String()}
 }
 
-func (g *koaGenerator) generateKoaApiRouting(w *sources.Writer, api *spec.Api) {
+func (g *koaGenerator) apiRouting(w *sources.Writer, api *spec.Api) {
 	w.EmptyLine()
 	w.Line("export let %s = (service: %s) => {", apiRouterName(api), serviceInterfaceName(api))
 	w.Line("  let router = new Router()")
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		g.generateKoaOperationRouting(w.Indented(), &operation)
+		g.operationRouting(w.Indented(), &operation)
 	}
 	w.EmptyLine()
 	w.Line("  return router")
@@ -101,7 +101,7 @@ func getKoaUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
-func (g *koaGenerator) generateKoaResponse(w *sources.Writer, response *spec.NamedResponse, dataParam string) {
+func (g *koaGenerator) response(w *sources.Writer, response *spec.NamedResponse, dataParam string) {
 	w.Line("ctx.status = %s", spec.HttpStatusCode(response.Name))
 	if !response.Type.Definition.IsEmpty() {
 		if response.Type.Definition.Plain == spec.TypeString {
@@ -113,7 +113,7 @@ func (g *koaGenerator) generateKoaResponse(w *sources.Writer, response *spec.Nam
 	w.Line("return")
 }
 
-func (g *koaGenerator) generateKoaOperationRouting(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) operationRouting(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line("router.%s('%s', async (ctx) => {", strings.ToLower(operation.Endpoint.Method), getKoaUrl(operation.Endpoint))
 	w.Indent()
 
@@ -137,12 +137,12 @@ func (g *koaGenerator) generateKoaOperationRouting(w *sources.Writer, operation 
 	w.Line("try {")
 	w.Line("  %s", serviceCall(operation, getApiCallParamsObject(operation)))
 	if len(operation.Responses) == 1 {
-		g.generateKoaResponse(w.IndentedWith(1), &operation.Responses[0], "result")
+		g.response(w.IndentedWith(1), &operation.Responses[0], "result")
 	} else {
 		w.Line("  switch (result.status) {")
 		for _, response := range operation.Responses {
 			w.Line("    case '%s':", response.Name.FlatCase())
-			g.generateKoaResponse(w.IndentedWith(3), &response, "result.data")
+			g.response(w.IndentedWith(3), &response, "result.data")
 		}
 		w.Line("  }")
 	}

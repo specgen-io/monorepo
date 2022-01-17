@@ -9,7 +9,7 @@ type Module struct {
 	path string
 }
 
-func NewModule(folderPath string) Module {
+func New(folderPath string) Module {
 	return Module{path: folderPath}
 }
 
@@ -23,7 +23,7 @@ func (m Module) GetImport(toModule Module) string {
 
 func (m Module) Submodule(name string) Module {
 	if name != "" {
-		return NewModule(fmt.Sprintf(`%s/%s`, m.path, name))
+		return New(fmt.Sprintf(`%s/%s`, m.path, name))
 	}
 	return m
 }

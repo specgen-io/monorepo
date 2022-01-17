@@ -14,30 +14,30 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 
 	sources := sources.NewSources()
 
-	generateModule := modules.NewModule(generatePath)
+	rootModule := modules.New(generatePath)
 
-	validationModule := generateModule.Submodule(validationName)
+	validationModule := rootModule.Submodule(validationName)
 	sources.AddGenerated(validation.SetupLibrary(validationModule))
-	paramsModule := generateModule.Submodule("params")
+	paramsModule := rootModule.Submodule("params")
 	sources.AddGenerated(generateParamsStaticCode(paramsModule))
 
 	for _, version := range specification.Versions {
-		versionModule := generateModule.Submodule(version.Version.FlatCase())
+		versionModule := rootModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule("models")
 		sources.AddGenerated(validation.VersionModels(&version, validationModule, modelsModule))
 		sources.AddGeneratedAll(generateServiceApis(&version, modelsModule, versionModule))
 		routingModule := versionModule.Submodule("routing")
 		sources.AddGenerated(generator.VersionRouting(&version, validationModule, paramsModule, routingModule))
 	}
-	specRouterModule := generateModule.Submodule("spec_router")
-	sources.AddGenerated(generator.SpecRouter(specification, generateModule, specRouterModule))
+	specRouterModule := rootModule.Submodule("spec_router")
+	sources.AddGenerated(generator.SpecRouter(specification, rootModule, specRouterModule))
 
 	if swaggerPath != "" {
 		sources.AddGenerated(genopenapi.GenerateOpenapi(specification, swaggerPath))
 	}
 
 	if servicesPath != "" {
-		sources.AddScaffoldedAll(generateServicesImplementations(specification, generateModule, modules.NewModule(servicesPath)))
+		sources.AddScaffoldedAll(generateServicesImplementations(specification, rootModule, modules.New(servicesPath)))
 	}
 
 	return sources

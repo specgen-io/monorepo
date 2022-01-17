@@ -14,17 +14,17 @@ func (g *Generator) VersionModels(version *spec.Version, superstructModule modul
 	for _, model := range version.ResolvedModels {
 		w.EmptyLine()
 		if model.IsObject() {
-			g.generateSuperstructObjectModel(w, model)
+			g.objectModel(w, model)
 		} else if model.IsEnum() {
-			g.generateSuperstructEnumModel(w, model)
+			g.enumModel(w, model)
 		} else if model.IsOneOf() {
-			g.generateSuperstructUnionModel(w, model)
+			g.unionModel(w, model)
 		}
 	}
 	return &sources.CodeFile{Path: module.GetPath(), Content: w.String()}
 }
 
-func (g *Generator) generateSuperstructObjectModel(w *sources.Writer, model *spec.NamedModel) {
+func (g *Generator) objectModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.type({", model.Name.PascalCase())
 	for _, field := range model.Object.Fields {
 		w.Line("  %s: %s,", field.Name.Source, g.RuntimeType(&field.Type.Definition))
@@ -34,7 +34,7 @@ func (g *Generator) generateSuperstructObjectModel(w *sources.Writer, model *spe
 	w.Line("export type %s = t.Infer<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func (g *Generator) generateSuperstructEnumModel(w *sources.Writer, model *spec.NamedModel) {
+func (g *Generator) enumModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.enums ([", model.Name.PascalCase())
 	for _, item := range model.Enum.Items {
 		w.Line(`  "%s",`, item.Value)
@@ -50,7 +50,7 @@ func (g *Generator) generateSuperstructEnumModel(w *sources.Writer, model *spec.
 	w.Line("}")
 }
 
-func (g *Generator) generateSuperstructUnionModel(w *sources.Writer, model *spec.NamedModel) {
+func (g *Generator) unionModel(w *sources.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {

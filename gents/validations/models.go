@@ -11,7 +11,7 @@ func GenerateModels(specification *spec.Spec, validation string, generatePath st
 
 	generator := New(validation)
 
-	module := modules.NewModule(generatePath)
+	module := modules.New(generatePath)
 	validationModule := module.Submodule(validation)
 	validationFile := generator.SetupLibrary(validationModule)
 	sources.AddGenerated(validationFile)
