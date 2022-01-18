@@ -203,6 +203,10 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 
 	generateServiceCall(w, operation)
 
+	if operation.Body != nil && operation.Body.Type.Definition.Plain != spec.TypeString {
+		w.Line(`res.Header().Set("Content-Type", "application/json")`)
+	}
+
 	if len(operation.Responses) == 1 {
 		generateResponseWriting(w, &operation.Responses[0], "response")
 	} else {
