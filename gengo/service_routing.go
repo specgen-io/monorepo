@@ -24,6 +24,7 @@ func generateRouting(modelsModule module, versionModule module, api *spec.Api) *
 	imports.Add("github.com/husobee/vestigo")
 	imports.AddAlias("github.com/sirupsen/logrus", "log")
 	imports.Add("net/http")
+	imports.Add("strings")
 	if bodyHasType(api, spec.TypeString) {
 		imports.Add("io/ioutil")
 	}
@@ -163,7 +164,14 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	w.Line(`var err error`)
 	if operation.Body != nil {
+		w.Line(`contentType := req.Header.Get("Content-Type")`)
 		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			w.Line(`if !strings.Contains(contentType, "text/plain") {`)
+			w.Line(`  log.WithFields(%s).Errorf("%s", contentType)`, logFieldsName(operation), "Wrong Content-type: %s")
+			w.Line(`  res.WriteHeader(400)`)
+			w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
+			w.Line(`  return`)
+			w.Line(`}`)
 			w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
 			w.Line(`if err != nil {`)
 			w.Line(`  log.WithFields(%s).Warnf("%s", err.Error())`, logFieldsName(operation), `Reading request body failed: %s`)
@@ -173,6 +181,12 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 			w.Line(`}`)
 			w.Line(`body := string(bodyData)`)
 		} else {
+			w.Line(`if !strings.Contains(contentType, "application/json") {`)
+			w.Line(`  log.WithFields(%s).Errorf("%s", contentType)`, logFieldsName(operation), "Wrong Content-type: %s")
+			w.Line(`  res.WriteHeader(400)`)
+			w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
+			w.Line(`  return`)
+			w.Line(`}`)
 			w.Line(`var body %s`, GoType(&operation.Body.Type.Definition))
 			w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
 			w.Line(`if err != nil {`)
@@ -188,6 +202,14 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 	generateOperationParametersParsing(w, operation, operation.Endpoint.UrlParams, true, "urlParams", "req.URL.Query()", false)
 
 	generateServiceCall(w, operation)
+
+	if operation.Body != nil {
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			w.Line(`res.Header().Set("Content-Type", "text/plain")`)
+		} else {
+			w.Line(`res.Header().Set("Content-Type", "application/json")`)
+		}
+	}
 
 	if len(operation.Responses) == 1 {
 		generateResponseWriting(w, &operation.Responses[0], "response")
