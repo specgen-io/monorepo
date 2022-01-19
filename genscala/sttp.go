@@ -174,7 +174,7 @@ func generateClientOperationImplementation(w *sources.Writer, operation *spec.Na
 	}
 	if operation.Body != nil {
 		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`    .header("Content-Type", "application/text")`)
+			w.Line(`    .header("Content-Type", "text/plain")`)
 			w.Line(`    .body(body)`)
 		} else {
 			w.Line(`    .header("Content-Type", "application/json")`)
