@@ -54,7 +54,7 @@ func (g *axiosGenerator) operation(w *sources.Writer, operation *spec.NamedOpera
 		w.Line(`  })`)
 		axiosConfigParts = append(axiosConfigParts, `params: new URLSearchParams(query)`)
 	}
-	if hasHeaderParams || operation.Body != nil {
+	if hasHeaderParams || body != nil {
 		w.Line(`  const headers = strParamsObject({`)
 		for _, p := range operation.HeaderParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
