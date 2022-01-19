@@ -129,8 +129,10 @@ func generateClientOperation(w *sources.Writer, moduleName string, operation *sp
 
 	if operation.Body != nil {
 		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			w.Line(`request.add_field('Content-Type', 'text/plain')`)
 			w.Line("request.body = T.check_var('body', String, body)")
 		} else {
+			w.Line(`request.add_field('Content-Type', 'application/json')`)
 			bodyRubyType := RubyType(&operation.Body.Type.Definition)
 			w.Line(fmt.Sprintf("body_json = Jsoner.to_json(%s, T.check_var('body', %s, body))", bodyRubyType, bodyRubyType))
 			w.Line("request.body = body_json")

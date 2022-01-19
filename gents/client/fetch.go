@@ -60,24 +60,32 @@ func (g *fetchGenerator) operation(w *sources.Writer, operation *spec.NamedOpera
 		w.Line(`  })`)
 		params = `?${new URLSearchParams(query)}`
 	}
-	fetchConfig := fmt.Sprintf(`method: '%s'`, strings.ToUpper(operation.Endpoint.Method))
-	if hasHeaderParams {
+	fetchConfigParts := []string{fmt.Sprintf(`method: '%s'`, strings.ToUpper(operation.Endpoint.Method))}
+	if hasHeaderParams || body != nil {
 		w.Line(`  const headers = strParamsItems({`)
 		for _, p := range operation.HeaderParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
+		if body != nil {
+			if body.Type.Definition.Plain == spec.TypeString {
+				w.Line(`    "Content-Type": "text/plain"`)
+			} else {
+				w.Line(`    "Content-Type": "application/json"`)
+			}
+		}
 		w.Line(`  })`)
-		fetchConfig += `, headers: headers`
+		fetchConfigParts = append(fetchConfigParts, `headers: headers`)
 	}
 	w.Line("  const url = config.baseURL+`%s%s`", getUrl(operation.Endpoint), params)
 	if body != nil {
 		if body.Type.Definition.Plain == spec.TypeString {
-			fetchConfig += `, body: parameters.body`
+			fetchConfigParts = append(fetchConfigParts, `body: parameters.body`)
 		} else {
 			w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &body.Type.Definition))
-			fetchConfig += `, body: JSON.stringify(bodyJson)`
+			fetchConfigParts = append(fetchConfigParts, `body: JSON.stringify(bodyJson)`)
 		}
 	}
+	fetchConfig := strings.Join(fetchConfigParts, ", ")
 	w.Line("  const response = await fetch(url, {%s})", fetchConfig)
 	w.Line(`  switch (response.status) {`)
 	for _, response := range operation.Responses {
