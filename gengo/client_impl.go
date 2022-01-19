@@ -38,7 +38,6 @@ func generateClientImplementation(api *spec.Api, versionModule, modelsModule, em
 	imports.Add(modelsModule.Package)
 	imports.Write(w)
 
-	w.EmptyLine()
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
 			w.EmptyLine()
@@ -85,6 +84,13 @@ func generateClientFunction(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`    log.WithFields(%s).Error("Failed to create HTTP request", err.Error())`, logFieldsName(operation))
 	w.Line(`    %s`, returnErr(operation))
 	w.Line(`  }`)
+	if operation.Body != nil {
+		if operation.Body.Type.Definition.Plain == spec.TypeString {
+			w.Line(`  req.Header.Set("Content-Type", "text/plain")`)
+		} else {
+			w.Line(`  req.Header.Set("Content-Type", "application/json")`)
+		}
+	}
 	w.EmptyLine()
 	parseParams(w, operation)
 	w.Line(`  log.WithFields(%s).Info("Sending request")`, logFieldsName(operation))
