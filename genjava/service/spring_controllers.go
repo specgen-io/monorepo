@@ -27,7 +27,7 @@ func (g *Generator) serviceController(api *spec.Api, apiPackage packages.Module,
 	w.Line(`import java.math.BigDecimal;`)
 	w.Line(`import java.io.IOException;`)
 	w.Line(`import java.time.*;`)
-	w.Line(`import java.util.UUID;`)
+	w.Line(`import java.util.*;`)
 	w.EmptyLine()
 	w.Line(`import org.apache.logging.log4j.*;`)
 	w.Line(`import org.springframework.beans.factory.annotation.Autowired;`)
@@ -35,6 +35,7 @@ func (g *Generator) serviceController(api *spec.Api, apiPackage packages.Module,
 	w.Line(`import org.springframework.http.*;`)
 	w.Line(`import org.springframework.web.bind.annotation.*;`)
 	w.Line(`import com.fasterxml.jackson.databind.ObjectMapper;`)
+	w.Line(`import com.fasterxml.jackson.core.type.TypeReference;`)
 	w.EmptyLine()
 	w.Line(`import static org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE;`)
 	w.EmptyLine()
@@ -81,9 +82,15 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 	w.EmptyLine()
 	if operation.Body != nil {
 		if operation.Body.Type.Definition.Plain != spec.TypeString {
-			w.Line(`  Message requestBody;`)
+			bodyJavaType := g.Types.Java(&operation.Body.Type.Definition)
+			w.Line(`  %s requestBody;`, bodyJavaType)
+			valueTypeName := fmt.Sprintf("%s.class", bodyJavaType)
+			if operation.Body.Type.Definition.Node == spec.MapType {
+				valueTypeName = "typeRef"
+				w.Line(`  TypeReference<%s> typeRef = new TypeReference<%s>() {};`, bodyJavaType, bodyJavaType)
+			}
 			w.Line(`  try {`)
-			w.Line(`    requestBody = %s;`, g.Models.ReadJson("bodyStr", g.Types.Java(&operation.Body.Type.Definition)))
+			w.Line(`    requestBody = %s;`, g.Models.ReadJson("bodyStr", valueTypeName))
 			w.Line(`  } catch (Exception e) {`)
 			w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
 			w.Line(`    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);`)

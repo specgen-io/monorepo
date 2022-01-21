@@ -131,7 +131,8 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		if !response.Type.Definition.IsEmpty() {
 			responseJavaType := g.Types.Java(&response.Type.Definition)
 			w.Line(`%s responseBody;`, responseJavaType)
-			responseBody := g.Models.ReadJson("response.body().string()", responseJavaType)
+			valueTypeName := fmt.Sprintf("%s.class", responseJavaType)
+			responseBody := g.Models.ReadJson("response.body().string()", valueTypeName)
 			if response.Type.Definition.Plain == spec.TypeString {
 				responseBody = `response.body().string()`
 			}

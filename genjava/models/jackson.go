@@ -21,7 +21,7 @@ func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 }
 
 func (g *JacksonGenerator) ReadJson(varJson string, typeJava string) string {
-	return fmt.Sprintf(`objectMapper.readValue(%s, %s.class)`, varJson, typeJava)
+	return fmt.Sprintf(`objectMapper.readValue(%s, %s)`, varJson, typeJava)
 }
 
 func (g *JacksonGenerator) WriteJson(varData string) string {
@@ -94,9 +94,10 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 	w.Line(`public class %s {`, className)
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
-		w.Line(jacksonJsonPropertyAnnotation(&field))
+		w.Line(`  %s`, jacksonJsonPropertyAnnotation(&field))
 		w.Line(`  private %s %s;`, g.Types.Java(&field.Type.Definition), field.Name.CamelCase())
 	}
+	w.EmptyLine()
 	if len(model.Object.Fields) == 0 {
 		w.Line(`  public %s() {`, model.Name.PascalCase())
 	} else {
