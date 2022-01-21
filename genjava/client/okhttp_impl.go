@@ -132,12 +132,7 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		if !response.Type.Definition.IsEmpty() {
 			responseJavaType := g.Types.Java(&response.Type.Definition)
 			w.Line(`%s responseBody;`, responseJavaType)
-			valueTypeName := fmt.Sprintf("%s.class", responseJavaType)
-			if response.Type.Definition.Node == spec.MapType {
-				valueTypeName = "typeRef"
-				w.Line(`TypeReference<%s> typeRef = new TypeReference<%s>() {};`, responseJavaType, responseJavaType)
-			}
-			responseBody := g.Models.ReadJson("response.body().string()", valueTypeName)
+			responseBody := g.Models.ReadJson("response.body().string()", responseJavaType)
 			if response.Type.Definition.Plain == spec.TypeString {
 				responseBody = `response.body().string()`
 			}

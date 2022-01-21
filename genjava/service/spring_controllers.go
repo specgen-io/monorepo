@@ -84,13 +84,8 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 		if operation.Body.Type.Definition.Plain != spec.TypeString {
 			bodyJavaType := g.Types.Java(&operation.Body.Type.Definition)
 			w.Line(`  %s requestBody;`, bodyJavaType)
-			valueTypeName := fmt.Sprintf("%s.class", bodyJavaType)
-			if operation.Body.Type.Definition.Node == spec.MapType {
-				valueTypeName = "typeRef"
-				w.Line(`  TypeReference<%s> typeRef = new TypeReference<%s>() {};`, bodyJavaType, bodyJavaType)
-			}
 			w.Line(`  try {`)
-			w.Line(`    requestBody = %s;`, g.Models.ReadJson("bodyStr", valueTypeName))
+			w.Line(`    requestBody = %s;`, g.Models.ReadJson("bodyStr", bodyJavaType))
 			w.Line(`  } catch (Exception e) {`)
 			w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
 			w.Line(`    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);`)

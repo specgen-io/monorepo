@@ -21,7 +21,7 @@ func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 }
 
 func (g *JacksonGenerator) ReadJson(varJson string, typeJava string) string {
-	return fmt.Sprintf(`objectMapper.readValue(%s, %s)`, varJson, typeJava)
+	return fmt.Sprintf(`objectMapper.readValue(%s, new TypeReference<%s>() {})`, varJson, typeJava)
 }
 
 func (g *JacksonGenerator) WriteJson(varData string) string {
