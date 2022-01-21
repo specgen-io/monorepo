@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/pinzolo/casee"
 	"github.com/specgen-io/specgen/v2/spec"
@@ -62,11 +63,17 @@ func convertResponse(response *openapi3.ResponseRef) *spec.Definition {
 	if response.Value == nil {
 		return nil //TODO: not sure in this - what if ref is specified here
 	}
-	media := response.Value.Content.Get("application/json")
-	if media == nil {
-		return &spec.Definition{emptyType, response.Value.Description, nil}
+	definition := &spec.Definition{emptyType, response.Value.Description, nil}
+	for mediaType, media := range response.Value.Content {
+		switch mediaType {
+		case "application/json":
+			definition = &spec.Definition{*specType(media.Schema, true), response.Value.Description, nil}
+			break
+		default:
+			panic(fmt.Sprintf("Unsupported media type: %s", mediaType))
+		}
 	}
-	return &spec.Definition{*specType(media.Schema, true), response.Value.Description, nil}
+	return definition
 }
 
 func convertParams(parameters openapi3.Parameters) []spec.NamedParam {
@@ -129,18 +136,18 @@ func useTagsAsApis(doc *openapi3.T) bool {
 
 func collectApis(doc *openapi3.T) []*Api {
 	useTagsAsApis := useTagsAsApis(doc)
-	apiDefault := &Api{name(doc.Info.Title).FlatCase(), []PathItem{}}
-	apisMap := map[string]*Api{}
+	defaultApiName := name(doc.Info.Title).FlatCase()
+	apisMap := map[string]*Api{defaultApiName: {defaultApiName, []PathItem{}}}
 	for path, pathItem := range doc.Paths {
 		for method, operation := range pathItem.Operations() {
-			api := apiDefault
+			apiName := defaultApiName
 			if useTagsAsApis {
-				apiName := operation.Tags[0]
-				if _, existing := apisMap[apiName]; !existing {
-					apisMap[apiName] = &Api{apiName, []PathItem{}}
-				}
-				api = apisMap[operation.Tags[0]]
+				apiName = operation.Tags[0]
 			}
+			if _, existing := apisMap[apiName]; !existing {
+				apisMap[apiName] = &Api{apiName, []PathItem{}}
+			}
+			api := apisMap[apiName]
 			pathItem := PathItem{path, method, operation}
 			api.Items = append(api.Items, pathItem)
 		}
