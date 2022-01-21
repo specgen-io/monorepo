@@ -73,6 +73,8 @@ func specPlainType(typ string, format string) *spec.TypeDef {
 			return spec.Plain(spec.TypeInt64)
 		case FormatInt32:
 			return spec.Plain(spec.TypeInt32)
+		case "":
+			return spec.Plain(spec.TypeInt32)
 		default:
 			panic(fmt.Sprintf("Unknown format of integer: %s", format))
 		}

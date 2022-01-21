@@ -12,7 +12,10 @@ func convertModels(schemas map[string]*openapi3.SchemaRef) []spec.NamedModel {
 		return models
 	}
 	for schemaName, schema := range schemas {
-		models = append(models, spec.NamedModel{name(schemaName), convertSchema(schema), nil})
+		specModel := convertSchema(schema)
+		if specModel != nil {
+			models = append(models, spec.NamedModel{name(schemaName), *specModel, nil})
+		}
 	}
 	return models
 }
@@ -26,7 +29,7 @@ func contains(array []string, what string) bool {
 	return false
 }
 
-func convertSchema(schema *openapi3.SchemaRef) spec.Model {
+func convertSchema(schema *openapi3.SchemaRef) *spec.Model {
 	switch schema.Value.Type {
 	case TypeObject:
 		fields := []spec.NamedDefinition{}
@@ -34,9 +37,10 @@ func convertSchema(schema *openapi3.SchemaRef) spec.Model {
 			fieldRequired := contains(schema.Value.Required, propName)
 			fields = append(fields, spec.NamedDefinition{name(propName), *convertProperty(propSchema, fieldRequired)})
 		}
-		return spec.Model{&spec.Object{fields}, nil, nil, nil, nil}
+		return &spec.Model{&spec.Object{fields}, nil, nil, nil, nil}
 	default:
-		panic(fmt.Sprintf(`schema is not supported`))
+		panic(fmt.Sprintf(`schema is not supported yet`))
+		return nil
 	}
 }
 
