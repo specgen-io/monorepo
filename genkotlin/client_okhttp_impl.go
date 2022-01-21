@@ -124,7 +124,7 @@ func generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
 		w.Line(`logger.info("Received response with status code {}", response.code)`)
 		if !response.Type.Definition.IsEmpty() {
 			responseJavaType := KotlinType(&response.Type.Definition)
-			responseBody := fmt.Sprintf(` objectMapper.readValue(response.body!!.string(), TypeReference<%s>(){})`, responseJavaType)
+			responseBody := fmt.Sprintf(` objectMapper.readValue(response.body!!.string(), object: TypeReference<%s>(){})`, responseJavaType)
 			if response.Type.Definition.Plain == spec.TypeString {
 				responseBody = `response.body!!.string()`
 			}
