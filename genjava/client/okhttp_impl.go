@@ -26,6 +26,7 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVers
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
 	w.Line(`import com.fasterxml.jackson.databind.ObjectMapper;`)
+	w.Line(`import com.fasterxml.jackson.core.type.TypeReference;`)
 	w.Line(`import okhttp3.*;`)
 	w.Line(`import org.slf4j.*;`)
 	w.Line(`import java.io.*;`)
@@ -132,6 +133,10 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 			responseJavaType := g.Types.Java(&response.Type.Definition)
 			w.Line(`%s responseBody;`, responseJavaType)
 			valueTypeName := fmt.Sprintf("%s.class", responseJavaType)
+			if response.Type.Definition.Node == spec.MapType {
+				valueTypeName = "typeRef"
+				w.Line(`TypeReference<%s> typeRef = new TypeReference<%s>() {};`, responseJavaType, responseJavaType)
+			}
 			responseBody := g.Models.ReadJson("response.body().string()", valueTypeName)
 			if response.Type.Definition.Plain == spec.TypeString {
 				responseBody = `response.body().string()`
