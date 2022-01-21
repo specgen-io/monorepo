@@ -182,7 +182,7 @@ func addClientResponses(w *sources.Writer, operation *spec.NamedOperation) {
 			w.Line(`  err = resp.Body.Close()`)
 			if response.Type.Definition.Plain != spec.TypeString {
 				w.EmptyLine()
-				w.Line(`  var result %s.%s`, modelsPackage, ToPascalCase(response.Type.Definition.Name))
+				w.Line(`  var result %s`, GoType(&response.Type.Definition))
 				w.Line(`  err = json.Unmarshal(responseBody, &result)`)
 				w.Line(`  if err != nil {`)
 				w.Line(`    log.WithFields(%s).Error("%s", err.Error())`, logFieldsName(operation), `Failed to parse response JSON`)

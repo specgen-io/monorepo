@@ -107,7 +107,7 @@ func (g *koaGenerator) response(w *sources.Writer, response *spec.NamedResponse,
 		if response.Type.Definition.Plain == spec.TypeString {
 			w.Line("ctx.body = %s", dataParam)
 		} else {
-			w.Line("ctx.body = t.encode(%s.%s, %s)", types.ModelsPackage, g.validation.RuntimeType(&response.Type.Definition), dataParam)
+			w.Line("ctx.body = t.encode(%s, %s)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), dataParam)
 		}
 	}
 	w.Line("return")

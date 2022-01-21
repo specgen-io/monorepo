@@ -22,6 +22,7 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
 	w.Line(`import com.fasterxml.jackson.core.JsonProcessingException`)
+	w.Line(`import com.fasterxml.jackson.core.type.TypeReference`)
 	w.Line(`import com.fasterxml.jackson.databind.ObjectMapper`)
 	w.Line(`import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper`)
 	w.Line(`import okhttp3.*`)
@@ -123,7 +124,7 @@ func generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
 		w.Line(`logger.info("Received response with status code {}", response.code)`)
 		if !response.Type.Definition.IsEmpty() {
 			responseJavaType := KotlinType(&response.Type.Definition)
-			responseBody := fmt.Sprintf(` objectMapper.readValue(response.body!!.string(), %s::class.java)`, responseJavaType)
+			responseBody := fmt.Sprintf(` objectMapper.readValue(response.body!!.string(), object: TypeReference<%s>(){})`, responseJavaType)
 			if response.Type.Definition.Plain == spec.TypeString {
 				responseBody = `response.body!!.string()`
 			}
