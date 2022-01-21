@@ -26,6 +26,7 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVers
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
 	w.Line(`import com.fasterxml.jackson.databind.ObjectMapper;`)
+	w.Line(`import com.fasterxml.jackson.core.type.TypeReference;`)
 	w.Line(`import okhttp3.*;`)
 	w.Line(`import org.slf4j.*;`)
 	w.Line(`import java.io.*;`)

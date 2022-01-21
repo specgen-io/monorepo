@@ -68,7 +68,7 @@ func generateBodyParsing(w *sources.Writer, validation validations.Validation, o
 		} else {
 			w.Line("var body: %s", types.TsType(&operation.Body.Type.Definition))
 			w.Line("try {")
-			w.Line("  body = t.decode(%s.%s, %s)", types.ModelsPackage, validation.RuntimeType(&operation.Body.Type.Definition), body)
+			w.Line("  body = t.decode(%s, %s)", validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition), body)
 			w.Line("} catch (error) {")
 			w.Line("  %s", badRequestStatement)
 			w.Line("  return")

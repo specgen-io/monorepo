@@ -111,7 +111,7 @@ func (g *expressGenerator) response(w *sources.Writer, response *spec.NamedRespo
 		if response.Type.Definition.Plain == spec.TypeString {
 			w.Line("response.status(%s).type('text').send(%s)", spec.HttpStatusCode(response.Name), dataParam)
 		} else {
-			w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s.%s, %s)))", spec.HttpStatusCode(response.Name), types.ModelsPackage, g.validation.RuntimeType(&response.Type.Definition), dataParam)
+			w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), dataParam)
 		}
 	}
 	w.Line("return")
