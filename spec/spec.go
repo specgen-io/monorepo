@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
-	"io/ioutil"
 )
 
 type Spec struct {
@@ -139,7 +138,7 @@ func specError(errs Messages) error {
 }
 
 func ReadSpec(data []byte) (*SpecParseResult, error) {
-	err := checkSpecVersion(data)
+	data, err := checkSpecVersion(data)
 	if err != nil {
 		return nil, err
 	}
@@ -162,17 +161,6 @@ func ReadSpec(data []byte) (*SpecParseResult, error) {
 	return &SpecParseResult{Spec: spec, Warnings: warnings, Errors: errors}, nil
 }
 
-func ReadSpecFile(filepath string) (*SpecParseResult, error) {
-	yamlFile, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := ReadSpec(yamlFile)
-
-	return result, err
-}
-
 func WriteSpec(spec *Spec) ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := yaml.NewEncoder(&buf)
@@ -184,20 +172,8 @@ func WriteSpec(spec *Spec) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func WriteSpecFile(spec *Spec, filepath string) error {
-	data, err := WriteSpec(spec)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(filepath, data, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func ReadMeta(data []byte) (*Meta, error) {
-	err := checkSpecVersion(data)
+	data, err := checkSpecVersion(data)
 	if err != nil {
 		return nil, err
 	}
@@ -206,19 +182,4 @@ func ReadMeta(data []byte) (*Meta, error) {
 		return nil, err
 	}
 	return &meta, nil
-}
-
-func ReadMetaFile(filepath string) (*Meta, error) {
-	yamlFile, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		return nil, err
-	}
-
-	meta, err := ReadMeta(yamlFile)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return meta, nil
 }

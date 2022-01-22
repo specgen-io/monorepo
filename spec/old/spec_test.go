@@ -8,7 +8,7 @@ import (
 
 func Test_ParseSpec_Models(t *testing.T) {
 	data := `
-old: 2
+spec: 2
 name: bla-api
 
 models:
@@ -22,14 +22,14 @@ models:
 	result, err := ReadSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	old := result.Spec
-	assert.Equal(t, len(old.Versions), 1)
-	assert.Equal(t, len(old.Versions[0].Models), 2)
+	spec := result.Spec
+	assert.Equal(t, len(spec.Versions), 1)
+	assert.Equal(t, len(spec.Versions[0].Models), 2)
 }
 
 func Test_ParseSpec_Models_Versions(t *testing.T) {
 	data := `
-old: 2
+spec: 2
 name: bla-api
 
 v2:
@@ -47,19 +47,19 @@ models:
 	result, err := ReadSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	old := result.Spec
-	assert.Equal(t, len(old.Versions), 2)
-	v2Version := old.Versions[0]
+	spec := result.Spec
+	assert.Equal(t, len(spec.Versions), 2)
+	v2Version := spec.Versions[0]
 	assert.Equal(t, v2Version.Version.Source, "v2")
 	assert.Equal(t, len(v2Version.Models), 1)
-	defaultVersion := old.Versions[1]
+	defaultVersion := spec.Versions[1]
 	assert.Equal(t, defaultVersion.Version.Source, "")
 	assert.Equal(t, len(defaultVersion.Models), 1)
 }
 
 func Test_ParseSpec_Http(t *testing.T) {
 	data := `
-old: 2
+spec: 2
 name: bla-api
 http:
     test:
@@ -77,9 +77,9 @@ http:
 	result, err := ReadSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	old := result.Spec
-	assert.Equal(t, len(old.Versions), 1)
-	version := old.Versions[0]
+	spec := result.Spec
+	assert.Equal(t, len(spec.Versions), 1)
+	version := spec.Versions[0]
 	assert.Equal(t, len(version.Http.Apis), 1)
 	api := version.Http.Apis[0]
 	assert.Equal(t, api.Name.Source, "test")
@@ -90,7 +90,7 @@ http:
 
 func Test_ParseSpec_Http_Versions(t *testing.T) {
 	data := `
-old: 2
+spec: 2
 name: bla-api
 
 v2:
@@ -121,17 +121,17 @@ http:
 	result, err := ReadSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	old := result.Spec
-	assert.Equal(t, len(old.Versions), 2)
+	spec := result.Spec
+	assert.Equal(t, len(spec.Versions), 2)
 
-	v2 := old.Versions[0]
+	v2 := spec.Versions[0]
 	assert.Equal(t, len(v2.Http.Apis), 1)
 	v2Api := v2.Http.Apis[0]
 	assert.Equal(t, v2Api.Name.Source, "test")
 	assert.Equal(t, len(v2Api.Operations), 1)
 	assert.Equal(t, v2Api.Operations[0].FullUrl(), "/v2/some/url")
 
-	defaultVersion := old.Versions[1]
+	defaultVersion := spec.Versions[1]
 	assert.Equal(t, len(defaultVersion.Http.Apis), 1)
 	defaultApi := defaultVersion.Http.Apis[0]
 	assert.Equal(t, defaultApi.Name.Source, "test")
@@ -142,7 +142,7 @@ http:
 
 func Test_ParseSpec_Broken(t *testing.T) {
 	data := `
-old: 2
+spec: 2
 name: test-service
 version: 1
 
@@ -197,14 +197,14 @@ models:
 	result, err := ReadSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	old := result.Spec
-	assert.Equal(t, old.SpecVersion, "2")
-	assert.Equal(t, old.Name.Source, "bla-api")
-	assert.Equal(t, *old.Title, "Bla API")
-	assert.Equal(t, *old.Description, "Some Bla API service")
-	assert.Equal(t, old.Version, "0")
-	assert.Equal(t, len(old.Versions), 1)
-	version := old.Versions[0]
+	spec := result.Spec
+	assert.Equal(t, spec.SpecVersion, "2")
+	assert.Equal(t, spec.Name.Source, "bla-api")
+	assert.Equal(t, *spec.Title, "Bla API")
+	assert.Equal(t, *spec.Description, "Some Bla API service")
+	assert.Equal(t, spec.Version, "0")
+	assert.Equal(t, len(spec.Versions), 1)
+	version := spec.Versions[0]
 	assert.Equal(t, len(version.Http.Apis), 1)
 	api := version.Http.Apis[0]
 	assert.Equal(t, api.Name.Source, "test")
@@ -216,7 +216,7 @@ models:
 
 func Test_ParseSpec_Meta(t *testing.T) {
 	data := `
-old: 2
+spec: 2
 name: bla-api
 title: Bla API
 description: Some Bla API service
@@ -226,17 +226,17 @@ version: 0
 	result, err := ReadSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	old := result.Spec
-	assert.Equal(t, old.SpecVersion, "2")
-	assert.Equal(t, old.Name.Source, "bla-api")
-	assert.Equal(t, *old.Title, "Bla API")
-	assert.Equal(t, *old.Description, "Some Bla API service")
-	assert.Equal(t, old.Version, "0")
+	spec := result.Spec
+	assert.Equal(t, spec.SpecVersion, "2")
+	assert.Equal(t, spec.Name.Source, "bla-api")
+	assert.Equal(t, *spec.Title, "Bla API")
+	assert.Equal(t, *spec.Description, "Some Bla API service")
+	assert.Equal(t, spec.Version, "0")
 }
 
 func Test_ParseMeta(t *testing.T) {
 	data := `
-old: 2
+spec: 2
 name: bla-api
 title: Bla API
 description: Some Bla API service
@@ -272,7 +272,7 @@ version: 0
 
 func Test_Spec_Write_Models(t *testing.T) {
 	expectedYaml := strings.TrimLeft(`
-old: 2
+spec: 2
 name: bla-api
 version: 3
 v2:
@@ -293,7 +293,7 @@ models:
 
 func Test_Spec_Write_Http(t *testing.T) {
 	expectedYaml := strings.TrimLeft(`
-old: 2
+spec: 2
 name: bla-api
 version: 3
 v2:

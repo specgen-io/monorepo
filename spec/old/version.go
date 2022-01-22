@@ -22,11 +22,11 @@ func GetSpecVersion(data []byte) (*string, error) {
 	if idlVersion != nil {
 		return &idlVersion.Value, nil
 	}
-	specVersion := getMappingValue(rootNode, "old")
+	specVersion := getMappingValue(rootNode, "spec")
 	if specVersion != nil {
 		return &specVersion.Value, nil
 	}
-	return nil, errors.New(`Can't find old version field, should be either "idl_version" for old v1 or "old" for later old versions`)
+	return nil, errors.New(`can't find old version field, should be either "idl_version" for old v1 or "spec" for later old versions`)
 }
 
 func checkSpecVersion(data []byte) ([]byte, error) {
@@ -46,7 +46,7 @@ func checkSpecVersion(data []byte) ([]byte, error) {
 		rootNode := node.Content[0]
 		idlVersionKey := getMappingKey(rootNode, "idl_version")
 		idlVersionValue := getMappingValue(rootNode, "idl_version")
-		idlVersionKey.Value = "old"
+		idlVersionKey.Value = "spec"
 		idlVersionValue.Value = "2"
 		operations := getMappingKey(rootNode, "operations")
 		if operations != nil {
