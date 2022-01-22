@@ -4,6 +4,7 @@ import (
 	"github.com/specgen-io/specgen/v2/fail"
 	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/spf13/cobra"
+	"io/ioutil"
 )
 
 func init() {
@@ -21,7 +22,10 @@ var cmdSpecFormat = &cobra.Command{
 
 		specification := readSpecFile(specFile)
 
-		err = spec.WriteSpecFile(specification, specFile)
+		data, err := spec.WriteSpec(specification)
 		fail.IfErrorF(err, "Failed to write spec")
+
+		err = ioutil.WriteFile(specFile, data, 0644)
+		fail.IfErrorF(err, "Failed to write spec to file: %s", specFile)
 	},
 }

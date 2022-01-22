@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
-	"io/ioutil"
 )
 
 type Spec struct {
@@ -26,7 +25,7 @@ type Version struct {
 }
 
 type Meta struct {
-	SpecVersion string  `yaml:"old"`
+	SpecVersion string  `yaml:"spec"`
 	Name        Name    `yaml:"name"`
 	Title       *string `yaml:"title,omitempty"`
 	Description *string `yaml:"description,omitempty"`
@@ -105,7 +104,7 @@ func (value Spec) MarshalYAML() (interface{}, error) {
 
 func (value Meta) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
-	yamlMap.Add("old", yamlx.String(value.SpecVersion))
+	yamlMap.Add("spec", yamlx.String(value.SpecVersion))
 	yamlMap.Add("name", value.Name)
 	yamlMap.AddOmitNil("title", value.Title)
 	yamlMap.AddOmitNil("description", value.Description)
@@ -114,11 +113,11 @@ func (value Meta) MarshalYAML() (interface{}, error) {
 }
 
 func unmarshalSpec(data []byte) (*Spec, error) {
-	var old Spec
-	if err := yaml.UnmarshalWith(decodeStrict, data, &old); err != nil {
+	var spec Spec
+	if err := yaml.UnmarshalWith(decodeStrict, data, &spec); err != nil {
 		return nil, err
 	}
-	return &old, nil
+	return &spec, nil
 }
 
 type SpecParseResult struct {
@@ -133,7 +132,7 @@ func specError(errs Messages) error {
 		for _, error := range errs {
 			message = message + fmt.Sprintf("%s\n", error)
 		}
-		return errors.New("old errors: \n" + message)
+		return errors.New("spec errors: \n" + message)
 	}
 	return nil
 }
@@ -144,56 +143,33 @@ func ReadSpec(data []byte) (*SpecParseResult, error) {
 		return nil, err
 	}
 
-	old, err := unmarshalSpec(data)
+	spec, err := unmarshalSpec(data)
 	if err != nil {
 		return nil, err
 	}
 
-	errors := enrichSpec(old)
+	errors := enrichSpec(spec)
 	if len(errors) > 0 {
 		return &SpecParseResult{Errors: errors}, specError(errors)
 	}
 
-	warnings, errors := validate(old)
+	warnings, errors := validate(spec)
 	if len(errors) > 0 {
 		return &SpecParseResult{Spec: nil, Warnings: warnings, Errors: errors}, specError(errors)
 	}
 
-	return &SpecParseResult{Spec: old, Warnings: warnings, Errors: errors}, nil
+	return &SpecParseResult{Spec: spec, Warnings: warnings, Errors: errors}, nil
 }
 
-func ReadSpecFile(filepath string) (*SpecParseResult, error) {
-	yamlFile, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := ReadSpec(yamlFile)
-
-	return result, err
-}
-
-func WriteSpec(old *Spec) ([]byte, error) {
+func WriteSpec(spec *Spec) ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := yaml.NewEncoder(&buf)
 	encoder.SetIndent(2)
-	err := encoder.Encode(old)
+	err := encoder.Encode(spec)
 	if err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
-}
-
-func WriteSpecFile(old *Spec, filepath string) error {
-	data, err := WriteSpec(old)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(filepath, data, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func ReadMeta(data []byte) (*Meta, error) {
@@ -208,26 +184,11 @@ func ReadMeta(data []byte) (*Meta, error) {
 	return &meta, nil
 }
 
-func ReadMetaFile(filepath string) (*Meta, error) {
-	yamlFile, err := ioutil.ReadFile(filepath)
+func FormatSpec(data []byte, newSpecVersion string) ([]byte, error) {
+	result, err := ReadSpec(data)
 	if err != nil {
 		return nil, err
 	}
-
-	meta, err := ReadMeta(yamlFile)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return meta, nil
-}
-
-func FormatSpec(inSpecFile, outSpecFile, newSpecVersion string) error {
-	result, err := ReadSpecFile(inSpecFile)
-	if err != nil { return err }
-	result.Spec.Version = newSpecVersion
-	err = WriteSpecFile(result.Spec, outSpecFile)
-	if err != nil { return err }
-	return nil
+	result.Spec.SpecVersion = newSpecVersion
+	return WriteSpec(result.Spec)
 }
