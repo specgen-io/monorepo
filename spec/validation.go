@@ -75,7 +75,7 @@ func (validator *validator) Spec(spec *Spec) {
 			for _, operation := range operations {
 				operationsStr = append(operationsStr, operation.FullName())
 			}
-			validator.AddError(operations[0].Location, fmt.Sprintf(`endpoint "%s" is used for %d operations: %s`, url, len(operationsStr), strings.Join(operationsStr, ", ")))
+			validator.AddWarning(operations[0].Location, fmt.Sprintf(`endpoint "%s" is used for %d operations: %s`, url, len(operationsStr), strings.Join(operationsStr, ", ")))
 		}
 	}
 }
