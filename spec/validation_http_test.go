@@ -323,7 +323,7 @@ http:
 	assert.Equal(t, len(errors), 0)
 
 	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 0)
-	assert.Equal(t, len(errors), 1)
-	assert.Equal(t, strings.Contains(errors[0].Message, "/some/url"), true)
+	assert.Equal(t, len(warnings), 1)
+	assert.Equal(t, len(errors), 0)
+	assert.Equal(t, strings.Contains(warnings[0].Message, "/some/url"), true)
 }
