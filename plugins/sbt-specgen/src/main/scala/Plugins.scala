@@ -48,7 +48,7 @@ object SpecgenService extends AutoPlugin {
     specgenServiceTask := specgenTask.value,
     sourceGenerators in Compile += specgenServiceTask,
     mappings in (Compile, packageSrc) ++= {(specgenServiceTask in Compile) map { sourceFiles =>
-      sourceFiles.pair(relativeTo(specgenGeneratePath.value))
+      sourceFiles.pair(relativeTo((specgenGeneratePath in Compile).value))
     }}.value
   )
 }
@@ -72,7 +72,7 @@ object SpecgenModels extends AutoPlugin {
     specgenModelsTask := specgenTask.value,
     sourceGenerators in Compile += specgenModelsTask,
     mappings in (Compile, packageSrc) ++= {(specgenModelsTask in Compile) map { sourceFiles =>
-      sourceFiles.pair(relativeTo(specgenGeneratePath.value))
+      sourceFiles.pair(relativeTo((specgenGeneratePath in Compile).value))
     }}.value
   )
 }
@@ -98,7 +98,7 @@ object SpecgenClient extends AutoPlugin {
     specgenClientTask := specgenTask.value,
     sourceGenerators in Compile += specgenClientTask,
     mappings in (Compile, packageSrc) ++= {(specgenClientTask in Compile) map { sourceFiles =>
-      sourceFiles.pair(relativeTo(specgenGeneratePath.value))
+      sourceFiles.pair(relativeTo((specgenGeneratePath in Compile).value))
     }}.value
   )
 }
