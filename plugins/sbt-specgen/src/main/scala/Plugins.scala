@@ -4,6 +4,7 @@ import sbt._
 import sbt.Keys._
 import Specgen._
 import Path.relativeTo
+import NativePackagerHelper._
 
 object SpecKeys {
   lazy val specgenSpecFile = settingKey[File]("Path to service specification file")
@@ -47,9 +48,7 @@ object SpecgenService extends AutoPlugin {
     specgenServicesPath := (scalaSource in Compile).value,
     specgenServiceTask := specgenTask.value,
     sourceGenerators in Compile += specgenServiceTask,
-    mappings in (Compile, packageSrc) ++= {(specgenServiceTask in Compile) map { sourceFiles =>
-      sourceFiles.pair(relativeTo((specgenGeneratePath in Compile).value))
-    }}.value
+    Compile / packageSrc / mappings ++= contentOf(specgenGeneratePath.value)
   )
 }
 
@@ -71,9 +70,7 @@ object SpecgenModels extends AutoPlugin {
     specgenGeneratePath := (sourceManaged in Compile).value / "spec",
     specgenModelsTask := specgenTask.value,
     sourceGenerators in Compile += specgenModelsTask,
-    mappings in (Compile, packageSrc) ++= {(specgenModelsTask in Compile) map { sourceFiles =>
-      sourceFiles.pair(relativeTo((specgenGeneratePath in Compile).value))
-    }}.value
+    Compile / packageSrc / mappings ++= contentOf(specgenGeneratePath.value)
   )
 }
 
@@ -97,8 +94,6 @@ object SpecgenClient extends AutoPlugin {
     specgenGeneratePath := (sourceManaged in Compile).value / "spec",
     specgenClientTask := specgenTask.value,
     sourceGenerators in Compile += specgenClientTask,
-    mappings in (Compile, packageSrc) ++= {(specgenClientTask in Compile) map { sourceFiles =>
-      sourceFiles.pair(relativeTo((specgenGeneratePath in Compile).value))
-    }}.value
+    Compile / packageSrc / mappings ++= contentOf(specgenGeneratePath.value)
   )
 }
