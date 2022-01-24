@@ -3,6 +3,7 @@ package spec
 import sbt._
 import sbt.Keys._
 import Specgen._
+import Path.relativeTo
 
 object SpecKeys {
   lazy val specgenSpecFile = settingKey[File]("Path to service specification file")
@@ -47,7 +48,7 @@ object SpecgenService extends AutoPlugin {
     specgenServiceTask := specgenTask.value,
     sourceGenerators in Compile += specgenServiceTask,
     mappings in (Compile, packageSrc) ++= {(specgenServiceTask in Compile) map { sourceFiles =>
-      sourceFiles map { sourceFile => (sourceFile, sourceFile.getName)}
+      sourceFiles map { sourceFile => (sourceFile, sourceFile.relativeTo(specgenGeneratePath.value)) }
     }}.value
   )
 }
@@ -71,7 +72,7 @@ object SpecgenModels extends AutoPlugin {
     specgenModelsTask := specgenTask.value,
     sourceGenerators in Compile += specgenModelsTask,
     mappings in (Compile, packageSrc) ++= {(specgenModelsTask in Compile) map { sourceFiles =>
-      sourceFiles map { sourceFile => (sourceFile, sourceFile.getName)}
+      sourceFiles map { sourceFile => (sourceFile, sourceFile.relativeTo(specgenGeneratePath.value)) }
     }}.value
   )
 }
@@ -97,7 +98,7 @@ object SpecgenClient extends AutoPlugin {
     specgenClientTask := specgenTask.value,
     sourceGenerators in Compile += specgenClientTask,
     mappings in (Compile, packageSrc) ++= {(specgenClientTask in Compile) map { sourceFiles =>
-      sourceFiles map { sourceFile => (sourceFile, sourceFile.getName)}
+      sourceFiles map { sourceFile => (sourceFile, sourceFile.relativeTo(specgenGeneratePath.value)) }
     }}.value
   )
 }
