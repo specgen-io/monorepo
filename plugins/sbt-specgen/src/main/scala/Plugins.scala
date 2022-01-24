@@ -3,8 +3,6 @@ package spec
 import sbt._
 import sbt.Keys._
 import Specgen._
-import Path.relativeTo
-import NativePackagerHelper._
 
 object SpecKeys {
   lazy val specgenSpecFile = settingKey[File]("Path to service specification file")
@@ -26,6 +24,7 @@ object CommonKeys extends AutoPlugin {
 
 object SpecgenService extends AutoPlugin {
   import SpecKeys._
+  import NativePackagerHelper._
 
   private def specgenTask = Def.task {
     serviceScala(
@@ -54,6 +53,7 @@ object SpecgenService extends AutoPlugin {
 
 object SpecgenModels extends AutoPlugin {
   import SpecKeys._
+  import NativePackagerHelper._
 
   private def specgenTask = Def.task {
     modelsScala(
@@ -76,6 +76,7 @@ object SpecgenModels extends AutoPlugin {
 
 object SpecgenClient extends AutoPlugin {
   import SpecKeys._
+  import NativePackagerHelper._
 
   private def specgenTask = Def.task {
     clientScala(
