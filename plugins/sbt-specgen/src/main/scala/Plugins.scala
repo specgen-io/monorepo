@@ -2,6 +2,7 @@ package spec
 
 import sbt._
 import sbt.Keys._
+import Path.contentOf
 import Specgen._
 
 object SpecKeys {
@@ -46,9 +47,7 @@ object SpecgenService extends AutoPlugin {
     specgenServicesPath := (scalaSource in Compile).value,
     specgenServiceTask := specgenTask.value,
     sourceGenerators in Compile += specgenServiceTask,
-    mappings in (Compile, packageSrc) ++= {(specgenServiceTask in Compile) map { sourceFiles =>
-      sourceFiles map { sourceFile => (sourceFile, sourceFile.getName)}
-    }}.value
+    Compile / packageSrc / mappings ++= contentOf(specgenGeneratePath.value)
   )
 }
 
@@ -70,9 +69,7 @@ object SpecgenModels extends AutoPlugin {
     specgenGeneratePath := (sourceManaged in Compile).value / "spec",
     specgenModelsTask := specgenTask.value,
     sourceGenerators in Compile += specgenModelsTask,
-    mappings in (Compile, packageSrc) ++= {(specgenModelsTask in Compile) map { sourceFiles =>
-      sourceFiles map { sourceFile => (sourceFile, sourceFile.getName)}
-    }}.value
+    Compile / packageSrc / mappings ++= contentOf(specgenGeneratePath.value)
   )
 }
 
@@ -96,8 +93,6 @@ object SpecgenClient extends AutoPlugin {
     specgenGeneratePath := (sourceManaged in Compile).value / "spec",
     specgenClientTask := specgenTask.value,
     sourceGenerators in Compile += specgenClientTask,
-    mappings in (Compile, packageSrc) ++= {(specgenClientTask in Compile) map { sourceFiles =>
-      sourceFiles map { sourceFile => (sourceFile, sourceFile.getName)}
-    }}.value
+    Compile / packageSrc / mappings ++= contentOf(specgenGeneratePath.value)
   )
 }
