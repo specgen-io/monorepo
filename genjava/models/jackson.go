@@ -25,9 +25,11 @@ func (g *JacksonGenerator) Imports(w *sources.Writer) {
 	w.Line(`import com.fasterxml.jackson.annotation.*;`)
 	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
 	w.Line(`import com.fasterxml.jackson.core.type.TypeReference;`)
+	w.EmptyLine()
 	w.Line(`import java.math.BigDecimal;`)
 	w.Line(`import java.time.*;`)
 	w.Line(`import java.util.*;`)
+	w.Line(`import java.io.*;`)
 }
 
 func (g *JacksonGenerator) InitJsonMapper(w *sources.Writer) {

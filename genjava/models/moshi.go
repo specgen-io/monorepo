@@ -22,9 +22,11 @@ func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
 
 func (g *MoshiGenerator) Imports(w *sources.Writer) {
 	w.Line(`import com.squareup.moshi.Json;`)
+	w.EmptyLine()
 	w.Line(`import java.math.BigDecimal;`)
 	w.Line(`import java.time.*;`)
 	w.Line(`import java.util.*;`)
+	w.Line(`import java.io.*;`)
 }
 
 func (g *MoshiGenerator) InitJsonMapper(w *sources.Writer) {

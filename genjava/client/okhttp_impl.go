@@ -26,7 +26,6 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVers
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
 	g.Models.Imports(w)
-	w.Line(`import java.io.*;`)
 	w.Line(`import okhttp3.*;`)
 	w.Line(`import org.slf4j.*;`)
 	w.EmptyLine()
