@@ -20,12 +20,27 @@ func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 	return &JacksonGenerator{types}
 }
 
-func (g *JacksonGenerator) ReadJson(varJson string, typeJava string) string {
-	return fmt.Sprintf(`objectMapper.readValue(%s, new TypeReference<%s>() {})`, varJson, typeJava)
+func (g *JacksonGenerator) Imports(w *sources.Writer) {
+	w.Line(`import com.fasterxml.jackson.databind.*;`)
+	w.Line(`import com.fasterxml.jackson.annotation.*;`)
+	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
+	w.Line(`import com.fasterxml.jackson.core.type.TypeReference;`)
+	w.Line(`import java.math.BigDecimal;`)
+	w.Line(`import java.time.*;`)
+	w.Line(`import java.util.*;`)
 }
 
-func (g *JacksonGenerator) WriteJson(varData string) string {
-	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData)
+func (g *JacksonGenerator) InitJsonMapper(w *sources.Writer) {
+	w.Line(`this.objectMapper = new ObjectMapper();`)
+	w.Line(`Json.setupObjectMapper(objectMapper);`)
+}
+
+func (g *JacksonGenerator) ReadJson(varJson string, typeJava string) (string, string) {
+	return fmt.Sprintf(`objectMapper.readValue(%s, new TypeReference<%s>() {})`, varJson, typeJava), `IOException`
+}
+
+func (g *JacksonGenerator) WriteJson(varData string) (string, string) {
+	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `IOException`
 }
 
 func (g *JacksonGenerator) SetupLibrary(thePackage packages.Module) []sources.CodeFile {
@@ -67,15 +82,6 @@ func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage packa
 	return files
 }
 
-func jacksonImports(w *sources.Writer) {
-	w.Line(`import java.time.*;`)
-	w.Line(`import java.util.*;`)
-	w.Line(`import java.math.BigDecimal;`)
-	w.Line(`import com.fasterxml.jackson.databind.JsonNode;`)
-	w.Line(`import com.fasterxml.jackson.annotation.*;`)
-	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
-}
-
 func jacksonJsonPropertyAnnotation(field *spec.NamedDefinition) string {
 	required := "false"
 	if !field.Type.Definition.IsNullable() {
@@ -88,7 +94,7 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	jacksonImports(w)
+	g.Imports(w)
 	w.EmptyLine()
 	className := model.Name.PascalCase()
 	w.Line(`public class %s {`, className)
@@ -145,7 +151,7 @@ func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	jacksonImports(w)
+	g.Imports(w)
 	w.EmptyLine()
 	enumName := model.Name.PascalCase()
 	w.Line(`public enum %s {`, enumName)
@@ -165,7 +171,7 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 	w := writer.NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
-	jacksonImports(w)
+	g.Imports(w)
 	w.EmptyLine()
 	if model.OneOf.Discriminator != nil {
 		w.Line(`@JsonTypeInfo(`)

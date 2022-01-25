@@ -25,14 +25,10 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVers
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
-	w.Line(`import com.fasterxml.jackson.databind.ObjectMapper;`)
-	w.Line(`import com.fasterxml.jackson.core.type.TypeReference;`)
+	g.Models.Imports(w)
+	w.Line(`import java.io.*;`)
 	w.Line(`import okhttp3.*;`)
 	w.Line(`import org.slf4j.*;`)
-	w.Line(`import java.io.*;`)
-	w.Line(`import java.math.BigDecimal;`)
-	w.Line(`import java.time.*;`)
-	w.Line(`import java.util.*;`)
 	w.EmptyLine()
 	w.Line(`import %s;`, mainPackage.PackageStar)
 	w.Line(`import %s;`, utilsPackage.PackageStar)
@@ -49,8 +45,7 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVers
 	w.EmptyLine()
 	w.Line(`  public %s(String baseUrl) {`, className)
 	w.Line(`    this.baseUrl = baseUrl;`)
-	w.Line(`    this.objectMapper = new ObjectMapper();`)
-	w.Line(`    Json.setupObjectMapper(objectMapper);`)
+	g.Models.InitJsonMapper(w.IndentedWith(2))
 	w.Line(`    this.client = new OkHttpClient();`)
 	w.Line(`  }`)
 	for _, operation := range api.Operations {
@@ -87,9 +82,10 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 			mediaType = "text/plain"
 		} else {
 			w.Line(`  String bodyJson;`)
+			bodyJson, exception := g.Models.WriteJson("body")
 			generateClientTryCatch(w.Indented(),
-				fmt.Sprintf(`bodyJson = %s;`, g.Models.WriteJson("body")),
-				`IOException`, `e`,
+				fmt.Sprintf(`bodyJson = %s;`, bodyJson),
+				exception, `e`,
 				`"Failed to serialize JSON " + e.getMessage()`)
 			w.EmptyLine()
 		}
@@ -132,13 +128,13 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		if !response.Type.Definition.IsEmpty() {
 			responseJavaType := g.Types.Java(&response.Type.Definition)
 			w.Line(`%s responseBody;`, responseJavaType)
-			responseBody := g.Models.ReadJson("response.body().string()", responseJavaType)
+			responseBody, exception := g.Models.ReadJson("response.body().string()", responseJavaType)
 			if response.Type.Definition.Plain == spec.TypeString {
 				responseBody = `response.body().string()`
 			}
 			generateClientTryCatch(w,
 				fmt.Sprintf(`responseBody = %s;`, responseBody),
-				`IOException`, `e`,
+				exception, `e`,
 				`"Failed to deserialize response body " + e.getMessage()`)
 			if len(operation.Responses) > 1 {
 				w.Line(`return new %s.%s(responseBody);`, responses.InterfaceName(operation), response.Name.PascalCase())

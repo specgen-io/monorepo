@@ -24,18 +24,13 @@ func (g *Generator) serviceController(api *spec.Api, apiPackage packages.Module,
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
-	w.Line(`import java.math.BigDecimal;`)
-	w.Line(`import java.io.IOException;`)
-	w.Line(`import java.time.*;`)
-	w.Line(`import java.util.*;`)
+	g.Models.Imports(w)
 	w.EmptyLine()
 	w.Line(`import org.apache.logging.log4j.*;`)
 	w.Line(`import org.springframework.beans.factory.annotation.Autowired;`)
 	w.Line(`import org.springframework.format.annotation.DateTimeFormat;`)
 	w.Line(`import org.springframework.http.*;`)
 	w.Line(`import org.springframework.web.bind.annotation.*;`)
-	w.Line(`import com.fasterxml.jackson.databind.ObjectMapper;`)
-	w.Line(`import com.fasterxml.jackson.core.type.TypeReference;`)
 	w.EmptyLine()
 	w.Line(`import static org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE;`)
 	w.EmptyLine()
@@ -83,10 +78,11 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 	if operation.Body != nil {
 		if operation.Body.Type.Definition.Plain != spec.TypeString {
 			bodyJavaType := g.Types.Java(&operation.Body.Type.Definition)
+			requestBody, exception := g.Models.ReadJson("bodyStr", bodyJavaType)
 			w.Line(`  %s requestBody;`, bodyJavaType)
 			w.Line(`  try {`)
-			w.Line(`    requestBody = %s;`, g.Models.ReadJson("bodyStr", bodyJavaType))
-			w.Line(`  } catch (Exception e) {`)
+			w.Line(`    requestBody = %s;`, requestBody)
+			w.Line(`  } catch (%s e) {`, exception)
 			w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
 			w.Line(`    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);`)
 			w.Line(`  }`)
@@ -109,7 +105,8 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 				responseVar := "result"
 				if resp.Type.Definition.Plain != spec.TypeString {
 					responseVar = "responseJson"
-					w.Line(`  String %s = %s;`, responseVar, g.Models.WriteJson("result"))
+					result, _ := g.Models.WriteJson("result")
+					w.Line(`  String %s = %s;`, responseVar, result)
 				}
 				w.EmptyLine()
 				w.Line(`  logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
@@ -127,7 +124,7 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 			w.EmptyLine()
 			w.Line(`  if (result instanceof %s.%s) {`, responses.InterfaceName(operation), resp.Name.PascalCase())
 			if !resp.Type.Definition.IsEmpty() {
-				responseWrite := g.Models.WriteJson(fmt.Sprintf(`((%s.%s) result).body`, responses.InterfaceName(operation), resp.Name.PascalCase()))
+				responseWrite, _ := g.Models.WriteJson(fmt.Sprintf(`((%s.%s) result).body`, responses.InterfaceName(operation), resp.Name.PascalCase()))
 				w.Line(`    String responseJson = %s;`, responseWrite)
 				w.Line(`    logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
 				w.Line(`    return new ResponseEntity<>(responseJson, headers, HttpStatus.%s);`, resp.Name.UpperCase())

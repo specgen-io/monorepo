@@ -11,8 +11,10 @@ import (
 type Generator interface {
 	SetupLibrary(thePackage packages.Module) []sources.CodeFile
 	VersionModels(version *spec.Version, thePackage packages.Module) []sources.CodeFile
-	ReadJson(jsonStr string, javaType string) string
-	WriteJson(varData string) string
+	ReadJson(jsonStr string, javaType string) (string, string)
+	WriteJson(varData string) (string, string)
+	InitJsonMapper(w *sources.Writer)
+	Imports(w *sources.Writer)
 }
 
 func NewGenerator(jsonlib string) Generator {
