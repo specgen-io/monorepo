@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genjava/imports"
 	"github.com/specgen-io/specgen/v2/genjava/packages"
 	"github.com/specgen-io/specgen/v2/genjava/types"
 	"github.com/specgen-io/specgen/v2/genjava/writer"
@@ -20,11 +21,23 @@ func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
 	return &MoshiGenerator{types}
 }
 
-func (g *MoshiGenerator) ReadJson(varJson string, typeJava string) string {
+func (g *MoshiGenerator) JsonImports() []string {
+	return []string{`com.squareup.moshi.Json`}
+}
+
+func (g *MoshiGenerator) CreateJsonMapperField(w *sources.Writer) {
 	panic("This is not implemented yet!!!")
 }
 
-func (g *MoshiGenerator) WriteJson(varData string) string {
+func (g *MoshiGenerator) InitJsonMapper(w *sources.Writer) {
+	panic("This is not implemented yet!!!")
+}
+
+func (g *MoshiGenerator) ReadJson(varJson string, typeJava string) (string, string) {
+	panic("This is not implemented yet!!!")
+}
+
+func (g *MoshiGenerator) WriteJson(varData string) (string, string) {
 	panic("This is not implemented yet!!!")
 }
 
@@ -42,18 +55,14 @@ func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage package
 	return files
 }
 
-func moshiImports(w *sources.Writer) {
-	w.Line(`import com.squareup.moshi.Json;`)
-	w.Line(`import java.math.BigDecimal;`)
-	w.Line(`import java.time.*;`)
-	w.Line(`import java.util.*;`)
-}
-
 func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	moshiImports(w)
+	imports := imports.New()
+	imports.Add(g.JsonImports()...)
+	imports.Add(g.Types.Imports()...)
+	imports.Write(w)
 	w.EmptyLine()
 	className := model.Name.PascalCase()
 	w.Line(`public class %s {`, className)
@@ -96,7 +105,10 @@ func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.M
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	moshiImports(w)
+	imports := imports.New()
+	imports.Add(g.JsonImports()...)
+	imports.Add(g.Types.Imports()...)
+	imports.Write(w)
 	w.EmptyLine()
 	enumName := model.Name.PascalCase()
 	w.Line(`public enum %s {`, enumName)
@@ -116,7 +128,10 @@ func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.
 	w := writer.NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
-	moshiImports(w)
+	imports := imports.New()
+	imports.Add(g.JsonImports()...)
+	imports.Add(g.Types.Imports()...)
+	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`public interface %s {`, interfaceName)
 	for index, item := range model.OneOf.Items {
