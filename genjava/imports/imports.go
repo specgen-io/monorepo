@@ -7,12 +7,3 @@ func GenerateImports(w *sources.Writer, imports []string) {
 		w.Line(`import %s;`, imp)
 	}
 }
-
-func GeneralImports() []string {
-	return []string{
-		`java.math.BigDecimal`,
-		`java.time.*`,
-		`java.util.*`,
-		`java.io.*`,
-	}
-}

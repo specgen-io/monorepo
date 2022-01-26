@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genjava/imports"
 	"github.com/specgen-io/specgen/v2/genjava/packages"
 	"github.com/specgen-io/specgen/v2/genjava/types"
 	"github.com/specgen-io/specgen/v2/genjava/writer"
@@ -97,9 +98,9 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	GenerateImports(w, g.JsonImports())
+	imports.GenerateImports(w, g.JsonImports())
 	w.EmptyLine()
-	GenerateImports(w, GeneralImports())
+	imports.GenerateImports(w, g.Types.Imports())
 	w.EmptyLine()
 	className := model.Name.PascalCase()
 	w.Line(`public class %s {`, className)
@@ -156,9 +157,9 @@ func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	GenerateImports(w, g.JsonImports())
+	imports.GenerateImports(w, g.JsonImports())
 	w.EmptyLine()
-	GenerateImports(w, GeneralImports())
+	imports.GenerateImports(w, g.Types.Imports())
 	w.EmptyLine()
 	w.EmptyLine()
 	enumName := model.Name.PascalCase()
@@ -179,9 +180,9 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 	w := writer.NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
-	GenerateImports(w, g.JsonImports())
+	imports.GenerateImports(w, g.JsonImports())
 	w.EmptyLine()
-	GenerateImports(w, GeneralImports())
+	imports.GenerateImports(w, g.Types.Imports())
 	w.EmptyLine()
 	if model.OneOf.Discriminator != nil {
 		w.Line(`@JsonTypeInfo(`)

@@ -2,12 +2,15 @@ package service
 
 import (
 	"fmt"
+	"github.com/pinzolo/casee"
+	"github.com/specgen-io/specgen/v2/genjava/imports"
 	"github.com/specgen-io/specgen/v2/genjava/packages"
 	"github.com/specgen-io/specgen/v2/genjava/responses"
 	"github.com/specgen-io/specgen/v2/genjava/types"
 	"github.com/specgen-io/specgen/v2/genjava/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
+	"strings"
 )
 
 func (g *Generator) ServicesControllers(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module, modelsVersionPackage packages.Module, serviceVersionPackage packages.Module) []sources.CodeFile {
@@ -24,9 +27,9 @@ func (g *Generator) serviceController(api *spec.Api, apiPackage packages.Module,
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
-	GenerateImports(w, g.Models.JsonImports())
+	imports.GenerateImports(w, g.Models.JsonImports())
 	w.EmptyLine()
-	GenerateImports(w, GeneralImports())
+	imports.GenerateImports(w, g.Types.Imports())
 	w.EmptyLine()
 	w.Line(`import org.apache.logging.log4j.*;`)
 	w.Line(`import org.springframework.beans.factory.annotation.Autowired;`)
@@ -67,7 +70,7 @@ func (g *Generator) serviceController(api *spec.Api, apiPackage packages.Module,
 func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
-	w.Line(`@%sMapping("%s")`, ToPascalCase(methodName), url)
+	w.Line(`@%sMapping("%s")`, casee.ToPascalCase(methodName), url)
 	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), joinParams(addMethodParams(operation, g.Types)))
 	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  HttpHeaders headers = new HttpHeaders();`)
@@ -233,4 +236,8 @@ func dateFormatAnnotationPlain(typ string) string {
 	default:
 		return ""
 	}
+}
+
+func joinParams(params []string) string {
+	return strings.Join(params, ", ")
 }

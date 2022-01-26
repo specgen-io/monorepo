@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genjava/imports"
 	"github.com/specgen-io/specgen/v2/genjava/packages"
 	"github.com/specgen-io/specgen/v2/genjava/responses"
 	"github.com/specgen-io/specgen/v2/genjava/writer"
@@ -22,7 +23,7 @@ func (g *Generator) serviceImplementation(api *spec.Api, thePackage packages.Mod
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	GenerateImports(w, GeneralImports())
+	imports.GenerateImports(w, g.Types.Imports())
 	w.EmptyLine()
 	w.Line(`import org.springframework.stereotype.Service;`)
 	w.EmptyLine()

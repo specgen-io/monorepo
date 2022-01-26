@@ -89,3 +89,12 @@ func (t *Types) plainJavaType(typ string, referenceTypesOnly bool) (string, bool
 		return typ, true
 	}
 }
+
+func (t *Types) Imports() []string {
+	return []string{
+		`java.math.BigDecimal`,
+		`java.time.*`,
+		`java.util.*`,
+		`java.io.*`,
+	}
+}

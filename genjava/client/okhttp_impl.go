@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genjava/imports"
 	"github.com/specgen-io/specgen/v2/genjava/packages"
 	"github.com/specgen-io/specgen/v2/genjava/responses"
 	"github.com/specgen-io/specgen/v2/genjava/writer"
@@ -25,9 +26,9 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVers
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
-	GenerateImports(w, g.Models.JsonImports())
+	imports.GenerateImports(w, g.Models.JsonImports())
 	w.EmptyLine()
-	GenerateImports(w, GeneralImports())
+	imports.GenerateImports(w, g.Types.Imports())
 	w.EmptyLine()
 	w.Line(`import okhttp3.*;`)
 	w.Line(`import org.slf4j.*;`)

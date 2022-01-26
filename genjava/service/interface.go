@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genjava/imports"
 	"github.com/specgen-io/specgen/v2/genjava/packages"
 	"github.com/specgen-io/specgen/v2/genjava/responses"
 	"github.com/specgen-io/specgen/v2/genjava/writer"
@@ -24,7 +25,7 @@ func (g *Generator) serviceInterface(api *spec.Api, apiPackage packages.Module, 
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
-	GenerateImports(w, GeneralImports())
+	imports.GenerateImports(w, g.Types.Imports())
 	w.EmptyLine()
 	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
 	w.EmptyLine()
