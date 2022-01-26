@@ -25,7 +25,10 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVers
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
-	g.Models.Imports(w)
+	GenerateImports(w, g.Models.JsonImports())
+	w.EmptyLine()
+	GenerateImports(w, GeneralImports())
+	w.EmptyLine()
 	w.Line(`import okhttp3.*;`)
 	w.Line(`import org.slf4j.*;`)
 	w.EmptyLine()
@@ -39,7 +42,7 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVers
 	w.Line(`  private static final Logger logger = LoggerFactory.getLogger(%s.class);`, className)
 	w.EmptyLine()
 	w.Line(`  private final String baseUrl;`)
-	w.Line(`  private final ObjectMapper objectMapper;`)
+	g.Models.CreateJsonMapperField(w.Indented())
 	w.Line(`  private final OkHttpClient client;`)
 	w.EmptyLine()
 	w.Line(`  public %s(String baseUrl) {`, className)
@@ -127,14 +130,18 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		if !response.Type.Definition.IsEmpty() {
 			responseJavaType := g.Types.Java(&response.Type.Definition)
 			w.Line(`%s responseBody;`, responseJavaType)
-			responseBody, exception := g.Models.ReadJson("response.body().string()", responseJavaType)
 			if response.Type.Definition.Plain == spec.TypeString {
-				responseBody = `response.body().string()`
+				generateClientTryCatch(w,
+					fmt.Sprintf(`responseBody = response.body().string();`),
+					`IOException`, `e`,
+					`"Failed to convert response body to string " + e.getMessage()`)
+			} else {
+				responseBody, exception := g.Models.ReadJson("response.body().string()", responseJavaType)
+				generateClientTryCatch(w,
+					fmt.Sprintf(`responseBody = %s;`, responseBody),
+					exception, `e`,
+					`"Failed to deserialize response body " + e.getMessage()`)
 			}
-			generateClientTryCatch(w,
-				fmt.Sprintf(`responseBody = %s;`, responseBody),
-				exception, `e`,
-				`"Failed to deserialize response body " + e.getMessage()`)
 			if len(operation.Responses) > 1 {
 				w.Line(`return new %s.%s(responseBody);`, responses.InterfaceName(operation), response.Name.PascalCase())
 			} else {

@@ -13,8 +13,9 @@ type Generator interface {
 	VersionModels(version *spec.Version, thePackage packages.Module) []sources.CodeFile
 	ReadJson(jsonStr string, javaType string) (string, string)
 	WriteJson(varData string) (string, string)
+	CreateJsonMapperField(w *sources.Writer)
 	InitJsonMapper(w *sources.Writer)
-	Imports(w *sources.Writer)
+	JsonImports() []string
 }
 
 func NewGenerator(jsonlib string) Generator {

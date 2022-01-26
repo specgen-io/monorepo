@@ -20,16 +20,17 @@ func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 	return &JacksonGenerator{types}
 }
 
-func (g *JacksonGenerator) Imports(w *sources.Writer) {
-	w.Line(`import com.fasterxml.jackson.databind.*;`)
-	w.Line(`import com.fasterxml.jackson.annotation.*;`)
-	w.Line(`import com.fasterxml.jackson.annotation.JsonSubTypes.*;`)
-	w.Line(`import com.fasterxml.jackson.core.type.TypeReference;`)
-	w.EmptyLine()
-	w.Line(`import java.math.BigDecimal;`)
-	w.Line(`import java.time.*;`)
-	w.Line(`import java.util.*;`)
-	w.Line(`import java.io.*;`)
+func (g *JacksonGenerator) JsonImports() []string {
+	return []string{
+		`com.fasterxml.jackson.databind.*`,
+		`com.fasterxml.jackson.annotation.*`,
+		`com.fasterxml.jackson.annotation.JsonSubTypes.*`,
+		`com.fasterxml.jackson.core.type.TypeReference`,
+	}
+}
+
+func (g *JacksonGenerator) CreateJsonMapperField(w *sources.Writer) {
+	w.Line(`private final ObjectMapper objectMapper;`)
 }
 
 func (g *JacksonGenerator) InitJsonMapper(w *sources.Writer) {
@@ -96,7 +97,9 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	g.Imports(w)
+	GenerateImports(w, g.JsonImports())
+	w.EmptyLine()
+	GenerateImports(w, GeneralImports())
 	w.EmptyLine()
 	className := model.Name.PascalCase()
 	w.Line(`public class %s {`, className)
@@ -153,7 +156,10 @@ func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
-	g.Imports(w)
+	GenerateImports(w, g.JsonImports())
+	w.EmptyLine()
+	GenerateImports(w, GeneralImports())
+	w.EmptyLine()
 	w.EmptyLine()
 	enumName := model.Name.PascalCase()
 	w.Line(`public enum %s {`, enumName)
@@ -173,7 +179,9 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 	w := writer.NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
-	g.Imports(w)
+	GenerateImports(w, g.JsonImports())
+	w.EmptyLine()
+	GenerateImports(w, GeneralImports())
 	w.EmptyLine()
 	if model.OneOf.Discriminator != nil {
 		w.Line(`@JsonTypeInfo(`)
