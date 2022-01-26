@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genjava/imports"
 	"github.com/specgen-io/specgen/v2/genjava/packages"
 	"github.com/specgen-io/specgen/v2/genjava/responses"
 	"github.com/specgen-io/specgen/v2/genjava/writer"
@@ -24,11 +25,10 @@ func (g *Generator) serviceInterface(api *spec.Api, apiPackage packages.Module, 
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
-	w.Line(`import java.math.BigDecimal;`)
-	w.Line(`import java.time.*;`)
-	w.Line(`import java.util.*;`)
-	w.EmptyLine()
-	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
+	imports := imports.New()
+	imports.Add(g.Types.Imports()...)
+	imports.Add(modelsVersionPackage.PackageStar)
+	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`public interface %s {`, serviceInterfaceName(api))
 	for _, operation := range api.Operations {
