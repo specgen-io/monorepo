@@ -25,9 +25,10 @@ func (g *Generator) serviceInterface(api *spec.Api, apiPackage packages.Module, 
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
-	imports.GenerateImports(w, g.Types.Imports())
-	w.EmptyLine()
-	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
+	imports := imports.New()
+	imports.Add(g.Types.Imports()...)
+	imports.Add(modelsVersionPackage.PackageStar)
+	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`public interface %s {`, serviceInterfaceName(api))
 	for _, operation := range api.Operations {
