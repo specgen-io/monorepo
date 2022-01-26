@@ -30,7 +30,7 @@ func (g *JacksonGenerator) JsonImports() []string {
 }
 
 func (g *JacksonGenerator) CreateJsonMapperField(w *sources.Writer) {
-	w.Line(`private final ObjectMapper objectMapper;`)
+	w.Line(`private ObjectMapper objectMapper;`)
 }
 
 func (g *JacksonGenerator) InitJsonMapper(w *sources.Writer) {
