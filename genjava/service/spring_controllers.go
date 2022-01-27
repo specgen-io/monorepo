@@ -84,7 +84,7 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 	if operation.Body != nil {
 		if operation.Body.Type.Definition.Plain != spec.TypeString {
 			bodyJavaType := g.Types.Java(&operation.Body.Type.Definition)
-			requestBody, exception := g.Models.ReadJson("bodyStr", bodyJavaType)
+			requestBody, exception := g.Models.ReadJson("bodyStr", &operation.Body.Type.Definition)
 			w.Line(`  %s requestBody;`, bodyJavaType)
 			w.Line(`  try {`)
 			w.Line(`    requestBody = %s;`, requestBody)
@@ -111,7 +111,7 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 				responseVar := "result"
 				if resp.Type.Definition.Plain != spec.TypeString {
 					responseVar = "responseJson"
-					result, _ := g.Models.WriteJson("result")
+					result, _ := g.Models.WriteJson("result", &resp.Type.Definition)
 					w.Line(`  String %s = %s;`, responseVar, result)
 				}
 				w.EmptyLine()
@@ -130,7 +130,7 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 			w.EmptyLine()
 			w.Line(`  if (result instanceof %s.%s) {`, responses.InterfaceName(operation), resp.Name.PascalCase())
 			if !resp.Type.Definition.IsEmpty() {
-				responseWrite, _ := g.Models.WriteJson(fmt.Sprintf(`((%s.%s) result).body`, responses.InterfaceName(operation), resp.Name.PascalCase()))
+				responseWrite, _ := g.Models.WriteJson(fmt.Sprintf(`((%s.%s) result).body`, responses.InterfaceName(operation), resp.Name.PascalCase()), &resp.Type.Definition)
 				w.Line(`    String responseJson = %s;`, responseWrite)
 				w.Line(`    logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
 				w.Line(`    return new ResponseEntity<>(responseJson, headers, HttpStatus.%s);`, resp.Name.UpperCase())

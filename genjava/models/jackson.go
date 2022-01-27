@@ -39,11 +39,11 @@ func (g *JacksonGenerator) InitJsonMapper(w *sources.Writer) {
 	w.Line(`Json.setupObjectMapper(objectMapper);`)
 }
 
-func (g *JacksonGenerator) ReadJson(varJson string, typeJava string) (string, string) {
-	return fmt.Sprintf(`objectMapper.readValue(%s, new TypeReference<%s>() {})`, varJson, typeJava), `IOException`
+func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
+	return fmt.Sprintf(`objectMapper.readValue(%s, new TypeReference<%s>() {})`, varJson, g.Types.Java(typ)), `IOException`
 }
 
-func (g *JacksonGenerator) WriteJson(varData string) (string, string) {
+func (g *JacksonGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
 	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `IOException`
 }
 
