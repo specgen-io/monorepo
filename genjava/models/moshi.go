@@ -194,7 +194,7 @@ func (g *MoshiGenerator) SetupLibrary(thePackage packages.Module) []sources.Code
 package [[.PackageName]];
 
 import com.squareup.moshi.Moshi;
-import test_client.json.adapters.*;
+import [[.PackageName]].adapters.*;
 
 public class Json {
 	public static void setupMoshiAdapters(Moshi.Builder moshiBuilder) {
