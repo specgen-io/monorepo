@@ -84,7 +84,7 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 			mediaType = "text/plain"
 		} else {
 			w.Line(`  String bodyJson;`)
-			bodyJson, exception := g.Models.WriteJson("body")
+			bodyJson, exception := g.Models.WriteJson("body", &operation.Body.Type.Definition)
 			generateClientTryCatch(w.Indented(),
 				fmt.Sprintf(`bodyJson = %s;`, bodyJson),
 				exception, `e`,
@@ -136,7 +136,7 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 					`IOException`, `e`,
 					`"Failed to convert response body to string " + e.getMessage()`)
 			} else {
-				responseBody, exception := g.Models.ReadJson("response.body().string()", responseJavaType)
+				responseBody, exception := g.Models.ReadJson("response.body().string()", &response.Type.Definition)
 				generateClientTryCatch(w,
 					fmt.Sprintf(`responseBody = %s;`, responseBody),
 					exception, `e`,

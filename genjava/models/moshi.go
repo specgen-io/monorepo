@@ -22,23 +22,37 @@ func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
 }
 
 func (g *MoshiGenerator) JsonImports() []string {
-	return []string{`com.squareup.moshi.Json`}
+	return []string{`com.squareup.moshi.*`}
 }
 
 func (g *MoshiGenerator) CreateJsonMapperField(w *sources.Writer) {
-	panic("This is not implemented yet!!!")
+	w.Line(`private Moshi moshi;`)
 }
 
 func (g *MoshiGenerator) InitJsonMapper(w *sources.Writer) {
-	panic("This is not implemented yet!!!")
+	w.Line(`Moshi.Builder moshiBuilder = new Moshi.Builder();`)
+	w.Line(`Json.setupMoshiAdapters(moshiBuilder);`)
+	w.Line(`this.moshi = moshiBuilder.build();`)
 }
 
-func (g *MoshiGenerator) ReadJson(varJson string, typeJava string) (string, string) {
-	panic("This is not implemented yet!!!")
+func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
+	adapter := fmt.Sprintf(`adapter(%s.class)`, g.Types.Java(typ))
+	if typ.Node == spec.MapType {
+		typeJava := g.Types.Java(typ.Child)
+		adapter = fmt.Sprintf(`<Map<String, %s>>adapter(Types.newParameterizedType(Map.class, String.class, %s.class))`, typeJava, typeJava)
+	}
+
+	return fmt.Sprintf(`moshi.%s.fromJson(%s)`, adapter, varJson), `IOException`
 }
 
-func (g *MoshiGenerator) WriteJson(varData string) (string, string) {
-	panic("This is not implemented yet!!!")
+func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
+	adapterParam := fmt.Sprintf(`%s.class`, g.Types.Java(typ))
+	if typ.Node == spec.MapType {
+		typeJava := g.Types.Java(typ.Child)
+		adapterParam = fmt.Sprintf(`Types.newParameterizedType(Map.class, String.class, %s.class)`, typeJava)
+	}
+
+	return fmt.Sprintf(`moshi.adapter(%s).toJson(%s)`, adapterParam, varData), `AssertionError`
 }
 
 func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage packages.Module) []sources.CodeFile {
@@ -175,7 +189,31 @@ func (g *MoshiGenerator) modelOneOfImplementation(w *sources.Writer, item *spec.
 
 func (g *MoshiGenerator) SetupLibrary(thePackage packages.Module) []sources.CodeFile {
 	adaptersPackage := thePackage.Subpackage("adapters")
+
+	code := `
+package [[.PackageName]];
+
+import com.squareup.moshi.Moshi;
+import test_client.json.adapters.*;
+
+public class Json {
+	public static void setupMoshiAdapters(Moshi.Builder moshiBuilder) {
+		moshiBuilder
+			.add(new BigDecimalAdapter())
+			.add(new UuidAdapter())
+			.add(new LocalDateAdapter())
+			.add(new LocalDateTimeAdapter());
+	}
+}
+`
+
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+
 	files := []sources.CodeFile{}
+	files = append(files, sources.CodeFile{
+		Path:    thePackage.GetPath("Json.java"),
+		Content: strings.TrimSpace(code),
+	})
 	files = append(files, *moshiBigDecimalAdapter(adaptersPackage))
 	files = append(files, *moshiLocalDateAdapter(adaptersPackage))
 	files = append(files, *moshiLocalDateTimeAdapter(adaptersPackage))
