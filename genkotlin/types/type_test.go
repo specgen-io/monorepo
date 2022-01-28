@@ -1,4 +1,4 @@
-package genkotlin
+package types
 
 import (
 	"github.com/specgen-io/specgen/v2/spec"

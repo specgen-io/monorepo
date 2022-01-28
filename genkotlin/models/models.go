@@ -1,7 +1,10 @@
-package genkotlin
+package models
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genkotlin/modules"
+	"github.com/specgen-io/specgen/v2/genkotlin/types"
+	"github.com/specgen-io/specgen/v2/genkotlin/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
@@ -12,22 +15,22 @@ func GenerateModels(specification *spec.Spec, packageName string, generatePath s
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
 	}
-	mainPackage := Package(generatePath, packageName)
+	mainPackage := modules.Package(generatePath, packageName)
 
 	jsonPackage := mainPackage.Subpackage("json")
-	sources.AddGenerated(generateJson(jsonPackage))
+	sources.AddGenerated(GenerateJson(jsonPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		sources.AddGenerated(generateVersionModels(&version, modelsVersionPackage))
+		sources.AddGenerated(GenerateVersionModels(&version, modelsVersionPackage))
 	}
 
 	return sources
 }
 
-func generateJson(thePackage Module) *sources.CodeFile {
+func GenerateJson(thePackage modules.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -51,8 +54,8 @@ fun setupObjectMapper(objectMapper: ObjectMapper): ObjectMapper {
 	}
 }
 
-func generateVersionModels(version *spec.Version, thePackage Module) *sources.CodeFile {
-	w := NewKotlinWriter()
+func GenerateVersionModels(version *spec.Version, thePackage modules.Module) *sources.CodeFile {
+	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
 	addImports(w)
@@ -95,7 +98,7 @@ func generateObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`data class %s(`, className)
 	for _, field := range model.Object.Fields {
 		w.Line(`  %s`, getJsonPropertyAnnotation(&field))
-		w.Line(`  val %s: %s,`, field.Name.CamelCase(), KotlinType(&field.Type.Definition))
+		w.Line(`  val %s: %s,`, field.Name.CamelCase(), types.KotlinType(&field.Type.Definition))
 	}
 
 	if isKotlinArrayType(model) {
@@ -179,7 +182,7 @@ func generateOneOfModels(w *sources.Writer, model *spec.NamedModel) {
 	}
 	w.Line(`sealed interface %s {`, interfaceName)
 	for _, item := range model.OneOf.Items {
-		itemType := KotlinType(&item.Type.Definition)
+		itemType := types.KotlinType(&item.Type.Definition)
 		w.Line(`  @JsonTypeName("%s")`, item.Name.Source)
 		w.Line(`  data class %s(@field:JsonIgnore val data: %s): %s {`, item.Name.PascalCase(), itemType, interfaceName)
 		w.Line(`    @get:JsonUnwrapped`)

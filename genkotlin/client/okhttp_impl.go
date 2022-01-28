@@ -1,12 +1,17 @@
-package genkotlin
+package client
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genkotlin/modules"
+	"github.com/specgen-io/specgen/v2/genkotlin/responses"
+	"github.com/specgen-io/specgen/v2/genkotlin/types"
+	"github.com/specgen-io/specgen/v2/genkotlin/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
+	"strings"
 )
 
-func generateClientsImplementations(version *spec.Version, thePackage Module, modelsVersionPackage Module, jsonPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+func generateClientsImplementations(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
@@ -15,10 +20,10 @@ func generateClientsImplementations(version *spec.Version, thePackage Module, mo
 	return files
 }
 
-func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Module, jsonPackage Module, utilsPackage Module, mainPackage Module) []sources.CodeFile {
+func generateClient(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
-	w := NewKotlinWriter()
+	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
 	w.Line(`import com.fasterxml.jackson.core.JsonProcessingException`)
@@ -54,7 +59,7 @@ func generateClient(api *spec.Api, apiPackage Module, modelsVersionPackage Modul
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, generateResponseInterface(&operation, apiPackage, modelsVersionPackage)...)
+			files = append(files, responses.GenerateResponseInterface(&operation, apiPackage, modelsVersionPackage)...)
 		}
 	}
 
@@ -71,7 +76,7 @@ func generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	url := operation.FullUrl()
 	requestBody := "null"
 
-	w.Line(`fun %s {`, generateResponsesSignatures(operation))
+	w.Line(`fun %s {`, responses.GenerateResponsesSignatures(operation))
 	bodyDataVar := "bodyJson"
 	mediaType := "application/json"
 	if operation.Body != nil {
@@ -88,10 +93,10 @@ func generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	}
 	w.Line(`  val url = UrlBuilder(baseUrl)`)
 	if operation.Api.Apis.GetUrl() != "" {
-		w.Line(`  url.addPathSegment("%s")`, TrimSlash(operation.Api.Apis.GetUrl()))
+		w.Line(`  url.addPathSegment("%s")`, trimSlash(operation.Api.Apis.GetUrl()))
 	}
 	for _, urlPart := range operation.Endpoint.UrlParts {
-		part := TrimSlash(urlPart.Part)
+		part := trimSlash(urlPart.Part)
 		if urlPart.Param != nil {
 			w.Line(`  url.addPathSegment(%s)`, urlPart.Param.Name.CamelCase())
 		} else if len(part) > 0 {
@@ -123,7 +128,7 @@ func generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
 		w.IndentWith(3)
 		w.Line(`logger.info("Received response with status code {}", response.code)`)
 		if !response.Type.Definition.IsEmpty() {
-			responseJavaType := KotlinType(&response.Type.Definition)
+			responseJavaType := types.KotlinType(&response.Type.Definition)
 			responseBody := fmt.Sprintf(` objectMapper.readValue(response.body!!.string(), object: TypeReference<%s>(){})`, responseJavaType)
 			if response.Type.Definition.Plain == spec.TypeString {
 				responseBody = `response.body!!.string()`
@@ -178,4 +183,8 @@ func generateThrowClientException(w *sources.Writer, errorMessage string, wrapEx
 		params += ", " + wrapException
 	}
 	w.Line(`throw ClientException(%s)`, params)
+}
+
+func trimSlash(param string) string {
+	return strings.Trim(param, "/")
 }

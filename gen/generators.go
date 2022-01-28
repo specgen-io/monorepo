@@ -3,7 +3,8 @@ package gen
 import (
 	"github.com/specgen-io/specgen/v2/gengo"
 	"github.com/specgen-io/specgen/v2/genjava"
-	"github.com/specgen-io/specgen/v2/genkotlin"
+	"github.com/specgen-io/specgen/v2/genkotlin/client"
+	"github.com/specgen-io/specgen/v2/genkotlin/models"
 	"github.com/specgen-io/specgen/v2/genopenapi"
 	"github.com/specgen-io/specgen/v2/genruby"
 	"github.com/specgen-io/specgen/v2/genscala"
@@ -124,7 +125,7 @@ var ModelsKotlin = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genkotlin.GenerateModels(specification, params[ArgPackageName], params[ArgGeneratePath])
+		return models.GenerateModels(specification, params[ArgPackageName], params[ArgGeneratePath])
 	},
 }
 
@@ -137,7 +138,7 @@ var ClientKotlin = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genkotlin.GenerateClient(specification, params[ArgPackageName], params[ArgGeneratePath])
+		return client.GenerateClient(specification, params[ArgPackageName], params[ArgGeneratePath])
 	},
 }
 

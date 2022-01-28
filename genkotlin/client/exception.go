@@ -1,11 +1,12 @@
-package genkotlin
+package client
 
 import (
+	"github.com/specgen-io/specgen/v2/genkotlin/modules"
 	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
-func generateClientException(thePackage Module) *sources.CodeFile {
+func generateClientException(thePackage modules.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]]
 
