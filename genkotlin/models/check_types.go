@@ -1,4 +1,4 @@
-package genkotlin
+package models
 
 import "github.com/specgen-io/specgen/v2/spec"
 

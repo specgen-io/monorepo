@@ -1,4 +1,4 @@
-package genkotlin
+package types
 
 import (
 	"fmt"

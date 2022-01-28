@@ -1,4 +1,4 @@
-package genkotlin
+package client
 
 import (
 	"fmt"

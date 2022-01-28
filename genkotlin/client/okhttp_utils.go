@@ -1,11 +1,12 @@
-package genkotlin
+package client
 
 import (
+	"github.com/specgen-io/specgen/v2/genkotlin/modules"
 	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
-func generateUtils(thePackage Module) []sources.CodeFile {
+func generateUtils(thePackage modules.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
 	files = append(files, *generateRequestBuilder(thePackage))
@@ -14,7 +15,7 @@ func generateUtils(thePackage Module) []sources.CodeFile {
 	return files
 }
 
-func generateRequestBuilder(thePackage Module) *sources.CodeFile {
+func generateRequestBuilder(thePackage modules.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -53,7 +54,7 @@ class RequestBuilder(method: String, url: HttpUrl, body: RequestBody?) {
 	}
 }
 
-func generateUrlBuilder(thePackage Module) *sources.CodeFile {
+func generateUrlBuilder(thePackage modules.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]]
 

@@ -1,4 +1,4 @@
-package genkotlin
+package modules
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 )
 
 type Module struct {
-	RootPath     string
+	RootPath    string
 	Path        string
 	PackageName string
 	PackageStar string
@@ -16,7 +16,7 @@ type Module struct {
 
 func Package(rootPath string, packageName string) Module {
 	path := fmt.Sprintf(`%s/%s`, rootPath, packageToPath(packageName))
-	return Module{RootPath: rootPath, Path: path, PackageName: packageName, PackageStar: packageName+".*"}
+	return Module{RootPath: rootPath, Path: path, PackageName: packageName, PackageStar: packageName + ".*"}
 }
 
 func (m Module) GetPath(filename string) string {
