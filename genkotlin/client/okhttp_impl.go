@@ -2,64 +2,58 @@ package client
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genkotlin/imports"
 	"github.com/specgen-io/specgen/v2/genkotlin/modules"
 	"github.com/specgen-io/specgen/v2/genkotlin/responses"
-	"github.com/specgen-io/specgen/v2/genkotlin/types"
 	"github.com/specgen-io/specgen/v2/genkotlin/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateClientsImplementations(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []sources.CodeFile {
+func (g *Generator) Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, generateClient(&api, apiPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage)...)
+		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage)...)
 	}
 	return files
 }
 
-func generateClient(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []sources.CodeFile {
+func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
-	w.Line(`import com.fasterxml.jackson.core.JsonProcessingException`)
-	w.Line(`import com.fasterxml.jackson.core.type.TypeReference`)
-	w.Line(`import com.fasterxml.jackson.databind.ObjectMapper`)
-	w.Line(`import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper`)
-	w.Line(`import okhttp3.*`)
-	w.Line(`import okhttp3.MediaType.Companion.toMediaTypeOrNull`)
-	w.Line(`import okhttp3.RequestBody.Companion.toRequestBody`)
-	w.Line(`import org.slf4j.*`)
-	w.Line(`import java.io.*`)
-	w.Line(`import java.math.BigDecimal`)
-	w.Line(`import java.time.*`)
-	w.Line(`import java.util.*`)
-	w.EmptyLine()
-	w.Line(`import %s`, mainPackage.PackageStar)
-	w.Line(`import %s`, utilsPackage.PackageStar)
-	w.Line(`import %s`, modelsVersionPackage.PackageStar)
-	w.Line(`import %s.setupObjectMapper`, jsonPackage.PackageName)
+	imports := imports.New()
+	imports.Add(g.Models.JsonImports()...)
+	imports.Add(g.Types.Imports()...)
+	imports.Add(`okhttp3.*`)
+	imports.Add(`okhttp3.MediaType.Companion.toMediaTypeOrNull`)
+	imports.Add(`okhttp3.RequestBody.Companion.toRequestBody`)
+	imports.Add(`org.slf4j.*`)
+	imports.Add(mainPackage.PackageStar)
+	imports.Add(utilsPackage.PackageStar)
+	imports.Add(fmt.Sprintf(`%s.setupObjectMapper`, jsonPackage.PackageName))
+	imports.Write(w)
 	w.EmptyLine()
 	className := clientName(api)
 	w.Line(`class %s(`, className)
 	w.Line(`  private val baseUrl: String,`)
 	w.Line(`  private val client: OkHttpClient = OkHttpClient(),`)
-	w.Line(`  private val objectMapper: ObjectMapper = setupObjectMapper(jacksonObjectMapper())`)
+	g.Models.InitJsonMapper(w.Indented())
 	w.Line(`) {`)
 	w.Line(`  private val logger: Logger = LoggerFactory.getLogger(%s::class.java)`, className)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		generateClientMethod(w.Indented(), &operation)
+		g.generateClientMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, responses.GenerateResponseInterface(&operation, apiPackage, modelsVersionPackage)...)
+			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage)...)
 		}
 	}
 
@@ -71,12 +65,12 @@ func generateClient(api *spec.Api, apiPackage modules.Module, modelsVersionPacka
 	return files
 }
 
-func generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	requestBody := "null"
 
-	w.Line(`fun %s {`, responses.GenerateResponsesSignatures(operation))
+	w.Line(`fun %s {`, responses.Signature(g.Types, operation))
 	bodyDataVar := "bodyJson"
 	mediaType := "application/json"
 	if operation.Body != nil {
@@ -84,9 +78,10 @@ func generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
 			bodyDataVar = "body"
 			mediaType = "text/plain"
 		} else {
+			bodyJson, exception := g.Models.WriteJson("body", &operation.Body.Type.Definition)
 			generateClientTryCatch(w.Indented(), bodyDataVar,
-				`objectMapper.writeValueAsString(body)`,
-				`JsonProcessingException`, `e`,
+				bodyJson,
+				exception, `e`,
 				`"Failed to serialize JSON " + e.message`)
 			w.EmptyLine()
 		}
@@ -128,15 +123,18 @@ func generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
 		w.IndentWith(3)
 		w.Line(`logger.info("Received response with status code {}", response.code)`)
 		if !response.Type.Definition.IsEmpty() {
-			responseJavaType := types.KotlinType(&response.Type.Definition)
-			responseBody := fmt.Sprintf(` objectMapper.readValue(response.body!!.string(), object: TypeReference<%s>(){})`, responseJavaType)
 			if response.Type.Definition.Plain == spec.TypeString {
-				responseBody = `response.body!!.string()`
+				generateClientTryCatch(w, `responseBody`,
+					`response.body()!!.string()`,
+					`IOException`, `e`,
+					`"Failed to convert response body to string " + e.message`)
+			} else {
+				responseBody, exception := g.Models.ReadJson(`response.body()!!.string()`, &response.Type.Definition)
+				generateClientTryCatch(w, `responseBody`,
+					responseBody,
+					exception, `e`,
+					`"Failed to deserialize response body " + e.message`)
 			}
-			generateClientTryCatch(w, "responseBody",
-				responseBody,
-				`IOException`, `e`,
-				`"Failed to deserialize response body " + e.message`)
 			if len(operation.Responses) > 1 {
 				w.Line(`%s.%s(responseBody)`, serviceResponseInterfaceName(operation), response.Name.PascalCase())
 			} else {
