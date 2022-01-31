@@ -35,6 +35,7 @@ func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersi
 	imports.Add(`org.slf4j.*`)
 	imports.Add(mainPackage.PackageStar)
 	imports.Add(utilsPackage.PackageStar)
+	imports.Add(modelsVersionPackage.PackageStar)
 	imports.Add(fmt.Sprintf(`%s.setupObjectMapper`, jsonPackage.PackageName))
 	imports.Write(w)
 	w.EmptyLine()
