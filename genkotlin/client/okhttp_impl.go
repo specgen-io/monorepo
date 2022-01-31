@@ -127,11 +127,11 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		if !response.Type.Definition.IsEmpty() {
 			if response.Type.Definition.Plain == spec.TypeString {
 				generateClientTryCatch(w, `responseBody`,
-					`response.body()!!.string()`,
+					`response.body!!.string()`,
 					`IOException`, `e`,
 					`"Failed to convert response body to string " + e.message`)
 			} else {
-				responseBody, exception := g.Models.ReadJson(`response.body()!!.string()`, &response.Type.Definition)
+				responseBody, exception := g.Models.ReadJson(`response.body!!.string()`, &response.Type.Definition)
 				generateClientTryCatch(w, `responseBody`,
 					responseBody,
 					exception, `e`,
