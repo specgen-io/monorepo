@@ -27,7 +27,7 @@ func (g *JacksonGenerator) JsonImports() []string {
 		`com.fasterxml.jackson.annotation.*`,
 		`com.fasterxml.jackson.annotation.JsonSubTypes.*`,
 		`com.fasterxml.jackson.core.type.*`,
-		`com.fasterxml.jackson.core.module.kotlin.jacksonObjectMapper`,
+		`com.fasterxml.jackson.module.kotlin.jacksonObjectMapper`,
 	}
 }
 
