@@ -8,22 +8,22 @@ import java.util.*;
 @Mojo(name = "service-java", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class ServiceJavaMojo extends SpecgenAbstractMojo {
 	@Parameter(property = "specFile", defaultValue = "${project.basedir}/spec.yaml", required = true)
-	String specFile;
+	private String specFile;
 
 	@Parameter(property = "jsonlib", defaultValue = "jackson", required = true)
-	String jsonlib;
+	private String jsonlib;
 
 	@Parameter(property = "packageName")
-	String packageName;
+	private String packageName;
 
 	@Parameter(property = "generatePath", defaultValue = "${project.build.directory}/generated-sources/java", required = true)
-	String generatePath;
+	private String generatePath;
 
 	@Parameter(property = "servicesPath")
-	String servicesPath;
+	private String servicesPath;
 
 	@Parameter(name = "swaggerPath")
-	String swaggerPath;
+	private String swaggerPath;
 
 	@Parameter(defaultValue = "${project}", readonly = true, required = true)
 	private MavenProject project;

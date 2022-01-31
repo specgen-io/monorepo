@@ -5,17 +5,21 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func KotlinType(typ *spec.TypeDef) string {
+type Types struct {
+	RawJsonType string
+}
+
+func (t *Types) KotlinType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainKotlinType(typ.Plain)
+		return t.PlainKotlinType(typ.Plain)
 	case spec.NullableType:
-		return KotlinType(typ.Child) + "?"
+		return t.KotlinType(typ.Child) + "?"
 	case spec.ArrayType:
-		child := KotlinType(typ.Child)
+		child := t.KotlinType(typ.Child)
 		return "Array<" + child + ">"
 	case spec.MapType:
-		child := KotlinType(typ.Child)
+		child := t.KotlinType(typ.Child)
 		result := "Map<String, " + child + ">"
 		return result
 	default:
@@ -23,7 +27,7 @@ func KotlinType(typ *spec.TypeDef) string {
 	}
 }
 
-func PlainKotlinType(typ string) string {
+func (t *Types) PlainKotlinType(typ string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "Int"
@@ -46,7 +50,7 @@ func PlainKotlinType(typ string) string {
 	case spec.TypeDateTime:
 		return "LocalDateTime"
 	case spec.TypeJson:
-		return "JsonNode"
+		return t.RawJsonType
 	case spec.TypeEmpty:
 		return "Void"
 	default:
@@ -77,5 +81,14 @@ func dateFormatAnnotationPlain(typ string) string {
 		return "@DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)"
 	default:
 		return ""
+	}
+}
+
+func (t *Types) Imports() []string {
+	return []string{
+		`java.math.BigDecimal`,
+		`java.time.*`,
+		`java.util.*`,
+		`java.io.*`,
 	}
 }
