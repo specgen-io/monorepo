@@ -7,7 +7,7 @@ import (
 )
 
 func Generate(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *sources.Sources {
-	newSources := sources.NewSources()
+	sources := sources.NewSources()
 
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
@@ -17,23 +17,23 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, gene
 
 	generator := NewGenerator(jsonlib)
 
-	newSources.AddGenerated(clientException(mainPackage))
+	sources.AddGenerated(clientException(mainPackage))
 
 	utilsPackage := mainPackage.Subpackage("utils")
-	newSources.AddGeneratedAll(generateUtils(utilsPackage))
+	sources.AddGeneratedAll(generateUtils(utilsPackage))
 
 	jsonPackage := mainPackage.Subpackage("json")
-	newSources.AddGeneratedAll(generator.Models.SetupLibrary(jsonPackage))
+	sources.AddGeneratedAll(generator.Models.SetupLibrary(jsonPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		newSources.AddGeneratedAll(generator.Models.VersionModels(&version, modelsVersionPackage))
+		sources.AddGeneratedAll(generator.Models.VersionModels(&version, modelsVersionPackage))
 
 		clientVersionPackage := versionPackage.Subpackage("clients")
-		newSources.AddGeneratedAll(generator.Clients(&version, clientVersionPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage))
+		sources.AddGeneratedAll(generator.Clients(&version, clientVersionPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage))
 	}
 
-	return newSources
+	return sources
 }

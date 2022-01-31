@@ -17,6 +17,6 @@ func (self *imports) Add(imports ...string) *imports {
 
 func (self *imports) Write(w *sources.Writer) {
 	for _, imp := range self.imports {
-		w.Line(`import %s;`, imp)
+		w.Line(`import %s`, imp)
 	}
 }

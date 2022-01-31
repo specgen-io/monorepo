@@ -10,23 +10,23 @@ import (
 	"strings"
 )
 
-func GenerateResponsesSignatures(operation *spec.NamedOperation) string {
+func Signature(types *types.Types, operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
 			if !response.Type.Definition.IsEmpty() {
-				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinDelimParams(addOperationResponseParams(operation)), types.KotlinType(&response.Type.Definition))
+				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinDelimParams(parameters(operation, types)), types.KotlinType(&response.Type.Definition))
 			} else {
-				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinDelimParams(addOperationResponseParams(operation)))
+				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinDelimParams(parameters(operation, types)))
 			}
 		}
 	}
 	if len(operation.Responses) > 1 {
-		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinDelimParams(addOperationResponseParams(operation)), InterfaceName(operation))
+		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinDelimParams(parameters(operation, types)), InterfaceName(operation))
 	}
 	return ""
 }
 
-func addOperationResponseParams(operation *spec.NamedOperation) []string {
+func parameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
 	if operation.Body != nil {
 		params = append(params, fmt.Sprintf("body: %s", types.KotlinType(&operation.Body.Type.Definition)))
@@ -43,7 +43,7 @@ func addOperationResponseParams(operation *spec.NamedOperation) []string {
 	return params
 }
 
-func GenerateResponseInterface(operation *spec.NamedOperation, apiPackage modules.Module, modelsVersionPackage modules.Module) []sources.CodeFile {
+func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage modules.Module, modelsVersionPackage modules.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
@@ -55,7 +55,7 @@ func GenerateResponseInterface(operation *spec.NamedOperation, apiPackage module
 		if index > 0 {
 			w.EmptyLine()
 		}
-		generateResponsesImplementations(w.Indented(), &response)
+		implementations(w.Indented(), types, &response)
 	}
 	w.Line(`}`)
 
@@ -66,7 +66,7 @@ func GenerateResponseInterface(operation *spec.NamedOperation, apiPackage module
 	return files
 }
 
-func generateResponsesImplementations(w *sources.Writer, response *spec.NamedResponse) {
+func implementations(w *sources.Writer, types *types.Types, response *spec.NamedResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
 	w.Line(`class %s : %s {`, serviceResponseImplementationName, InterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {

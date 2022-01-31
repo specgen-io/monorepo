@@ -7,7 +7,7 @@ import (
 )
 
 func Generate(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *sources.Sources {
-	newSources := sources.NewSources()
+	sources := sources.NewSources()
 
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
@@ -18,14 +18,14 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, gene
 	generator := NewGenerator(jsonlib)
 
 	jsonPackage := mainPackage.Subpackage("json")
-	newSources.AddGeneratedAll(generator.SetupLibrary(jsonPackage))
+	sources.AddGeneratedAll(generator.SetupLibrary(jsonPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		versionModelsPackage := versionPackage.Subpackage("models")
-		newSources.AddGeneratedAll(generator.VersionModels(&version, versionModelsPackage))
+		sources.AddGeneratedAll(generator.VersionModels(&version, versionModelsPackage))
 	}
 
-	return newSources
+	return sources
 }

@@ -8,13 +8,16 @@ import java.util.*;
 @Mojo(name = "client-kotlin", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class ClientKotlinMojo extends SpecgenAbstractMojo {
 	@Parameter(property = "specFile", defaultValue = "${project.basedir}/spec.yaml", required = true)
-	String specFile;
+	private String specFile;
+
+	@Parameter(property = "jsonlib", required = true)
+	private String jsonlib;
 
 	@Parameter(property = "packageName")
-	String packageName;
+	private String packageName;
 
 	@Parameter(property = "generatePath", defaultValue = "${project.build.directory}/generated-sources/kotlin/spec", required = true)
-	String generatePath;
+	private String generatePath;
 
 	@Parameter(defaultValue = "${project}", readonly = true, required = true)
 	private MavenProject project;
@@ -25,6 +28,7 @@ public class ClientKotlinMojo extends SpecgenAbstractMojo {
 
 		List<String> commandlineArgs = new ArrayList<>(List.of(
 			"client-kotlin",
+			"--jsonlib", jsonlib,
 			"--spec-file", specFile,
 			"--generate-path", generatePath
 		));
