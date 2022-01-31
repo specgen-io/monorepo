@@ -136,7 +136,7 @@ var ClientKotlin = Generator{
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
 		{Arg: ArgJsonlib, Required: false, Values: JsonlibKotlinValues},
-		{Arg: ArgPackageName, Required: true},
+		{Arg: ArgPackageName, Required: false},
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
