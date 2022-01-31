@@ -404,7 +404,7 @@ workflows:
       - circleci/start-pipeline:
           name: test-plugins
           repository: specgen-io/test-plugins
-          branch: genkotlin-generators
+          branch: main
           pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
           context: specgen
           requires:
@@ -412,7 +412,7 @@ workflows:
       - circleci/start-pipeline:
           name: test-models
           repository: specgen-io/test-models
-          branch: genkotlin-generators
+          branch: main
           pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
           context: specgen
           requires:
@@ -436,7 +436,7 @@ workflows:
       - circleci/start-pipeline:
           name: generated-code
           repository: specgen-io/generated-code
-          branch: genkotlin-generators
+          branch: main
           pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
           context: specgen
           requires:

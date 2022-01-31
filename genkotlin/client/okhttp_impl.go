@@ -27,6 +27,7 @@ func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersi
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
+	imports.Add(`com.fasterxml.jackson.core.JsonProcessingException`)
 	imports.Add(g.Models.JsonImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Add(`okhttp3.*`)
