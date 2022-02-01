@@ -170,6 +170,9 @@ func (g *MoshiGenerator) modelOneOfImplementation(w *sources.Writer, item *spec.
 	w.Line(`  }`)
 	w.EmptyLine()
 	w.Line(`  public %s(%s data) {`, oneOfItemClassName(item), g.Types.Java(&item.Type.Definition))
+	if !item.Type.Definition.IsNullable() && g.Types.IsReference(&item.Type.Definition) {
+		w.Line(`    if (data == null) { throw new IllegalArgumentException("null value is not allowed"); }`)
+	}
 	w.Line(`  	this.data = data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
@@ -178,6 +181,9 @@ func (g *MoshiGenerator) modelOneOfImplementation(w *sources.Writer, item *spec.
 	w.Line(`  }`)
 	w.EmptyLine()
 	w.Line(`  public void setData(%s data) {`, g.Types.Java(&item.Type.Definition))
+	if !item.Type.Definition.IsNullable() && g.Types.IsReference(&item.Type.Definition) {
+		w.Line(`    if (data == null) { throw new IllegalArgumentException("null value is not allowed"); }`)
+	}
 	w.Line(`    this.data = data;`)
 	w.Line(`  }`)
 	w.EmptyLine()
@@ -190,6 +196,18 @@ func (g *MoshiGenerator) modelOneOfImplementation(w *sources.Writer, item *spec.
 func (g *MoshiGenerator) SetupLibrary(thePackage packages.Module) []sources.CodeFile {
 	adaptersPackage := thePackage.Subpackage("adapters")
 
+	files := []sources.CodeFile{}
+	files = append(files, *setupAdapters(thePackage))
+	files = append(files, *bigDecimalAdapter(adaptersPackage))
+	files = append(files, *localDateAdapter(adaptersPackage))
+	files = append(files, *localDateTimeAdapter(adaptersPackage))
+	files = append(files, *uuidAdapter(adaptersPackage))
+	files = append(files, *unionAdapterFactory(adaptersPackage))
+	files = append(files, *unwrapFieldAdapterFactory(adaptersPackage))
+	return files
+}
+
+func setupAdapters(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -208,20 +226,13 @@ public class Json {
 `
 
 	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-
-	files := []sources.CodeFile{}
-	files = append(files, sources.CodeFile{
+	return &sources.CodeFile{
 		Path:    thePackage.GetPath("Json.java"),
 		Content: strings.TrimSpace(code),
-	})
-	files = append(files, *moshiBigDecimalAdapter(adaptersPackage))
-	files = append(files, *moshiLocalDateAdapter(adaptersPackage))
-	files = append(files, *moshiLocalDateTimeAdapter(adaptersPackage))
-	files = append(files, *moshiUuidAdapter(adaptersPackage))
-	return files
+	}
 }
 
-func moshiBigDecimalAdapter(thePackage packages.Module) *sources.CodeFile {
+func bigDecimalAdapter(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -259,7 +270,7 @@ public class BigDecimalAdapter {
 	}
 }
 
-func moshiLocalDateAdapter(thePackage packages.Module) *sources.CodeFile {
+func localDateAdapter(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -287,7 +298,7 @@ public class LocalDateAdapter {
 	}
 }
 
-func moshiLocalDateTimeAdapter(thePackage packages.Module) *sources.CodeFile {
+func localDateTimeAdapter(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -315,7 +326,7 @@ public class LocalDateTimeAdapter {
 	}
 }
 
-func moshiUuidAdapter(thePackage packages.Module) *sources.CodeFile {
+func uuidAdapter(thePackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -339,6 +350,387 @@ public class UuidAdapter {
 	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
 	return &sources.CodeFile{
 		Path:    thePackage.GetPath("UuidAdapter.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func unionAdapterFactory(thePackage packages.Module) *sources.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import com.squareup.moshi.*;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.util.*;
+import javax.annotation.*;
+
+public final class UnionAdapterFactory<T> implements JsonAdapter.Factory {
+    final Class<T> baseType;
+    final String discriminator;
+    final List<String> tags;
+    final List<Type> subtypes;
+    @Nullable final JsonAdapter<Object> fallbackAdapter;
+
+    UnionAdapterFactory(
+            Class<T> baseType,
+            String discriminator,
+            List<String> tags,
+            List<Type> subtypes,
+            @Nullable JsonAdapter<Object> fallbackAdapter) {
+        this.baseType = baseType;
+        this.discriminator = discriminator;
+        this.tags = tags;
+        this.subtypes = subtypes;
+        this.fallbackAdapter = fallbackAdapter;
+    }
+
+    /**
+     * @param baseType The base type for which this factory will create adapters. Cannot be Object.
+     *     JSON object.
+     */
+    @CheckReturnValue
+    public static <T> UnionAdapterFactory<T> of(Class<T> baseType) {
+        if (baseType == null) throw new NullPointerException("baseType == null");
+        return new UnionAdapterFactory<>(baseType, null, Collections.<String>emptyList(), Collections.<Type>emptyList(), null);
+    }
+
+    /** Returns a new factory that decodes instances of {@code subtype}. */
+    public UnionAdapterFactory<T> withDiscriminator(String discriminator) {
+        if (discriminator == null) throw new NullPointerException("discriminator == null");
+        return new UnionAdapterFactory<>(baseType, discriminator, tags, subtypes, fallbackAdapter);
+    }
+
+    /** Returns a new factory that decodes instances of {@code subtype}. */
+    public UnionAdapterFactory<T> withSubtype(Class<? extends T> subtype, String tag) {
+        if (subtype == null) throw new NullPointerException("subtype == null");
+        if (tag == null) throw new NullPointerException("tag == null");
+        if (tags.contains(tag)) {
+            throw new IllegalArgumentException("Tags must be unique.");
+        }
+        List<String> newTags = new ArrayList<>(tags);
+        newTags.add(tag);
+        List<Type> newSubtypes = new ArrayList<>(subtypes);
+        newSubtypes.add(subtype);
+        return new UnionAdapterFactory<>(baseType, discriminator, newTags, newSubtypes, fallbackAdapter);
+    }
+
+    /**
+     * Returns a new factory that with default to {@code fallbackJsonAdapter.fromJson(reader)} upon
+     * decoding of unrecognized tags.
+     *
+     * <p>The {@link JsonReader} instance will not be automatically consumed, so make sure to consume
+     * it within your implementation of {@link JsonAdapter#fromJson(JsonReader)}
+     */
+    public UnionAdapterFactory<T> withFallbackAdapter(@Nullable JsonAdapter<Object> fallbackJsonAdapter) {
+        return new UnionAdapterFactory<>(baseType, discriminator, tags, subtypes, fallbackJsonAdapter);
+    }
+
+    /**
+     * Returns a new factory that will default to {@code defaultValue} upon decoding of unrecognized
+     * tags. The default value should be immutable.
+     */
+    public UnionAdapterFactory<T> withDefaultValue(@Nullable T defaultValue) {
+        return withFallbackAdapter(buildFallbackAdapter(defaultValue));
+    }
+
+    private JsonAdapter<Object> buildFallbackAdapter(final T defaultValue) {
+        return new JsonAdapter<Object>() {
+            @Override
+            public @Nullable Object fromJson(JsonReader reader) throws IOException {
+                reader.skipValue();
+                return defaultValue;
+            }
+
+            @Override
+            public void toJson(JsonWriter writer, Object value) throws IOException {
+                throw new IllegalArgumentException("Expected one of " + subtypes + " but found " + value + ", a " + value.getClass() + ". Register this subtype.");
+            }
+        };
+    }
+
+    @Override
+    public JsonAdapter<?> create(Type type, Set<? extends Annotation> annotations, Moshi moshi) {
+        if (Types.getRawType(type) != baseType || !annotations.isEmpty()) {
+            return null;
+        }
+
+        List<JsonAdapter<Object>> jsonAdapters = new ArrayList<>(subtypes.size());
+        for (int i = 0, size = subtypes.size(); i < size; i++) {
+            jsonAdapters.add(moshi.adapter(subtypes.get(i)));
+        }
+
+        if (discriminator != null) {
+            return new UnionDiscriminatorAdapter(discriminator, tags, subtypes, jsonAdapters, fallbackAdapter).nullSafe();
+        } else {
+            return new UnionWrapperAdapter(tags, subtypes, jsonAdapters, fallbackAdapter).nullSafe();
+        }
+    }
+
+    static final class UnionDiscriminatorAdapter extends JsonAdapter<Object> {
+        final String discriminator;
+        final List<String> tags;
+        final List<Type> subtypes;
+        final List<JsonAdapter<Object>> adapters;
+        @Nullable final JsonAdapter<Object> fallbackAdapter;
+        final JsonReader.Options discriminatorOptions;
+        final JsonReader.Options tagsOptions;
+
+        UnionDiscriminatorAdapter(
+                String discriminator,
+                List<String> tags,
+                List<Type> subtypes,
+                List<JsonAdapter<Object>> adapters,
+                @Nullable JsonAdapter<Object> fallbackAdapter) {
+            this.discriminator = discriminator;
+            this.tags = tags;
+            this.subtypes = subtypes;
+            this.adapters = adapters;
+            this.fallbackAdapter = fallbackAdapter;
+
+            this.discriminatorOptions = JsonReader.Options.of(discriminator);
+            this.tagsOptions = JsonReader.Options.of(tags.toArray(new String[0]));
+        }
+
+        @Override
+        public Object fromJson(JsonReader reader) throws IOException {
+            final int tagIndex = getTagIndex(reader);
+            JsonAdapter<Object> adapter = fallbackAdapter;
+            if (tagIndex != -1) {
+                adapter = adapters.get(tagIndex);
+            }
+            return adapter.fromJson(reader);
+        }
+
+        @Override
+        public void toJson(JsonWriter writer, Object value) throws IOException {
+            int tagIndex = getTagIndex(value);
+            if (tagIndex == -1) {
+                fallbackAdapter.toJson(writer, value);
+            } else {
+                final JsonAdapter<Object> adapter = adapters.get(tagIndex);
+                writer.beginObject();
+                writer.name(discriminator).value(tags.get(tagIndex));
+                int flattenToken = writer.beginFlatten();
+                adapter.toJson(writer, value);
+                writer.endFlatten(flattenToken);
+                writer.endObject();
+            }
+        }
+
+        private int getTagIndex(JsonReader reader) throws IOException {
+            JsonReader peeked = reader.peekJson();
+            peeked.setFailOnUnknown(false);
+            try {
+                peeked.beginObject();
+                while (peeked.hasNext()) {
+                    if (peeked.selectName(discriminatorOptions) == -1) {
+                        peeked.skipName();
+                        peeked.skipValue();
+                        continue;
+                    }
+
+                    int tagIndex = peeked.selectString(tagsOptions);
+                    if (tagIndex == -1 && this.fallbackAdapter == null) {
+                        throw new JsonDataException("Expected one of " + tags + " for key '" + discriminator + "' but found '" + peeked.nextString() + "'. Register a subtype for this tag.");
+                    }
+                    return tagIndex;
+                }
+
+                throw new JsonDataException("Missing discriminator field " + discriminator);
+            } finally {
+                peeked.close();
+            }
+        }
+
+        private int getTagIndex(Object value) {
+            Class<?> type = value.getClass();
+            int tagIndex = subtypes.indexOf(type);
+            if (tagIndex == -1 && fallbackAdapter == null) {
+                throw new IllegalArgumentException("Expected one of " + subtypes + " but found " + value + ", a " + value.getClass() + ". Register this subtype.");
+            } else {
+                return tagIndex;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "UnionDiscriminatorAdapter(" + discriminator + ")";
+        }
+    }
+
+    static final class UnionWrapperAdapter extends JsonAdapter<Object> {
+        final List<String> tags;
+        final List<Type> subtypes;
+        final List<JsonAdapter<Object>> adapters;
+        @Nullable final JsonAdapter<Object> fallbackAdapter;
+        final JsonReader.Options tagsOptions;
+
+        UnionWrapperAdapter(
+                List<String> tags,
+                List<Type> subtypes,
+                List<JsonAdapter<Object>> adapters,
+                @Nullable JsonAdapter<Object> fallbackAdapter) {
+            this.tags = tags;
+            this.subtypes = subtypes;
+            this.adapters = adapters;
+            this.fallbackAdapter = fallbackAdapter;
+
+            this.tagsOptions = JsonReader.Options.of(tags.toArray(new String[0]));
+        }
+
+        @Override
+        public Object fromJson(JsonReader reader) throws IOException {
+            int tagIndex = getTagIndex(reader);
+            if (tagIndex == -1) {
+                return this.fallbackAdapter.fromJson(reader);
+            } else {
+                reader.beginObject();
+                reader.skipName();
+                final Object value = adapters.get(tagIndex).fromJson(reader);
+                reader.endObject();
+                return value;
+            }
+        }
+
+        @Override
+        public void toJson(JsonWriter writer, Object value) throws IOException {
+            int tagIndex = getTagIndex(value);
+            if (tagIndex == -1) {
+                fallbackAdapter.toJson(writer, value);
+            } else {
+                final JsonAdapter<Object> adapter = adapters.get(tagIndex);
+                writer.beginObject();
+                writer.name(tags.get(tagIndex));
+                adapter.toJson(writer, value);
+                writer.endObject();
+            }
+        }
+
+        private int getTagIndex(JsonReader reader) throws IOException {
+            JsonReader peeked = reader.peekJson();
+            peeked.setFailOnUnknown(false);
+            try {
+                peeked.beginObject();
+                int tagIndex = peeked.selectName(tagsOptions);
+                if (tagIndex == -1 && this.fallbackAdapter == null) {
+                    throw new JsonDataException("Expected one of keys:" + tags + "' but found '" + peeked.nextString() + "'. Register a subtype for this tag.");
+                }
+                return tagIndex;
+            } finally {
+                peeked.close();
+            }
+        }
+
+        private int getTagIndex(Object value) {
+            Class<?> type = value.getClass();
+            int tagIndex = subtypes.indexOf(type);
+            if (tagIndex == -1 && fallbackAdapter == null) {
+                throw new IllegalArgumentException("Expected one of " + subtypes + " but found " + value + ", a " + value.getClass() + ". Register this subtype.");
+            }
+            return tagIndex;
+        }
+
+        @Override
+        public String toString() {
+            return "UnionWrapperAdapter";
+        }
+    }
+}
+`
+
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath("UnionAdapterFactory.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func unwrapFieldAdapterFactory(thePackage packages.Module) *sources.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import com.squareup.moshi.*;
+import org.jetbrains.annotations.Nullable;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
+import java.util.Set;
+
+public final class UnwrapFieldAdapterFactory<T> implements JsonAdapter.Factory {
+    final Class<T> type;
+
+    public UnwrapFieldAdapterFactory(Class<T> type) {
+        this.type = type;
+    }
+
+    @Nullable
+    @Override
+    public JsonAdapter<?> create(Type type, Set<? extends Annotation> annotations, Moshi moshi) {
+        if (Types.getRawType(type) != this.type || !annotations.isEmpty()) {
+            return null;
+        }
+
+        final Field[] fields = this.type.getDeclaredFields();
+        if (fields.length != 1) {
+            throw new RuntimeException("Type "+type.getTypeName()+" has "+fields.length+" fields, unwrap adapter can be used only with single-field types");
+        }
+        var field = fields[0];
+
+        Constructor<T> constructor;
+        try {
+            constructor = this.type.getDeclaredConstructor(field.getType());
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("Type "+type.getTypeName()+" does not have constructor with single parameter of type "+ field.getType().getName()+", it's required for unwrap adapter");
+        }
+
+        JsonAdapter<?> fieldAdapter = moshi.adapter(field.getType());
+        return new UnwrapFieldAdapter(constructor, field, fieldAdapter);
+    }
+
+    public class UnwrapFieldAdapter<O, I> extends JsonAdapter<Object> {
+        private Constructor<O> constructor;
+        private Field field;
+        private JsonAdapter<I> fieldAdapter;
+
+        public UnwrapFieldAdapter(Constructor<O> constructor, Field field, JsonAdapter<I> fieldAdapter) {
+            this.constructor = constructor;
+            this.field = field;
+            this.fieldAdapter = fieldAdapter;
+        }
+
+        @Override
+        public Object fromJson(JsonReader reader) throws IOException {
+            I fieldValue = fieldAdapter.fromJson(reader);
+            try {
+                return constructor.newInstance(fieldValue);
+            } catch (Throwable e) {
+                throw new IOException("Failed to create object with constructor "+constructor.getName(), e);
+            }
+        }
+
+        @Override
+        public void toJson(JsonWriter writer, Object value) throws IOException {
+            I fieldValue;
+            try {
+                fieldValue = (I)field.get(value);
+            } catch (IllegalAccessException e) {
+                throw new IOException("Failed to get value of field "+field.getName(), e);
+            }
+            fieldAdapter.toJson(writer, fieldValue);
+        }
+
+        @Override
+        public String toString() {
+            return "UnwrapFieldAdapter(" + field.getName() + ")";
+        }
+    }
+}
+`
+
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath("UnwrapFieldAdapterFactory.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
