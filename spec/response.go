@@ -14,6 +14,14 @@ type NamedResponse struct {
 
 type Responses []NamedResponse
 
+func (response *NamedResponse) BodyKind() BodyKind {
+	return kindOf(&response.Definition)
+}
+
+func (response *NamedResponse) BodyIs(kind BodyKind) bool {
+	return kindOf(&response.Definition) == kind
+}
+
 func (value *Responses) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
 		return yamlError(node, "response should be YAML mapping")

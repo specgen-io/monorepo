@@ -27,6 +27,14 @@ func (operation *Operation) GetResponse(status string) *NamedResponse {
 	return nil
 }
 
+func (operation *Operation) BodyKind() BodyKind {
+	return kindOf(operation.Body)
+}
+
+func (operation *Operation) BodyIs(kind BodyKind) bool {
+	return kindOf(operation.Body) == kind
+}
+
 func (operation *Operation) HasParams() bool {
 	return len(operation.QueryParams) > 0 || len(operation.HeaderParams) > 0 || len(operation.Endpoint.UrlParams) > 0
 }
