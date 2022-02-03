@@ -155,15 +155,15 @@ func generateClientOperationImplementation(w *sources.Writer, operation *spec.Na
 	}
 
 	addParamsWriting(w, operation.HeaderParams, "headers")
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`logger.debug(s"Request to url: ${url}, body: ${body}")`)
-		} else {
-			w.Line(`val bodyJson = Jsoner.write(body)`)
-			w.Line(`logger.debug(s"Request to url: ${url}, body: ${bodyJson}")`)
-		}
-	} else {
+	if operation.BodyIs(spec.BodyEmpty) {
 		w.Line(`logger.debug(s"Request to url: ${url}")`)
+	}
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`logger.debug(s"Request to url: ${url}, body: ${body}")`)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`val bodyJson = Jsoner.write(body)`)
+		w.Line(`logger.debug(s"Request to url: ${url}, body: ${bodyJson}")`)
 	}
 	w.Line(`val response: Future[Response[String]] =`)
 	w.Line(`  sttp`)
@@ -172,14 +172,13 @@ func generateClientOperationImplementation(w *sources.Writer, operation *spec.Na
 	if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
 		w.Line(`    .headers(headers.params:_*)`)
 	}
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`    .header("Content-Type", "text/plain")`)
-			w.Line(`    .body(body)`)
-		} else {
-			w.Line(`    .header("Content-Type", "application/json")`)
-			w.Line(`    .body(bodyJson)`)
-		}
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`    .header("Content-Type", "text/plain")`)
+		w.Line(`    .body(body)`)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`    .header("Content-Type", "application/json")`)
+		w.Line(`    .body(bodyJson)`)
 	}
 	w.Line(`    .parseResponseIf { status => status < 500 }`)
 	w.Line(`    .send()`)
@@ -207,26 +206,26 @@ func generateClientOperationImplementation(w *sources.Writer, operation *spec.Na
 func generateClientResponses(w *sources.Writer, operation *spec.NamedOperation) {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]
-		responseParam := `()`
-		if !response.Type.Definition.IsEmpty() {
-			if response.Type.Definition.Plain == spec.TypeString {
-				responseParam = `body`
-			} else {
-				responseParam = fmt.Sprintf(`Jsoner.readThrowing[%s](body)`, ScalaType(&response.Type.Definition))
-			}
+		if response.BodyIs(spec.BodyEmpty) {
+			w.Line(`case %s => ()`, spec.HttpStatusCode(response.Name))
 		}
-		w.Line(`case %s => %s`, spec.HttpStatusCode(response.Name), responseParam)
+		if response.BodyIs(spec.BodyString) {
+			w.Line(`case %s => body`, spec.HttpStatusCode(response.Name))
+		}
+		if response.BodyIs(spec.BodyJson) {
+			w.Line(`case %s => Jsoner.readThrowing[%s](body)`, spec.HttpStatusCode(response.Name), ScalaType(&response.Type.Definition))
+		}
 	} else {
 		for _, response := range operation.Responses {
-			responseParam := ``
-			if !response.Type.Definition.IsEmpty() {
-				if response.Type.Definition.Plain == spec.TypeString {
-					responseParam = `body`
-				} else {
-					responseParam = fmt.Sprintf(`Jsoner.readThrowing[%s](body)`, ScalaType(&response.Type.Definition))
-				}
+			if response.BodyIs(spec.BodyEmpty) {
+				w.Line(`case %s => %s.%s()`, spec.HttpStatusCode(response.Name), responseTypeName(operation), response.Name.PascalCase())
 			}
-			w.Line(`case %s => %s.%s(%s)`, spec.HttpStatusCode(response.Name), responseTypeName(operation), response.Name.PascalCase(), responseParam)
+			if response.BodyIs(spec.BodyString) {
+				w.Line(`case %s => %s.%s(body)`, spec.HttpStatusCode(response.Name), responseTypeName(operation), response.Name.PascalCase())
+			}
+			if response.BodyIs(spec.BodyJson) {
+				w.Line(`case %s => %s.%s(Jsoner.readThrowing[%s](body))`, spec.HttpStatusCode(response.Name), responseTypeName(operation), response.Name.PascalCase(), ScalaType(&response.Type.Definition))
+			}
 		}
 	}
 }

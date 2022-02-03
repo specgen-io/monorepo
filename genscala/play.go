@@ -225,7 +225,7 @@ func generateControllerMethod(w *sources.Writer, operation *spec.NamedOperation)
 
 	w.Line(`def %s(%s) = Action%s.async {`, operation.Name.CamelCase(), JoinParams(params), payload)
 	w.Line(`  implicit request =>`)
-	if operation.Body != nil && operation.Body.Type.Definition.Plain == spec.TypeString {
+	if operation.BodyIs(spec.BodyString) {
 		w.Line(`    request.contentType match {`)
 		w.Line(`      case Some("text/plain") =>`)
 		generateControllerMethodRequest(w.IndentedWith(4), operation)
@@ -244,12 +244,11 @@ func generateControllerMethodRequest(w *sources.Writer, operation *spec.NamedOpe
 	if len(parseParams) > 0 {
 		w.Line(`val params = Try {`)
 		addParamsParsing(w.Indented(), operation.HeaderParams, "header", "request.headers.toMap")
-		if operation.Body != nil {
-			if operation.Body.Type.Definition.Plain == spec.TypeString {
-				w.Line(`  val body = request.body.utf8String`)
-			} else {
-				w.Line(`  val body = Jsoner.readThrowing[%s](request.body.utf8String)`, ScalaType(&operation.Body.Type.Definition))
-			}
+		if operation.BodyIs(spec.BodyString) {
+			w.Line(`  val body = request.body.utf8String`)
+		}
+		if operation.BodyIs(spec.BodyJson) {
+			w.Line(`  val body = Jsoner.readThrowing[%s](request.body.utf8String)`, ScalaType(&operation.Body.Type.Definition))
 		}
 		w.Line(`  (%s)`, JoinParams(parseParams))
 		w.Line(`}`)
