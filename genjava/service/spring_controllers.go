@@ -74,71 +74,35 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 	w.Line(`@%sMapping("%s")`, casee.ToPascalCase(methodName), url)
 	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), joinParams(addMethodParams(operation, g.Types)))
 	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
-	w.Line(`  HttpHeaders headers = new HttpHeaders();`)
-	if operation.BodyIs(spec.BodyString) {
-		w.Line(`  headers.add(CONTENT_TYPE, "text/plain");`)
-	}
-	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`  headers.add(CONTENT_TYPE, "application/json");`)
-	}
 	w.EmptyLine()
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain != spec.TypeString {
-			bodyJavaType := g.Types.Java(&operation.Body.Type.Definition)
-			requestBody, exception := g.Models.ReadJson("bodyStr", &operation.Body.Type.Definition)
-			w.Line(`  %s requestBody;`, bodyJavaType)
-			w.Line(`  try {`)
-			w.Line(`    requestBody = %s;`, requestBody)
-			w.Line(`  } catch (%s e) {`, exception)
-			w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
-			w.Line(`    return new ResponseEntity<>(headers, HttpStatus.BAD_REQUEST);`)
-			w.Line(`  }`)
-		}
+	if operation.BodyIs(spec.BodyJson) {
+		bodyJavaType := g.Types.Java(&operation.Body.Type.Definition)
+		requestBody, exception := g.Models.ReadJson("bodyStr", &operation.Body.Type.Definition)
+		w.Line(`  %s requestBody;`, bodyJavaType)
+		w.Line(`  try {`)
+		w.Line(`    requestBody = %s;`, requestBody)
+		w.Line(`  } catch (%s e) {`, exception)
+		w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
+		w.Line(`    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);`)
+		w.Line(`  }`)
 	}
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, "bodyStr", "requestBody")))
-	if len(operation.Responses) == 1 {
-		for _, resp := range operation.Responses {
-			if resp.Type.Definition.IsEmpty() {
-				w.Line(`  %s;`, serviceCall)
-				w.EmptyLine()
-				w.Line(`  logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
-				w.Line(`  return new ResponseEntity<>(HttpStatus.%s);`, resp.Name.UpperCase())
-			} else {
-				w.Line(`  var result = %s;`, serviceCall)
-				w.Line(`  if (result == null) {`)
-				w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
-				w.Line(`    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);`)
-				w.Line(`  }`)
-				responseVar := "result"
-				if resp.Type.Definition.Plain != spec.TypeString {
-					responseVar = "responseJson"
-					result, _ := g.Models.WriteJson("result", &resp.Type.Definition)
-					w.Line(`  String %s = %s;`, responseVar, result)
-				}
-				w.EmptyLine()
-				w.Line(`  logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
-				w.Line(`  return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, responseVar, resp.Name.UpperCase())
-			}
-		}
-	}
-	if len(operation.Responses) > 1 {
+	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
+		w.Line(`  %s;`, serviceCall)
+	} else {
 		w.Line(`  var result = %s;`, serviceCall)
 		w.Line(`  if (result == null) {`)
 		w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
 		w.Line(`    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);`)
 		w.Line(`  }`)
-		for _, resp := range operation.Responses {
-			w.EmptyLine()
-			w.Line(`  if (result instanceof %s.%s) {`, responses.InterfaceName(operation), resp.Name.PascalCase())
-			if !resp.Type.Definition.IsEmpty() {
-				responseWrite, _ := g.Models.WriteJson(fmt.Sprintf(`((%s.%s) result).body`, responses.InterfaceName(operation), resp.Name.PascalCase()), &resp.Type.Definition)
-				w.Line(`    String responseJson = %s;`, responseWrite)
-				w.Line(`    logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
-				w.Line(`    return new ResponseEntity<>(responseJson, headers, HttpStatus.%s);`, resp.Name.UpperCase())
-			} else {
-				w.Line(`    logger.info("Completed request with status code: {}", HttpStatus.%s);`, resp.Name.UpperCase())
-				w.Line(`    return new ResponseEntity<>(HttpStatus.%s);`, resp.Name.UpperCase())
-			}
+	}
+	if len(operation.Responses) == 1 {
+		g.processResponse(w.Indented(), &operation.Responses[0], "result")
+	}
+	if len(operation.Responses) > 1 {
+		for _, response := range operation.Responses {
+			w.Line(`  if (result instanceof %s.%s) {`, responses.InterfaceName(operation), response.Name.PascalCase())
+			g.processResponse(w.IndentedWith(2), &response, "result")
 			w.Line(`  }`)
 		}
 		w.EmptyLine()
@@ -146,6 +110,30 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 		w.Line(`  return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);`)
 	}
 	w.Line(`}`)
+}
+
+func (g *Generator) processResponse(w *sources.Writer, response *spec.NamedResponse, result string) {
+	if len(response.Operation.Responses) > 1 {
+		result = fmt.Sprintf(`((%s.%s) %s).body`, responses.InterfaceName(response.Operation), response.Name.PascalCase(), result)
+	}
+	if response.BodyIs(spec.BodyEmpty) {
+		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
+		w.Line(`return new ResponseEntity<>(HttpStatus.%s);`, response.Name.UpperCase())
+	}
+	if response.BodyIs(spec.BodyString) {
+		w.Line(`HttpHeaders headers = new HttpHeaders();`)
+		w.Line(`headers.add(CONTENT_TYPE, "text/plain");`)
+		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
+		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, result, response.Name.UpperCase())
+	}
+	if response.BodyIs(spec.BodyJson) {
+		responseWrite, _ := g.Models.WriteJson(result, &response.Type.Definition)
+		w.Line(`String responseJson = %s;`, responseWrite)
+		w.Line(`HttpHeaders headers = new HttpHeaders();`)
+		w.Line(`headers.add(CONTENT_TYPE, "application/json");`)
+		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
+		w.Line(`return new ResponseEntity<>(responseJson, headers, HttpStatus.%s);`, response.Name.UpperCase())
+	}
 }
 
 func getSpringParameterAnnotation(paramAnnotationName string, param *spec.NamedParam) string {
