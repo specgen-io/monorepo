@@ -69,14 +69,6 @@ func generateVersionClientModule(w *sources.Writer, version *spec.Version, modul
 }
 
 func operationResult(operation *spec.NamedOperation, response *spec.NamedResponse) string {
-	body := "nil"
-	if !response.Type.Definition.IsEmpty() {
-		if response.Type.Definition.Plain == spec.TypeString {
-			body = "response.body"
-		} else {
-			body = fmt.Sprintf("Jsoner.from_json(%s, response.body)", RubyType(&response.Type.Definition))
-		}
-	}
 	flags := ""
 	for _, r := range operation.Responses {
 		if r.Name.Source == response.Name.Source {
@@ -85,7 +77,17 @@ func operationResult(operation *spec.NamedOperation, response *spec.NamedRespons
 			flags += fmt.Sprintf(", :%s? => false", r.Name.Source)
 		}
 	}
-	return fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags)
+
+	if response.BodyIs(spec.BodyString) {
+		body := "response.body"
+		return fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags)
+	} else if response.BodyIs(spec.BodyJson) {
+		body := fmt.Sprintf("Jsoner.from_json(%s, response.body)", RubyType(&response.Type.Definition))
+		return fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags)
+	} else {
+		body := "nil"
+		return fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags)
+	}
 }
 
 func generateClientOperation(w *sources.Writer, moduleName string, operation *spec.NamedOperation) {
@@ -127,16 +129,15 @@ func generateClientOperation(w *sources.Writer, moduleName string, operation *sp
 		w.Line("header.params.each { |name, value| request.add_field(name, value) }")
 	}
 
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`request.add_field('Content-Type', 'text/plain')`)
-			w.Line("request.body = T.check_var('body', String, body)")
-		} else {
-			w.Line(`request.add_field('Content-Type', 'application/json')`)
-			bodyRubyType := RubyType(&operation.Body.Type.Definition)
-			w.Line(fmt.Sprintf("body_json = Jsoner.to_json(%s, T.check_var('body', %s, body))", bodyRubyType, bodyRubyType))
-			w.Line("request.body = body_json")
-		}
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`request.add_field('Content-Type', 'text/plain')`)
+		w.Line("request.body = T.check_var('body', String, body)")
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`request.add_field('Content-Type', 'application/json')`)
+		bodyRubyType := RubyType(&operation.Body.Type.Definition)
+		w.Line(fmt.Sprintf("body_json = Jsoner.to_json(%s, T.check_var('body', %s, body))", bodyRubyType, bodyRubyType))
+		w.Line("request.body = body_json")
 	}
 	w.Line("response = @client.request(request)")
 	w.Line("case response.code")
