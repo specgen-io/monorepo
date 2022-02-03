@@ -76,22 +76,19 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 	requestBody := "null"
 
 	w.Line(`public %s {`, responses.Signature(g.Types, operation))
-	if operation.Body != nil {
-		bodyDataVar := "bodyJson"
-		mediaType := "application/json"
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			bodyDataVar = "body"
-			mediaType = "text/plain"
-		} else {
-			w.Line(`  String bodyJson;`)
-			bodyJson, exception := g.Models.WriteJson("body", &operation.Body.Type.Definition)
-			generateClientTryCatch(w.Indented(),
-				fmt.Sprintf(`bodyJson = %s;`, bodyJson),
-				exception, `e`,
-				`"Failed to serialize JSON " + e.getMessage()`)
-			w.EmptyLine()
-		}
-		w.Line(`  var requestBody = RequestBody.create(%s, MediaType.parse("%s"));`, bodyDataVar, mediaType)
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`  var requestBody = RequestBody.create(body, MediaType.parse("text/plain"));`)
+		requestBody = "requestBody"
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`  String bodyJson;`)
+		bodyJson, exception := g.Models.WriteJson("body", &operation.Body.Type.Definition)
+		generateClientTryCatch(w.Indented(),
+			fmt.Sprintf(`bodyJson = %s;`, bodyJson),
+			exception, `e`,
+			`"Failed to serialize JSON " + e.getMessage()`)
+		w.EmptyLine()
+		w.Line(`  var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
 		requestBody = "requestBody"
 	}
 	w.Line(`  var url = new UrlBuilder(baseUrl);`)
@@ -127,32 +124,25 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
 		w.IndentWith(3)
 		w.Line(`logger.info("Received response with status code {}", response.code());`)
-		if !response.Type.Definition.IsEmpty() {
-			responseJavaType := g.Types.Java(&response.Type.Definition)
-			w.Line(`%s responseBody;`, responseJavaType)
-			if response.Type.Definition.Plain == spec.TypeString {
-				generateClientTryCatch(w,
-					fmt.Sprintf(`responseBody = response.body().string();`),
-					`IOException`, `e`,
-					`"Failed to convert response body to string " + e.getMessage()`)
-			} else {
-				responseBody, exception := g.Models.ReadJson("response.body().string()", &response.Type.Definition)
-				generateClientTryCatch(w,
-					fmt.Sprintf(`responseBody = %s;`, responseBody),
-					exception, `e`,
-					`"Failed to deserialize response body " + e.getMessage()`)
-			}
-			if len(operation.Responses) > 1 {
-				w.Line(`return new %s.%s(responseBody);`, responses.InterfaceName(operation), response.Name.PascalCase())
-			} else {
-				w.Line(`return responseBody;`)
-			}
-		} else {
-			if len(operation.Responses) > 1 {
-				w.Line(`return new %s.%s();`, responses.InterfaceName(operation), response.Name.PascalCase())
-			} else {
-				w.Line(`return;`)
-			}
+		if response.BodyIs(spec.BodyEmpty) {
+			w.Line(responses.CreateResponse(&response, ""))
+		}
+		if response.BodyIs(spec.BodyString) {
+			w.Line(`%s responseBody;`, g.Types.Java(&response.Type.Definition))
+			generateClientTryCatch(w,
+				fmt.Sprintf(`responseBody = response.body().string();`),
+				`IOException`, `e`,
+				`"Failed to convert response body to string " + e.getMessage()`)
+			w.Line(responses.CreateResponse(&response, `responseBody`))
+		}
+		if response.BodyIs(spec.BodyJson) {
+			w.Line(`%s responseBody;`, g.Types.Java(&response.Type.Definition))
+			responseBody, exception := g.Models.ReadJson("response.body().string()", &response.Type.Definition)
+			generateClientTryCatch(w,
+				fmt.Sprintf(`responseBody = %s;`, responseBody),
+				exception, `e`,
+				`"Failed to deserialize response body " + e.getMessage()`)
+			w.Line(responses.CreateResponse(&response, `responseBody`))
 		}
 		w.UnindentWith(3)
 	}

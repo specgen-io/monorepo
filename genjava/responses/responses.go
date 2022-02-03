@@ -22,6 +22,18 @@ func Signature(types *types.Types, operation *spec.NamedOperation) string {
 	return ""
 }
 
+func CreateResponse(response *spec.NamedResponse, resultVar string) string {
+	if len(response.Operation.Responses) > 1 {
+		return fmt.Sprintf(`return new %s.%s(%s);`, InterfaceName(response.Operation), response.Name.PascalCase(), resultVar)
+	} else {
+		if resultVar != "" {
+			return fmt.Sprintf(`return %s;`, resultVar)
+		} else {
+			return `return;`
+		}
+	}
+}
+
 func parameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
 	if operation.Body != nil {
