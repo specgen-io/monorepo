@@ -149,12 +149,11 @@ func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation) {
 
 func generateResponseWriting(w *sources.Writer, response *spec.NamedResponse, responseVar string) {
 	w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
-	if !response.Type.Definition.IsEmpty() {
-		if response.Type.Definition.Plain == spec.TypeString {
-			w.Line(`res.Write([]byte(*response))`)
-		} else {
-			w.Line(`json.NewEncoder(res).Encode(%s)`, responseVar)
-		}
+	if response.BodyIs(spec.BodyString) {
+		w.Line(`res.Write([]byte(*response))`)
+	}
+	if response.BodyIs(spec.BodyJson) {
+		w.Line(`json.NewEncoder(res).Encode(%s)`, responseVar)
 	}
 	w.Line(`log.WithFields(%s).WithField("status", %s).Info("Completed request")`, logFieldsName(response.Operation), spec.HttpStatusCode(response.Name))
 	w.Line(`return`)
@@ -163,39 +162,39 @@ func generateResponseWriting(w *sources.Writer, response *spec.NamedResponse, re
 func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	w.Line(`var err error`)
-	if operation.Body != nil {
+	if operation.BodyIs(spec.BodyString) {
 		w.Line(`contentType := req.Header.Get("Content-Type")`)
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`if !strings.Contains(contentType, "text/plain") {`)
-			w.Line(`  log.WithFields(%s).Errorf("%s", contentType)`, logFieldsName(operation), "Wrong Content-type: %s")
-			w.Line(`  res.WriteHeader(400)`)
-			w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
-			w.Line(`  return`)
-			w.Line(`}`)
-			w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
-			w.Line(`if err != nil {`)
-			w.Line(`  log.WithFields(%s).Warnf("%s", err.Error())`, logFieldsName(operation), `Reading request body failed: %s`)
-			w.Line(`  res.WriteHeader(400)`)
-			w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
-			w.Line(`  return`)
-			w.Line(`}`)
-			w.Line(`body := string(bodyData)`)
-		} else {
-			w.Line(`if !strings.Contains(contentType, "application/json") {`)
-			w.Line(`  log.WithFields(%s).Errorf("%s", contentType)`, logFieldsName(operation), "Wrong Content-type: %s")
-			w.Line(`  res.WriteHeader(400)`)
-			w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
-			w.Line(`  return`)
-			w.Line(`}`)
-			w.Line(`var body %s`, GoType(&operation.Body.Type.Definition))
-			w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
-			w.Line(`if err != nil {`)
-			w.Line(`  log.WithFields(%s).Warnf("%s", err.Error())`, logFieldsName(operation), `Decoding body JSON failed: %s`)
-			w.Line(`  res.WriteHeader(400)`)
-			w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
-			w.Line(`  return`)
-			w.Line(`}`)
-		}
+		w.Line(`if !strings.Contains(contentType, "text/plain") {`)
+		w.Line(`  log.WithFields(%s).Errorf("%s", contentType)`, logFieldsName(operation), "Wrong Content-type: %s")
+		w.Line(`  res.WriteHeader(400)`)
+		w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
+		w.Line(`  return`)
+		w.Line(`}`)
+		w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
+		w.Line(`if err != nil {`)
+		w.Line(`  log.WithFields(%s).Warnf("%s", err.Error())`, logFieldsName(operation), `Reading request body failed: %s`)
+		w.Line(`  res.WriteHeader(400)`)
+		w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
+		w.Line(`  return`)
+		w.Line(`}`)
+		w.Line(`body := string(bodyData)`)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`contentType := req.Header.Get("Content-Type")`)
+		w.Line(`if !strings.Contains(contentType, "application/json") {`)
+		w.Line(`  log.WithFields(%s).Errorf("%s", contentType)`, logFieldsName(operation), "Wrong Content-type: %s")
+		w.Line(`  res.WriteHeader(400)`)
+		w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
+		w.Line(`  return`)
+		w.Line(`}`)
+		w.Line(`var body %s`, GoType(&operation.Body.Type.Definition))
+		w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
+		w.Line(`if err != nil {`)
+		w.Line(`  log.WithFields(%s).Warnf("%s", err.Error())`, logFieldsName(operation), `Decoding body JSON failed: %s`)
+		w.Line(`  res.WriteHeader(400)`)
+		w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
+		w.Line(`  return`)
+		w.Line(`}`)
 	}
 	generateOperationParametersParsing(w, operation, operation.QueryParams, false, "queryParams", "req.URL.Query()", false)
 	generateOperationParametersParsing(w, operation, operation.HeaderParams, false, "headerParams", "req.Header", true)
@@ -203,12 +202,11 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 
 	generateServiceCall(w, operation)
 
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`res.Header().Set("Content-Type", "text/plain")`)
-		} else {
-			w.Line(`res.Header().Set("Content-Type", "application/json")`)
-		}
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`res.Header().Set("Content-Type", "text/plain")`)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`res.Header().Set("Content-Type", "application/json")`)
 	}
 
 	if len(operation.Responses) == 1 {
@@ -229,12 +227,11 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 
 func addOperationMethodParams(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			urlParams = append(urlParams, "body")
-		} else {
-			urlParams = append(urlParams, "&body")
-		}
+	if operation.BodyIs(spec.BodyString) {
+		urlParams = append(urlParams, "body")
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		urlParams = append(urlParams, "&body")
 	}
 	for _, param := range operation.QueryParams {
 		urlParams = append(urlParams, param.Name.CamelCase())
