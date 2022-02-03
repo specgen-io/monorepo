@@ -66,24 +66,22 @@ func (g *fetchGenerator) operation(w *sources.Writer, operation *spec.NamedOpera
 		for _, p := range operation.HeaderParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
-		if body != nil {
-			if body.Type.Definition.Plain == spec.TypeString {
-				w.Line(`    "Content-Type": "text/plain"`)
-			} else {
-				w.Line(`    "Content-Type": "application/json"`)
-			}
+		if operation.BodyIs(spec.BodyString) {
+			w.Line(`    "Content-Type": "text/plain"`)
+		}
+		if operation.BodyIs(spec.BodyJson) {
+			w.Line(`    "Content-Type": "application/json"`)
 		}
 		w.Line(`  })`)
 		fetchConfigParts = append(fetchConfigParts, `headers: headers`)
 	}
 	w.Line("  const url = config.baseURL+`%s%s`", getUrl(operation.Endpoint), params)
-	if body != nil {
-		if body.Type.Definition.Plain == spec.TypeString {
-			fetchConfigParts = append(fetchConfigParts, `body: parameters.body`)
-		} else {
-			w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &body.Type.Definition))
-			fetchConfigParts = append(fetchConfigParts, `body: JSON.stringify(bodyJson)`)
-		}
+	if operation.BodyIs(spec.BodyString) {
+		fetchConfigParts = append(fetchConfigParts, `body: parameters.body`)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &body.Type.Definition))
+		fetchConfigParts = append(fetchConfigParts, `body: JSON.stringify(bodyJson)`)
 	}
 	fetchConfig := strings.Join(fetchConfigParts, ", ")
 	w.Line("  const response = await fetch(url, {%s})", fetchConfig)

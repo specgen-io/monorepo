@@ -105,34 +105,35 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 }
 
 func (g *expressGenerator) response(w *sources.Writer, response *spec.NamedResponse, dataParam string) {
-	if response.Type.Definition.IsEmpty() {
+	if response.BodyIs(spec.BodyEmpty) {
 		w.Line("response.status(%s).send()", spec.HttpStatusCode(response.Name))
-	} else {
-		if response.Type.Definition.Plain == spec.TypeString {
-			w.Line("response.status(%s).type('text').send(%s)", spec.HttpStatusCode(response.Name), dataParam)
-		} else {
-			w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), dataParam)
-		}
+		w.Line("return")
 	}
-	w.Line("return")
+	if response.BodyIs(spec.BodyString) {
+		w.Line("response.status(%s).type('text').send(%s)", spec.HttpStatusCode(response.Name), dataParam)
+		w.Line("return")
+	}
+	if response.BodyIs(spec.BodyJson) {
+		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), dataParam)
+		w.Line("return")
+	}
 }
 
 func (g *expressGenerator) operationRouting(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
 	w.Indent()
 
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`if (!request.is('text/plain')) {`)
-			w.Line(`  response.status(400).send()`)
-			w.Line(`  return`)
-			w.Line(`}`)
-		} else {
-			w.Line(`if (!request.is('application/json')) {`)
-			w.Line(`  response.status(400).send()`)
-			w.Line(`  return`)
-			w.Line(`}`)
-		}
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`if (!request.is('text/plain')) {`)
+		w.Line(`  response.status(400).send()`)
+		w.Line(`  return`)
+		w.Line(`}`)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`if (!request.is('application/json')) {`)
+		w.Line(`  response.status(400).send()`)
+		w.Line(`  return`)
+		w.Line(`}`)
 	}
 
 	generateParametersParsing(w, operation, "zipHeaders(request.rawHeaders)", "request.params", "request.query", "response.status(400).send()")
