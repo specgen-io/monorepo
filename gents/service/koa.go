@@ -103,32 +103,32 @@ func getKoaUrl(endpoint spec.Endpoint) string {
 
 func (g *koaGenerator) response(w *sources.Writer, response *spec.NamedResponse, dataParam string) {
 	w.Line("ctx.status = %s", spec.HttpStatusCode(response.Name))
-	if !response.Type.Definition.IsEmpty() {
-		if response.Type.Definition.Plain == spec.TypeString {
-			w.Line("ctx.body = %s", dataParam)
-		} else {
-			w.Line("ctx.body = t.encode(%s, %s)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), dataParam)
-		}
+	if response.BodyIs(spec.BodyEmpty) {
+		w.Line("return")
 	}
-	w.Line("return")
+	if response.BodyIs(spec.BodyString) {
+		w.Line("ctx.body = %s", dataParam)
+	}
+	if response.BodyIs(spec.BodyString) {
+		w.Line("ctx.body = t.encode(%s, %s)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), dataParam)
+	}
 }
 
 func (g *koaGenerator) operationRouting(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line("router.%s('%s', async (ctx) => {", strings.ToLower(operation.Endpoint.Method), getKoaUrl(operation.Endpoint))
 	w.Indent()
 
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`if (ctx.request.type != 'text/plain') {`)
-			w.Line(`  ctx.throw(400)`)
-			w.Line(`  return`)
-			w.Line(`}`)
-		} else {
-			w.Line(`if (ctx.request.type != 'application/json') {`)
-			w.Line(`  ctx.throw(400)`)
-			w.Line(`  return`)
-			w.Line(`}`)
-		}
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`if (ctx.request.type != 'text/plain') {`)
+		w.Line(`  ctx.throw(400)`)
+		w.Line(`  return`)
+		w.Line(`}`)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`if (ctx.request.type != 'application/json') {`)
+		w.Line(`  ctx.throw(400)`)
+		w.Line(`  return`)
+		w.Line(`}`)
 	}
 
 	generateParametersParsing(w, operation, "zipHeaders(ctx.req.rawHeaders)", "ctx.params", "ctx.request.query", "ctx.throw(400)")
