@@ -176,24 +176,24 @@ func addClientResponses(w *sources.Writer, operation *spec.NamedOperation) {
 		w.EmptyLine()
 		w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
 		w.Line(`  log.WithFields(%s).WithField("status", %s).Info("Received response")`, logFieldsName(operation), spec.HttpStatusCode(response.Name))
-		if !response.Type.Definition.IsEmpty() {
+		if response.BodyIs(spec.BodyString) {
 			w.Line(`  responseBody, err := ioutil.ReadAll(resp.Body)`)
 			w.Line(`  err = resp.Body.Close()`)
-			if response.Type.Definition.Plain != spec.TypeString {
-				w.EmptyLine()
-				w.Line(`  var result %s`, GoType(&response.Type.Definition))
-				w.Line(`  err = json.Unmarshal(responseBody, &result)`)
-				w.Line(`  if err != nil {`)
-				w.Line(`    log.WithFields(%s).Error("%s", err.Error())`, logFieldsName(operation), `Failed to parse response JSON`)
-				w.Line(`    return nil, err`)
-				w.Line(`  }`)
-			} else {
-				w.Line(`  if err != nil {`)
-				w.Line(`    log.WithFields(%s).Error("%s", err.Error())`, logFieldsName(operation), `Reading request body failed`)
-				w.Line(`    return nil, err`)
-				w.Line(`  }`)
-				w.Line(`  result := string(responseBody)`)
-			}
+			w.Line(`  var result %s`, GoType(&response.Type.Definition))
+			w.Line(`  err = json.Unmarshal(responseBody, &result)`)
+			w.Line(`  if err != nil {`)
+			w.Line(`    log.WithFields(%s).Error("%s", err.Error())`, logFieldsName(operation), `Failed to parse response JSON`)
+			w.Line(`    return nil, err`)
+			w.Line(`  }`)
+		}
+		if response.BodyIs(spec.BodyJson) {
+			w.Line(`  responseBody, err := ioutil.ReadAll(resp.Body)`)
+			w.Line(`  err = resp.Body.Close()`)
+			w.Line(`  if err != nil {`)
+			w.Line(`    log.WithFields(%s).Error("%s", err.Error())`, logFieldsName(operation), `Reading request body failed`)
+			w.Line(`    return nil, err`)
+			w.Line(`  }`)
+			w.Line(`  result := string(responseBody)`)
 		}
 		w.Line(`  %s`, returnStatement(&response))
 		w.Line(`}`)

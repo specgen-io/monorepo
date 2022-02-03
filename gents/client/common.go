@@ -54,20 +54,25 @@ func createOperationParams(operation *spec.NamedOperation) string {
 }
 
 func clientResponseResult(validation validations.Validation, response *spec.NamedResponse, textResposneData, jsonResponseData string) string {
-	if response.Type.Definition.IsEmpty() {
-		if len(response.Operation.Responses) == 1 {
+	if len(response.Operation.Responses) == 1 {
+		if response.BodyIs(spec.BodyEmpty) {
 			return ""
 		}
-		return fmt.Sprintf(`{ status: "%s" }`, response.Name.Source)
+		if response.BodyIs(spec.BodyString) {
+			return textResposneData
+		} else {
+			return fmt.Sprintf(`t.decode(%s, %s)`, validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), jsonResponseData)
+		}
 	} else {
-		data := textResposneData
-		if response.Type.Definition.Plain != spec.TypeString {
-			data = fmt.Sprintf(`t.decode(%s, %s)`, validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), jsonResponseData)
+		if response.BodyIs(spec.BodyEmpty) {
+			return fmt.Sprintf(`{ status: "%s" }`, response.Name.Source)
 		}
-		if len(response.Operation.Responses) == 1 {
-			return data
+		if response.BodyIs(spec.BodyString) {
+			return fmt.Sprintf(`{ status: "%s", data: %s }`, response.Name.Source, textResposneData)
+		} else {
+			data := fmt.Sprintf(`t.decode(%s, %s)`, validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), jsonResponseData)
+			return fmt.Sprintf(`{ status: "%s", data: %s }`, response.Name.Source, data)
 		}
-		return fmt.Sprintf(`{ status: "%s", data: %s }`, response.Name.Source, data)
 	}
 }
 
