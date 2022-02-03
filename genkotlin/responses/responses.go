@@ -2,6 +2,7 @@ package responses
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/genjava/responses"
 	"github.com/specgen-io/specgen/v2/genkotlin/modules"
 	"github.com/specgen-io/specgen/v2/genkotlin/types"
 	"github.com/specgen-io/specgen/v2/genkotlin/writer"
@@ -24,6 +25,13 @@ func Signature(types *types.Types, operation *spec.NamedOperation) string {
 		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinDelimParams(parameters(operation, types)), InterfaceName(operation))
 	}
 	return ""
+}
+
+func CreateResponse(response *spec.NamedResponse, resultVar string) string {
+	if len(response.Operation.Responses) > 1 {
+		return fmt.Sprintf(`%s.%s(%s)`, responses.InterfaceName(response.Operation), response.Name.PascalCase(), resultVar)
+	}
+	return resultVar
 }
 
 func parameters(operation *spec.NamedOperation, types *types.Types) []string {

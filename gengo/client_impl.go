@@ -70,13 +70,13 @@ func generateClientWithCtor(w *sources.Writer) {
 func generateClientFunction(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
 	w.Line(`func (client *%s) %s(%s) %s {`, clientTypeName(), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), operationReturn(operation, nil))
-	var body = "nil"
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`  bodyData := []byte(body)`)
-		} else {
-			w.Line(`  bodyData, err := json.Marshal(body)`)
-		}
+	body := "nil"
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`  bodyData := []byte(body)`)
+		body = "bytes.NewBuffer(bodyData)"
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`  bodyData, err := json.Marshal(body)`)
 		body = "bytes.NewBuffer(bodyData)"
 	}
 	w.Line(`  req, err := http.NewRequest("%s", client.baseUrl+%s, %s)`, operation.Endpoint.Method, addRequestUrlParams(operation), body)
@@ -84,12 +84,11 @@ func generateClientFunction(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`    log.WithFields(%s).Error("Failed to create HTTP request", err.Error())`, logFieldsName(operation))
 	w.Line(`    %s`, returnErr(operation))
 	w.Line(`  }`)
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`  req.Header.Set("Content-Type", "text/plain")`)
-		} else {
-			w.Line(`  req.Header.Set("Content-Type", "application/json")`)
-		}
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`  req.Header.Set("Content-Type", "text/plain")`)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`  req.Header.Set("Content-Type", "application/json")`)
 	}
 	w.EmptyLine()
 	parseParams(w, operation)

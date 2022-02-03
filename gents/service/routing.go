@@ -62,18 +62,17 @@ func generateParametersParsing(w *sources.Writer, operation *spec.NamedOperation
 }
 
 func generateBodyParsing(w *sources.Writer, validation validations.Validation, operation *spec.NamedOperation, body, rawBody string, badRequestStatement string) {
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			w.Line(`const body: string = %s`, rawBody)
-		} else {
-			w.Line("var body: %s", types.TsType(&operation.Body.Type.Definition))
-			w.Line("try {")
-			w.Line("  body = t.decode(%s, %s)", validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition), body)
-			w.Line("} catch (error) {")
-			w.Line("  %s", badRequestStatement)
-			w.Line("  return")
-			w.Line("}")
-		}
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`const body: string = %s`, rawBody)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line("var body: %s", types.TsType(&operation.Body.Type.Definition))
+		w.Line("try {")
+		w.Line("  body = t.decode(%s, %s)", validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition), body)
+		w.Line("} catch (error) {")
+		w.Line("  %s", badRequestStatement)
+		w.Line("  return")
+		w.Line("}")
 	}
 }
 

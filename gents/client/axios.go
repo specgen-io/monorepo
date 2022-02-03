@@ -59,26 +59,25 @@ func (g *axiosGenerator) operation(w *sources.Writer, operation *spec.NamedOpera
 		for _, p := range operation.HeaderParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
-		if body != nil {
-			if body.Type.Definition.Plain == spec.TypeString {
-				w.Line(`    "Content-Type": "text/plain"`)
-			} else {
-				w.Line(`    "Content-Type": "application/json"`)
-			}
+		if operation.BodyIs(spec.BodyString) {
+			w.Line(`    "Content-Type": "text/plain"`)
+		}
+		if operation.BodyIs(spec.BodyJson) {
+			w.Line(`    "Content-Type": "application/json"`)
 		}
 		w.Line(`  })`)
 		axiosConfigParts = append(axiosConfigParts, `headers: headers`)
 	}
 	axiosConfig := strings.Join(axiosConfigParts, `, `)
-	if body != nil {
-		if body.Type.Definition.Plain == spec.TypeString {
-			w.Line("  const response = await axiosInstance.%s(`%s`, parameters.body, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
-		} else {
-			w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &body.Type.Definition))
-			w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
-		}
-	} else {
+	if operation.BodyIs(spec.BodyEmpty) {
 		w.Line("  const response = await axiosInstance.%s(`%s`, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
+	}
+	if operation.BodyIs(spec.BodyString) {
+		w.Line("  const response = await axiosInstance.%s(`%s`, parameters.body, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &body.Type.Definition))
+		w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 	}
 	w.Line(`  switch (response.status) {`)
 	for _, response := range operation.Responses {
