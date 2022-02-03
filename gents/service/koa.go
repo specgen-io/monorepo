@@ -108,9 +108,11 @@ func (g *koaGenerator) response(w *sources.Writer, response *spec.NamedResponse,
 	}
 	if response.BodyIs(spec.BodyString) {
 		w.Line("ctx.body = %s", dataParam)
+		w.Line("return")
 	}
-	if response.BodyIs(spec.BodyString) {
+	if response.BodyIs(spec.BodyJson) {
 		w.Line("ctx.body = t.encode(%s, %s)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), dataParam)
+		w.Line("return")
 	}
 }
 
