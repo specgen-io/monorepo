@@ -271,15 +271,14 @@ func generateControllerMethodRequest(w *sources.Writer, operation *spec.NamedOpe
 	}
 }
 
-func getPlayStatus(r *spec.NamedResponse) string {
-	body := ``
-	if !r.Type.Definition.IsEmpty() {
-		body = `(body)`
-		if r.Type.Definition.Plain != spec.TypeString {
-			body = `(Jsoner.write(body)).as("application/json")`
-		}
+func getPlayStatus(response *spec.NamedResponse) string {
+	if response.BodyIs(spec.BodyEmpty) {
+		return fmt.Sprintf(`new Status(%s)`, spec.HttpStatusCode(response.Name))
+	} else if response.BodyIs(spec.BodyString) {
+		return fmt.Sprintf(`new Status(%s)(body)`, spec.HttpStatusCode(response.Name))
+	} else {
+		return fmt.Sprintf(`new Status(%s)(Jsoner.write(body)).as("application/json")`, spec.HttpStatusCode(response.Name))
 	}
-	return fmt.Sprintf(`new Status(%s)%s`, spec.HttpStatusCode(r.Name), body)
 }
 
 func genResponseCases(w *sources.Writer, operation *spec.NamedOperation) {
