@@ -70,24 +70,24 @@ func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersi
 func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
-	requestBody := "null"
 
 	w.Line(`fun %s {`, responses.Signature(g.Types, operation))
-	bodyDataVar := "bodyJson"
-	mediaType := "application/json"
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			bodyDataVar = "body"
-			mediaType = "text/plain"
-		} else {
-			bodyJson, exception := g.Models.WriteJson("body", &operation.Body.Type.Definition)
-			generateClientTryCatch(w.Indented(), bodyDataVar,
-				bodyJson,
-				exception, `e`,
-				`"Failed to serialize JSON " + e.message`)
-			w.EmptyLine()
-		}
+	requestBody := "null"
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`  val requestBody = body.toRequestBody("text/plain".toMediaTypeOrNull())`)
+		requestBody = "requestBody"
 	}
+	if operation.BodyIs(spec.BodyJson) {
+		bodyJson, exception := g.Models.WriteJson("body", &operation.Body.Type.Definition)
+		generateClientTryCatch(w.Indented(), "bodyJson",
+			bodyJson,
+			exception, `e`,
+			`"Failed to serialize JSON " + e.message`)
+		w.EmptyLine()
+		w.Line(`  val requestBody = bodyJson.toRequestBody("application/json".toMediaTypeOrNull())`)
+		requestBody = "requestBody"
+	}
+
 	w.Line(`  val url = UrlBuilder(baseUrl)`)
 	if operation.Api.Apis.GetUrl() != "" {
 		w.Line(`  url.addPathSegment("%s")`, trimSlash(operation.Api.Apis.GetUrl()))
@@ -104,10 +104,6 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		w.Line(`  url.addQueryParameter("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))
 	}
 	w.EmptyLine()
-	if operation.Body != nil {
-		w.Line(`  val requestBody = %s.toRequestBody("%s".toMediaTypeOrNull())`, bodyDataVar, mediaType)
-		requestBody = "requestBody"
-	}
 	w.Line(`  val request = RequestBuilder("%s", url.build(), %s)`, methodName, requestBody)
 	for _, param := range operation.HeaderParams {
 		w.Line(`  request.addHeaderParameter("%s", %s)`, param.Name.Source, addBuilderParam(&param))
@@ -124,28 +120,27 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		w.Line(`    %s -> {`, spec.HttpStatusCode(response.Name))
 		w.IndentWith(3)
 		w.Line(`logger.info("Received response with status code {}", response.code)`)
-		if !response.Type.Definition.IsEmpty() {
-			if response.Type.Definition.Plain == spec.TypeString {
-				generateClientTryCatch(w, `responseBody`,
-					`response.body!!.string()`,
-					`IOException`, `e`,
-					`"Failed to convert response body to string " + e.message`)
-			} else {
-				responseBody, exception := g.Models.ReadJson(`response.body!!.string()`, &response.Type.Definition)
-				generateClientTryCatch(w, `responseBody`,
-					responseBody,
-					exception, `e`,
-					`"Failed to deserialize response body " + e.message`)
+
+		if response.BodyIs(spec.BodyEmpty) {
+			responseCode := responses.CreateResponse(&response, ``)
+			if responseCode != "" {
+				w.Line(responseCode)
 			}
-			if len(operation.Responses) > 1 {
-				w.Line(`%s.%s(responseBody)`, serviceResponseInterfaceName(operation), response.Name.PascalCase())
-			} else {
-				w.Line(`responseBody`)
-			}
-		} else {
-			if len(operation.Responses) > 1 {
-				w.Line(`%s.%s()`, serviceResponseInterfaceName(operation), response.Name.PascalCase())
-			}
+		}
+		if response.BodyIs(spec.BodyString) {
+			generateClientTryCatch(w, `responseBody`,
+				`response.body!!.string()`,
+				`IOException`, `e`,
+				`"Failed to convert response body to string " + e.message`)
+			w.Line(responses.CreateResponse(&response, `responseBody`))
+		}
+		if response.BodyIs(spec.BodyJson) {
+			responseBody, exception := g.Models.ReadJson(`response.body!!.string()`, &response.Type.Definition)
+			generateClientTryCatch(w, `responseBody`,
+				responseBody,
+				exception, `e`,
+				`"Failed to deserialize response body " + e.message`)
+			w.Line(responses.CreateResponse(&response, `responseBody`))
 		}
 		w.UnindentWith(3)
 		w.Line(`    }`)
