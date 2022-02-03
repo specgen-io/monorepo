@@ -75,11 +75,12 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), joinParams(addMethodParams(operation, g.Types)))
 	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  HttpHeaders headers = new HttpHeaders();`)
-	contentType := "application/json"
-	if operation.Body != nil && operation.Body.Type.Definition.Plain == spec.TypeString {
-		contentType = "text/plain"
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`  headers.add(CONTENT_TYPE, "text/plain");`)
 	}
-	w.Line(`  headers.add(CONTENT_TYPE, "%s");`, contentType)
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`  headers.add(CONTENT_TYPE, "application/json");`)
+	}
 	w.EmptyLine()
 	if operation.Body != nil {
 		if operation.Body.Type.Definition.Plain != spec.TypeString {
@@ -94,7 +95,7 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 			w.Line(`  }`)
 		}
 	}
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation)))
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, "bodyStr", "requestBody")))
 	if len(operation.Responses) == 1 {
 		for _, resp := range operation.Responses {
 			if resp.Type.Definition.IsEmpty() {
@@ -192,14 +193,13 @@ func addMethodParams(operation *spec.NamedOperation, types *types.Types) []strin
 	return methodParams
 }
 
-func addServiceMethodParams(operation *spec.NamedOperation) []string {
+func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) []string {
 	methodParams := []string{}
-	if operation.Body != nil {
-		if operation.Body.Type.Definition.Plain == spec.TypeString {
-			methodParams = append(methodParams, "bodyStr")
-		} else {
-			methodParams = append(methodParams, "requestBody")
-		}
+	if operation.BodyIs(spec.BodyString) {
+		methodParams = append(methodParams, bodyStringVar)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		methodParams = append(methodParams, bodyJsonVar)
 	}
 	for _, param := range operation.QueryParams {
 		methodParams = append(methodParams, param.Name.CamelCase())
