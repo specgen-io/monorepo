@@ -1,4 +1,4 @@
-package conoldspec
+package oldspec
 
 import (
 	"github.com/specgen-io/specgen/v2/fail"
