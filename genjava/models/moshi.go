@@ -26,6 +26,7 @@ func (g *MoshiGenerator) JsonImports() []string {
 	return []string{
 		`com.squareup.moshi.Json`,
 		`com.squareup.moshi.Moshi`,
+		`com.squareup.moshi.Types`,
 	}
 }
 
@@ -35,7 +36,7 @@ func (g *MoshiGenerator) CreateJsonMapperField(w *sources.Writer) {
 
 func (g *MoshiGenerator) InitJsonMapper(w *sources.Writer) {
 	w.Line(`Moshi.Builder moshiBuilder = new Moshi.Builder();`)
-	w.Line(`Json.setupMoshiAdapters(moshiBuilder);`)
+	w.Line(`setupMoshiAdapters(moshiBuilder);`)
 	w.Line(`this.moshi = moshiBuilder.build();`)
 }
 
@@ -64,11 +65,6 @@ func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage package
 
 	files := []sources.CodeFile{}
 
-	adaptersPackage := jsonPackage.Subpackage("adapters")
-	for range g.generatedSetupMoshiMethods {
-		files = append(files, *g.setupOneOfAdapters(version, thePackage, adaptersPackage))
-	}
-
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
 			files = append(files, *g.modelObject(model, thePackage))
@@ -77,6 +73,11 @@ func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage package
 		} else if model.IsEnum() {
 			files = append(files, *g.modelEnum(model, thePackage))
 		}
+	}
+
+	adaptersPackage := jsonPackage.Subpackage("adapters")
+	for range g.generatedSetupMoshiMethods {
+		files = append(files, *g.setupOneOfAdapters(version, thePackage, adaptersPackage))
 	}
 
 	return files
