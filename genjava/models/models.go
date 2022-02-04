@@ -18,14 +18,15 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, gene
 	generator := NewGenerator(jsonlib)
 
 	jsonPackage := mainPackage.Subpackage("json")
-	sources.AddGeneratedAll(generator.SetupLibrary(jsonPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		versionModelsPackage := versionPackage.Subpackage("models")
-		sources.AddGeneratedAll(generator.VersionModels(&version, versionModelsPackage))
+		sources.AddGeneratedAll(generator.VersionModels(&version, versionModelsPackage, jsonPackage))
 	}
+
+	sources.AddGeneratedAll(generator.SetupLibrary(jsonPackage))
 
 	return sources
 }
