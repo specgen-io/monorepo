@@ -90,6 +90,18 @@ type Type struct {
 	Location   *yaml.Node
 }
 
+func NewType(str string) *Type {
+	typ, err := parseType(str)
+	if err != nil {
+		panic(err)
+	}
+	return &Type{*typ, nil}
+}
+
+func (typ Type) String() string {
+	return typ.Definition.String()
+}
+
 func (value *Type) UnmarshalYAML(node *yaml.Node) error {
 	str := ""
 	err := node.DecodeWith(decodeStrict, &str)

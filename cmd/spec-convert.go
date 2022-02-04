@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/specgen-io/specgen/v2/conoldspec"
 	"github.com/specgen-io/specgen/v2/console"
+	"github.com/specgen-io/specgen/v2/convert/oldspec"
+	"github.com/specgen-io/specgen/v2/convert/openapi"
 	"github.com/specgen-io/specgen/v2/fail"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +31,11 @@ var cmdSpecConvert = &cobra.Command{
 		fail.IfError(err)
 
 		if specFormat == "spec-2.0" {
-			err = conoldspec.ConvertFromOldSpec(inFile, outFile)
+			err = oldspec.ConvertFromOldSpec(inFile, outFile)
+			fail.IfError(err)
+		}
+		if specFormat == "openapi" {
+			err = openapi.ConvertFromOpenapi(inFile, outFile)
 			fail.IfError(err)
 		}
 

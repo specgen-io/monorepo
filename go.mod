@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/dollarshaveclub/line v0.0.0-20171219191008-fc7a351a8b58
 	github.com/fatih/camelcase v1.0.0 // indirect
+	github.com/getkin/kin-openapi v0.85.0
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/pinzolo/casee v0.0.0-20210416022938-38877fea886d
 	github.com/pkg/errors v0.9.1 // indirect
