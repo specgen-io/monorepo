@@ -72,7 +72,7 @@ public class Json {
 	}}
 }
 
-func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage packages.Module) []sources.CodeFile {
+func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
