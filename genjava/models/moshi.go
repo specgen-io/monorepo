@@ -30,6 +30,10 @@ func (g *MoshiGenerator) JsonImports() []string {
 	}
 }
 
+func (g *MoshiGenerator) SetupImport(jsonPackage packages.Module) string {
+	return fmt.Sprintf(`static %s.Json.setupMoshiAdapters`, jsonPackage.PackageName)
+}
+
 func (g *MoshiGenerator) CreateJsonMapperField(w *sources.Writer) {
 	w.Line(`private Moshi moshi;`)
 }

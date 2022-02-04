@@ -10,6 +10,7 @@ import (
 
 type Generator interface {
 	SetupLibrary(thePackage packages.Module) []sources.CodeFile
+	SetupImport(jsonPackage packages.Module) string
 	VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []sources.CodeFile
 	ReadJson(jsonStr string, typ *spec.TypeDef) (string, string)
 	WriteJson(varData string, typ *spec.TypeDef) (string, string)
