@@ -6,13 +6,13 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func convertModels(schemas map[string]*openapi3.SchemaRef) []spec.NamedModel {
+func (c *Converter) models(schemas map[string]*openapi3.SchemaRef) []spec.NamedModel {
 	models := []spec.NamedModel{}
 	if schemas == nil {
 		return models
 	}
 	for schemaName, schema := range schemas {
-		specModel := convertSchema(schema)
+		specModel := c.schema(schema)
 		if specModel != nil {
 			models = append(models, spec.NamedModel{name(schemaName), *specModel, nil})
 		}
@@ -29,22 +29,21 @@ func contains(array []string, what string) bool {
 	return false
 }
 
-func convertSchema(schema *openapi3.SchemaRef) *spec.Model {
+func (c *Converter) schema(schema *openapi3.SchemaRef) *spec.Model {
 	switch schema.Value.Type {
 	case TypeObject:
 		fields := []spec.NamedDefinition{}
 		for propName, propSchema := range schema.Value.Properties {
 			fieldRequired := contains(schema.Value.Required, propName)
-			fields = append(fields, spec.NamedDefinition{name(propName), *convertProperty(propSchema, fieldRequired)})
+			fields = append(fields, spec.NamedDefinition{name(propName), *c.property(propSchema, fieldRequired)})
 		}
 		return &spec.Model{&spec.Object{fields}, nil, nil, nil, nil}
 	default:
 		panic(fmt.Sprintf(`schema is not supported yet`))
-		return nil
 	}
 }
 
-func convertProperty(schema *openapi3.SchemaRef, required bool) *spec.Definition {
+func (c *Converter) property(schema *openapi3.SchemaRef, required bool) *spec.Definition {
 	var description *string = nil
 	if schema.Value.Description != "" {
 		description = &schema.Value.Description

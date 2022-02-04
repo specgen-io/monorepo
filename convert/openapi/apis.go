@@ -7,30 +7,30 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func convertApis(doc *openapi3.T) spec.Apis {
+func (c *Converter) apis(doc *openapi3.T) spec.Apis {
 	apis := collectApis(doc)
 	specApis := []spec.Api{}
 	for _, api := range apis {
-		specApis = append(specApis, *convertApi(api))
+		specApis = append(specApis, *c.api(api))
 	}
 	return spec.Apis{nil, specApis, nil}
 }
 
-func convertApi(api *Api) *spec.Api {
+func (c *Converter) api(api *Api) *spec.Api {
 	operations := []spec.NamedOperation{}
 	for _, pathItem := range api.Items {
-		operation := convertPathItem(&pathItem)
+		operation := c.pathItem(&pathItem)
 		operations = append(operations, spec.NamedOperation{name(casee.ToSnakeCase(pathItem.Operation.OperationID)), *operation, nil})
 	}
 	return &spec.Api{name(api.Name), operations, nil}
 }
 
-func convertPathItem(pathItem *PathItem) *spec.Operation {
+func (c *Converter) pathItem(pathItem *PathItem) *spec.Operation {
 	pathParams := collectParams(pathItem.Operation.Parameters, "path")
 	headerParams := collectParams(pathItem.Operation.Parameters, "header")
 	queryParams := collectParams(pathItem.Operation.Parameters, "query")
 
-	endpoint := spec.Endpoint{pathItem.Method, pathItem.Path, convertParams(pathParams), nil}
+	endpoint := spec.Endpoint{pathItem.Method, pathItem.Path, c.params(pathParams), nil}
 	var description *string = nil
 	if pathItem.Operation.Description != "" {
 		description = &pathItem.Operation.Description
@@ -38,28 +38,28 @@ func convertPathItem(pathItem *PathItem) *spec.Operation {
 	operation := spec.Operation{
 		endpoint,
 		description,
-		convertParams(headerParams),
-		convertParams(queryParams),
-		convertRequestBody(pathItem.Operation.RequestBody),
-		convertResponses(pathItem.Operation.Responses),
+		c.params(headerParams),
+		c.params(queryParams),
+		c.requestBody(pathItem.Operation.RequestBody),
+		c.responses(pathItem.Operation.Responses),
 		nil,
 	}
 	return &operation
 }
 
-func convertResponses(responses openapi3.Responses) []spec.NamedResponse {
+func (c *Converter) responses(responses openapi3.Responses) []spec.NamedResponse {
 	result := []spec.NamedResponse{}
 	for status, response := range responses {
 		statusName := "ok"
 		if status != "default" {
 			statusName = spec.HttpStatusName(status)
 		}
-		result = append(result, spec.NamedResponse{name(statusName), *convertResponse(response), nil})
+		result = append(result, spec.NamedResponse{name(statusName), *c.response(response), nil})
 	}
 	return result
 }
 
-func convertResponse(response *openapi3.ResponseRef) *spec.Definition {
+func (c *Converter) response(response *openapi3.ResponseRef) *spec.Definition {
 	if response.Value == nil {
 		return nil //TODO: not sure in this - what if ref is specified here
 	}
@@ -76,15 +76,15 @@ func convertResponse(response *openapi3.ResponseRef) *spec.Definition {
 	return definition
 }
 
-func convertParams(parameters openapi3.Parameters) []spec.NamedParam {
+func (c *Converter) params(parameters openapi3.Parameters) []spec.NamedParam {
 	result := []spec.NamedParam{}
 	for _, parameter := range parameters {
-		result = append(result, *convertParam(parameter))
+		result = append(result, *c.param(parameter))
 	}
 	return result
 }
 
-func convertParam(parameter *openapi3.ParameterRef) *spec.NamedParam {
+func (c *Converter) param(parameter *openapi3.ParameterRef) *spec.NamedParam {
 	p := parameter.Value
 	return &spec.NamedParam{
 		name(p.Name),
@@ -97,7 +97,7 @@ func convertParam(parameter *openapi3.ParameterRef) *spec.NamedParam {
 	}
 }
 
-func convertRequestBody(body *openapi3.RequestBodyRef) *spec.Definition {
+func (c *Converter) requestBody(body *openapi3.RequestBodyRef) *spec.Definition {
 	if body == nil {
 		return nil // this is fair - no body means nil definition
 	}
