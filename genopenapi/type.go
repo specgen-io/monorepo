@@ -79,7 +79,7 @@ func PlainOpenApiType(typeInfo *spec.TypeInfo, typ string) *yamlx.YamlMap {
 	case spec.TypeDateTime:
 		result := yamlx.Map()
 		result.Add("type", "string")
-		result.Add("format", "datetime")
+		result.Add("format", "date-time")
 		return result
 	case spec.TypeJson:
 		result := yamlx.Map()
