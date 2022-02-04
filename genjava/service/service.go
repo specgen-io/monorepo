@@ -19,13 +19,12 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, swag
 	generator := NewGenerator(jsonlib)
 
 	jsonPackage := mainPackage.Subpackage("json")
-	newSources.AddGeneratedAll(generator.Models.SetupLibrary(jsonPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		newSources.AddGeneratedAll(generator.Models.VersionModels(&version, modelsVersionPackage))
+		newSources.AddGeneratedAll(generator.Models.VersionModels(&version, modelsVersionPackage, jsonPackage))
 
 		serviceVersionPackage := versionPackage.Subpackage("services")
 		newSources.AddGeneratedAll(generator.ServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage))
@@ -33,6 +32,8 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, swag
 		controllerVersionPackage := versionPackage.Subpackage("controllers")
 		newSources.AddGeneratedAll(generator.ServicesControllers(&version, controllerVersionPackage, jsonPackage, modelsVersionPackage, serviceVersionPackage))
 	}
+
+	newSources.AddGeneratedAll(generator.Models.SetupLibrary(jsonPackage))
 
 	if swaggerPath != "" {
 		newSources.AddGenerated(genopenapi.GenerateOpenapi(specification, swaggerPath))

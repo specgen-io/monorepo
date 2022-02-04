@@ -14,15 +14,19 @@ import (
 var Moshi = "moshi"
 
 type MoshiGenerator struct {
-	Types *types.Types
+	generatedSetupMoshiMethods []string
+	Types                      *types.Types
 }
 
 func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
-	return &MoshiGenerator{types}
+	return &MoshiGenerator{[]string{}, types}
 }
 
 func (g *MoshiGenerator) JsonImports() []string {
-	return []string{`com.squareup.moshi.*`}
+	return []string{
+		`com.squareup.moshi.Json`,
+		`com.squareup.moshi.Moshi`,
+	}
 }
 
 func (g *MoshiGenerator) CreateJsonMapperField(w *sources.Writer) {
@@ -55,8 +59,16 @@ func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, s
 	return fmt.Sprintf(`moshi.adapter(%s).toJson(%s)`, adapterParam, varData), `AssertionError`
 }
 
-func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage packages.Module) []sources.CodeFile {
+func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []sources.CodeFile {
+	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.Json.setupMoshiOneOfAdapters`, thePackage.PackageName))
+
 	files := []sources.CodeFile{}
+
+	adaptersPackage := jsonPackage.Subpackage("adapters")
+	for range g.generatedSetupMoshiMethods {
+		files = append(files, *g.setupOneOfAdapters(version, thePackage, adaptersPackage))
+	}
+
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
 			files = append(files, *g.modelObject(model, thePackage))
@@ -66,6 +78,7 @@ func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage package
 			files = append(files, *g.modelEnum(model, thePackage))
 		}
 	}
+
 	return files
 }
 
@@ -197,7 +210,7 @@ func (g *MoshiGenerator) SetupLibrary(thePackage packages.Module) []sources.Code
 	adaptersPackage := thePackage.Subpackage("adapters")
 
 	files := []sources.CodeFile{}
-	files = append(files, *setupAdapters(thePackage))
+	files = append(files, *g.setupAdapters(thePackage, adaptersPackage))
 	files = append(files, *bigDecimalAdapter(adaptersPackage))
 	files = append(files, *localDateAdapter(adaptersPackage))
 	files = append(files, *localDateTimeAdapter(adaptersPackage))
@@ -207,28 +220,73 @@ func (g *MoshiGenerator) SetupLibrary(thePackage packages.Module) []sources.Code
 	return files
 }
 
-func setupAdapters(thePackage packages.Module) *sources.CodeFile {
-	code := `
-package [[.PackageName]];
-
-import com.squareup.moshi.Moshi;
-import [[.PackageName]].adapters.*;
-
-public class Json {
-	public static void setupMoshiAdapters(Moshi.Builder moshiBuilder) {
-		moshiBuilder
-			.add(new BigDecimalAdapter())
-			.add(new UuidAdapter())
-			.add(new LocalDateAdapter())
-			.add(new LocalDateTimeAdapter());
+func (g *MoshiGenerator) setupAdapters(thePackage packages.Module, adaptersPackage packages.Module) *sources.CodeFile {
+	w := writer.NewJavaWriter()
+	w.Line("package %s;", thePackage.PackageName)
+	w.EmptyLine()
+	imports := imports.New()
+	imports.Add(`com.squareup.moshi.Moshi`)
+	imports.Add(adaptersPackage.PackageStar)
+	imports.Write(w)
+	w.EmptyLine()
+	w.Line(`public class Json {`)
+	w.Line(`  public static void setupMoshiAdapters(Moshi.Builder moshiBuilder) {`)
+	w.Line(`    moshiBuilder`)
+	w.Line(`      .add(new BigDecimalAdapter())`)
+	w.Line(`      .add(new UuidAdapter())`)
+	w.Line(`      .add(new LocalDateAdapter())`)
+	w.Line(`      .add(new LocalDateTimeAdapter());`)
+	w.EmptyLine()
+	for _, setupMoshiMethod := range g.generatedSetupMoshiMethods {
+		w.Line(`    %s(moshiBuilder);`, setupMoshiMethod)
 	}
-}
-`
+	w.Line(`  }`)
+	w.Line(`}`)
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
 	return &sources.CodeFile{
 		Path:    thePackage.GetPath("Json.java"),
-		Content: strings.TrimSpace(code),
+		Content: w.String(),
+	}
+}
+
+func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage packages.Module, adaptersPackage packages.Module) *sources.CodeFile {
+	w := writer.NewJavaWriter()
+	w.Line("package %s;", thePackage.PackageName)
+	w.EmptyLine()
+	imports := imports.New()
+	imports.Add(`com.squareup.moshi.Moshi`)
+	imports.Add(adaptersPackage.PackageStar)
+	imports.Write(w)
+	w.EmptyLine()
+	w.Line(`public class Json {`)
+	w.Line(`  public static void setupMoshiOneOfAdapters(Moshi.Builder moshiBuilder) {`)
+	for _, model := range version.ResolvedModels {
+		if model.IsOneOf() {
+			w.IndentWith(2)
+			w.Line(`moshiBuilder`)
+			modelName := model.Name.PascalCase()
+			for _, item := range model.OneOf.Items {
+				w.Line(`  .add(new UnwrapFieldAdapterFactory(%s.%s.class))`, modelName, oneOfItemClassName(&item))
+			}
+			addUnionAdapterFactory := fmt.Sprintf(`  .add(UnionAdapterFactory.of(%s.class)`, modelName)
+			if model.OneOf.Discriminator != nil {
+				w.Line(`%s.withDiscriminator("%s")`, addUnionAdapterFactory, *model.OneOf.Discriminator)
+			} else {
+				w.Line(addUnionAdapterFactory)
+			}
+			for _, item := range model.OneOf.Items {
+				w.Line(`    .withSubtype(%s.%s.class, "%s")`, modelName, oneOfItemClassName(&item), item.Name.Source)
+			}
+			w.Line(`  );`)
+			w.UnindentWith(2)
+		}
+	}
+	w.Line(`  }`)
+	w.Line(`}`)
+
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath("Json.java"),
+		Content: w.String(),
 	}
 }
 
