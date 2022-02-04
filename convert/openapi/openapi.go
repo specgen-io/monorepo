@@ -3,6 +3,7 @@ package openapi
 import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/specgen-io/specgen/v2/spec"
+	"io/ioutil"
 )
 
 func ConvertFromOpenapi(inFile, outFile string) error {
@@ -11,7 +12,11 @@ func ConvertFromOpenapi(inFile, outFile string) error {
 		return err
 	}
 	specification := convertSpec(doc)
-	err = spec.WriteSpecFile(specification, outFile)
+	data, err := spec.WriteSpec(specification)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(outFile, data, 0644)
 	return err
 }
 
