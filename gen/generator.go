@@ -14,6 +14,7 @@ type GeneratorArg struct {
 
 type Generator struct {
 	Name      string
+	Title     string
 	Usage     string
 	Args      []GeneratorArg
 	Generator GeneratorFunc
