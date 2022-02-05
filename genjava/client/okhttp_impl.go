@@ -34,7 +34,7 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVers
 	imports.Add(mainPackage.PackageStar)
 	imports.Add(utilsPackage.PackageStar)
 	imports.Add(modelsVersionPackage.PackageStar)
-	imports.Add(fmt.Sprintf(`%s.Json`, jsonPackage.PackageName))
+	imports.Add(g.Models.SetupImport(jsonPackage))
 	imports.Write(w)
 	w.EmptyLine()
 	className := clientName(api)
