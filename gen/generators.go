@@ -14,6 +14,7 @@ import (
 
 var Openapi = Generator{
 	"openapi",
+	"OpenAPI v3",
 	"Generate OpenAPI specification",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -29,6 +30,7 @@ var Openapi = Generator{
 
 var ModelsGo = Generator{
 	"models-go",
+	"Go Models",
 	"Generate Go models source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -42,6 +44,7 @@ var ModelsGo = Generator{
 
 var ClientGo = Generator{
 	"client-go",
+	"Go Client",
 	"Generate Go client source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -55,6 +58,7 @@ var ClientGo = Generator{
 
 var ServiceGo = Generator{
 	"service-go",
+	"Go Service",
 	"Generate Go service source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -72,6 +76,7 @@ var JsonlibJavaValues = []string{"jackson", "moshi"}
 
 var ModelsJava = Generator{
 	"models-java",
+	"Java Models",
 	"Generate Java models source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -86,6 +91,7 @@ var ModelsJava = Generator{
 
 var ClientJava = Generator{
 	"client-java",
+	"Java Client",
 	"Generate Java client source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -100,6 +106,7 @@ var ClientJava = Generator{
 
 var ServiceJava = Generator{
 	"service-java",
+	"Java Service",
 	"Generate Java service source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -118,6 +125,7 @@ var JsonlibKotlinValues = []string{"jackson"}
 
 var ModelsKotlin = Generator{
 	"models-kotlin",
+	"Kotlin Models",
 	"Generate Kotlin models source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -132,6 +140,7 @@ var ModelsKotlin = Generator{
 
 var ClientKotlin = Generator{
 	"client-kotlin",
+	"Kotlin Client",
 	"Generate Kotlin client source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -146,6 +155,7 @@ var ClientKotlin = Generator{
 
 var ModelsRuby = Generator{
 	"models-ruby",
+	"Ruby Models",
 	"Generate Ruby models source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -158,6 +168,7 @@ var ModelsRuby = Generator{
 
 var ClientRuby = Generator{
 	"client-ruby",
+	"Ruby Client",
 	"Generate Ruby client source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -170,6 +181,7 @@ var ClientRuby = Generator{
 
 var ModelsScala = Generator{
 	"models-scala",
+	"Scala Models",
 	"Generate Scala models source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -182,6 +194,7 @@ var ModelsScala = Generator{
 
 var ClientScala = Generator{
 	"client-scala",
+	"Scala Client",
 	"Generate Scala client source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -194,6 +207,7 @@ var ClientScala = Generator{
 
 var ServiceScala = Generator{
 	"service-scala",
+	"Scala Service",
 	"Generate Scala service source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -212,6 +226,7 @@ var ServerTsValues = []string{"express", "koa"}
 
 var ModelsTs = Generator{
 	"models-ts",
+	"TypeScript Models",
 	"Generate TypeScript models source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -225,6 +240,7 @@ var ModelsTs = Generator{
 
 var ClientTs = Generator{
 	"client-ts",
+	"TypeScript Client",
 	"Generate TypeScript client source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
@@ -239,6 +255,7 @@ var ClientTs = Generator{
 
 var ServiceTs = Generator{
 	"service-ts",
+	"TypeScript Service",
 	"Generate TypeScript client source code",
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
