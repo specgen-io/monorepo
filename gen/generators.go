@@ -121,7 +121,7 @@ var ServiceJava = Generator{
 	},
 }
 
-var JsonlibKotlinValues = []string{"jackson"}
+var JsonlibKotlinValues = []string{"jackson", "moshi"}
 
 var ModelsKotlin = Generator{
 	"models-kotlin",
