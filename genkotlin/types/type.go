@@ -9,17 +9,17 @@ type Types struct {
 	RawJsonType string
 }
 
-func (t *Types) KotlinType(typ *spec.TypeDef) string {
+func (t *Types) Kotlin(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
 		return t.PlainKotlinType(typ.Plain)
 	case spec.NullableType:
-		return t.KotlinType(typ.Child) + "?"
+		return t.Kotlin(typ.Child) + "?"
 	case spec.ArrayType:
-		child := t.KotlinType(typ.Child)
+		child := t.Kotlin(typ.Child)
 		return "Array<" + child + ">"
 	case spec.MapType:
-		child := t.KotlinType(typ.Child)
+		child := t.Kotlin(typ.Child)
 		result := "Map<String, " + child + ">"
 		return result
 	default:
