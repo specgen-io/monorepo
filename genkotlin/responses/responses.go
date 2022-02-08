@@ -15,7 +15,7 @@ func Signature(types *types.Types, operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
 			if !response.Type.Definition.IsEmpty() {
-				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinDelimParams(parameters(operation, types)), types.KotlinType(&response.Type.Definition))
+				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinDelimParams(parameters(operation, types)), types.Kotlin(&response.Type.Definition))
 			} else {
 				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinDelimParams(parameters(operation, types)))
 			}
@@ -37,16 +37,16 @@ func CreateResponse(response *spec.NamedResponse, resultVar string) string {
 func parameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
 	if operation.Body != nil {
-		params = append(params, fmt.Sprintf("body: %s", types.KotlinType(&operation.Body.Type.Definition)))
+		params = append(params, fmt.Sprintf("body: %s", types.Kotlin(&operation.Body.Type.Definition)))
 	}
 	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.KotlinType(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
 	}
 	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.KotlinType(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.KotlinType(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
 	}
 	return params
 }
@@ -78,11 +78,11 @@ func implementations(w *sources.Writer, types *types.Types, response *spec.Named
 	serviceResponseImplementationName := response.Name.PascalCase()
 	w.Line(`class %s : %s {`, serviceResponseImplementationName, InterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {
-		w.Line(`  private lateinit var body: %s`, types.KotlinType(&response.Type.Definition))
+		w.Line(`  private lateinit var body: %s`, types.Kotlin(&response.Type.Definition))
 		w.EmptyLine()
 		w.Line(`  constructor()`)
 		w.EmptyLine()
-		w.Line(`  constructor(body: %s) {`, types.KotlinType(&response.Type.Definition))
+		w.Line(`  constructor(body: %s) {`, types.Kotlin(&response.Type.Definition))
 		w.Line(`    this.body = body`)
 		w.Line(`  }`)
 	}
