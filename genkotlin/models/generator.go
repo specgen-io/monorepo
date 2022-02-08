@@ -9,7 +9,7 @@ import (
 )
 
 type Generator interface {
-	SetupLibrary(thePackage modules.Module) *sources.CodeFile
+	SetupLibrary(thePackage modules.Module) []sources.CodeFile
 	VersionModels(version *spec.Version, thePackage modules.Module) *sources.CodeFile
 	ReadJson(jsonStr string, typ *spec.TypeDef) (string, string)
 	WriteJson(varData string, typ *spec.TypeDef) (string, string)
@@ -22,12 +22,18 @@ func NewGenerator(jsonlib string) Generator {
 	if jsonlib == Jackson {
 		return NewJacksonGenerator(types)
 	}
+	if jsonlib == Moshi {
+		return NewMoshiGenerator(types)
+	}
 	panic(fmt.Sprintf(`Unsupported jsonlib: %s`, jsonlib))
 }
 
 func NewTypes(jsonlib string) *types.Types {
 	if jsonlib == Jackson {
 		return &types.Types{"JsonNode"}
+	}
+	if jsonlib == Moshi {
+		return &types.Types{"Map<String, Any>"}
 	}
 	panic(fmt.Sprintf(`Unsupported jsonlib: %s`, jsonlib))
 }
