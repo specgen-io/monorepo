@@ -41,7 +41,7 @@ func (g *JacksonGenerator) CreateJsonMapperVar(w *sources.Writer) {
 }
 
 func (g *JacksonGenerator) InitJsonMapper(w *sources.Writer) {
-	w.Line(`objectMapper = setupObjectMapper(jacksonObjectMapper()))`)
+	w.Line(`objectMapper = setupObjectMapper(jacksonObjectMapper())`)
 }
 
 func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
