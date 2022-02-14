@@ -71,7 +71,7 @@ fun setupObjectMapper(objectMapper: ObjectMapper): ObjectMapper {
 	return files
 }
 
-func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage modules.Module) *sources.CodeFile {
+func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage modules.Module, jsonPackage modules.Module) []sources.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -91,10 +91,10 @@ func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage modul
 		}
 	}
 
-	return &sources.CodeFile{
-		Path:    thePackage.GetPath("models.kt"),
-		Content: w.String(),
-	}
+	files := []sources.CodeFile{}
+	files = append(files, sources.CodeFile{Path: thePackage.GetPath("models.kt"), Content: w.String()})
+
+	return files
 }
 
 func (g *JacksonGenerator) jacksonPropertyAnnotation(field *spec.NamedDefinition) string {
