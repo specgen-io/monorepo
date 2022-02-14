@@ -59,3 +59,7 @@ func addObjectModelMethods(w *sources.Writer, model *spec.NamedModel) {
 	}
 	w.Line(`}`)
 }
+
+func oneOfItemClassName(item *spec.NamedDefinition) string {
+	return item.Name.PascalCase()
+}
