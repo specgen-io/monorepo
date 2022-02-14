@@ -28,16 +28,40 @@ func (g *MoshiGenerator) JsonImports() []string {
 	}
 }
 
+func (g *MoshiGenerator) SetupImport(jsonPackage modules.Module) string {
+	return fmt.Sprintf(`%s.setupMoshiAdapters`, jsonPackage.PackageName)
+}
+
+func (g *MoshiGenerator) CreateJsonMapperVar(w *sources.Writer) {
+	w.Line(`private var moshi: Moshi`)
+}
+
 func (g *MoshiGenerator) InitJsonMapper(w *sources.Writer) {
-	panic("This is not implemented yet!!!")
+	w.Line(`val moshiBuilder = Moshi.Builder()`)
+	w.Line(`setupMoshiAdapters(moshiBuilder)`)
+	w.Line(`moshi = moshiBuilder.build()`)
 }
 
 func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
-	panic("This is not implemented yet!!!")
+	adapter := fmt.Sprintf(`adapter(%s::class.java)`, g.Types.Kotlin(typ))
+	if typ.Node == spec.MapType {
+		typeJava := g.Types.Kotlin(typ.Child)
+		adapter = fmt.Sprintf(`adapter<Map<String, %s>>(Types.newParameterizedType(MutableMap::class.java, String::class.java, %s::class.java))`, typeJava, typeJava)
+	}
+
+	return fmt.Sprintf(`moshi.%s.fromJson(%s)!!`, adapter, varJson), `IOException`
+
 }
 
 func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
-	panic("This is not implemented yet!!!")
+	adapterParam := fmt.Sprintf(`adapter(%s::class.java)`, g.Types.Kotlin(typ))
+	if typ.Node == spec.MapType {
+		typeJava := g.Types.Kotlin(typ.Child)
+		adapterParam = fmt.Sprintf(`adapter<Map<String, %s>>(Types.newParameterizedType(MutableMap::class.java, String::class.java, %s::class.java))`, typeJava, typeJava)
+	}
+
+	return fmt.Sprintf(`moshi.%s.toJson(%s)`, adapterParam, varData), `AssertionError`
+
 }
 
 func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage modules.Module, jsonPackage modules.Module) []sources.CodeFile {
