@@ -65,8 +65,6 @@ func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, s
 }
 
 func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []sources.CodeFile {
-	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.Json.setupMoshiAdapters`, thePackage.PackageName))
-
 	files := []sources.CodeFile{}
 
 	for _, model := range version.ResolvedModels {
@@ -79,6 +77,7 @@ func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage package
 		}
 	}
 
+	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.Json.setupMoshiAdapters`, thePackage.PackageName))
 	adaptersPackage := jsonPackage.Subpackage("adapters")
 	for range g.generatedSetupMoshiMethods {
 		files = append(files, *g.setupOneOfAdapters(version, thePackage, adaptersPackage))
@@ -256,7 +255,7 @@ func (g *MoshiGenerator) setupAdapters(thePackage packages.Module, adaptersPacka
 
 func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage packages.Module, adaptersPackage packages.Module) *sources.CodeFile {
 	w := writer.NewJavaWriter()
-	w.Line("package %s;", thePackage.PackageName)
+	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
