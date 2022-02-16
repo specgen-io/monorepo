@@ -10,7 +10,7 @@ func enrichSpec(spec *Spec) []Message {
 	for verIndex := range spec.Versions {
 		version := &spec.Versions[verIndex]
 		modelsMap := buildModelsMap(version.Models)
-		enricher := &enricher{modelsMap, nil, nil}
+		enricher := &enricher{modelsMap, make(map[string]interface{}), nil, nil}
 		enricher.Version(version)
 		version.ResolvedModels = enricher.ResolvedModels
 		errors = append(errors, enricher.Errors...)
@@ -30,9 +30,18 @@ func buildModelsMap(models Models) ModelsMap {
 }
 
 type enricher struct {
-	ModelsMap      ModelsMap
-	Errors         []Message
-	ResolvedModels []*NamedModel
+	ModelsMap       ModelsMap
+	ProcessedModels map[string]interface{}
+	Errors          []Message
+	ResolvedModels  []*NamedModel
+}
+
+func (enricher *enricher) processedModels(name string) bool {
+	if _, ok := enricher.ProcessedModels[name]; ok {
+		return true
+	}
+	enricher.ProcessedModels[name] = nil
+	return false
 }
 
 func (enricher *enricher) findModel(name string) (*NamedModel, bool) {
@@ -131,7 +140,9 @@ func (enricher *enricher) TypeDef(typ *TypeDef, location *yaml.Node) *TypeInfo {
 		case PlainType:
 			if model, ok := enricher.findModel(typ.Plain); ok {
 				typ.Info = ModelTypeInfo(model)
-				enricher.Model(model)
+				if !enricher.processedModels(typ.Plain) {
+					enricher.Model(model)
+				}
 			} else {
 				if info, ok := Types[typ.Plain]; ok {
 					typ.Info = &info
