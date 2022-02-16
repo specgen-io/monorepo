@@ -27,12 +27,21 @@ func (g *JacksonGenerator) JsonImports() []string {
 		`com.fasterxml.jackson.annotation.*`,
 		`com.fasterxml.jackson.annotation.JsonSubTypes.*`,
 		`com.fasterxml.jackson.core.type.*`,
+		`com.fasterxml.jackson.core.JsonProcessingException`,
 		`com.fasterxml.jackson.module.kotlin.jacksonObjectMapper`,
 	}
 }
 
+func (g *JacksonGenerator) SetupImport(jsonPackage modules.Module) string {
+	return fmt.Sprintf(`%s.setupObjectMapper`, jsonPackage.PackageName)
+}
+
+func (g *JacksonGenerator) CreateJsonMapperVar(w *sources.Writer) {
+	w.Line(`private var objectMapper: ObjectMapper`)
+}
+
 func (g *JacksonGenerator) InitJsonMapper(w *sources.Writer) {
-	w.Line(`private val objectMapper: ObjectMapper = setupObjectMapper(jacksonObjectMapper())`)
+	w.Line(`objectMapper = setupObjectMapper(jacksonObjectMapper())`)
 }
 
 func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
@@ -71,7 +80,7 @@ fun setupObjectMapper(objectMapper: ObjectMapper): ObjectMapper {
 	return files
 }
 
-func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage modules.Module) *sources.CodeFile {
+func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage modules.Module, jsonPackage modules.Module) []sources.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -91,10 +100,10 @@ func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage modul
 		}
 	}
 
-	return &sources.CodeFile{
-		Path:    thePackage.GetPath("models.kt"),
-		Content: w.String(),
-	}
+	files := []sources.CodeFile{}
+	files = append(files, sources.CodeFile{Path: thePackage.GetPath("models.kt"), Content: w.String()})
+
+	return files
 }
 
 func (g *JacksonGenerator) jacksonPropertyAnnotation(field *spec.NamedDefinition) string {
