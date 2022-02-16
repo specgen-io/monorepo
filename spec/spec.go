@@ -3,7 +3,6 @@ package spec
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
 )
@@ -126,17 +125,6 @@ type SpecParseResult struct {
 	Errors   Messages
 }
 
-func specError(errs Messages) error {
-	if len(errs) > 0 {
-		message := ""
-		for _, error := range errs {
-			message = message + fmt.Sprintf("%s\n", error)
-		}
-		return errors.New("spec errors: \n" + message)
-	}
-	return nil
-}
-
 func ReadSpec(data []byte) (*SpecParseResult, error) {
 	data, err := checkSpecVersion(data)
 	if err != nil {
@@ -148,17 +136,17 @@ func ReadSpec(data []byte) (*SpecParseResult, error) {
 		return nil, err
 	}
 
-	errors := enrichSpec(spec)
-	if len(errors) > 0 {
-		return &SpecParseResult{Errors: errors}, specError(errors)
+	errs := enrichSpec(spec)
+	if len(errs) > 0 {
+		return &SpecParseResult{Errors: errs}, errors.New("failed to parse specification")
 	}
 
-	warnings, errors := validate(spec)
-	if len(errors) > 0 {
-		return &SpecParseResult{Spec: nil, Warnings: warnings, Errors: errors}, specError(errors)
+	warns, errs := validate(spec)
+	if len(errs) > 0 {
+		return &SpecParseResult{Spec: nil, Warnings: warns, Errors: errs}, errors.New("failed to validate specification")
 	}
 
-	return &SpecParseResult{Spec: spec, Warnings: warnings, Errors: errors}, nil
+	return &SpecParseResult{Spec: spec, Warnings: warns, Errors: errs}, nil
 }
 
 func WriteSpec(spec *Spec) ([]byte, error) {
