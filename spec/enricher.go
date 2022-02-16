@@ -105,17 +105,19 @@ func (enricher *enricher) Params(params []NamedParam) {
 }
 
 func (enricher *enricher) Model(model *NamedModel) {
-	if model.IsObject() {
-		for index := range model.Object.Fields {
-			enricher.Definition(&model.Object.Fields[index].Definition)
+	if !enricher.processedModels(model.Name.Source) {
+		if model.IsObject() {
+			for index := range model.Object.Fields {
+				enricher.Definition(&model.Object.Fields[index].Definition)
+			}
 		}
-	}
-	if model.IsOneOf() {
-		for index := range model.OneOf.Items {
-			enricher.Definition(&model.OneOf.Items[index].Definition)
+		if model.IsOneOf() {
+			for index := range model.OneOf.Items {
+				enricher.Definition(&model.OneOf.Items[index].Definition)
+			}
 		}
+		enricher.addResolvedModel(model)
 	}
-	enricher.addResolvedModel(model)
 }
 
 func (enricher *enricher) DefinitionDefault(definition *DefinitionDefault) {
@@ -140,9 +142,7 @@ func (enricher *enricher) TypeDef(typ *TypeDef, location *yaml.Node) *TypeInfo {
 		case PlainType:
 			if model, ok := enricher.findModel(typ.Plain); ok {
 				typ.Info = ModelTypeInfo(model)
-				if !enricher.processedModels(typ.Plain) {
-					enricher.Model(model)
-				}
+				enricher.Model(model)
 			} else {
 				if info, ok := Types[typ.Plain]; ok {
 					typ.Info = &info
