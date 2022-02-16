@@ -5,6 +5,8 @@ import (
 	"errors"
 	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
+	"strconv"
+	"strings"
 )
 
 type Spec struct {
@@ -128,11 +130,19 @@ type SpecParseResult struct {
 func ReadSpec(data []byte) (*SpecParseResult, error) {
 	data, err := checkSpecVersion(data)
 	if err != nil {
+		message := convertError(err)
+		if message != nil {
+			return &SpecParseResult{Errors: []Message{*message}}, errors.New("failed to read specification")
+		}
 		return nil, err
 	}
 
 	spec, err := unmarshalSpec(data)
 	if err != nil {
+		message := convertError(err)
+		if message != nil {
+			return &SpecParseResult{Errors: []Message{*message}}, errors.New("failed to read specification")
+		}
 		return nil, err
 	}
 
@@ -147,6 +157,18 @@ func ReadSpec(data []byte) (*SpecParseResult, error) {
 	}
 
 	return &SpecParseResult{Spec: spec, Warnings: warns, Errors: errs}, nil
+}
+
+func convertError(err error) *Message {
+	if strings.HasPrefix(err.Error(), "yaml: line ") {
+		parts := strings.SplitN(strings.TrimPrefix(err.Error(), "yaml: line "), ":", 2)
+		line, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return nil
+		}
+		return &Message{LevelError, strings.TrimSpace(parts[1]), line, 0}
+	}
+	return nil
 }
 
 func WriteSpec(spec *Spec) ([]byte, error) {

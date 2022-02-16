@@ -148,9 +148,10 @@ func (enricher *enricher) TypeDef(typ *TypeDef, location *yaml.Node) *TypeInfo {
 					typ.Info = &info
 				} else {
 					error := Message{
-						Level:    LevelError,
-						Message:  fmt.Sprintf("unknown type: %s", typ.Plain),
-						Location: location,
+						Level:   LevelError,
+						Message: fmt.Sprintf("unknown type: %s", typ.Plain),
+						Line:    location.Line,
+						Column:  location.Column,
 					}
 					enricher.addError(error)
 				}
