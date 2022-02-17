@@ -136,7 +136,7 @@ func (enricher *enricher) Type(typ *Type) {
 	enricher.TypeDef(&typ.Definition, typ.Location)
 }
 
-func (enricher *enricher) TypeDef(typ *TypeDef, location *yaml.Node) *TypeInfo {
+func (enricher *enricher) TypeDef(typ *TypeDef, node *yaml.Node) *TypeInfo {
 	if typ != nil {
 		switch typ.Node {
 		case PlainType:
@@ -148,22 +148,21 @@ func (enricher *enricher) TypeDef(typ *TypeDef, location *yaml.Node) *TypeInfo {
 					typ.Info = &info
 				} else {
 					error := Message{
-						Level:   LevelError,
-						Message: fmt.Sprintf("unknown type: %s", typ.Plain),
-						Line:    location.Line,
-						Column:  location.Column,
+						Level:    LevelError,
+						Message:  fmt.Sprintf("unknown type: %s", typ.Plain),
+						Location: locationFromNode(node),
 					}
 					enricher.addError(error)
 				}
 			}
 		case NullableType:
-			childInfo := enricher.TypeDef(typ.Child, location)
+			childInfo := enricher.TypeDef(typ.Child, node)
 			typ.Info = NullableTypeInfo(childInfo)
 		case ArrayType:
-			enricher.TypeDef(typ.Child, location)
+			enricher.TypeDef(typ.Child, node)
 			typ.Info = ArrayTypeInfo()
 		case MapType:
-			enricher.TypeDef(typ.Child, location)
+			enricher.TypeDef(typ.Child, node)
 			typ.Info = MapTypeInfo()
 		default:
 			panic(fmt.Sprintf("Unknown type: %v", typ))

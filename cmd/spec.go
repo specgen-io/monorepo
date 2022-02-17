@@ -17,8 +17,15 @@ func (ms messages) Swap(i, j int) {
 	ms[i], ms[j] = ms[j], ms[i]
 }
 func (ms messages) Less(i, j int) bool {
-	return ms[i].Line < ms[j].Line ||
-		(ms[i].Line == ms[j].Line && ms[i].Column < ms[j].Column)
+	if ms[i].Location == nil {
+		return true
+	}
+	if ms[j].Location == nil {
+		return false
+
+	}
+	return ms[i].Location.Line < ms[j].Location.Line ||
+		(ms[i].Location.Line == ms[j].Location.Line && ms[i].Location.Column < ms[j].Location.Column)
 }
 
 func printSpecParseResult(result *spec.SpecParseResult) {

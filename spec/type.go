@@ -207,14 +207,6 @@ func MapTypeInfo() *TypeInfo {
 	return &TypeInfo{StructureObject, true, nil}
 }
 
-type Location struct {
-	Line int
-}
-
-func GetLocation(node yaml.Node) Location {
-	return Location{node.Line}
-}
-
 func ParseType(value string) TypeDef {
 	typ, err := parseType(value)
 	if err != nil {

@@ -166,7 +166,7 @@ func convertError(err error) *Message {
 		if err != nil {
 			return nil
 		}
-		return &Message{LevelError, strings.TrimSpace(parts[1]), line, 0}
+		return &Message{LevelError, strings.TrimSpace(parts[1]), &Location{line, 0}}
 	}
 	return nil
 }
