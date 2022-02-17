@@ -7,22 +7,39 @@ import (
 	"strings"
 )
 
+type Level string
+
 const (
-	LevelError   string = "error"
-	LevelWarning string = "warning"
+	LevelError   Level = "error"
+	LevelWarning Level = "warning"
+	LevelInfo    Level = "info"
 )
 
+type Location struct {
+	Line   int
+	Column int
+}
+
+func locationFromNode(node *yaml.Node) *Location {
+	if node == nil {
+		return nil
+	}
+	return &Location{node.Line, node.Column}
+}
+
 type Message struct {
-	Level   string
-	Message string
-	Line    int
-	Column  int
+	Level    Level
+	Message  string
+	Location *Location
 }
 
 type Messages []Message
 
 func (self Message) String() string {
-	return fmt.Sprintf("line %s: %s", strconv.Itoa(self.Line), self.Message)
+	if self.Location != nil {
+		return fmt.Sprintf("%s - line %s: %s", self.Level, strconv.Itoa(self.Location.Line), self.Message)
+	}
+	return fmt.Sprintf("%s - %s", self.Level, self.Message)
 }
 
 type validator struct {
@@ -37,18 +54,12 @@ func validate(spec *Spec) (Messages, Messages) {
 }
 
 func (validator *validator) AddError(node *yaml.Node, message string) {
-	line := -1
-	column := -1
-	if node != nil {
-		line = node.Line
-		column = node.Column
-	}
-	theMessage := Message{Level: LevelError, Message: message, Line: line, Column: column}
+	theMessage := Message{LevelError, message, locationFromNode(node)}
 	validator.Errors = append(validator.Errors, theMessage)
 }
 
 func (validator *validator) AddWarning(node *yaml.Node, message string) {
-	theMessage := Message{Level: LevelWarning, Message: message, Line: node.Line, Column: node.Column}
+	theMessage := Message{LevelWarning, message, locationFromNode(node)}
 	validator.Warnings = append(validator.Warnings, theMessage)
 }
 
