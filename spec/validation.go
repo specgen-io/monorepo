@@ -1,39 +1,12 @@
 package spec
 
 import (
+	"errors"
 	"fmt"
 	"gopkg.in/specgen-io/yaml.v3"
 	"strconv"
 	"strings"
 )
-
-type Level string
-
-const (
-	LevelError   Level = "error"
-	LevelWarning Level = "warning"
-	LevelInfo    Level = "info"
-)
-
-type Location struct {
-	Line   int
-	Column int
-}
-
-func locationFromNode(node *yaml.Node) *Location {
-	if node == nil {
-		return nil
-	}
-	return &Location{node.Line, node.Column}
-}
-
-type Message struct {
-	Level    Level
-	Message  string
-	Location *Location
-}
-
-type Messages []Message
 
 func (self Message) String() string {
 	if self.Location != nil {
@@ -42,25 +15,27 @@ func (self Message) String() string {
 	return fmt.Sprintf("%s - %s", self.Level, self.Message)
 }
 
-type validator struct {
-	Errors   Messages
-	Warnings Messages
-}
-
-func validate(spec *Spec) (Messages, Messages) {
+func validate(spec *Spec) (Messages, error) {
 	validator := &validator{}
 	validator.Spec(spec)
-	return validator.Warnings, validator.Errors
+	if validator.Messages.Contains(LevelError) {
+		return validator.Messages, errors.New("failed to validate specification")
+	}
+	return validator.Messages, nil
 }
 
-func (validator *validator) AddError(node *yaml.Node, message string) {
+type validator struct {
+	Messages Messages
+}
+
+func (validator *validator) addError(node *yaml.Node, message string) {
 	theMessage := Message{LevelError, message, locationFromNode(node)}
-	validator.Errors = append(validator.Errors, theMessage)
+	validator.Messages = append(validator.Messages, theMessage)
 }
 
-func (validator *validator) AddWarning(node *yaml.Node, message string) {
+func (validator *validator) addWarning(node *yaml.Node, message string) {
 	theMessage := Message{LevelWarning, message, locationFromNode(node)}
-	validator.Warnings = append(validator.Warnings, theMessage)
+	validator.Messages = append(validator.Messages, theMessage)
 }
 
 func (validator *validator) Spec(spec *Spec) {
@@ -89,7 +64,7 @@ func (validator *validator) Spec(spec *Spec) {
 			for _, operation := range operations {
 				operationsStr = append(operationsStr, operation.FullName())
 			}
-			validator.AddWarning(operations[0].Location, fmt.Sprintf(`endpoint "%s" is used for %d operations: %s`, url, len(operationsStr), strings.Join(operationsStr, ", ")))
+			validator.addWarning(operations[0].Location, fmt.Sprintf(`endpoint "%s" is used for %d operations: %s`, url, len(operationsStr), strings.Join(operationsStr, ", ")))
 		}
 	}
 }
@@ -98,7 +73,7 @@ func (validator *validator) ParamsNames(paramsMap map[string]NamedParam, params 
 	for _, p := range params {
 		if other, ok := paramsMap[p.Name.SnakeCase()]; ok {
 			message := fmt.Sprintf("parameter name '%s' conflicts with the other parameter name '%s'", p.Name.Source, other.Name.Source)
-			validator.AddError(p.Name.Location, message)
+			validator.addError(p.Name.Location, message)
 		} else {
 			paramsMap[p.Name.SnakeCase()] = p
 		}
@@ -121,7 +96,7 @@ func (validator *validator) Operation(operation *NamedOperation) {
 			bodyType.Definition.Info.Structure != StructureArray &&
 			bodyType.Definition.String() != TypeString {
 			message := fmt.Sprintf("body should be object, array or string type, found %s", bodyType.Definition.Name)
-			validator.AddError(operation.Body.Location, message)
+			validator.addError(operation.Body.Location, message)
 		}
 		validator.Definition(operation.Body)
 	}
@@ -135,7 +110,7 @@ func (validator *validator) Response(response *NamedResponse) {
 	if response.Name.Source == HttpStatusInternalServerError || response.Name.Source == HttpStatusNotFound || response.Name.Source == HttpStatusBadRequest {
 		if !response.Type.Definition.IsEmpty() {
 			message := fmt.Sprintf("response %s can be only empty if declared, found %s", response.Name.Source, response.Type.Definition.Name)
-			validator.AddWarning(response.Type.Location, message)
+			validator.addWarning(response.Type.Location, message)
 		}
 	}
 	if !response.Type.Definition.IsEmpty() &&
@@ -143,7 +118,7 @@ func (validator *validator) Response(response *NamedResponse) {
 		response.Type.Definition.Info.Structure != StructureArray &&
 		response.Type.Definition.String() != TypeString {
 		message := fmt.Sprintf("response %s should be either empty or some type with structure of an object or array, found %s", response.Name.Source, response.Type.Definition.Name)
-		validator.AddError(response.Type.Location, message)
+		validator.addError(response.Type.Location, message)
 	}
 	validator.Definition(&response.Definition)
 }
@@ -156,11 +131,11 @@ func (validator *validator) Params(params []NamedParam, allowArrayTypes bool) {
 		arrayNotNullable := paramType.Definition.Info.Structure == StructureArray && !paramType.Definition.IsNullable()
 		if allowArrayTypes {
 			if !scalar && !arrayNotNullable {
-				validator.AddError(paramType.Location, fmt.Sprintf("parameter %s should be of scalar type or array of scalar type, found %s", paramName.Source, paramType.Definition.Name))
+				validator.addError(paramType.Location, fmt.Sprintf("parameter %s should be of scalar type or array of scalar type, found %s", paramName.Source, paramType.Definition.Name))
 			}
 		} else {
 			if !scalar {
-				validator.AddError(paramType.Location, fmt.Sprintf("parameter %s should be of scalar type, found %s", paramName.Source, paramType.Definition.Name))
+				validator.addError(paramType.Location, fmt.Sprintf("parameter %s should be of scalar type, found %s", paramName.Source, paramType.Definition.Name))
 			}
 		}
 		validator.DefinitionDefault(&params[index].DefinitionDefault)
@@ -181,7 +156,7 @@ func (validator *validator) ItemsUniqueness(location *yaml.Node, items []NamedDe
 	}
 	for _, names := range itemsMap {
 		if len(names) > 1 {
-			validator.AddError(location, fmt.Sprintf(`%s: %s`, errorMsg, strings.Join(names, ", ")))
+			validator.addError(location, fmt.Sprintf(`%s: %s`, errorMsg, strings.Join(names, ", ")))
 		}
 	}
 }
@@ -200,14 +175,14 @@ func (validator *validator) EnumItemsUniqueness(location *yaml.Node, items []Nam
 	}
 	for _, names := range itemsMap {
 		if len(names) > 1 {
-			validator.AddError(location, fmt.Sprintf(`%s: %s`, errorMsg, strings.Join(names, ", ")))
+			validator.addError(location, fmt.Sprintf(`%s: %s`, errorMsg, strings.Join(names, ", ")))
 		}
 	}
 }
 
 func (validator *validator) NonEmpty(definition *NamedDefinition) {
 	if definition.Type.Definition.IsEmpty() {
-		validator.AddError(definition.Location, "type empty can not be used in models")
+		validator.addError(definition.Location, "type empty can not be used in models")
 	}
 }
 
@@ -236,7 +211,7 @@ func (validator *validator) Model(model *NamedModel) {
 func (validator *validator) DefinitionDefault(definition *DefinitionDefault) {
 	if definition != nil {
 		if definition.Default != nil && !definition.Type.Definition.Info.Defaultable {
-			validator.AddError(definition.Location, fmt.Sprintf("type %s can not have default value", definition.Type.Definition.Name))
+			validator.addError(definition.Location, fmt.Sprintf("type %s can not have default value", definition.Type.Definition.Name))
 		}
 		if definition.Default != nil {
 			validator.DefaultValue(definition.Type.Definition, *definition.Default, definition.Location)
@@ -248,11 +223,11 @@ func (validator *validator) DefaultValue(typ TypeDef, value string, location *ya
 	switch typ.Node {
 	case ArrayType:
 		if value != "[]" {
-			validator.AddError(location, fmt.Sprintf("default value for array type %s can be only empty list: [], found '%s'", typ.Name, value))
+			validator.addError(location, fmt.Sprintf("default value for array type %s can be only empty list: [], found '%s'", typ.Name, value))
 		}
 	case MapType:
 		if value != "{}" {
-			validator.AddError(location, fmt.Sprintf("default value for map type %s can be only empty map: {}, found '%s'", typ.Name, value))
+			validator.addError(location, fmt.Sprintf("default value for map type %s can be only empty map: {}, found '%s'", typ.Name, value))
 		}
 	case PlainType:
 		switch typ.Plain {
@@ -260,40 +235,40 @@ func (validator *validator) DefaultValue(typ TypeDef, value string, location *ya
 			TypeInt64:
 			err := Integer.Check(value)
 			if err != nil {
-				validator.AddError(location, "default value "+err.Error())
+				validator.addError(location, "default value "+err.Error())
 			}
 		case TypeDouble,
 			TypeFloat,
 			TypeDecimal:
 			err := Float.Check(value)
 			if err != nil {
-				validator.AddError(location, "default value "+err.Error())
+				validator.addError(location, "default value "+err.Error())
 			}
 		case TypeBoolean:
 			err := Boolean.Check(value)
 			if err != nil {
-				validator.AddError(location, "default value "+err.Error())
+				validator.addError(location, "default value "+err.Error())
 			}
 		case TypeUuid:
 			err := UUID.Check(value)
 			if err != nil {
-				validator.AddError(location, "default value "+err.Error())
+				validator.addError(location, "default value "+err.Error())
 			}
 		case TypeDate:
 			err := Date.Check(value)
 			if err != nil {
-				validator.AddError(location, "default value "+err.Error())
+				validator.addError(location, "default value "+err.Error())
 			}
 		case TypeDateTime:
 			err := DateTime.Check(value)
 			if err != nil {
-				validator.AddError(location, "default value "+err.Error())
+				validator.addError(location, "default value "+err.Error())
 			}
 		default:
 			model := typ.Info.Model
 			if model != nil && model.IsEnum() {
 				if !enumContainsItem(model.Enum, value) {
-					validator.AddError(location, fmt.Sprintf("default value %s is not defined in the enum %s", value, typ.Name))
+					validator.addError(location, fmt.Sprintf("default value %s is not defined in the enum %s", value, typ.Name))
 				}
 			}
 		}

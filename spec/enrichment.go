@@ -1,21 +1,25 @@
 package spec
 
 import (
+	"errors"
 	"fmt"
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
-func enrichSpec(spec *Spec) []Message {
-	errors := []Message{}
+func enrich(spec *Spec) (Messages, error) {
+	messages := Messages{}
 	for verIndex := range spec.Versions {
 		version := &spec.Versions[verIndex]
 		modelsMap := buildModelsMap(version.Models)
 		enricher := &enricher{modelsMap, make(map[string]interface{}), nil, nil}
 		enricher.Version(version)
 		version.ResolvedModels = enricher.ResolvedModels
-		errors = append(errors, enricher.Errors...)
+		messages = append(messages, enricher.Messages...)
 	}
-	return errors
+	if messages.Contains(LevelError) {
+		return messages, errors.New("failed to parse specification")
+	}
+	return messages, nil
 }
 
 type ModelsMap map[string]*NamedModel
@@ -32,7 +36,7 @@ func buildModelsMap(models Models) ModelsMap {
 type enricher struct {
 	ModelsMap       ModelsMap
 	ProcessedModels map[string]interface{}
-	Errors          []Message
+	Messages        Messages
 	ResolvedModels  []*NamedModel
 }
 
@@ -60,8 +64,14 @@ func (enricher *enricher) addResolvedModel(model *NamedModel) {
 	enricher.ResolvedModels = append(enricher.ResolvedModels, model)
 }
 
-func (enricher *enricher) addError(error Message) {
-	enricher.Errors = append(enricher.Errors, error)
+func (enricher *enricher) addError(node *yaml.Node, message string) {
+	theMessage := Message{LevelError, message, locationFromNode(node)}
+	enricher.Messages = append(enricher.Messages, theMessage)
+}
+
+func (enricher *enricher) addWarning(node *yaml.Node, message string) {
+	theMessage := Message{LevelWarning, message, locationFromNode(node)}
+	enricher.Messages = append(enricher.Messages, theMessage)
 }
 
 func (enricher *enricher) Version(version *Version) {
@@ -147,12 +157,7 @@ func (enricher *enricher) TypeDef(typ *TypeDef, node *yaml.Node) *TypeInfo {
 				if info, ok := Types[typ.Plain]; ok {
 					typ.Info = &info
 				} else {
-					error := Message{
-						Level:    LevelError,
-						Message:  fmt.Sprintf("unknown type: %s", typ.Plain),
-						Location: locationFromNode(node),
-					}
-					enricher.addError(error)
+					enricher.addError(node, fmt.Sprintf("unknown type: %s", typ.Plain))
 				}
 			}
 		case NullableType:

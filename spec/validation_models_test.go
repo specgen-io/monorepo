@@ -17,7 +17,7 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrich(spec)
 	assert.Equal(t, len(errors), 0)
 
 	_, errors = validate(spec)
@@ -35,7 +35,7 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrich(spec)
 	assert.Equal(t, len(errors), 0)
 
 	_, errors = validate(spec)
@@ -54,7 +54,7 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrich(spec)
 	assert.Equal(t, len(errors), 0)
 
 	_, errors = validate(spec)
@@ -72,7 +72,7 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrich(spec)
 	assert.Equal(t, len(errors), 0)
 
 	_, errors = validate(spec)
@@ -91,7 +91,7 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	errors := enrich(spec)
 	assert.Equal(t, len(errors), 0)
 
 	_, errors = validate(spec)

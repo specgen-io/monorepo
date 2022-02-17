@@ -22,9 +22,9 @@ http:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
-
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 }
 
 func Test_Resolve_Operations_Fail_UnknownType(t *testing.T) {
@@ -43,12 +43,13 @@ http:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	messages, err := enrich(spec)
+	assert.ErrorContains(t, err, "bla")
 
-	assert.Equal(t, len(errors), 3)
-	assert.Equal(t, strings.Contains(errors[0].Message, "nonexisting1"), true)
-	assert.Equal(t, strings.Contains(errors[1].Message, "nonexisting2"), true)
-	assert.Equal(t, strings.Contains(errors[2].Message, "nonexisting3"), true)
+	assert.Equal(t, len(messages), 3)
+	assert.Equal(t, strings.Contains(messages[0].Message, "nonexisting1"), true)
+	assert.Equal(t, strings.Contains(messages[1].Message, "nonexisting2"), true)
+	assert.Equal(t, strings.Contains(messages[2].Message, "nonexisting3"), true)
 }
 
 func Test_Resolve_Operations_Pass_CustomType(t *testing.T) {
@@ -71,9 +72,9 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
-
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 }
 
 func Test_ResolveTypes_ObjectField_Pass(t *testing.T) {
@@ -94,9 +95,9 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
-
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 }
 
 func Test_ResolveTypes_ObjectField_Fail(t *testing.T) {
@@ -109,10 +110,11 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
+	messages, err := enrich(spec)
 
-	assert.Equal(t, len(errors), 1)
-	assert.Equal(t, strings.Contains(errors[0].Message, "NonExisting"), true)
+	assert.ErrorContains(t, err, "bla")
+	assert.Equal(t, len(messages), 1)
+	assert.Equal(t, strings.Contains(messages[0].Message, "NonExisting"), true)
 }
 
 func Test_ResolveTypes_UnionItem_Pass(t *testing.T) {
@@ -131,9 +133,9 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
-
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 }
 
 func Test_ResolveTypes_UnionItem_Fail(t *testing.T) {
@@ -146,10 +148,10 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
-
-	assert.Equal(t, len(errors), 1)
-	assert.Equal(t, strings.Contains(errors[0].Message, "NonExisting"), true)
+	messages, err := enrich(spec)
+	assert.ErrorContains(t, err, "bla")
+	assert.Equal(t, len(messages), 1)
+	assert.Equal(t, strings.Contains(messages[0].Message, "NonExisting"), true)
 }
 
 func Test_Resolve_Models_Normal_Order(t *testing.T) {
@@ -165,7 +167,7 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	enrichSpec(spec)
+	enrich(spec)
 
 	assert.Equal(t, len(spec.Versions), 1)
 	models := spec.Versions[0].ResolvedModels
@@ -191,7 +193,7 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	enrichSpec(spec)
+	enrich(spec)
 
 	assert.Equal(t, len(spec.Versions), 1)
 	version := &spec.Versions[0]
@@ -222,7 +224,7 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	enrichSpec(spec)
+	enrich(spec)
 
 	assert.Equal(t, len(spec.Versions), 1)
 	models := spec.Versions[0].ResolvedModels
@@ -244,8 +246,9 @@ http:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrichSpec(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
 	version := &spec.Versions[0]
 	apis := &version.Http
@@ -269,7 +272,7 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	enrichSpec(spec)
+	enrich(spec)
 
 	ver := &spec.Versions[0]
 	assert.Equal(t, ver.Models[0].Version, ver)
