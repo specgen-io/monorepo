@@ -1,12 +1,8 @@
 package spec
 
 import (
-	"bytes"
-	"errors"
 	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
-	"strconv"
-	"strings"
 )
 
 type Spec struct {
@@ -119,77 +115,4 @@ func unmarshalSpec(data []byte) (*Spec, error) {
 		return nil, err
 	}
 	return &spec, nil
-}
-
-type SpecParseResult struct {
-	Spec     *Spec
-	Warnings Messages
-	Errors   Messages
-}
-
-func ReadSpec(data []byte) (*SpecParseResult, error) {
-	data, err := checkSpecVersion(data)
-	if err != nil {
-		message := convertError(err)
-		if message != nil {
-			return &SpecParseResult{Errors: []Message{*message}}, errors.New("failed to read specification")
-		}
-		return nil, err
-	}
-
-	spec, err := unmarshalSpec(data)
-	if err != nil {
-		message := convertError(err)
-		if message != nil {
-			return &SpecParseResult{Errors: []Message{*message}}, errors.New("failed to read specification")
-		}
-		return nil, err
-	}
-
-	errs := enrichSpec(spec)
-	if len(errs) > 0 {
-		return &SpecParseResult{Errors: errs}, errors.New("failed to parse specification")
-	}
-
-	warns, errs := validate(spec)
-	if len(errs) > 0 {
-		return &SpecParseResult{Spec: nil, Warnings: warns, Errors: errs}, errors.New("failed to validate specification")
-	}
-
-	return &SpecParseResult{Spec: spec, Warnings: warns, Errors: errs}, nil
-}
-
-func convertError(err error) *Message {
-	if strings.HasPrefix(err.Error(), "yaml: line ") {
-		parts := strings.SplitN(strings.TrimPrefix(err.Error(), "yaml: line "), ":", 2)
-		line, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return nil
-		}
-		return &Message{LevelError, strings.TrimSpace(parts[1]), &Location{line, 0}}
-	}
-	return nil
-}
-
-func WriteSpec(spec *Spec) ([]byte, error) {
-	var buf bytes.Buffer
-	encoder := yaml.NewEncoder(&buf)
-	encoder.SetIndent(2)
-	err := encoder.Encode(spec)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func ReadMeta(data []byte) (*Meta, error) {
-	data, err := checkSpecVersion(data)
-	if err != nil {
-		return nil, err
-	}
-	var meta Meta
-	if err := yaml.UnmarshalWith(decodeLooze, data, &meta); err != nil {
-		return nil, err
-	}
-	return &meta, nil
 }

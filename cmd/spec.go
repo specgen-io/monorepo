@@ -8,31 +8,13 @@ import (
 	"sort"
 )
 
-type messages spec.Messages
-
-func (ms messages) Len() int {
-	return len(ms)
-}
-func (ms messages) Swap(i, j int) {
-	ms[i], ms[j] = ms[j], ms[i]
-}
-func (ms messages) Less(i, j int) bool {
-	if ms[i].Location == nil {
-		return true
+func printSpecParseResult(messages spec.Messages) {
+	if messages == nil {
+		return
 	}
-	if ms[j].Location == nil {
-		return false
+	sort.Sort(messages)
 
-	}
-	return ms[i].Location.Line < ms[j].Location.Line ||
-		(ms[i].Location.Line == ms[j].Location.Line && ms[i].Location.Column < ms[j].Location.Column)
-}
-
-func printSpecParseResult(result *spec.SpecParseResult) {
-	allMessages := append(result.Errors, result.Warnings...)
-	sort.Sort(messages(allMessages))
-
-	for _, message := range allMessages {
+	for _, message := range messages {
 		if message.Level != spec.LevelError {
 			console.PrintLnF("%s %s", message.Level, message)
 		} else {
@@ -47,9 +29,9 @@ func readSpecFile(specFile string) *spec.Spec {
 	fail.IfErrorF(err, "Failed to read spec file: %s", specFile)
 
 	console.PrintLn("Parsing spec")
-	result, err := spec.ReadSpec(data)
+	spec, messages, err := spec.ReadSpec(data)
 
-	printSpecParseResult(result)
+	printSpecParseResult(messages)
 	fail.IfErrorF(err, "Failed to parse spec: %s", specFile)
-	return result.Spec
+	return spec
 }
