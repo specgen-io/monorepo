@@ -9,10 +9,10 @@ import (
 )
 
 func checkOpenApi(t *testing.T, specYaml, expectedOpenApiYaml string) {
-	result, err := spec.ReadSpec([]byte(specYaml))
+	spec, _, err := spec.ReadSpec([]byte(specYaml))
 	assert.Equal(t, err, nil)
 
-	openapiYaml, err := yamlx.ToYamlString(generateSpecification(result.Spec))
+	openapiYaml, err := yamlx.ToYamlString(generateSpecification(spec))
 	assert.NilError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))

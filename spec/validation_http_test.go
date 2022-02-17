@@ -20,12 +20,13 @@ http:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 0)
-	assert.Equal(t, len(errors), 0)
+	messages, err = validate(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 }
 
 func Test_Body_NonObject_Error(t *testing.T) {
@@ -42,13 +43,14 @@ http:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 0)
-	assert.Equal(t, len(errors), 1)
-	assert.Equal(t, strings.Contains(errors[0].Message, "body"), true)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 1)
+	assert.Equal(t, messages[0].Level, LevelError)
+	assert.Equal(t, strings.Contains(messages[0].Message, "body"), true)
 }
 
 func Test_Response_String(t *testing.T) {
@@ -64,12 +66,13 @@ http:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 0)
-	assert.Equal(t, len(errors), 0)
+	messages, err = validate(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 }
 
 func Test_Response_NonObject_Error(t *testing.T) {
@@ -85,13 +88,13 @@ http:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 0)
-	assert.Equal(t, len(errors), 1)
-	assert.Equal(t, strings.Contains(errors[0].Message, "response"), true)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 1)
+	assert.Equal(t, strings.Contains(messages[0].Message, "response"), true)
 }
 
 func Test_Response_NonEmpty_SpecialStatus_Error(t *testing.T) {
@@ -109,15 +112,15 @@ http:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 3)
-	assert.Equal(t, len(errors), 0)
-	assert.Equal(t, strings.Contains(warnings[0].Message, "internal_server_error"), true)
-	assert.Equal(t, strings.Contains(warnings[1].Message, "not_found"), true)
-	assert.Equal(t, strings.Contains(warnings[2].Message, "bad_request"), true)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 3)
+	assert.Equal(t, strings.Contains(messages[0].Message, "internal_server_error"), true)
+	assert.Equal(t, strings.Contains(messages[1].Message, "not_found"), true)
+	assert.Equal(t, strings.Contains(messages[2].Message, "bad_request"), true)
 }
 
 func Test_Query_Param_Array_Allowed(t *testing.T) {
@@ -135,12 +138,13 @@ http:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 0)
-	assert.Equal(t, len(errors), 0)
+	messages, err = validate(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 }
 
 func Test_Query_Param_Object_Errors(t *testing.T) {
@@ -163,14 +167,14 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 0)
-	assert.Equal(t, len(errors), 2)
-	assert.Equal(t, strings.Contains(errors[0].Message, "param1"), true)
-	assert.Equal(t, strings.Contains(errors[1].Message, "param2"), true)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 2)
+	assert.Equal(t, strings.Contains(messages[0].Message, "param1"), true)
+	assert.Equal(t, strings.Contains(messages[1].Message, "param2"), true)
 }
 
 func Test_Params_SameName_Error(t *testing.T) {
@@ -190,13 +194,13 @@ http:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 0)
-	assert.Equal(t, len(errors), 1)
-	assert.Equal(t, strings.Contains(errors[0].Message, "the_param"), true)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 1)
+	assert.Equal(t, strings.Contains(messages[0].Message, "the_param"), true)
 }
 
 func Test_NonDefaultable_Type_Error(t *testing.T) {
@@ -216,14 +220,14 @@ http:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 0)
-	assert.Equal(t, len(errors), 2)
-	assert.Equal(t, strings.Contains(errors[0].Message, "string?"), true)
-	assert.Equal(t, strings.Contains(errors[1].Message, "date?"), true)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 2)
+	assert.Equal(t, strings.Contains(messages[0].Message, "string?"), true)
+	assert.Equal(t, strings.Contains(messages[1].Message, "date?"), true)
 }
 
 func Test_Defaulted_Format_Pass(t *testing.T) {
@@ -256,12 +260,13 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 0)
-	assert.Equal(t, len(errors), 0)
+	messages, err = validate(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 }
 
 func Test_Defaulted_Format_Fail(t *testing.T) {
@@ -294,12 +299,12 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 0)
-	assert.Equal(t, len(errors), 10)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 10)
 }
 
 func Test_DuplicateUrl(t *testing.T) {
@@ -319,11 +324,11 @@ http:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	warnings, errors := validate(spec)
-	assert.Equal(t, len(warnings), 1)
-	assert.Equal(t, len(errors), 0)
-	assert.Equal(t, strings.Contains(warnings[0].Message, "/some/url"), true)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 1)
+	assert.Equal(t, strings.Contains(messages[0].Message, "/some/url"), true)
 }
