@@ -17,11 +17,12 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	_, errors = validate(spec)
-	assert.Equal(t, len(errors), 1)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 1)
 }
 
 func Test_Object_EmptyIsNotAllowed(t *testing.T) {
@@ -35,11 +36,12 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	_, errors = validate(spec)
-	assert.Equal(t, len(errors), 1)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 1)
 }
 
 func Test_OneOf_ItemsUniqueness(t *testing.T) {
@@ -54,11 +56,12 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	_, errors = validate(spec)
-	assert.Equal(t, len(errors), 1)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 1)
 }
 
 func Test_OneOf_EmptyIsNotAllowed(t *testing.T) {
@@ -72,11 +75,12 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	_, errors = validate(spec)
-	assert.Equal(t, len(errors), 1)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 1)
 }
 
 func Test_Enum_ItemsUniqueness(t *testing.T) {
@@ -91,9 +95,10 @@ models:
 	spec, err := unmarshalSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	errors := enrich(spec)
-	assert.Equal(t, len(errors), 0)
+	messages, err := enrich(spec)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(messages), 0)
 
-	_, errors = validate(spec)
-	assert.Equal(t, len(errors), 1)
+	messages, err = validate(spec)
+	assert.Equal(t, len(messages), 1)
 }

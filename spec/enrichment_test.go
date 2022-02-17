@@ -44,7 +44,7 @@ http:
 	assert.Equal(t, err, nil)
 
 	messages, err := enrich(spec)
-	assert.ErrorContains(t, err, "bla")
+	assert.ErrorContains(t, err, "failed to parse specification")
 
 	assert.Equal(t, len(messages), 3)
 	assert.Equal(t, strings.Contains(messages[0].Message, "nonexisting1"), true)
@@ -112,7 +112,7 @@ models:
 
 	messages, err := enrich(spec)
 
-	assert.ErrorContains(t, err, "bla")
+	assert.ErrorContains(t, err, "failed to parse specification")
 	assert.Equal(t, len(messages), 1)
 	assert.Equal(t, strings.Contains(messages[0].Message, "NonExisting"), true)
 }
@@ -149,7 +149,7 @@ models:
 	assert.Equal(t, err, nil)
 
 	messages, err := enrich(spec)
-	assert.ErrorContains(t, err, "bla")
+	assert.ErrorContains(t, err, "failed to parse specification")
 	assert.Equal(t, len(messages), 1)
 	assert.Equal(t, strings.Contains(messages[0].Message, "NonExisting"), true)
 }

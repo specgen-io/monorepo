@@ -21,10 +21,9 @@ models:
       prop2: int32
 `
 
-	result, err := ReadSpec([]byte(data))
+	spec, _, err := ReadSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	spec := result.Spec
 	assert.Equal(t, len(spec.Versions), 1)
 	assert.Equal(t, len(spec.Versions[0].Models), 2)
 }
@@ -48,10 +47,9 @@ models:
       prop2: int32
 `
 
-	result, err := ReadSpec([]byte(data))
+	spec, _, err := ReadSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	spec := result.Spec
 	assert.Equal(t, len(spec.Versions), 2)
 	v2Version := spec.Versions[0]
 	assert.Equal(t, v2Version.Version.Source, "v2")
@@ -78,10 +76,9 @@ http:
             response:
                 ok: empty
 `
-	result, err := ReadSpec([]byte(data))
+	spec, _, err := ReadSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	spec := result.Spec
 	assert.Equal(t, len(spec.Versions), 1)
 	version := spec.Versions[0]
 	assert.Equal(t, len(version.Http.Apis), 1)
@@ -123,10 +120,9 @@ http:
                 ok: empty
 `
 
-	result, err := ReadSpec([]byte(data))
+	spec, _, err := ReadSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	spec := result.Spec
 	assert.Equal(t, len(spec.Versions), 2)
 
 	v2 := spec.Versions[0]
@@ -166,7 +162,7 @@ http:
       response:
         ok: Message
 `
-	_, err := ReadSpec([]byte(data))
+	_, _, err := ReadSpec([]byte(data))
 	assert.ErrorContains(t, err, "echo_body")
 }
 
@@ -179,10 +175,9 @@ description: Some Bla API service
 version: 0
 `
 
-	result, err := ReadSpec([]byte(data))
+	spec, _, err := ReadSpec([]byte(data))
 	assert.Equal(t, err, nil)
 
-	spec := result.Spec
 	assert.Equal(t, spec.SpecVersion, "2.1")
 	assert.Equal(t, spec.Name.Source, "bla-api")
 	assert.Equal(t, *spec.Title, "Bla API")
