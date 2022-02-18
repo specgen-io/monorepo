@@ -1,13 +1,13 @@
 package gen
 
 import (
-	"github.com/specgen-io/specgen/v2/gengo"
-	"github.com/specgen-io/specgen/v2/genjava"
-	"github.com/specgen-io/specgen/v2/genkotlin"
-	"github.com/specgen-io/specgen/v2/genopenapi"
-	"github.com/specgen-io/specgen/v2/genruby"
-	"github.com/specgen-io/specgen/v2/genscala"
-	"github.com/specgen-io/specgen/v2/gents"
+	"github.com/specgen-io/specgen/v2/gen/golang"
+	"github.com/specgen-io/specgen/v2/gen/java"
+	"github.com/specgen-io/specgen/v2/gen/kotlin"
+	"github.com/specgen-io/specgen/v2/gen/openapi"
+	"github.com/specgen-io/specgen/v2/gen/ruby"
+	"github.com/specgen-io/specgen/v2/gen/scala"
+	"github.com/specgen-io/specgen/v2/gen/ts"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
@@ -21,7 +21,7 @@ var Openapi = Generator{
 		{Arg: ArgOutFile, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		openapiFile := genopenapi.GenerateOpenapi(specification, params[ArgOutFile])
+		openapiFile := openapi.GenerateOpenapi(specification, params[ArgOutFile])
 		sources := sources.NewSources()
 		sources.AddGenerated(openapiFile)
 		return sources
@@ -38,7 +38,7 @@ var ModelsGo = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return gengo.GenerateModels(specification, params[ArgModuleName], params[ArgGeneratePath])
+		return golang.GenerateModels(specification, params[ArgModuleName], params[ArgGeneratePath])
 	},
 }
 
@@ -52,7 +52,7 @@ var ClientGo = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return gengo.GenerateClient(specification, params[ArgModuleName], params[ArgGeneratePath])
+		return golang.GenerateClient(specification, params[ArgModuleName], params[ArgGeneratePath])
 	},
 }
 
@@ -68,7 +68,7 @@ var ServiceGo = Generator{
 		{Arg: ArgServicesPath, Required: false},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return gengo.GenerateService(specification, params[ArgModuleName], params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath])
+		return golang.GenerateService(specification, params[ArgModuleName], params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath])
 	},
 }
 
@@ -85,7 +85,7 @@ var ModelsJava = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genjava.GenerateModels(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgGeneratePath])
+		return java.GenerateModels(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgGeneratePath])
 	},
 }
 
@@ -100,7 +100,7 @@ var ClientJava = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genjava.GenerateClient(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgGeneratePath])
+		return java.GenerateClient(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgGeneratePath])
 	},
 }
 
@@ -117,7 +117,7 @@ var ServiceJava = Generator{
 		{Arg: ArgServicesPath, Required: false},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genjava.GenerateService(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath])
+		return java.GenerateService(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath])
 	},
 }
 
@@ -134,7 +134,7 @@ var ModelsKotlin = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genkotlin.GenerateModels(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgGeneratePath])
+		return kotlin.GenerateModels(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgGeneratePath])
 	},
 }
 
@@ -149,7 +149,7 @@ var ClientKotlin = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genkotlin.GenerateClient(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgGeneratePath])
+		return kotlin.GenerateClient(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgGeneratePath])
 	},
 }
 
@@ -162,7 +162,7 @@ var ModelsRuby = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genruby.GenerateModels(specification, params[ArgGeneratePath])
+		return ruby.GenerateModels(specification, params[ArgGeneratePath])
 	},
 }
 
@@ -175,7 +175,7 @@ var ClientRuby = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genruby.GenerateClient(specification, params[ArgGeneratePath])
+		return ruby.GenerateClient(specification, params[ArgGeneratePath])
 	},
 }
 
@@ -188,7 +188,7 @@ var ModelsScala = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genscala.GenerateCirceModels(specification, "", params[ArgGeneratePath])
+		return scala.GenerateCirceModels(specification, "", params[ArgGeneratePath])
 	},
 }
 
@@ -201,7 +201,7 @@ var ClientScala = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genscala.GenerateSttpClient(specification, "", params[ArgGeneratePath])
+		return scala.GenerateSttpClient(specification, "", params[ArgGeneratePath])
 	},
 }
 
@@ -216,7 +216,7 @@ var ServiceScala = Generator{
 		{Arg: ArgServicesPath, Required: false},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return genscala.GeneratePlayService(specification, params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath])
+		return scala.GeneratePlayService(specification, params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath])
 	},
 }
 
@@ -234,7 +234,7 @@ var ModelsTs = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return gents.GenerateModels(specification, params[ArgValidation], params[ArgGeneratePath])
+		return ts.GenerateModels(specification, params[ArgValidation], params[ArgGeneratePath])
 	},
 }
 
@@ -249,7 +249,7 @@ var ClientTs = Generator{
 		{Arg: ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return gents.GenerateClient(specification, params[ArgGeneratePath], params[ArgClient], params[ArgValidation])
+		return ts.GenerateClient(specification, params[ArgGeneratePath], params[ArgClient], params[ArgValidation])
 	},
 }
 
@@ -266,7 +266,7 @@ var ServiceTs = Generator{
 		{Arg: ArgSwaggerPath, Required: false},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return gents.GenerateService(specification, params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath], params[ArgServer], params[ArgValidation])
+		return ts.GenerateService(specification, params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath], params[ArgServer], params[ArgValidation])
 	},
 }
 
