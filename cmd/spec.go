@@ -8,30 +8,26 @@ import (
 	"sort"
 )
 
-func printSpecParseResult(messages spec.Messages) {
-	if messages == nil {
-		return
-	}
-	sort.Sort(messages)
-
-	for _, message := range messages {
-		if message.Level != spec.LevelError {
-			console.PrintLnF("%s %s", message.Level, message)
-		} else {
-			console.ProblemLnF("%s %s", message.Level, message)
-		}
-	}
-}
-
 func readSpecFile(specFile string) *spec.Spec {
 	console.PrintLnF("Reading spec file: %s", specFile)
 	data, err := ioutil.ReadFile(specFile)
 	fail.IfErrorF(err, "Failed to read spec file: %s", specFile)
 
 	console.PrintLn("Parsing spec")
-	spec, messages, err := spec.ReadSpec(data)
+	specification, messages, err := spec.ReadSpec(data)
 
-	printSpecParseResult(messages)
+	if messages != nil {
+		sort.Sort(messages.Items)
+
+		for _, message := range messages.Items {
+			if message.Level != spec.LevelError {
+				console.PrintLnF("%s %s", message.Level, message)
+			} else {
+				console.ProblemLnF("%s %s", message.Level, message)
+			}
+		}
+	}
+
 	fail.IfErrorF(err, "Failed to parse spec: %s", specFile)
-	return spec
+	return specification
 }

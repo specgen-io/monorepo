@@ -163,7 +163,7 @@ http:
         ok: Message
 `
 	_, _, err := ReadSpec([]byte(data))
-	assert.ErrorContains(t, err, "echo_body")
+	assert.Error(t, err, "failed to read specification")
 }
 
 func Test_ParseSpec_Meta(t *testing.T) {
@@ -183,24 +183,6 @@ version: 0
 	assert.Equal(t, *spec.Title, "Bla API")
 	assert.Equal(t, *spec.Description, "Some Bla API service")
 	assert.Equal(t, spec.Version, "0")
-}
-
-func Test_ParseMeta(t *testing.T) {
-	data := `
-spec: 2.1
-name: bla-api
-title: Bla API
-description: Some Bla API service
-version: 0
-`
-	meta, err := ReadMeta([]byte(data))
-	assert.Equal(t, err, nil)
-
-	assert.Equal(t, meta.SpecVersion, "2.1")
-	assert.Equal(t, meta.Name.Source, "bla-api")
-	assert.Equal(t, *meta.Title, "Bla API")
-	assert.Equal(t, *meta.Description, "Some Bla API service")
-	assert.Equal(t, meta.Version, "0")
 }
 
 func Test_Spec_Write_Models(t *testing.T) {

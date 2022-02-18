@@ -1,7 +1,10 @@
 package spec
 
 import (
+	"fmt"
 	"gopkg.in/specgen-io/yaml.v3"
+	"strconv"
+	"strings"
 )
 
 type Level string
@@ -30,15 +33,77 @@ type Message struct {
 	Location *Location
 }
 
-type Messages []Message
+func Error(messageFormat string, args ...interface{}) Message {
+	return Message{LevelError, fmt.Sprintf(messageFormat, args...), nil}
+}
 
-func (ms Messages) Len() int {
+func Warning(messageFormat string, args ...interface{}) Message {
+	return Message{LevelWarning, fmt.Sprintf(messageFormat, args...), nil}
+}
+
+func Info(messageFormat string, args ...interface{}) Message {
+	return Message{LevelInfo, fmt.Sprintf(messageFormat, args...), nil}
+}
+
+func (message Message) At(location *Location) Message {
+	message.Location = location
+	return message
+}
+
+func convertYamlError(err error) Message {
+	if strings.HasPrefix(err.Error(), "yaml: line ") {
+		parts := strings.SplitN(strings.TrimPrefix(err.Error(), "yaml: line "), ":", 2)
+		line, err := strconv.Atoi(parts[0])
+		if err == nil {
+			return Message{LevelError, strings.TrimSpace(parts[1]), &Location{line, 0}}
+		}
+	}
+	return Message{LevelError, err.Error(), nil}
+}
+
+type Messages struct {
+	Items messages
+}
+
+func NewMessages() *Messages {
+	return &Messages{[]Message{}}
+}
+
+func (ms *Messages) Add(message Message) {
+	ms.Items = append(ms.Items, message)
+}
+
+func (ms *Messages) AddAll(messages ...Message) {
+	ms.Items = append(ms.Items, messages...)
+}
+
+func (ms *Messages) ContainsLevel(level Level) bool {
+	for _, m := range ms.Items {
+		if m.Level == level {
+			return true
+		}
+	}
+	return false
+}
+
+func (ms *Messages) Contains(f func(Message) bool) bool {
+	for _, m := range ms.Items {
+		if f(m) {
+			return true
+		}
+	}
+	return false
+}
+
+type messages []Message
+
+func (ms messages) Len() int {
 	return len(ms)
 }
-func (ms Messages) Swap(i, j int) {
+func (ms messages) Swap(i, j int) {
 	ms[i], ms[j] = ms[j], ms[i]
 }
-func (ms Messages) Less(i, j int) bool {
+func (ms messages) Less(i, j int) bool {
 	if ms[i].Location == nil {
 		return true
 	}
@@ -48,13 +113,4 @@ func (ms Messages) Less(i, j int) bool {
 	}
 	return ms[i].Location.Line < ms[j].Location.Line ||
 		(ms[i].Location.Line == ms[j].Location.Line && ms[i].Location.Column < ms[j].Location.Column)
-}
-
-func (ms Messages) Contains(level Level) bool {
-	for _, m := range ms {
-		if m.Level == level {
-			return true
-		}
-	}
-	return false
 }

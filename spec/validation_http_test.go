@@ -1,36 +1,47 @@
 package spec
 
 import (
-	"gotest.tools/assert"
-	"strings"
+	"errors"
 	"testing"
 )
 
-func Test_Body_String(t *testing.T) {
-	data := `
-http:
-    test:
-      some_url:
-        endpoint: GET /some/url
-        body: string
-        response:
-          ok: empty
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
+func Test_Validation_Http(t *testing.T) {
+	runReadSpecificationCases(t, validationHttpCases)
 }
 
-func Test_Body_NonObject_Error(t *testing.T) {
-	data := `
+var validationHttpCases = []ReadSpecificationCase{
+	{
+		`string request body no errors`,
+		`
+http:
+  test:
+    some_url:
+      endpoint: GET /some/url
+      body: string
+      response:
+        ok: empty
+`,
+		nil,
+		[]Message{},
+		nil,
+	},
+	{
+		`string response body no errors`,
+		`
+http:
+  test:
+    some_url:
+      endpoint: GET /some/url
+      response:
+        ok: string
+`,
+		nil,
+		[]Message{},
+		nil,
+	},
+	{
+		`scalar request body error`,
+		`
 http:
     test:
       some_url:
@@ -38,297 +49,230 @@ http:
         body: int
         response:
           ok: empty
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 1)
-	assert.Equal(t, messages[0].Level, LevelError)
-	assert.Equal(t, strings.Contains(messages[0].Message, "body"), true)
-}
-
-func Test_Response_String(t *testing.T) {
-	data := `
+`,
+		errors.New("failed to validate specification"),
+		[]Message{Error("body should be object, array or string type, found int")},
+		nil,
+	},
+	{
+		`scalar request body error`,
+		`
 http:
     test:
       some_url:
         endpoint: GET /some/url
-        response:
-          ok: string
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-}
-
-func Test_Response_NonObject_Error(t *testing.T) {
-	data := `
-http:
-    test:
-      some_url:
-        endpoint: GET /some/url
-        response:
-          ok: int
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 1)
-	assert.Equal(t, strings.Contains(messages[0].Message, "response"), true)
-}
-
-func Test_Response_NonEmpty_SpecialStatus_Error(t *testing.T) {
-	data := `
-http:
-    test:
-      some_url:
-        endpoint: GET /some/url
-        response:
-          internal_server_error: string{}
-          not_found: string{}
-          bad_request: string{}
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 3)
-	assert.Equal(t, strings.Contains(messages[0].Message, "internal_server_error"), true)
-	assert.Equal(t, strings.Contains(messages[1].Message, "not_found"), true)
-	assert.Equal(t, strings.Contains(messages[2].Message, "bad_request"), true)
-}
-
-func Test_Query_Param_Array_Allowed(t *testing.T) {
-	data := `
-http:
-    test:
-      some_url:
-        endpoint: GET /some/url
-        query:
-          param1: int[]
+        body: int
         response:
           ok: empty
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-}
-
-func Test_Query_Param_Object_Errors(t *testing.T) {
-	data := `
+`,
+		errors.New("failed to validate specification"),
+		[]Message{Error("body should be object, array or string type, found int")},
+		nil,
+	},
+	{
+		`scalar response body error`,
+		`
 http:
-    test:
-      some_url:
-        endpoint: GET /some/url
-        query:
-          param1: int[]?
-          param2: TheModel
-        response:
-          ok: empty
+  test:
+    some_url:
+      endpoint: GET /some/url
+      response:
+        ok: int
+`,
+		errors.New("failed to validate specification"),
+		[]Message{Error("response ok should be either empty or some type with structure of an object or array, found int")},
+		nil,
+	},
+	{
+		`special responses body non empty warnings`,
+		`
+http:
+  test:
+    some_url:
+      endpoint: GET /some/url
+      response:
+        internal_server_error: string{}
+        not_found: string{}
+        bad_request: string{}
+`,
+		nil,
+		[]Message{
+			Warning("response internal_server_error can be only empty if declared, found string{}"),
+			Warning("response not_found can be only empty if declared, found string{}"),
+			Warning("response bad_request can be only empty if declared, found string{}"),
+		},
+		nil,
+	},
+	{
+		`array query param no errors`,
+		`
+http:
+  test:
+    some_url:
+      endpoint: GET /some/url
+      query:
+        param1: int[]
+      response:
+        ok: empty
+`,
+		nil,
+		[]Message{},
+		nil,
+	},
+	{
+		`object and nullable query param errors`,
+		`
+http:
+  test:
+    some_url:
+      endpoint: GET /some/url
+      query:
+        param1: int[]?
+        param2: TheModel
+      response:
+        ok: empty
 models:
- TheModel:
-   object:
-     field: string
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 2)
-	assert.Equal(t, strings.Contains(messages[0].Message, "param1"), true)
-	assert.Equal(t, strings.Contains(messages[1].Message, "param2"), true)
-}
-
-func Test_Params_SameName_Error(t *testing.T) {
-	data := `
+  TheModel:
+    object:
+      field: string
+`,
+		errors.New("failed to validate specification"),
+		[]Message{
+			Error("parameter param1 should be of scalar type or array of scalar type, found int[]?"),
+			Error("parameter param2 should be of scalar type or array of scalar type, found TheModel"),
+		},
+		nil,
+	},
+	{
+		`same name params error`,
+		`
 http:
-    test:
-      some_url:
-        endpoint: GET /some/url
-        query:
-          the_param: string
-        header:
-          The-Param: string
-        response:
-          ok: empty
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 1)
-	assert.Equal(t, strings.Contains(messages[0].Message, "the_param"), true)
-}
-
-func Test_NonDefaultable_Type_Error(t *testing.T) {
-	data := `
+  test:
+    some_url:
+      endpoint: GET /some/url
+      query:
+        the_param: string
+      header:
+        The-Param: string
+      response:
+        ok: empty
+`,
+		errors.New("failed to validate specification"),
+		[]Message{
+			Error("parameter name 'The-Param' conflicts with the other parameter name 'the_param'"),
+		},
+		nil,
+	},
+	{
+		`nullable pararms defaulted errors`,
+		`
 http:
-    test:
-      some_url:
-        endpoint: GET /some/url
-        query:
-          the_query_param: string? = the default
-        header:
-          The-Header-Param: date? = the default
-        response:
-          ok: empty
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 2)
-	assert.Equal(t, strings.Contains(messages[0].Message, "string?"), true)
-	assert.Equal(t, strings.Contains(messages[1].Message, "date?"), true)
-}
-
-func Test_Defaulted_Format_Pass(t *testing.T) {
-	data := `
+  test:
+    some_url:
+      endpoint: GET /some/url
+      query:
+        the_query_param: string? = the default
+      header:
+        The-Header-Param: date? = the default
+      response:
+        ok: empty
+`,
+		errors.New("failed to validate specification"),
+		[]Message{
+			Error("type string? can not have default value"),
+			Error("type date? can not have default value"),
+		},
+		nil,
+	},
+	{
+		`pararms defaulted no errors`,
+		`
 http:
-    test:
-      some_url:
-        endpoint: GET /some/url
-        query:
-          int: int = 123
-          long: long = 123
-          float: float = 123.4
-          double: double = 123.4
-          decimal: decimal = 123.4
-          boolean: boolean = true
-          string: string = the default value
-          uuid: uuid = 58d5e212-165b-4ca0-909b-c86b9cee0111
-          date: date = 2019-08-07
-          datetime: datetime = 2019-08-07T10:20:30
-          the_enum: Enum = second
-        response:
-          ok: empty
+  test:
+    some_url:
+      endpoint: GET /some/url
+      query:
+        int: int = 123
+        long: long = 123
+        float: float = 123.4
+        double: double = 123.4
+        decimal: decimal = 123.4
+        boolean: boolean = true
+        string: string = the default value
+        uuid: uuid = 58d5e212-165b-4ca0-909b-c86b9cee0111
+        date: date = 2019-08-07
+        datetime: datetime = 2019-08-07T10:20:30
+        the_enum: Enum = second
+      response:
+        ok: empty
 models:
   Enum:
     enum:
       - first
       - second
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-}
-
-func Test_Defaulted_Format_Fail(t *testing.T) {
-	data := `
+`,
+		nil,
+		[]Message{},
+		nil,
+	},
+	{
+		`pararms defaulted bad format errors`,
+		`
 http:
-    test:
-      some_url:
-        endpoint: GET /some/url
-        query:
-          int: int = -
-          long: long = 1.2
-          float: float = abc
-          double: double = .4
-          decimal: decimal = -.
-          boolean: boolean = yes
-          string: string = the default value
-          uuid: uuid = 58d5e212165b4ca0909bc86b9cee0111
-          date: date = 2019/08/07
-          datetime: datetime = 2019/08/07 10:20:30
-          the_enum: Enum = nonexisting
-        response:
-          ok: empty
+  test:
+    some_url:
+      endpoint: GET /some/url
+      query:
+        int: int = -
+        long: long = 1.2
+        float: float = abc
+        double: double = .4
+        decimal: decimal = -.
+        boolean: boolean = yes
+        string: string = the default value
+        uuid: uuid = 58d5e212165b4ca0909bc86b9cee0111
+        date: date = 2019/08/07
+        datetime: datetime = 2019/08/07 10:20:30
+        the_enum: Enum = nonexisting
+      response:
+        ok: empty
 models:
   Enum:
     enum:
       - first
       - second
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 10)
-}
-
-func Test_DuplicateUrl(t *testing.T) {
-	data := `
+`,
+		errors.New("failed to validate specification"),
+		[]Message{
+			Error("default value format error: '-' is in wrong format, should be integer; examples: 123"),
+			Error("default value format error: '1.2' is in wrong format, should be integer; examples: 123"),
+			Error("default value format error: 'abc' is in wrong format, should be float; examples: 123.4"),
+			Error("default value format error: '.4' is in wrong format, should be float; examples: 123.4"),
+			Error("default value format error: '-.' is in wrong format, should be float; examples: 123.4"),
+			Error("default value format error: 'yes' is in wrong format, should be boolean; examples: true or false"),
+			Error("default value format error: '58d5e212165b4ca0909bc86b9cee0111' is in wrong format, should be uuid; examples: fbd3036f-0f1c-4e98-b71c-d4cd61213f90"),
+			Error("default value format error: '2019/08/07' is in wrong format, should be date; examples: 2019-12-31"),
+			Error("default value format error: '2019/08/07 10:20:30' is in wrong format, should be datetime; examples: 2019-12-31T15:53:45"),
+			Error("default value nonexisting is not defined in the enum Enum"),
+		},
+		nil,
+	},
+	{
+		`duplicated url error`,
+		`
 http:
-    test:
-      first:
-        endpoint: GET /some/url
-        response:
-          ok: empty
-      second:
-        endpoint: GET /some/url
-        response:
-          ok: empty
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 1)
-	assert.Equal(t, strings.Contains(messages[0].Message, "/some/url"), true)
+  test:
+    first:
+      endpoint: GET /some/url
+      response:
+        ok: empty
+    second:
+      endpoint: GET /some/url
+      response:
+        ok: empty
+`,
+		nil,
+		[]Message{Warning(`endpoint "GET /some/url" is used for 2 operations: test.first, test.second`)},
+		nil,
+	},
 }
