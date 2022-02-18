@@ -40,6 +40,19 @@ func decodeStringOptional(node *yaml.Node, key string) (*string, error) {
 	return &str, err
 }
 
+func decodeStringNodeOptional(node *yaml.Node, key string) (*string, *yaml.Node, error) {
+	strNode := getMappingValue(node, key)
+	if strNode == nil {
+		return nil, nil, nil
+	}
+	str := ""
+	err := strNode.DecodeWith(decodeStrict, &str)
+	if err != nil {
+		return nil, strNode, yamlError(strNode, "failed to decode string value")
+	}
+	return &str, strNode, err
+}
+
 func getDescriptionFromComment(node *yaml.Node) *string {
 	if node == nil {
 		return nil

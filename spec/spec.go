@@ -115,7 +115,7 @@ func unmarshalSpec(data []byte) (*Spec, *Messages, error) {
 	var spec Spec
 	err := yaml.UnmarshalWith(decodeStrict, data, &spec)
 	if err != nil {
-		messages.Add(convertYamlError(err))
+		messages.Add(convertYamlError(err, nil))
 		return nil, messages, errors.New("failed to read specification")
 	}
 	return &spec, messages, nil

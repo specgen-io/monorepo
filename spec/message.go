@@ -50,15 +50,15 @@ func (message Message) At(location *Location) Message {
 	return message
 }
 
-func convertYamlError(err error) Message {
+func convertYamlError(err error, node *yaml.Node) Message {
 	if strings.HasPrefix(err.Error(), "yaml: line ") {
 		parts := strings.SplitN(strings.TrimPrefix(err.Error(), "yaml: line "), ":", 2)
 		line, err := strconv.Atoi(parts[0])
 		if err == nil {
-			return Message{LevelError, strings.TrimSpace(parts[1]), &Location{line, 0}}
+			return Error(strings.TrimSpace(parts[1])).At(&Location{line, 0})
 		}
 	}
-	return Message{LevelError, err.Error(), nil}
+	return Error(err.Error()).At(locationFromNode(node))
 }
 
 type Messages struct {
