@@ -164,7 +164,7 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 	w.Line(`var err error`)
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`contentType := req.Header.Get("Content-Type")`)
-		w.Line(`if !strings.ContainsLevel(contentType, "text/plain") {`)
+		w.Line(`if !strings.Contains(contentType, "text/plain") {`)
 		w.Line(`  log.WithFields(%s).Errorf("%s", contentType)`, logFieldsName(operation), "Wrong Content-type: %s")
 		w.Line(`  res.WriteHeader(400)`)
 		w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
@@ -181,7 +181,7 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 	}
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`contentType := req.Header.Get("Content-Type")`)
-		w.Line(`if !strings.ContainsLevel(contentType, "application/json") {`)
+		w.Line(`if !strings.Contains(contentType, "application/json") {`)
 		w.Line(`  log.WithFields(%s).Errorf("%s", contentType)`, logFieldsName(operation), "Wrong Content-type: %s")
 		w.Line(`  res.WriteHeader(400)`)
 		w.Line(`  log.WithFields(%s).WithField("status", 400).Info("Completed request")`, logFieldsName(operation))
