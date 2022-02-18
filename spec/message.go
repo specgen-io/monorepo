@@ -12,7 +12,7 @@ type Level string
 const (
 	LevelError   Level = "error"
 	LevelWarning Level = "warning"
-	LevelInfo    Level = "info"
+	LevelInfo    Level = "information"
 )
 
 type Location struct {
