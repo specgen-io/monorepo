@@ -15,27 +15,27 @@ func (self Message) String() string {
 	return fmt.Sprintf("%s - %s", self.Level, self.Message)
 }
 
-func validate(spec *Spec) (Messages, error) {
-	validator := &validator{}
+func validate(spec *Spec) (*Messages, error) {
+	messages := NewMessages()
+	validator := &validator{messages}
 	validator.Spec(spec)
-	if validator.Messages.Contains(LevelError) {
-		return validator.Messages, errors.New("failed to validate specification")
+	var err error = nil
+	if validator.Messages.ContainsLevel(LevelError) {
+		err = errors.New("failed to validate specification")
 	}
-	return validator.Messages, nil
+	return messages, err
 }
 
 type validator struct {
-	Messages Messages
+	Messages *Messages
 }
 
 func (validator *validator) addError(node *yaml.Node, message string) {
-	theMessage := Message{LevelError, message, locationFromNode(node)}
-	validator.Messages = append(validator.Messages, theMessage)
+	validator.Messages.Add(Error(message).At(locationFromNode(node)))
 }
 
 func (validator *validator) addWarning(node *yaml.Node, message string) {
-	theMessage := Message{LevelWarning, message, locationFromNode(node)}
-	validator.Messages = append(validator.Messages, theMessage)
+	validator.Messages.Add(Warning(message).At(locationFromNode(node)))
 }
 
 func (validator *validator) Spec(spec *Spec) {

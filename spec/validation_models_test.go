@@ -1,104 +1,76 @@
 package spec
 
 import (
-	"gotest.tools/assert"
+	"errors"
 	"testing"
 )
 
-func Test_Object_FieldUniqueness(t *testing.T) {
-	data := `
+func Test_Validation_Models(t *testing.T) {
+	runReadSpecificationCases(t, validationModelsCases)
+}
+
+var validationModelsCases = []ReadSpecificationCase{
+	{
+		`object field non unique error`,
+		`
 models:
   MyObject:
     object:
       the_field: string
       theField: string
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 1)
-}
-
-func Test_Object_EmptyIsNotAllowed(t *testing.T) {
-	data := `
+`,
+		errors.New(`failed to validate specification`),
+		[]Message{Error(`object model MyObject fields names are too similiar to each other: the_field, theField`)},
+		nil,
+	},
+	{
+		`object field is empty error`,
+		`
 models:
   MyObject:
     object:
       the_field: empty
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 1)
-}
-
-func Test_OneOf_ItemsUniqueness(t *testing.T) {
-	data := `
+`,
+		errors.New(`failed to validate specification`),
+		[]Message{Error(`type empty can not be used in models`)},
+		nil,
+	},
+	{
+		`oneOf items aren't unique error`,
+		`
 models:
   MyUnion:
     oneOf:
       the_item: string
       theItem: string
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 1)
-}
-
-func Test_OneOf_EmptyIsNotAllowed(t *testing.T) {
-	data := `
+`,
+		errors.New(`failed to validate specification`),
+		[]Message{Error(`oneOf model MyUnion items names are too similiar to each other: the_item, theItem`)},
+		nil,
+	},
+	{
+		`oneOf item is empty error`,
+		`
 models:
   MyUnion:
     oneOf:
       the_item: empty
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 1)
-}
-
-func Test_Enum_ItemsUniqueness(t *testing.T) {
-	data := `
+`,
+		errors.New(`failed to validate specification`),
+		[]Message{Error(`type empty can not be used in models`)},
+		nil,
+	},
+	{
+		`enum items aren't unique error`,
+		`
 models:
   MyUnion:
     enum:
       - the_item
       - the_item
-`
-
-	spec, err := unmarshalSpec([]byte(data))
-	assert.Equal(t, err, nil)
-
-	messages, err := enrich(spec)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(messages), 0)
-
-	messages, err = validate(spec)
-	assert.Equal(t, len(messages), 1)
+`,
+		errors.New(`failed to validate specification`),
+		[]Message{Error(`enum model MyUnion items names are too similiar to each other: the_item, the_item`)},
+		nil,
+	},
 }

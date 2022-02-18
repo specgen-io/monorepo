@@ -6,17 +6,16 @@ import (
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
-func enrich(spec *Spec) (Messages, error) {
-	messages := Messages{}
+func enrich(spec *Spec) (*Messages, error) {
+	messages := NewMessages()
 	for verIndex := range spec.Versions {
 		version := &spec.Versions[verIndex]
 		modelsMap := buildModelsMap(version.Models)
-		enricher := &enricher{modelsMap, make(map[string]interface{}), nil, nil}
+		enricher := &enricher{modelsMap, make(map[string]interface{}), messages, nil}
 		enricher.Version(version)
 		version.ResolvedModels = enricher.ResolvedModels
-		messages = append(messages, enricher.Messages...)
 	}
-	if messages.Contains(LevelError) {
+	if messages.ContainsLevel(LevelError) {
 		return messages, errors.New("failed to parse specification")
 	}
 	return messages, nil
@@ -36,7 +35,7 @@ func buildModelsMap(models Models) ModelsMap {
 type enricher struct {
 	ModelsMap       ModelsMap
 	ProcessedModels map[string]interface{}
-	Messages        Messages
+	Messages        *Messages
 	ResolvedModels  []*NamedModel
 }
 
@@ -62,16 +61,6 @@ func (enricher *enricher) addResolvedModel(model *NamedModel) {
 		}
 	}
 	enricher.ResolvedModels = append(enricher.ResolvedModels, model)
-}
-
-func (enricher *enricher) addError(node *yaml.Node, message string) {
-	theMessage := Message{LevelError, message, locationFromNode(node)}
-	enricher.Messages = append(enricher.Messages, theMessage)
-}
-
-func (enricher *enricher) addWarning(node *yaml.Node, message string) {
-	theMessage := Message{LevelWarning, message, locationFromNode(node)}
-	enricher.Messages = append(enricher.Messages, theMessage)
 }
 
 func (enricher *enricher) Version(version *Version) {
@@ -157,7 +146,8 @@ func (enricher *enricher) TypeDef(typ *TypeDef, node *yaml.Node) *TypeInfo {
 				if info, ok := Types[typ.Plain]; ok {
 					typ.Info = &info
 				} else {
-					enricher.addError(node, fmt.Sprintf("unknown type: %s", typ.Plain))
+					e := Error("unknown type: %s", typ.Plain).At(locationFromNode(node))
+					enricher.Messages.Add(e)
 				}
 			}
 		case NullableType:

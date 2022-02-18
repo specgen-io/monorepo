@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/specgen-io/specgen/v2/console"
 	"github.com/specgen-io/specgen/v2/spec/old"
 )
 import "gopkg.in/specgen-io/yaml.v3"
@@ -40,20 +39,25 @@ func getSpecVersion(data []byte) (*string, error) {
 	return nil, errors.New(`can't find "spec" or legacy "idl_version" containing spec version`)
 }
 
-func checkSpecVersion(data []byte) ([]byte, error) {
+func checkSpecVersion(data []byte) ([]byte, *Messages, error) {
+	messages := NewMessages()
 	specVersion, err := getSpecVersion(data)
 	if err != nil {
-		return nil, err
+		messages.Add(convertYamlError(err))
+		return nil, messages, errors.New("failed to read specification")
 	}
+
 	if *specVersion != SpecVersion {
-		console.PrintLnF("warning: unexpected spec format version: %s; please format you spec to format %s", *specVersion, SpecVersion)
-		console.PrintLnF("trying to convert spec to format %s on the fly...", SpecVersion)
+		messages.Add(Warning("warning: unexpected spec format version: %s; please format you spec to format %s", *specVersion, SpecVersion))
+		messages.Add(Info("will try to convert spec to format %s on the fly...", SpecVersion))
+
 		convertedData, err := old.FormatSpec(data, SpecVersion)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf(`unexpected spec version, expected: %s, found: %s, conversion failed: %s`, SpecVersion, *specVersion, err.Error()))
+			messages.Add(Error("tried to convert specification - %s", err.Error()))
+			return nil, messages, errors.New(fmt.Sprintf(`unexpected spec version, expected: %s, found: %s, conversion failed: %s`, SpecVersion, *specVersion, err.Error()))
 		}
-		console.PrintLnF("convert spec to format %s succeeded", SpecVersion)
-		return convertedData, nil
+		messages.Add(Info("convert spec to format %s succeeded", SpecVersion))
+		return convertedData, messages, nil
 	}
-	return data, nil
+	return data, messages, nil
 }

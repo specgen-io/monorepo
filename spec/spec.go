@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"errors"
 	"github.com/specgen-io/specgen/v2/yamlx"
 	"gopkg.in/specgen-io/yaml.v3"
 )
@@ -109,10 +110,13 @@ func (value Meta) MarshalYAML() (interface{}, error) {
 	return yamlMap.Node, nil
 }
 
-func unmarshalSpec(data []byte) (*Spec, error) {
+func unmarshalSpec(data []byte) (*Spec, *Messages, error) {
+	messages := NewMessages()
 	var spec Spec
-	if err := yaml.UnmarshalWith(decodeStrict, data, &spec); err != nil {
-		return nil, err
+	err := yaml.UnmarshalWith(decodeStrict, data, &spec)
+	if err != nil {
+		messages.Add(convertYamlError(err))
+		return nil, messages, errors.New("failed to read specification")
 	}
-	return &spec, nil
+	return &spec, messages, nil
 }

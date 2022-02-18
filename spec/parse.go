@@ -2,10 +2,7 @@ package spec
 
 import (
 	"bytes"
-	"errors"
 	"gopkg.in/specgen-io/yaml.v3"
-	"strconv"
-	"strings"
 )
 
 type SpecParseResult struct {
@@ -13,48 +10,33 @@ type SpecParseResult struct {
 	Messages Messages
 }
 
-func ReadSpec(data []byte) (*Spec, Messages, error) {
-	data, err := checkSpecVersion(data)
+func ReadSpec(data []byte) (*Spec, *Messages, error) {
+	allMessages := NewMessages()
+	data, messages, err := checkSpecVersion(data)
+	allMessages.AddAll(messages.Items...)
 	if err != nil {
-		message := convertError(err)
-		if message != nil {
-			return nil, Messages{*message}, errors.New("failed to read specification")
-		}
-		return nil, Messages{}, err
+		return nil, allMessages, err
 	}
 
-	spec, err := unmarshalSpec(data)
+	spec, messages, err := unmarshalSpec(data)
+	allMessages.AddAll(messages.Items...)
 	if err != nil {
-		message := convertError(err)
-		if message != nil {
-			return nil, Messages{*message}, errors.New("failed to read specification")
-		}
-		return nil, Messages{}, err
+		return nil, allMessages, err
 	}
 
-	messages, err := enrich(spec)
+	messages, err = enrich(spec)
+	allMessages.AddAll(messages.Items...)
 	if err != nil {
-		return nil, messages, err
+		return nil, allMessages, err
 	}
 
 	messages, err = validate(spec)
+	allMessages.AddAll(messages.Items...)
 	if err != nil {
-		return nil, messages, err
+		return nil, allMessages, err
 	}
 
-	return spec, messages, nil
-}
-
-func convertError(err error) *Message {
-	if strings.HasPrefix(err.Error(), "yaml: line ") {
-		parts := strings.SplitN(strings.TrimPrefix(err.Error(), "yaml: line "), ":", 2)
-		line, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return nil
-		}
-		return &Message{LevelError, strings.TrimSpace(parts[1]), &Location{line, 0}}
-	}
-	return nil
+	return spec, allMessages, nil
 }
 
 func WriteSpec(spec *Spec) ([]byte, error) {
@@ -66,16 +48,4 @@ func WriteSpec(spec *Spec) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
-}
-
-func ReadMeta(data []byte) (*Meta, error) {
-	data, err := checkSpecVersion(data)
-	if err != nil {
-		return nil, err
-	}
-	var meta Meta
-	if err := yaml.UnmarshalWith(decodeLooze, data, &meta); err != nil {
-		return nil, err
-	}
-	return &meta, nil
 }
