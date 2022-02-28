@@ -2,7 +2,6 @@ package responses
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen/java/responses"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/types"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/writer"
@@ -29,7 +28,7 @@ func Signature(types *types.Types, operation *spec.NamedOperation) string {
 
 func CreateResponse(response *spec.NamedResponse, resultVar string) string {
 	if len(response.Operation.Responses) > 1 {
-		return fmt.Sprintf(`%s.%s(%s)`, responses.InterfaceName(response.Operation), response.Name.PascalCase(), resultVar)
+		return fmt.Sprintf(`%s.%s(%s)`, InterfaceName(response.Operation), response.Name.PascalCase(), resultVar)
 	}
 	return resultVar
 }
