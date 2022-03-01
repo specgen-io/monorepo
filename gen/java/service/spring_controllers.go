@@ -10,26 +10,25 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/java/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
-	"strings"
 )
 
-func (g *Generator) ServicesControllers(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module, modelsVersionPackage packages.Module, serviceVersionPackage packages.Module) []sources.CodeFile {
+func (s *SpringGenerator) ServicesControllers(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module, modelsVersionPackage packages.Module, serviceVersionPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.serviceController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
+		files = append(files, s.serviceController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
 	}
 	return files
 }
 
-func (g *Generator) serviceController(api *spec.Api, apiPackage packages.Module, jsonPackage packages.Module, modelsVersionPackage packages.Module, serviceVersionPackage packages.Module) []sources.CodeFile {
+func (s *SpringGenerator) serviceController(api *spec.Api, apiPackage packages.Module, jsonPackage packages.Module, modelsVersionPackage packages.Module, serviceVersionPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.Models.JsonImports()...)
-	imports.Add(g.Types.Imports()...)
+	imports.Add(s.Models.JsonImports()...)
+	imports.Add(s.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`import org.apache.logging.log4j.*;`)
@@ -53,10 +52,10 @@ func (g *Generator) serviceController(api *spec.Api, apiPackage packages.Module,
 	w.Line(`  private %s %s;`, serviceInterfaceName(api), serviceVarName(api))
 	w.EmptyLine()
 	w.Line(`  @Autowired`)
-	g.Models.CreateJsonMapperField(w.Indented())
+	s.Models.CreateJsonMapperField(w.Indented())
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		g.controllerMethod(w.Indented(), &operation)
+		s.controllerMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 
@@ -68,16 +67,16 @@ func (g *Generator) serviceController(api *spec.Api, apiPackage packages.Module,
 	return files
 }
 
-func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOperation) {
+func (s *SpringGenerator) controllerMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, casee.ToPascalCase(methodName), url)
-	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), joinParams(addMethodParams(operation, g.Types)))
+	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), joinParams(addMethodParams(operation, s.Types)))
 	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.EmptyLine()
 	if operation.BodyIs(spec.BodyJson) {
-		bodyJavaType := g.Types.Java(&operation.Body.Type.Definition)
-		requestBody, exception := g.Models.ReadJson("bodyStr", &operation.Body.Type.Definition)
+		bodyJavaType := s.Types.Java(&operation.Body.Type.Definition)
+		requestBody, exception := s.Models.ReadJson("bodyStr", &operation.Body.Type.Definition)
 		w.Line(`  %s requestBody;`, bodyJavaType)
 		w.Line(`  try {`)
 		w.Line(`    requestBody = %s;`, requestBody)
@@ -97,12 +96,12 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 		w.Line(`  }`)
 	}
 	if len(operation.Responses) == 1 {
-		g.processResponse(w.Indented(), &operation.Responses[0], "result")
+		s.processResponse(w.Indented(), &operation.Responses[0], "result")
 	}
 	if len(operation.Responses) > 1 {
 		for _, response := range operation.Responses {
 			w.Line(`  if (result instanceof %s.%s) {`, responses.InterfaceName(operation), response.Name.PascalCase())
-			g.processResponse(w.IndentedWith(2), &response, "result")
+			s.processResponse(w.IndentedWith(2), &response, "result")
 			w.Line(`  }`)
 		}
 		w.EmptyLine()
@@ -112,7 +111,7 @@ func (g *Generator) controllerMethod(w *sources.Writer, operation *spec.NamedOpe
 	w.Line(`}`)
 }
 
-func (g *Generator) processResponse(w *sources.Writer, response *spec.NamedResponse, result string) {
+func (s *SpringGenerator) processResponse(w *sources.Writer, response *spec.NamedResponse, result string) {
 	if len(response.Operation.Responses) > 1 {
 		result = fmt.Sprintf(`((%s.%s) %s).body`, responses.InterfaceName(response.Operation), response.Name.PascalCase(), result)
 	}
@@ -127,7 +126,7 @@ func (g *Generator) processResponse(w *sources.Writer, response *spec.NamedRespo
 		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, result, response.Name.UpperCase())
 	}
 	if response.BodyIs(spec.BodyJson) {
-		responseWrite, _ := g.Models.WriteJson(result, &response.Type.Definition)
+		responseWrite, _ := s.Models.WriteJson(result, &response.Type.Definition)
 		w.Line(`String responseJson = %s;`, responseWrite)
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json");`)
@@ -149,6 +148,19 @@ func getSpringParameterAnnotation(paramAnnotationName string, param *spec.NamedP
 	return fmt.Sprintf(`@%s(%s)`, paramAnnotationName, joinParams(annotationParams))
 }
 
+func addMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
+	methodParams := []string{}
+
+	if operation.Body != nil {
+		methodParams = append(methodParams, "@RequestBody String bodyStr")
+	}
+	methodParams = append(methodParams, generateMethodParam(operation.QueryParams, "RequestParam", types)...)
+	methodParams = append(methodParams, generateMethodParam(operation.HeaderParams, "RequestHeader", types)...)
+	methodParams = append(methodParams, generateMethodParam(operation.Endpoint.UrlParams, "PathVariable", types)...)
+
+	return methodParams
+}
+
 func generateMethodParam(namedParams []spec.NamedParam, paramAnnotationName string, types *types.Types) []string {
 	params := []string{}
 
@@ -166,39 +178,6 @@ func generateMethodParam(namedParams []spec.NamedParam, paramAnnotationName stri
 	}
 
 	return params
-}
-
-func addMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
-	methodParams := []string{}
-
-	if operation.Body != nil {
-		methodParams = append(methodParams, "@RequestBody String bodyStr")
-	}
-	methodParams = append(methodParams, generateMethodParam(operation.QueryParams, "RequestParam", types)...)
-	methodParams = append(methodParams, generateMethodParam(operation.HeaderParams, "RequestHeader", types)...)
-	methodParams = append(methodParams, generateMethodParam(operation.Endpoint.UrlParams, "PathVariable", types)...)
-
-	return methodParams
-}
-
-func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) []string {
-	methodParams := []string{}
-	if operation.BodyIs(spec.BodyString) {
-		methodParams = append(methodParams, bodyStringVar)
-	}
-	if operation.BodyIs(spec.BodyJson) {
-		methodParams = append(methodParams, bodyJsonVar)
-	}
-	for _, param := range operation.QueryParams {
-		methodParams = append(methodParams, param.Name.CamelCase())
-	}
-	for _, param := range operation.HeaderParams {
-		methodParams = append(methodParams, param.Name.CamelCase())
-	}
-	for _, param := range operation.Endpoint.UrlParams {
-		methodParams = append(methodParams, param.Name.CamelCase())
-	}
-	return methodParams
 }
 
 func dateFormatAnnotation(typ *spec.TypeDef) string {
@@ -225,8 +204,4 @@ func dateFormatAnnotationPlain(typ string) string {
 	default:
 		return ""
 	}
-}
-
-func joinParams(params []string) string {
-	return strings.Join(params, ", ")
 }
