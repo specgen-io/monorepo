@@ -143,7 +143,7 @@ func (g *koaGenerator) operationRouting(w *sources.Writer, operation *spec.Named
 	} else {
 		w.Line("  switch (result.status) {")
 		for _, response := range operation.Responses {
-			w.Line("    case '%s':", response.Name.FlatCase())
+			w.Line("    case '%s':", response.Name.SnakeCase())
 			g.response(w.IndentedWith(3), &response, "result.data")
 		}
 		w.Line("  }")
