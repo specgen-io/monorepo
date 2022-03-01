@@ -104,6 +104,8 @@ var ClientJava = Generator{
 	},
 }
 
+var ServerJavaValues = []string{"spring"}
+
 var ServiceJava = Generator{
 	"service-java",
 	"Java Service",
@@ -111,13 +113,14 @@ var ServiceJava = Generator{
 	[]GeneratorArg{
 		{Arg: ArgSpecFile, Required: true},
 		{Arg: ArgJsonlib, Required: true, Values: JsonlibJavaValues},
+		{Arg: ArgServer, Required: true, Values: ServerJavaValues},
 		{Arg: ArgPackageName, Required: false},
 		{Arg: ArgSwaggerPath, Required: false},
 		{Arg: ArgGeneratePath, Required: true},
 		{Arg: ArgServicesPath, Required: false},
 	},
 	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
-		return java.GenerateService(specification, params[ArgJsonlib], params[ArgPackageName], params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath])
+		return java.GenerateService(specification, params[ArgJsonlib], params[ArgServer], params[ArgPackageName], params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath])
 	},
 }
 
