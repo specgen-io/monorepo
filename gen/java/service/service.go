@@ -7,7 +7,7 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func Generate(specification *spec.Spec, jsonlib string, packageName string, swaggerPath string, generatePath string, servicesPath string) *sources.Sources {
+func Generate(specification *spec.Spec, jsonlib string, server string, packageName string, swaggerPath string, generatePath string, servicesPath string) *sources.Sources {
 	newSources := sources.NewSources()
 
 	if packageName == "" {
@@ -16,7 +16,7 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, swag
 
 	mainPackage := packages.New(generatePath, packageName)
 
-	generator := NewGenerator(jsonlib)
+	generator := NewGenerator(jsonlib, server)
 
 	jsonPackage := mainPackage.Subpackage("json")
 
@@ -30,7 +30,7 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, swag
 		newSources.AddGeneratedAll(generator.ServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage))
 
 		controllerVersionPackage := versionPackage.Subpackage("controllers")
-		newSources.AddGeneratedAll(generator.ServicesControllers(&version, controllerVersionPackage, jsonPackage, modelsVersionPackage, serviceVersionPackage))
+		newSources.AddGeneratedAll(generator.Server.ServicesControllers(&version, controllerVersionPackage, jsonPackage, modelsVersionPackage, serviceVersionPackage))
 	}
 
 	newSources.AddGeneratedAll(generator.Models.SetupLibrary(jsonPackage))
@@ -49,7 +49,7 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, swag
 			modelsVersionPackage := versionPackage.Subpackage("models")
 			serviceVersionPackage := versionPackage.Subpackage("services")
 
-			newSources.AddScaffoldedAll(generator.ServicesImplementations(&version, serviceImplVersionPackage, modelsVersionPackage, serviceVersionPackage))
+			newSources.AddScaffoldedAll(generator.Server.ServicesImplementations(&version, serviceImplVersionPackage, modelsVersionPackage, serviceVersionPackage))
 		}
 	}
 
