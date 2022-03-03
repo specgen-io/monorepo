@@ -49,7 +49,7 @@ func Generate(specification *spec.Spec, jsonlib string, server string, packageNa
 			modelsVersionPackage := versionPackage.Subpackage("models")
 			serviceVersionPackage := versionPackage.Subpackage("services")
 
-			newSources.AddScaffoldedAll(generator.Server.ServicesImplementations(&version, serviceImplVersionPackage, modelsVersionPackage, serviceVersionPackage))
+			newSources.AddScaffoldedAll(generator.ServicesImplementations(&version, serviceImplVersionPackage, modelsVersionPackage, serviceVersionPackage))
 		}
 	}
 

@@ -10,31 +10,32 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (s *SpringGenerator) ServicesImplementations(version *spec.Version, thePackage packages.Module, modelsVersionPackage packages.Module, servicesVersionPackage packages.Module) []sources.CodeFile {
+func (g *Generator) ServicesImplementations(version *spec.Version, thePackage packages.Module, modelsVersionPackage packages.Module, servicesVersionPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := servicesVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, *s.serviceImplementation(&api, thePackage, modelsVersionPackage, serviceVersionSubpackage))
+		files = append(files, *g.serviceImplementation(&api, thePackage, modelsVersionPackage, serviceVersionSubpackage))
 	}
 	return files
 }
 
-func (s *SpringGenerator) serviceImplementation(api *spec.Api, thePackage packages.Module, modelsVersionPackage packages.Module, serviceVersionSubpackage packages.Module) *sources.CodeFile {
+func (g *Generator) serviceImplementation(api *spec.Api, thePackage packages.Module, modelsVersionPackage packages.Module, serviceVersionSubpackage packages.Module) *sources.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
+	annotationImport, annotation := g.Server.ServiceImplAnnotation(api)
 	imports := imports.New()
-	imports.Add(s.Types.Imports()...)
-	imports.Add(`org.springframework.stereotype.Service`)
+	imports.Add(annotationImport)
 	imports.Add(modelsVersionPackage.PackageStar)
 	imports.Add(serviceVersionSubpackage.PackageStar)
+	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`@Service("%s")`, versionServiceName(serviceName(api), api.Apis.Version))
+	w.Line(`@%s`, annotation)
 	w.Line(`public class %s implements %s {`, serviceImplName(api), serviceInterfaceName(api))
 	for _, operation := range api.Operations {
 		w.Line(`  @Override`)
-		w.Line(`  public %s {`, responses.Signature(s.Types, &operation))
+		w.Line(`  public %s {`, responses.Signature(g.Types, &operation))
 		w.Line(`    throw new UnsupportedOperationException("Implementation has not added yet");`)
 		w.Line(`  }`)
 	}
