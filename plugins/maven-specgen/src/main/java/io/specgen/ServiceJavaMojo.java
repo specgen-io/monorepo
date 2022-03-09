@@ -13,6 +13,9 @@ public class ServiceJavaMojo extends SpecgenAbstractMojo {
 	@Parameter(property = "jsonlib", defaultValue = "jackson", required = true)
 	private String jsonlib;
 
+	@Parameter(property = "server", defaultValue = "spring", required = true)
+	private String server;
+
 	@Parameter(property = "packageName")
 	private String packageName;
 
@@ -35,6 +38,7 @@ public class ServiceJavaMojo extends SpecgenAbstractMojo {
 		List<String> commandlineArgs = new ArrayList<>(List.of(
 			"service-java",
 			"--jsonlib", jsonlib,
+			"--server", server,
 			"--spec-file", specFile,
 			"--generate-path", generatePath
 		));
