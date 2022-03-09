@@ -69,6 +69,7 @@ object SpecgenModels extends AutoPlugin {
     specgenGeneratePath := (sourceManaged in Compile).value / "spec",
     specgenModelsTask := specgenTask.value,
     sourceGenerators in Compile += specgenModelsTask,
+    Compile / packageSrc := ((Compile / packageSrc) dependsOn specgenTask).value,
     Compile / packageSrc / mappings ++= contentOf(specgenGeneratePath.value)
   )
 }
@@ -93,6 +94,7 @@ object SpecgenClient extends AutoPlugin {
     specgenGeneratePath := (sourceManaged in Compile).value / "spec",
     specgenClientTask := specgenTask.value,
     sourceGenerators in Compile += specgenClientTask,
+    Compile / packageSrc := ((Compile / packageSrc) dependsOn specgenTask).value,
     Compile / packageSrc / mappings ++= contentOf(specgenGeneratePath.value)
   )
 }
