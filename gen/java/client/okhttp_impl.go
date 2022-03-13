@@ -93,14 +93,14 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 	}
 	w.Line(`  var url = new UrlBuilder(baseUrl);`)
 	if operation.Api.Apis.GetUrl() != "" {
-		w.Line(`  url.addPathSegment("%s");`, strings.Trim(operation.Api.Apis.GetUrl(), "/"))
+		w.Line(`  url.addPathSegments("%s");`, strings.Trim(operation.Api.Apis.GetUrl(), "/"))
 	}
 	for _, urlPart := range operation.Endpoint.UrlParts {
 		part := strings.Trim(urlPart.Part, "/")
 		if urlPart.Param != nil {
 			w.Line(`  url.addPathParameter(%s);`, urlPart.Param.Name.CamelCase())
 		} else if len(part) > 0 {
-			w.Line(`  url.addPathSegment("%s");`, part)
+			w.Line(`  url.addPathSegments("%s");`, part)
 		}
 	}
 	for _, param := range operation.QueryParams {

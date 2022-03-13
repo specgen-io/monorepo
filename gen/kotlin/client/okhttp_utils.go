@@ -81,8 +81,8 @@ class UrlBuilder(baseUrl: String) {
         return this
     }
 
-    fun addPathSegment(value: String): UrlBuilder {
-        this.urlBuilder.addPathSegment(value)
+    fun addPathSegments(value: String): UrlBuilder {
+        this.urlBuilder.addPathSegments(value)
         return this
     }
 
