@@ -98,7 +98,7 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 	for _, urlPart := range operation.Endpoint.UrlParts {
 		part := trimSlash(urlPart.Part)
 		if urlPart.Param != nil {
-			w.Line(`  url.addPathSegment(%s)`, urlPart.Param.Name.CamelCase())
+			w.Line(`  url.addPathParameter(%s)`, urlPart.Param.Name.CamelCase())
 		} else if len(part) > 0 {
 			w.Line(`  url.addPathSegment("%s")`, part)
 		}
