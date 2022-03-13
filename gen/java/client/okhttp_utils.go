@@ -85,8 +85,8 @@ public class UrlBuilder {
         return this;
     }
 
-    public UrlBuilder addPathSegment(String value) {
-        this.urlBuilder.addPathSegment(value);
+    public UrlBuilder addPathSegments(String value) {
+        this.urlBuilder.addPathSegments(value);
         return this;
     }
 
