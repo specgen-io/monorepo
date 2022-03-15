@@ -10,8 +10,8 @@ import (
 )
 
 type ServerGenerator interface {
-	ServicesControllers(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module, modelsVersionPackage packages.Module, serviceVersionPackage packages.Module) []sources.CodeFile
-	ServicesImplementations(version *spec.Version, thePackage packages.Module, modelsVersionPackage packages.Module, servicesVersionPackage packages.Module) []sources.CodeFile
+	ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile
+	ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string)
 }
 
 type Generator struct {
@@ -33,5 +33,14 @@ func NewGenerator(jsonlib, server string) *Generator {
 			NewSpringGenerator(types, models),
 		}
 	}
+	if server == Micronaut {
+		return &Generator{
+			jsonlib,
+			types,
+			models,
+			NewMicronautGenerator(types, models),
+		}
+	}
+
 	panic(fmt.Sprintf(`Unsupported server: %s`, server))
 }

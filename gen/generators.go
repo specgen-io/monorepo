@@ -104,7 +104,7 @@ var ClientJava = Generator{
 	},
 }
 
-var ServerJavaValues = []string{"spring"}
+var ServerJavaValues = []string{"spring", "micronaut"}
 
 var ServiceJava = Generator{
 	"service-java",
