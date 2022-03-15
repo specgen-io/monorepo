@@ -34,5 +34,5 @@ func versionControllerName(controllerName string, version *spec.Version) string 
 }
 
 func controllerMethodName(operation *spec.NamedOperation) string {
-	return fmt.Sprintf(`%sController`, operation.Name.CamelCase())
+	return operation.Name.CamelCase()
 }
