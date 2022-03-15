@@ -11,6 +11,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/java/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
+	"strings"
 )
 
 var Micronaut = "micronaut"
@@ -28,16 +29,17 @@ func (m *MicronautGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImp
 	return `io.micronaut.context.annotation.Bean`, `Bean`
 }
 
-func (m *MicronautGenerator) ServicesControllers(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module, modelsVersionPackage packages.Module, serviceVersionPackage packages.Module) []sources.CodeFile {
+func (m *MicronautGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, m.serviceController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
 	}
+	files = append(files, dateConverters(mainPackage)...)
 	return files
 }
 
-func (m *MicronautGenerator) serviceController(api *spec.Api, apiPackage packages.Module, jsonPackage packages.Module, modelsVersionPackage packages.Module, serviceVersionPackage packages.Module) []sources.CodeFile {
+func (m *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPackage packages.Module, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -45,6 +47,7 @@ func (m *MicronautGenerator) serviceController(api *spec.Api, apiPackage package
 	imports := imports.New()
 	imports.Add(`org.slf4j.*`)
 	imports.Add(`io.micronaut.core.convert.format.Format`)
+	imports.Add(`io.micronaut.core.annotation.Nullable`)
 	imports.Add(`io.micronaut.http.*`)
 	imports.Add(`io.micronaut.http.annotation.*`)
 	imports.Add(`jakarta.inject.Inject`)
@@ -152,34 +155,31 @@ func addMicronautMethodParams(operation *spec.NamedOperation, types *types.Types
 		methodParams = append(methodParams, "@Body String bodyStr")
 	}
 
-	methodParams = append(methodParams, generateMicronautMethodParam(operation.QueryParams, "QueryValue", "value", types)...)
-	methodParams = append(methodParams, generateMicronautMethodParam(operation.HeaderParams, "Header", "name", types)...)
-	methodParams = append(methodParams, generateMicronautMethodParam(operation.Endpoint.UrlParams, "PathVariable", "name", types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.QueryParams, "QueryValue", types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.HeaderParams, "Header", types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.Endpoint.UrlParams, "PathVariable", types)...)
 
 	return methodParams
 }
 
-func generateMicronautMethodParam(namedParams []spec.NamedParam, paramAnnotation string, paramAnnotationField string, types *types.Types) []string {
+func generateMicronautMethodParam(namedParams []spec.NamedParam, paramAnnotation string, types *types.Types) []string {
 	params := []string{}
 
 	if namedParams != nil && len(namedParams) > 0 {
 		for _, param := range namedParams {
-			paramAnnotation := getMicronautParameterAnnotation(paramAnnotation, paramAnnotationField, &param)
 			paramType := fmt.Sprintf(`%s %s`, types.Java(&param.Type.Definition), param.Name.CamelCase())
-			dateFormatAnnotation := dateFormatMicronautAnnotation(&param.Type.Definition)
-			if dateFormatAnnotation != "" {
-				params = append(params, fmt.Sprintf(`%s %s %s`, paramAnnotation, dateFormatAnnotation, paramType))
-			} else {
-				params = append(params, fmt.Sprintf(`%s %s`, paramAnnotation, paramType))
+			if param.Type.Definition.IsNullable() {
+				paramType = fmt.Sprintf(`@Nullable %s`, paramType)
 			}
+			params = append(params, fmt.Sprintf(`%s %s`, getMicronautParameterAnnotation(paramAnnotation, &param), paramType))
 		}
 	}
 
 	return params
 }
 
-func getMicronautParameterAnnotation(paramAnnotation string, paramAnnotationField string, param *spec.NamedParam) string {
-	annotationParams := []string{fmt.Sprintf(`%s = "%s"`, paramAnnotationField, param.Name.Source)}
+func getMicronautParameterAnnotation(paramAnnotation string, param *spec.NamedParam) string {
+	annotationParams := []string{fmt.Sprintf(`value = "%s"`, param.Name.Source)}
 
 	if param.DefinitionDefault.Default != nil {
 		annotationParams = append(annotationParams, fmt.Sprintf(`defaultValue = "%s"`, *param.DefinitionDefault.Default))
@@ -188,28 +188,79 @@ func getMicronautParameterAnnotation(paramAnnotation string, paramAnnotationFiel
 	return fmt.Sprintf(`@%s(%s)`, paramAnnotation, joinParams(annotationParams))
 }
 
-func dateFormatMicronautAnnotation(typ *spec.TypeDef) string {
-	switch typ.Node {
-	case spec.PlainType:
-		return dateFormatMicronautAnnotationPlain(typ.Plain)
-	case spec.NullableType:
-		return dateFormatMicronautAnnotation(typ.Child)
-	case spec.ArrayType:
-		return dateFormatMicronautAnnotation(typ.Child)
-	case spec.MapType:
-		return dateFormatMicronautAnnotation(typ.Child)
-	default:
-		panic(fmt.Sprintf("Unknown type: %v", typ))
+func dateConverters(thePackage packages.Module) []sources.CodeFile {
+	convertersPackage := thePackage.Subpackage("converters")
+
+	files := []sources.CodeFile{}
+	files = append(files, *localDateConverter(convertersPackage))
+	files = append(files, *localDateTimeConverter(convertersPackage))
+	return files
+}
+
+func localDateConverter(thePackage packages.Module) *sources.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import io.micronaut.core.convert.*;
+import jakarta.inject.Singleton;
+
+import java.time.LocalDate;
+import java.time.format.*;
+import java.util.Optional;
+
+@Singleton
+public class LocalDateConverter implements TypeConverter<String, LocalDate> {
+    @Override
+    public Optional<LocalDate> convert(String value, Class<LocalDate> targetType, ConversionContext context) {
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", context.getLocale());
+            LocalDate result = LocalDate.parse(value, formatter);
+            return Optional.of(result);
+        } catch (DateTimeParseException e) {
+            context.reject(value, e);
+            return Optional.empty();
+        }
+    }
+}
+`
+
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath("LocalDateConverter.java"),
+		Content: strings.TrimSpace(code),
 	}
 }
 
-func dateFormatMicronautAnnotationPlain(typ string) string {
-	switch typ {
-	case spec.TypeDate:
-		return `@Format("yyyy-MM-dd")`
-	case spec.TypeDateTime:
-		return `@Format("yyyy-MM-dd'T'HH:mm:ss")`
-	default:
-		return ``
+func localDateTimeConverter(thePackage packages.Module) *sources.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import io.micronaut.core.convert.*;
+import jakarta.inject.Singleton;
+
+import java.time.LocalDateTime;
+import java.time.format.*;
+import java.util.Optional;
+
+@Singleton
+public class LocalDateTimeConverter implements TypeConverter<String, LocalDateTime> {
+    @Override
+    public Optional<LocalDateTime> convert(String value, Class<LocalDateTime> targetType, ConversionContext context) {
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", context.getLocale());
+            LocalDateTime result = LocalDateTime.parse(value, formatter);
+            return Optional.of(result);
+        } catch (DateTimeParseException e) {
+            context.reject(value, e);
+            return Optional.empty();
+        }
+    }
+}
+`
+
+	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath("LocalDateTimeConverter.java"),
+		Content: strings.TrimSpace(code),
 	}
 }
