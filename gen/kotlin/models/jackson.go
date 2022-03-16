@@ -36,7 +36,7 @@ func (g *JacksonGenerator) SetupImport(jsonPackage modules.Module) string {
 	return fmt.Sprintf(`%s.setupObjectMapper`, jsonPackage.PackageName)
 }
 
-func (g *JacksonGenerator) CreateJsonMapperVar(w *sources.Writer) {
+func (g *JacksonGenerator) CreateJsonMapperField(w *sources.Writer) {
 	w.Line(`private var objectMapper: ObjectMapper`)
 }
 

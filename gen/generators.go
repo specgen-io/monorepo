@@ -156,6 +156,26 @@ var ClientKotlin = Generator{
 	},
 }
 
+var ServerKotlinValues = []string{"micronaut"}
+
+var ServiceKotlin = Generator{
+	"service-kotlin",
+	"Kotlin Service",
+	"Generate Kotlin service source code",
+	[]GeneratorArg{
+		{Arg: ArgSpecFile, Required: true},
+		{Arg: ArgJsonlib, Required: true, Values: JsonlibKotlinValues},
+		{Arg: ArgServer, Required: true, Values: ServerKotlinValues},
+		{Arg: ArgPackageName, Required: false},
+		{Arg: ArgSwaggerPath, Required: false},
+		{Arg: ArgGeneratePath, Required: true},
+		{Arg: ArgServicesPath, Required: false},
+	},
+	func(specification *spec.Spec, params map[Arg]string) *sources.Sources {
+		return kotlin.GenerateService(specification, params[ArgJsonlib], params[ArgServer], params[ArgPackageName], params[ArgSwaggerPath], params[ArgGeneratePath], params[ArgServicesPath])
+	},
+}
+
 var ModelsRuby = Generator{
 	"models-ruby",
 	"Ruby Models",
@@ -282,6 +302,7 @@ var Generators = []Generator{
 	ServiceJava,
 	ModelsKotlin,
 	ClientKotlin,
+	ServiceKotlin,
 	ModelsRuby,
 	ClientRuby,
 	ModelsScala,

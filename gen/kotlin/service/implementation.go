@@ -2,15 +2,15 @@ package service
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen/java/imports"
-	"github.com/specgen-io/specgen/v2/gen/java/packages"
-	"github.com/specgen-io/specgen/v2/gen/java/responses"
-	"github.com/specgen-io/specgen/v2/gen/java/writer"
+	"github.com/specgen-io/specgen/v2/gen/kotlin/imports"
+	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
+	"github.com/specgen-io/specgen/v2/gen/kotlin/responses"
+	"github.com/specgen-io/specgen/v2/gen/kotlin/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (g *Generator) ServicesImplementations(version *spec.Version, thePackage, modelsVersionPackage, servicesVersionPackage packages.Module) []sources.CodeFile {
+func (g *Generator) ServicesImplementations(version *spec.Version, thePackage, modelsVersionPackage, servicesVersionPackage modules.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := servicesVersionPackage.Subpackage(api.Name.SnakeCase())
@@ -19,8 +19,8 @@ func (g *Generator) ServicesImplementations(version *spec.Version, thePackage, m
 	return files
 }
 
-func (g *Generator) serviceImplementation(api *spec.Api, thePackage, modelsVersionPackage, serviceVersionSubpackage packages.Module) *sources.CodeFile {
-	w := writer.NewJavaWriter()
+func (g *Generator) serviceImplementation(api *spec.Api, thePackage, modelsVersionPackage, serviceVersionSubpackage modules.Module) *sources.CodeFile {
+	w := writer.NewKotlinWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	annotationImport, annotation := g.Server.ServiceImplAnnotation(api)
@@ -32,17 +32,16 @@ func (g *Generator) serviceImplementation(api *spec.Api, thePackage, modelsVersi
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@%s`, annotation)
-	w.Line(`public class %s implements %s {`, serviceImplName(api), serviceInterfaceName(api))
+	w.Line(`class %s : %s {`, serviceImplName(api), serviceInterfaceName(api))
 	for _, operation := range api.Operations {
-		w.Line(`  @Override`)
-		w.Line(`  public %s {`, responses.Signature(g.Types, &operation))
-		w.Line(`    throw new UnsupportedOperationException("Implementation has not added yet");`)
+		w.Line(`  override fun %s {`, responses.Signature(g.Types, &operation))
+		w.Line(`    throw new UnsupportedOperationException("Implementation has not added yet")`)
 		w.Line(`  }`)
 	}
 	w.Line(`}`)
 
 	return &sources.CodeFile{
-		Path:    thePackage.GetPath(fmt.Sprintf("%s.java", serviceImplName(api))),
+		Path:    thePackage.GetPath(fmt.Sprintf("%s.kt", serviceImplName(api))),
 		Content: w.String(),
 	}
 }

@@ -32,8 +32,8 @@ func (g *MoshiGenerator) SetupImport(jsonPackage modules.Module) string {
 	return fmt.Sprintf(`%s.setupMoshiAdapters`, jsonPackage.PackageName)
 }
 
-func (g *MoshiGenerator) CreateJsonMapperVar(w *sources.Writer) {
-	w.Line(`private var moshi: Moshi`)
+func (g *MoshiGenerator) CreateJsonMapperField(w *sources.Writer) {
+	w.Line(`private val moshi: Moshi`)
 }
 
 func (g *MoshiGenerator) InitJsonMapper(w *sources.Writer) {
@@ -49,7 +49,7 @@ func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, st
 		adapter = fmt.Sprintf(`adapter<Map<String, %s>>(Types.newParameterizedType(MutableMap::class.java, String::class.java, %s::class.java))`, typeJava, typeJava)
 	}
 
-	return fmt.Sprintf(`moshi.%s.fromJson(%s)!!`, adapter, varJson), `IOException`
+	return fmt.Sprintf(`moshi.%s.fromJson(%s)`, adapter, varJson), `JsonDataException`
 
 }
 
@@ -60,7 +60,7 @@ func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, s
 		adapterParam = fmt.Sprintf(`adapter<Map<String, %s>>(Types.newParameterizedType(MutableMap::class.java, String::class.java, %s::class.java))`, typeJava, typeJava)
 	}
 
-	return fmt.Sprintf(`moshi.%s.toJson(%s)`, adapterParam, varData), `AssertionError`
+	return fmt.Sprintf(`moshi.%s.toJson(%s)`, adapterParam, varData), `IOException`
 
 }
 

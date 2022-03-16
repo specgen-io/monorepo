@@ -2,15 +2,15 @@ package service
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/gen/java/imports"
-	"github.com/specgen-io/specgen/v2/gen/java/packages"
-	"github.com/specgen-io/specgen/v2/gen/java/responses"
-	"github.com/specgen-io/specgen/v2/gen/java/writer"
+	"github.com/specgen-io/specgen/v2/gen/kotlin/imports"
+	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
+	"github.com/specgen-io/specgen/v2/gen/kotlin/responses"
+	"github.com/specgen-io/specgen/v2/gen/kotlin/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (g *Generator) ServicesInterfaces(version *spec.Version, thePackage, modelsVersionPackage packages.Module) []sources.CodeFile {
+func (g *Generator) ServicesInterfaces(version *spec.Version, thePackage, modelsVersionPackage modules.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
@@ -19,10 +19,10 @@ func (g *Generator) ServicesInterfaces(version *spec.Version, thePackage, models
 	return files
 }
 
-func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPackage packages.Module) []sources.CodeFile {
+func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPackage modules.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
-	w := writer.NewJavaWriter()
+	w := writer.NewKotlinWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
@@ -30,9 +30,9 @@ func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPac
 	imports.Add(modelsVersionPackage.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`public interface %s {`, serviceInterfaceName(api))
+	w.Line(`interface %s {`, serviceInterfaceName(api))
 	for _, operation := range api.Operations {
-		w.Line(`  %s;`, responses.Signature(g.Types, &operation))
+		w.Line(`  fun %s`, responses.Signature(g.Types, &operation))
 	}
 	w.Line(`}`)
 
@@ -43,7 +43,7 @@ func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPac
 	}
 
 	files = append(files, sources.CodeFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", serviceInterfaceName(api))),
+		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", serviceInterfaceName(api))),
 		Content: w.String(),
 	})
 

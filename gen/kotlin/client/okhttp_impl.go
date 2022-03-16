@@ -41,8 +41,8 @@ func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersi
 	w.EmptyLine()
 	className := clientName(api)
 	w.Line(`class %s(private val baseUrl: String) {`, className)
-	g.Models.CreateJsonMapperVar(w.Indented())
-	w.Line(`  private var client: OkHttpClient`)
+	g.Models.CreateJsonMapperField(w.Indented())
+	w.Line(`  private val client: OkHttpClient`)
 	w.EmptyLine()
 	w.Line(`  init {`)
 	g.Models.InitJsonMapper(w.IndentedWith(2))
@@ -143,7 +143,7 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 				responseBody,
 				exception, `e`,
 				`"Failed to deserialize response body " + e.message`)
-			w.Line(responses.CreateResponse(&response, `responseBody`))
+			w.Line(responses.CreateResponse(&response, `responseBody!!`))
 		}
 		w.UnindentWith(3)
 		w.Line(`    }`)
