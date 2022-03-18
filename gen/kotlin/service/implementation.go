@@ -21,7 +21,7 @@ func (g *Generator) ServicesImplementations(version *spec.Version, thePackage, m
 
 func (g *Generator) serviceImplementation(api *spec.Api, thePackage, modelsVersionPackage, serviceVersionSubpackage modules.Module) *sources.CodeFile {
 	w := writer.NewKotlinWriter()
-	w.Line(`package %s;`, thePackage.PackageName)
+	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
 	annotationImport, annotation := g.Server.ServiceImplAnnotation(api)
 	imports := imports.New()
@@ -35,7 +35,7 @@ func (g *Generator) serviceImplementation(api *spec.Api, thePackage, modelsVersi
 	w.Line(`class %s : %s {`, serviceImplName(api), serviceInterfaceName(api))
 	for _, operation := range api.Operations {
 		w.Line(`  override fun %s {`, responses.Signature(g.Types, &operation))
-		w.Line(`    throw new UnsupportedOperationException("Implementation has not added yet")`)
+		w.Line(`    throw UnsupportedOperationException("Implementation has not added yet")`)
 		w.Line(`  }`)
 	}
 	w.Line(`}`)
