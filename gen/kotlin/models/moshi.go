@@ -32,14 +32,14 @@ func (g *MoshiGenerator) SetupImport(jsonPackage modules.Module) string {
 	return fmt.Sprintf(`%s.setupMoshiAdapters`, jsonPackage.PackageName)
 }
 
-func (g *MoshiGenerator) CreateJsonMapperField(w *sources.Writer) {
-	w.Line(`private val moshi: Moshi`)
-}
-
 func (g *MoshiGenerator) InitJsonMapper(w *sources.Writer) {
-	w.Line(`val moshiBuilder = Moshi.Builder()`)
-	w.Line(`setupMoshiAdapters(moshiBuilder)`)
-	w.Line(`moshi = moshiBuilder.build()`)
+	w.Line(`private val moshi: Moshi`)
+	w.EmptyLine()
+	w.Line(`init {`)
+	w.Line(`  val moshiBuilder = Moshi.Builder()`)
+	w.Line(`  setupMoshiAdapters(moshiBuilder)`)
+	w.Line(`  moshi = moshiBuilder.build()`)
+	w.Line(`}`)
 }
 
 func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
