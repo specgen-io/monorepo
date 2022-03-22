@@ -87,7 +87,7 @@ func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage modules
 	files := []sources.CodeFile{}
 	files = append(files, sources.CodeFile{Path: thePackage.GetPath("models.kt"), Content: w.String()})
 
-	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.setupMoshiAdapters`, thePackage.PackageName))
+	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.setupModelsMoshiAdapters`, thePackage.PackageName))
 	adaptersPackage := jsonPackage.Subpackage("adapters")
 	for range g.generatedSetupMoshiMethods {
 		files = append(files, *g.setupOneOfAdapters(version, thePackage, adaptersPackage))
@@ -186,7 +186,7 @@ func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage mo
 	imports.Add(adaptersPackage.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`fun setupMoshiAdapters(moshiBuilder: Moshi.Builder) {`)
+	w.Line(`fun setupModelsMoshiAdapters(moshiBuilder: Moshi.Builder) {`)
 	for _, model := range version.ResolvedModels {
 		if model.IsOneOf() {
 			w.Indent()

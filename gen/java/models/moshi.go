@@ -77,7 +77,7 @@ func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage package
 		}
 	}
 
-	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.Json.setupMoshiAdapters`, thePackage.PackageName))
+	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.Json.setupModelsMoshiAdapters`, thePackage.PackageName))
 	adaptersPackage := jsonPackage.Subpackage("adapters")
 	for range g.generatedSetupMoshiMethods {
 		files = append(files, *g.setupOneOfAdapters(version, thePackage, adaptersPackage))
@@ -263,7 +263,7 @@ func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage pa
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`public class Json {`)
-	w.Line(`  public static void setupMoshiAdapters(Moshi.Builder moshiBuilder) {`)
+	w.Line(`  public static void setupModelsMoshiAdapters(Moshi.Builder moshiBuilder) {`)
 	for _, model := range version.ResolvedModels {
 		if model.IsOneOf() {
 			w.IndentWith(2)
