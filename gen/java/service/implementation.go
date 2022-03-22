@@ -10,7 +10,7 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (g *Generator) ServicesImplementations(version *spec.Version, thePackage packages.Module, modelsVersionPackage packages.Module, servicesVersionPackage packages.Module) []sources.CodeFile {
+func (g *Generator) ServicesImplementations(version *spec.Version, thePackage, modelsVersionPackage, servicesVersionPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := servicesVersionPackage.Subpackage(api.Name.SnakeCase())
@@ -19,7 +19,7 @@ func (g *Generator) ServicesImplementations(version *spec.Version, thePackage pa
 	return files
 }
 
-func (g *Generator) serviceImplementation(api *spec.Api, thePackage packages.Module, modelsVersionPackage packages.Module, serviceVersionSubpackage packages.Module) *sources.CodeFile {
+func (g *Generator) serviceImplementation(api *spec.Api, thePackage, modelsVersionPackage, serviceVersionSubpackage packages.Module) *sources.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()

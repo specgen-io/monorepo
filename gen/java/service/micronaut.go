@@ -39,7 +39,7 @@ func (m *MicronautGenerator) ServicesControllers(version *spec.Version, mainPack
 	return files
 }
 
-func (m *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPackage packages.Module, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
+func (m *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -99,7 +99,7 @@ func (m *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec
 		w.Line(`    requestBody = %s;`, requestBody)
 		w.Line(`  } catch (%s e) {`, exception)
 		w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
-		w.Line(`    return HttpResponse.status(HttpStatus.BAD_REQUEST).contentType("application/json");`)
+		w.Line(`    return HttpResponse.status(HttpStatus.BAD_REQUEST);`)
 		w.Line(`  }`)
 	}
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, "bodyStr", "requestBody")))

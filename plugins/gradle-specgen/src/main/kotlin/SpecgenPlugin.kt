@@ -18,6 +18,7 @@ public open class SpecgenPluginExtension @Inject constructor(private val objectF
     public var configServiceJava: ServiceJavaConfig? = null
     public var configModelsKotlin: ModelsKotlinConfig? = null
     public var configClientKotlin: ClientKotlinConfig? = null
+    public var configServiceKotlin: ServiceKotlinConfig? = null
 
     @Nested
     public fun modelsJava(action: Action<in ModelsJavaConfig>) {
@@ -53,6 +54,13 @@ public open class SpecgenPluginExtension @Inject constructor(private val objectF
         action.execute(config)
         configClientKotlin = config
     }
+
+    @Nested
+    public fun serviceKotlin(action: Action<in ServiceKotlinConfig>) {
+        val config = objectFactory.newInstance(ServiceKotlinConfig::class.java)
+        action.execute(config)
+        configServiceKotlin = config
+    }
 }
 
 public class SpecgenPlugin : Plugin<Project> {
@@ -66,6 +74,7 @@ public class SpecgenPlugin : Plugin<Project> {
         val specgenServiceJava by project.tasks.registering(SpecgenServiceJavaTask::class)
         val specgenModelsKotlin by project.tasks.registering(SpecgenModelsKotlinTask::class)
         val specgenClientKotlin by project.tasks.registering(SpecgenClientKotlinTask::class)
+        val specgenServiceKotlin by project.tasks.registering(SpecgenServiceKotlinTask::class)
 
         project.afterEvaluate {
             extension.configModelsJava?.let { config ->
@@ -105,6 +114,14 @@ public class SpecgenPlugin : Plugin<Project> {
                     sourceSets.all {
                         kotlin.srcDir(config.outputDirectory.get())
                         tasks["compileKotlin"]?.dependsOn(specgenClientKotlin)
+                    }
+                }
+            }
+            extension.configServiceKotlin?.let { config ->
+                project.configure<KotlinProjectExtension> {
+                    sourceSets.all {
+                        kotlin.srcDir(config.outputDirectory.get())
+                        tasks["compileKotlin"]?.dependsOn(specgenServiceKotlin)
                     }
                 }
             }

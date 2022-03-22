@@ -75,17 +75,11 @@ func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage m
 
 func implementations(w *sources.Writer, types *types.Types, response *spec.NamedResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
-	w.Line(`class %s : %s {`, serviceResponseImplementationName, InterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {
-		w.Line(`  private lateinit var body: %s`, types.Kotlin(&response.Type.Definition))
-		w.EmptyLine()
-		w.Line(`  constructor()`)
-		w.EmptyLine()
-		w.Line(`  constructor(body: %s) {`, types.Kotlin(&response.Type.Definition))
-		w.Line(`    this.body = body`)
-		w.Line(`  }`)
+		w.Line(`class %s(var body: %s) : %s`, serviceResponseImplementationName, types.Kotlin(&response.Type.Definition), InterfaceName(response.Operation))
+	} else {
+		w.Line(`class %s : %s`, serviceResponseImplementationName, InterfaceName(response.Operation))
 	}
-	w.Line(`}`)
 }
 
 func InterfaceName(operation *spec.NamedOperation) string {
