@@ -274,7 +274,7 @@ jobs:
     docker:
       - image: cimg/base:2021.04
     steps:
-      - run: echo "Build is complete!!!"
+      - run: echo "Build for <<pipeline.parameters.specgen-version>> is complete!!!"
 
   release-specgen:
     docker:
