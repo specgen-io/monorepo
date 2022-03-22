@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/specgen-io/specgen/v2/gen/java/packages"
+	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
 	"github.com/specgen-io/specgen/v2/gen/openapi"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
@@ -14,7 +14,7 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 		packageName = specification.Name.SnakeCase()
 	}
 
-	mainPackage := packages.New(generatePath, packageName)
+	mainPackage := modules.Package(generatePath, packageName)
 
 	generator := NewGenerator(jsonlib, server)
 
@@ -39,7 +39,7 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 	}
 
 	if servicesPath != "" {
-		servicesImplPackage := packages.New(servicesPath, packageName)
+		servicesImplPackage := modules.Package(servicesPath, packageName)
 		for _, version := range specification.Versions {
 			servicesImplVersionPath := servicesImplPackage.Subpackage("services")
 			serviceImplVersionPackage := servicesImplVersionPath.Subpackage(version.Version.FlatCase())
