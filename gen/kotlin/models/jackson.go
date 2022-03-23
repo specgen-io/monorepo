@@ -36,8 +36,8 @@ func (g *JacksonGenerator) SetupImport(jsonPackage modules.Module) string {
 	return fmt.Sprintf(`%s.setupObjectMapper`, jsonPackage.PackageName)
 }
 
-func (g *JacksonGenerator) InitJsonMapper(w *sources.Writer) {
-	w.Line(`private val objectMapper: ObjectMapper = setupObjectMapper(jacksonObjectMapper())`)
+func (g *JacksonGenerator) InitJsonMapper() string {
+	return `private val objectMapper: ObjectMapper = setupObjectMapper(jacksonObjectMapper())`
 }
 
 func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {

@@ -14,7 +14,7 @@ type Generator interface {
 	VersionModels(version *spec.Version, thePackage modules.Module, jsonPackage modules.Module) []sources.CodeFile
 	ReadJson(jsonStr string, typ *spec.TypeDef) (string, string)
 	WriteJson(varData string, typ *spec.TypeDef) (string, string)
-	InitJsonMapper(w *sources.Writer)
+	InitJsonMapper() string
 	JsonImports() []string
 }
 

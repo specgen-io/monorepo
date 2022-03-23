@@ -42,7 +42,7 @@ func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersi
 	className := clientName(api)
 	w.Line(`class %s(private val baseUrl: String) {`, className)
 	w.Line(`  private val client: OkHttpClient = OkHttpClient()`)
-	g.Models.InitJsonMapper(w.Indented())
+	w.Line(`  %s`, g.Models.InitJsonMapper())
 	w.EmptyLine()
 	w.Line(`  private val logger: Logger = LoggerFactory.getLogger(%s::class.java)`, className)
 	for _, operation := range api.Operations {
