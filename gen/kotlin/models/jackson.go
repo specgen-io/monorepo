@@ -28,6 +28,7 @@ func (g *JacksonGenerator) JsonImports() []string {
 		`com.fasterxml.jackson.annotation.JsonSubTypes.*`,
 		`com.fasterxml.jackson.core.type.*`,
 		`com.fasterxml.jackson.core.JsonProcessingException`,
+		`com.fasterxml.jackson.module.kotlin.jacksonObjectMapper`,
 	}
 }
 
@@ -35,8 +36,12 @@ func (g *JacksonGenerator) SetupImport(jsonPackage modules.Module) string {
 	return fmt.Sprintf(`%s.setupObjectMapper`, jsonPackage.PackageName)
 }
 
-func (g *JacksonGenerator) InitJsonMapper() string {
+func (g *JacksonGenerator) CreateJsonMapperField() string {
 	return `private val objectMapper: ObjectMapper`
+}
+
+func (g *JacksonGenerator) InitJsonMapper(w *sources.Writer) {
+	w.Line(`objectMapper = setupObjectMapper(jacksonObjectMapper())`)
 }
 
 func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {

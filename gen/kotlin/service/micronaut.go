@@ -59,7 +59,7 @@ func (m *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPa
 	className := controllerName(api)
 	w.Line(`class %s(`, className)
 	w.Line(`  @Inject private val %s: %s,`, serviceVarName(api), serviceInterfaceName(api))
-	w.Line(`  @Inject %s`, m.Models.InitJsonMapper())
+	w.Line(`  @Inject %s`, m.Models.CreateJsonMapperField())
 	w.Line(`) {`)
 	w.Line(`  private val logger = LoggerFactory.getLogger(%s::class.java)`, className)
 	for _, operation := range api.Operations {
