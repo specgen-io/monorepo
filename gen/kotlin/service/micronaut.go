@@ -51,7 +51,6 @@ func (m *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPa
 	imports.Add(`jakarta.inject.Inject`)
 	imports.Add(modelsVersionPackage.PackageStar)
 	imports.Add(serviceVersionPackage.PackageStar)
-	imports.Add(m.Models.SetupImport(jsonPackage))
 	imports.Add(m.Models.JsonImports()...)
 	imports.Add(m.Types.Imports()...)
 	imports.Write(w)
