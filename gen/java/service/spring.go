@@ -83,19 +83,17 @@ func (s *SpringGenerator) controllerMethod(w *sources.Writer, operation *spec.Na
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, casee.ToPascalCase(methodName), url)
-	w.Line(`public ResponseEntity<String> %s(%s) throws IOException {`, controllerMethodName(operation), joinParams(addSpringMethodParams(operation, s.Types)))
+	w.Line(`public ResponseEntity<String> %s(%s) {`, controllerMethodName(operation), joinParams(addSpringMethodParams(operation, s.Types)))
 	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.EmptyLine()
 	if operation.BodyIs(spec.BodyJson) {
-		bodyJavaType := s.Types.Java(&operation.Body.Type.Definition)
+		w.Line(`  %s requestBody;`, s.Types.Java(&operation.Body.Type.Definition))
 		requestBody, exception := s.Models.ReadJson("bodyStr", &operation.Body.Type.Definition)
-		w.Line(`  %s requestBody;`, bodyJavaType)
-		w.Line(`  try {`)
-		w.Line(`    requestBody = %s;`, requestBody)
-		w.Line(`  } catch (%s e) {`, exception)
-		w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
-		w.Line(`    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);`)
-		w.Line(`  }`)
+		generateServiceTryCatch(w.Indented(),
+			fmt.Sprintf(`requestBody = %s;`, requestBody),
+			exception, `e`,
+			`"Completed request with status code: {}", HttpStatus.BAD_REQUEST`,
+			`new ResponseEntity<>(HttpStatus.BAD_REQUEST)`)
 	}
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, "bodyStr", "requestBody")))
 	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
@@ -138,8 +136,13 @@ func (s *SpringGenerator) processResponse(w *sources.Writer, response *spec.Name
 		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, result, response.Name.UpperCase())
 	}
 	if response.BodyIs(spec.BodyJson) {
-		responseWrite, _ := s.Models.WriteJson(result, &response.Type.Definition)
-		w.Line(`String responseJson = %s;`, responseWrite)
+		w.Line(`String responseJson;`)
+		responseWrite, exception := s.Models.WriteJson(result, &response.Type.Definition)
+		generateServiceTryCatch(w,
+			fmt.Sprintf(`responseJson = %s;`, responseWrite),
+			exception, `e`,
+			`"Failed to serialize JSON: {}" + e.getMessage()`,
+			`new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR)`)
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json");`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
