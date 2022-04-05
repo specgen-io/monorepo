@@ -51,7 +51,7 @@ func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, st
 		adapter = fmt.Sprintf(`<Map<String, %s>>adapter(Types.newParameterizedType(Map.class, String.class, %s.class))`, typeJava, typeJava)
 	}
 
-	return fmt.Sprintf(`moshi.%s.fromJson(%s)`, adapter, varJson), `IOException`
+	return fmt.Sprintf(`moshi.%s.fromJson(%s)`, adapter, varJson), `Exception`
 }
 
 func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
