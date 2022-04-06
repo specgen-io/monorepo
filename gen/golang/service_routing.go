@@ -196,7 +196,7 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 		w.Line(`  return`)
 		w.Line(`}`)
 	}
-	generateOperationParametersParsing(w, operation, operation.QueryParams, false, "queryParams", "req.URL.Query()", false)
+	generateOperationParametersParsing(w, operation, operation.QueryParams, false, "queryParams", "req.URL.Query()", true)
 	generateOperationParametersParsing(w, operation, operation.HeaderParams, false, "headerParams", "req.Header", true)
 	generateOperationParametersParsing(w, operation, operation.Endpoint.UrlParams, true, "urlParams", "req.URL.Query()", false)
 
