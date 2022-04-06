@@ -202,10 +202,10 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 
 	generateServiceCall(w, operation)
 
-	if operation.BodyIs(spec.BodyString) {
+	if operation.Responses[0].BodyIs(spec.BodyString) {
 		w.Line(`res.Header().Set("Content-Type", "text/plain")`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.Responses[0].BodyIs(spec.BodyJson) {
 		w.Line(`res.Header().Set("Content-Type", "application/json")`)
 	}
 
