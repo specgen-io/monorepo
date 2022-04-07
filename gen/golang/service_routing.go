@@ -150,9 +150,11 @@ func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation) {
 func generateResponseWriting(w *sources.Writer, response *spec.NamedResponse, responseVar string) {
 	w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
 	if response.BodyIs(spec.BodyString) {
+		w.Line(`res.Header().Set("Content-Type", "text/plain")`)
 		w.Line(`res.Write([]byte(*response))`)
 	}
 	if response.BodyIs(spec.BodyJson) {
+		w.Line(`res.Header().Set("Content-Type", "application/json")`)
 		w.Line(`json.NewEncoder(res).Encode(%s)`, responseVar)
 	}
 	w.Line(`log.WithFields(%s).WithField("status", %s).Info("Completed request")`, logFieldsName(response.Operation), spec.HttpStatusCode(response.Name))
@@ -201,13 +203,6 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 	generateOperationParametersParsing(w, operation, operation.Endpoint.UrlParams, true, "urlParams", "req.URL.Query()", false)
 
 	generateServiceCall(w, operation)
-
-	if operation.Responses[0].BodyIs(spec.BodyString) {
-		w.Line(`res.Header().Set("Content-Type", "text/plain")`)
-	}
-	if operation.Responses[0].BodyIs(spec.BodyJson) {
-		w.Line(`res.Header().Set("Content-Type", "application/json")`)
-	}
 
 	if len(operation.Responses) == 1 {
 		generateResponseWriting(w, &operation.Responses[0], "response")
