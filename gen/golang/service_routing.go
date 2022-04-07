@@ -148,14 +148,16 @@ func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation) {
 }
 
 func generateResponseWriting(w *sources.Writer, response *spec.NamedResponse, responseVar string) {
-	w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
 	if response.BodyIs(spec.BodyString) {
 		w.Line(`res.Header().Set("Content-Type", "text/plain")`)
+		w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
 		w.Line(`res.Write([]byte(*response))`)
-	}
-	if response.BodyIs(spec.BodyJson) {
+	} else if response.BodyIs(spec.BodyJson) {
 		w.Line(`res.Header().Set("Content-Type", "application/json")`)
+		w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
 		w.Line(`json.NewEncoder(res).Encode(%s)`, responseVar)
+	} else {
+		w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
 	}
 	w.Line(`log.WithFields(%s).WithField("status", %s).Info("Completed request")`, logFieldsName(response.Operation), spec.HttpStatusCode(response.Name))
 	w.Line(`return`)
