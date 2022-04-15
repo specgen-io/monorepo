@@ -128,21 +128,21 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 			w.Line(responses.CreateResponse(&response, ""))
 		}
 		if response.BodyIs(spec.BodyString) {
-			w.Line(`%s responseBody;`, g.Types.Java(&response.Type.Definition))
+			w.Line(`%s %s;`, g.Types.Java(&response.Type.Definition), responseBodyName(&response))
 			generateClientTryCatch(w,
-				fmt.Sprintf(`responseBody = response.body().string();`),
+				fmt.Sprintf(`%s = response.body().string();`, responseBodyName(&response)),
 				`IOException`, `e`,
 				`"Failed to convert response body to string " + e.getMessage()`)
-			w.Line(responses.CreateResponse(&response, `responseBody`))
+			w.Line(responses.CreateResponse(&response, responseBodyName(&response)))
 		}
 		if response.BodyIs(spec.BodyJson) {
-			w.Line(`%s responseBody;`, g.Types.Java(&response.Type.Definition))
+			w.Line(`%s %s;`, g.Types.Java(&response.Type.Definition), responseBodyName(&response))
 			responseBody, exception := g.Models.ReadJson("response.body().string()", &response.Type.Definition)
 			generateClientTryCatch(w,
-				fmt.Sprintf(`responseBody = %s;`, responseBody),
+				fmt.Sprintf(`%s = %s;`, responseBodyName(&response), responseBody),
 				exception, `e`,
 				`"Failed to deserialize response body " + e.getMessage()`)
-			w.Line(responses.CreateResponse(&response, `responseBody`))
+			w.Line(responses.CreateResponse(&response, responseBodyName(&response)))
 		}
 		w.UnindentWith(3)
 	}
