@@ -30,6 +30,8 @@ set +e
 $GOPATH/bin/github-release release --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --target v2
 set -e
 
+sleep 10
+
 echo "Releasing specgen_darwin_amd64.zip"
 $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --name specgen_darwin_amd64.zip  --file specgen_darwin_amd64.zip
 echo "Releasing specgen_linux_amd64.zip"
