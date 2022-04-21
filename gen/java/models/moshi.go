@@ -421,11 +421,12 @@ func unionAdapterFactory(thePackage packages.Module) *sources.CodeFile {
 package [[.PackageName]];
 
 import com.squareup.moshi.*;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.*;
-import javax.annotation.*;
 
 public final class UnionAdapterFactory<T> implements JsonAdapter.Factory {
     final Class<T> baseType;
@@ -718,7 +719,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
-import java.util.Set;
+import java.util.*;
 
 public final class UnwrapFieldAdapterFactory<T> implements JsonAdapter.Factory {
     final Class<T> type;
