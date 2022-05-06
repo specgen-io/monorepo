@@ -121,30 +121,31 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 	w.EmptyLine()
 	w.Line(`  switch (response.code()) {`)
 	for _, response := range operation.Responses {
-		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
+		w.Line(`    case %s: {`, spec.HttpStatusCode(response.Name))
 		w.IndentWith(3)
 		w.Line(`logger.info("Received response with status code {}", response.code());`)
 		if response.BodyIs(spec.BodyEmpty) {
 			w.Line(responses.CreateResponse(&response, ""))
 		}
 		if response.BodyIs(spec.BodyString) {
-			w.Line(`%s %s;`, g.Types.Java(&response.Type.Definition), responseBodyName(&response))
+			w.Line(`%s responseBody;`, g.Types.Java(&response.Type.Definition))
 			generateClientTryCatch(w,
-				fmt.Sprintf(`%s = response.body().string();`, responseBodyName(&response)),
+				fmt.Sprintf(`responseBody = response.body().string();`),
 				`IOException`, `e`,
 				`"Failed to convert response body to string " + e.getMessage()`)
-			w.Line(responses.CreateResponse(&response, responseBodyName(&response)))
+			w.Line(responses.CreateResponse(&response, `responseBody`))
 		}
 		if response.BodyIs(spec.BodyJson) {
-			w.Line(`%s %s;`, g.Types.Java(&response.Type.Definition), responseBodyName(&response))
+			w.Line(`%s responseBody;`, g.Types.Java(&response.Type.Definition))
 			responseBody, exception := g.Models.ReadJson("response.body().string()", &response.Type.Definition)
 			generateClientTryCatch(w,
-				fmt.Sprintf(`%s = %s;`, responseBodyName(&response), responseBody),
+				fmt.Sprintf(`responseBody = %s;`, responseBody),
 				exception, `e`,
 				`"Failed to deserialize response body " + e.getMessage()`)
-			w.Line(responses.CreateResponse(&response, responseBodyName(&response)))
+			w.Line(responses.CreateResponse(&response, `responseBody`))
 		}
 		w.UnindentWith(3)
+		w.Line(`    }`)
 	}
 	w.Line(`    default:`)
 	generateThrowClientException(w.IndentedWith(3), `"Unexpected status code received: " + response.code()`, ``)
