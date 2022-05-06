@@ -121,7 +121,7 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 	w.EmptyLine()
 	w.Line(`  switch (response.code()) {`)
 	for _, response := range operation.Responses {
-		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
+		w.Line(`    case %s: {`, spec.HttpStatusCode(response.Name))
 		w.IndentWith(3)
 		w.Line(`logger.info("Received response with status code {}", response.code());`)
 		if response.BodyIs(spec.BodyEmpty) {
@@ -145,6 +145,7 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 			w.Line(responses.CreateResponse(&response, `responseBody`))
 		}
 		w.UnindentWith(3)
+		w.Line(`    }`)
 	}
 	w.Line(`    default:`)
 	generateThrowClientException(w.IndentedWith(3), `"Unexpected status code received: " + response.code()`, ``)
