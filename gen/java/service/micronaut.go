@@ -89,45 +89,44 @@ func (g *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec
 	url := operation.FullUrl()
 	w.Line(`@%s("%s")`, casee.ToPascalCase(methodName), url)
 	w.Line(`public MutableHttpResponse<?> %s(%s) {`, controllerMethodName(operation), joinParams(addMicronautMethodParams(operation, g.Types)))
-	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
+	w.Indent()
+	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.EmptyLine()
 	if operation.BodyIs(spec.BodyJson) {
 		requestBody, exception := g.Models.ReadJson("bodyStr", &operation.Body.Type.Definition)
-		w.Line(`  %s requestBody;`, g.Types.Java(&operation.Body.Type.Definition))
-		w.Line(`  try {`)
-		w.Line(`    requestBody = %s;`, requestBody)
-		w.Line(`  } catch (%s %s) {`, exception, `e`)
-		g.badRequest(w.IndentedWith(2), operation, `"Failed to deserialize request body {}", e.getMessage()`)
-		w.Line(`  }`)
+		w.Line(`%s requestBody;`, g.Types.Java(&operation.Body.Type.Definition))
+		w.Line(`try {`)
+		w.Line(`  requestBody = %s;`, requestBody)
+		w.Line(`} catch (%s %s) {`, exception, `e`)
+		g.badRequest(w.Indented(), operation, `"Failed to deserialize request body {}", e.getMessage()`)
+		w.Line(`}`)
 	}
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, "bodyStr", "requestBody")))
 	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
-		w.Line(`  %s;`, serviceCall)
+		w.Line(`%s;`, serviceCall)
 	} else {
-		w.Line(`  var result = %s;`, serviceCall)
-		w.Line(`  if (result == null) {`)
-		g.internalServerError(w.IndentedWith(2), operation, `"Service implementation returned nil"`)
-		w.Line(`  }`)
+		w.Line(`var result = %s;`, serviceCall)
+		w.Line(`if (result == null) {`)
+		g.internalServerError(w.Indented(), operation, `"Service implementation returned nil"`)
+		w.Line(`}`)
 	}
 	if len(operation.Responses) == 1 {
-		g.processResponse(w.Indented(), &operation.Responses[0], "result")
+		g.processResponse(w, &operation.Responses[0], "result")
 	}
 	if len(operation.Responses) > 1 {
 		for _, response := range operation.Responses {
-			w.Line(`  if (result instanceof %s.%s) {`, responses.InterfaceName(operation), response.Name.PascalCase())
-			g.processResponse(w.IndentedWith(2), &response, "result")
-			w.Line(`  }`)
+			w.Line(`if (result instanceof %s.%s) {`, responses.InterfaceName(operation), response.Name.PascalCase())
+			g.processResponse(w.Indented(), &response, responses.GetBody(&response, "result"))
+			w.Line(`}`)
 		}
 		w.EmptyLine()
-		g.internalServerError(w.Indented(), operation, `"No result returned from service implementation"`)
+		g.internalServerError(w, operation, `"No result returned from service implementation"`)
 	}
+	w.Unindent()
 	w.Line(`}`)
 }
 
 func (g *MicronautGenerator) processResponse(w *sources.Writer, response *spec.NamedResponse, result string) {
-	if len(response.Operation.Responses) > 1 {
-		result = fmt.Sprintf(`((%s.%s) %s).body`, responses.InterfaceName(response.Operation), response.Name.PascalCase(), result)
-	}
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s);`, response.Name.UpperCase())
@@ -137,13 +136,9 @@ func (g *MicronautGenerator) processResponse(w *sources.Writer, response *spec.N
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s).contentType("text/plain");`, response.Name.UpperCase(), result)
 	}
 	if response.BodyIs(spec.BodyJson) {
-		responseWrite, exception := g.Models.WriteJson(result, &response.Type.Definition)
+		responseWrite, _ := g.Models.WriteJson(result, &response.Type.Definition)
 		w.Line(`String responseJson;`)
-		w.Line(`try {`)
-		w.Line(`  responseJson = %s;`, responseWrite)
-		w.Line(`} catch (%s %s) {`, exception, `e`)
-		g.internalServerError(w.Indented(), response.Operation, `"Failed to serialize JSON: {}", e.getMessage()`)
-		w.Line(`}`)
+		w.Line(`try { responseJson = %s; }`, responseWrite)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(responseJson).contentType("application/json");`, response.Name.UpperCase())
 	}

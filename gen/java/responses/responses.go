@@ -94,6 +94,10 @@ func InterfaceName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
 }
 
+func GetBody(response *spec.NamedResponse, responseVarName string) string {
+	return fmt.Sprintf(`((%s.%s) %s).body`, InterfaceName(response.Operation), response.Name.PascalCase(), responseVarName)
+}
+
 func joinParams(params []string) string {
 	return strings.Join(params, ", ")
 }
