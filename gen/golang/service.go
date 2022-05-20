@@ -19,7 +19,7 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 		versionModule := rootModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionModule.Submodule(modelsPackage)
 
-		sources.AddGenerated(generateParamsParser(versionModule))
+		sources.AddGenerated(generateParamsParser(versionModule, modelsModule))
 		sources.AddGeneratedAll(generateRoutings(&version, versionModule, modelsModule))
 		sources.AddGeneratedAll(generateServicesInterfaces(&version, versionModule, modelsModule, emptyModule))
 		sources.AddGeneratedAll(generateVersionModels(&version, modelsModule))

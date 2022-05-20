@@ -13,6 +13,7 @@ type operation struct {
 	QueryParams  QueryParams  `yaml:"query,omitempty"`
 	Body         *Definition  `yaml:"body,omitempty"`
 	Responses    Responses    `yaml:"response"`
+	Errors       Responses    `yaml:"errors"`
 	Location     *yaml.Node
 }
 
