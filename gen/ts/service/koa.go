@@ -6,6 +6,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
 	"github.com/specgen-io/specgen/v2/gen/ts/types"
 	"github.com/specgen-io/specgen/v2/gen/ts/validations"
+	"github.com/specgen-io/specgen/v2/gen/ts/validations/common"
 	"github.com/specgen-io/specgen/v2/gen/ts/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
@@ -133,8 +134,8 @@ func (g *koaGenerator) operationRouting(w *sources.Writer, operation *spec.Named
 		w.Line(`}`)
 	}
 
-	generateParametersParsing(w, operation, "zipHeaders(ctx.req.rawHeaders)", "ctx.params", "ctx.request.query", "ctx.throw(400)")
-	generateBodyParsing(w, g.validation, operation, "ctx.request.body", "ctx.request.rawBody", "ctx.throw(400)")
+	g.parametersParsing(w, operation)
+	g.bodyParsing(w, operation)
 
 	w.Line("try {")
 	w.Line("  %s", serviceCall(operation, getApiCallParamsObject(operation)))
@@ -150,7 +151,51 @@ func (g *koaGenerator) operationRouting(w *sources.Writer, operation *spec.Named
 	}
 	w.Line("} catch (error) {")
 	w.Line("  ctx.throw(500)")
+	w.Line("  return")
 	w.Line("}")
 	w.Unindent()
 	w.Line("})")
+}
+
+func (g *koaGenerator) parametersParsing(w *sources.Writer, operation *spec.NamedOperation) {
+	if operation.HasParams() {
+		if len(operation.Endpoint.UrlParams) > 0 {
+			w.Line("var urlParams: %s", paramsTypeName(operation, "UrlParams"))
+		}
+		if len(operation.HeaderParams) > 0 {
+			w.Line("var headerParams: %s", paramsTypeName(operation, "HeaderParams"))
+		}
+		if len(operation.QueryParams) > 0 {
+			w.Line("var queryParams: %s", paramsTypeName(operation, "QueryParams"))
+		}
+		w.Line("try {")
+		if len(operation.Endpoint.UrlParams) > 0 {
+			w.Line("  urlParams = t.decode(%s, ctx.params)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "UrlParams")))
+		}
+		if len(operation.HeaderParams) > 0 {
+			w.Line("  headerParams = t.decode(%s, zipHeaders(ctx.req.rawHeaders))", common.ParamsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")))
+		}
+		if len(operation.QueryParams) > 0 {
+			w.Line("  queryParams = t.decode(%s, ctx.request.query)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams")))
+		}
+		w.Line("} catch (error) {")
+		w.Line("  ctx.throw(400)")
+		w.Line("  return")
+		w.Line("}")
+	}
+}
+
+func (g *koaGenerator) bodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`const body: string = ctx.request.rawBody`)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line("var body: %s", types.TsType(&operation.Body.Type.Definition))
+		w.Line("try {")
+		w.Line("  body = t.decode(%s, ctx.request.body)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition))
+		w.Line("} catch (error) {")
+		w.Line("  ctx.throw(400)")
+		w.Line("  return")
+		w.Line("}")
+	}
 }
