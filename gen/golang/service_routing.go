@@ -135,7 +135,7 @@ func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation) {
 
 	if !singleEmptyResponse {
 		w.Line(`if response == nil {`)
-		generateInternalServerErrorResponse(w.Indented(), operation, `"No result returned from service implementation"`)
+		generateInternalServerErrorResponse(w.Indented(), operation, `"Service implementation returned nil"`)
 		w.Line(`}`)
 	}
 }
