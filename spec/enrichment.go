@@ -10,6 +10,13 @@ func enrich(spec *Spec) (*Messages, error) {
 	messages := NewMessages()
 	for verIndex := range spec.Versions {
 		version := &spec.Versions[verIndex]
+		if len(version.Http.Apis) > 0 {
+			errorResponses, err := createErrorResponsesModels()
+			if err != nil {
+				return nil, err
+			}
+			version.Models = append(version.Models, errorResponses...)
+		}
 		modelsMap := buildModelsMap(version.Models)
 		enricher := &enricher{modelsMap, make(map[string]interface{}), messages, nil}
 		enricher.Version(version)
@@ -76,6 +83,11 @@ func (enricher *enricher) Version(version *Version) {
 		api.Apis = apis
 		for opIndex := range api.Operations {
 			operation := &api.Operations[opIndex]
+			errors, err := createErrorResponses()
+			if err != nil {
+				// TODO: Escalate gracefully
+			}
+			operation.Errors = errors
 			operation.Api = api
 			enricher.Operation(operation)
 		}
@@ -94,6 +106,11 @@ func (enricher *enricher) Operation(operation *NamedOperation) {
 	for index := range operation.Responses {
 		operation.Responses[index].Operation = operation
 		enricher.Definition(&operation.Responses[index].Definition)
+	}
+
+	for index := range operation.Errors {
+		operation.Errors[index].Operation = operation
+		enricher.Definition(&operation.Errors[index].Definition)
 	}
 }
 
@@ -165,4 +182,45 @@ func (enricher *enricher) TypeDef(typ *TypeDef, node *yaml.Node) *TypeInfo {
 		return typ.Info
 	}
 	return nil
+}
+
+func createErrorResponsesModels() (Models, error) {
+	data := `
+InternalServerError:
+  object:
+    message: string
+
+BadRequestError:
+  object:
+    message: string
+    params: ParamMessage[]
+  
+ParamMessage:
+  object:
+    name: string
+    message: string
+`
+	var models Models
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &models)
+	if err != nil {
+		return nil, err
+	}
+	return models, nil
+}
+
+const InternalServerError string = "InternalServerError"
+const BadRequestError string = "BadRequestError"
+const ParamMessage string = "ParamMessage"
+
+func createErrorResponses() (Responses, error) {
+	data := `
+bad_request: BadRequestError
+internal_server_error: InternalServerError
+`
+	var responses Responses
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &responses)
+	if err != nil {
+		return nil, err
+	}
+	return responses, nil
 }

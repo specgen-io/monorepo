@@ -42,6 +42,7 @@ func (c *Converter) pathItem(pathItem *PathItem) *spec.Operation {
 		c.params(queryParams),
 		c.requestBody(pathItem.Operation.RequestBody),
 		c.responses(pathItem.Operation.Responses),
+		[]spec.NamedResponse{},
 		nil,
 	}
 	return &operation

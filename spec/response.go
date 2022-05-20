@@ -14,6 +14,15 @@ type NamedResponse struct {
 
 type Responses []NamedResponse
 
+func (responses Responses) Get(httpStatus string) *NamedResponse {
+	for _, response := range responses {
+		if response.Name.Source == httpStatus {
+			return &response
+		}
+	}
+	return nil
+}
+
 func (response *NamedResponse) BodyKind() BodyKind {
 	return kindOf(&response.Definition)
 }
