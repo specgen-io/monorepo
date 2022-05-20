@@ -5,6 +5,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
 	"github.com/specgen-io/specgen/v2/gen/ts/types"
 	"github.com/specgen-io/specgen/v2/gen/ts/validations"
+	"github.com/specgen-io/specgen/v2/gen/ts/validations/common"
 	"github.com/specgen-io/specgen/v2/gen/ts/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
@@ -136,8 +137,8 @@ func (g *expressGenerator) operationRouting(w *sources.Writer, operation *spec.N
 		w.Line(`}`)
 	}
 
-	generateParametersParsing(w, operation, "zipHeaders(request.rawHeaders)", "request.params", "request.query", "response.status(400).send()")
-	generateBodyParsing(w, g.validation, operation, "request.body", "request.body", "response.status(400).send()")
+	g.parametersParsing(w, operation)
+	g.bodyParsing(w, operation)
 
 	w.Line("try {")
 	w.Line("  %s", serviceCall(operation, getApiCallParamsObject(operation)))
@@ -153,7 +154,51 @@ func (g *expressGenerator) operationRouting(w *sources.Writer, operation *spec.N
 	}
 	w.Line("} catch (error) {")
 	w.Line("  response.status(500).send()")
+	w.Line("  return")
 	w.Line("}")
 	w.Unindent()
 	w.Line("})")
+}
+
+func (g *expressGenerator) parametersParsing(w *sources.Writer, operation *spec.NamedOperation) {
+	if operation.HasParams() {
+		if len(operation.Endpoint.UrlParams) > 0 {
+			w.Line("var urlParams: %s", paramsTypeName(operation, "UrlParams"))
+		}
+		if len(operation.HeaderParams) > 0 {
+			w.Line("var headerParams: %s", paramsTypeName(operation, "HeaderParams"))
+		}
+		if len(operation.QueryParams) > 0 {
+			w.Line("var queryParams: %s", paramsTypeName(operation, "QueryParams"))
+		}
+		w.Line("try {")
+		if len(operation.Endpoint.UrlParams) > 0 {
+			w.Line("  urlParams = t.decode(%s, request.params)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "UrlParams")))
+		}
+		if len(operation.HeaderParams) > 0 {
+			w.Line("  headerParams = t.decode(%s, zipHeaders(request.rawHeaders))", common.ParamsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")))
+		}
+		if len(operation.QueryParams) > 0 {
+			w.Line("  queryParams = t.decode(%s, request.query)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams")))
+		}
+		w.Line("} catch (error) {")
+		w.Line("  response.status(400).send()")
+		w.Line("  return")
+		w.Line("}")
+	}
+}
+
+func (g *expressGenerator) bodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`const body: string = request.body`)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line("var body: %s", types.TsType(&operation.Body.Type.Definition))
+		w.Line("try {")
+		w.Line("  body = t.decode(%s, request.body)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition))
+		w.Line("} catch (error) {")
+		w.Line("  response.status(400).send()")
+		w.Line("  return")
+		w.Line("}")
+	}
 }
