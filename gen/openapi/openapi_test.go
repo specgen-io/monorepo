@@ -310,6 +310,35 @@ components:
       properties:
         field1:
           type: string
+    InternalServerError:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    BadRequestError:
+      type: object
+      required:
+        - message
+        - params
+      properties:
+        message:
+          type: string
+        params:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParamMessage'
+    ParamMessage:
+      type: object
+      required:
+        - name
+        - message
+      properties:
+        name:
+          type: string
+        message:
+          type: string
 `
 
 	checkOpenApi(t, specYaml, expectedOpenApiYaml)
@@ -428,6 +457,35 @@ components:
         prop2:
           type: integer
           format: int32
+    InternalServerError:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    BadRequestError:
+      type: object
+      required:
+        - message
+        - params
+      properties:
+        message:
+          type: string
+        params:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParamMessage'
+    ParamMessage:
+      type: object
+      required:
+        - name
+        - message
+      properties:
+        name:
+          type: string
+        message:
+          type: string
 `
 
 	checkOpenApi(t, specYaml, expectedOpenApiYaml)
@@ -484,6 +542,35 @@ components:
         - prop1
       properties:
         prop1:
+          type: string
+    v2.InternalServerError:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    v2.BadRequestError:
+      type: object
+      required:
+        - message
+        - params
+      properties:
+        message:
+          type: string
+        params:
+          type: array
+          items:
+            $ref: '#/components/schemas/v2.ParamMessage'
+    v2.ParamMessage:
+      type: object
+      required:
+        - name
+        - message
+      properties:
+        name:
+          type: string
+        message:
           type: string
 `
 
