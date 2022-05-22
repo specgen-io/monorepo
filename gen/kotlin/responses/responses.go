@@ -26,7 +26,7 @@ func Signature(types *types.Types, operation *spec.NamedOperation) string {
 	return ""
 }
 
-func CreateResponse(response *spec.NamedResponse, resultVar string) string {
+func CreateResponse(response *spec.OperationResponse, resultVar string) string {
 	if len(response.Operation.Responses) > 1 {
 		return fmt.Sprintf(`%s.%s(%s)`, InterfaceName(response.Operation), response.Name.PascalCase(), resultVar)
 	}
@@ -73,13 +73,17 @@ func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage m
 	return files
 }
 
-func implementations(w *sources.Writer, types *types.Types, response *spec.NamedResponse) {
+func implementations(w *sources.Writer, types *types.Types, response *spec.OperationResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
 	if !response.Type.Definition.IsEmpty() {
 		w.Line(`class %s(var body: %s) : %s`, serviceResponseImplementationName, types.Kotlin(&response.Type.Definition), InterfaceName(response.Operation))
 	} else {
 		w.Line(`class %s : %s`, serviceResponseImplementationName, InterfaceName(response.Operation))
 	}
+}
+
+func GetBody(varName string) string {
+	return fmt.Sprintf(`%s.body`, varName)
 }
 
 func InterfaceName(operation *spec.NamedOperation) string {

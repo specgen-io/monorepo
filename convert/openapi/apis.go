@@ -42,20 +42,20 @@ func (c *Converter) pathItem(pathItem *PathItem) *spec.Operation {
 		c.params(queryParams),
 		c.requestBody(pathItem.Operation.RequestBody),
 		c.responses(pathItem.Operation.Responses),
-		[]spec.NamedResponse{},
+		[]spec.OperationResponse{},
 		nil,
 	}
 	return &operation
 }
 
-func (c *Converter) responses(responses openapi3.Responses) []spec.NamedResponse {
-	result := []spec.NamedResponse{}
+func (c *Converter) responses(responses openapi3.Responses) []spec.OperationResponse {
+	result := []spec.OperationResponse{}
 	for status, response := range responses {
 		statusName := "ok"
 		if status != "default" {
 			statusName = spec.HttpStatusName(status)
 		}
-		result = append(result, spec.NamedResponse{name(statusName), *c.response(response), nil})
+		result = append(result, spec.OperationResponse{spec.Response{name(statusName), *c.response(response)}, nil})
 	}
 	return result
 }

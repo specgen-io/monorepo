@@ -105,7 +105,7 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
-func (g *expressGenerator) response(w *sources.Writer, response *spec.NamedResponse, dataParam string) {
+func (g *expressGenerator) response(w *sources.Writer, response *spec.Response, dataParam string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line("response.status(%s).send()", spec.HttpStatusCode(response.Name))
 		w.Line("return")
@@ -143,12 +143,12 @@ func (g *expressGenerator) operationRouting(w *sources.Writer, operation *spec.N
 	w.Line("try {")
 	w.Line("  %s", serviceCall(operation, getApiCallParamsObject(operation)))
 	if len(operation.Responses) == 1 {
-		g.response(w.IndentedWith(1), &operation.Responses[0], "result")
+		g.response(w.IndentedWith(1), &operation.Responses[0].Response, "result")
 	} else {
 		w.Line("  switch (result.status) {")
 		for _, response := range operation.Responses {
 			w.Line("    case '%s':", response.Name.SnakeCase())
-			g.response(w.IndentedWith(3), &response, "result.data")
+			g.response(w.IndentedWith(3), &response.Response, "result.data")
 		}
 		w.Line("  }")
 	}

@@ -102,12 +102,12 @@ func (m *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec
 		w.Line(`  val result = %s`, serviceCall)
 	}
 	if len(operation.Responses) == 1 {
-		m.processResponse(w.Indented(), &operation.Responses[0], "result")
+		m.processResponse(w.Indented(), &operation.Responses[0].Response, "result")
 	}
 	if len(operation.Responses) > 1 {
 		for _, response := range operation.Responses {
 			w.Line(`  if (result is %s.%s) {`, responses.InterfaceName(operation), response.Name.PascalCase())
-			m.processResponse(w.IndentedWith(2), &response, "result")
+			m.processResponse(w.IndentedWith(2), &response.Response, responses.GetBody("result"))
 			w.Line(`  }`)
 		}
 		w.EmptyLine()
@@ -117,10 +117,7 @@ func (m *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec
 	w.Line(`}`)
 }
 
-func (m *MicronautGenerator) processResponse(w *sources.Writer, response *spec.NamedResponse, result string) {
-	if len(response.Operation.Responses) > 1 {
-		result = fmt.Sprintf(`%s.body`, result)
-	}
+func (m *MicronautGenerator) processResponse(w *sources.Writer, response *spec.Response, result string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s)`, response.Name.UpperCase())

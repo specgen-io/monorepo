@@ -85,13 +85,23 @@ func (g *fetchGenerator) operation(w *sources.Writer, operation *spec.NamedOpera
 	}
 	fetchConfig := strings.Join(fetchConfigParts, ", ")
 	w.Line("  const response = await fetch(url, {%s})", fetchConfig)
+
 	w.Line(`  switch (response.status) {`)
-	for _, response := range operation.Responses {
+	if len(operation.Responses) == 1 {
+		response := operation.Responses[0]
+		body := clientResponseBody(g.validation, &response.Response, `await response.text()`, `await response.json()`)
 		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
-		w.Line(`      return Promise.resolve(%s)`, clientResponseResult(g.validation, &response, `await response.text()`, `await response.json()`))
+		w.Line(`      return Promise.resolve(%s)`, body)
+	} else {
+		for _, response := range operation.Responses {
+			body := clientResponseBody(g.validation, &response.Response, `await response.text()`, `await response.json()`)
+			w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
+			w.Line(`      return Promise.resolve(%s)`, responses.New(&response.Response, body))
+		}
 	}
 	w.Line(`    default:`)
 	w.Line("      throw new Error(`Unexpected status code ${ response.status }`)")
 	w.Line(`  }`)
+
 	w.Line(`},`)
 }

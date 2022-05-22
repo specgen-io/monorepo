@@ -63,7 +63,7 @@ func PlainGoType(typ string, modelsPackage string) string {
 	case spec.TypeJson:
 		return "json.RawMessage"
 	case spec.TypeEmpty:
-		return "empty.Type"
+		return emptyType
 	default:
 		if modelsPackage != "" {
 			return fmt.Sprintf("%s.%s", modelsPackage, typ)
@@ -71,6 +71,8 @@ func PlainGoType(typ string, modelsPackage string) string {
 		return typ
 	}
 }
+
+const emptyType = `empty.Type`
 
 var modelsPackage = "models"
 
