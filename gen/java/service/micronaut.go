@@ -111,12 +111,12 @@ func (g *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec
 		w.Line(`}`)
 	}
 	if len(operation.Responses) == 1 {
-		g.processResponse(w, &operation.Responses[0], "result")
+		g.processResponse(w, &operation.Responses[0].Response, "result")
 	}
 	if len(operation.Responses) > 1 {
 		for _, response := range operation.Responses {
 			w.Line(`if (result instanceof %s.%s) {`, responses.InterfaceName(operation), response.Name.PascalCase())
-			g.processResponse(w.Indented(), &response, responses.GetBody(&response, "result"))
+			g.processResponse(w.Indented(), &response.Response, responses.GetBody(&response, "result"))
 			w.Line(`}`)
 		}
 		w.EmptyLine()
@@ -126,7 +126,7 @@ func (g *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec
 	w.Line(`}`)
 }
 
-func (g *MicronautGenerator) processResponse(w *sources.Writer, response *spec.NamedResponse, result string) {
+func (g *MicronautGenerator) processResponse(w *sources.Writer, response *spec.Response, result string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s);`, response.Name.UpperCase())

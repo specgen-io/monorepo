@@ -80,12 +80,21 @@ func (g *axiosGenerator) operation(w *sources.Writer, operation *spec.NamedOpera
 		w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 	}
 	w.Line(`  switch (response.status) {`)
-	for _, response := range operation.Responses {
+	if len(operation.Responses) == 1 {
+		response := operation.Responses[0]
+		body := clientResponseBody(g.validation, &response.Response, `response.data`, `response.data`)
 		w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
-		w.Line(`      return Promise.resolve(%s)`, clientResponseResult(g.validation, &response, `response.data`, `response.data`))
+		w.Line(`      return Promise.resolve(%s)`, body)
+	} else {
+		for _, response := range operation.Responses {
+			body := clientResponseBody(g.validation, &response.Response, `response.data`, `response.data`)
+			w.Line(`    case %s:`, spec.HttpStatusCode(response.Name))
+			w.Line(`      return Promise.resolve(%s)`, responses.New(&response.Response, body))
+		}
 	}
 	w.Line(`    default:`)
 	w.Line("      throw new Error(`Unexpected status code ${ response.status }`)")
 	w.Line(`  }`)
+
 	w.Line(`},`)
 }

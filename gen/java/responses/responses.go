@@ -22,7 +22,7 @@ func Signature(types *types.Types, operation *spec.NamedOperation) string {
 	return ""
 }
 
-func CreateResponse(response *spec.NamedResponse, resultVar string) string {
+func CreateResponse(response *spec.OperationResponse, resultVar string) string {
 	if len(response.Operation.Responses) > 1 {
 		return fmt.Sprintf(`return new %s.%s(%s);`, InterfaceName(response.Operation), response.Name.PascalCase(), resultVar)
 	} else {
@@ -74,7 +74,7 @@ func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage p
 	return files
 }
 
-func implementation(w *sources.Writer, types *types.Types, response *spec.NamedResponse) {
+func implementation(w *sources.Writer, types *types.Types, response *spec.OperationResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
 	w.Line(`class %s implements %s {`, serviceResponseImplementationName, InterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {
@@ -94,7 +94,7 @@ func InterfaceName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
 }
 
-func GetBody(response *spec.NamedResponse, responseVarName string) string {
+func GetBody(response *spec.OperationResponse, responseVarName string) string {
 	return fmt.Sprintf(`((%s.%s) %s).body`, InterfaceName(response.Operation), response.Name.PascalCase(), responseVarName)
 }
 

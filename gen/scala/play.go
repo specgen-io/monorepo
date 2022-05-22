@@ -271,10 +271,11 @@ func generateControllerMethodRequest(w *sources.Writer, operation *spec.NamedOpe
 	}
 }
 
-func getPlayStatus(response *spec.NamedResponse) string {
+func getPlayStatus(response *spec.Response) string {
 	if response.BodyIs(spec.BodyEmpty) {
 		return fmt.Sprintf(`new Status(%s)`, spec.HttpStatusCode(response.Name))
-	} else if response.BodyIs(spec.BodyString) {
+	}
+	if response.BodyIs(spec.BodyString) {
 		return fmt.Sprintf(`new Status(%s)(body)`, spec.HttpStatusCode(response.Name))
 	} else {
 		return fmt.Sprintf(`new Status(%s)(Jsoner.write(body)).as("application/json")`, spec.HttpStatusCode(response.Name))
@@ -285,16 +286,16 @@ func genResponseCases(w *sources.Writer, operation *spec.NamedOperation) {
 	if len(operation.Responses) == 1 {
 		r := operation.Responses[0]
 		if !r.Type.Definition.IsEmpty() {
-			w.Line(`body => %s`, getPlayStatus(&r))
+			w.Line(`body => %s`, getPlayStatus(&r.Response))
 		} else {
-			w.Line(`_ => %s`, getPlayStatus(&r))
+			w.Line(`_ => %s`, getPlayStatus(&r.Response))
 		}
 	} else {
 		for _, r := range operation.Responses {
 			if !r.Type.Definition.IsEmpty() {
-				w.Line(`case %s.%s(body) => %s`, responseType(r.Operation), r.Name.PascalCase(), getPlayStatus(&r))
+				w.Line(`case %s.%s(body) => %s`, responseType(operation), r.Name.PascalCase(), getPlayStatus(&r.Response))
 			} else {
-				w.Line(`case %s.%s() => %s`, responseType(r.Operation), r.Name.PascalCase(), getPlayStatus(&r))
+				w.Line(`case %s.%s() => %s`, responseType(operation), r.Name.PascalCase(), getPlayStatus(&r.Response))
 			}
 		}
 	}

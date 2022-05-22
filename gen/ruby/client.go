@@ -68,7 +68,7 @@ func generateVersionClientModule(w *sources.Writer, version *spec.Version, modul
 	w.Line("end")
 }
 
-func operationResult(operation *spec.NamedOperation, response *spec.NamedResponse) string {
+func operationResult(operation *spec.NamedOperation, response *spec.Response) string {
 	flags := ""
 	for _, r := range operation.Responses {
 		if r.Name.Source == response.Name.Source {
@@ -144,7 +144,7 @@ func generateClientOperation(w *sources.Writer, moduleName string, operation *sp
 
 	for _, response := range operation.Responses {
 		w.Line("when '%s'", spec.HttpStatusCode(response.Name))
-		w.Line("  %s", operationResult(operation, &response))
+		w.Line("  %s", operationResult(operation, &response.Response))
 	}
 
 	w.Line("else")

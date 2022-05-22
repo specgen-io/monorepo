@@ -98,9 +98,7 @@ func generateClientFunction(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`    log.WithFields(%s).Error("Request failed", err.Error())`, logFieldsName(operation))
 	w.Line(`    %s`, returnErr(operation))
 	w.Line(`  }`)
-	w.Indent()
-	addClientResponses(w, operation)
-	w.Unindent()
+	addClientResponses(w.Indented(), operation)
 	w.EmptyLine()
 	w.Line(`  msg := fmt.Sprintf("Unexpected status code received: %s", resp.StatusCode)`, "%d")
 	w.Line(`  log.WithFields(%s).Error(msg)`, logFieldsName(operation))
@@ -176,6 +174,9 @@ func addClientResponses(w *sources.Writer, operation *spec.NamedOperation) {
 		w.EmptyLine()
 		w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
 		w.Line(`  log.WithFields(%s).WithField("status", %s).Info("Received response")`, logFieldsName(operation), spec.HttpStatusCode(response.Name))
+		if response.BodyIs(spec.BodyEmpty) {
+			w.Line(`  result := %s{}`, emptyType)
+		}
 		if response.BodyIs(spec.BodyString) {
 			w.Line(`  responseBody, err := ioutil.ReadAll(resp.Body)`)
 			w.Line(`  err = resp.Body.Close()`)
@@ -195,22 +196,16 @@ func addClientResponses(w *sources.Writer, operation *spec.NamedOperation) {
 			w.Line(`    return nil, err`)
 			w.Line(`  }`)
 		}
-		w.Line(`  %s`, returnStatement(&response))
-		w.Line(`}`)
-	}
-}
 
-func returnStatement(response *spec.NamedResponse) string {
-	operation := response.Operation
-	if len(operation.Responses) == 1 {
-		if response.Type.Definition.IsEmpty() {
-			return `return nil`
+		if len(operation.Responses) == 1 {
+			if response.Type.Definition.IsEmpty() {
+				w.Line(`  return nil`)
+			} else {
+				w.Line(`  return &result, nil`)
+			}
+		} else {
+			w.Line(`  return %s`, NewResponse(&response, `result`))
 		}
-		return fmt.Sprintf(`return &result, nil`)
-	} else {
-		if response.Type.Definition.IsEmpty() {
-			return fmt.Sprintf(`return &%s{%s: &%s{}}, nil`, responseTypeName(operation), response.Name.PascalCase(), GoType(&response.Type.Definition))
-		}
-		return fmt.Sprintf(`return &%s{%s: &result}, nil`, responseTypeName(operation), response.Name.PascalCase())
+		w.Line(`}`)
 	}
 }

@@ -120,13 +120,13 @@ func generateOperationParametersParsing(w *sources.Writer, operation *spec.Named
 	}
 }
 
-func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation) {
+func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation, responseVar string) {
 	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceInterfaceTypeVar(operation.Api), operation.Name.PascalCase(), JoinDelimParams(addOperationMethodParams(operation)))
 	if singleEmptyResponse {
 		w.Line(`err = %s`, serviceCall)
 	} else {
-		w.Line(`response, err := %s`, serviceCall)
+		w.Line(`%s, err := %s`, responseVar, serviceCall)
 	}
 
 	w.Line(`if err != nil {`)
@@ -140,19 +140,21 @@ func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation) {
 	}
 }
 
-func generateResponseWriting(w *sources.Writer, response *spec.NamedResponse, responseVar string) {
+func generateResponseWriting(w *sources.Writer, logFieldsName string, response *spec.Response, responseVar string) {
+	if response.BodyIs(spec.BodyEmpty) {
+		w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
+	}
 	if response.BodyIs(spec.BodyString) {
 		w.Line(`res.Header().Set("Content-Type", "text/plain")`)
 		w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
 		w.Line(`res.Write([]byte(*response))`)
-	} else if response.BodyIs(spec.BodyJson) {
+	}
+	if response.BodyIs(spec.BodyJson) {
 		w.Line(`res.Header().Set("Content-Type", "application/json")`)
 		w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
 		w.Line(`json.NewEncoder(res).Encode(%s)`, responseVar)
-	} else {
-		w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
 	}
-	w.Line(`log.WithFields(%s).WithField("status", %s).Info("Completed request")`, logFieldsName(response.Operation), spec.HttpStatusCode(response.Name))
+	w.Line(`log.WithFields(%s).WithField("status", %s).Info("Completed request")`, logFieldsName, spec.HttpStatusCode(response.Name))
 	w.Line(`return`)
 }
 
@@ -166,6 +168,29 @@ func checkRequestContentType(w *sources.Writer, operation *spec.NamedOperation, 
 func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	w.Line(`var err error`)
+	generateBodyParsing(w, operation)
+	generateOperationParametersParsing(w, operation, operation.QueryParams, false, "queryParams", "req.URL.Query()", true)
+	generateOperationParametersParsing(w, operation, operation.HeaderParams, false, "headerParams", "req.Header", true)
+	generateOperationParametersParsing(w, operation, operation.Endpoint.UrlParams, true, "urlParams", "req.URL.Query()", false)
+	generateServiceCall(w, operation, `response`)
+	generateReponse(w, operation, `response`)
+}
+
+func generateReponse(w *sources.Writer, operation *spec.NamedOperation, responseVar string) {
+	if len(operation.Responses) == 1 {
+		generateResponseWriting(w, logFieldsName(operation), &operation.Responses[0].Response, responseVar)
+	} else {
+		for _, response := range operation.Responses {
+			responseVar := fmt.Sprintf("%s.%s", responseVar, response.Name.PascalCase())
+			w.Line(`if %s != nil {`, responseVar)
+			generateResponseWriting(w.Indented(), logFieldsName(operation), &response.Response, responseVar)
+			w.Line(`}`)
+		}
+		generateInternalServerErrorResponse(w, operation, `"Result from service implementation does not have anything in it"`)
+	}
+}
+
+func generateBodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		checkRequestContentType(w, operation, "text/plain")
 		w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
@@ -181,23 +206,6 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 		w.Line(`if err != nil {`)
 		generateBadRequestResponse(w.Indented(), operation, genFmtSprintf(`Decoding body JSON failed: %s`, `err.Error()`))
 		w.Line(`}`)
-	}
-	generateOperationParametersParsing(w, operation, operation.QueryParams, false, "queryParams", "req.URL.Query()", true)
-	generateOperationParametersParsing(w, operation, operation.HeaderParams, false, "headerParams", "req.Header", true)
-	generateOperationParametersParsing(w, operation, operation.Endpoint.UrlParams, true, "urlParams", "req.URL.Query()", false)
-
-	generateServiceCall(w, operation)
-
-	if len(operation.Responses) == 1 {
-		generateResponseWriting(w, &operation.Responses[0], "response")
-	} else {
-		for _, response := range operation.Responses {
-			responseVar := fmt.Sprintf("response.%s", response.Name.PascalCase())
-			w.Line(`if %s != nil {`, responseVar)
-			generateResponseWriting(w.Indented(), &response, responseVar)
-			w.Line(`}`)
-		}
-		generateInternalServerErrorResponse(w, operation, `"Result from service implementation does not have anything in it"`)
 	}
 }
 
@@ -230,7 +238,7 @@ func generateBadRequestResponse(w *sources.Writer, operation *spec.NamedOperatio
 	w.Line(`message := %s`, message)
 	w.Line(`log.WithFields(%s).Warn(message)`, logFieldsName(operation))
 	w.Line(`errorResponse := %s{message, nil}`, GoType(&badRequest.Type.Definition))
-	generateResponseWriting(w, badRequest, `errorResponse`)
+	generateResponseWriting(w, logFieldsName(operation), &badRequest.Response, `errorResponse`)
 }
 
 func generateInternalServerErrorResponse(w *sources.Writer, operation *spec.NamedOperation, message string) {
@@ -238,7 +246,7 @@ func generateInternalServerErrorResponse(w *sources.Writer, operation *spec.Name
 	w.Line(`message := %s`, message)
 	w.Line(`log.WithFields(%s).Error(message)`, logFieldsName(operation))
 	w.Line(`errorResponse := %s{message}`, GoType(&internalServerError.Type.Definition))
-	generateResponseWriting(w, internalServerError, `errorResponse`)
+	generateResponseWriting(w, logFieldsName(operation), &internalServerError.Response, `errorResponse`)
 }
 
 func genFmtSprintf(format string, args ...string) string {

@@ -1,6 +1,7 @@
 package responses
 
 import (
+	"fmt"
 	"github.com/specgen-io/specgen/v2/gen/ts/types"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
@@ -30,6 +31,14 @@ func ResponseType(operation *spec.NamedOperation, servicePackage string) string 
 		result = "service." + result
 	}
 	return result
+}
+
+func New(response *spec.Response, body string) string {
+	if body == `` {
+		return fmt.Sprintf(`{ status: "%s" }`, response.Name.Source)
+	} else {
+		return fmt.Sprintf(`{ status: "%s", data: %s }`, response.Name.Source, body)
+	}
 }
 
 func responseTypeName(operation *spec.NamedOperation) string {
