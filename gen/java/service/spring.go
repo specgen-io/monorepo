@@ -136,7 +136,7 @@ func (g *SpringGenerator) processResponse(w *sources.Writer, response *spec.Resp
 		responseWrite, exception := g.Models.WriteJson(result, &response.Type.Definition)
 		w.Line(`String responseJson = "";`)
 		w.Line(`try {`)
-		w.Line(`  responseJson = %s; }`, responseWrite)
+		w.Line(`  responseJson = %s;`, responseWrite)
 		w.Line(`} catch (%s e) {`, exception)
 		w.Line(`  logger.error("Failed to serialize response body: {}", e.getMessage());`)
 		w.Line(`}`)
