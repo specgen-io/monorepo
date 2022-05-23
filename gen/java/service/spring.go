@@ -92,7 +92,7 @@ func (g *SpringGenerator) controllerMethod(w *sources.Writer, operation *spec.Na
 		w.Line(`%s requestBody;`, g.Types.Java(&operation.Body.Type.Definition))
 		w.Line(`try {`)
 		w.Line(`  requestBody = %s;`, requestBody)
-		w.Line(`} catch (%s %s) {`, exception, `e`)
+		w.Line(`} catch (%s e) {`, exception)
 		g.badRequest(w.Indented(), operation, `"Failed to deserialize request body {}", e.getMessage()`)
 		w.Line(`}`)
 	}

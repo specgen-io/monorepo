@@ -97,7 +97,7 @@ func (g *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec
 		w.Line(`%s requestBody;`, g.Types.Java(&operation.Body.Type.Definition))
 		w.Line(`try {`)
 		w.Line(`  requestBody = %s;`, requestBody)
-		w.Line(`} catch (%s %s) {`, exception, `e`)
+		w.Line(`} catch (%s e) {`, exception)
 		g.badRequest(w.Indented(), operation, `"Failed to deserialize request body: {}", e.getMessage()`)
 		w.Line(`}`)
 	}
@@ -137,7 +137,7 @@ func (g *MicronautGenerator) processResponse(w *sources.Writer, response *spec.R
 	}
 	if response.BodyIs(spec.BodyJson) {
 		responseWrite, exception := g.Models.WriteJson(result, &response.Type.Definition)
-		w.Line(`String responseJson;`)
+		w.Line(`String responseJson = "";`)
 		w.Line(`try {`)
 		w.Line(`  responseJson = %s;`, responseWrite)
 		w.Line(`} catch (%s e) {`, exception)
