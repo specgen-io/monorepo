@@ -98,7 +98,7 @@ func (g *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec
 		w.Line(`try {`)
 		w.Line(`  requestBody = %s;`, requestBody)
 		w.Line(`} catch (%s %s) {`, exception, `e`)
-		g.badRequest(w.Indented(), operation, `"Failed to deserialize request body {}", e.getMessage()`)
+		g.badRequest(w.Indented(), operation, `"Failed to deserialize request body: {}", e.getMessage()`)
 		w.Line(`}`)
 	}
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, "bodyStr", "requestBody")))
@@ -136,9 +136,13 @@ func (g *MicronautGenerator) processResponse(w *sources.Writer, response *spec.R
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s).contentType("text/plain");`, response.Name.UpperCase(), result)
 	}
 	if response.BodyIs(spec.BodyJson) {
-		responseWrite, _ := g.Models.WriteJson(result, &response.Type.Definition)
+		responseWrite, exception := g.Models.WriteJson(result, &response.Type.Definition)
 		w.Line(`String responseJson;`)
-		w.Line(`try { responseJson = %s; }`, responseWrite)
+		w.Line(`try {`)
+		w.Line(`  responseJson = %s;`, responseWrite)
+		w.Line(`} catch (%s e) {`, exception)
+		w.Line(`  logger.error("Failed to serialize response body: {}", e.getMessage());`)
+		w.Line(`}`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(responseJson).contentType("application/json");`, response.Name.UpperCase())
 	}
