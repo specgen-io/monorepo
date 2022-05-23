@@ -174,9 +174,6 @@ func addClientResponses(w *sources.Writer, operation *spec.NamedOperation) {
 		w.EmptyLine()
 		w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
 		w.Line(`  log.WithFields(%s).WithField("status", %s).Info("Received response")`, logFieldsName(operation), spec.HttpStatusCode(response.Name))
-		if response.BodyIs(spec.BodyEmpty) {
-			w.Line(`  result := %s{}`, emptyType)
-		}
 		if response.BodyIs(spec.BodyString) {
 			w.Line(`  responseBody, err := ioutil.ReadAll(resp.Body)`)
 			w.Line(`  err = resp.Body.Close()`)
@@ -204,7 +201,11 @@ func addClientResponses(w *sources.Writer, operation *spec.NamedOperation) {
 				w.Line(`  return &result, nil`)
 			}
 		} else {
-			w.Line(`  return %s`, NewResponse(&response, `result`))
+			if response.Type.Definition.IsEmpty() {
+				w.Line(`  return &%s, nil`, NewResponse(&response, fmt.Sprintf(`%s{}`, emptyType)))
+			} else {
+				w.Line(`  return &%s, nil`, NewResponse(&response, `result`))
+			}
 		}
 		w.Line(`}`)
 	}

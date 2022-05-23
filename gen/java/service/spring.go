@@ -133,9 +133,13 @@ func (g *SpringGenerator) processResponse(w *sources.Writer, response *spec.Resp
 		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, result, response.Name.UpperCase())
 	}
 	if response.BodyIs(spec.BodyJson) {
-		responseWrite, _ := g.Models.WriteJson(result, &response.Type.Definition)
+		responseWrite, exception := g.Models.WriteJson(result, &response.Type.Definition)
 		w.Line(`String responseJson = "";`)
-		w.Line(`try { responseJson = %s; }`, responseWrite)
+		w.Line(`try {`)
+		w.Line(`  responseJson = %s; }`, responseWrite)
+		w.Line(`} catch (%s e) {`, exception)
+		w.Line(`  logger.error("Failed to serialize response body: {}", e.getMessage());`)
+		w.Line(`}`)
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json");`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
