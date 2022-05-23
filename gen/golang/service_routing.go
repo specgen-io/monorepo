@@ -234,19 +234,19 @@ func addRoutes(api *spec.Api) string {
 }
 
 func generateBadRequestResponse(w *sources.Writer, operation *spec.NamedOperation, message string) {
-	badRequest := operation.Errors.Get(spec.HttpStatusBadRequest)
+	badRequest := operation.Api.Apis.Errors.Get(spec.HttpStatusBadRequest)
 	w.Line(`message := %s`, message)
 	w.Line(`log.WithFields(%s).Warn(message)`, logFieldsName(operation))
 	w.Line(`errorResponse := %s{message, nil}`, GoType(&badRequest.Type.Definition))
-	generateResponseWriting(w, logFieldsName(operation), &badRequest.Response, `errorResponse`)
+	generateResponseWriting(w, logFieldsName(operation), badRequest, `errorResponse`)
 }
 
 func generateInternalServerErrorResponse(w *sources.Writer, operation *spec.NamedOperation, message string) {
-	internalServerError := operation.Errors.Get(spec.HttpStatusInternalServerError)
+	internalServerError := operation.Api.Apis.Errors.Get(spec.HttpStatusInternalServerError)
 	w.Line(`message := %s`, message)
 	w.Line(`log.WithFields(%s).Error(message)`, logFieldsName(operation))
 	w.Line(`errorResponse := %s{message}`, GoType(&internalServerError.Type.Definition))
-	generateResponseWriting(w, logFieldsName(operation), &internalServerError.Response, `errorResponse`)
+	generateResponseWriting(w, logFieldsName(operation), internalServerError, `errorResponse`)
 }
 
 func genFmtSprintf(format string, args ...string) string {

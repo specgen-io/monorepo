@@ -13,7 +13,7 @@ func (c *Converter) apis(doc *openapi3.T) spec.Apis {
 	for _, api := range apis {
 		specApis = append(specApis, *c.api(api))
 	}
-	return spec.Apis{nil, specApis, nil}
+	return spec.Apis{nil, specApis, nil, nil}
 }
 
 func (c *Converter) api(api *Api) *spec.Api {
@@ -42,7 +42,6 @@ func (c *Converter) pathItem(pathItem *PathItem) *spec.Operation {
 		c.params(queryParams),
 		c.requestBody(pathItem.Operation.RequestBody),
 		c.responses(pathItem.Operation.Responses),
-		[]spec.OperationResponse{},
 		nil,
 	}
 	return &operation
