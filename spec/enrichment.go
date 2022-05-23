@@ -16,6 +16,11 @@ func enrich(spec *Spec) (*Messages, error) {
 				return nil, err
 			}
 			version.Models = append(version.Models, errorResponses...)
+			errors, err := createErrorResponses()
+			if err != nil {
+				return nil, err
+			}
+			version.Http.Errors = errors
 		}
 		modelsMap := buildModelsMap(version.Models)
 		enricher := &enricher{modelsMap, make(map[string]interface{}), messages, nil}
@@ -78,16 +83,16 @@ func (enricher *enricher) Version(version *Version) {
 	}
 	apis := &version.Http
 	apis.Version = version
+
+	for index := range apis.Errors {
+		enricher.Definition(&apis.Errors[index].Definition)
+	}
+
 	for apiIndex := range apis.Apis {
 		api := &version.Http.Apis[apiIndex]
 		api.Apis = apis
 		for opIndex := range api.Operations {
 			operation := &api.Operations[opIndex]
-			errors, err := createErrorResponses()
-			if err != nil {
-				// TODO: Escalate gracefully
-			}
-			operation.Errors = errors
 			operation.Api = api
 			enricher.Operation(operation)
 		}
@@ -106,11 +111,6 @@ func (enricher *enricher) Operation(operation *NamedOperation) {
 	for index := range operation.Responses {
 		operation.Responses[index].Operation = operation
 		enricher.Definition(&operation.Responses[index].Definition)
-	}
-
-	for index := range operation.Errors {
-		operation.Errors[index].Operation = operation
-		enricher.Definition(&operation.Errors[index].Definition)
 	}
 }
 
@@ -212,12 +212,12 @@ const InternalServerError string = "InternalServerError"
 const BadRequestError string = "BadRequestError"
 const ParamMessage string = "ParamMessage"
 
-func createErrorResponses() (Responses, error) {
+func createErrorResponses() (Errors, error) {
 	data := `
 bad_request: BadRequestError
 internal_server_error: InternalServerError
 `
-	var responses Responses
+	var responses Errors
 	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &responses)
 	if err != nil {
 		return nil, err
