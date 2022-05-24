@@ -8,6 +8,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
+	"strings"
 )
 
 func generateServicesInterfaces(version *spec.Version, versionModule, modelsModule, emptyModule module.Module) []sources.CodeFile {
@@ -40,9 +41,13 @@ func generateInterface(api *spec.Api, apiModule, modelsModule, emptyModule modul
 		}
 	}
 	w.EmptyLine()
-	w.Line(`type Service interface {`)
+	w.Line(`type %s interface {`, serviceInterfaceName)
 	for _, operation := range api.Operations {
-		w.Line(`  %s(%s) %s`, operation.Name.PascalCase(), JoinParams(common.AddMethodParams(&operation)), common.OperationReturn(&operation, nil))
+		w.Line(`  %s(%s) %s`,
+			operation.Name.PascalCase(),
+			strings.Join(common.AddMethodParams(&operation), ", "),
+			common.OperationReturn(&operation, nil),
+		)
 	}
 	w.Line(`}`)
 	return &sources.CodeFile{
@@ -50,3 +55,5 @@ func generateInterface(api *spec.Api, apiModule, modelsModule, emptyModule modul
 		Content: w.String(),
 	}
 }
+
+const serviceInterfaceName = "Service"

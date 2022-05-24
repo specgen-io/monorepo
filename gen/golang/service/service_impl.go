@@ -9,28 +9,28 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
-	"path/filepath"
+	"strings"
 )
 
-//TODO: Use Module
-func generateServicesImplementations(moduleName string, versionModulePath string, version *spec.Version, generatePath string) []sources.CodeFile {
+func generateServicesImplementations(version *spec.Version, versionModule, modelsModule, targetModule module.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *generateServiceImplementation(moduleName, versionModulePath, &api, generatePath))
+		apiModule := versionModule.Submodule(api.Name.SnakeCase())
+		files = append(files, *generateServiceImplementation(&api, apiModule, modelsModule, targetModule))
 	}
 	return files
 }
 
-func generateServiceImplementation(moduleName string, versionModulePath string, api *spec.Api, generatePath string) *sources.CodeFile {
+func generateServiceImplementation(api *spec.Api, apiModule, modelsModule, targetModule module.Module) *sources.CodeFile {
 	w := writer.NewGoWriter()
-	w.Line("package %s", module.GetShortPackageName(generatePath))
+	w.Line("package %s", targetModule.Name)
 
 	imports := imports2.Imports()
 	imports.Add("errors")
 	imports.AddApiTypes(api)
-	imports.Add(module.CreatePackageName(moduleName, versionModulePath, api.Name.SnakeCase()))
+	imports.Add(apiModule.Package)
 	if paramsContainsModel(api) {
-		imports.Add(module.CreatePackageName(moduleName, versionModulePath, types.ModelsPackage))
+		imports.Add(modelsModule.Package)
 	}
 	imports.Write(w)
 
@@ -42,7 +42,7 @@ func generateServiceImplementation(moduleName string, versionModulePath string, 
 		w.Line(`func (service *%s) %s(%s) %s {`,
 			serviceTypeName(api),
 			operation.Name.PascalCase(),
-			JoinParams(addVersionedMethodParams(&operation)),
+			strings.Join(addVersionedMethodParams(&operation), ", "),
 			common.OperationReturn(&operation, &apiPackage),
 		)
 		singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
@@ -55,7 +55,7 @@ func generateServiceImplementation(moduleName string, versionModulePath string, 
 	}
 
 	return &sources.CodeFile{
-		Path:    filepath.Join(generatePath, fmt.Sprintf("%s.go", api.Name.SnakeCase())),
+		Path:    targetModule.GetPath(fmt.Sprintf("%s.go", api.Name.SnakeCase())),
 		Content: w.String(),
 	}
 }

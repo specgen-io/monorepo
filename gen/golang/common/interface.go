@@ -7,6 +7,7 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
+//TODO: Should be bigger abstraction
 func OperationReturn(operation *spec.NamedOperation, responsePackageName *string) string {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]

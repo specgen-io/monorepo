@@ -13,7 +13,7 @@ type Module struct {
 }
 
 func New(rootModule string, path string) Module {
-	packageName := CreatePackageName(rootModule, strings.TrimPrefix(path, "./"))
+	packageName := createPackageName(rootModule, strings.TrimPrefix(path, "./"))
 	parts := strings.Split(packageName, "/")
 	name := parts[len(parts)-1]
 	return Module{RootModule: rootModule, Path: path, Package: packageName, Name: name}
@@ -31,7 +31,7 @@ func (m Module) Submodule(name string) Module {
 	return m
 }
 
-func CreatePackageName(args ...string) string {
+func createPackageName(args ...string) string {
 	parts := []string{}
 	for _, arg := range args {
 		arg = strings.TrimPrefix(arg, "./")
@@ -40,9 +40,4 @@ func CreatePackageName(args ...string) string {
 		}
 	}
 	return strings.Join(parts, "/")
-}
-
-func GetShortPackageName(path string) string {
-	parts := strings.Split(path, "/")
-	return parts[len(parts)-1]
 }
