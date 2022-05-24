@@ -1,11 +1,12 @@
-package golang
+package models
 
 import (
+	"github.com/specgen-io/specgen/v2/gen/golang/module"
 	"github.com/specgen-io/specgen/v2/sources"
 	"strings"
 )
 
-func generateEnumsHelperFunctions(module module) *sources.CodeFile {
+func generateEnumsHelperFunctions(module module.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]]
 

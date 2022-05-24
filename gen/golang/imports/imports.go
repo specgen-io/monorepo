@@ -1,6 +1,7 @@
-package golang
+package imports
 
 import (
+	"github.com/specgen-io/specgen/v2/gen/golang/common"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"sort"
@@ -47,16 +48,16 @@ func (self *imports) Write(w *sources.Writer) {
 }
 
 func (self *imports) AddApiTypes(api *spec.Api) *imports {
-	if apiHasType(api, spec.TypeDate) {
+	if common.ApiHasType(api, spec.TypeDate) {
 		self.Add("cloud.google.com/go/civil")
 	}
-	if apiHasType(api, spec.TypeJson) {
+	if common.ApiHasType(api, spec.TypeJson) {
 		self.Add("encoding/json")
 	}
-	if apiHasType(api, spec.TypeUuid) {
+	if common.ApiHasType(api, spec.TypeUuid) {
 		self.Add("github.com/google/uuid")
 	}
-	if apiHasType(api, spec.TypeDecimal) {
+	if common.ApiHasType(api, spec.TypeDecimal) {
 		self.Add("github.com/shopspring/decimal")
 	}
 	return self
@@ -65,13 +66,13 @@ func (self *imports) AddApiTypes(api *spec.Api) *imports {
 func (self *imports) AddModelsTypes(version *spec.Version) *imports {
 	self.Add("errors")
 	self.Add("encoding/json")
-	if versionModelsHasType(version, spec.TypeDate) {
+	if common.VersionModelsHasType(version, spec.TypeDate) {
 		self.Add("cloud.google.com/go/civil")
 	}
-	if versionModelsHasType(version, spec.TypeUuid) {
+	if common.VersionModelsHasType(version, spec.TypeUuid) {
 		self.Add("github.com/google/uuid")
 	}
-	if versionModelsHasType(version, spec.TypeDecimal) {
+	if common.VersionModelsHasType(version, spec.TypeDecimal) {
 		self.Add("github.com/shopspring/decimal")
 	}
 	return self

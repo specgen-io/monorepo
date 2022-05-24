@@ -1,7 +1,9 @@
-package golang
+package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gen/golang/module"
+	"github.com/specgen-io/specgen/v2/gen/golang/types"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
@@ -10,7 +12,7 @@ import (
 func parserDefaultName(param *spec.NamedParam) (string, *string) {
 	methodName := parserMethodName(&param.Type.Definition)
 	if param.Default != nil {
-		defaultValue := DefaultValue(&param.Type.Definition, *param.Default)
+		defaultValue := types.DefaultValue(&param.Type.Definition, *param.Default)
 		return methodName + `Defaulted`, &defaultValue
 	} else {
 		return methodName, nil
@@ -60,7 +62,7 @@ func parserMethodNamePlain(typ *spec.TypeDef) string {
 	}
 }
 
-func generateParamsParser(module module, models module) *sources.CodeFile {
+func generateParamsParser(module module.Module, models module.Module) *sources.CodeFile {
 	data := struct {
 		PackageName   string
 		ModelsPackage string
@@ -68,7 +70,7 @@ func generateParamsParser(module module, models module) *sources.CodeFile {
 	}{
 		module.Name,
 		models.Package,
-		PlainGoType(spec.ParamMessage, modelsPackage),
+		types.PlainGoType(spec.ParamMessage, types.ModelsPackage),
 	}
 	code := `
 package [[.PackageName]]

@@ -1,13 +1,20 @@
-package golang
+package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gen/golang/client"
+	"github.com/specgen-io/specgen/v2/gen/golang/common"
+	imports2 "github.com/specgen-io/specgen/v2/gen/golang/imports"
+	"github.com/specgen-io/specgen/v2/gen/golang/models"
+	"github.com/specgen-io/specgen/v2/gen/golang/module"
+	"github.com/specgen-io/specgen/v2/gen/golang/types"
+	"github.com/specgen-io/specgen/v2/gen/golang/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateRoutings(version *spec.Version, versionModule module, modelsModule module) []sources.CodeFile {
+func generateRoutings(version *spec.Version, versionModule module.Module, modelsModule module.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		files = append(files, *generateRouting(modelsModule, versionModule, &api))
@@ -15,18 +22,18 @@ func generateRoutings(version *spec.Version, versionModule module, modelsModule 
 	return files
 }
 
-func generateRouting(modelsModule module, versionModule module, api *spec.Api) *sources.CodeFile {
-	w := NewGoWriter()
+func generateRouting(modelsModule module.Module, versionModule module.Module, api *spec.Api) *sources.CodeFile {
+	w := writer.NewGoWriter()
 	w.Line("package %s", versionModule.Name)
 
-	imports := Imports()
+	imports := imports2.Imports()
 	imports.Add("encoding/json")
 	imports.Add("github.com/husobee/vestigo")
 	imports.AddAlias("github.com/sirupsen/logrus", "log")
 	imports.Add("net/http")
 	imports.Add("fmt")
 	imports.Add("strings")
-	if bodyHasType(api, spec.TypeString) {
+	if common.BodyHasType(api, spec.TypeString) {
 		imports.Add("io/ioutil")
 	}
 	apiModule := versionModule.Submodule(api.Name.SnakeCase())
@@ -44,8 +51,8 @@ func generateRouting(modelsModule module, versionModule module, api *spec.Api) *
 		}
 		w.Indent()
 		url := getVestigoUrl(&operation)
-		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), url)
-		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, ToPascalCase(operation.Endpoint.Method), url)
+		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, client.ToUpperCase(operation.Endpoint.Method), url)
+		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, client.ToPascalCase(operation.Endpoint.Method), url)
 		generateOperationMethod(w.Indented(), &operation)
 		w.Line(`})`)
 		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
@@ -77,7 +84,7 @@ func addSetCors(w *sources.Writer, operation *spec.NamedOperation) {
 	for _, param := range operation.HeaderParams {
 		params = append(params, fmt.Sprintf(`"%s"`, param.Name.Source))
 	}
-	w.Line(`  AllowHeaders: []string{%s},`, JoinDelimParams(params))
+	w.Line(`  AllowHeaders: []string{%s},`, strings.Join(params, ", "))
 	w.Line(`})`)
 }
 
@@ -95,14 +102,14 @@ func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserNa
 	isEnum := param.Type.Definition.Info.Model != nil && param.Type.Definition.Info.Model.IsEnum()
 	enumModel := param.Type.Definition.Info.Model
 	if isEnum {
-		parserParams = append(parserParams, fmt.Sprintf("%s.%s", modelsPackage, enumValuesStrings(enumModel)))
+		parserParams = append(parserParams, fmt.Sprintf("%s.%s", types.ModelsPackage, models.EnumValuesStrings(enumModel)))
 	}
 	if defaultParam != nil {
 		parserParams = append(parserParams, *defaultParam)
 	}
-	call := fmt.Sprintf(`%s.%s(%s)`, paramsParserName, methodName, JoinDelimParams(parserParams))
+	call := fmt.Sprintf(`%s.%s(%s)`, paramsParserName, methodName, JoinParams(parserParams))
 	if isEnum {
-		call = fmt.Sprintf(`%s.%s(%s)`, modelsPackage, enumModel.Name.PascalCase(), call)
+		call = fmt.Sprintf(`%s.%s(%s)`, types.ModelsPackage, enumModel.Name.PascalCase(), call)
 	}
 	return call
 }
@@ -122,7 +129,8 @@ func generateOperationParametersParsing(w *sources.Writer, operation *spec.Named
 
 func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation, responseVar string) {
 	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceInterfaceTypeVar(operation.Api), operation.Name.PascalCase(), JoinDelimParams(addOperationMethodParams(operation)))
+	//TODO: Make serviceCall helper method
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceInterfaceTypeVar(operation.Api), operation.Name.PascalCase(), JoinParams(addOperationMethodParams(operation)))
 	if singleEmptyResponse {
 		w.Line(`err = %s`, serviceCall)
 	} else {
@@ -201,7 +209,7 @@ func generateBodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
 	}
 	if operation.BodyIs(spec.BodyJson) {
 		checkRequestContentType(w, operation, "application/json")
-		w.Line(`var body %s`, GoType(&operation.Body.Type.Definition))
+		w.Line(`var body %s`, types.GoType(&operation.Body.Type.Definition))
 		w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
 		w.Line(`if err != nil {`)
 		generateBadRequestResponse(w.Indented(), operation, genFmtSprintf(`Decoding body JSON failed: %s`, `err.Error()`))
@@ -237,7 +245,7 @@ func generateBadRequestResponse(w *sources.Writer, operation *spec.NamedOperatio
 	badRequest := operation.Api.Apis.Errors.Get(spec.HttpStatusBadRequest)
 	w.Line(`message := %s`, message)
 	w.Line(`log.WithFields(%s).Warn(message)`, logFieldsName(operation))
-	w.Line(`errorResponse := %s{message, nil}`, GoType(&badRequest.Type.Definition))
+	w.Line(`errorResponse := %s{message, nil}`, types.GoType(&badRequest.Type.Definition))
 	generateResponseWriting(w, logFieldsName(operation), badRequest, `errorResponse`)
 }
 
@@ -245,7 +253,7 @@ func generateInternalServerErrorResponse(w *sources.Writer, operation *spec.Name
 	internalServerError := operation.Api.Apis.Errors.Get(spec.HttpStatusInternalServerError)
 	w.Line(`message := %s`, message)
 	w.Line(`log.WithFields(%s).Error(message)`, logFieldsName(operation))
-	w.Line(`errorResponse := %s{message}`, GoType(&internalServerError.Type.Definition))
+	w.Line(`errorResponse := %s{message}`, types.GoType(&internalServerError.Type.Definition))
 	generateResponseWriting(w, logFieldsName(operation), internalServerError, `errorResponse`)
 }
 
@@ -255,4 +263,8 @@ func genFmtSprintf(format string, args ...string) string {
 	} else {
 		return format
 	}
+}
+
+func serviceInterfaceTypeVar(api *spec.Api) string {
+	return fmt.Sprintf(`%sService`, api.Name.Source)
 }

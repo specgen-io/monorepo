@@ -1,11 +1,57 @@
-package golang
+package client
 
 import (
+	"fmt"
+	"github.com/specgen-io/specgen/v2/gen/golang/module"
 	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateConverter(module module) *sources.CodeFile {
+func converterMethodName(typ *spec.TypeDef) string {
+	switch typ.Node {
+	case spec.PlainType:
+		return converterMethodNamePlain(typ)
+	case spec.NullableType:
+		return converterMethodNamePlain(typ.Child) + "Nullable"
+	case spec.ArrayType:
+		return converterMethodNamePlain(typ.Child) + "Array"
+	default:
+		panic(fmt.Sprintf("Unsupported string param type: %v", typ.Plain))
+	}
+}
+
+func converterMethodNamePlain(typ *spec.TypeDef) string {
+	if typ.Info.Model != nil && typ.Info.Model.IsEnum() {
+		return "StringEnum"
+	}
+	switch typ.Plain {
+	case spec.TypeInt32:
+		return "Int"
+	case spec.TypeInt64:
+		return "Int64"
+	case spec.TypeFloat:
+		return "Float32"
+	case spec.TypeDouble:
+		return "Float64"
+	case spec.TypeDecimal:
+		return "Decimal"
+	case spec.TypeBoolean:
+		return "Bool"
+	case spec.TypeString:
+		return "String"
+	case spec.TypeUuid:
+		return "Uuid"
+	case spec.TypeDate:
+		return "Date"
+	case spec.TypeDateTime:
+		return "DateTime"
+	default:
+		panic(fmt.Sprintf("Unsupported string param type: %v", typ.Plain))
+	}
+}
+
+func generateConverter(module module.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]]
 
