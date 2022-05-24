@@ -1,11 +1,11 @@
-package golang
+package common
 
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func apiHasBody(api *spec.Api) bool {
+func ApiHasBody(api *spec.Api) bool {
 	for _, operation := range api.Operations {
 		if operation.Body != nil {
 			return true
@@ -16,14 +16,14 @@ func apiHasBody(api *spec.Api) bool {
 
 func versionHasType(version *spec.Version, typ string) bool {
 	for _, api := range version.Http.Apis {
-		if apiHasType(&api, typ) {
+		if ApiHasType(&api, typ) {
 			return true
 		}
 	}
 	return false
 }
 
-func bodyHasType(api *spec.Api, typ string) bool {
+func BodyHasType(api *spec.Api, typ string) bool {
 	for _, operation := range api.Operations {
 		if operation.Body != nil {
 			if checkType(&operation.Body.Type.Definition, typ) {
@@ -34,16 +34,16 @@ func bodyHasType(api *spec.Api, typ string) bool {
 	return false
 }
 
-func apiHasType(api *spec.Api, typ string) bool {
+func ApiHasType(api *spec.Api, typ string) bool {
 	for _, operation := range api.Operations {
-		if operationHasType(&operation, typ) {
+		if OperationHasType(&operation, typ) {
 			return true
 		}
 	}
 	return false
 }
 
-func operationHasType(operation *spec.NamedOperation, typ string) bool {
+func OperationHasType(operation *spec.NamedOperation, typ string) bool {
 	if paramHasType(operation.QueryParams, typ) {
 		return true
 	}
@@ -77,7 +77,7 @@ func paramHasType(namedParams []spec.NamedParam, typ string) bool {
 	return false
 }
 
-func versionModelsHasType(version *spec.Version, typ string) bool {
+func VersionModelsHasType(version *spec.Version, typ string) bool {
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
 			for _, field := range model.Object.Fields {

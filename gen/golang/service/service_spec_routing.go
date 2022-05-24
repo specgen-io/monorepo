@@ -1,16 +1,20 @@
-package golang
+package service
 
 import (
 	"fmt"
+	imports2 "github.com/specgen-io/specgen/v2/gen/golang/imports"
+	"github.com/specgen-io/specgen/v2/gen/golang/module"
+	"github.com/specgen-io/specgen/v2/gen/golang/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
+	"strings"
 )
 
-func generateSpecRouting(specification *spec.Spec, module module) *sources.CodeFile {
-	w := NewGoWriter()
+func generateSpecRouting(specification *spec.Spec, module module.Module) *sources.CodeFile {
+	w := writer.NewGoWriter()
 	w.Line("package %s", module.Name)
 
-	imports := Imports()
+	imports := imports2.Imports()
 	imports.Add("github.com/husobee/vestigo")
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Version.FlatCase())
@@ -31,7 +35,7 @@ func generateSpecRouting(specification *spec.Spec, module module) *sources.CodeF
 			routesParams = append(routesParams, fmt.Sprintf(`%s %s`, addVersionedInterfaceParam(&api), versionedApiInterfaceType(&api)))
 		}
 	}
-	w.Line(`func AddRoutes(router *vestigo.Router, %s) {`, JoinDelimParams(routesParams))
+	w.Line(`func AddRoutes(router *vestigo.Router, %s) {`, strings.Join(routesParams, ", "))
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
 			//TODO: Add%sRoutes should be abstracted behind some function
@@ -58,10 +62,12 @@ func versionedApiInterfaceType(api *spec.Api) string {
 	return fmt.Sprintf("%s.Service", versionedApiImportAlias(api))
 }
 
+//TODO: Bad naming
 func addVersionedInterfaceParam(api *spec.Api) string {
-	return serviceInterfaceTypeVar(api) + api.Apis.Version.Version.PascalCase()
+	return fmt.Sprintf(`%sService%s`, api.Name.Source, api.Apis.Version.Version.PascalCase())
 }
 
+//TODO: Use Module instead
 func packageFrom(version *spec.Version) string {
 	if version.Version.Source != "" {
 		return fmt.Sprintf(`%s.`, version.Version.FlatCase())

@@ -1,14 +1,15 @@
-package golang
+package types
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gen/golang/module"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
 func GoType(typ *spec.TypeDef) string {
-	return goType(typ, modelsPackage)
+	return goType(typ, ModelsPackage)
 }
 
 func GoTypeSamePackage(typ *spec.TypeDef) string {
@@ -63,7 +64,7 @@ func PlainGoType(typ string, modelsPackage string) string {
 	case spec.TypeJson:
 		return "json.RawMessage"
 	case spec.TypeEmpty:
-		return emptyType
+		return EmptyType
 	default:
 		if modelsPackage != "" {
 			return fmt.Sprintf("%s.%s", modelsPackage, typ)
@@ -72,11 +73,11 @@ func PlainGoType(typ string, modelsPackage string) string {
 	}
 }
 
-const emptyType = `empty.Type`
+const EmptyType = `empty.Type`
 
-var modelsPackage = "models"
+var ModelsPackage = "models"
 
-func generateEmpty(module module) *sources.CodeFile {
+func GenerateEmpty(module module.Module) *sources.CodeFile {
 	code := `
 package empty
 

@@ -1,12 +1,18 @@
-package golang
+package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gen/golang/common"
+	imports2 "github.com/specgen-io/specgen/v2/gen/golang/imports"
+	"github.com/specgen-io/specgen/v2/gen/golang/module"
+	"github.com/specgen-io/specgen/v2/gen/golang/types"
+	"github.com/specgen-io/specgen/v2/gen/golang/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"path/filepath"
 )
 
+//TODO: Use Module
 func generateServicesImplementations(moduleName string, versionModulePath string, version *spec.Version, generatePath string) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
@@ -16,15 +22,15 @@ func generateServicesImplementations(moduleName string, versionModulePath string
 }
 
 func generateServiceImplementation(moduleName string, versionModulePath string, api *spec.Api, generatePath string) *sources.CodeFile {
-	w := NewGoWriter()
-	w.Line("package %s", getShortPackageName(generatePath))
+	w := writer.NewGoWriter()
+	w.Line("package %s", module.GetShortPackageName(generatePath))
 
-	imports := Imports()
+	imports := imports2.Imports()
 	imports.Add("errors")
 	imports.AddApiTypes(api)
-	imports.Add(createPackageName(moduleName, versionModulePath, api.Name.SnakeCase()))
+	imports.Add(module.CreatePackageName(moduleName, versionModulePath, api.Name.SnakeCase()))
 	if paramsContainsModel(api) {
-		imports.Add(createPackageName(moduleName, versionModulePath, modelsPackage))
+		imports.Add(module.CreatePackageName(moduleName, versionModulePath, types.ModelsPackage))
 	}
 	imports.Write(w)
 
@@ -36,8 +42,8 @@ func generateServiceImplementation(moduleName string, versionModulePath string, 
 		w.Line(`func (service *%s) %s(%s) %s {`,
 			serviceTypeName(api),
 			operation.Name.PascalCase(),
-			JoinDelimParams(addVersionedMethodParams(&operation)),
-			operationReturn(&operation, &apiPackage),
+			JoinParams(addVersionedMethodParams(&operation)),
+			common.OperationReturn(&operation, &apiPackage),
 		)
 		singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
 		if singleEmptyResponse {
@@ -57,19 +63,19 @@ func generateServiceImplementation(moduleName string, versionModulePath string, 
 func addVersionedMethodParams(operation *spec.NamedOperation) []string {
 	params := []string{}
 	if operation.BodyIs(spec.BodyString) {
-		params = append(params, fmt.Sprintf("body %s", GoType(&operation.Body.Type.Definition)))
+		params = append(params, fmt.Sprintf("body %s", types.GoType(&operation.Body.Type.Definition)))
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		params = append(params, fmt.Sprintf("body *%s", GoType(&operation.Body.Type.Definition)))
+		params = append(params, fmt.Sprintf("body *%s", types.GoType(&operation.Body.Type.Definition)))
 	}
 	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
 	}
 	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), GoType(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
 	}
 	return params
 }
