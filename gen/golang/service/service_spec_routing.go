@@ -32,14 +32,13 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *source
 	routesParams := []string{}
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			routesParams = append(routesParams, fmt.Sprintf(`%s %s`, addVersionedInterfaceParam(&api), versionedApiInterfaceType(&api)))
+			routesParams = append(routesParams, fmt.Sprintf(`%s %s`, serviceApiNameVersioned(&api), versionedApiInterfaceType(&api)))
 		}
 	}
 	w.Line(`func AddRoutes(router *vestigo.Router, %s) {`, strings.Join(routesParams, ", "))
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			//TODO: Add%sRoutes should be abstracted behind some function
-			w.Line(`  %sAdd%sRoutes(router, %s)`, packageFrom(&version), api.Name.PascalCase(), addVersionedInterfaceParam(&api))
+			w.Line(`  %s%s`, packageFrom(&version), callAddRouting(&api))
 		}
 	}
 	w.Line(`}`)
@@ -62,12 +61,10 @@ func versionedApiInterfaceType(api *spec.Api) string {
 	return fmt.Sprintf("%s.Service", versionedApiImportAlias(api))
 }
 
-//TODO: Bad naming
-func addVersionedInterfaceParam(api *spec.Api) string {
+func serviceApiNameVersioned(api *spec.Api) string {
 	return fmt.Sprintf(`%sService%s`, api.Name.Source, api.Apis.Version.Version.PascalCase())
 }
 
-//TODO: Use Module instead
 func packageFrom(version *spec.Version) string {
 	if version.Version.Source != "" {
 		return fmt.Sprintf(`%s.`, version.Version.FlatCase())

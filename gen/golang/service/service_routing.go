@@ -22,6 +22,15 @@ func generateRoutings(version *spec.Version, versionModule module.Module, models
 	return files
 }
 
+func signatureAddRouting(api *spec.Api) string {
+	fullServiceInterfaceName := fmt.Sprintf("%s.%s", api.Name.SnakeCase(), serviceInterfaceName)
+	return fmt.Sprintf(`%s(router *vestigo.Router, %s %s)`, addRoutesMethodName(api), serviceInterfaceTypeVar(api), fullServiceInterfaceName)
+}
+
+func callAddRouting(api *spec.Api) string {
+	return fmt.Sprintf(`%s(router, %s)`, addRoutesMethodName(api), serviceApiNameVersioned(api))
+}
+
 func generateRouting(modelsModule module.Module, versionModule module.Module, api *spec.Api) *sources.CodeFile {
 	w := writer.NewGoWriter()
 	w.Line("package %s", versionModule.Name)
@@ -44,7 +53,7 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 	imports.Write(w)
 
 	w.EmptyLine()
-	w.Line(`func %s(router *vestigo.Router, %s %s) {`, addRoutes(api), serviceInterfaceTypeVar(api), fmt.Sprintf("%s.Service", api.Name.SnakeCase()))
+	w.Line(`func %s {`, signatureAddRouting(api))
 	for i, operation := range api.Operations {
 		if i != 0 {
 			w.EmptyLine()
@@ -107,7 +116,7 @@ func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserNa
 	if defaultParam != nil {
 		parserParams = append(parserParams, *defaultParam)
 	}
-	call := fmt.Sprintf(`%s.%s(%s)`, paramsParserName, methodName, JoinParams(parserParams))
+	call := fmt.Sprintf(`%s.%s(%s)`, paramsParserName, methodName, strings.Join(parserParams, ", "))
 	if isEnum {
 		call = fmt.Sprintf(`%s.%s(%s)`, types.ModelsPackage, enumModel.Name.PascalCase(), call)
 	}
@@ -129,12 +138,11 @@ func generateOperationParametersParsing(w *sources.Writer, operation *spec.Named
 
 func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation, responseVar string) {
 	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
-	//TODO: Make serviceCall helper method
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceInterfaceTypeVar(operation.Api), operation.Name.PascalCase(), JoinParams(addOperationMethodParams(operation)))
+	serviceCall := serviceCall(serviceInterfaceTypeVar(operation.Api), operation)
 	if singleEmptyResponse {
-		w.Line(`err = %s`, serviceCall)
+		w.Line(`err = %s.%s`, serviceCall)
 	} else {
-		w.Line(`%s, err := %s`, responseVar, serviceCall)
+		w.Line(`%s, err := %s.%s`, responseVar, serviceCall)
 	}
 
 	w.Line(`if err != nil {`)
@@ -217,27 +225,28 @@ func generateBodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
 	}
 }
 
-func addOperationMethodParams(operation *spec.NamedOperation) []string {
-	urlParams := []string{}
+func serviceCall(serviceVar string, operation *spec.NamedOperation) string {
+	params := []string{}
 	if operation.BodyIs(spec.BodyString) {
-		urlParams = append(urlParams, "body")
+		params = append(params, "body")
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		urlParams = append(urlParams, "&body")
+		params = append(params, "&body")
 	}
 	for _, param := range operation.QueryParams {
-		urlParams = append(urlParams, param.Name.CamelCase())
+		params = append(params, param.Name.CamelCase())
 	}
 	for _, param := range operation.HeaderParams {
-		urlParams = append(urlParams, param.Name.CamelCase())
+		params = append(params, param.Name.CamelCase())
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		urlParams = append(urlParams, param.Name.CamelCase())
+		params = append(params, param.Name.CamelCase())
 	}
-	return urlParams
+
+	return fmt.Sprintf(`%s.%s(%s)`, serviceVar, operation.Name.PascalCase(), strings.Join(params, ", "))
 }
 
-func addRoutes(api *spec.Api) string {
+func addRoutesMethodName(api *spec.Api) string {
 	return fmt.Sprintf(`Add%sRoutes`, api.Name.PascalCase())
 }
 
