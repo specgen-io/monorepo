@@ -57,10 +57,10 @@ func generateClientImplementation(api *spec.Api, versionModule, modelsModule, em
 		Add("net/http").
 		Add("encoding/json").
 		AddAlias("github.com/sirupsen/logrus", "log")
-	if common.ApiHasBody(api) {
+	if types.ApiHasBody(api) {
 		imports.Add("bytes")
 	}
-	if common.ApiHasType(api, spec.TypeEmpty) {
+	if types.ApiHasType(api, spec.TypeEmpty) {
 		imports.Add(emptyModule.Package)
 	}
 	imports.AddApiTypes(api)
@@ -98,7 +98,7 @@ func generateClientWithCtor(w *sources.Writer) {
 
 func generateClientFunction(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
-	w.Line(`func (client *%s) %s(%s) %s {`, clientTypeName(), operation.Name.PascalCase(), JoinParams(common.AddMethodParams(operation)), common.OperationReturn(operation, nil))
+	w.Line(`func (client *%s) %s {`, clientTypeName(), common.OperationSignature(operation, nil))
 	body := "nil"
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`  bodyData := []byte(body)`)
@@ -159,7 +159,7 @@ func getUrl(operation *spec.NamedOperation) []string {
 
 func addRequestUrlParams(operation *spec.NamedOperation) string {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		return fmt.Sprintf(`fmt.Sprintf("%s", %s)`, strings.Join(getUrl(operation), ""), JoinParams(addUrlParam(operation)))
+		return fmt.Sprintf(`fmt.Sprintf("%s", %s)`, strings.Join(getUrl(operation), ""), strings.Join(addUrlParam(operation), ", "))
 	} else {
 		return fmt.Sprintf(`"%s"`, operation.FullUrl())
 	}
@@ -242,4 +242,8 @@ func addClientResponses(w *sources.Writer, operation *spec.NamedOperation) {
 
 func clientTypeName() string {
 	return `Client`
+}
+
+func logFieldsName(operation *spec.NamedOperation) string {
+	return fmt.Sprintf("log%s", operation.Name.PascalCase())
 }

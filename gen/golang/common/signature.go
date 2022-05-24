@@ -5,10 +5,18 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/golang/responses"
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
 	"github.com/specgen-io/specgen/v2/spec"
+	"strings"
 )
 
-//TODO: Should be bigger abstraction
-func OperationReturn(operation *spec.NamedOperation, responsePackageName *string) string {
+func OperationSignature(operation *spec.NamedOperation, apiPackage *string) string {
+	return fmt.Sprintf(`%s(%s) %s`,
+		operation.Name.PascalCase(),
+		strings.Join(operationParams(operation), ", "),
+		operationReturn(operation, apiPackage),
+	)
+}
+
+func operationReturn(operation *spec.NamedOperation, responsePackageName *string) string {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]
 		if response.Type.Definition.IsEmpty() {
@@ -23,7 +31,7 @@ func OperationReturn(operation *spec.NamedOperation, responsePackageName *string
 	return fmt.Sprintf(`(*%s, error)`, responseType)
 }
 
-func AddMethodParams(operation *spec.NamedOperation) []string {
+func operationParams(operation *spec.NamedOperation) []string {
 	params := []string{}
 	if operation.BodyIs(spec.BodyString) {
 		params = append(params, fmt.Sprintf("body %s", types.GoType(&operation.Body.Type.Definition)))
