@@ -32,13 +32,13 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *source
 	routesParams := []string{}
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			routesParams = append(routesParams, fmt.Sprintf(`%s %s`, serviceApiNameVersioned(&api), versionedApiInterfaceType(&api)))
+			routesParams = append(routesParams, fmt.Sprintf(`%s %s.%s`, serviceApiNameVersioned(&api), versionedApiImportAlias(&api), serviceInterfaceName))
 		}
 	}
 	w.Line(`func AddRoutes(router *vestigo.Router, %s) {`, strings.Join(routesParams, ", "))
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			w.Line(`  %s%s`, packageFrom(&version), callAddRouting(&api))
+			w.Line(`  %s%s`, packageFrom(&version), callAddRouting(&api, serviceApiNameVersioned(&api)))
 		}
 	}
 	w.Line(`}`)
@@ -55,10 +55,6 @@ func versionedApiImportAlias(api *spec.Api) string {
 		return api.Name.CamelCase() + version.PascalCase()
 	}
 	return api.Name.CamelCase()
-}
-
-func versionedApiInterfaceType(api *spec.Api) string {
-	return fmt.Sprintf("%s.Service", versionedApiImportAlias(api))
 }
 
 func serviceApiNameVersioned(api *spec.Api) string {

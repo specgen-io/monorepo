@@ -27,8 +27,8 @@ func signatureAddRouting(api *spec.Api) string {
 	return fmt.Sprintf(`%s(router *vestigo.Router, %s %s)`, addRoutesMethodName(api), serviceInterfaceTypeVar(api), fullServiceInterfaceName)
 }
 
-func callAddRouting(api *spec.Api) string {
-	return fmt.Sprintf(`%s(router, %s)`, addRoutesMethodName(api), serviceApiNameVersioned(api))
+func callAddRouting(api *spec.Api, serviceVar string) string {
+	return fmt.Sprintf(`%s(router, %s)`, addRoutesMethodName(api), serviceVar)
 }
 
 func generateRouting(modelsModule module.Module, versionModule module.Module, api *spec.Api) *sources.CodeFile {
@@ -140,9 +140,9 @@ func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation, resp
 	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
 	serviceCall := serviceCall(serviceInterfaceTypeVar(operation.Api), operation)
 	if singleEmptyResponse {
-		w.Line(`err = %s.%s`, serviceCall)
+		w.Line(`err = %s`, serviceCall)
 	} else {
-		w.Line(`%s, err := %s.%s`, responseVar, serviceCall)
+		w.Line(`%s, err := %s`, responseVar, serviceCall)
 	}
 
 	w.Line(`if err != nil {`)
