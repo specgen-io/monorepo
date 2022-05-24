@@ -5,10 +5,10 @@ import (
 	imports2 "github.com/specgen-io/specgen/v2/gen/golang/imports"
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
 	"github.com/specgen-io/specgen/v2/gen/golang/responses"
+	"github.com/specgen-io/specgen/v2/gen/golang/types"
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
-	"strings"
 )
 
 func generateServicesInterfaces(version *spec.Version, versionModule, modelsModule, emptyModule module.Module) []sources.CodeFile {
@@ -27,7 +27,7 @@ func generateInterface(api *spec.Api, apiModule, modelsModule, emptyModule modul
 	imports := imports2.Imports()
 	imports.AddApiTypes(api)
 	for _, operation := range api.Operations {
-		if len(operation.Responses) > 1 && common.OperationHasType(&operation, spec.TypeEmpty) {
+		if len(operation.Responses) > 1 && types.OperationHasType(&operation, spec.TypeEmpty) {
 			imports.Add(emptyModule.Package)
 		}
 	}
@@ -43,11 +43,7 @@ func generateInterface(api *spec.Api, apiModule, modelsModule, emptyModule modul
 	w.EmptyLine()
 	w.Line(`type %s interface {`, serviceInterfaceName)
 	for _, operation := range api.Operations {
-		w.Line(`  %s(%s) %s`,
-			operation.Name.PascalCase(),
-			strings.Join(common.AddMethodParams(&operation), ", "),
-			common.OperationReturn(&operation, nil),
-		)
+		w.Line(`  %s`, common.OperationSignature(&operation, nil))
 	}
 	w.Line(`}`)
 	return &sources.CodeFile{
