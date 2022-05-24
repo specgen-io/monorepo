@@ -169,7 +169,7 @@ func addUrlParam(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
 		if types.GoType(&param.Type.Definition) != "string" {
-			urlParams = append(urlParams, fmt.Sprintf("%s(%s)", converterMethodName(&param.Type.Definition), param.Name.CamelCase()))
+			urlParams = append(urlParams, fmt.Sprintf("convert%s(%s)", converterMethodName(&param.Type.Definition), param.Name.CamelCase()))
 		} else {
 			urlParams = append(urlParams, param.Name.CamelCase())
 		}
