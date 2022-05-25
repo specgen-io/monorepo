@@ -40,7 +40,7 @@ func generateErrors(version *spec.Version, versionModule module.Module, modelsMo
 	w.Line(`func CheckContentType(logFields log.Fields, res http.ResponseWriter, req *http.Request, expectedContentType string) bool {`)
 	w.Line(`  contentType := req.Header.Get("Content-Type")`)
 	w.Line(`  if !strings.Contains(contentType, expectedContentType) {`)
-	w.Line(`    error := models.BadRequestError{fmt.Sprintf("Wrong Content-type: %s", contentType), nil}`)
+	w.Line(`    error := models.BadRequestError{%s, nil}`, genFmtSprintf("Wrong Content-type: %s", "contentType"))
 	w.Line(`    BadRequest(logFields, res, &error)`)
 	w.Line(`    return false`)
 	w.Line(`  }`)
@@ -53,9 +53,9 @@ func generateErrors(version *spec.Version, versionModule module.Module, modelsMo
 	}
 }
 
-func generateBadRequestResponse(w *sources.Writer, operation *spec.NamedOperation, message string) {
+func generateBadRequestResponse(w *sources.Writer, operation *spec.NamedOperation, message string, params string) {
 	badRequest := operation.Api.Apis.Errors.Get(spec.HttpStatusBadRequest)
-	w.Line(`error := %s{Message: %s, Params: nil}`, types.GoType(&badRequest.Type.Definition), message)
+	w.Line(`error := %s{Message: %s, Params: %s}`, types.GoType(&badRequest.Type.Definition), message, params)
 	w.Line(`BadRequest(%s, res, &error)`, logFieldsName(operation))
 	w.Line(`return`)
 }

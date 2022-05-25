@@ -41,7 +41,6 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 	imports.AddAlias("github.com/sirupsen/logrus", "log")
 	imports.Add("net/http")
 	imports.Add("fmt")
-	imports.Add("strings")
 	if types.BodyHasType(api, spec.TypeString) {
 		imports.Add("io/ioutil")
 	}
@@ -131,7 +130,7 @@ func generateOperationParametersParsing(w *sources.Writer, operation *spec.Named
 		}
 
 		w.Line(`if len(%s.Errors) > 0 {`, paramsParserName)
-		generateBadRequestResponse(w.Indented(), operation, fmt.Sprintf(`"Can't parse %s"`, paramsParserName))
+		generateBadRequestResponse(w.Indented(), operation, fmt.Sprintf(`"Can't parse %s"`, paramsParserName), fmt.Sprintf(`%s.Errors`, paramsParserName))
 		w.Line(`}`)
 	}
 }
@@ -204,7 +203,7 @@ func generateBodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
 		checkRequestContentType(w, operation, "text/plain")
 		w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
 		w.Line(`if err != nil {`)
-		generateBadRequestResponse(w.Indented(), operation, genFmtSprintf(`Reading request body failed: %s`, `err.Error()`))
+		generateBadRequestResponse(w.Indented(), operation, genFmtSprintf(`Reading request body failed: %s`, `err.Error()`), "nil")
 		w.Line(`}`)
 		w.Line(`body := string(bodyData)`)
 	}
@@ -213,7 +212,7 @@ func generateBodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
 		w.Line(`var body %s`, types.GoType(&operation.Body.Type.Definition))
 		w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
 		w.Line(`if err != nil {`)
-		generateBadRequestResponse(w.Indented(), operation, genFmtSprintf(`Decoding body JSON failed: %s`, `err.Error()`))
+		generateBadRequestResponse(w.Indented(), operation, genFmtSprintf(`Decoding body JSON failed: %s`, `err.Error()`), "nil")
 		w.Line(`}`)
 	}
 }
