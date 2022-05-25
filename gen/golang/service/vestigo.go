@@ -58,7 +58,7 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 			w.EmptyLine()
 		}
 		w.Indent()
-		url := getVestigoUrl(&operation)
+		url := getEndpointUrl(&operation)
 		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, client.ToUpperCase(operation.Endpoint.Method), url)
 		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, client.ToPascalCase(operation.Endpoint.Method), url)
 		generateOperationMethod(w.Indented(), &operation)
@@ -76,7 +76,7 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 	}
 }
 
-func getVestigoUrl(operation *spec.NamedOperation) string {
+func getEndpointUrl(operation *spec.NamedOperation) string {
 	url := operation.FullUrl()
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		for _, param := range operation.Endpoint.UrlParams {
@@ -87,7 +87,7 @@ func getVestigoUrl(operation *spec.NamedOperation) string {
 }
 
 func addSetCors(w *sources.Writer, operation *spec.NamedOperation) {
-	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, getVestigoUrl(operation))
+	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, getEndpointUrl(operation))
 	params := []string{}
 	for _, param := range operation.HeaderParams {
 		params = append(params, fmt.Sprintf(`"%s"`, param.Name.Source))
@@ -251,17 +251,15 @@ func addRoutesMethodName(api *spec.Api) string {
 
 func generateBadRequestResponse(w *sources.Writer, operation *spec.NamedOperation, message string) {
 	badRequest := operation.Api.Apis.Errors.Get(spec.HttpStatusBadRequest)
-	w.Line(`message := %s`, message)
-	w.Line(`log.WithFields(%s).Warn(message)`, logFieldsName(operation))
-	w.Line(`errorResponse := %s{message, nil}`, types.GoType(&badRequest.Type.Definition))
+	w.Line(`errorResponse := %s{%s, nil}`, types.GoType(&badRequest.Type.Definition), message)
+	w.Line(`log.WithFields(%s).Warn(errorResponse.Message)`, logFieldsName(operation))
 	generateResponseWriting(w, logFieldsName(operation), badRequest, `errorResponse`)
 }
 
 func generateInternalServerErrorResponse(w *sources.Writer, operation *spec.NamedOperation, message string) {
 	internalServerError := operation.Api.Apis.Errors.Get(spec.HttpStatusInternalServerError)
-	w.Line(`message := %s`, message)
-	w.Line(`log.WithFields(%s).Error(message)`, logFieldsName(operation))
-	w.Line(`errorResponse := %s{message}`, types.GoType(&internalServerError.Type.Definition))
+	w.Line(`errorResponse := %s{%s}`, types.GoType(&internalServerError.Type.Definition), message)
+	w.Line(`log.WithFields(%s).Error(errorResponse.Message)`, logFieldsName(operation))
 	generateResponseWriting(w, logFieldsName(operation), internalServerError, `errorResponse`)
 }
 
