@@ -24,7 +24,7 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 
 		sources.AddGenerated(generateParamsParser(versionModule, modelsModule))
 		sources.AddGeneratedAll(generateRoutings(&version, versionModule, modelsModule))
-		sources.AddGeneratedAll(generateServicesInterfaces(&version, versionModule, modelsModule, emptyModule))
+		sources.AddGeneratedAll(generateServiceInterfaces(&version, versionModule, modelsModule, emptyModule))
 		sources.AddGeneratedAll(models.GenerateVersionModels(&version, modelsModule))
 	}
 
@@ -38,7 +38,7 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 			versionServicesModule := rootServicesModule.Submodule(version.Version.FlatCase())
 			versionModule := rootModule.Submodule(version.Version.FlatCase())
 			modelsModule := versionModule.Submodule(types.ModelsPackage)
-			sources.AddScaffoldedAll(generateServicesImplementations(&version, versionModule, modelsModule, versionServicesModule))
+			sources.AddScaffoldedAll(generateServiceImplementations(&version, versionModule, modelsModule, versionServicesModule))
 		}
 	}
 

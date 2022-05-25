@@ -11,16 +11,16 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServicesInterfaces(version *spec.Version, versionModule, modelsModule, emptyModule module.Module) []sources.CodeFile {
+func generateServiceInterfaces(version *spec.Version, versionModule, modelsModule, emptyModule module.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
-		files = append(files, *generateInterface(&api, apiModule, modelsModule, emptyModule))
+		files = append(files, *generateServiceInterface(&api, apiModule, modelsModule, emptyModule))
 	}
 	return files
 }
 
-func generateInterface(api *spec.Api, apiModule, modelsModule, emptyModule module.Module) *sources.CodeFile {
+func generateServiceInterface(api *spec.Api, apiModule, modelsModule, emptyModule module.Module) *sources.CodeFile {
 	w := writer.NewGoWriter()
 	w.Line("package %s", apiModule.Name)
 

@@ -10,7 +10,7 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServicesImplementations(version *spec.Version, versionModule, modelsModule, targetModule module.Module) []sources.CodeFile {
+func generateServiceImplementations(version *spec.Version, versionModule, modelsModule, targetModule module.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
