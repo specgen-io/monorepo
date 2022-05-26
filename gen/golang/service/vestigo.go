@@ -18,7 +18,7 @@ func generateRoutings(version *spec.Version, versionModule module.Module, models
 	for _, api := range version.Http.Apis {
 		files = append(files, *generateRouting(modelsModule, versionModule, &api))
 	}
-	files = append(files, *generateErrors(version, versionModule, modelsModule))
+	files = append(files, *generateRespondFunctions(versionModule))
 	return files
 }
 
@@ -41,6 +41,7 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 	imports.AddAlias("github.com/sirupsen/logrus", "log")
 	imports.Add("net/http")
 	imports.Add("fmt")
+	imports.Add("strings")
 	if types.BodyHasType(api, spec.TypeString) {
 		imports.Add("io/ioutil")
 	}
@@ -53,11 +54,10 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 
 	w.EmptyLine()
 	w.Line(`func %s {`, signatureAddRouting(api))
-	for i, operation := range api.Operations {
-		if i != 0 {
-			w.EmptyLine()
-		}
-		w.Indent()
+	w.Indent()
+	generateErrors(w, api.Apis.Version)
+	for _, operation := range api.Operations {
+		w.EmptyLine()
 		url := getEndpointUrl(&operation)
 		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, client.ToUpperCase(operation.Endpoint.Method), url)
 		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, client.ToPascalCase(operation.Endpoint.Method), url)
@@ -66,8 +66,8 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
 			addSetCors(w, &operation)
 		}
-		w.Unindent()
 	}
+	w.Unindent()
 	w.Line(`}`)
 
 	return &sources.CodeFile{
@@ -157,19 +157,14 @@ func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation, resp
 
 func generateResponseWriting(w *sources.Writer, logFieldsName string, response *spec.Response, responseVar string) {
 	if response.BodyIs(spec.BodyEmpty) {
-		w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
+		w.Line(respondEmpty(logFieldsName, `res`, spec.HttpStatusCode(response.Name)))
 	}
 	if response.BodyIs(spec.BodyString) {
-		w.Line(`res.Header().Set("Content-Type", "text/plain")`)
-		w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
-		w.Line(`res.Write([]byte(*response))`)
+		w.Line(respondText(logFieldsName, `res`, spec.HttpStatusCode(response.Name), `*`+responseVar))
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`res.Header().Set("Content-Type", "application/json")`)
-		w.Line(`res.WriteHeader(%s)`, spec.HttpStatusCode(response.Name))
-		w.Line(`json.NewEncoder(res).Encode(%s)`, responseVar)
+		w.Line(respondJson(logFieldsName, `res`, spec.HttpStatusCode(response.Name), responseVar))
 	}
-	w.Line(`log.WithFields(%s).WithField("status", %s).Info("Completed request")`, logFieldsName, spec.HttpStatusCode(response.Name))
 }
 
 func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) {
@@ -215,6 +210,13 @@ func generateBodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
 		generateBadRequestResponse(w.Indented(), operation, genFmtSprintf(`Decoding body JSON failed: %s`, `err.Error()`), "nil")
 		w.Line(`}`)
 	}
+}
+
+func checkRequestContentType(w *sources.Writer, operation *spec.NamedOperation, contentType string) {
+	w.Line(`contentType := req.Header.Get("Content-Type")`)
+	w.Line(`if !strings.Contains(contentType, "%s") {`, contentType)
+	generateBadRequestResponse(w.Indented(), operation, genFmtSprintf("Wrong Content-type: %s", "contentType"), "nil")
+	w.Line(`}`)
 }
 
 func serviceCall(serviceVar string, operation *spec.NamedOperation) string {
