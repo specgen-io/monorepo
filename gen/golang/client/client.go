@@ -169,7 +169,7 @@ func addUrlParam(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
 		if types.GoType(&param.Type.Definition) != "string" {
-			urlParams = append(urlParams, fmt.Sprintf("convert%s(%s)", converterMethodName(&param.Type.Definition), param.Name.CamelCase()))
+			urlParams = append(urlParams, callRawConvert(&param.Type.Definition, param.Name.CamelCase()))
 		} else {
 			urlParams = append(urlParams, param.Name.CamelCase())
 		}
@@ -194,7 +194,7 @@ func parseParams(w *sources.Writer, operation *spec.NamedOperation) {
 func addParsedParams(w *sources.Writer, namedParams []spec.NamedParam, paramsConverterName string, paramsParserName string) {
 	w.Line(`  %s := NewParamsConverter(%s)`, paramsConverterName, paramsParserName)
 	for _, param := range namedParams {
-		w.Line(`  %s.%s("%s", %s)`, paramsConverterName, converterMethodName(&param.Type.Definition), param.Name.Source, param.Name.CamelCase())
+		w.Line(`  %s.%s`, paramsConverterName, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
 	}
 }
 
