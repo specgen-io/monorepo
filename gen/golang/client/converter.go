@@ -8,6 +8,14 @@ import (
 	"strings"
 )
 
+func callRawConvert(typ *spec.TypeDef, paramNameVar string) string {
+	return fmt.Sprintf("convert%s(%s)", converterMethodName(typ), paramNameVar)
+}
+
+func callConverter(typ *spec.TypeDef, paramName string, paramNameVar string) string {
+	return fmt.Sprintf(`%s("%s", %s)`, converterMethodName(typ), paramName, paramNameVar)
+}
+
 func converterMethodName(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
