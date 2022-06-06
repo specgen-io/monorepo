@@ -30,7 +30,7 @@ func generateServiceImplementation(api *spec.Api, apiModule modules.Module, mode
 	w.Line("import * as service from '%s'", apiModule.GetImport(module))
 	w.Line("import * as models from '%s'", modelsModule.GetImport(module))
 	w.EmptyLine()
-	w.Line("export let %sService = (): service.%s => {", api.Name.CamelCase(), serviceInterfaceName(api)) //TODO: remove services
+	w.Line("export const %sService = (): service.%s => {", api.Name.CamelCase(), serviceInterfaceName(api)) //TODO: remove services
 
 	operations := []string{}
 	for _, operation := range api.Operations {
@@ -39,7 +39,7 @@ func generateServiceImplementation(api *spec.Api, apiModule modules.Module, mode
 		if operation.Body != nil || operation.HasParams() {
 			params = fmt.Sprintf(`params: service.%s`, operationParamsTypeName(&operation))
 		}
-		w.Line("  let %s = async (%s): Promise<%s> => {", operation.Name.CamelCase(), params, responses.ResponseType(&operation, "service"))
+		w.Line("  const %s = async (%s): Promise<%s> => {", operation.Name.CamelCase(), params, responses.ResponseType(&operation, "service"))
 		w.Line("    throw new Error('Not Implemented')")
 		w.Line("  }")
 		w.EmptyLine()

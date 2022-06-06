@@ -33,5 +33,5 @@ func serviceCall(operation *spec.NamedOperation, paramsObject string) string {
 	if len(operation.Responses) == 1 && operation.Responses[0].Definition.Type.Definition.IsEmpty() {
 		return fmt.Sprintf("await service.%s(%s)", operation.Name.CamelCase(), paramsObject)
 	}
-	return fmt.Sprintf("let result = await service.%s(%s)", operation.Name.CamelCase(), paramsObject)
+	return fmt.Sprintf("const result = await service.%s(%s)", operation.Name.CamelCase(), paramsObject)
 }
