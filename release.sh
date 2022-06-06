@@ -18,6 +18,7 @@ else
 fi
 
 zip "./specgen_darwin_amd64.zip" "./dist/darwin_amd64/specgen" -q -j
+zip "./specgen_darwin_arm64.zip" "./dist/darwin_arm64/specgen" -q -j
 zip "./specgen_linux_amd64.zip" "./dist/linux_amd64/specgen" -q -j
 zip "./specgen_windows_amd64.zip" "./dist/windows_amd64/specgen.exe" -q -j
 
@@ -34,6 +35,8 @@ sleep 10
 
 echo "Releasing specgen_darwin_amd64.zip"
 $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --name specgen_darwin_amd64.zip  --file specgen_darwin_amd64.zip
+echo "Releasing specgen_darwin_arm64.zip"
+$GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --name specgen_darwin_arm64.zip  --file specgen_darwin_arm64.zip
 echo "Releasing specgen_linux_amd64.zip"
 $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user specgen-io --repo specgen --tag $RELEASE_NAME --name specgen_linux_amd64.zip   --file specgen_linux_amd64.zip
 echo "Releasing specgen_windows_amd64.zip"
