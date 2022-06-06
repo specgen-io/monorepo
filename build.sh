@@ -14,7 +14,7 @@ build()
   EXECNAME=$3
 
   echo "Building ${GOOS}_${GOARCH}/${EXECNAME}"
-  go build -ldflags "-s -w" -o ./dist/${GOOS}_${GOARCH}/${EXECNAME} specgen.go
+  env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-s -w" -o ./dist/${GOOS}_${GOARCH}/${EXECNAME} specgen.go
   if [ $? -ne 0 ]; then
       echo "An error has occurred while building ${GOOS}_${GOARCH}/${EXECNAME}! Aborting the script execution..."
       exit 1
