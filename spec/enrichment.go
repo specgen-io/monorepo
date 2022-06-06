@@ -186,18 +186,31 @@ func (enricher *enricher) TypeDef(typ *TypeDef, node *yaml.Node) *TypeInfo {
 
 func createErrorResponsesModels() (Models, error) {
 	data := `
-InternalServerError:
-  object:
-    message: string
-
 BadRequestError:
   object:
     message: string
-    params: ParamMessage[]
-  
-ParamMessage:
+    location: ErrorLocation
+    errors: ValidationError[]
+
+ValidationError:
   object:
-    name: string
+    path: string
+    code: string
+    message: string?
+
+ErrorLocation:
+  enum:
+    - query
+    - header
+    - body
+    - unknown
+
+NotFoundError:
+  object:
+    message: string
+
+InternalServerError:
+  object:
     message: string
 `
 	var models Models
@@ -210,11 +223,15 @@ ParamMessage:
 
 const InternalServerError string = "InternalServerError"
 const BadRequestError string = "BadRequestError"
+const NotFoundError string = "NotFound"
+const ValidationError string = "ValidationError"
+const ErrorLocation string = "ErrorLocation"
 const ParamMessage string = "ParamMessage"
 
 func createErrorResponses() (Errors, error) {
 	data := `
 bad_request: BadRequestError
+not_found: NotFoundError
 internal_server_error: InternalServerError
 `
 	var responses Errors
