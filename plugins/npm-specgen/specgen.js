@@ -27,6 +27,8 @@ const getExeName = (toolName) => {
 }
 
 const getArch = () => {
+    if (process.arch === "arm64")
+        return "arm64"
     if (process.arch === "x64")
         return "amd64"
     throw Error(`Unsupported architecture: ${process.arch}`)

@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash +x
 
 VERSION="0.0.0"
 if [ -n "$1" ]; then
@@ -7,28 +7,24 @@ fi
 
 echo "Building version: $VERSION"
 
-platforms=("windows/amd64" "darwin/amd64" "linux/amd64")
-for platform in "${platforms[@]}"
-do
-    echo "Building platform: $platform"
+build()
+{
+  GOOS=$1
+  GOARCH=$2
+  EXECNAME=$3
 
-    # parse platforms
-    platform_split=(${platform//\// })
-    GOOS=${platform_split[0]}
-    GOARCH=${platform_split[1]}
+  echo "Building ${GOOS}_${GOARCH}/${EXECNAME}"
+  go build -ldflags "-s -w" -o ./dist/${GOOS}_${GOARCH}/${EXECNAME} specgen.go
+  if [ $? -ne 0 ]; then
+      echo "An error has occurred while building ${GOOS}_${GOARCH}/${EXECNAME}! Aborting the script execution..."
+      exit 1
+  fi
+  echo 'Successfully built'
+}
 
-    EXEC_NAME="specgen"
-    if [ $GOOS = "windows" ]; then
-        EXEC_NAME+='.exe'
-    fi
-
-    env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-s -w" -o ./dist/${GOOS}_${GOARCH}/${EXEC_NAME} specgen.go
-    if [ $? -ne 0 ]; then
-        echo 'An error has occurred! Aborting the script execution...'
-        exit 1
-    fi
-
-    rm -rf ./output
-done
+build windows amd64 specgen.exe
+build darwin amd64 specgen
+build darwin arm64 specgen
+build linux amd64 specgen
 
 echo "Done building version: $VERSION"
