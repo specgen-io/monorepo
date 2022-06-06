@@ -24,14 +24,21 @@ func generateErrors(w *sources.Writer, version *spec.Version) {
 	w.Line(`_ = respondInternalServerError`)
 }
 
-func generateBadRequestResponse(w *sources.Writer, operation *spec.NamedOperation, message string, params string) {
+func respondNotFound(w *sources.Writer, operation *spec.NamedOperation, message string) {
+	badRequest := operation.Api.Apis.Errors.Get(spec.HttpStatusNotFound)
+	error := fmt.Sprintf(`%s{Message: %s}`, types.GoType(&badRequest.Type.Definition), message)
+	w.Line(`respondBadRequest(%s, res, &%s)`, logFieldsName(operation), error)
+	w.Line(`return`)
+}
+
+func respondBadRequest(w *sources.Writer, operation *spec.NamedOperation, message string, params string) {
 	badRequest := operation.Api.Apis.Errors.Get(spec.HttpStatusBadRequest)
 	error := fmt.Sprintf(`%s{Message: %s, Params: %s}`, types.GoType(&badRequest.Type.Definition), message, params)
 	w.Line(`respondBadRequest(%s, res, &%s)`, logFieldsName(operation), error)
 	w.Line(`return`)
 }
 
-func generateInternalServerErrorResponse(w *sources.Writer, operation *spec.NamedOperation, message string) {
+func respondInternalServerError(w *sources.Writer, operation *spec.NamedOperation, message string) {
 	internalServerError := operation.Api.Apis.Errors.Get(spec.HttpStatusInternalServerError)
 	error := fmt.Sprintf(`%s{Message: %s}`, types.GoType(&internalServerError.Type.Definition), message)
 	w.Line(`respondInternalServerError(%s, res, &%s)`, logFieldsName(operation), error)

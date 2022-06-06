@@ -122,6 +122,26 @@ func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserNa
 	return call
 }
 
+func generateHeaderParsing(w *sources.Writer, operation *spec.NamedOperation) {
+	generateOperationParametersParsing(w, operation, operation.HeaderParams, false, "headers", "req.Header", true)
+}
+
+func generateQueryParsing(w *sources.Writer, operation *spec.NamedOperation) {
+	generateOperationParametersParsing(w, operation, operation.QueryParams, false, "query", "req.URL.Query()", true)
+}
+
+func generateUrlParametersParsing(w *sources.Writer, operation *spec.NamedOperation) {
+	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
+		w.Line(`urlParams := NewParamsParser(req.URL.Query(), false)`)
+		for _, param := range operation.Endpoint.UrlParams {
+			w.Line(`%s := %s`, param.Name.CamelCase(), parserParameterCall(true, &param, "urlParams"))
+		}
+		w.Line(`if len(urlParams.Errors) > 0 {`)
+		respondNotFound(w.Indented(), operation, fmt.Sprintf(`"Can't parse url parameters"`))
+		w.Line(`}`)
+	}
+}
+
 func generateOperationParametersParsing(w *sources.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, isUrlParam bool, paramsParserName string, paramName string, parseCommaSeparatedArray bool) {
 	if namedParams != nil && len(namedParams) > 0 {
 		w.Line(`%s := NewParamsParser(%s, %t)`, paramsParserName, paramName, parseCommaSeparatedArray)
@@ -130,7 +150,7 @@ func generateOperationParametersParsing(w *sources.Writer, operation *spec.Named
 		}
 
 		w.Line(`if len(%s.Errors) > 0 {`, paramsParserName)
-		generateBadRequestResponse(w.Indented(), operation, fmt.Sprintf(`"Can't parse %s"`, paramsParserName), fmt.Sprintf(`%s.Errors`, paramsParserName))
+		respondBadRequest(w.Indented(), operation, fmt.Sprintf(`"Can't parse %s"`, paramsParserName), fmt.Sprintf(`%s.Errors`, paramsParserName))
 		w.Line(`}`)
 	}
 }
@@ -145,12 +165,12 @@ func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation, resp
 	}
 
 	w.Line(`if err != nil {`)
-	generateInternalServerErrorResponse(w.Indented(), operation, genFmtSprintf("Error returned from service implementation: %s", `err.Error()`))
+	respondInternalServerError(w.Indented(), operation, genFmtSprintf("Error returned from service implementation: %s", `err.Error()`))
 	w.Line(`}`)
 
 	if !singleEmptyResponse {
 		w.Line(`if response == nil {`)
-		generateInternalServerErrorResponse(w.Indented(), operation, `"Service implementation returned nil"`)
+		respondInternalServerError(w.Indented(), operation, `"Service implementation returned nil"`)
 		w.Line(`}`)
 	}
 }
@@ -170,10 +190,10 @@ func generateResponseWriting(w *sources.Writer, logFieldsName string, response *
 func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	w.Line(`var err error`)
+	generateUrlParametersParsing(w, operation)
+	generateHeaderParsing(w, operation)
+	generateQueryParsing(w, operation)
 	generateBodyParsing(w, operation)
-	generateOperationParametersParsing(w, operation, operation.QueryParams, false, "query", "req.URL.Query()", true)
-	generateOperationParametersParsing(w, operation, operation.HeaderParams, false, "headers", "req.Header", true)
-	generateOperationParametersParsing(w, operation, operation.Endpoint.UrlParams, true, "urlParams", "req.URL.Query()", false)
 	generateServiceCall(w, operation, `response`)
 	generateReponse(w, operation, `response`)
 }
@@ -189,7 +209,7 @@ func generateReponse(w *sources.Writer, operation *spec.NamedOperation, response
 			w.Line(`  return`)
 			w.Line(`}`)
 		}
-		generateInternalServerErrorResponse(w, operation, `"Result from service implementation does not have anything in it"`)
+		respondInternalServerError(w, operation, `"Result from service implementation does not have anything in it"`)
 	}
 }
 
@@ -198,7 +218,7 @@ func generateBodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
 		checkRequestContentType(w, operation, "text/plain")
 		w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
 		w.Line(`if err != nil {`)
-		generateBadRequestResponse(w.Indented(), operation, genFmtSprintf(`Reading request body failed: %s`, `err.Error()`), "nil")
+		respondBadRequest(w.Indented(), operation, genFmtSprintf(`Reading request body failed: %s`, `err.Error()`), "nil")
 		w.Line(`}`)
 		w.Line(`body := string(bodyData)`)
 	}
@@ -207,7 +227,7 @@ func generateBodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
 		w.Line(`var body %s`, types.GoType(&operation.Body.Type.Definition))
 		w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
 		w.Line(`if err != nil {`)
-		generateBadRequestResponse(w.Indented(), operation, genFmtSprintf(`Decoding body JSON failed: %s`, `err.Error()`), "nil")
+		respondBadRequest(w.Indented(), operation, genFmtSprintf(`Decoding body JSON failed: %s`, `err.Error()`), "nil")
 		w.Line(`}`)
 	}
 }
@@ -215,7 +235,7 @@ func generateBodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
 func checkRequestContentType(w *sources.Writer, operation *spec.NamedOperation, contentType string) {
 	w.Line(`contentType := req.Header.Get("Content-Type")`)
 	w.Line(`if !strings.Contains(contentType, "%s") {`, contentType)
-	generateBadRequestResponse(w.Indented(), operation, genFmtSprintf("Wrong Content-type: %s", "contentType"), "nil")
+	respondBadRequest(w.Indented(), operation, genFmtSprintf("Wrong Content-type: %s", "contentType"), "nil")
 	w.Line(`}`)
 }
 

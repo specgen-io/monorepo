@@ -226,7 +226,6 @@ const BadRequestError string = "BadRequestError"
 const NotFoundError string = "NotFound"
 const ValidationError string = "ValidationError"
 const ErrorLocation string = "ErrorLocation"
-const ParamMessage string = "ParamMessage"
 
 func createErrorResponses() (Errors, error) {
 	data := `
