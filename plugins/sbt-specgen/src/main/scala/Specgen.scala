@@ -152,6 +152,7 @@ object Specgen {
       case x if x.contains("win") => "windows"
       case x if x.contains("mac") => "darwin"
       case x if x.contains("nix") || x.contains("nux") => "linux"
+      case _ => throw new Exception(s"Unknown OS name: $osName")
     }
   }
 
@@ -159,8 +160,10 @@ object Specgen {
     val arch = System.getProperty("os.arch")
 
     arch match {
-      case x if x.contains("64") => "amd64"
-      case _ => "x86"
+      case "ia64" => "amd64"
+      case "amd64" => "amd64"
+      case "aarch64" => "arm64"
+      case _ => throw new Exception(s"Unknown architecture name: $arch")
     }
   }
 }

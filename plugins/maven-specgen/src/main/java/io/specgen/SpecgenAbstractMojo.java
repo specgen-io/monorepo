@@ -103,10 +103,16 @@ public abstract class SpecgenAbstractMojo extends AbstractMojo {
 	private static String getArchName() {
 		String archName = System.getProperty("os.arch");
 		String arch;
-		if (archName.contains("64")) {
-			arch = "amd64";
-		} else {
-			arch = "x86";
+		switch(archName) {
+			case "ia64":
+			case "amd64":
+				arch = "amd64";
+				break;
+			case "aarch64":
+				arch = "arm64";
+				break;
+			default:
+			    throw new RuntimeException("Unsupported architecture: "+archName);
 		}
 		return arch;
 	}
