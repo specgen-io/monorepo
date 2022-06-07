@@ -30,14 +30,17 @@ func OperationsByUrl(specification *spec.Spec) []*UrlOperations {
 	return groups
 }
 
-func createEmptyResponse(name string, description string) *spec.NamedResponse {
-	return &spec.NamedResponse{
-		Name: spec.Name{name, nil},
-		Definition: spec.Definition{
-			Type:        spec.Type{Definition: spec.ParseType(spec.TypeEmpty), Location: nil},
-			Description: &description,
-			Location:    nil,
+func createEmptyResponse(name string, description string) *spec.OperationResponse {
+	return &spec.OperationResponse{
+		spec.Response{
+			Name: spec.Name{name, nil},
+			Definition: spec.Definition{
+				Type:        spec.Type{Definition: spec.ParseType(spec.TypeEmpty), Location: nil},
+				Description: &description,
+				Location:    nil,
+			},
 		},
+		nil,
 	}
 }
 

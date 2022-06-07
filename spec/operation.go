@@ -18,7 +18,7 @@ type operation struct {
 
 type Operation operation
 
-func (operation *Operation) GetResponse(status string) *NamedResponse {
+func (operation *Operation) GetResponse(status string) *OperationResponse {
 	for _, response := range operation.Responses {
 		if response.Name.Source == status {
 			return &response

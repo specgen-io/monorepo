@@ -1,4 +1,4 @@
-package golang
+package writer
 
 import (
 	"github.com/specgen-io/specgen/v2/sources"

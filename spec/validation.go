@@ -106,7 +106,7 @@ func (validator *validator) Operation(operation *NamedOperation) {
 	}
 }
 
-func (validator *validator) Response(response *NamedResponse) {
+func (validator *validator) Response(response *OperationResponse) {
 	if response.Name.Source == HttpStatusInternalServerError || response.Name.Source == HttpStatusNotFound || response.Name.Source == HttpStatusBadRequest {
 		if !response.Type.Definition.IsEmpty() {
 			message := fmt.Sprintf("response %s can be only empty if declared, found %s", response.Name.Source, response.Type.Definition.Name)

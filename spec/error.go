@@ -6,20 +6,10 @@ import (
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
-type Response struct {
-	Name Name
-	Definition
-}
+type Errors []Response
 
-type OperationResponse struct {
-	Response
-	Operation *NamedOperation
-}
-
-type Responses []OperationResponse
-
-func (responses Responses) Get(httpStatus string) *OperationResponse {
-	for _, response := range responses {
+func (errors Errors) Get(httpStatus string) *Response {
+	for _, response := range errors {
 		if response.Name.Source == httpStatus {
 			return &response
 		}
@@ -27,12 +17,20 @@ func (responses Responses) Get(httpStatus string) *OperationResponse {
 	return nil
 }
 
-func (value *Responses) UnmarshalYAML(node *yaml.Node) error {
+func (response *Response) BodyKind() BodyKind {
+	return kindOf(&response.Definition)
+}
+
+func (response *Response) BodyIs(kind BodyKind) bool {
+	return kindOf(&response.Definition) == kind
+}
+
+func (value *Errors) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
 		return yamlError(node, "response should be YAML mapping")
 	}
 	count := len(node.Content) / 2
-	array := make([]OperationResponse, count)
+	array := make([]Response, count)
 	for index := 0; index < count; index++ {
 		keyNode := node.Content[index*2]
 		valueNode := node.Content[index*2+1]
@@ -53,13 +51,13 @@ func (value *Responses) UnmarshalYAML(node *yaml.Node) error {
 		if err != nil {
 			return err
 		}
-		array[index] = OperationResponse{Response{Name: name, Definition: definition}, nil}
+		array[index] = Response{Name: name, Definition: definition}
 	}
 	*value = array
 	return nil
 }
 
-func (value Responses) MarshalYAML() (interface{}, error) {
+func (value Errors) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
 	for index := 0; index < len(value); index++ {
 		response := value[index]

@@ -13,7 +13,7 @@ func (c *Converter) apis(doc *openapi3.T) spec.Apis {
 	for _, api := range apis {
 		specApis = append(specApis, *c.api(api))
 	}
-	return spec.Apis{nil, specApis, nil}
+	return spec.Apis{nil, specApis, nil, nil}
 }
 
 func (c *Converter) api(api *Api) *spec.Api {
@@ -47,14 +47,14 @@ func (c *Converter) pathItem(pathItem *PathItem) *spec.Operation {
 	return &operation
 }
 
-func (c *Converter) responses(responses openapi3.Responses) []spec.NamedResponse {
-	result := []spec.NamedResponse{}
+func (c *Converter) responses(responses openapi3.Responses) []spec.OperationResponse {
+	result := []spec.OperationResponse{}
 	for status, response := range responses {
 		statusName := "ok"
 		if status != "default" {
 			statusName = spec.HttpStatusName(status)
 		}
-		result = append(result, spec.NamedResponse{name(statusName), *c.response(response), nil})
+		result = append(result, spec.OperationResponse{spec.Response{name(statusName), *c.response(response)}, nil})
 	}
 	return result
 }

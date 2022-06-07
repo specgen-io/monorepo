@@ -25,21 +25,21 @@ func NewMicronautGenerator(types *types.Types, models models.Generator) *Microna
 	return &MicronautGenerator{types, models}
 }
 
-func (m *MicronautGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string) {
+func (g *MicronautGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string) {
 	return `io.micronaut.context.annotation.Bean`, `Bean`
 }
 
-func (m *MicronautGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
+func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, m.serviceController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
+		files = append(files, g.serviceController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
 	}
 	files = append(files, dateConverters(mainPackage)...)
 	return files
 }
 
-func (m *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
+func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -53,8 +53,8 @@ func (m *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPa
 	imports.Add(`jakarta.inject.Inject`)
 	imports.Add(modelsVersionPackage.PackageStar)
 	imports.Add(serviceVersionPackage.PackageStar)
-	imports.Add(m.Models.JsonImports()...)
-	imports.Add(m.Types.Imports()...)
+	imports.Add(g.Models.JsonImports()...)
+	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Controller`)
@@ -66,10 +66,10 @@ func (m *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPa
 	w.Line(`  private %s %s;`, serviceInterfaceName(api), serviceVarName(api))
 	w.EmptyLine()
 	w.Line(`  @Inject`)
-	m.Models.CreateJsonMapperField(w.Indented())
+	g.Models.CreateJsonMapperField(w.Indented())
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		m.controllerMethod(w.Indented(), &operation)
+		g.controllerMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 
@@ -81,55 +81,52 @@ func (m *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPa
 	return files
 }
 
-func (m *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`@Consumes(MediaType.TEXT_PLAIN)`)
 	}
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%s("%s")`, casee.ToPascalCase(methodName), url)
-	w.Line(`public MutableHttpResponse<?> %s(%s) {`, controllerMethodName(operation), joinParams(addMicronautMethodParams(operation, m.Types)))
-	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
+	w.Line(`public MutableHttpResponse<?> %s(%s) {`, controllerMethodName(operation), joinParams(addMicronautMethodParams(operation, g.Types)))
+	w.Indent()
+	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.EmptyLine()
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`  %s requestBody;`, m.Types.Java(&operation.Body.Type.Definition))
-		requestBody, exception := m.Models.ReadJson("bodyStr", &operation.Body.Type.Definition)
-		generateServiceTryCatch(w.Indented(),
-			fmt.Sprintf(`requestBody = %s;`, requestBody),
-			exception, `e`,
-			`"Completed request with status code: {}", HttpStatus.BAD_REQUEST`,
-			`HttpResponse.status(HttpStatus.BAD_REQUEST)`)
+		requestBody, exception := g.Models.ReadJson("bodyStr", &operation.Body.Type.Definition)
+		w.Line(`%s requestBody;`, g.Types.Java(&operation.Body.Type.Definition))
+		w.Line(`try {`)
+		w.Line(`  requestBody = %s;`, requestBody)
+		w.Line(`} catch (%s e) {`, exception)
+		g.badRequest(w.Indented(), operation, `"Failed to deserialize request body: {}", e.getMessage()`)
+		w.Line(`}`)
 	}
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, "bodyStr", "requestBody")))
 	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
-		w.Line(`  %s;`, serviceCall)
+		w.Line(`%s;`, serviceCall)
 	} else {
-		w.Line(`  var result = %s;`, serviceCall)
-		w.Line(`  if (result == null) {`)
-		w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
-		w.Line(`    return HttpResponse.status(HttpStatus.INTERNAL_SERVER_ERROR);`)
-		w.Line(`  }`)
+		w.Line(`var result = %s;`, serviceCall)
+		w.Line(`if (result == null) {`)
+		g.internalServerError(w.Indented(), operation, `"Service implementation returned nil"`)
+		w.Line(`}`)
 	}
 	if len(operation.Responses) == 1 {
-		m.processResponse(w.Indented(), &operation.Responses[0], "result")
+		g.processResponse(w, &operation.Responses[0].Response, "result")
 	}
 	if len(operation.Responses) > 1 {
 		for _, response := range operation.Responses {
-			w.Line(`  if (result instanceof %s.%s) {`, responses.InterfaceName(operation), response.Name.PascalCase())
-			m.processResponse(w.IndentedWith(2), &response, "result")
-			w.Line(`  }`)
+			w.Line(`if (result instanceof %s.%s) {`, responses.InterfaceName(operation), response.Name.PascalCase())
+			g.processResponse(w.Indented(), &response.Response, responses.GetBody(&response, "result"))
+			w.Line(`}`)
 		}
 		w.EmptyLine()
-		w.Line(`  logger.error("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
-		w.Line(`  return HttpResponse.status(HttpStatus.INTERNAL_SERVER_ERROR);`)
+		g.internalServerError(w, operation, `"No result returned from service implementation"`)
 	}
+	w.Unindent()
 	w.Line(`}`)
 }
 
-func (m *MicronautGenerator) processResponse(w *sources.Writer, response *spec.NamedResponse, result string) {
-	if len(response.Operation.Responses) > 1 {
-		result = fmt.Sprintf(`((%s.%s) %s).body`, responses.InterfaceName(response.Operation), response.Name.PascalCase(), result)
-	}
+func (g *MicronautGenerator) processResponse(w *sources.Writer, response *spec.Response, result string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s);`, response.Name.UpperCase())
@@ -139,17 +136,28 @@ func (m *MicronautGenerator) processResponse(w *sources.Writer, response *spec.N
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s).contentType("text/plain");`, response.Name.UpperCase(), result)
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`String responseJson;`)
-		responseWrite, exception := m.Models.WriteJson(result, &response.Type.Definition)
-		generateServiceTryCatch(w,
-			fmt.Sprintf(`responseJson = %s;`, responseWrite),
-			exception, `e`,
-			`"Failed to serialize JSON: {}" + e.getMessage()`,
-			`HttpResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)`)
-
+		responseWrite, exception := g.Models.WriteJson(result, &response.Type.Definition)
+		w.Line(`String responseJson = "";`)
+		w.Line(`try {`)
+		w.Line(`  responseJson = %s;`, responseWrite)
+		w.Line(`} catch (%s e) {`, exception)
+		w.Line(`  logger.error("Failed to serialize response body: {}", e.getMessage());`)
+		w.Line(`}`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(responseJson).contentType("application/json");`, response.Name.UpperCase())
 	}
+}
+
+func (g *MicronautGenerator) badRequest(w *sources.Writer, operation *spec.NamedOperation, message string) {
+	w.Line(`logger.error(%s);`, message)
+	w.Line(`logger.info("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
+	w.Line(`return HttpResponse.status(HttpStatus.BAD_REQUEST);`)
+}
+
+func (g *MicronautGenerator) internalServerError(w *sources.Writer, operation *spec.NamedOperation, message string) {
+	w.Line(`logger.error(%s);`, message)
+	w.Line(`logger.info("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
+	w.Line(`return HttpResponse.status(HttpStatus.INTERNAL_SERVER_ERROR);`)
 }
 
 func addMicronautMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
