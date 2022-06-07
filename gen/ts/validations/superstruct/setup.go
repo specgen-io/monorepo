@@ -46,13 +46,17 @@ const convertFailure = (failure: t.Failure): ValidationError => {
     }  
 }
 
-export const decode = <T>(struct: t.Struct<T, unknown>, value: unknown): Result<T, ValidationError[]> => {
+export const decodeR = <T>(struct: t.Struct<T, unknown>, value: unknown): Result<T, ValidationError[]> => {
     try {
         return {value: t.create(value, struct)}
     } catch (err: unknown) {
         const structError = err as t.StructError
         return {error: structError.failures().map(convertFailure)}
     }
+}
+
+export const decode = <T>(struct: t.Struct<T, unknown>, value: unknown): Result<T, ValidationError[]> => {
+	return t.create(value, struct)
 }
 
 function datetimeToString(datetime: Date): string {

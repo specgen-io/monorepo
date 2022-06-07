@@ -170,7 +170,7 @@ func (g *expressGenerator) operationRouting(w *sources.Writer, operation *spec.N
 
 func (g *expressGenerator) urlParamsParsing(w *sources.Writer, operation *spec.NamedOperation) {
 	if len(operation.Endpoint.UrlParams) > 0 {
-		w.Line("const urlParamsDecode = t.decode(%s, request.params)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "UrlParams")))
+		w.Line("const urlParamsDecode = t.decodeR(%s, request.params)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "UrlParams")))
 		w.Line("if (urlParamsDecode.error) {")
 		g.respondNotFound(w.Indented(), operation, "Failed to parse url parameters")
 		w.Line("}")
@@ -180,7 +180,7 @@ func (g *expressGenerator) urlParamsParsing(w *sources.Writer, operation *spec.N
 
 func (g *expressGenerator) headerParsing(w *sources.Writer, operation *spec.NamedOperation) {
 	if len(operation.HeaderParams) > 0 {
-		w.Line("const headerParamsDecode = t.decode(%s, zipHeaders(request.rawHeaders))", common.ParamsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")))
+		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(request.rawHeaders))", common.ParamsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")))
 		w.Line("if (headerParamsDecode.error) {")
 		g.respondBadRequest(w.Indented(), operation, "HEADER", "headerParamsDecode.error", "Failed to parse header parameters")
 		w.Line("}")
@@ -190,7 +190,7 @@ func (g *expressGenerator) headerParsing(w *sources.Writer, operation *spec.Name
 
 func (g *expressGenerator) queryParsing(w *sources.Writer, operation *spec.NamedOperation) {
 	if len(operation.QueryParams) > 0 {
-		w.Line("const queryParamsDecode = t.decode(%s, request.query)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams")))
+		w.Line("const queryParamsDecode = t.decodeR(%s, request.query)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams")))
 		w.Line("if (queryParamsDecode.error) {")
 		g.respondBadRequest(w.Indented(), operation, "QUERY", "queryParamsDecode.error", "Failed to parse query parameters")
 		w.Line("}")
@@ -203,7 +203,7 @@ func (g *expressGenerator) bodyParsing(w *sources.Writer, operation *spec.NamedO
 		w.Line(`const body: string = request.body`)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line("const bodyDecode = t.decode(%s, request.body)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition))
+		w.Line("const bodyDecode = t.decodeR(%s, request.body)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
 		g.respondBadRequest(w.Indented(), operation, "BODY", "bodyDecode.error", "Failed to parse body JSON")
 		w.Line("}")

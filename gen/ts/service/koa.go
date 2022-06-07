@@ -167,7 +167,7 @@ func (g *koaGenerator) operationRouting(w *sources.Writer, operation *spec.Named
 
 func (g *koaGenerator) urlParamsParsing(w *sources.Writer, operation *spec.NamedOperation) {
 	if len(operation.Endpoint.UrlParams) > 0 {
-		w.Line("const urlParamsDecode = t.decode(%s, ctx.params)", urlParamsRuntimeType(operation))
+		w.Line("const urlParamsDecode = t.decodeR(%s, ctx.params)", urlParamsRuntimeType(operation))
 		w.Line("if (urlParamsDecode.error) {")
 		g.respondNotFound(w.Indented(), operation, "Failed to parse url parameters")
 		w.Line("}")
@@ -177,7 +177,7 @@ func (g *koaGenerator) urlParamsParsing(w *sources.Writer, operation *spec.Named
 
 func (g *koaGenerator) headerParsing(w *sources.Writer, operation *spec.NamedOperation) {
 	if len(operation.HeaderParams) > 0 {
-		w.Line("const headerParamsDecode = t.decode(%s, zipHeaders(ctx.req.rawHeaders))", headersRuntimeType(operation))
+		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(ctx.req.rawHeaders))", headersRuntimeType(operation))
 		w.Line("if (headerParamsDecode.error) {")
 		g.respondBadRequest(w.Indented(), operation, "HEADER", "headerParamsDecode.error", "Failed to parse header parameters")
 		w.Line("}")
@@ -187,7 +187,7 @@ func (g *koaGenerator) headerParsing(w *sources.Writer, operation *spec.NamedOpe
 
 func (g *koaGenerator) queryParsing(w *sources.Writer, operation *spec.NamedOperation) {
 	if len(operation.QueryParams) > 0 {
-		w.Line("const queryParamsDecode = t.decode(%s, ctx.request.query)", queryRuntimeType(operation))
+		w.Line("const queryParamsDecode = t.decodeR(%s, ctx.request.query)", queryRuntimeType(operation))
 		w.Line("if (queryParamsDecode.error) {")
 		g.respondBadRequest(w.Indented(), operation, "QUERY", "queryParamsDecode.error", "Failed to parse query parameters")
 		w.Line("}")
@@ -200,7 +200,7 @@ func (g *koaGenerator) bodyParsing(w *sources.Writer, operation *spec.NamedOpera
 		w.Line(`const body: string = ctx.request.rawBody`)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line("const bodyDecode = t.decode(%s, ctx.request.body)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition))
+		w.Line("const bodyDecode = t.decodeR(%s, ctx.request.body)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
 		g.respondBadRequest(w.Indented(), operation, "BODY", "bodyDecode.error", "Failed to parse body JSON")
 		w.Line("}")
