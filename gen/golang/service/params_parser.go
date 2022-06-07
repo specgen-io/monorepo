@@ -173,7 +173,7 @@ func (parser *ParamsParser) addParsingError(name string, format string, err erro
 }
 
 func (parser *ParamsParser) addValidationError(name string, code, message string) {
-	parser.Errors = append(parser.Errors, [[.ValidationError]]{name, code, message})
+	parser.Errors = append(parser.Errors, [[.ValidationError]]{name, code, &message})
 }
 
 func (parser *ParamsParser) exactlyOneValue(name string) bool {
