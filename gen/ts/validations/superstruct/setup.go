@@ -55,7 +55,7 @@ export const decodeR = <T>(struct: t.Struct<T, unknown>, value: unknown): Result
     }
 }
 
-export const decode = <T>(struct: t.Struct<T, unknown>, value: unknown): Result<T, ValidationError[]> => {
+export const decode = <T>(struct: t.Struct<T, unknown>, value: unknown): T => {
 	return t.create(value, struct)
 }
 
