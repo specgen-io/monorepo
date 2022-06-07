@@ -14,8 +14,49 @@ export * from "superstruct"
 
 import * as t from "superstruct"
 
+interface Success<T> {
+    value: T
+    error?: never
+}
+
+interface Error<E> {
+    value?: never
+    error: E
+}
+
+export type Result<T, E> = Success<T> | Error<E>
+
+export interface ValidationError {
+    path: string
+    code: string
+    message?: string
+}
+
+const convertFailure = (failure: t.Failure): ValidationError => {
+    let code = "unknown"
+    if (failure.message.includes("but received: undefined")) {
+        code = "missing"
+    } else if (failure.message.includes("but received:")) {
+        code = "parsing_failed"
+    }
+    return {
+        code, 
+        path: failure.path.join("."), 
+        message: failure.message
+    }  
+}
+
+export const decodeR = <T>(struct: t.Struct<T, unknown>, value: unknown): Result<T, ValidationError[]> => {
+    try {
+        return {value: t.create(value, struct)}
+    } catch (err: unknown) {
+        const structError = err as t.StructError
+        return {error: structError.failures().map(convertFailure)}
+    }
+}
+
 export const decode = <T>(struct: t.Struct<T, unknown>, value: unknown): T => {
-    return t.create(value, struct)
+	return t.create(value, struct)
 }
 
 function datetimeToString(datetime: Date): string {

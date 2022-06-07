@@ -53,26 +53,15 @@ func createOperationParams(operation *spec.NamedOperation) string {
 	return fmt.Sprintf("parameters: {%s}", strings.Join(operationParams, ", "))
 }
 
-func clientResponseResult(validation validations.Validation, response *spec.NamedResponse, textResposneData, jsonResponseData string) string {
-	if len(response.Operation.Responses) == 1 {
-		if response.BodyIs(spec.BodyEmpty) {
-			return ""
-		}
-		if response.BodyIs(spec.BodyString) {
-			return textResposneData
-		} else {
-			return fmt.Sprintf(`t.decode(%s, %s)`, validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), jsonResponseData)
-		}
+func clientResponseBody(validation validations.Validation, response *spec.Response, textResponseData, jsonResponseData string) string {
+	if response.BodyIs(spec.BodyEmpty) {
+		return ""
+	}
+	if response.BodyIs(spec.BodyString) {
+		return textResponseData
 	} else {
-		if response.BodyIs(spec.BodyEmpty) {
-			return fmt.Sprintf(`{ status: "%s" }`, response.Name.Source)
-		}
-		if response.BodyIs(spec.BodyString) {
-			return fmt.Sprintf(`{ status: "%s", data: %s }`, response.Name.Source, textResposneData)
-		} else {
-			data := fmt.Sprintf(`t.decode(%s, %s)`, validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), jsonResponseData)
-			return fmt.Sprintf(`{ status: "%s", data: %s }`, response.Name.Source, data)
-		}
+		data := fmt.Sprintf(`t.decode(%s, %s)`, validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), jsonResponseData)
+		return data
 	}
 }
 

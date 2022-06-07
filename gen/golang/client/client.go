@@ -1,13 +1,42 @@
-package golang
+package client
 
 import (
 	"fmt"
+	"github.com/pinzolo/casee"
+	"github.com/specgen-io/specgen/v2/gen/golang/common"
+	"github.com/specgen-io/specgen/v2/gen/golang/imports"
+	"github.com/specgen-io/specgen/v2/gen/golang/models"
+	"github.com/specgen-io/specgen/v2/gen/golang/module"
+	"github.com/specgen-io/specgen/v2/gen/golang/responses"
+	"github.com/specgen-io/specgen/v2/gen/golang/types"
+	"github.com/specgen-io/specgen/v2/gen/golang/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateClientsImplementations(version *spec.Version, versionModule, modelsModule, emptyModule module) []sources.CodeFile {
+var ToPascalCase = casee.ToPascalCase
+var ToUpperCase = casee.ToUpperCase
+
+func GenerateClient(specification *spec.Spec, moduleName string, generatePath string) *sources.Sources {
+	sources := sources.NewSources()
+
+	rootModule := module.New(moduleName, generatePath)
+
+	emptyModule := rootModule.Submodule("empty")
+	sources.AddGenerated(types.GenerateEmpty(emptyModule))
+
+	for _, version := range specification.Versions {
+		versionModule := rootModule.Submodule(version.Version.FlatCase())
+		modelsModule := versionModule.Submodule(types.ModelsPackage)
+
+		sources.AddGeneratedAll(models.GenerateVersionModels(&version, modelsModule))
+		sources.AddGeneratedAll(generateClientsImplementations(&version, versionModule, modelsModule, emptyModule))
+	}
+	return sources
+}
+
+func generateClientsImplementations(version *spec.Version, versionModule, modelsModule, emptyModule module.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
@@ -17,21 +46,21 @@ func generateClientsImplementations(version *spec.Version, versionModule, models
 	return files
 }
 
-func generateClientImplementation(api *spec.Api, versionModule, modelsModule, emptyModule module) *sources.CodeFile {
-	w := NewGoWriter()
+func generateClientImplementation(api *spec.Api, versionModule, modelsModule, emptyModule module.Module) *sources.CodeFile {
+	w := writer.NewGoWriter()
 	w.Line("package %s", versionModule.Name)
 
-	imports := Imports().
+	imports := imports.Imports().
 		Add("fmt").
 		Add("errors").
 		Add("io/ioutil").
 		Add("net/http").
 		Add("encoding/json").
 		AddAlias("github.com/sirupsen/logrus", "log")
-	if apiHasBody(api) {
+	if types.ApiHasBody(api) {
 		imports.Add("bytes")
 	}
-	if apiHasType(api, spec.TypeEmpty) {
+	if types.ApiHasType(api, spec.TypeEmpty) {
 		imports.Add(emptyModule.Package)
 	}
 	imports.AddApiTypes(api)
@@ -41,7 +70,7 @@ func generateClientImplementation(api *spec.Api, versionModule, modelsModule, em
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
 			w.EmptyLine()
-			generateOperationResponseStruct(w, &operation)
+			responses.GenerateOperationResponseStruct(w, &operation)
 		}
 	}
 	w.EmptyLine()
@@ -69,7 +98,7 @@ func generateClientWithCtor(w *sources.Writer) {
 
 func generateClientFunction(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
-	w.Line(`func (client *%s) %s(%s) %s {`, clientTypeName(), operation.Name.PascalCase(), JoinDelimParams(addMethodParams(operation)), operationReturn(operation, nil))
+	w.Line(`func (client *%s) %s {`, clientTypeName(), common.OperationSignature(operation, nil))
 	body := "nil"
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`  bodyData := []byte(body)`)
@@ -98,9 +127,7 @@ func generateClientFunction(w *sources.Writer, operation *spec.NamedOperation) {
 	w.Line(`    log.WithFields(%s).Error("Request failed", err.Error())`, logFieldsName(operation))
 	w.Line(`    %s`, returnErr(operation))
 	w.Line(`  }`)
-	w.Indent()
-	addClientResponses(w, operation)
-	w.Unindent()
+	addClientResponses(w.Indented(), operation)
 	w.EmptyLine()
 	w.Line(`  msg := fmt.Sprintf("Unexpected status code received: %s", resp.StatusCode)`, "%d")
 	w.Line(`  log.WithFields(%s).Error(msg)`, logFieldsName(operation))
@@ -132,7 +159,7 @@ func getUrl(operation *spec.NamedOperation) []string {
 
 func addRequestUrlParams(operation *spec.NamedOperation) string {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		return fmt.Sprintf(`fmt.Sprintf("%s", %s)`, JoinParams(getUrl(operation)), JoinDelimParams(addUrlParam(operation)))
+		return fmt.Sprintf(`fmt.Sprintf("%s", %s)`, strings.Join(getUrl(operation), ""), strings.Join(addUrlParam(operation), ", "))
 	} else {
 		return fmt.Sprintf(`"%s"`, operation.FullUrl())
 	}
@@ -141,8 +168,8 @@ func addRequestUrlParams(operation *spec.NamedOperation) string {
 func addUrlParam(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
-		if GoType(&param.Type.Definition) != "string" {
-			urlParams = append(urlParams, fmt.Sprintf("convert%s(%s)", parserMethodName(&param.Type.Definition), param.Name.CamelCase()))
+		if types.GoType(&param.Type.Definition) != "string" {
+			urlParams = append(urlParams, callRawConvert(&param.Type.Definition, param.Name.CamelCase()))
 		} else {
 			urlParams = append(urlParams, param.Name.CamelCase())
 		}
@@ -167,7 +194,7 @@ func parseParams(w *sources.Writer, operation *spec.NamedOperation) {
 func addParsedParams(w *sources.Writer, namedParams []spec.NamedParam, paramsConverterName string, paramsParserName string) {
 	w.Line(`  %s := NewParamsConverter(%s)`, paramsConverterName, paramsParserName)
 	for _, param := range namedParams {
-		w.Line(`  %s.%s("%s", %s)`, paramsConverterName, parserMethodName(&param.Type.Definition), param.Name.Source, param.Name.CamelCase())
+		w.Line(`  %s.%s`, paramsConverterName, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
 	}
 }
 
@@ -188,29 +215,35 @@ func addClientResponses(w *sources.Writer, operation *spec.NamedOperation) {
 		if response.BodyIs(spec.BodyJson) {
 			w.Line(`  responseBody, err := ioutil.ReadAll(resp.Body)`)
 			w.Line(`  err = resp.Body.Close()`)
-			w.Line(`  var result %s`, GoType(&response.Type.Definition))
+			w.Line(`  var result %s`, types.GoType(&response.Type.Definition))
 			w.Line(`  err = json.Unmarshal(responseBody, &result)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    log.WithFields(%s).Error("%s", err.Error())`, logFieldsName(operation), `Failed to parse response JSON`)
 			w.Line(`    return nil, err`)
 			w.Line(`  }`)
 		}
-		w.Line(`  %s`, returnStatement(&response))
+
+		if len(operation.Responses) == 1 {
+			if response.Type.Definition.IsEmpty() {
+				w.Line(`  return nil`)
+			} else {
+				w.Line(`  return &result, nil`)
+			}
+		} else {
+			if response.Type.Definition.IsEmpty() {
+				w.Line(`  return &%s, nil`, responses.NewResponse(&response, fmt.Sprintf(`%s{}`, types.EmptyType)))
+			} else {
+				w.Line(`  return &%s, nil`, responses.NewResponse(&response, `result`))
+			}
+		}
 		w.Line(`}`)
 	}
 }
 
-func returnStatement(response *spec.NamedResponse) string {
-	operation := response.Operation
-	if len(operation.Responses) == 1 {
-		if response.Type.Definition.IsEmpty() {
-			return `return nil`
-		}
-		return fmt.Sprintf(`return &result, nil`)
-	} else {
-		if response.Type.Definition.IsEmpty() {
-			return fmt.Sprintf(`return &%s{%s: &%s{}}, nil`, responseTypeName(operation), response.Name.PascalCase(), GoType(&response.Type.Definition))
-		}
-		return fmt.Sprintf(`return &%s{%s: &result}, nil`, responseTypeName(operation), response.Name.PascalCase())
-	}
+func clientTypeName() string {
+	return `Client`
+}
+
+func logFieldsName(operation *spec.NamedOperation) string {
+	return fmt.Sprintf("log%s", operation.Name.PascalCase())
 }

@@ -24,20 +24,20 @@ func NewSpringGenerator(types *types.Types, models models.Generator) *SpringGene
 	return &SpringGenerator{types, models}
 }
 
-func (s *SpringGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string) {
+func (g *SpringGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string) {
 	return `org.springframework.stereotype.Service`, fmt.Sprintf(`Service("%s")`, versionServiceName(serviceName(api), api.Apis.Version))
 }
 
-func (s *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
+func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, s.serviceController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
+		files = append(files, g.serviceController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
 	}
 	return files
 }
 
-func (s *SpringGenerator) serviceController(api *spec.Api, apiPackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
+func (g *SpringGenerator) serviceController(api *spec.Api, apiPackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -50,8 +50,8 @@ func (s *SpringGenerator) serviceController(api *spec.Api, apiPackage, jsonPacka
 	imports.Add(`org.springframework.web.bind.annotation.*`)
 	imports.Add(modelsVersionPackage.PackageStar)
 	imports.Add(serviceVersionPackage.PackageStar)
-	imports.Add(s.Models.JsonImports()...)
-	imports.Add(s.Types.Imports()...)
+	imports.Add(g.Models.JsonImports()...)
+	imports.Add(g.Types.Imports()...)
 	imports.Add(`static org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Write(w)
 	w.EmptyLine()
@@ -64,10 +64,10 @@ func (s *SpringGenerator) serviceController(api *spec.Api, apiPackage, jsonPacka
 	w.Line(`  private %s %s;`, serviceInterfaceName(api), serviceVarName(api))
 	w.EmptyLine()
 	w.Line(`  @Autowired`)
-	s.Models.CreateJsonMapperField(w.Indented())
+	g.Models.CreateJsonMapperField(w.Indented())
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		s.controllerMethod(w.Indented(), &operation)
+		g.controllerMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 
@@ -79,52 +79,49 @@ func (s *SpringGenerator) serviceController(api *spec.Api, apiPackage, jsonPacka
 	return files
 }
 
-func (s *SpringGenerator) controllerMethod(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *SpringGenerator) controllerMethod(w *sources.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, casee.ToPascalCase(methodName), url)
-	w.Line(`public ResponseEntity<String> %s(%s) {`, controllerMethodName(operation), joinParams(addSpringMethodParams(operation, s.Types)))
-	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
+	w.Line(`public ResponseEntity<String> %s(%s) {`, controllerMethodName(operation), joinParams(addSpringMethodParams(operation, g.Types)))
+	w.Indent()
+	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.EmptyLine()
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`  %s requestBody;`, s.Types.Java(&operation.Body.Type.Definition))
-		requestBody, exception := s.Models.ReadJson("bodyStr", &operation.Body.Type.Definition)
-		generateServiceTryCatch(w.Indented(),
-			fmt.Sprintf(`requestBody = %s;`, requestBody),
-			exception, `e`,
-			`"Completed request with status code: {}", HttpStatus.BAD_REQUEST`,
-			`new ResponseEntity<>(HttpStatus.BAD_REQUEST)`)
+		requestBody, exception := g.Models.ReadJson("bodyStr", &operation.Body.Type.Definition)
+		w.Line(`%s requestBody;`, g.Types.Java(&operation.Body.Type.Definition))
+		w.Line(`try {`)
+		w.Line(`  requestBody = %s;`, requestBody)
+		w.Line(`} catch (%s e) {`, exception)
+		g.badRequest(w.Indented(), operation, `"Failed to deserialize request body {}", e.getMessage()`)
+		w.Line(`}`)
 	}
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, "bodyStr", "requestBody")))
 	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
-		w.Line(`  %s;`, serviceCall)
+		w.Line(`%s;`, serviceCall)
 	} else {
-		w.Line(`  var result = %s;`, serviceCall)
-		w.Line(`  if (result == null) {`)
-		w.Line(`    logger.error("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
-		w.Line(`    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);`)
-		w.Line(`  }`)
+		w.Line(`var result = %s;`, serviceCall)
+		w.Line(`if (result == null) {`)
+		g.internalServerError(w.Indented(), operation, `"Service implementation returned nil"`)
+		w.Line(`}`)
 	}
 	if len(operation.Responses) == 1 {
-		s.processResponse(w.Indented(), &operation.Responses[0], "result")
+		g.processResponse(w, &operation.Responses[0].Response, "result")
 	}
 	if len(operation.Responses) > 1 {
 		for _, response := range operation.Responses {
-			w.Line(`  if (result instanceof %s.%s) {`, responses.InterfaceName(operation), response.Name.PascalCase())
-			s.processResponse(w.IndentedWith(2), &response, "result")
-			w.Line(`  }`)
+			w.Line(`if (result instanceof %s.%s) {`, responses.InterfaceName(operation), response.Name.PascalCase())
+			g.processResponse(w.Indented(), &response.Response, responses.GetBody(&response, "result"))
+			w.Line(`}`)
 		}
 		w.EmptyLine()
-		w.Line(`  logger.error("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
-		w.Line(`  return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);`)
+		g.internalServerError(w, operation, `"No result returned from service implementation"`)
 	}
+	w.Unindent()
 	w.Line(`}`)
 }
 
-func (s *SpringGenerator) processResponse(w *sources.Writer, response *spec.NamedResponse, result string) {
-	if len(response.Operation.Responses) > 1 {
-		result = fmt.Sprintf(`((%s.%s) %s).body`, responses.InterfaceName(response.Operation), response.Name.PascalCase(), result)
-	}
+func (g *SpringGenerator) processResponse(w *sources.Writer, response *spec.Response, result string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return new ResponseEntity<>(HttpStatus.%s);`, response.Name.UpperCase())
@@ -136,18 +133,30 @@ func (s *SpringGenerator) processResponse(w *sources.Writer, response *spec.Name
 		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, result, response.Name.UpperCase())
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`String responseJson;`)
-		responseWrite, exception := s.Models.WriteJson(result, &response.Type.Definition)
-		generateServiceTryCatch(w,
-			fmt.Sprintf(`responseJson = %s;`, responseWrite),
-			exception, `e`,
-			`"Failed to serialize JSON: {}" + e.getMessage()`,
-			`new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR)`)
+		responseWrite, exception := g.Models.WriteJson(result, &response.Type.Definition)
+		w.Line(`String responseJson = "";`)
+		w.Line(`try {`)
+		w.Line(`  responseJson = %s;`, responseWrite)
+		w.Line(`} catch (%s e) {`, exception)
+		w.Line(`  logger.error("Failed to serialize response body: {}", e.getMessage());`)
+		w.Line(`}`)
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json");`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return new ResponseEntity<>(responseJson, headers, HttpStatus.%s);`, response.Name.UpperCase())
 	}
+}
+
+func (g *SpringGenerator) badRequest(w *sources.Writer, operation *spec.NamedOperation, message string) {
+	w.Line(`logger.error(%s);`, message)
+	w.Line(`logger.info("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
+	w.Line(`return new ResponseEntity<>(HttpStatus.BAD_REQUEST);`)
+}
+
+func (g *SpringGenerator) internalServerError(w *sources.Writer, operation *spec.NamedOperation, message string) {
+	w.Line(`logger.error(%s);`, message)
+	w.Line(`logger.info("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
+	w.Line(`return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);`)
 }
 
 func addSpringMethodParams(operation *spec.NamedOperation, types *types.Types) []string {

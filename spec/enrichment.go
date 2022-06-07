@@ -10,6 +10,18 @@ func enrich(spec *Spec) (*Messages, error) {
 	messages := NewMessages()
 	for verIndex := range spec.Versions {
 		version := &spec.Versions[verIndex]
+		if len(version.Http.Apis) > 0 {
+			errorResponses, err := createErrorResponsesModels()
+			if err != nil {
+				return nil, err
+			}
+			version.Models = append(version.Models, errorResponses...)
+			errors, err := createErrorResponses()
+			if err != nil {
+				return nil, err
+			}
+			version.Http.Errors = errors
+		}
 		modelsMap := buildModelsMap(version.Models)
 		enricher := &enricher{modelsMap, make(map[string]interface{}), messages, nil}
 		enricher.Version(version)
@@ -71,6 +83,11 @@ func (enricher *enricher) Version(version *Version) {
 	}
 	apis := &version.Http
 	apis.Version = version
+
+	for index := range apis.Errors {
+		enricher.Definition(&apis.Errors[index].Definition)
+	}
+
 	for apiIndex := range apis.Apis {
 		api := &version.Http.Apis[apiIndex]
 		api.Apis = apis
@@ -165,4 +182,61 @@ func (enricher *enricher) TypeDef(typ *TypeDef, node *yaml.Node) *TypeInfo {
 		return typ.Info
 	}
 	return nil
+}
+
+func createErrorResponsesModels() (Models, error) {
+	data := `
+BadRequestError:
+  object:
+    message: string
+    location: ErrorLocation
+    errors: ValidationError[]
+
+ValidationError:
+  object:
+    path: string
+    code: string
+    message: string?
+
+ErrorLocation:
+  enum:
+    - query
+    - header
+    - body
+    - unknown
+
+NotFoundError:
+  object:
+    message: string
+
+InternalServerError:
+  object:
+    message: string
+`
+	var models Models
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &models)
+	if err != nil {
+		return nil, err
+	}
+	return models, nil
+}
+
+const InternalServerError string = "InternalServerError"
+const BadRequestError string = "BadRequestError"
+const NotFoundError string = "NotFound"
+const ValidationError string = "ValidationError"
+const ErrorLocation string = "ErrorLocation"
+
+func createErrorResponses() (Errors, error) {
+	data := `
+bad_request: BadRequestError
+not_found: NotFoundError
+internal_server_error: InternalServerError
+`
+	var responses Errors
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &responses)
+	if err != nil {
+		return nil, err
+	}
+	return responses, nil
 }

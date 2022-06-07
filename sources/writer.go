@@ -42,6 +42,14 @@ func (writer *Writer) Line(format string, args ...interface{}) {
 	io.WriteString(writer.buffer, line)
 }
 
+func (writer *Writer) Lines(format string, args ...interface{}) {
+	code := fmt.Sprintf(strings.Trim(format, "\n"), args...)
+	lines := strings.Split(code, "\n")
+	for _, line := range lines {
+		writer.Line(line)
+	}
+}
+
 func (writer *Writer) EmptyLine() {
 	io.WriteString(writer.buffer, "\n")
 }

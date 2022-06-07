@@ -1,7 +1,11 @@
-package golang
+package models
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/gen/golang/imports"
+	"github.com/specgen-io/specgen/v2/gen/golang/module"
+	"github.com/specgen-io/specgen/v2/gen/golang/types"
+	"github.com/specgen-io/specgen/v2/gen/golang/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
@@ -10,28 +14,28 @@ import (
 func GenerateModels(specification *spec.Spec, moduleName string, generatePath string) *sources.Sources {
 	sources := sources.NewSources()
 
-	rootModule := Module(moduleName, generatePath)
+	rootModule := module.New(moduleName, generatePath)
 
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Version.FlatCase())
-		modelsModule := versionModule.Submodule(modelsPackage)
-		sources.AddGeneratedAll(generateVersionModels(&version, modelsModule))
+		modelsModule := versionModule.Submodule(types.ModelsPackage)
+		sources.AddGeneratedAll(GenerateVersionModels(&version, modelsModule))
 	}
 	return sources
 }
 
-func generateVersionModels(version *spec.Version, module module) []sources.CodeFile {
+func GenerateVersionModels(version *spec.Version, module module.Module) []sources.CodeFile {
 	return []sources.CodeFile{
 		*generateVersionModelsCode(version, module),
 		*generateEnumsHelperFunctions(module),
 	}
 }
 
-func generateVersionModelsCode(version *spec.Version, module module) *sources.CodeFile {
-	w := NewGoWriter()
+func generateVersionModelsCode(version *spec.Version, module module.Module) *sources.CodeFile {
+	w := writer.NewGoWriter()
 	w.Line("package %s", module.Name)
 
-	imports := Imports()
+	imports := imports.Imports()
 	imports.AddModelsTypes(version)
 	imports.Write(w)
 
@@ -72,11 +76,11 @@ func generateObjectModel(w *sources.Writer, model *spec.NamedModel) {
 		}
 		fields = append(fields, []string{
 			field.Name.PascalCase(),
-			GoTypeSamePackage(&field.Type.Definition),
+			types.GoTypeSamePackage(&field.Type.Definition),
 			fmt.Sprintf("`json:\"%s\"`", strings.Join(jsonAttributes, ",")),
 		})
 	}
-	WriteAlignedLines(w.Indented(), fields)
+	writer.WriteAlignedLines(w.Indented(), fields)
 	w.Line("}")
 	w.EmptyLine()
 	w.Line(`type %s %s`, model.Name.CamelCase(), model.Name.PascalCase())
@@ -141,11 +145,11 @@ func generateEnumModel(w *sources.Writer, model *spec.NamedModel) {
 		choiceValuesStringsParams = append(choiceValuesStringsParams, fmt.Sprintf("string(%s)", enumConstName))
 		choiceValuesParams = append(choiceValuesParams, fmt.Sprintf("%s", enumConstName))
 	}
-	WriteAlignedLines(w.Indented(), items)
+	writer.WriteAlignedLines(w.Indented(), items)
 	w.Line(")")
 	w.EmptyLine()
-	w.Line("var %s = []string{%s}", enumValuesStrings(model), JoinDelimParams(choiceValuesStringsParams))
-	w.Line("var %s = []%s{%s}", enumValues(model), modelName, JoinDelimParams(choiceValuesParams))
+	w.Line("var %s = []string{%s}", EnumValuesStrings(model), strings.Join(choiceValuesStringsParams, ", "))
+	w.Line("var %s = []%s{%s}", enumValues(model), modelName, strings.Join(choiceValuesParams, ", "))
 	w.EmptyLine()
 	w.Line("func (self *%s) UnmarshalJSON(b []byte) error {", modelName)
 	w.Line("  str, err := readEnumStringValue(b, %sValuesStrings)", modelName)
@@ -157,7 +161,7 @@ func generateEnumModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("}")
 }
 
-func enumValuesStrings(model *spec.NamedModel) string {
+func EnumValuesStrings(model *spec.NamedModel) string {
 	return fmt.Sprintf("%sValuesStrings", model.Name.PascalCase())
 }
 
@@ -188,11 +192,11 @@ func generateOneOfModelWrapper(w *sources.Writer, model *spec.NamedModel) {
 	for _, item := range model.OneOf.Items {
 		items = append(items, []string{
 			item.Name.PascalCase(),
-			GoTypeSamePackage(spec.Nullable(&item.Type.Definition)),
+			types.GoTypeSamePackage(spec.Nullable(&item.Type.Definition)),
 			fmt.Sprintf("`json:\"%s,omitempty\"`", item.Name.Source),
 		})
 	}
-	WriteAlignedLines(w.Indented(), items)
+	writer.WriteAlignedLines(w.Indented(), items)
 	w.Line("}")
 	w.EmptyLine()
 	w.Line(`type %s %s`, model.Name.CamelCase(), model.Name.PascalCase())
@@ -224,10 +228,10 @@ func generateOneOfModelDiscriminator(w *sources.Writer, model *spec.NamedModel) 
 	for _, item := range model.OneOf.Items {
 		items = append(items, []string{
 			item.Name.PascalCase(),
-			GoTypeSamePackage(spec.Nullable(&item.Type.Definition)),
+			types.GoTypeSamePackage(spec.Nullable(&item.Type.Definition)),
 		})
 	}
-	WriteAlignedLines(w.Indented(), items)
+	writer.WriteAlignedLines(w.Indented(), items)
 	w.Line("}")
 	w.EmptyLine()
 	w.Line(`func (u %s) MarshalJSON() ([]byte, error) {`, model.Name.PascalCase())
@@ -261,7 +265,7 @@ func generateOneOfModelDiscriminator(w *sources.Writer, model *spec.NamedModel) 
 	w.Line(`  switch *discriminator.Value {`)
 	for _, item := range model.OneOf.Items {
 		w.Line(`  case "%s":`, item.Name.Source)
-		w.Line(`    unionCase := %s{}`, GoTypeSamePackage(&item.Type.Definition))
+		w.Line(`    unionCase := %s{}`, types.GoTypeSamePackage(&item.Type.Definition))
 		w.Line(`    err := json.Unmarshal(data, &unionCase)`)
 		w.Line(`    if err != nil {`)
 		w.Line(`      return err`)
