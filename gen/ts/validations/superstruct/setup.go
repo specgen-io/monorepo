@@ -32,14 +32,26 @@ export interface ValidationError {
     message?: string
 }
 
+const convertFailure = (failure: t.Failure): ValidationError => {
+    let code = "unknown"
+    if (failure.message.includes("but received: undefined")) {
+        code = "missing"
+    } else if (failure.message.includes("but received:")) {
+        code = "parsing_failed"
+    }
+    return {
+        code, 
+        path: failure.path.join("."), 
+        message: failure.message
+    }  
+}
+
 export const decode = <T>(struct: t.Struct<T, unknown>, value: unknown): Result<T, ValidationError[]> => {
     try {
         return {value: t.create(value, struct)}
     } catch (err: unknown) {
         const structError = err as t.StructError
-        const failures = structError.failures()
-        const errors = failures.map(failure => ({path: failure.path.join("."), code: "", message: failure.message}))
-        return {error: errors}
+        return {error: structError.failures().map(convertFailure)}
     }
 }
 
