@@ -180,7 +180,7 @@ func (parser *ParamsParser) exactlyOneValue(name string) bool {
 	pValues := parser.values[name]
 	if len(pValues) != 1 {
 		if len(pValues) == 0 {
-			parser.addValidationError(name, "missing", "Parameters is missing")
+			parser.addValidationError(name, "missing", "Parameter is missing")
 		} else {
 			parser.addValidationError(name, "too_many_values", fmt.Sprintf("expected exactly one value, found: %s", strings.Join(pValues, ",")))
 		}

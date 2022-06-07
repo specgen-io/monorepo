@@ -38,9 +38,9 @@ func respondNotFound(w *sources.Writer, operation *spec.NamedOperation, message 
 	w.Line(`return`)
 }
 
-func respondBadRequest(w *sources.Writer, operation *spec.NamedOperation, message string, params string) {
+func respondBadRequest(w *sources.Writer, operation *spec.NamedOperation, location string, message string, params string) {
 	badRequest := operation.Api.Apis.Errors.Get(spec.HttpStatusBadRequest)
-	error := fmt.Sprintf(`%s{Message: %s, Errors: %s}`, types.GoType(&badRequest.Type.Definition), message, params)
+	error := fmt.Sprintf(`%s{Location: "%s", Message: %s, Errors: %s}`, types.GoType(&badRequest.Type.Definition), location, message, params)
 	w.Line(`respondBadRequest(%s, res, &%s)`, logFieldsName(operation), error)
 	w.Line(`return`)
 }
