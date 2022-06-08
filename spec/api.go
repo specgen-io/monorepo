@@ -8,7 +8,7 @@ import (
 type Api struct {
 	Name       Name
 	Operations Operations
-	Apis       *Apis
+	Http       *Apis
 }
 
 type Apis struct {

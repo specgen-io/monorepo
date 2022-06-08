@@ -25,7 +25,7 @@ func NewSpringGenerator(types *types.Types, models models.Generator) *SpringGene
 }
 
 func (g *SpringGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string) {
-	return `org.springframework.stereotype.Service`, fmt.Sprintf(`Service("%s")`, versionServiceName(serviceName(api), api.Apis.Version))
+	return `org.springframework.stereotype.Service`, fmt.Sprintf(`Service("%s")`, versionServiceName(serviceName(api), api.Http.Version))
 }
 
 func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
@@ -55,7 +55,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api, apiPackage, jsonPacka
 	imports.Add(`static org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.Apis.Version))
+	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.Http.Version))
 	className := controllerName(api)
 	w.Line(`public class %s {`, className)
 	w.Line(`  private static final Logger logger = LogManager.getLogger(%s.class);`, className)

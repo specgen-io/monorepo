@@ -55,7 +55,7 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 	w.EmptyLine()
 	w.Line(`func %s {`, signatureAddRouting(api))
 	w.Indent()
-	generateErrors(w, api.Apis.Version)
+	generateErrors(w, api.Http.Version)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		url := getEndpointUrl(&operation)
@@ -316,7 +316,7 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *source
 }
 
 func versionedApiImportAlias(api *spec.Api) string {
-	version := api.Apis.Version.Version
+	version := api.Http.Version.Version
 	if version.Source != "" {
 		return api.Name.CamelCase() + version.PascalCase()
 	}
@@ -324,7 +324,7 @@ func versionedApiImportAlias(api *spec.Api) string {
 }
 
 func serviceApiNameVersioned(api *spec.Api) string {
-	return fmt.Sprintf(`%sService%s`, api.Name.Source, api.Apis.Version.Version.PascalCase())
+	return fmt.Sprintf(`%sService%s`, api.Name.Source, api.Http.Version.Version.PascalCase())
 }
 
 func packageFrom(version *spec.Version) string {
