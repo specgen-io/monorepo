@@ -108,8 +108,14 @@ func (validator *validator) Operation(operation *NamedOperation) {
 
 func (validator *validator) Response(response *OperationResponse) {
 	if response.Name.Source == HttpStatusInternalServerError || response.Name.Source == HttpStatusNotFound || response.Name.Source == HttpStatusBadRequest {
-		if !response.Type.Definition.IsEmpty() {
-			message := fmt.Sprintf("response %s can be only empty if declared, found %s", response.Name.Source, response.Type.Definition.Name)
+		errors := response.Operation.Api.Http.Errors
+		errorResponse := errors.Get(response.Name.Source)
+		if response.Type.Definition.String() != errorResponse.Type.Definition.String() {
+			messageFormat :=
+				`response %s is recommended to have standard error type "%s", if declared, found: "%s", ` +
+					`error responses should be declared on individual endpoint only if "business" logic is going to return them, ` +
+					`all errors from generated code are automatically attached to all endpoints`
+			message := fmt.Sprintf(messageFormat, response.Name.Source, errorResponse.Type.Definition.String(), response.Type.Definition.String())
 			validator.addWarning(response.Type.Location, message)
 		}
 	}
