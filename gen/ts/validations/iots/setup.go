@@ -132,10 +132,11 @@ const convertError = (error: t.ValidationError): ValidationError => {
   if (error.value === undefined) {
     code = "missing"
   }
-  const path = error.context.slice(1).map(item => item.key).join(".")
+  const path = error.context[error.context.length-1].key
+//  const path = error.context.slice(1).map(item => item.key).join(".")
   return {
     code,
-    path: error.context.slice(1).map(item => item.key).join("."),
+    path,
     message: "Failed to parse"
   }
 }

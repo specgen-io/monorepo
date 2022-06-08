@@ -26,10 +26,10 @@ func (g *Generator) VersionModels(version *spec.Version, codecModule modules.Mod
 	return &sources.CodeFile{Path: module.GetPath(), Content: w.String()}
 }
 
-func kindOfFields(objectModel *spec.NamedModel) (bool, bool) {
+func kindOfFields(fields spec.NamedDefinitions) (bool, bool) {
 	var hasRequiredFields = false
 	var hasOptionalFields = false
-	for _, field := range objectModel.Object.Fields {
+	for _, field := range fields {
 		if !field.Type.Definition.IsNullable() {
 			hasRequiredFields = true
 		} else {
@@ -40,7 +40,7 @@ func kindOfFields(objectModel *spec.NamedModel) (bool, bool) {
 }
 
 func (g *Generator) objectModel(w *sources.Writer, model *spec.NamedModel) {
-	hasRequiredFields, hasOptionalFields := kindOfFields(model)
+	hasRequiredFields, hasOptionalFields := kindOfFields(model.Object.Fields)
 	if hasRequiredFields && hasOptionalFields {
 		w.Line("export const T%s = t.intersection([", model.Name.PascalCase())
 		w.Line("  t.interface({")
