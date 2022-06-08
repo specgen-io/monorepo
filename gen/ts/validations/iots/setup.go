@@ -15,9 +15,8 @@ export * from 'io-ts-types'
 
 import * as t from 'io-ts'
 
-import { pipe, identity } from 'fp-ts/lib/function'
-import { fold, map, chain } from 'fp-ts/lib/Either'
-
+import { pipe } from 'fp-ts/lib/function'
+import { map, chain, match } from 'fp-ts/lib/Either'
 
 enum Enum {}
 
@@ -103,21 +102,60 @@ export const withDefault = <RT extends t.Type<A, O>, A = any, O = A>(type: RT, d
 }
 
 export class DecodeError extends Error {
-    errors: t.Errors
-    constructor(errors: t.Errors) {
+    errors: ValidationError[]
+    constructor(errors: ValidationError[]) {
         super('Decoding failed')
         this.errors = errors
     }
 }
 
-export const decode = <A, O, I>(codec: t.Type<A, O, I>, value: I): A => {
-    return pipe(
-        codec.decode(value),
-        fold(
-            errors => { throw new DecodeError(errors) },
-            identity
-        )
+interface Success<T> {
+  value: T
+  error?: never
+}
+
+interface Error<E> {
+  value?: never
+  error: E
+}
+
+export type Result<T, E> = Success<T> | Error<E>
+
+export interface ValidationError {
+  path: string
+  code: string
+  message?: string
+}
+
+const convertError = (error: t.ValidationError): ValidationError => {
+  let code = "parsing_failed"
+  if (error.value === undefined) {
+    code = "missing"
+  }
+  const path = error.context.slice(1).map(item => item.key).join(".")
+  return {
+    code,
+    path: error.context.slice(1).map(item => item.key).join("."),
+    message: "Failed to parse"
+  }
+}
+
+export const decodeR = <A, O, I>(codec: t.Type<A, O, I>, value: I): Result<A, ValidationError[]> => {
+  return pipe(
+    codec.decode(value),
+    match(
+      (errors: t.ValidationError[]): Result<A, ValidationError[]> => { return { error: errors.map(convertError) } },
+      (value: A): Result<A, ValidationError[]> => { return { value } },
     )
+  )
+}
+
+export const decode = <A, O, I>(codec: t.Type<A, O, I>, value: I): A => {
+  const result = decodeR(codec, value)
+  if (result.error) {
+    throw new DecodeError(result.error)
+  }
+  return result.value
 }
 
 export const encode = <A, O, I>(codec: t.Type<A, O, I>, value: A): O => {
