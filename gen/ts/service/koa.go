@@ -29,20 +29,27 @@ func (g *koaGenerator) SpecRouter(specification *spec.Spec, rootModule modules.M
 		}
 	}
 
-	routerParams := []string{}
+	servicesDefinitions := []string{}
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			routerParams = append(routerParams, fmt.Sprintf("%s: %s", apiServiceParamName(&api), serviceInterfaceNameVersioned(&api)))
+			servicesDefinitions = append(servicesDefinitions, fmt.Sprintf("%s: %s", apiServiceParamName(&api), serviceInterfaceNameVersioned(&api)))
 		}
 	}
 
 	w.EmptyLine()
-	w.Line("export const specRouter = (%s) => {", strings.Join(routerParams, ", "))
+	w.Line(`export interface Services {`)
+	for _, serviceDefinition := range servicesDefinitions {
+		w.Line(`  %s`, serviceDefinition)
+	}
+	w.Line(`}`)
+
+	w.EmptyLine()
+	w.Line("export const specRouter = (services: Services) => {")
 	w.Line("  const router = new Router()")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
 			apiRouterNameConst := "the" + casee.ToPascalCase(apiRouterNameVersioned(&api))
-			w.Line("  const %s = %s(%s)", apiRouterNameConst, apiRouterNameVersioned(&api), apiServiceParamName(&api))
+			w.Line("  const %s = %s(services.%s)", apiRouterNameConst, apiRouterNameVersioned(&api), apiServiceParamName(&api))
 			if version.Http.GetUrl() == "" {
 				w.Line("  router.use(%s.routes(), %s.allowedMethods())", apiRouterNameConst, apiRouterNameConst)
 			} else {
