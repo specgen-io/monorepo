@@ -93,8 +93,8 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 	}
 
 	w.Line(`  val url = UrlBuilder(baseUrl)`)
-	if operation.Api.Apis.GetUrl() != "" {
-		w.Line(`  url.addPathSegments("%s")`, trimSlash(operation.Api.Apis.GetUrl()))
+	if operation.Api.Http.GetUrl() != "" {
+		w.Line(`  url.addPathSegments("%s")`, trimSlash(operation.Api.Http.GetUrl()))
 	}
 	for _, urlPart := range operation.Endpoint.UrlParts {
 		part := trimSlash(urlPart.Part)

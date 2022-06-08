@@ -92,8 +92,8 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 		requestBody = "requestBody"
 	}
 	w.Line(`  var url = new UrlBuilder(baseUrl);`)
-	if operation.Api.Apis.GetUrl() != "" {
-		w.Line(`  url.addPathSegments("%s");`, strings.Trim(operation.Api.Apis.GetUrl(), "/"))
+	if operation.Api.Http.GetUrl() != "" {
+		w.Line(`  url.addPathSegments("%s");`, strings.Trim(operation.Api.Http.GetUrl(), "/"))
 	}
 	for _, urlPart := range operation.Endpoint.UrlParts {
 		part := strings.Trim(urlPart.Part, "/")

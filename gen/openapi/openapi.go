@@ -67,7 +67,7 @@ func generateApis(spec *spec.Spec) *yamlx.YamlMap {
 }
 
 func generateOperation(o *spec.NamedOperation) *yamlx.YamlMap {
-	version := o.Api.Apis.Version.Version
+	version := o.Api.Http.Version.Version
 	operationId := casee.ToCamelCase(version.PascalCase() + o.Api.Name.PascalCase() + o.Name.PascalCase())
 	operation := yamlx.Map()
 	operation.Add("operationId", operationId)

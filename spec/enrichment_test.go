@@ -204,7 +204,7 @@ http:
 			operation := &api.Operations[0]
 			response := operation.Responses[0]
 			assert.Equal(t, apis.Version, version)
-			assert.Equal(t, api.Apis, apis)
+			assert.Equal(t, api.Http, apis)
 			assert.Equal(t, operation.Api, api)
 			assert.Equal(t, response.Operation, operation)
 		},

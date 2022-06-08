@@ -90,7 +90,7 @@ func (enricher *enricher) Version(version *Version) {
 
 	for apiIndex := range apis.Apis {
 		api := &version.Http.Apis[apiIndex]
-		api.Apis = apis
+		api.Http = apis
 		for opIndex := range api.Operations {
 			operation := &api.Operations[opIndex]
 			operation.Api = api

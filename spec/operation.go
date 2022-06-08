@@ -76,13 +76,13 @@ type NamedOperation struct {
 }
 
 func (op *NamedOperation) FullUrl() string {
-	return op.Api.Apis.GetUrl() + op.Endpoint.Url
+	return op.Api.Http.GetUrl() + op.Endpoint.Url
 }
 
 func (op *NamedOperation) FullName() string {
 	fullName := fmt.Sprintf(`%s.%s`, op.Api.Name.Source, op.Name.Source)
-	if op.Api.Apis.Version.Version.Source != "" {
-		fullName = fmt.Sprintf(`%s.%s`, op.Api.Apis.Version.Version.Source, fullName)
+	if op.Api.Http.Version.Version.Source != "" {
+		fullName = fmt.Sprintf(`%s.%s`, op.Api.Http.Version.Version.Source, fullName)
 	}
 	return fullName
 }
