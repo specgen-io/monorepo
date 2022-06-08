@@ -17,7 +17,9 @@ type ReadSpecificationCase struct {
 func assertMessages(t *testing.T, expected []Message, messages *Messages) {
 	assert.Equal(t, len(expected), len(messages.Items), `Expected %s messages, found %s`, len(expected), len(messages.Items))
 	for _, expected := range expected {
-		found := messages.Contains(func(m Message) bool { return m.Level == expected.Level && m.Message == expected.Message })
+		found := messages.Contains(func(m Message) bool {
+			return m.Level == expected.Level && strings.HasPrefix(m.Message, expected.Message)
+		})
 		if !found {
 			actualMessages := []string{}
 			for _, msg := range messages.Items {

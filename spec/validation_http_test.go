@@ -97,9 +97,9 @@ http:
 `,
 		nil,
 		[]Message{
-			Warning("response internal_server_error can be only empty if declared, found string{}"),
-			Warning("response not_found can be only empty if declared, found string{}"),
-			Warning("response bad_request can be only empty if declared, found string{}"),
+			Warning("response internal_server_error is recommended to have standard error type"),
+			Warning("response not_found is recommended to have standard error type"),
+			Warning("response bad_request is recommended to have standard error type"),
 		},
 		nil,
 	},
