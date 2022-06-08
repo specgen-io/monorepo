@@ -29,19 +29,26 @@ func (g *expressGenerator) SpecRouter(specification *spec.Spec, rootModule modul
 		}
 	}
 
-	routerParams := []string{}
+	servicesDefinitions := []string{}
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			routerParams = append(routerParams, fmt.Sprintf("%s: %s", apiServiceParamName(&api), serviceInterfaceNameVersioned(&api)))
+			servicesDefinitions = append(servicesDefinitions, fmt.Sprintf("%s: %s", apiServiceParamName(&api), serviceInterfaceNameVersioned(&api)))
 		}
 	}
 
 	w.EmptyLine()
-	w.Line("export const specRouter = (%s) => {", strings.Join(routerParams, ", "))
+	w.Line(`export interface Services {`)
+	for _, serviceDefinition := range servicesDefinitions {
+		w.Line(`  %s`, serviceDefinition)
+	}
+	w.Line(`}`)
+
+	w.EmptyLine()
+	w.Line("export const specRouter = (services: Services) => {")
 	w.Line("  const router = Router()")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			w.Line("  router.use('%s', %s(%s))", expressVersionUrl(&version), apiRouterNameVersioned(&api), apiServiceParamName(&api))
+			w.Line("  router.use('%s', %s(services.%s))", expressVersionUrl(&version), apiRouterNameVersioned(&api), apiServiceParamName(&api))
 		}
 	}
 	w.Line("  return router")
