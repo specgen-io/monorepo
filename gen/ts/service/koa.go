@@ -126,7 +126,7 @@ func (g *koaGenerator) response(w *sources.Writer, response *spec.Response, data
 	}
 }
 
-func (g *koaGenerator) responses(w *sources.Writer, responses spec.Responses) {
+func (g *koaGenerator) responses(w *sources.Writer, responses spec.OperationResponses) {
 	if len(responses) == 1 {
 		g.response(w, &responses[0].Response, "result")
 	} else {

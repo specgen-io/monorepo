@@ -227,13 +227,13 @@ const NotFoundError string = "NotFound"
 const ValidationError string = "ValidationError"
 const ErrorLocation string = "ErrorLocation"
 
-func createErrorResponses() (Errors, error) {
+func createErrorResponses() (Responses, error) {
 	data := `
 bad_request: BadRequestError
 not_found: NotFoundError
 internal_server_error: InternalServerError
 `
-	var responses Errors
+	var responses Responses
 	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &responses)
 	if err != nil {
 		return nil, err
