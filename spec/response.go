@@ -16,9 +16,9 @@ type OperationResponse struct {
 	Operation *NamedOperation
 }
 
-type Responses []OperationResponse
+type OperationResponses []OperationResponse
 
-func (responses Responses) Get(httpStatus string) *OperationResponse {
+func (responses OperationResponses) Get(httpStatus string) *OperationResponse {
 	for _, response := range responses {
 		if response.Name.Source == httpStatus {
 			return &response
@@ -27,7 +27,24 @@ func (responses Responses) Get(httpStatus string) *OperationResponse {
 	return nil
 }
 
-func (value *Responses) UnmarshalYAML(node *yaml.Node) error {
+func (responses OperationResponses) GetByStatusCode(statusCode string) *OperationResponse {
+	for _, response := range responses {
+		if response.Name.Source == HttpStatusName(statusCode) {
+			return &response
+		}
+	}
+	return nil
+}
+
+func (responses OperationResponses) HttpStatusCodes() []string {
+	codes := []string{}
+	for _, response := range responses {
+		codes = append(codes, HttpStatusCode(response.Name))
+	}
+	return codes
+}
+
+func (value *OperationResponses) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
 		return yamlError(node, "response should be YAML mapping")
 	}
@@ -59,7 +76,7 @@ func (value *Responses) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
-func (value Responses) MarshalYAML() (interface{}, error) {
+func (value OperationResponses) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
 	for index := 0; index < len(value); index++ {
 		response := value[index]

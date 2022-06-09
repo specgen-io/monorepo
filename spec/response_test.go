@@ -9,7 +9,7 @@ import (
 
 func Test_Response_WrongName_Error(t *testing.T) {
 	data := `bla: empty`
-	var responses Responses
+	var responses OperationResponses
 	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &responses)
 	assert.Equal(t, err != nil, true)
 	assert.Equal(t, strings.Contains(err.Error(), "bla"), true)
@@ -20,6 +20,6 @@ func Test_Responses_Marshal(t *testing.T) {
 ok: empty # success
 bad_request: empty # invalid request
 `, "\n")
-	var responses Responses
+	var responses OperationResponses
 	checkUnmarshalMarshal(t, expectedYaml, &responses)
 }

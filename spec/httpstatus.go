@@ -1,6 +1,9 @@
 package spec
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 var httpStatusCode = map[string]string{
 	"continue":           "100",
@@ -90,3 +93,22 @@ const (
 	HttpStatusNotFound            string = "not_found"
 	HttpStatusBadRequest          string = "bad_request"
 )
+
+func MergeHttpStatusCodes(left, right []string) []string {
+	results := []string{}
+	seen := make(map[string]bool)
+	for _, item := range left {
+		if !seen[item] {
+			seen[item] = true
+			results = append(results, item)
+		}
+	}
+	for _, item := range right {
+		if !seen[item] {
+			seen[item] = true
+			results = append(results, item)
+		}
+	}
+	sort.Strings(results)
+	return results
+}

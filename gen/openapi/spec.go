@@ -44,7 +44,7 @@ func createEmptyResponse(name string, description string) *spec.OperationRespons
 	}
 }
 
-func addSpecialResponses(operation *spec.Operation) spec.Responses {
+func addSpecialResponses(operation *spec.Operation) spec.OperationResponses {
 	responses := operation.Responses
 	if operation.HasParams() || operation.Body != nil {
 		if operation.GetResponse(spec.HttpStatusBadRequest) == nil {

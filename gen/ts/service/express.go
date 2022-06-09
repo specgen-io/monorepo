@@ -129,7 +129,7 @@ func (g *expressGenerator) response(w *sources.Writer, response *spec.Response, 
 	}
 }
 
-func (g *expressGenerator) responses(w *sources.Writer, responses spec.Responses) {
+func (g *expressGenerator) responses(w *sources.Writer, responses spec.OperationResponses) {
 	if len(responses) == 1 {
 		g.response(w, &responses[0].Response, "result")
 	} else {

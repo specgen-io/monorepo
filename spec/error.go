@@ -6,15 +6,32 @@ import (
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
-type Errors []Response
+type Responses []Response
 
-func (errors Errors) Get(httpStatus string) *Response {
-	for _, response := range errors {
+func (responses Responses) GetByStatusName(httpStatus string) *Response {
+	for _, response := range responses {
 		if response.Name.Source == httpStatus {
 			return &response
 		}
 	}
 	return nil
+}
+
+func (responses Responses) GetByStatusCode(statusCode string) *Response {
+	for _, response := range responses {
+		if response.Name.Source == HttpStatusName(statusCode) {
+			return &response
+		}
+	}
+	return nil
+}
+
+func (responses Responses) HttpStatusCodes() []string {
+	codes := []string{}
+	for _, response := range responses {
+		codes = append(codes, HttpStatusCode(response.Name))
+	}
+	return codes
 }
 
 func (response *Response) BodyKind() BodyKind {
@@ -25,7 +42,7 @@ func (response *Response) BodyIs(kind BodyKind) bool {
 	return kindOf(&response.Definition) == kind
 }
 
-func (value *Errors) UnmarshalYAML(node *yaml.Node) error {
+func (responses *Responses) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
 		return yamlError(node, "response should be YAML mapping")
 	}
@@ -53,14 +70,14 @@ func (value *Errors) UnmarshalYAML(node *yaml.Node) error {
 		}
 		array[index] = Response{Name: name, Definition: definition}
 	}
-	*value = array
+	*responses = array
 	return nil
 }
 
-func (value Errors) MarshalYAML() (interface{}, error) {
+func (responses Responses) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
-	for index := 0; index < len(value); index++ {
-		response := value[index]
+	for index := 0; index < len(responses); index++ {
+		response := responses[index]
 		err := yamlMap.AddWithComment(response.Name, response.Definition, response.Description)
 		if err != nil {
 			return nil, err
