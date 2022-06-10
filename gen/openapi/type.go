@@ -6,29 +6,41 @@ import (
 	"github.com/specgen-io/specgen/v2/yamlx"
 )
 
-func OpenApiType(typ *spec.TypeDef) *yamlx.YamlMap {
-	switch typ.Node {
-	case spec.PlainType:
-		result := PlainOpenApiType(typ.Info, typ.Plain)
-		return result
-	case spec.NullableType:
-		child := OpenApiType(typ.Child)
-		return child
-	case spec.ArrayType:
-		child := OpenApiType(typ.Child)
+func OpenApiType(types ...*spec.TypeDef) *yamlx.YamlMap {
+	if len(types) > 1 {
 		result := yamlx.Map()
-		result.Add("type", "array")
-		result.Add("items", child)
+		anyOfItems := yamlx.Array()
+		for _, typ := range types {
+			anyOfItems.Add(OpenApiType(typ))
+		}
+		result.Add("anyOf", anyOfItems)
 		return result
-	case spec.MapType:
-		child := OpenApiType(typ.Child)
-		result := yamlx.Map()
-		result.Add("type", "object")
-		result.Add("additionalProperties", child)
-		return result
-	default:
-		panic(fmt.Sprintf("Unknown type: %v", typ))
+	} else {
+		typ := types[0]
+		switch typ.Node {
+		case spec.PlainType:
+			result := PlainOpenApiType(typ.Info, typ.Plain)
+			return result
+		case spec.NullableType:
+			child := OpenApiType(typ.Child)
+			return child
+		case spec.ArrayType:
+			child := OpenApiType(typ.Child)
+			result := yamlx.Map()
+			result.Add("type", "array")
+			result.Add("items", child)
+			return result
+		case spec.MapType:
+			child := OpenApiType(typ.Child)
+			result := yamlx.Map()
+			result.Add("type", "object")
+			result.Add("additionalProperties", child)
+			return result
+		default:
+			panic(fmt.Sprintf("Unknown type: %v", typ))
+		}
 	}
+
 }
 
 func PlainOpenApiType(typeInfo *spec.TypeInfo, typ string) *yamlx.YamlMap {

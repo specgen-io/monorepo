@@ -8,6 +8,7 @@ import (
 
 func Test_Enrichment(t *testing.T) {
 	runReadSpecificationCases(t, enrichmentCases)
+	runReadSpecificationCases(t, enrichmentCases)
 }
 
 var enrichmentCases = []ReadSpecificationCase{

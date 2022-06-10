@@ -6,21 +6,23 @@ import (
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
-func enrich(spec *Spec) (*Messages, error) {
+func enrich(options SpecOptions, spec *Spec) (*Messages, error) {
 	messages := NewMessages()
 	for verIndex := range spec.Versions {
 		version := &spec.Versions[verIndex]
-		if len(version.Http.Apis) > 0 {
-			errorResponses, err := createErrorResponsesModels()
-			if err != nil {
-				return nil, err
+		if options.AddErrors {
+			if len(version.Http.Apis) > 0 {
+				errorResponses, err := createErrorResponsesModels()
+				if err != nil {
+					return nil, err
+				}
+				version.Models = append(version.Models, errorResponses...)
+				errors, err := createErrorResponses()
+				if err != nil {
+					return nil, err
+				}
+				version.Http.Errors = errors
 			}
-			version.Models = append(version.Models, errorResponses...)
-			errors, err := createErrorResponses()
-			if err != nil {
-				return nil, err
-			}
-			version.Http.Errors = errors
 		}
 		modelsMap := buildModelsMap(version.Models)
 		enricher := &enricher{modelsMap, make(map[string]interface{}), messages, nil}
@@ -190,7 +192,7 @@ BadRequestError:
   object:
     message: string
     location: ErrorLocation
-    errors: ValidationError[]
+    errors: ValidationError[]?
 
 ValidationError:
   object:
@@ -203,7 +205,6 @@ ErrorLocation:
     - query
     - header
     - body
-    - unknown
 
 NotFoundError:
   object:
@@ -229,9 +230,9 @@ const ErrorLocation string = "ErrorLocation"
 
 func createErrorResponses() (Responses, error) {
 	data := `
-bad_request: BadRequestError
-not_found: NotFoundError
-internal_server_error: InternalServerError
+bad_request: BadRequestError   # Service will return this if parameters are not provided or couldn't be parsed correctly
+not_found: NotFoundError   # Service will return this if the endpoint is not found
+internal_server_error: InternalServerError   # Service will return this if unexpected internal error happens
 `
 	var responses Responses
 	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &responses)
