@@ -9,7 +9,9 @@ import (
 )
 
 func checkOpenApi(t *testing.T, specYaml, expectedOpenApiYaml string) {
-	spec, _, err := spec.ReadSpec([]byte(specYaml))
+	specOptions := spec.SpecOptionsDefault
+	specOptions.AddErrors = false
+	spec, _, err := spec.ReadSpecWithOptions(specOptions, []byte(specYaml))
 	assert.Equal(t, err, nil)
 
 	openapiYaml, err := yamlx.ToYamlString(generateSpecification(spec))
@@ -297,10 +299,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyModel'
-        "400":
-          description: Service will return this if parameters are not provided or couldn't be parsed correctly
-        "500":
-          description: Service will return this if unexpected internal error happens
 components:
   schemas:
     MyModel:
@@ -309,54 +307,6 @@ components:
         - field1
       properties:
         field1:
-          type: string
-    BadRequestError:
-      type: object
-      required:
-        - message
-        - location
-        - errors
-      properties:
-        message:
-          type: string
-        location:
-          $ref: '#/components/schemas/ErrorLocation'
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ValidationError'
-    ValidationError:
-      type: object
-      required:
-        - path
-        - code
-      properties:
-        path:
-          type: string
-        code:
-          type: string
-        message:
-          type: string
-    ErrorLocation:
-      type: string
-      enum:
-        - query
-        - header
-        - body
-        - unknown
-    NotFoundError:
-      type: object
-      required:
-        - message
-      properties:
-        message:
-          type: string
-    InternalServerError:
-      type: object
-      required:
-        - message
-      properties:
-        message:
           type: string
 `
 
@@ -436,8 +386,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Model1'
-        "500":
-          description: Service will return this if unexpected internal error happens
   /ping:
     get:
       operationId: testPing
@@ -452,10 +400,6 @@ paths:
       responses:
         "200":
           description: ""
-        "400":
-          description: Service will return this if parameters are not provided or couldn't be parsed correctly
-        "500":
-          description: Service will return this if unexpected internal error happens
 components:
   schemas:
     Model1:
@@ -476,54 +420,6 @@ components:
         prop2:
           type: integer
           format: int32
-    BadRequestError:
-      type: object
-      required:
-        - message
-        - location
-        - errors
-      properties:
-        message:
-          type: string
-        location:
-          $ref: '#/components/schemas/ErrorLocation'
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ValidationError'
-    ValidationError:
-      type: object
-      required:
-        - path
-        - code
-      properties:
-        path:
-          type: string
-        code:
-          type: string
-        message:
-          type: string
-    ErrorLocation:
-      type: string
-      enum:
-        - query
-        - header
-        - body
-        - unknown
-    NotFoundError:
-      type: object
-      required:
-        - message
-      properties:
-        message:
-          type: string
-    InternalServerError:
-      type: object
-      required:
-        - message
-      properties:
-        message:
-          type: string
 `
 
 	checkOpenApi(t, specYaml, expectedOpenApiYaml)
@@ -570,8 +466,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/v2.Message'
-        "500":
-          description: Service will return this if unexpected internal error happens
 components:
   schemas:
     v2.Message:
@@ -580,54 +474,6 @@ components:
         - prop1
       properties:
         prop1:
-          type: string
-    v2.BadRequestError:
-      type: object
-      required:
-        - message
-        - location
-        - errors
-      properties:
-        message:
-          type: string
-        location:
-          $ref: '#/components/schemas/v2.ErrorLocation'
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/v2.ValidationError'
-    v2.ValidationError:
-      type: object
-      required:
-        - path
-        - code
-      properties:
-        path:
-          type: string
-        code:
-          type: string
-        message:
-          type: string
-    v2.ErrorLocation:
-      type: string
-      enum:
-        - query
-        - header
-        - body
-        - unknown
-    v2.NotFoundError:
-      type: object
-      required:
-        - message
-      properties:
-        message:
-          type: string
-    v2.InternalServerError:
-      type: object
-      required:
-        - message
-      properties:
-        message:
           type: string
 `
 

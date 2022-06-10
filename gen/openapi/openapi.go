@@ -97,12 +97,7 @@ func generateOperation(o *spec.NamedOperation) *yamlx.YamlMap {
 		operation.Add("parameters", parameters)
 	}
 
-	responses := yamlx.Map()
-	allResponses := addSpecialResponses(&o.Operation)
-	for _, r := range allResponses {
-		responses.Add(spec.HttpStatusCode(r.Name), generateResponse(r.Definition))
-	}
-	operation.Add("responses", responses)
+	operation.Add("responses", generateResponses(o))
 	return operation
 }
 
@@ -124,23 +119,57 @@ func addParameters(parameters *yamlx.YamlArray, in string, params []spec.NamedPa
 	}
 }
 
-func generateJsonContent(typ *spec.TypeDef) *yamlx.YamlMap {
-	schema := yamlx.Map(yamlx.Pair{"schema", OpenApiType(typ)})
+func generateJsonContent(types ...*spec.TypeDef) *yamlx.YamlMap {
+	schema := yamlx.Map(yamlx.Pair{"schema", OpenApiType(types...)})
 	content := yamlx.Map(yamlx.Pair{"application/json", schema})
 	return content
 }
 
-func generateResponse(r spec.Definition) *yamlx.YamlMap {
-	response := yamlx.Map()
+func generateResponses(operation *spec.NamedOperation) *yamlx.YamlMap {
+	statusCodes := spec.MergeHttpStatusCodes(operation.Api.Http.Errors.HttpStatusCodes(), operation.Responses.HttpStatusCodes())
+
+	result := yamlx.Map()
+	for _, statusCode := range statusCodes {
+		response := operation.Responses.GetByStatusCode(statusCode)
+		errorResponse := operation.Api.Http.Errors.GetByStatusCode(statusCode)
+		var responseDefinition *spec.Definition = nil
+		var alternateDefinition *spec.Definition = nil
+
+		if response != nil {
+			responseDefinition = &response.Definition
+			if errorResponse != nil && response.Definition.Type.String() != errorResponse.Definition.Type.String() {
+				alternateDefinition = &errorResponse.Definition
+			}
+		} else {
+			responseDefinition = &errorResponse.Definition
+		}
+
+		result.Add(statusCode, generateResponse(responseDefinition, alternateDefinition))
+	}
+
+	return result
+}
+
+func generateResponse(response *spec.Definition, alternate *spec.Definition) *yamlx.YamlMap {
+	result := yamlx.Map()
 	description := ""
-	if r.Description != nil {
-		description = *r.Description
+	if response.Description != nil {
+		description = *response.Description
 	}
-	response.Add("description", description)
-	if !r.Type.Definition.IsEmpty() {
-		response.Add("content", generateJsonContent(&r.Type.Definition))
+	result.Add("description", description)
+
+	types := []*spec.TypeDef{}
+	if !response.Type.Definition.IsEmpty() {
+		types = append(types, &response.Type.Definition)
 	}
-	return response
+	if alternate != nil && !alternate.Type.Definition.IsEmpty() {
+		types = append(types, &alternate.Type.Definition)
+	}
+
+	if len(types) > 0 {
+		result.Add("content", generateJsonContent(types...))
+	}
+	return result
 }
 
 func generateModel(model *spec.NamedModel) *yamlx.YamlMap {

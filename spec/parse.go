@@ -11,6 +11,16 @@ type SpecParseResult struct {
 }
 
 func ReadSpec(data []byte) (*Spec, *Messages, error) {
+	return ReadSpecWithOptions(SpecOptionsDefault, data)
+}
+
+type SpecOptions struct {
+	AddErrors bool
+}
+
+var SpecOptionsDefault = SpecOptions{true}
+
+func ReadSpecWithOptions(options SpecOptions, data []byte) (*Spec, *Messages, error) {
 	allMessages := NewMessages()
 	data, messages, err := checkSpecVersion(data)
 	allMessages.AddAll(messages.Items...)
@@ -24,7 +34,7 @@ func ReadSpec(data []byte) (*Spec, *Messages, error) {
 		return nil, allMessages, err
 	}
 
-	messages, err = enrich(spec)
+	messages, err = enrich(options, spec)
 	allMessages.AddAll(messages.Items...)
 	if err != nil {
 		return nil, allMessages, err
