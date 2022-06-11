@@ -73,6 +73,7 @@ public abstract class SpecgenBaseTask : DefaultTask() {
         return when (archName) {
             "ia64" -> "amd64"
             "amd64" -> "amd64"
+            "x86_64" -> "amd64"
             "aarch64" -> "arm64"
             else -> throw SpecgenException("Unsupported architecture: ${archName}")
         }

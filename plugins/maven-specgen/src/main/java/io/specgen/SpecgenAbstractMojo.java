@@ -106,6 +106,7 @@ public abstract class SpecgenAbstractMojo extends AbstractMojo {
 		switch(archName) {
 			case "ia64":
 			case "amd64":
+			case "x86_64":
 				arch = "amd64";
 				break;
 			case "aarch64":

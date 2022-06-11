@@ -162,6 +162,7 @@ object Specgen {
     arch match {
       case "ia64" => "amd64"
       case "amd64" => "amd64"
+      case "x86_64" => "amd64"
       case "aarch64" => "arm64"
       case _ => throw new Exception(s"Unknown architecture name: $arch")
     }
