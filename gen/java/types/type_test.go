@@ -65,7 +65,7 @@ func TestNullableType(t *testing.T) {
 }
 
 func TestArrayType(t *testing.T) {
-	CheckJacksonType(t, spec.Array(spec.Plain(spec.TypeString)), "String[]")
+	CheckJacksonType(t, spec.Array(spec.Plain(spec.TypeString)), "List<String>")
 }
 
 func TestMapType(t *testing.T) {
@@ -73,7 +73,7 @@ func TestMapType(t *testing.T) {
 }
 
 func TestComplexType(t *testing.T) {
-	CheckJacksonType(t, spec.Array(spec.Nullable(spec.Plain(spec.TypeBoolean))), "Boolean[]")
+	CheckJacksonType(t, spec.Array(spec.Nullable(spec.Plain(spec.TypeBoolean))), "List<Boolean>")
 }
 
 func TestMapScalarType(t *testing.T) {
