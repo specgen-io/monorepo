@@ -48,6 +48,10 @@ func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, st
 		typeJava := g.Types.Kotlin(typ.Child)
 		adapter = fmt.Sprintf(`adapter<Map<String, %s>>(Types.newParameterizedType(MutableMap::class.java, String::class.java, %s::class.java))`, typeJava, typeJava)
 	}
+	if typ.Node == spec.ArrayType {
+		typeJava := g.Types.Kotlin(typ.Child)
+		adapter = fmt.Sprintf(`adapter<List<%s>>(Types.newParameterizedType(List::class.java, %s::class.java))`, typeJava, typeJava)
+	}
 
 	return fmt.Sprintf(`moshi.%s.fromJson(%s)`, adapter, varJson), `JsonDataException`
 
@@ -58,6 +62,10 @@ func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, s
 	if typ.Node == spec.MapType {
 		typeJava := g.Types.Kotlin(typ.Child)
 		adapterParam = fmt.Sprintf(`adapter<Map<String, %s>>(Types.newParameterizedType(MutableMap::class.java, String::class.java, %s::class.java))`, typeJava, typeJava)
+	}
+	if typ.Node == spec.ArrayType {
+		typeJava := g.Types.Kotlin(typ.Child)
+		adapterParam = fmt.Sprintf(`adapter<List<%s>>(Types.newParameterizedType(List::class.java, %s::class.java))`, typeJava, typeJava)
 	}
 
 	return fmt.Sprintf(`moshi.%s.toJson(%s)`, adapterParam, varData), `IOException`
