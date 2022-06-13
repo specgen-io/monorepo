@@ -24,32 +24,10 @@ func addObjectModelMethods(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`@Override`)
 	w.Line(`public int hashCode() {`)
 	hashCodeParams := []string{}
-	hashParams := []string{}
-	var arrayFieldCount, nonArrayFieldCount int
 	for _, field := range model.Object.Fields {
-		if isJavaArrayType(&field.Type.Definition) {
-			hashCodeParams = append(hashCodeParams, fmt.Sprintf(`%s()`, getterName(&field)))
-			arrayFieldCount++
-		} else {
-			hashParams = append(hashParams, fmt.Sprintf(`%s()`, getterName(&field)))
-			nonArrayFieldCount++
-		}
+		hashCodeParams = append(hashCodeParams, fmt.Sprintf(`%s()`, getterName(&field)))
 	}
-	if arrayFieldCount > 0 && nonArrayFieldCount == 0 {
-		w.Line(`  int result = Arrays.hashCode(%s);`, hashCodeParams[0])
-		for _, param := range hashCodeParams[1:] {
-			w.Line(`  result = 31 * result + Arrays.hashCode(%s);`, param)
-		}
-		w.Line(`  return result;`)
-	} else if arrayFieldCount > 0 && nonArrayFieldCount > 0 {
-		w.Line(`  int result = Objects.hash(%s);`, joinParams(hashParams))
-		for _, param := range hashCodeParams {
-			w.Line(`  result = 31 * result + Arrays.hashCode(%s);`, param)
-		}
-		w.Line(`  return result;`)
-	} else if arrayFieldCount == 0 && nonArrayFieldCount > 0 {
-		w.Line(`  return Objects.hash(%s);`, joinParams(hashParams))
-	}
+	w.Line(`  return Objects.hash(%s);`, joinParams(hashCodeParams))
 	w.Line(`}`)
 	w.EmptyLine()
 	w.Line(`@Override`)
@@ -58,7 +36,7 @@ func addObjectModelMethods(w *sources.Writer, model *spec.NamedModel) {
 	formatArgs := []string{}
 	for _, field := range model.Object.Fields {
 		formatParams = append(formatParams, fmt.Sprintf(`%s=%s`, field.Name.CamelCase(), "%s"))
-		formatArgs = append(formatArgs, toStringExpression(&field.Type.Definition, field.Name.CamelCase()))
+		formatArgs = append(formatArgs, fmt.Sprintf(`%s`, field.Name.CamelCase()))
 	}
 	w.Line(`  return String.format("%s{%s}", %s);`, model.Name.PascalCase(), joinParams(formatParams), joinParams(formatArgs))
 	w.Line(`}`)

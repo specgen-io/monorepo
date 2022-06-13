@@ -5,17 +5,6 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func isJavaArrayType(typ *spec.TypeDef) bool {
-	switch typ.Node {
-	case spec.ArrayType:
-		return true
-	case spec.NullableType:
-		return isJavaArrayType(typ.Child)
-	default:
-		return false
-	}
-}
-
 func equalsExpression(typ *spec.TypeDef, left string, right string) string {
 	return _equalsExpression(typ, left, right, true)
 }
@@ -26,9 +15,7 @@ func _equalsExpression(typ *spec.TypeDef, left string, right string, canBePrimit
 		return equalsExpressionPlainType(typ.Plain, left, right, canBePrimitiveType)
 	case spec.NullableType:
 		return _equalsExpression(typ.Child, left, right, false)
-	case spec.ArrayType:
-		return fmt.Sprintf(`Arrays.equals(%s, that.%s)`, left, right)
-	case spec.MapType:
+	case spec.ArrayType, spec.MapType:
 		return fmt.Sprintf(`Objects.equals(%s, that.%s)`, left, right)
 	default:
 		panic(fmt.Sprintf("Unknown type: %v", typ))
@@ -58,13 +45,5 @@ func equalsExpressionPlainType(typ string, left string, right string, canBePrimi
 		return fmt.Sprintf(`Objects.equals(%s, that.%s)`, left, right)
 	default:
 		return fmt.Sprintf(`Objects.equals(%s, that.%s)`, left, right)
-	}
-}
-
-func toStringExpression(typ *spec.TypeDef, value string) string {
-	if isJavaArrayType(typ) {
-		return fmt.Sprintf(`Arrays.toString(%s)`, value)
-	} else {
-		return fmt.Sprintf(`%s`, value)
 	}
 }
