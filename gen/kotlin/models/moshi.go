@@ -103,14 +103,7 @@ func (g *MoshiGenerator) modelObject(w *sources.Writer, model *spec.NamedModel) 
 		w.Line(`  @Json(name = "%s")`, field.Name.Source)
 		w.Line(`  val %s: %s,`, field.Name.CamelCase(), g.Types.Kotlin(&field.Type.Definition))
 	}
-
-	if isKotlinArrayType(model) {
-		w.Line(`) {`)
-		addObjectModelMethods(w.Indented(), model)
-		w.Line(`}`)
-	} else {
-		w.Line(`)`)
-	}
+	w.Line(`)`)
 }
 
 func (g *MoshiGenerator) modelEnum(w *sources.Writer, model *spec.NamedModel) {

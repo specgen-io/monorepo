@@ -17,7 +17,7 @@ func (t *Types) Kotlin(typ *spec.TypeDef) string {
 		return t.Kotlin(typ.Child) + "?"
 	case spec.ArrayType:
 		child := t.Kotlin(typ.Child)
-		return "Array<" + child + ">"
+		return "List<" + child + ">"
 	case spec.MapType:
 		child := t.Kotlin(typ.Child)
 		result := "Map<String, " + child + ">"
