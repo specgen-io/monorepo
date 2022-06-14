@@ -46,9 +46,14 @@ func (g *MoshiGenerator) InitJsonMapper(w *sources.Writer) {
 
 func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
 	adapter := fmt.Sprintf(`adapter(%s.class)`, g.Types.Java(typ))
+
 	if typ.Node == spec.MapType {
 		typeJava := g.Types.Java(typ.Child)
 		adapter = fmt.Sprintf(`<Map<String, %s>>adapter(Types.newParameterizedType(Map.class, String.class, %s.class))`, typeJava, typeJava)
+	}
+	if typ.Node == spec.ArrayType {
+		typeJava := g.Types.Java(typ.Child)
+		adapter = fmt.Sprintf(`<List<%s>>adapter(Types.newParameterizedType(List.class, %s.class))`, typeJava, typeJava)
 	}
 
 	return fmt.Sprintf(`moshi.%s.fromJson(%s)`, adapter, varJson), `Exception`
@@ -56,9 +61,14 @@ func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, st
 
 func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
 	adapterParam := fmt.Sprintf(`%s.class`, g.Types.Java(typ))
+
 	if typ.Node == spec.MapType {
 		typeJava := g.Types.Java(typ.Child)
 		adapterParam = fmt.Sprintf(`Types.newParameterizedType(Map.class, String.class, %s.class)`, typeJava)
+	}
+	if typ.Node == spec.ArrayType {
+		typeJava := g.Types.Java(typ.Child)
+		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List.class, %s.class)`, typeJava)
 	}
 
 	return fmt.Sprintf(`moshi.adapter(%s).toJson(%s)`, adapterParam, varData), `AssertionError`

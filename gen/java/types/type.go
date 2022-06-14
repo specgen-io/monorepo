@@ -26,8 +26,8 @@ func (t *Types) javaType(typ *spec.TypeDef, referenceTypesOnly bool) (string, bo
 	case spec.NullableType:
 		return t.javaType(typ.Child, true)
 	case spec.ArrayType:
-		child, _ := t.javaType(typ.Child, false)
-		result := child + "[]"
+		child, _ := t.javaType(typ.Child, true)
+		result := "List<" + child + ">"
 		return result, true
 	case spec.MapType:
 		child, _ := t.javaType(typ.Child, true)
