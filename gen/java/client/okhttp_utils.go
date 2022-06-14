@@ -21,6 +21,7 @@ func generateRequestBuilder(thePackage packages.Module) *sources.CodeFile {
 package [[.PackageName]];
 
 import okhttp3.*;
+import java.util.List;
 
 public class RequestBuilder {
 	private final Request.Builder requestBuilder;
@@ -37,7 +38,7 @@ public class RequestBuilder {
 		return this;
 	}
 
-	public <T> RequestBuilder addHeaderParameter(String name, T[] values) {
+	public <T> RequestBuilder addHeaderParameter(String name, List<T> values) {
 		for (T val : values) {
 			this.addHeaderParameter(name, val);
 		}
@@ -62,6 +63,7 @@ func generateUrlBuilder(thePackage packages.Module) *sources.CodeFile {
 package [[.PackageName]];
 
 import okhttp3.HttpUrl;
+import java.util.List;
 
 public class UrlBuilder {
     private final HttpUrl.Builder urlBuilder;
@@ -78,7 +80,7 @@ public class UrlBuilder {
         return this;
     }
 
-    public <T> UrlBuilder addQueryParameter(String name, T[] values) {
+    public <T> UrlBuilder addQueryParameter(String name, List<T> values) {
         for (T val : values) {
             this.addQueryParameter(name, val);
         }
