@@ -23,9 +23,9 @@ type Generator struct {
 
 func NewGenerator(jsonlib, server string) *Generator {
 	types := models.NewTypes(jsonlib)
-	models := models.NewGenerator(jsonlib)
 
 	if server == Spring {
+		models := models.NewGenerator(jsonlib)
 		return &Generator{
 			jsonlib,
 			types,
@@ -34,6 +34,7 @@ func NewGenerator(jsonlib, server string) *Generator {
 		}
 	}
 	if server == Micronaut {
+		models := models.NewJacksonGenerator(models.NewTypes(models.Jackson))
 		return &Generator{
 			jsonlib,
 			types,
