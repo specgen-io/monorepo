@@ -150,7 +150,7 @@ func generateParametersParsing(w *sources.Writer, operation *spec.NamedOperation
 		}
 
 		w.Line(`if len(%s.Errors) > 0 {`, paramsParserName)
-		respondBadRequest(w.Indented(), operation, paramsParserName, fmt.Sprintf(`"Failed to parse %s parameters"`, paramsParserName), fmt.Sprintf(`%s.Errors`, paramsParserName))
+		respondBadRequest(w.Indented(), operation, paramsParserName, fmt.Sprintf(`"Failed to parse %s"`, paramsParserName), fmt.Sprintf(`%s.Errors`, paramsParserName))
 		w.Line(`}`)
 	}
 }
@@ -227,7 +227,7 @@ func generateBodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
 		w.Line(`var body %s`, types.GoType(&operation.Body.Type.Definition))
 		w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
 		w.Line(`if err != nil {`)
-		respondBadRequest(w.Indented(), operation, "body", `"Failed to parse body JSON"`, "[]models.ValidationError{}")
+		respondBadRequest(w.Indented(), operation, "body", `"Failed to parse body"`, "[]models.ValidationError{}")
 		w.Line(`}`)
 	}
 }
