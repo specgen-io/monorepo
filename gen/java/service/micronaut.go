@@ -241,6 +241,7 @@ import io.micronaut.web.router.exceptions.*;
 import javax.validation.ConstraintViolationException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import java.io.IOException;
+import java.util.List;
 
 import [[.ModelsPackage]].*;
 
@@ -294,7 +295,7 @@ public class ErrorsHelpers {
         var parameterName = getParameterName(arg);
         var validation = new ValidationError(parameterName, code, errorMessage);
         var message = String.format("Failed to parse %s", location.name().toLowerCase());
-        return new BadRequestError(message, location, new ValidationError[]{validation});
+        return new BadRequestError(message, location, List.of(validation));
     }
 
     private static String getJsonPath(InvalidFormatException exception) {
@@ -312,11 +313,11 @@ public class ErrorsHelpers {
     public static BadRequestError jacksonBodyBadRequestError(IOException exception) {
         var location = ErrorLocation.BODY;
         var message = "Failed to parse body";
-        ValidationError[] errors = null;
+        List<ValidationError> errors = null;
         if (exception instanceof InvalidFormatException) {
             var jsonPath = getJsonPath((InvalidFormatException)exception);
-            var validation = new ValidationError(jsonPath, "missing", exception.getMessage());
-            errors = new ValidationError[]{validation};
+            var validation = new ValidationError(jsonPath, "parsing_failed", exception.getMessage());
+            errors = List.of(validation);
         }
         return new BadRequestError(message, location, errors);
     }
