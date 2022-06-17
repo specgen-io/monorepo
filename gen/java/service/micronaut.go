@@ -299,12 +299,16 @@ public class ErrorsHelpers {
     }
 
     private static String getJsonPath(InvalidFormatException exception) {
-        var path = new StringBuilder("$");
-        for (var reference: exception.getPath()) {
+        var path = new StringBuilder("");
+        for (int i = 0; i < exception.getPath().size(); i++) {
+            var reference = exception.getPath().get(i);
             if (reference.getIndex() != -1) {
                 path.append("[").append(reference.getIndex()).append("]");
             } else {
-                path.append(".").append(reference.getFieldName());
+                if (i != 0) {
+                    path.append(".");
+                }
+                path.append(reference.getFieldName());
             }
         }
         return path.toString();
