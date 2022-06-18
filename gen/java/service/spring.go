@@ -63,8 +63,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api, apiPackage, jsonPacka
 	w.Line(`  @Autowired`)
 	w.Line(`  private %s %s;`, serviceInterfaceName(api), serviceVarName(api))
 	w.EmptyLine()
-	w.Line(`  @Autowired`)
-	g.Models.CreateJsonMapperField(w.Indented())
+	g.Models.CreateJsonMapperField(w.Indented(), "@Autowired")
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		g.controllerMethod(w.Indented(), &operation)

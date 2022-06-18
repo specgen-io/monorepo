@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/pinzolo/casee"
 	"github.com/specgen-io/specgen/v2/gen/java/imports"
 	"github.com/specgen-io/specgen/v2/gen/java/models"
@@ -11,17 +13,16 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/java/writer"
 	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
-	"strings"
 )
 
 var Micronaut = "micronaut"
 
 type MicronautGenerator struct {
 	Types  *types.Types
-	Models *models.JacksonGenerator
+	Models models.Generator
 }
 
-func NewMicronautGenerator(types *types.Types, models *models.JacksonGenerator) *MicronautGenerator {
+func NewMicronautGenerator(types *types.Types, models models.Generator) *MicronautGenerator {
 	return &MicronautGenerator{types, models}
 }
 
@@ -35,7 +36,12 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPack
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, g.serviceController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
 	}
-	files = append(files, *g.errorsHelpers(thePackage, modelsVersionPackage), *g.badRequestException(thePackage, modelsVersionPackage))
+	files = append(
+		files,
+		*g.errorsHelpers(thePackage, modelsVersionPackage),
+		*g.badRequestException(thePackage, modelsVersionPackage),
+		*g.Models.GenerateBodyBadRequestErrorCreator(thePackage, modelsVersionPackage),
+	)
 	files = append(files, dateConverters(mainPackage)...)
 	return files
 }
@@ -55,6 +61,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPa
 	imports.Add(`jakarta.inject.Inject`)
 
 	imports.AddStatic(apiPackage.Subpackage("ErrorsHelpers").PackageStar)
+	imports.AddStatic(apiPackage.Subpackage("JsonErrorHelpers").PackageStar)
 	imports.Add(modelsVersionPackage.PackageStar)
 	imports.Add(serviceVersionPackage.PackageStar)
 	imports.Add(g.Models.JsonImports()...)
@@ -69,8 +76,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPa
 	w.Line(`  @Inject`)
 	w.Line(`  private %s %s;`, serviceInterfaceName(api), serviceVarName(api))
 	w.EmptyLine()
-	w.Line(`  @Inject`)
-	g.Models.CreateJsonMapperField(w.Indented())
+	g.Models.CreateJsonMapperField(w.Indented(), "@Inject")
 
 	for _, operation := range api.Operations {
 		w.EmptyLine()
@@ -78,8 +84,6 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPa
 	}
 	w.EmptyLine()
 	g.errorHandler(w.Indented(), api.Http.Errors)
-	w.EmptyLine()
-	g.responseHelpers(w.Indented())
 	w.Line(`}`)
 
 	files = append(files, sources.CodeFile{
@@ -114,7 +118,7 @@ func (g *MicronautGenerator) parseBody(w *sources.Writer, operation *spec.NamedO
 		w.Line(`try {`)
 		w.Line(`  %s = %s;`, bodyJsonVar, requestBody)
 		w.Line(`} catch (%s e) {`, exception)
-		w.Line(`  throw new BadRequestException(jacksonBodyBadRequestError(e));`)
+		w.Line(`  throw new BadRequestException(%s);`, g.Models.CreateBodyBadRequestError("e"))
 		w.Line(`}`)
 	}
 }
@@ -148,13 +152,17 @@ func (g *MicronautGenerator) processResponses(w *sources.Writer, operation *spec
 
 func (g *MicronautGenerator) processResponse(w *sources.Writer, response *spec.Response, bodyVar string) {
 	if response.BodyIs(spec.BodyEmpty) {
-		w.Line(`return responseEmpty(HttpStatus.%s);`, response.Name.UpperCase())
+		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
+		w.Line(`return HttpResponse.status(HttpStatus.%s);`, response.Name.UpperCase())
 	}
 	if response.BodyIs(spec.BodyString) {
-		w.Line(`return responseText(HttpStatus.%s, %s);`, response.Name.UpperCase(), bodyVar)
+		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
+		w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s).contentType("text/plain");`, response.Name.UpperCase(), bodyVar)
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`return responseJson(HttpStatus.%s, %s);`, response.Name.UpperCase(), bodyVar)
+		w.Line(`var bodyJson = %s;`, g.Models.WriteJsonNoCheckedException(bodyVar, &response.Type.Definition))
+		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
+		w.Line(`return HttpResponse.status(HttpStatus.%s).body(bodyJson).contentType("application/json");`, response.Name.UpperCase())
 	}
 }
 
@@ -166,39 +174,15 @@ func (g *MicronautGenerator) errorHandler(w *sources.Writer, errors spec.Respons
 	w.Line(`public HttpResponse<?> error(HttpRequest request, Throwable exception) {`)
 	w.Line(`  var notFoundError = getNotFoundError(exception);`)
 	w.Line(`  if (notFoundError != null) {`)
-	w.Line(`    return responseJson(HttpStatus.%s, %s);`, notFoundError.Name.UpperCase(), `notFoundError`)
+	g.processResponse(w.IndentedWith(2), notFoundError, "notFoundError")
 	w.Line(`  }`)
 	w.Line(`  var badRequestError = getBadRequestError(exception);`)
 	w.Line(`  if (badRequestError != null) {`)
-	w.Line(`    return responseJson(HttpStatus.%s, %s);`, badRequestError.Name.UpperCase(), `badRequestError`)
+	g.processResponse(w.IndentedWith(2), badRequestError, "badRequestError")
 	w.Line(`  }`)
 	w.Line(`  var internalServerError = new InternalServerError(exception.getMessage());`)
-	w.Line(`  return responseJson(HttpStatus.%s, %s);`, internalServerError.Name.UpperCase(), `internalServerError`)
+	g.processResponse(w.IndentedWith(2), internalServerError, "internalServerError")
 	w.Line(`}`)
-}
-
-func (g *MicronautGenerator) responseHelpers(w *sources.Writer) {
-	w.Lines(`
-private HttpResponse<?> responseEmpty(HttpStatus status) {
-  logger.info("Completed request with status code: {}", status);
-  return HttpResponse.status(status);
-}
-
-private HttpResponse<?> responseText(HttpStatus status, String body) {
-  logger.info("Completed request with status code: {}", HttpStatus.OK);
-  return HttpResponse.status(HttpStatus.OK).body(body).contentType("text/plain");
-}
-
-private HttpResponse<?> responseJson(HttpStatus status, Object body) {
-  try {
-    var bodyJson = objectMapper.writeValueAsString(body);
-    logger.info("Completed request with status code: {}", status);
-    return HttpResponse.status(status).body(bodyJson).contentType("application/json");
-  } catch (Exception e) {
-    throw new RuntimeException("Failed to serialize response body: "+e.getMessage(), e);
-  }
-}
-`)
 }
 
 func (g *MicronautGenerator) badRequestException(thePackage, modelsPackage packages.Module) *sources.CodeFile {
@@ -239,8 +223,6 @@ import io.micronaut.core.type.Argument;
 import io.micronaut.web.router.exceptions.*;
 
 import javax.validation.ConstraintViolationException;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import java.io.IOException;
 import java.util.List;
 
 import [[.ModelsPackage]].*;
@@ -296,34 +278,6 @@ public class ErrorsHelpers {
         var validation = new ValidationError(parameterName, code, errorMessage);
         var message = String.format("Failed to parse %s", location.name().toLowerCase());
         return new BadRequestError(message, location, List.of(validation));
-    }
-
-    private static String getJsonPath(InvalidFormatException exception) {
-        var path = new StringBuilder("");
-        for (int i = 0; i < exception.getPath().size(); i++) {
-            var reference = exception.getPath().get(i);
-            if (reference.getIndex() != -1) {
-                path.append("[").append(reference.getIndex()).append("]");
-            } else {
-                if (i != 0) {
-                    path.append(".");
-                }
-                path.append(reference.getFieldName());
-            }
-        }
-        return path.toString();
-    }
-
-    public static BadRequestError jacksonBodyBadRequestError(IOException exception) {
-        var location = ErrorLocation.BODY;
-        var message = "Failed to parse body";
-        List<ValidationError> errors = null;
-        if (exception instanceof InvalidFormatException) {
-            var jsonPath = getJsonPath((InvalidFormatException)exception);
-            var validation = new ValidationError(jsonPath, "parsing_failed", exception.getMessage());
-            errors = List.of(validation);
-        }
-        return new BadRequestError(message, location, errors);
     }
 
     public static BadRequestError getBadRequestError(Throwable exception) {

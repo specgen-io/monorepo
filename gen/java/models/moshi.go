@@ -34,7 +34,10 @@ func (g *MoshiGenerator) SetupImport(jsonPackage packages.Module) string {
 	return fmt.Sprintf(`static %s.Json.setupMoshiAdapters`, jsonPackage.PackageName)
 }
 
-func (g *MoshiGenerator) CreateJsonMapperField(w *sources.Writer) {
+func (g *MoshiGenerator) CreateJsonMapperField(w *sources.Writer, annotation string) {
+	if annotation != "" {
+		w.Line(annotation)
+	}
 	w.Line(`private Moshi moshi;`)
 }
 
@@ -72,6 +75,41 @@ func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, s
 	}
 
 	return fmt.Sprintf(`moshi.adapter(%s).toJson(%s)`, adapterParam, varData), `AssertionError`
+}
+
+func (g *MoshiGenerator) WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string {
+	statement, _ := g.WriteJson(varData, typ)
+	return statement
+}
+
+func (g *MoshiGenerator) GenerateBodyBadRequestErrorCreator(thePackage, modelsPackage packages.Module) *sources.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import java.util.*;
+import [[.ModelsPackage]];
+
+public class JsonErrorHelpers {
+	public static BadRequestError bodyBadRequestError(Exception exception) {
+		return new BadRequestError("Failed to parse body", ErrorLocation.BODY, null);
+	}
+}
+`
+	code, _ = sources.ExecuteTemplate(code, struct {
+		PackageName   string
+		ModelsPackage string
+	}{
+		thePackage.PackageName,
+		modelsPackage.PackageStar,
+	})
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath("JsonErrorHelpers.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func (g *MoshiGenerator) CreateBodyBadRequestError(exceptionVar string) string {
+	return fmt.Sprintf(`bodyBadRequestError(%s)`, exceptionVar)
 }
 
 func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []sources.CodeFile {

@@ -42,7 +42,7 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVers
 	w.Line(`  private static final Logger logger = LoggerFactory.getLogger(%s.class);`, className)
 	w.EmptyLine()
 	w.Line(`  private String baseUrl;`)
-	g.Models.CreateJsonMapperField(w.Indented())
+	g.Models.CreateJsonMapperField(w.Indented(), "")
 	w.Line(`  private OkHttpClient client;`)
 	w.EmptyLine()
 	w.Line(`  public %s(String baseUrl) {`, className)

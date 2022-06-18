@@ -34,8 +34,19 @@ func (g *JacksonGenerator) SetupImport(jsonPackage packages.Module) string {
 	return fmt.Sprintf(`static %s.Json.setupObjectMapper`, jsonPackage.PackageName)
 }
 
-func (g *JacksonGenerator) CreateJsonMapperField(w *sources.Writer) {
+func (g *JacksonGenerator) CreateJsonMapperField(w *sources.Writer, annotation string) {
+	if annotation != "" {
+		w.Line(annotation)
+	}
 	w.Line(`private ObjectMapper objectMapper;`)
+	w.EmptyLine()
+	w.Line(`private String writeJson(Object result) {`)
+	w.Line(`  try {`)
+	w.Line(`    return objectMapper.writeValueAsString(result);`)
+	w.Line(`  } catch (Exception exception) {`)
+	w.Line(`    throw new RuntimeException(exception);`)
+	w.Line(`  }`)
+	w.Line(`}`)
 }
 
 func (g *JacksonGenerator) InitJsonMapper(w *sources.Writer) {
@@ -48,11 +59,11 @@ func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, 
 }
 
 func (g *JacksonGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
-	return g.WriteJsonRaw(varData)
+	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `Exception`
 }
 
-func (g *JacksonGenerator) WriteJsonRaw(varData string) (string, string) {
-	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `Exception`
+func (g *JacksonGenerator) WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string {
+	return fmt.Sprintf(`writeJson(%s)`, varData)
 }
 
 func (g *JacksonGenerator) SetupLibrary(thePackage packages.Module) []sources.CodeFile {
@@ -78,6 +89,62 @@ public class Json {
 		Path:    thePackage.GetPath("Json.java"),
 		Content: strings.TrimSpace(code),
 	}}
+}
+
+func (g *JacksonGenerator) GenerateBodyBadRequestErrorCreator(thePackage, modelsPackage packages.Module) *sources.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import java.io.IOException;
+import java.util.*;
+import [[.ModelsPackage]];
+
+public class JsonErrorHelpers {
+	private static String getJsonPath(InvalidFormatException exception) {
+		var path = new StringBuilder("");
+		for (int i = 0; i < exception.getPath().size(); i++) {
+			var reference = exception.getPath().get(i);
+			if (reference.getIndex() != -1) {
+				path.append("[").append(reference.getIndex()).append("]");
+			} else {
+				if (i != 0) {
+					path.append(".");
+				}
+				path.append(reference.getFieldName());
+			}
+		}
+		return path.toString();
+	}
+	
+	public static BadRequestError bodyBadRequestError(IOException exception) {
+		var location = ErrorLocation.BODY;
+		var message = "Failed to parse body";
+		List<ValidationError> errors = null;
+		if (exception instanceof InvalidFormatException) {
+			var jsonPath = getJsonPath((InvalidFormatException)exception);
+			var validation = new ValidationError(jsonPath, "parsing_failed", exception.getMessage());
+			errors = List.of(validation);
+		}
+		return new BadRequestError(message, location, errors);
+	}
+}
+`
+	code, _ = sources.ExecuteTemplate(code, struct {
+		PackageName   string
+		ModelsPackage string
+	}{
+		thePackage.PackageName,
+		modelsPackage.PackageStar,
+	})
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath("JsonErrorHelpers.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func (g *JacksonGenerator) CreateBodyBadRequestError(exceptionVar string) string {
+	return fmt.Sprintf(`bodyBadRequestError(%s)`, exceptionVar)
 }
 
 func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []sources.CodeFile {
