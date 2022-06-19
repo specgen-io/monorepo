@@ -93,8 +93,9 @@ func (g *MoshiGenerator) GenerateJsonParseException(thePackage, modelsPackage pa
 	code := `
 package [[.PackageName]];
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import java.util.*;
+import java.util.regex.Pattern;
+import com.squareup.moshi.JsonDataException;
 import [[.ModelsPackage]];
 
 public class JsonParseException extends RuntimeException {
@@ -105,7 +106,21 @@ public class JsonParseException extends RuntimeException {
 
     public JsonParseException(Throwable exception) {
         super ("Failed to parse body: "+exception.getMessage(), exception);
-        this.errors = List.of();
+        this.errors = extractErrors(exception);
+    }
+
+    private static final Pattern pathPattern = Pattern.compile("\\$\\.([^ ]+)");
+    private static List<ValidationError> extractErrors(Throwable exception) {
+        List<ValidationError> errors = null;
+        if (exception instanceof JsonDataException) {
+            var e = (JsonDataException) exception;
+            var matcher = pathPattern.matcher(e.getMessage());
+            if (matcher.find()) {
+                var jsonPath = matcher.group(1);
+                errors = List.of(new ValidationError(jsonPath, "parsing_failed", exception.getMessage()));
+            }
+        }
+        return errors;
     }
 }
 `
