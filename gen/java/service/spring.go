@@ -50,7 +50,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api, apiPackage, jsonPacka
 	imports.Add(`org.springframework.web.bind.annotation.*`)
 	imports.Add(modelsVersionPackage.PackageStar)
 	imports.Add(serviceVersionPackage.PackageStar)
-	imports.Add(g.Models.JsonImports()...)
+	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Add(`static org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Write(w)

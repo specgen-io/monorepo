@@ -17,10 +17,10 @@ type Generator interface {
 	WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string
 	CreateJsonMapperField(w *sources.Writer, annotation string)
 	InitJsonMapper(w *sources.Writer)
-	JsonImports() []string
+	ModelsDefinitionsImports() []string
+	ModelsUsageImports() []string
 
-	GenerateBodyBadRequestErrorCreator(thePackage, modelsPackage packages.Module) *sources.CodeFile
-	CreateBodyBadRequestError(exceptionVar string) string
+	GenerateJsonParseException(thePackage, modelsPackage packages.Module) *sources.CodeFile
 }
 
 func NewGenerator(jsonlib string) Generator {

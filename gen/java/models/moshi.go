@@ -22,9 +22,16 @@ func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
 	return &MoshiGenerator{[]string{}, types}
 }
 
-func (g *MoshiGenerator) JsonImports() []string {
+func (g *MoshiGenerator) ModelsDefinitionsImports() []string {
 	return []string{
 		`com.squareup.moshi.Json`,
+		`com.squareup.moshi.Moshi`,
+		`com.squareup.moshi.Types`,
+	}
+}
+
+func (g *MoshiGenerator) ModelsUsageImports() []string {
+	return []string{
 		`com.squareup.moshi.Moshi`,
 		`com.squareup.moshi.Types`,
 	}
@@ -82,17 +89,24 @@ func (g *MoshiGenerator) WriteJsonNoCheckedException(varData string, typ *spec.T
 	return statement
 }
 
-func (g *MoshiGenerator) GenerateBodyBadRequestErrorCreator(thePackage, modelsPackage packages.Module) *sources.CodeFile {
+func (g *MoshiGenerator) GenerateJsonParseException(thePackage, modelsPackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import java.util.*;
 import [[.ModelsPackage]];
 
-public class JsonErrorHelpers {
-	public static BadRequestError bodyBadRequestError(Exception exception) {
-		return new BadRequestError("Failed to parse body", ErrorLocation.BODY, null);
-	}
+public class JsonParseException extends RuntimeException {
+    private List<ValidationError> errors;
+    public List<ValidationError> getErrors() {
+        return errors;
+    }
+
+    public JsonParseException(Throwable exception) {
+        super ("Failed to parse body: "+exception.getMessage(), exception);
+        this.errors = List.of();
+    }
 }
 `
 	code, _ = sources.ExecuteTemplate(code, struct {
@@ -103,13 +117,9 @@ public class JsonErrorHelpers {
 		modelsPackage.PackageStar,
 	})
 	return &sources.CodeFile{
-		Path:    thePackage.GetPath("JsonErrorHelpers.java"),
+		Path:    thePackage.GetPath("JsonParseException.java"),
 		Content: strings.TrimSpace(code),
 	}
-}
-
-func (g *MoshiGenerator) CreateBodyBadRequestError(exceptionVar string) string {
-	return fmt.Sprintf(`bodyBadRequestError(%s)`, exceptionVar)
 }
 
 func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []sources.CodeFile {
@@ -139,7 +149,7 @@ func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -185,7 +195,7 @@ func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.M
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -208,7 +218,7 @@ func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()

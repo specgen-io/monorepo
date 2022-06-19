@@ -39,17 +39,16 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPack
 	files = append(
 		files,
 		*g.errorsHelpers(thePackage, modelsVersionPackage),
-		*g.badRequestException(thePackage, modelsVersionPackage),
-		*g.Models.GenerateBodyBadRequestErrorCreator(thePackage, modelsVersionPackage),
+		*g.Models.GenerateJsonParseException(thePackage, modelsVersionPackage),
 	)
 	files = append(files, dateConverters(mainPackage)...)
 	return files
 }
 
-func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
+func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, apiPackage.PackageName)
+	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(`org.slf4j.*`)
@@ -60,11 +59,10 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPa
 	imports.Add(`io.micronaut.http.annotation.Error`)
 	imports.Add(`jakarta.inject.Inject`)
 
-	imports.AddStatic(apiPackage.Subpackage("ErrorsHelpers").PackageStar)
-	imports.AddStatic(apiPackage.Subpackage("JsonErrorHelpers").PackageStar)
+	imports.AddStatic(thePackage.Subpackage("ErrorsHelpers").PackageStar)
 	imports.Add(modelsVersionPackage.PackageStar)
 	imports.Add(serviceVersionPackage.PackageStar)
-	imports.Add(g.Models.JsonImports()...)
+	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -87,7 +85,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, jsonPa
 	w.Line(`}`)
 
 	files = append(files, sources.CodeFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", className)),
+		Path:    thePackage.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
 	})
 
@@ -117,8 +115,8 @@ func (g *MicronautGenerator) parseBody(w *sources.Writer, operation *spec.NamedO
 		w.Line(`%s %s;`, g.Types.Java(&operation.Body.Type.Definition), bodyJsonVar)
 		w.Line(`try {`)
 		w.Line(`  %s = %s;`, bodyJsonVar, requestBody)
-		w.Line(`} catch (%s e) {`, exception)
-		w.Line(`  throw new BadRequestException(%s);`, g.Models.CreateBodyBadRequestError("e"))
+		w.Line(`} catch (%s exception) {`, exception)
+		w.Line(`  throw new JsonParseException(exception);`)
 		w.Line(`}`)
 	}
 }
@@ -183,35 +181,6 @@ func (g *MicronautGenerator) errorHandler(w *sources.Writer, errors spec.Respons
 	w.Line(`  var internalServerError = new InternalServerError(exception.getMessage());`)
 	g.processResponse(w.IndentedWith(2), internalServerError, "internalServerError")
 	w.Line(`}`)
-}
-
-func (g *MicronautGenerator) badRequestException(thePackage, modelsPackage packages.Module) *sources.CodeFile {
-	code := `
-package [[.PackageName]];
-
-import [[.ModelsPackage]].BadRequestError;
-
-public class BadRequestException extends RuntimeException {
-    private BadRequestError error;
-    public BadRequestError getError() {
-        return error;
-    }
-
-    public BadRequestException(BadRequestError error) {
-        super (error.getMessage());
-        this.error = error;
-    }
-}
-`
-
-	code, _ = sources.ExecuteTemplate(code, struct {
-		PackageName   string
-		ModelsPackage string
-	}{thePackage.PackageName, modelsPackage.PackageName})
-	return &sources.CodeFile{
-		Path:    thePackage.GetPath("BadRequestException.java"),
-		Content: strings.TrimSpace(code),
-	}
 }
 
 func (g *MicronautGenerator) errorsHelpers(thePackage, modelsPackage packages.Module) *sources.CodeFile {
@@ -281,8 +250,9 @@ public class ErrorsHelpers {
     }
 
     public static BadRequestError getBadRequestError(Throwable exception) {
-        if (exception instanceof BadRequestException) {
-            return ((BadRequestException)exception).getError();
+        if (exception instanceof JsonParseException) {
+            var e = (JsonParseException) exception;
+            return new BadRequestError("Failed to parse body", ErrorLocation.BODY, e.getErrors());
         }
         if (exception instanceof UnsatisfiedRouteException) {
             var e = (UnsatisfiedRouteException) exception;
@@ -293,7 +263,7 @@ public class ErrorsHelpers {
             return argumentBadRequestError(e.getArgument(), e.getMessage(), "wrong_format");
         }
         if (exception instanceof ConstraintViolationException) {
-            var message = "Failed to parse params";
+            var message = "Failed to parse body";
             return new BadRequestError(message, ErrorLocation.BODY, null);
         }
         return null;

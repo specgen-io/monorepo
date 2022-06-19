@@ -21,11 +21,18 @@ func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 	return &JacksonGenerator{types}
 }
 
-func (g *JacksonGenerator) JsonImports() []string {
+func (g *JacksonGenerator) ModelsDefinitionsImports() []string {
 	return []string{
 		`com.fasterxml.jackson.databind.*`,
 		`com.fasterxml.jackson.annotation.*`,
 		`com.fasterxml.jackson.annotation.JsonSubTypes.*`,
+		`com.fasterxml.jackson.core.type.TypeReference`,
+	}
+}
+
+func (g *JacksonGenerator) ModelsUsageImports() []string {
+	return []string{
+		`com.fasterxml.jackson.databind.ObjectMapper`,
 		`com.fasterxml.jackson.core.type.TypeReference`,
 	}
 }
@@ -91,16 +98,37 @@ public class Json {
 	}}
 }
 
-func (g *JacksonGenerator) GenerateBodyBadRequestErrorCreator(thePackage, modelsPackage packages.Module) *sources.CodeFile {
+func (g *JacksonGenerator) GenerateJsonParseException(thePackage, modelsPackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import java.io.IOException;
 import java.util.*;
 import [[.ModelsPackage]];
 
-public class JsonErrorHelpers {
+public class JsonParseException extends RuntimeException {
+    private List<ValidationError> errors;
+    public List<ValidationError> getErrors() {
+        return errors;
+    }
+
+    public JsonParseException(Throwable exception) {
+        super ("Failed to parse body: "+exception.getMessage(), exception);
+        this.errors = extractErrors(exception);
+    }
+
+	private static List<ValidationError> extractErrors(Throwable exception) {
+		var location = ErrorLocation.BODY;
+		var message = "Failed to parse body";
+		List<ValidationError> errors = null;
+		if (exception instanceof InvalidFormatException) {
+			var jsonPath = getJsonPath((InvalidFormatException)exception);
+			var validation = new ValidationError(jsonPath, "parsing_failed", exception.getMessage());
+			errors = List.of(validation);
+		}
+		return errors;
+	}
+
 	private static String getJsonPath(InvalidFormatException exception) {
 		var path = new StringBuilder("");
 		for (int i = 0; i < exception.getPath().size(); i++) {
@@ -116,18 +144,6 @@ public class JsonErrorHelpers {
 		}
 		return path.toString();
 	}
-	
-	public static BadRequestError bodyBadRequestError(IOException exception) {
-		var location = ErrorLocation.BODY;
-		var message = "Failed to parse body";
-		List<ValidationError> errors = null;
-		if (exception instanceof InvalidFormatException) {
-			var jsonPath = getJsonPath((InvalidFormatException)exception);
-			var validation = new ValidationError(jsonPath, "parsing_failed", exception.getMessage());
-			errors = List.of(validation);
-		}
-		return new BadRequestError(message, location, errors);
-	}
 }
 `
 	code, _ = sources.ExecuteTemplate(code, struct {
@@ -138,13 +154,9 @@ public class JsonErrorHelpers {
 		modelsPackage.PackageStar,
 	})
 	return &sources.CodeFile{
-		Path:    thePackage.GetPath("JsonErrorHelpers.java"),
+		Path:    thePackage.GetPath("JsonParseException.java"),
 		Content: strings.TrimSpace(code),
 	}
-}
-
-func (g *JacksonGenerator) CreateBodyBadRequestError(exceptionVar string) string {
-	return fmt.Sprintf(`bodyBadRequestError(%s)`, exceptionVar)
 }
 
 func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []sources.CodeFile {
@@ -174,7 +186,7 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -234,7 +246,7 @@ func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -257,7 +269,7 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
