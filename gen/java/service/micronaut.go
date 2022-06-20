@@ -40,6 +40,7 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPack
 		files,
 		*g.errorsHelpers(thePackage, modelsVersionPackage),
 		*g.Models.GenerateJsonParseException(thePackage, modelsVersionPackage),
+		*g.contentTypeMismatchException(thePackage),
 	)
 	files = append(files, dateConverters(mainPackage)...)
 	return files
@@ -81,6 +82,8 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, jsonPa
 		g.controllerMethod(w.Indented(), &operation)
 	}
 	w.EmptyLine()
+	g.checkContentType(w.Indented())
+	w.EmptyLine()
 	g.errorHandler(w.Indented(), api.Http.Errors)
 	w.Line(`}`)
 
@@ -96,12 +99,21 @@ func (g *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`@Consumes(MediaType.TEXT_PLAIN)`)
 	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`@Consumes(MediaType.APPLICATION_JSON)`)
+	}
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%s("%s")`, casee.ToPascalCase(methodName), url)
-	w.Line(`public HttpResponse<?> %s(%s) {`, controllerMethodName(operation), joinParams(addMicronautMethodParams(operation, g.Types)))
+	w.Line(`public HttpResponse<?> %s(%s) {`, controllerMethodName(operation), strings.Join(micronautMethodParams(operation, g.Types), ", "))
 	w.Indent()
 	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`checkContentType(request, MediaType.TEXT_PLAIN);`)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`checkContentType(request, MediaType.APPLICATION_JSON);`)
+	}
 	g.parseBody(w, operation, "bodyStr", "requestBody")
 	g.serviceCall(w, operation, "bodyStr", "requestBody", "result")
 	g.processResponses(w, operation, "result")
@@ -164,6 +176,17 @@ func (g *MicronautGenerator) processResponse(w *sources.Writer, response *spec.R
 	}
 }
 
+func (g *MicronautGenerator) checkContentType(w *sources.Writer) {
+	w.Lines(`
+private void checkContentType(HttpRequest<?> request, String expectedContentType) {
+	var contentType = request.getHeaders().get("Content-Type");
+	if (contentType == null || !contentType.contains(expectedContentType)) {
+		throw new ContentTypeMismatchException(expectedContentType, contentType);
+	}
+}
+`)
+}
+
 func (g *MicronautGenerator) errorHandler(w *sources.Writer, errors spec.Responses) {
 	notFoundError := errors.GetByStatusName(spec.HttpStatusNotFound)
 	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)
@@ -179,14 +202,38 @@ func (g *MicronautGenerator) errorHandler(w *sources.Writer, errors spec.Respons
 	g.processResponse(w.IndentedWith(2), badRequestError, "badRequestError")
 	w.Line(`  }`)
 	w.Line(`  var internalServerError = new InternalServerError(exception.getMessage());`)
-	g.processResponse(w.IndentedWith(2), internalServerError, "internalServerError")
+	g.processResponse(w.IndentedWith(1), internalServerError, "internalServerError")
 	w.Line(`}`)
+}
+
+func (g *MicronautGenerator) contentTypeMismatchException(thePackage packages.Module) *sources.CodeFile {
+	code := `
+package [[.PackageName]];
+
+public class ContentTypeMismatchException extends RuntimeException {
+    String expected;
+    String actual;
+    public ContentTypeMismatchException(String expected, String actual) {
+        super(String.format("Expected Content-Type header: '%s' was not provided, found: '%s'", expected, actual));
+    }
+}
+`
+	code, _ = sources.ExecuteTemplate(code, struct {
+		PackageName string
+	}{
+		thePackage.PackageName,
+	})
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath("ContentTypeMismatchException.java"),
+		Content: strings.TrimSpace(code),
+	}
 }
 
 func (g *MicronautGenerator) errorsHelpers(thePackage, modelsPackage packages.Module) *sources.CodeFile {
 	code := `
 package [[.PackageName]];
 
+import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.convert.exceptions.ConversionErrorException;
 import io.micronaut.core.type.Argument;
 import io.micronaut.web.router.exceptions.*;
@@ -222,7 +269,7 @@ public class ErrorsHelpers {
             var parameterName = query.get().getValues().get("value");
             return ErrorLocation.QUERY;
         }
-        var header = argument.getAnnotationMetadata().findDeclaredAnnotation("io.micronaut.http.annotation.Header");
+        var header = argument.getAnnotationMetadata().findDeclaredAnnotation("io.micronaut.http.annotation.Headers");
         if (header.isPresent()) {
             return ErrorLocation.HEADER;
         }
@@ -234,9 +281,10 @@ public class ErrorsHelpers {
         if (query.isPresent()) {
             return query.get().getValues().get("value").toString();
         }
-        var header = argument.getAnnotationMetadata().findDeclaredAnnotation("io.micronaut.http.annotation.Header");
+        var header = argument.getAnnotationMetadata().findDeclaredAnnotation("io.micronaut.http.annotation.Headers");
         if (header.isPresent()) {
-            return header.get().getValues().get("value").toString();
+            var annotationValues = (AnnotationValue[]) header.get().getValues().get("value");
+            return annotationValues[0].getValues().get("value").toString();
         }
         return "unknown";
     }
@@ -254,13 +302,18 @@ public class ErrorsHelpers {
             var e = (JsonParseException) exception;
             return new BadRequestError("Failed to parse body", ErrorLocation.BODY, e.getErrors());
         }
+        if (exception instanceof ContentTypeMismatchException) {
+            var error = new ValidationError("Content-Type", "missing", exception.getMessage());
+            return new BadRequestError("Failed to parse header", ErrorLocation.HEADER, List.of(error));
+
+        }
         if (exception instanceof UnsatisfiedRouteException) {
             var e = (UnsatisfiedRouteException) exception;
             return argumentBadRequestError(e.getArgument(), e.getMessage(), "missing");
         }
         if (exception instanceof ConversionErrorException) {
             var e = (ConversionErrorException) exception;
-            return argumentBadRequestError(e.getArgument(), e.getMessage(), "wrong_format");
+            return argumentBadRequestError(e.getArgument(), e.getMessage(), "parsing_failed");
         }
         if (exception instanceof ConstraintViolationException) {
             var message = "Failed to parse body";
@@ -281,8 +334,8 @@ public class ErrorsHelpers {
 	}
 }
 
-func addMicronautMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
-	methodParams := []string{}
+func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
+	methodParams := []string{"HttpRequest<?> request"}
 
 	if operation.Body != nil {
 		methodParams = append(methodParams, "@Body String bodyStr")
