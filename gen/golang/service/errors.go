@@ -31,6 +31,25 @@ func generateErrors(w *sources.Writer, version *spec.Version) {
 	w.Line(`_ = respondInternalServerError`)
 }
 
+func generateCheckContentType(w *sources.Writer) {
+	w.Lines(`
+checkContentType := func(logFields log.Fields, expectedContentType string, req *http.Request, res http.ResponseWriter) bool {
+	contentType := req.Header.Get("Content-Type")
+	if !strings.Contains(contentType, expectedContentType) {
+		message := fmt.Sprintf("Expected Content-Type header: '%s' was not provided, found: '%s'", expectedContentType, contentType)
+		respondBadRequest(logFields, res, &models.BadRequestError{Location: "header", Message: "Failed to parse header", Errors: []models.ValidationError{{Path: "Content-Type", Code: "missing", Message: &message}}})
+		return false
+	}
+	return true
+}
+_ = checkContentType
+`)
+}
+
+func callCheckContentType(logFieldsVar, expectedContentType, requestVar, responseVar string) string {
+	return fmt.Sprintf(`checkContentType(%s, %s, %s, %s)`, logFieldsVar, expectedContentType, requestVar, responseVar)
+}
+
 func respondNotFound(w *sources.Writer, operation *spec.NamedOperation, message string) {
 	badRequest := operation.Api.Http.Errors.GetByStatusName(spec.HttpStatusNotFound)
 	error := fmt.Sprintf(`%s{Message: %s}`, types.GoType(&badRequest.Type.Definition), message)

@@ -56,6 +56,8 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 	w.Line(`func %s {`, signatureAddRouting(api))
 	w.Indent()
 	generateErrors(w, api.Http.Version)
+	w.EmptyLine()
+	generateCheckContentType(w)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		url := getEndpointUrl(&operation)
@@ -215,28 +217,30 @@ func generateReponse(w *sources.Writer, operation *spec.NamedOperation, response
 
 func generateBodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
-		checkRequestContentType(w, operation, "text/plain")
+		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"text/plain"`, "req", "res"))
+		w.Line(`  return`)
+		w.Line(`}`)
 		w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
 		w.Line(`if err != nil {`)
-		respondBadRequest(w.Indented(), operation, "body", genFmtSprintf(`Reading request body failed: %s`, `err.Error()`), "[]models.ValidationError{}")
+		respondBadRequest(w.Indented(), operation, "body", genFmtSprintf(`Reading request body failed: %s`, `err.Error()`), "nil")
 		w.Line(`}`)
 		w.Line(`body := string(bodyData)`)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		checkRequestContentType(w, operation, "application/json")
+		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"application/json"`, "req", "res"))
+		w.Line(`  return`)
+		w.Line(`}`)
 		w.Line(`var body %s`, types.GoType(&operation.Body.Type.Definition))
 		w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
 		w.Line(`if err != nil {`)
-		respondBadRequest(w.Indented(), operation, "body", `"Failed to parse body"`, "[]models.ValidationError{}")
+		w.Line(`  var errors []models.ValidationError = nil`)
+		w.Line(`  if unmarshalError, ok := err.(*json.UnmarshalTypeError); ok {`)
+		w.Line(`    message := %s`, genFmtSprintf("Failed to parse JSON, field: %s", "unmarshalError.Field"))
+		w.Line(`    errors = []models.ValidationError{{Path: unmarshalError.Field, Code: "parsing_failed", Message: &message}}`)
+		w.Line(`  }`)
+		respondBadRequest(w.Indented(), operation, "body", `"Failed to parse body"`, "errors")
 		w.Line(`}`)
 	}
-}
-
-func checkRequestContentType(w *sources.Writer, operation *spec.NamedOperation, contentType string) {
-	w.Line(`contentType := req.Header.Get("Content-Type")`)
-	w.Line(`if !strings.Contains(contentType, "%s") {`, contentType)
-	respondBadRequest(w.Indented(), operation, "header", genFmtSprintf("Wrong Content-type: %s", "contentType"), "[]models.ValidationError{}")
-	w.Line(`}`)
 }
 
 func serviceCall(serviceVar string, operation *spec.NamedOperation) string {
