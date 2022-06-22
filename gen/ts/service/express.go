@@ -252,14 +252,17 @@ const respondBadRequest = (response: Response, error: models.BadRequestError) =>
 
 const assertContentType = (request: Request, response: Response, contentType: string): boolean => {
   if (!request.is(contentType)) {
-    const message = 'Expected Content-Type header: ${contentType}'
-    const errors = [{path: "Content-Type", code: "wrong_value", message}]
-    const error = {message, location: models.ErrorLocation.HEADER, errors}
+    const error = {
+      message: "Failed to parse header", 
+      location: models.ErrorLocation.HEADER,
+      errors: [{path: "Content-Type", code: "missing", message: 'Expected Content-Type header: ${contentType}'}]
+    }
     respondBadRequest(response, error)
     return false
   }
   return true
 }
 `
+	code = strings.Replace(code, "'", "`", -1)
 	w.Lines(strings.Replace(code, "'", "`", -1))
 }
