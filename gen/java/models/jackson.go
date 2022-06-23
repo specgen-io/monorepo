@@ -118,15 +118,12 @@ public class JsonParseException extends RuntimeException {
     }
 
 	private static List<ValidationError> extractErrors(Throwable exception) {
-		var location = ErrorLocation.BODY;
-		var message = "Failed to parse body";
-		List<ValidationError> errors = null;
 		if (exception instanceof InvalidFormatException) {
 			var jsonPath = getJsonPath((InvalidFormatException)exception);
 			var validation = new ValidationError(jsonPath, "parsing_failed", exception.getMessage());
-			errors = List.of(validation);
+			return List.of(validation);
 		}
-		return errors;
+		return null;
 	}
 
 	private static String getJsonPath(InvalidFormatException exception) {
