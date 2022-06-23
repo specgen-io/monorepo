@@ -108,12 +108,6 @@ func (g *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec
 	w.Line(`public HttpResponse<?> %s(%s) {`, controllerMethodName(operation), strings.Join(micronautMethodParams(operation, g.Types), ", "))
 	w.Indent()
 	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
-	if operation.BodyIs(spec.BodyString) {
-		w.Line(`checkContentType(request, MediaType.TEXT_PLAIN);`)
-	}
-	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`checkContentType(request, MediaType.APPLICATION_JSON);`)
-	}
 	g.parseBody(w, operation, "bodyStr", "requestBody")
 	g.serviceCall(w, operation, "bodyStr", "requestBody", "result")
 	g.processResponses(w, operation, "result")
@@ -122,7 +116,11 @@ func (g *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec
 }
 
 func (g *MicronautGenerator) parseBody(w *sources.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`checkContentType(request, MediaType.TEXT_PLAIN);`)
+	}
 	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`checkContentType(request, MediaType.APPLICATION_JSON);`)
 		requestBody, exception := g.Models.ReadJson(bodyStringVar, &operation.Body.Type.Definition)
 		w.Line(`%s %s;`, g.Types.Java(&operation.Body.Type.Definition), bodyJsonVar)
 		w.Line(`try {`)
@@ -133,26 +131,26 @@ func (g *MicronautGenerator) parseBody(w *sources.Writer, operation *spec.NamedO
 	}
 }
 
-func (g *MicronautGenerator) serviceCall(w *sources.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, responseVarName string) {
+func (g *MicronautGenerator) serviceCall(w *sources.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar)))
 	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
 		w.Line(`%s;`, serviceCall)
 	} else {
-		w.Line(`var %s = %s;`, responseVarName, serviceCall)
-		w.Line(`if (%s == null) {`, responseVarName)
+		w.Line(`var %s = %s;`, resultVarName, serviceCall)
+		w.Line(`if (%s == null) {`, resultVarName)
 		w.Line(`  throw new RuntimeException("Service implementation didn't return any value'");`)
 		w.Line(`}`)
 	}
 }
 
-func (g *MicronautGenerator) processResponses(w *sources.Writer, operation *spec.NamedOperation, responseVarName string) {
+func (g *MicronautGenerator) processResponses(w *sources.Writer, operation *spec.NamedOperation, resultVarName string) {
 	if len(operation.Responses) == 1 {
-		g.processResponse(w, &operation.Responses[0].Response, "result")
+		g.processResponse(w, &operation.Responses[0].Response, resultVarName)
 	}
 	if len(operation.Responses) > 1 {
 		for _, response := range operation.Responses {
-			w.Line(`if (%s instanceof %s.%s) {`, responseVarName, responses.InterfaceName(operation), response.Name.PascalCase())
-			g.processResponse(w.Indented(), &response.Response, responses.GetBody(&response, responseVarName))
+			w.Line(`if (%s instanceof %s.%s) {`, resultVarName, responses.InterfaceName(operation), response.Name.PascalCase())
+			g.processResponse(w.Indented(), &response.Response, responses.GetBody(&response, resultVarName))
 			w.Line(`}`)
 		}
 		w.EmptyLine()
