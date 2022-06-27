@@ -15,6 +15,13 @@ func (self *imports) Add(imports ...string) *imports {
 	return self
 }
 
+func (self *imports) AddStatic(imports ...string) *imports {
+	for _, i := range imports {
+		self.imports = append(self.imports, "static "+i)
+	}
+	return self
+}
+
 func (self *imports) Write(w *sources.Writer) {
 	for _, imp := range self.imports {
 		w.Line(`import %s;`, imp)

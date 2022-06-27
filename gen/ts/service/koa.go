@@ -186,7 +186,7 @@ func (g *koaGenerator) headerParsing(w *sources.Writer, operation *spec.NamedOpe
 	if len(operation.HeaderParams) > 0 {
 		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(ctx.req.rawHeaders))", headersRuntimeType(operation))
 		w.Line("if (headerParamsDecode.error) {")
-		g.respondBadRequest(w.Indented(), operation, "HEADER", "headerParamsDecode.error", "Failed to parse header parameters")
+		g.respondBadRequest(w.Indented(), operation, "HEADER", "headerParamsDecode.error", "Failed to parse header")
 		w.Line("}")
 		w.Line("const headerParams = headerParamsDecode.value")
 	}
@@ -196,7 +196,7 @@ func (g *koaGenerator) queryParsing(w *sources.Writer, operation *spec.NamedOper
 	if len(operation.QueryParams) > 0 {
 		w.Line("const queryParamsDecode = t.decodeR(%s, ctx.request.query)", queryRuntimeType(operation))
 		w.Line("if (queryParamsDecode.error) {")
-		g.respondBadRequest(w.Indented(), operation, "QUERY", "queryParamsDecode.error", "Failed to parse query parameters")
+		g.respondBadRequest(w.Indented(), operation, "QUERY", "queryParamsDecode.error", "Failed to parse query")
 		w.Line("}")
 		w.Line("const queryParams = queryParamsDecode.value")
 	}
@@ -209,7 +209,7 @@ func (g *koaGenerator) bodyParsing(w *sources.Writer, operation *spec.NamedOpera
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line("const bodyDecode = t.decodeR(%s, ctx.request.body)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
-		g.respondBadRequest(w.Indented(), operation, "BODY", "bodyDecode.error", "Failed to parse body JSON")
+		g.respondBadRequest(w.Indented(), operation, "BODY", "bodyDecode.error", "Failed to parse body")
 		w.Line("}")
 		w.Line("const body = bodyDecode.value")
 	}
@@ -252,11 +252,10 @@ const respondBadRequest = (ctx: ExtendableContext, error: models.BadRequestError
 
 const assertContentType = (ctx: ExtendableContext, contentType: string): boolean => {
   if (ctx.request.type != contentType) {
-    const message = 'Expected Content-Type header: ${contentType}'
     const error = {
-      message, 
+      message: "Failed to parse header", 
       location: models.ErrorLocation.HEADER,
-      errors: [{path: "Content-Type", code: "wrong_value", message}]
+      errors: [{path: "Content-Type", code: "missing", message: "Expected Content-Type header: ${contentType}"}]
     }
     respondBadRequest(ctx, error)
     return false

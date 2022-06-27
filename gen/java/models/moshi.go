@@ -22,9 +22,16 @@ func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
 	return &MoshiGenerator{[]string{}, types}
 }
 
-func (g *MoshiGenerator) JsonImports() []string {
+func (g *MoshiGenerator) ModelsDefinitionsImports() []string {
 	return []string{
 		`com.squareup.moshi.Json`,
+		`com.squareup.moshi.Moshi`,
+		`com.squareup.moshi.Types`,
+	}
+}
+
+func (g *MoshiGenerator) ModelsUsageImports() []string {
+	return []string{
 		`com.squareup.moshi.Moshi`,
 		`com.squareup.moshi.Types`,
 	}
@@ -34,7 +41,10 @@ func (g *MoshiGenerator) SetupImport(jsonPackage packages.Module) string {
 	return fmt.Sprintf(`static %s.Json.setupMoshiAdapters`, jsonPackage.PackageName)
 }
 
-func (g *MoshiGenerator) CreateJsonMapperField(w *sources.Writer) {
+func (g *MoshiGenerator) CreateJsonMapperField(w *sources.Writer, annotation string) {
+	if annotation != "" {
+		w.Line(annotation)
+	}
 	w.Line(`private Moshi moshi;`)
 }
 
@@ -74,6 +84,58 @@ func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, s
 	return fmt.Sprintf(`moshi.adapter(%s).toJson(%s)`, adapterParam, varData), `AssertionError`
 }
 
+func (g *MoshiGenerator) WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string {
+	statement, _ := g.WriteJson(varData, typ)
+	return statement
+}
+
+func (g *MoshiGenerator) GenerateJsonParseException(thePackage, modelsPackage packages.Module) *sources.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import java.util.*;
+import java.util.regex.Pattern;
+import com.squareup.moshi.JsonDataException;
+import [[.ModelsPackage]];
+
+public class JsonParseException extends RuntimeException {
+    private List<ValidationError> errors;
+    public List<ValidationError> getErrors() {
+        return errors;
+    }
+
+    public JsonParseException(Throwable exception) {
+        super ("Failed to parse body: "+exception.getMessage(), exception);
+        this.errors = extractErrors(exception);
+    }
+
+    private static final Pattern pathPattern = Pattern.compile("\\$\\.([^ ]+)");
+    private static List<ValidationError> extractErrors(Throwable exception) {
+        if (exception instanceof JsonDataException) {
+            var e = (JsonDataException) exception;
+            var matcher = pathPattern.matcher(e.getMessage());
+            if (matcher.find()) {
+                var jsonPath = matcher.group(1);
+                return List.of(new ValidationError(jsonPath, "parsing_failed", exception.getMessage()));
+            }
+        }
+        return null;
+    }
+}
+`
+	code, _ = sources.ExecuteTemplate(code, struct {
+		PackageName   string
+		ModelsPackage string
+	}{
+		thePackage.PackageName,
+		modelsPackage.PackageStar,
+	})
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath("JsonParseException.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
 func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []sources.CodeFile {
 	files := []sources.CodeFile{}
 
@@ -101,7 +163,7 @@ func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -147,7 +209,7 @@ func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.M
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -170,7 +232,7 @@ func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
