@@ -425,14 +425,6 @@ workflows:
           context: specgen
           requires:
             - build-complete
-      - circleci/start-pipeline:
-          name: generated-code
-          repository: specgen-io/generated-code
-          branch: main
-          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
-          context: specgen
-          requires:
-            - build-complete
       - approve-release:
           type: approval
           requires:
