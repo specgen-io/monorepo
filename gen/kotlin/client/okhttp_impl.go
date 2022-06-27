@@ -27,7 +27,7 @@ func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersi
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.Models.JsonImports()...)
+	imports.Add(g.Models.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Add(`okhttp3.*`)
 	imports.Add(`okhttp3.MediaType.Companion.toMediaTypeOrNull`)

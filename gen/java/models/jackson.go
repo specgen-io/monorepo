@@ -21,7 +21,7 @@ func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 	return &JacksonGenerator{types}
 }
 
-func (g *JacksonGenerator) JsonImports() []string {
+func (g *JacksonGenerator) ModelsDefinitionsImports() []string {
 	return []string{
 		`com.fasterxml.jackson.databind.*`,
 		`com.fasterxml.jackson.annotation.*`,
@@ -30,12 +30,30 @@ func (g *JacksonGenerator) JsonImports() []string {
 	}
 }
 
+func (g *JacksonGenerator) ModelsUsageImports() []string {
+	return []string{
+		`com.fasterxml.jackson.databind.ObjectMapper`,
+		`com.fasterxml.jackson.core.type.TypeReference`,
+	}
+}
+
 func (g *JacksonGenerator) SetupImport(jsonPackage packages.Module) string {
 	return fmt.Sprintf(`static %s.Json.setupObjectMapper`, jsonPackage.PackageName)
 }
 
-func (g *JacksonGenerator) CreateJsonMapperField(w *sources.Writer) {
+func (g *JacksonGenerator) CreateJsonMapperField(w *sources.Writer, annotation string) {
+	if annotation != "" {
+		w.Line(annotation)
+	}
 	w.Line(`private ObjectMapper objectMapper;`)
+	w.EmptyLine()
+	w.Line(`private String writeJson(Object result) {`)
+	w.Line(`  try {`)
+	w.Line(`    return objectMapper.writeValueAsString(result);`)
+	w.Line(`  } catch (Exception exception) {`)
+	w.Line(`    throw new RuntimeException(exception);`)
+	w.Line(`  }`)
+	w.Line(`}`)
 }
 
 func (g *JacksonGenerator) InitJsonMapper(w *sources.Writer) {
@@ -49,6 +67,10 @@ func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, 
 
 func (g *JacksonGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
 	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `Exception`
+}
+
+func (g *JacksonGenerator) WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string {
+	return fmt.Sprintf(`writeJson(%s)`, varData)
 }
 
 func (g *JacksonGenerator) SetupLibrary(thePackage packages.Module) []sources.CodeFile {
@@ -74,6 +96,64 @@ public class Json {
 		Path:    thePackage.GetPath("Json.java"),
 		Content: strings.TrimSpace(code),
 	}}
+}
+
+func (g *JacksonGenerator) GenerateJsonParseException(thePackage, modelsPackage packages.Module) *sources.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import java.util.*;
+import [[.ModelsPackage]];
+
+public class JsonParseException extends RuntimeException {
+    private List<ValidationError> errors;
+    public List<ValidationError> getErrors() {
+        return errors;
+    }
+
+    public JsonParseException(Throwable exception) {
+        super ("Failed to parse body: "+exception.getMessage(), exception);
+        this.errors = extractErrors(exception);
+    }
+
+	private static List<ValidationError> extractErrors(Throwable exception) {
+		if (exception instanceof InvalidFormatException) {
+			var jsonPath = getJsonPath((InvalidFormatException)exception);
+			var validation = new ValidationError(jsonPath, "parsing_failed", exception.getMessage());
+			return List.of(validation);
+		}
+		return null;
+	}
+
+	private static String getJsonPath(InvalidFormatException exception) {
+		var path = new StringBuilder("");
+		for (int i = 0; i < exception.getPath().size(); i++) {
+			var reference = exception.getPath().get(i);
+			if (reference.getIndex() != -1) {
+				path.append("[").append(reference.getIndex()).append("]");
+			} else {
+				if (i != 0) {
+					path.append(".");
+				}
+				path.append(reference.getFieldName());
+			}
+		}
+		return path.toString();
+	}
+}
+`
+	code, _ = sources.ExecuteTemplate(code, struct {
+		PackageName   string
+		ModelsPackage string
+	}{
+		thePackage.PackageName,
+		modelsPackage.PackageStar,
+	})
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath("JsonParseException.java"),
+		Content: strings.TrimSpace(code),
+	}
 }
 
 func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []sources.CodeFile {
@@ -103,7 +183,7 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -163,7 +243,7 @@ func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -186,7 +266,7 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()

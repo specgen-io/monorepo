@@ -22,7 +22,13 @@ func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
 	return &MoshiGenerator{[]string{}, types}
 }
 
-func (g *MoshiGenerator) JsonImports() []string {
+func (g *MoshiGenerator) ModelsDefinitionsImports() []string {
+	return []string{
+		`com.squareup.moshi.*`,
+	}
+}
+
+func (g *MoshiGenerator) ModelsUsageImports() []string {
 	return []string{
 		`com.squareup.moshi.*`,
 	}
@@ -53,7 +59,7 @@ func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, st
 		adapter = fmt.Sprintf(`adapter<List<%s>>(Types.newParameterizedType(List::class.java, %s::class.java))`, typeJava, typeJava)
 	}
 
-	return fmt.Sprintf(`moshi.%s.fromJson(%s)`, adapter, varJson), `JsonDataException`
+	return fmt.Sprintf(`moshi.%s.fromJson(%s)!!`, adapter, varJson), `JsonDataException`
 
 }
 
@@ -72,12 +78,56 @@ func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, s
 
 }
 
+func (g *MoshiGenerator) GenerateJsonParseException(thePackage, modelsPackage modules.Module) *sources.CodeFile {
+	code := `
+package [[.PackageName]]
+
+import com.squareup.moshi.JsonDataException
+import java.util.regex.Pattern
+import [[.ModelsPackage]]
+
+class JsonParseException(exception: Throwable) :
+    RuntimeException("Failed to parse body: " + exception.message, exception) {
+    val errors: List<ValidationError>?
+
+    init {
+        errors = extractErrors(exception)
+    }
+
+    companion object {
+        private val pathPattern = Pattern.compile("\\$\\.([^ ]+)")
+        private fun extractErrors(exception: Throwable): List<ValidationError>? {
+            if (exception is JsonDataException) {
+                val matcher = pathPattern.matcher(exception.message)
+                if (matcher.find()) {
+                    val jsonPath = matcher.group(1)
+                    return listOf(ValidationError(jsonPath, "parsing_failed", exception.message))
+                }
+            }
+            return null
+        }
+    }
+}
+`
+	code, _ = sources.ExecuteTemplate(code, struct {
+		PackageName   string
+		ModelsPackage string
+	}{
+		thePackage.PackageName,
+		modelsPackage.PackageStar,
+	})
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath("JsonParseException.kt"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
 func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage modules.Module, jsonPackage modules.Module) []sources.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 

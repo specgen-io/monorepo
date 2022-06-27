@@ -16,7 +16,10 @@ type Generator interface {
 	WriteJson(varData string, typ *spec.TypeDef) (string, string)
 	CreateJsonMapperField() string
 	InitJsonMapper(w *sources.Writer)
-	JsonImports() []string
+	ModelsDefinitionsImports() []string
+	ModelsUsageImports() []string
+
+	GenerateJsonParseException(thePackage, modelsPackage modules.Module) *sources.CodeFile
 }
 
 func NewGenerator(jsonlib string) Generator {

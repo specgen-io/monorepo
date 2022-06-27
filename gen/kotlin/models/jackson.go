@@ -21,7 +21,7 @@ func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 	return &JacksonGenerator{types}
 }
 
-func (g *JacksonGenerator) JsonImports() []string {
+func (g *JacksonGenerator) ModelsDefinitionsImports() []string {
 	return []string{
 		`com.fasterxml.jackson.databind.*`,
 		`com.fasterxml.jackson.annotation.*`,
@@ -29,6 +29,13 @@ func (g *JacksonGenerator) JsonImports() []string {
 		`com.fasterxml.jackson.core.type.*`,
 		`com.fasterxml.jackson.core.JsonProcessingException`,
 		`com.fasterxml.jackson.module.kotlin.jacksonObjectMapper`,
+	}
+}
+
+func (g *JacksonGenerator) ModelsUsageImports() []string {
+	return []string{
+		`com.fasterxml.jackson.databind.*`,
+		`com.fasterxml.jackson.core.type.*`,
 	}
 }
 
@@ -80,12 +87,68 @@ fun setupObjectMapper(objectMapper: ObjectMapper): ObjectMapper {
 	return files
 }
 
+func (g *JacksonGenerator) GenerateJsonParseException(thePackage, modelsPackage modules.Module) *sources.CodeFile {
+	code := `
+package [[.PackageName]]
+
+import com.fasterxml.jackson.databind.exc.InvalidFormatException
+import [[.ModelsPackage]]
+
+class JsonParseException(exception: Throwable) :
+    RuntimeException("Failed to parse body: " + exception.message, exception) {
+    val errors: List<ValidationError>?
+
+    init {
+        errors = extractErrors(exception)
+    }
+
+    companion object {
+        private fun extractErrors(exception: Throwable): List<ValidationError>? {
+            if (exception is InvalidFormatException) {
+                val jsonPath = getJsonPath(exception)
+                val validation = ValidationError(jsonPath, "parsing_failed", exception.message)
+                return listOf(validation)
+            }
+            return null
+        }
+
+        private fun getJsonPath(exception: InvalidFormatException): String {
+            val path = StringBuilder("")
+            for (i in exception.path.indices) {
+                val reference = exception.path[i]
+                if (reference.index != -1) {
+                    path.append("[").append(reference.index).append("]")
+                } else {
+                    if (i != 0) {
+                        path.append(".")
+                    }
+                    path.append(reference.fieldName)
+                }
+            }
+            return path.toString()
+        }
+    }
+}
+`
+	code, _ = sources.ExecuteTemplate(code, struct {
+		PackageName   string
+		ModelsPackage string
+	}{
+		thePackage.PackageName,
+		modelsPackage.PackageStar,
+	})
+	return &sources.CodeFile{
+		Path:    thePackage.GetPath("JsonParseException.kt"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
 func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage modules.Module, jsonPackage modules.Module) []sources.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.JsonImports()...)
+	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 
