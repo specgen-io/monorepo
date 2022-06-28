@@ -1,11 +1,11 @@
 package scala
 
 import (
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
 )
 
-func generateStringParams(thepackage Package) *sources.CodeFile {
+func generateStringParams(thepackage Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -130,8 +130,8 @@ object ParamsTypesBindings {
     }
   }
 }`
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thepackage.GetPath("StringParams.scala"),
 		Content: strings.TrimSpace(code)}
 }

@@ -2,7 +2,7 @@ package imports
 
 import (
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"sort"
 )
@@ -25,7 +25,7 @@ func (self *imports) AddAlias(theImport string, alias string) *imports {
 	return self
 }
 
-func (self *imports) Write(w *sources.Writer) {
+func (self *imports) Write(w *generator.Writer) {
 	if len(self.imports) > 0 {
 		imports := make([]string, 0, len(self.imports))
 		for theImport := range self.imports {

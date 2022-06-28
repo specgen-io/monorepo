@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"github.com/specgen-io/specgen/v2/console"
 	"github.com/specgen-io/specgen/v2/fail"
 	"github.com/specgen-io/specgen/v2/gen"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/spf13/cobra"
 	"strings"
 )
@@ -13,13 +15,13 @@ func init() {
 	}
 }
 
-func generatorCommand(generator *gen.Generator) *cobra.Command {
+func generatorCommand(g *generator.Generator) *cobra.Command {
 	command := &cobra.Command{
-		Use:   generator.Name,
-		Short: generator.Usage,
+		Use:   g.Name,
+		Short: g.Usage,
 		Run: func(cmd *cobra.Command, args []string) {
-			params := map[gen.Arg]string{}
-			for _, arg := range generator.Args {
+			params := generator.GeneratorArgsValues{}
+			for _, arg := range g.Args {
 				value, err := cmd.Flags().GetString(arg.Name)
 				fail.IfError(err)
 				if arg.Values != nil {
@@ -29,13 +31,19 @@ func generatorCommand(generator *gen.Generator) *cobra.Command {
 				}
 				params[arg.Arg] = value
 			}
-			specification := readSpecFile(params[gen.ArgSpecFile])
-			sources := generator.Generator(specification, params)
-			err := sources.Write(false)
+			specification := readSpecFile(params[generator.ArgSpecFile])
+			sources := g.Generator(specification, params)
+			err := sources.Write(false, func(wrote bool, fullpath string) {
+				if wrote {
+					console.PrintLn("Writing:", fullpath)
+				} else {
+					console.PrintLn("Skipping:", fullpath)
+				}
+			})
 			fail.IfErrorF(err, "Failed to write source code")
 		},
 	}
-	for _, arg := range generator.Args {
+	for _, arg := range g.Args {
 		description := arg.Description
 		if arg.Values != nil {
 			description += "; allowed values: " + strings.Join(arg.Values, ", ")

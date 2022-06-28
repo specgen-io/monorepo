@@ -2,12 +2,12 @@ package client
 
 import (
 	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
 )
 
-func generateUtils(thePackage modules.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func generateUtils(thePackage modules.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 
 	files = append(files, *generateRequestBuilder(thePackage))
 	files = append(files, *generateUrlBuilder(thePackage))
@@ -15,7 +15,7 @@ func generateUtils(thePackage modules.Module) []sources.CodeFile {
 	return files
 }
 
-func generateRequestBuilder(thePackage modules.Module) *sources.CodeFile {
+func generateRequestBuilder(thePackage modules.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -47,14 +47,14 @@ class RequestBuilder(method: String, url: HttpUrl, body: RequestBody?) {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("RequestBuilder.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func generateUrlBuilder(thePackage modules.Module) *sources.CodeFile {
+func generateUrlBuilder(thePackage modules.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -98,8 +98,8 @@ class UrlBuilder(baseUrl: String) {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("UrlBuilder.kt"),
 		Content: strings.TrimSpace(code),
 	}

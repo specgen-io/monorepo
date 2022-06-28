@@ -7,12 +7,12 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/ts/responses"
 	"github.com/specgen-io/specgen/v2/gen/ts/types"
 	"github.com/specgen-io/specgen/v2/gen/ts/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServiceApis(version *spec.Version, modelsModule modules.Module, module modules.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func generateServiceApis(version *spec.Version, modelsModule modules.Module, module modules.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := module.Submodule(serviceName(&api))
 		serviceFile := generateApiService(&api, modelsModule, apiModule)
@@ -21,7 +21,7 @@ func generateServiceApis(version *spec.Version, modelsModule modules.Module, mod
 	return files
 }
 
-func generateApiService(api *spec.Api, modelsModule modules.Module, module modules.Module) *sources.CodeFile {
+func generateApiService(api *spec.Api, modelsModule modules.Module, module modules.Module) *generator.CodeFile {
 	w := writer.NewTsWriter()
 	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(module))
 	for _, operation := range api.Operations {
@@ -44,7 +44,7 @@ func generateApiService(api *spec.Api, modelsModule modules.Module, module modul
 		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, responses.ResponseType(&operation, ""))
 	}
 	w.Line("}")
-	return &sources.CodeFile{module.GetPath(), w.String()}
+	return &generator.CodeFile{module.GetPath(), w.String()}
 }
 
 func serviceInterfaceName(api *spec.Api) string {
@@ -68,20 +68,20 @@ func operationParamsTypeName(operation *spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Params"
 }
 
-func addServiceParam(w *sources.Writer, paramName string, typ *spec.TypeDef) {
+func addServiceParam(w *generator.Writer, paramName string, typ *spec.TypeDef) {
 	if typ.IsNullable() {
 		paramName = paramName + "?"
 	}
 	w.Line("  %s: %s,", paramName, types.TsType(typ))
 }
 
-func generateServiceParams(w *sources.Writer, params []spec.NamedParam) {
+func generateServiceParams(w *generator.Writer, params []spec.NamedParam) {
 	for _, param := range params {
 		addServiceParam(w, common.TSIdentifier(param.Name.Source), &param.Type.Definition)
 	}
 }
 
-func generateOperationParams(w *sources.Writer, operation *spec.NamedOperation) {
+func generateOperationParams(w *generator.Writer, operation *spec.NamedOperation) {
 	w.Line("export interface %s {", operationParamsTypeName(operation))
 	generateServiceParams(w, operation.HeaderParams)
 	generateServiceParams(w, operation.Endpoint.UrlParams)

@@ -2,16 +2,16 @@ package openapi
 
 import (
 	"github.com/pinzolo/casee"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"github.com/specgen-io/specgen/v2/yamlx"
 	"strings"
 )
 
-func GenerateOpenapi(spec *spec.Spec, outFile string) *sources.CodeFile {
+func GenerateOpenapi(spec *spec.Spec, outFile string) *generator.CodeFile {
 	openapi := generateSpecification(spec)
 	data, _ := yamlx.ToYamlString(openapi)
-	openapiFile := &sources.CodeFile{outFile, data}
+	openapiFile := &generator.CodeFile{outFile, data}
 	return openapiFile
 }
 

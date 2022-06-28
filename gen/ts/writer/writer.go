@@ -1,7 +1,9 @@
 package writer
 
-import "github.com/specgen-io/specgen/v2/sources"
+import (
+	"github.com/specgen-io/specgen/v2/generator"
+)
 
-func NewTsWriter() *sources.Writer {
-	return sources.NewWriter("    ", 2)
+func NewTsWriter() *generator.Writer {
+	return generator.NewWriter("    ", 2)
 }

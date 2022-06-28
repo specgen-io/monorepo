@@ -2,12 +2,12 @@ package validations
 
 import (
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateModels(specification *spec.Spec, validation string, generatePath string) *sources.Sources {
-	sources := sources.NewSources()
+func GenerateModels(specification *spec.Spec, validation string, generatePath string) *generator.Sources {
+	sources := generator.NewSources()
 
 	generator := New(validation)
 

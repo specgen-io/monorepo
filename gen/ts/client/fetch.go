@@ -7,7 +7,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/ts/types"
 	"github.com/specgen-io/specgen/v2/gen/ts/validations"
 	"github.com/specgen-io/specgen/v2/gen/ts/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -17,7 +17,7 @@ type fetchGenerator struct {
 	validation validations.Validation
 }
 
-func (g *fetchGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *sources.CodeFile {
+func (g *fetchGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *generator.CodeFile {
 	w := writer.NewTsWriter()
 	if g.node {
 		w.Line(`import { URL, URLSearchParams } from 'url'`)
@@ -43,10 +43,10 @@ func (g *fetchGenerator) ApiClient(api spec.Api, validationModule, modelsModule,
 			responses.GenerateOperationResponse(w, &operation)
 		}
 	}
-	return &sources.CodeFile{module.GetPath(), w.String()}
+	return &generator.CodeFile{module.GetPath(), w.String()}
 }
 
-func (g *fetchGenerator) operation(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *fetchGenerator) operation(w *generator.Writer, operation *spec.NamedOperation) {
 	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0

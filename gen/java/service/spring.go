@@ -9,7 +9,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/java/responses"
 	"github.com/specgen-io/specgen/v2/gen/java/types"
 	"github.com/specgen-io/specgen/v2/gen/java/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
@@ -28,8 +28,8 @@ func (g *SpringGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport
 	return `org.springframework.stereotype.Service`, fmt.Sprintf(`Service("%s")`, versionServiceName(serviceName(api), api.Http.Version))
 }
 
-func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, g.serviceController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
@@ -37,8 +37,8 @@ func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage
 	return files
 }
 
-func (g *SpringGenerator) serviceController(api *spec.Api, apiPackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func (g *SpringGenerator) serviceController(api *spec.Api, apiPackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -70,7 +70,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api, apiPackage, jsonPacka
 	}
 	w.Line(`}`)
 
-	files = append(files, sources.CodeFile{
+	files = append(files, generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
 	})
@@ -78,7 +78,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api, apiPackage, jsonPacka
 	return files
 }
 
-func (g *SpringGenerator) controllerMethod(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *SpringGenerator) controllerMethod(w *generator.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, casee.ToPascalCase(methodName), url)
@@ -120,7 +120,7 @@ func (g *SpringGenerator) controllerMethod(w *sources.Writer, operation *spec.Na
 	w.Line(`}`)
 }
 
-func (g *SpringGenerator) processResponse(w *sources.Writer, response *spec.Response, result string) {
+func (g *SpringGenerator) processResponse(w *generator.Writer, response *spec.Response, result string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return new ResponseEntity<>(HttpStatus.%s);`, response.Name.UpperCase())
@@ -146,13 +146,13 @@ func (g *SpringGenerator) processResponse(w *sources.Writer, response *spec.Resp
 	}
 }
 
-func (g *SpringGenerator) badRequest(w *sources.Writer, operation *spec.NamedOperation, message string) {
+func (g *SpringGenerator) badRequest(w *generator.Writer, operation *spec.NamedOperation, message string) {
 	w.Line(`logger.error(%s);`, message)
 	w.Line(`logger.info("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
 	w.Line(`return new ResponseEntity<>(HttpStatus.BAD_REQUEST);`)
 }
 
-func (g *SpringGenerator) internalServerError(w *sources.Writer, operation *spec.NamedOperation, message string) {
+func (g *SpringGenerator) internalServerError(w *generator.Writer, operation *spec.NamedOperation, message string) {
 	w.Line(`logger.error(%s);`, message)
 	w.Line(`logger.info("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
 	w.Line(`return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);`)

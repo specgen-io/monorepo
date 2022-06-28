@@ -5,13 +5,13 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
 	"github.com/specgen-io/specgen/v2/gen/ts/responses"
 	"github.com/specgen-io/specgen/v2/gen/ts/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateServicesImplementations(specification *spec.Spec, generatedModule modules.Module, module modules.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func generateServicesImplementations(specification *spec.Spec, generatedModule modules.Module, module modules.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	for _, version := range specification.Versions {
 		versionGeneratedModule := generatedModule.Submodule(version.Version.FlatCase())
 		modelsModule := versionGeneratedModule.Submodule("models")
@@ -24,7 +24,7 @@ func generateServicesImplementations(specification *spec.Spec, generatedModule m
 	return files
 }
 
-func generateServiceImplementation(api *spec.Api, apiModule modules.Module, modelsModule modules.Module, module modules.Module) *sources.CodeFile {
+func generateServiceImplementation(api *spec.Api, apiModule modules.Module, modelsModule modules.Module, module modules.Module) *generator.CodeFile {
 	w := writer.NewTsWriter()
 
 	w.Line("import * as service from '%s'", apiModule.GetImport(module))
@@ -46,5 +46,5 @@ func generateServiceImplementation(api *spec.Api, apiModule modules.Module, mode
 	}
 	w.Line("  return {%s}", strings.Join(operations, ", "))
 	w.Line("}")
-	return &sources.CodeFile{module.GetPath(), w.String()}
+	return &generator.CodeFile{module.GetPath(), w.String()}
 }

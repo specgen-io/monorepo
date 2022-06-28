@@ -2,13 +2,13 @@ package iots
 
 import (
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
 )
 
 var IoTs = "io-ts"
 
-func (g *Generator) SetupLibrary(module modules.Module) *sources.CodeFile {
+func (g *Generator) SetupLibrary(module modules.Module) *generator.CodeFile {
 	code := `
 export * from 'io-ts'
 export * from 'io-ts-types'
@@ -163,5 +163,5 @@ export const encode = <A, O, I>(codec: t.Type<A, O, I>, value: A): O => {
     return codec.encode(value)
 }
 `
-	return &sources.CodeFile{module.GetPath(), strings.TrimSpace(code)}
+	return &generator.CodeFile{module.GetPath(), strings.TrimSpace(code)}
 }

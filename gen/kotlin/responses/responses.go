@@ -5,7 +5,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/types"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -50,8 +50,8 @@ func parameters(operation *spec.NamedOperation, types *types.Types) []string {
 	return params
 }
 
-func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage modules.Module, modelsVersionPackage modules.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage modules.Module, modelsVersionPackage modules.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -66,14 +66,14 @@ func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage m
 	}
 	w.Line(`}`)
 
-	files = append(files, sources.CodeFile{
+	files = append(files, generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", InterfaceName(operation))),
 		Content: w.String(),
 	})
 	return files
 }
 
-func implementations(w *sources.Writer, types *types.Types, response *spec.OperationResponse) {
+func implementations(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
 	if !response.Type.Definition.IsEmpty() {
 		w.Line(`class %s(var body: %s) : %s`, serviceResponseImplementationName, types.Kotlin(&response.Type.Definition), InterfaceName(response.Operation))

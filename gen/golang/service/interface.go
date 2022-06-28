@@ -7,12 +7,12 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/golang/responses"
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServiceInterfaces(version *spec.Version, versionModule, modelsModule, emptyModule module.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func generateServiceInterfaces(version *spec.Version, versionModule, modelsModule, emptyModule module.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
 		files = append(files, *generateServiceInterface(&api, apiModule, modelsModule, emptyModule))
@@ -20,7 +20,7 @@ func generateServiceInterfaces(version *spec.Version, versionModule, modelsModul
 	return files
 }
 
-func generateServiceInterface(api *spec.Api, apiModule, modelsModule, emptyModule module.Module) *sources.CodeFile {
+func generateServiceInterface(api *spec.Api, apiModule, modelsModule, emptyModule module.Module) *generator.CodeFile {
 	w := writer.NewGoWriter()
 	w.Line("package %s", apiModule.Name)
 
@@ -46,7 +46,7 @@ func generateServiceInterface(api *spec.Api, apiModule, modelsModule, emptyModul
 		w.Line(`  %s`, common.OperationSignature(&operation, nil))
 	}
 	w.Line(`}`)
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    apiModule.GetPath("service.go"),
 		Content: w.String(),
 	}

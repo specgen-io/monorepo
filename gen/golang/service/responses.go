@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
 )
 
@@ -19,7 +19,7 @@ func respondEmpty(logFields, resVar, statusCode string) string {
 	return fmt.Sprintf(`respondEmpty(%s, %s, %s)`, logFields, resVar, statusCode)
 }
 
-func generateRespondFunctions(module module.Module) *sources.CodeFile {
+func generateRespondFunctions(module module.Module) *generator.CodeFile {
 	data := struct {
 		PackageName string
 	}{
@@ -54,6 +54,6 @@ func respondEmpty(logFields log.Fields, res http.ResponseWriter, statusCode int)
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, data)
-	return &sources.CodeFile{module.GetPath("responses.go"), strings.TrimSpace(code)}
+	code, _ = generator.ExecuteTemplate(code, data)
+	return &generator.CodeFile{module.GetPath("responses.go"), strings.TrimSpace(code)}
 }

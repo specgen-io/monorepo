@@ -2,11 +2,11 @@ package models
 
 import (
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
 )
 
-func generateEnumsHelperFunctions(module module.Module) *sources.CodeFile {
+func generateEnumsHelperFunctions(module module.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -36,6 +36,6 @@ func readEnumStringValue(b []byte, values []string) (string, error) {
 	return str, nil
 }
 `
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
-	return &sources.CodeFile{module.GetPath("enums_helpers.go"), strings.TrimSpace(code)}
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
+	return &generator.CodeFile{module.GetPath("enums_helpers.go"), strings.TrimSpace(code)}
 }

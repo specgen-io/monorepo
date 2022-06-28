@@ -6,12 +6,12 @@ import (
 	imports2 "github.com/specgen-io/specgen/v2/gen/golang/imports"
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func generateServiceImplementations(version *spec.Version, versionModule, modelsModule, targetModule module.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func generateServiceImplementations(version *spec.Version, versionModule, modelsModule, targetModule module.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
 		files = append(files, *generateServiceImplementation(&api, apiModule, modelsModule, targetModule))
@@ -19,7 +19,7 @@ func generateServiceImplementations(version *spec.Version, versionModule, models
 	return files
 }
 
-func generateServiceImplementation(api *spec.Api, apiModule, modelsModule, targetModule module.Module) *sources.CodeFile {
+func generateServiceImplementation(api *spec.Api, apiModule, modelsModule, targetModule module.Module) *generator.CodeFile {
 	w := writer.NewGoWriter()
 	w.Line("package %s", targetModule.Name)
 
@@ -47,7 +47,7 @@ func generateServiceImplementation(api *spec.Api, apiModule, modelsModule, targe
 		w.Line(`}`)
 	}
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    targetModule.GetPath(fmt.Sprintf("%s.go", api.Name.SnakeCase())),
 		Content: w.String(),
 	}

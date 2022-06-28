@@ -5,11 +5,11 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/ts/common"
 	"github.com/specgen-io/specgen/v2/gen/ts/types"
 	validations "github.com/specgen-io/specgen/v2/gen/ts/validations/common"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (g *Generator) WriteParamsType2(w *sources.Writer, typeName string, params []spec.NamedParam) {
+func (g *Generator) WriteParamsType2(w *generator.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		w.Line("const %s = t.type({", validations.ParamsRuntimeTypeName(typeName))
@@ -35,7 +35,7 @@ func kindOfParams(params []spec.NamedParam) (bool, bool) {
 	return hasRequiredParams, hasOptionalParams
 }
 
-func (g *Generator) WriteParamsType(w *sources.Writer, typeName string, params []spec.NamedParam) {
+func (g *Generator) WriteParamsType(w *generator.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		hasRequiredFields, hasOptionalFields := kindOfParams(params)

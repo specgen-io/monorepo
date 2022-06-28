@@ -4,11 +4,11 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/ts/common"
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
 	"github.com/specgen-io/specgen/v2/gen/ts/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (g *Generator) VersionModels(version *spec.Version, superstructModule modules.Module, module modules.Module) *sources.CodeFile {
+func (g *Generator) VersionModels(version *spec.Version, superstructModule modules.Module, module modules.Module) *generator.CodeFile {
 	w := writer.NewTsWriter()
 	w.Line(`import * as t from '%s'`, superstructModule.GetImport(module))
 	for _, model := range version.ResolvedModels {
@@ -21,10 +21,10 @@ func (g *Generator) VersionModels(version *spec.Version, superstructModule modul
 			g.unionModel(w, model)
 		}
 	}
-	return &sources.CodeFile{Path: module.GetPath(), Content: w.String()}
+	return &generator.CodeFile{Path: module.GetPath(), Content: w.String()}
 }
 
-func (g *Generator) objectModel(w *sources.Writer, model *spec.NamedModel) {
+func (g *Generator) objectModel(w *generator.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.type({", model.Name.PascalCase())
 	for _, field := range model.Object.Fields {
 		w.Line("  %s: %s,", field.Name.Source, g.RuntimeType(&field.Type.Definition))
@@ -34,7 +34,7 @@ func (g *Generator) objectModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("export type %s = t.Infer<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func (g *Generator) enumModel(w *sources.Writer, model *spec.NamedModel) {
+func (g *Generator) enumModel(w *generator.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.enums ([", model.Name.PascalCase())
 	for _, item := range model.Enum.Items {
 		w.Line(`  "%s",`, item.Value)
@@ -50,7 +50,7 @@ func (g *Generator) enumModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line("}")
 }
 
-func (g *Generator) unionModel(w *sources.Writer, model *spec.NamedModel) {
+func (g *Generator) unionModel(w *generator.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {

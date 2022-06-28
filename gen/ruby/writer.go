@@ -1,7 +1,9 @@
 package ruby
 
-import "github.com/specgen-io/specgen/v2/sources"
+import (
+	"github.com/specgen-io/specgen/v2/generator"
+)
 
-func NewRubyWriter() *sources.Writer {
-	return sources.NewWriter("  ", 2)
+func NewRubyWriter() *generator.Writer {
+	return generator.NewWriter("  ", 2)
 }

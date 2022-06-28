@@ -3,15 +3,15 @@ package client
 import (
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
 	"github.com/specgen-io/specgen/v2/gen/ts/validations"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateClient(specification *spec.Spec, generatePath string, client string, validationName string) *sources.Sources {
+func GenerateClient(specification *spec.Spec, generatePath string, client string, validationName string) *generator.Sources {
 	validation := validations.New(validationName)
-	generator := NewClientGenerator(client, validation)
+	g := NewClientGenerator(client, validation)
 
-	sources := sources.NewSources()
+	sources := generator.NewSources()
 	rootModule := modules.New(generatePath)
 
 	validationModule := rootModule.Submodule(validationName)
@@ -24,7 +24,7 @@ func GenerateClient(specification *spec.Spec, generatePath string, client string
 		sources.AddGenerated(validation.VersionModels(&version, validationModule, modelsModule))
 		for _, api := range version.Http.Apis {
 			apiModule := versionModule.Submodule(api.Name.SnakeCase())
-			sources.AddGenerated(generator.ApiClient(api, validationModule, modelsModule, paramsModule, apiModule))
+			sources.AddGenerated(g.ApiClient(api, validationModule, modelsModule, paramsModule, apiModule))
 		}
 	}
 

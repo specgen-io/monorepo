@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
 
 	"github.com/pinzolo/casee"
@@ -11,7 +12,6 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/java/responses"
 	"github.com/specgen-io/specgen/v2/gen/java/types"
 	"github.com/specgen-io/specgen/v2/gen/java/writer"
-	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
@@ -30,8 +30,8 @@ func (g *MicronautGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImp
 	return `io.micronaut.context.annotation.Bean`, `Bean`
 }
 
-func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, g.serviceController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
@@ -46,8 +46,8 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPack
 	return files
 }
 
-func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -87,7 +87,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, jsonPa
 	g.errorHandler(w.Indented(), api.Http.Errors)
 	w.Line(`}`)
 
-	files = append(files, sources.CodeFile{
+	files = append(files, generator.CodeFile{
 		Path:    thePackage.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
 	})
@@ -95,7 +95,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, jsonPa
 	return files
 }
 
-func (g *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *MicronautGenerator) controllerMethod(w *generator.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`@Consumes(MediaType.TEXT_PLAIN)`)
 	}
@@ -115,7 +115,7 @@ func (g *MicronautGenerator) controllerMethod(w *sources.Writer, operation *spec
 	w.Line(`}`)
 }
 
-func (g *MicronautGenerator) parseBody(w *sources.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
+func (g *MicronautGenerator) parseBody(w *generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`checkContentType(request, MediaType.TEXT_PLAIN);`)
 	}
@@ -131,7 +131,7 @@ func (g *MicronautGenerator) parseBody(w *sources.Writer, operation *spec.NamedO
 	}
 }
 
-func (g *MicronautGenerator) serviceCall(w *sources.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
+func (g *MicronautGenerator) serviceCall(w *generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar)))
 	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
 		w.Line(`%s;`, serviceCall)
@@ -143,7 +143,7 @@ func (g *MicronautGenerator) serviceCall(w *sources.Writer, operation *spec.Name
 	}
 }
 
-func (g *MicronautGenerator) processResponses(w *sources.Writer, operation *spec.NamedOperation, resultVarName string) {
+func (g *MicronautGenerator) processResponses(w *generator.Writer, operation *spec.NamedOperation, resultVarName string) {
 	if len(operation.Responses) == 1 {
 		g.processResponse(w, &operation.Responses[0].Response, resultVarName)
 	}
@@ -158,7 +158,7 @@ func (g *MicronautGenerator) processResponses(w *sources.Writer, operation *spec
 	}
 }
 
-func (g *MicronautGenerator) processResponse(w *sources.Writer, response *spec.Response, bodyVar string) {
+func (g *MicronautGenerator) processResponse(w *generator.Writer, response *spec.Response, bodyVar string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s);`, response.Name.UpperCase())
@@ -174,7 +174,7 @@ func (g *MicronautGenerator) processResponse(w *sources.Writer, response *spec.R
 	}
 }
 
-func (g *MicronautGenerator) checkContentType(w *sources.Writer) {
+func (g *MicronautGenerator) checkContentType(w *generator.Writer) {
 	w.Lines(`
 private void checkContentType(HttpRequest<?> request, String expectedContentType) {
 	var contentType = request.getHeaders().get("Content-Type");
@@ -185,7 +185,7 @@ private void checkContentType(HttpRequest<?> request, String expectedContentType
 `)
 }
 
-func (g *MicronautGenerator) errorHandler(w *sources.Writer, errors spec.Responses) {
+func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Responses) {
 	notFoundError := errors.GetByStatusName(spec.HttpStatusNotFound)
 	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)
 	internalServerError := errors.GetByStatusName(spec.HttpStatusInternalServerError)
@@ -204,7 +204,7 @@ func (g *MicronautGenerator) errorHandler(w *sources.Writer, errors spec.Respons
 	w.Line(`}`)
 }
 
-func (g *MicronautGenerator) contentTypeMismatchException(thePackage packages.Module) *sources.CodeFile {
+func (g *MicronautGenerator) contentTypeMismatchException(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -216,18 +216,18 @@ public class ContentTypeMismatchException extends RuntimeException {
     }
 }
 `
-	code, _ = sources.ExecuteTemplate(code, struct {
+	code, _ = generator.ExecuteTemplate(code, struct {
 		PackageName string
 	}{
 		thePackage.PackageName,
 	})
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("ContentTypeMismatchException.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *MicronautGenerator) errorsHelpers(thePackage, modelsPackage packages.Module) *sources.CodeFile {
+func (g *MicronautGenerator) errorsHelpers(thePackage, modelsPackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -322,11 +322,11 @@ public class ErrorsHelpers {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct {
+	code, _ = generator.ExecuteTemplate(code, struct {
 		PackageName   string
 		ModelsPackage string
 	}{thePackage.PackageName, modelsPackage.PackageName})
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("ErrorsHelpers.java"),
 		Content: strings.TrimSpace(code),
 	}
@@ -372,16 +372,16 @@ func getMicronautParameterAnnotation(paramAnnotation string, param *spec.NamedPa
 	return fmt.Sprintf(`@%s(%s)`, paramAnnotation, joinParams(annotationParams))
 }
 
-func dateConverters(thePackage packages.Module) []sources.CodeFile {
+func dateConverters(thePackage packages.Module) []generator.CodeFile {
 	convertersPackage := thePackage.Subpackage("converters")
 
-	files := []sources.CodeFile{}
+	files := []generator.CodeFile{}
 	files = append(files, *localDateConverter(convertersPackage))
 	files = append(files, *localDateTimeConverter(convertersPackage))
 	return files
 }
 
-func localDateConverter(thePackage packages.Module) *sources.CodeFile {
+func localDateConverter(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -408,14 +408,14 @@ public class LocalDateConverter implements TypeConverter<String, LocalDate> {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("LocalDateConverter.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func localDateTimeConverter(thePackage packages.Module) *sources.CodeFile {
+func localDateTimeConverter(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -442,8 +442,8 @@ public class LocalDateTimeConverter implements TypeConverter<String, LocalDateTi
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("LocalDateTimeConverter.java"),
 		Content: strings.TrimSpace(code),
 	}

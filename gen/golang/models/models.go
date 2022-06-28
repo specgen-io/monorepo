@@ -6,13 +6,13 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func GenerateModels(specification *spec.Spec, moduleName string, generatePath string) *sources.Sources {
-	sources := sources.NewSources()
+func GenerateModels(specification *spec.Spec, moduleName string, generatePath string) *generator.Sources {
+	sources := generator.NewSources()
 
 	rootModule := module.New(moduleName, generatePath)
 
@@ -24,14 +24,14 @@ func GenerateModels(specification *spec.Spec, moduleName string, generatePath st
 	return sources
 }
 
-func GenerateVersionModels(version *spec.Version, module module.Module) []sources.CodeFile {
-	return []sources.CodeFile{
+func GenerateVersionModels(version *spec.Version, module module.Module) []generator.CodeFile {
+	return []generator.CodeFile{
 		*generateVersionModelsCode(version, module),
 		*generateEnumsHelperFunctions(module),
 	}
 }
 
-func generateVersionModelsCode(version *spec.Version, module module.Module) *sources.CodeFile {
+func generateVersionModelsCode(version *spec.Version, module module.Module) *generator.CodeFile {
 	w := writer.NewGoWriter()
 	w.Line("package %s", module.Name)
 
@@ -49,7 +49,7 @@ func generateVersionModelsCode(version *spec.Version, module module.Module) *sou
 			generateEnumModel(w, model)
 		}
 	}
-	return &sources.CodeFile{Path: module.GetPath("models.go"), Content: w.String()}
+	return &generator.CodeFile{Path: module.GetPath("models.go"), Content: w.String()}
 }
 
 func requiredFieldsList(object *spec.Object) string {
@@ -66,7 +66,7 @@ func requiredFields(model *spec.NamedModel) string {
 	return fmt.Sprintf(`%sRequiredFields`, model.Name.CamelCase())
 }
 
-func generateObjectModel(w *sources.Writer, model *spec.NamedModel) {
+func generateObjectModel(w *generator.Writer, model *spec.NamedModel) {
 	w.Line("type %s struct {", model.Name.PascalCase())
 	fields := [][]string{}
 	for _, field := range model.Object.Fields {
@@ -131,7 +131,7 @@ func generateObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateEnumModel(w *sources.Writer, model *spec.NamedModel) {
+func generateEnumModel(w *generator.Writer, model *spec.NamedModel) {
 	w.Line("type %s %s", model.Name.PascalCase(), "string")
 	w.EmptyLine()
 	w.Line("const (")
@@ -169,7 +169,7 @@ func enumValues(model *spec.NamedModel) string {
 	return fmt.Sprintf("%sValues", model.Name.PascalCase())
 }
 
-func generateOneOfModel(w *sources.Writer, model *spec.NamedModel) {
+func generateOneOfModel(w *generator.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		generateOneOfModelDiscriminator(w, model)
 	} else {
@@ -185,7 +185,7 @@ func getCaseChecks(oneof *spec.OneOf) string {
 	return strings.Join(caseChecks, " && ")
 }
 
-func generateOneOfModelWrapper(w *sources.Writer, model *spec.NamedModel) {
+func generateOneOfModelWrapper(w *generator.Writer, model *spec.NamedModel) {
 	caseChecks := getCaseChecks(model.OneOf)
 	items := [][]string{}
 	w.Line("type %s struct {", model.Name.PascalCase())
@@ -222,7 +222,7 @@ func generateOneOfModelWrapper(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateOneOfModelDiscriminator(w *sources.Writer, model *spec.NamedModel) {
+func generateOneOfModelDiscriminator(w *generator.Writer, model *spec.NamedModel) {
 	w.Line("type %s struct {", model.Name.PascalCase())
 	items := [][]string{}
 	for _, item := range model.OneOf.Items {

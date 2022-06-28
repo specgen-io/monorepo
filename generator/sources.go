@@ -1,4 +1,4 @@
-package sources
+package generator
 
 type Sources struct {
 	Generated  []CodeFile
@@ -37,13 +37,13 @@ func (sources *Sources) AddGeneratedAll(files []CodeFile) {
 	}
 }
 
-func (sources *Sources) Write(overwriteAll bool) error {
-	err := WriteFiles(sources.Scaffolded, false || overwriteAll)
+func (sources *Sources) Write(overwriteAll bool, processedFile ProcessedFileCallback) error {
+	err := WriteFiles(sources.Scaffolded, false || overwriteAll, processedFile)
 	if err != nil {
 		return err
 	}
 
-	err = WriteFiles(sources.Generated, true)
+	err = WriteFiles(sources.Generated, true, processedFile)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,9 @@
 package writer
 
-import "github.com/specgen-io/specgen/v2/sources"
+import (
+	"github.com/specgen-io/specgen/v2/generator"
+)
 
-func NewKotlinWriter() *sources.Writer {
-	return sources.NewWriter("\t", 2)
+func NewKotlinWriter() *generator.Writer {
+	return generator.NewWriter("\t", 2)
 }

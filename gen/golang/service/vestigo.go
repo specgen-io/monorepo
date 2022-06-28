@@ -8,13 +8,13 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func generateRoutings(version *spec.Version, versionModule module.Module, modelsModule module.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func generateRoutings(version *spec.Version, versionModule module.Module, modelsModule module.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		files = append(files, *generateRouting(modelsModule, versionModule, &api))
 	}
@@ -31,7 +31,7 @@ func callAddRouting(api *spec.Api, serviceVar string) string {
 	return fmt.Sprintf(`%s(router, %s)`, addRoutesMethodName(api), serviceVar)
 }
 
-func generateRouting(modelsModule module.Module, versionModule module.Module, api *spec.Api) *sources.CodeFile {
+func generateRouting(modelsModule module.Module, versionModule module.Module, api *spec.Api) *generator.CodeFile {
 	w := writer.NewGoWriter()
 	w.Line("package %s", versionModule.Name)
 
@@ -72,7 +72,7 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 	w.Unindent()
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    versionModule.GetPath(fmt.Sprintf("%s_routing.go", api.Name.SnakeCase())),
 		Content: w.String(),
 	}
@@ -88,7 +88,7 @@ func getEndpointUrl(operation *spec.NamedOperation) string {
 	return url
 }
 
-func addSetCors(w *sources.Writer, operation *spec.NamedOperation) {
+func addSetCors(w *generator.Writer, operation *spec.NamedOperation) {
 	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, getEndpointUrl(operation))
 	params := []string{}
 	for _, param := range operation.HeaderParams {
@@ -124,15 +124,15 @@ func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserNa
 	return call
 }
 
-func generateHeaderParsing(w *sources.Writer, operation *spec.NamedOperation) {
+func generateHeaderParsing(w *generator.Writer, operation *spec.NamedOperation) {
 	generateParametersParsing(w, operation, operation.HeaderParams, "header", "req.Header")
 }
 
-func generateQueryParsing(w *sources.Writer, operation *spec.NamedOperation) {
+func generateQueryParsing(w *generator.Writer, operation *spec.NamedOperation) {
 	generateParametersParsing(w, operation, operation.QueryParams, "query", "req.URL.Query()")
 }
 
-func generateUrlParamsParsing(w *sources.Writer, operation *spec.NamedOperation) {
+func generateUrlParamsParsing(w *generator.Writer, operation *spec.NamedOperation) {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		w.Line(`urlParams := NewParamsParser(req.URL.Query(), false)`)
 		for _, param := range operation.Endpoint.UrlParams {
@@ -144,7 +144,7 @@ func generateUrlParamsParsing(w *sources.Writer, operation *spec.NamedOperation)
 	}
 }
 
-func generateParametersParsing(w *sources.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramsValuesVar string) {
+func generateParametersParsing(w *generator.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramsValuesVar string) {
 	if namedParams != nil && len(namedParams) > 0 {
 		w.Line(`%s := NewParamsParser(%s, true)`, paramsParserName, paramsValuesVar)
 		for _, param := range namedParams {
@@ -157,7 +157,7 @@ func generateParametersParsing(w *sources.Writer, operation *spec.NamedOperation
 	}
 }
 
-func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation, responseVar string) {
+func generateServiceCall(w *generator.Writer, operation *spec.NamedOperation, responseVar string) {
 	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
 	serviceCall := serviceCall(serviceInterfaceTypeVar(operation.Api), operation)
 	if singleEmptyResponse {
@@ -177,7 +177,7 @@ func generateServiceCall(w *sources.Writer, operation *spec.NamedOperation, resp
 	}
 }
 
-func generateResponseWriting(w *sources.Writer, logFieldsName string, response *spec.Response, responseVar string) {
+func generateResponseWriting(w *generator.Writer, logFieldsName string, response *spec.Response, responseVar string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(respondEmpty(logFieldsName, `res`, spec.HttpStatusCode(response.Name)))
 	}
@@ -189,7 +189,7 @@ func generateResponseWriting(w *sources.Writer, logFieldsName string, response *
 	}
 }
 
-func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) {
+func generateOperationMethod(w *generator.Writer, operation *spec.NamedOperation) {
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	w.Line(`var err error`)
 	generateUrlParamsParsing(w, operation)
@@ -200,7 +200,7 @@ func generateOperationMethod(w *sources.Writer, operation *spec.NamedOperation) 
 	generateReponse(w, operation, `response`)
 }
 
-func generateReponse(w *sources.Writer, operation *spec.NamedOperation, responseVar string) {
+func generateReponse(w *generator.Writer, operation *spec.NamedOperation, responseVar string) {
 	if len(operation.Responses) == 1 {
 		generateResponseWriting(w, logFieldsName(operation), &operation.Responses[0].Response, responseVar)
 	} else {
@@ -215,7 +215,7 @@ func generateReponse(w *sources.Writer, operation *spec.NamedOperation, response
 	}
 }
 
-func generateBodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
+func generateBodyParsing(w *generator.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"text/plain"`, "req", "res"))
 		w.Line(`  return`)
@@ -280,7 +280,7 @@ func serviceInterfaceTypeVar(api *spec.Api) string {
 	return fmt.Sprintf(`%sService`, api.Name.Source)
 }
 
-func generateSpecRouting(specification *spec.Spec, module module.Module) *sources.CodeFile {
+func generateSpecRouting(specification *spec.Spec, module module.Module) *generator.CodeFile {
 	w := writer.NewGoWriter()
 	w.Line("package %s", module.Name)
 
@@ -313,7 +313,7 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *source
 	}
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    module.GetPath("spec_routing.go"),
 		Content: w.String(),
 	}

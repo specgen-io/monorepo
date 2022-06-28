@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
 	"github.com/specgen-io/specgen/v2/gen/ts/validations/common"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -25,7 +25,7 @@ func queryRuntimeType(operation *spec.NamedOperation) string {
 	return common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams"))
 }
 
-func generateParamsStaticCode(module modules.Module) *sources.CodeFile {
+func generateParamsStaticCode(module modules.Module) *generator.CodeFile {
 	code := `
 export function zipHeaders(headers: string[]): Record<string, string | string[]> {
   const result: Record<string, string | string[]> = {}
@@ -48,5 +48,5 @@ export function zipHeaders(headers: string[]): Record<string, string | string[]>
   return result
 }`
 
-	return &sources.CodeFile{module.GetPath(), strings.TrimSpace(code)}
+	return &generator.CodeFile{module.GetPath(), strings.TrimSpace(code)}
 }

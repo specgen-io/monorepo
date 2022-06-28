@@ -10,7 +10,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/golang/responses"
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -18,8 +18,8 @@ import (
 var ToPascalCase = casee.ToPascalCase
 var ToUpperCase = casee.ToUpperCase
 
-func GenerateClient(specification *spec.Spec, moduleName string, generatePath string) *sources.Sources {
-	sources := sources.NewSources()
+func GenerateClient(specification *spec.Spec, moduleName string, generatePath string) *generator.Sources {
+	sources := generator.NewSources()
 
 	rootModule := module.New(moduleName, generatePath)
 
@@ -36,8 +36,8 @@ func GenerateClient(specification *spec.Spec, moduleName string, generatePath st
 	return sources
 }
 
-func generateClientsImplementations(version *spec.Version, versionModule, modelsModule, emptyModule module.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func generateClientsImplementations(version *spec.Version, versionModule, modelsModule, emptyModule module.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
 		files = append(files, *generateConverter(apiModule))
@@ -46,7 +46,7 @@ func generateClientsImplementations(version *spec.Version, versionModule, models
 	return files
 }
 
-func generateClientImplementation(api *spec.Api, versionModule, modelsModule, emptyModule module.Module) *sources.CodeFile {
+func generateClientImplementation(api *spec.Api, versionModule, modelsModule, emptyModule module.Module) *generator.CodeFile {
 	w := writer.NewGoWriter()
 	w.Line("package %s", versionModule.Name)
 
@@ -80,13 +80,13 @@ func generateClientImplementation(api *spec.Api, versionModule, modelsModule, em
 		generateClientFunction(w, &operation)
 	}
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    versionModule.GetPath("client.go"),
 		Content: w.String(),
 	}
 }
 
-func generateClientWithCtor(w *sources.Writer) {
+func generateClientWithCtor(w *generator.Writer) {
 	w.Line(`type %s struct {`, clientTypeName())
 	w.Line(`  baseUrl string`)
 	w.Line(`}`)
@@ -96,7 +96,7 @@ func generateClientWithCtor(w *sources.Writer) {
 	w.Line(`}`)
 }
 
-func generateClientFunction(w *sources.Writer, operation *spec.NamedOperation) {
+func generateClientFunction(w *generator.Writer, operation *spec.NamedOperation) {
 	w.Line(`var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(operation), operation.Api.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
 	w.Line(`func (client *%s) %s {`, clientTypeName(), common.OperationSignature(operation, nil))
 	body := "nil"
@@ -177,7 +177,7 @@ func addUrlParam(operation *spec.NamedOperation) []string {
 	return urlParams
 }
 
-func parseParams(w *sources.Writer, operation *spec.NamedOperation) {
+func parseParams(w *generator.Writer, operation *spec.NamedOperation) {
 	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		w.Line(`  query := req.URL.Query()`)
 		addParsedParams(w, operation.QueryParams, "q", "query")
@@ -191,14 +191,14 @@ func parseParams(w *sources.Writer, operation *spec.NamedOperation) {
 	}
 }
 
-func addParsedParams(w *sources.Writer, namedParams []spec.NamedParam, paramsConverterName string, paramsParserName string) {
+func addParsedParams(w *generator.Writer, namedParams []spec.NamedParam, paramsConverterName string, paramsParserName string) {
 	w.Line(`  %s := NewParamsConverter(%s)`, paramsConverterName, paramsParserName)
 	for _, param := range namedParams {
 		w.Line(`  %s.%s`, paramsConverterName, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
 	}
 }
 
-func addClientResponses(w *sources.Writer, operation *spec.NamedOperation) {
+func addClientResponses(w *generator.Writer, operation *spec.NamedOperation) {
 	for _, response := range operation.Responses {
 		w.EmptyLine()
 		w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))

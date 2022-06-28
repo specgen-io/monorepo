@@ -1,9 +1,14 @@
-package gen
+package generator
 
 import (
-	"github.com/specgen-io/specgen/v2/sources"
 	"github.com/specgen-io/specgen/v2/spec"
 )
+
+type Arg struct {
+	Name        string
+	Title       string
+	Description string
+}
 
 type GeneratorArg struct {
 	Arg
@@ -20,4 +25,6 @@ type Generator struct {
 	Generator GeneratorFunc
 }
 
-type GeneratorFunc func(specification *spec.Spec, params map[Arg]string) *sources.Sources
+type GeneratorArgsValues map[Arg]string
+
+type GeneratorFunc func(specification *spec.Spec, params GeneratorArgsValues) *Sources

@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -77,7 +77,7 @@ const EmptyType = `empty.Type`
 
 var ModelsPackage = "models"
 
-func GenerateEmpty(module module.Module) *sources.CodeFile {
+func GenerateEmpty(module module.Module) *generator.CodeFile {
 	code := `
 package empty
 
@@ -85,6 +85,6 @@ type Type struct{}
 
 var Value = Type{}
 `
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
-	return &sources.CodeFile{module.GetPath("empty.go"), strings.TrimSpace(code)}
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
+	return &generator.CodeFile{module.GetPath("empty.go"), strings.TrimSpace(code)}
 }

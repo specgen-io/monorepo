@@ -6,13 +6,13 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/responses"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func (g *Generator) Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func (g *Generator) Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage)...)
@@ -20,8 +20,8 @@ func (g *Generator) Clients(version *spec.Version, thePackage modules.Module, mo
 	return files
 }
 
-func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
@@ -63,7 +63,7 @@ func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersi
 		}
 	}
 
-	files = append(files, sources.CodeFile{
+	files = append(files, generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", className)),
 		Content: w.String(),
 	})
@@ -71,7 +71,7 @@ func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersi
 	return files
 }
 
-func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 
@@ -156,7 +156,7 @@ func (g *Generator) generateClientMethod(w *sources.Writer, operation *spec.Name
 	w.Line(`}`)
 }
 
-func generateTryCatch(w *sources.Writer, valName string, exceptionObject string, codeBlock func(w *sources.Writer), exceptionHandler func(w *sources.Writer)) {
+func generateTryCatch(w *generator.Writer, valName string, exceptionObject string, codeBlock func(w *generator.Writer), exceptionHandler func(w *generator.Writer)) {
 	w.Line(`val %s = try {`, valName)
 	codeBlock(w.Indented())
 	w.Line(`} catch (%s) {`, exceptionObject)
@@ -164,17 +164,17 @@ func generateTryCatch(w *sources.Writer, valName string, exceptionObject string,
 	w.Line(`}`)
 }
 
-func generateClientTryCatch(w *sources.Writer, valName string, statement string, exceptionType, exceptionVar, errorMessage string) {
+func generateClientTryCatch(w *generator.Writer, valName string, statement string, exceptionType, exceptionVar, errorMessage string) {
 	generateTryCatch(w, valName, exceptionVar+`: `+exceptionType,
-		func(w *sources.Writer) {
+		func(w *generator.Writer) {
 			w.Line(statement)
 		},
-		func(w *sources.Writer) {
+		func(w *generator.Writer) {
 			generateThrowClientException(w, errorMessage, exceptionVar)
 		})
 }
 
-func generateThrowClientException(w *sources.Writer, errorMessage string, wrapException string) {
+func generateThrowClientException(w *generator.Writer, errorMessage string, wrapException string) {
 	w.Line(`val errorMessage = %s`, errorMessage)
 	w.Line(`logger.error(errorMessage)`)
 	params := "errorMessage"
