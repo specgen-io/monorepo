@@ -5,13 +5,8 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/ts/service"
 	"github.com/specgen-io/specgen/v2/gen/ts/validations"
 	"github.com/specgen-io/specgen/v2/generator"
-	"github.com/specgen-io/specgen/v2/generators"
 	"github.com/specgen-io/specgen/v2/spec"
 )
-
-func init() {
-	generators.Add(Models, Client, Service)
-}
 
 var ValidationTsValues = []string{"superstruct", "io-ts"}
 var ClientTsValues = []string{"axios", "node-fetch", "browser-fetch"}
