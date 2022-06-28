@@ -6,7 +6,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/java/packages"
 	"github.com/specgen-io/specgen/v2/gen/java/types"
 	"github.com/specgen-io/specgen/v2/gen/java/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -41,14 +41,14 @@ func (g *MoshiGenerator) SetupImport(jsonPackage packages.Module) string {
 	return fmt.Sprintf(`static %s.Json.setupMoshiAdapters`, jsonPackage.PackageName)
 }
 
-func (g *MoshiGenerator) CreateJsonMapperField(w *sources.Writer, annotation string) {
+func (g *MoshiGenerator) CreateJsonMapperField(w *generator.Writer, annotation string) {
 	if annotation != "" {
 		w.Line(annotation)
 	}
 	w.Line(`private Moshi moshi;`)
 }
 
-func (g *MoshiGenerator) InitJsonMapper(w *sources.Writer) {
+func (g *MoshiGenerator) InitJsonMapper(w *generator.Writer) {
 	w.Line(`Moshi.Builder moshiBuilder = new Moshi.Builder();`)
 	w.Line(`setupMoshiAdapters(moshiBuilder);`)
 	w.Line(`this.moshi = moshiBuilder.build();`)
@@ -89,7 +89,7 @@ func (g *MoshiGenerator) WriteJsonNoCheckedException(varData string, typ *spec.T
 	return statement
 }
 
-func (g *MoshiGenerator) GenerateJsonParseException(thePackage, modelsPackage packages.Module) *sources.CodeFile {
+func (g *MoshiGenerator) GenerateJsonParseException(thePackage, modelsPackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -123,21 +123,21 @@ public class JsonParseException extends RuntimeException {
     }
 }
 `
-	code, _ = sources.ExecuteTemplate(code, struct {
+	code, _ = generator.ExecuteTemplate(code, struct {
 		PackageName   string
 		ModelsPackage string
 	}{
 		thePackage.PackageName,
 		modelsPackage.PackageStar,
 	})
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("JsonParseException.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
@@ -158,7 +158,7 @@ func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage package
 	return files
 }
 
-func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
+func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages.Module) *generator.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -198,13 +198,13 @@ func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages
 	addObjectModelMethods(w.Indented(), model)
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath(className + ".java"),
 		Content: w.String(),
 	}
 }
 
-func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
+func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.Module) *generator.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -220,13 +220,13 @@ func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.M
 	}
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath(enumName + ".java"),
 		Content: w.String(),
 	}
 }
 
-func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
+func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.Module) *generator.CodeFile {
 	interfaceName := model.Name.PascalCase()
 	w := writer.NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
@@ -245,13 +245,13 @@ func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.
 	}
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath(interfaceName + ".java"),
 		Content: w.String(),
 	}
 }
 
-func (g *MoshiGenerator) modelOneOfImplementation(w *sources.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelOneOfImplementation(w *generator.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
 	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
 	w.Line(`  public %s data;`, g.Types.Java(&item.Type.Definition))
 	w.EmptyLine()
@@ -282,10 +282,10 @@ func (g *MoshiGenerator) modelOneOfImplementation(w *sources.Writer, item *spec.
 	w.Line(`}`)
 }
 
-func (g *MoshiGenerator) SetupLibrary(thePackage packages.Module) []sources.CodeFile {
+func (g *MoshiGenerator) SetupLibrary(thePackage packages.Module) []generator.CodeFile {
 	adaptersPackage := thePackage.Subpackage("adapters")
 
-	files := []sources.CodeFile{}
+	files := []generator.CodeFile{}
 	files = append(files, *g.setupAdapters(thePackage, adaptersPackage))
 	files = append(files, *bigDecimalAdapter(adaptersPackage))
 	files = append(files, *localDateAdapter(adaptersPackage))
@@ -296,7 +296,7 @@ func (g *MoshiGenerator) SetupLibrary(thePackage packages.Module) []sources.Code
 	return files
 }
 
-func (g *MoshiGenerator) setupAdapters(thePackage packages.Module, adaptersPackage packages.Module) *sources.CodeFile {
+func (g *MoshiGenerator) setupAdapters(thePackage packages.Module, adaptersPackage packages.Module) *generator.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
@@ -319,13 +319,13 @@ func (g *MoshiGenerator) setupAdapters(thePackage packages.Module, adaptersPacka
 	w.Line(`  }`)
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("Json.java"),
 		Content: w.String(),
 	}
 }
 
-func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage packages.Module, adaptersPackage packages.Module) *sources.CodeFile {
+func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage packages.Module, adaptersPackage packages.Module) *generator.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -360,13 +360,13 @@ func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage pa
 	w.Line(`  }`)
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("Json.java"),
 		Content: w.String(),
 	}
 }
 
-func bigDecimalAdapter(thePackage packages.Module) *sources.CodeFile {
+func bigDecimalAdapter(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -397,14 +397,14 @@ public class BigDecimalAdapter {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("BigDecimalAdapter.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func localDateAdapter(thePackage packages.Module) *sources.CodeFile {
+func localDateAdapter(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -425,14 +425,14 @@ public class LocalDateAdapter {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("LocalDateAdapter.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func localDateTimeAdapter(thePackage packages.Module) *sources.CodeFile {
+func localDateTimeAdapter(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -453,14 +453,14 @@ public class LocalDateTimeAdapter {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("LocalDateTimeAdapter.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func uuidAdapter(thePackage packages.Module) *sources.CodeFile {
+func uuidAdapter(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -481,14 +481,14 @@ public class UuidAdapter {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("UuidAdapter.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func unionAdapterFactory(thePackage packages.Module) *sources.CodeFile {
+func unionAdapterFactory(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -773,14 +773,14 @@ public final class UnionAdapterFactory<T> implements JsonAdapter.Factory {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("UnionAdapterFactory.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func unwrapFieldAdapterFactory(thePackage packages.Module) *sources.CodeFile {
+func unwrapFieldAdapterFactory(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -878,8 +878,8 @@ public final class UnwrapFieldAdapterFactory<T> implements JsonAdapter.Factory {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("UnwrapFieldAdapterFactory.java"),
 		Content: strings.TrimSpace(code),
 	}

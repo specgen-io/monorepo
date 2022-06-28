@@ -3,12 +3,12 @@ package scala
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen/openapi"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func GeneratePlayService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string) *sources.Sources {
+func GeneratePlayService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string) *generator.Sources {
 	rootPackage := NewPackage(generatePath, "", "")
 	implRootPackage := NewPackage(servicesPath, "", "")
 
@@ -16,7 +16,7 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 	jsonPackage := rootPackage.Subpackage("json")
 	paramsPackage := rootPackage.Subpackage("params")
 
-	sources := sources.NewSources()
+	sources := generator.NewSources()
 
 	playParamsFile := generatePlayParams(paramsPackage)
 	scalaHttpStaticFile := generateStringParams(paramsPackage)
@@ -102,7 +102,7 @@ func operationSignature(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`def %s(%s): Future[%s]`, controllerMethodName(operation), JoinParams(params), responseType(operation))
 }
 
-func generateApiTrait(api *spec.Api, thepackage, modelsPackage, servicesImplPackage Package) *sources.CodeFile {
+func generateApiTrait(api *spec.Api, thepackage, modelsPackage, servicesImplPackage Package) *generator.CodeFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
@@ -127,13 +127,13 @@ func generateApiTrait(api *spec.Api, thepackage, modelsPackage, servicesImplPack
 		}
 	}
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", apiClassType(api.Name))),
 		Content: w.String(),
 	}
 }
 
-func generateApiImpl(api spec.Api, thepackage, apiPackage, modelsPackage Package) *sources.CodeFile {
+func generateApiImpl(api spec.Api, thepackage, apiPackage, modelsPackage Package) *generator.CodeFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 
@@ -154,13 +154,13 @@ func generateApiImpl(api spec.Api, thepackage, apiPackage, modelsPackage Package
 	}
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", apiClassName)),
 		Content: w.String(),
 	}
 }
 
-func addParamsParsing(w *sources.Writer, params []spec.NamedParam, paramsName string, values string) {
+func addParamsParsing(w *generator.Writer, params []spec.NamedParam, paramsName string, values string) {
 	if params != nil && len(params) > 0 {
 		w.Line(`val %s = new StringParamsReader(%s)`, paramsName, values)
 		for _, param := range params {
@@ -182,7 +182,7 @@ func addParamsParsing(w *sources.Writer, params []spec.NamedParam, paramsName st
 	}
 }
 
-func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage, jsonPackage, paramsPackage Package) *sources.CodeFile {
+func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage, jsonPackage, paramsPackage Package) *generator.CodeFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
@@ -203,13 +203,13 @@ func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage,
 	}
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", controllerType(api.Name))),
 		Content: w.String(),
 	}
 }
 
-func generateControllerMethod(w *sources.Writer, operation *spec.NamedOperation) {
+func generateControllerMethod(w *generator.Writer, operation *spec.NamedOperation) {
 	params := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
 		params = append(params, fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
@@ -237,7 +237,7 @@ func generateControllerMethod(w *sources.Writer, operation *spec.NamedOperation)
 	w.Line(`}`)
 }
 
-func generateControllerMethodRequest(w *sources.Writer, operation *spec.NamedOperation) {
+func generateControllerMethodRequest(w *generator.Writer, operation *spec.NamedOperation) {
 	parseParams := getParsedOperationParams(operation)
 	allParams := getOperationCallParams(operation)
 
@@ -282,7 +282,7 @@ func getPlayStatus(response *spec.Response) string {
 	}
 }
 
-func genResponseCases(w *sources.Writer, operation *spec.NamedOperation) {
+func genResponseCases(w *generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.Responses) == 1 {
 		r := operation.Responses[0]
 		if !r.Type.Definition.IsEmpty() {
@@ -335,7 +335,7 @@ func getParsedOperationParams(operation *spec.NamedOperation) []string {
 	return params
 }
 
-func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPackage, paramsPackage Package) *sources.CodeFile {
+func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPackage, paramsPackage Package) *generator.CodeFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 
@@ -352,13 +352,13 @@ func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPack
 	w.EmptyLine()
 	generateApiRouterClass(w, api)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", routerType(api.Name))),
 		Content: w.String(),
 	}
 }
 
-func generateMainRouter(versions []spec.Version, thepackage Package) *sources.CodeFile {
+func generateMainRouter(versions []spec.Version, thepackage Package) *generator.CodeFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 
@@ -368,13 +368,13 @@ func generateMainRouter(versions []spec.Version, thepackage Package) *sources.Co
 
 	generateSpecRouterMainClass(w, versions)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thepackage.GetPath("SpecRouter.scala"),
 		Content: w.String(),
 	}
 }
 
-func generateSpecRouterMainClass(w *sources.Writer, versions []spec.Version) {
+func generateSpecRouterMainClass(w *generator.Writer, versions []spec.Version) {
 	params := []string{}
 	for _, version := range versions {
 		for _, api := range version.Http.Apis {
@@ -406,7 +406,7 @@ func routeName(operationName spec.Name) string {
 	return fmt.Sprintf("route%s", operationName.PascalCase())
 }
 
-func generateApiRouterClass(w *sources.Writer, api *spec.Api) {
+func generateApiRouterClass(w *generator.Writer, api *spec.Api) {
 	w.Line(`class %s @Inject()(Action: DefaultActionBuilder, controller: %s) extends SimpleRouter {`, routerType(api.Name), controllerType(api.Name))
 
 	for _, operation := range api.Operations {
@@ -476,7 +476,7 @@ func routerTypeName(api *spec.Api) string {
 	return typeName
 }
 
-func generatePlayParams(thepackage Package) *sources.CodeFile {
+func generatePlayParams(thepackage Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -519,8 +519,8 @@ object PlayParamsTypesBindings {
     override def unbind(key: String, value: T): String = stringBinder.unbind(key, codec.encode(value))
   }
 }`
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thepackage.GetPath("PlayParamsTypesBindings.scala"),
 		Content: strings.TrimSpace(code),
 	}

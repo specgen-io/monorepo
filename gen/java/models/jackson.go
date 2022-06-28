@@ -6,7 +6,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/java/packages"
 	"github.com/specgen-io/specgen/v2/gen/java/types"
 	"github.com/specgen-io/specgen/v2/gen/java/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -41,7 +41,7 @@ func (g *JacksonGenerator) SetupImport(jsonPackage packages.Module) string {
 	return fmt.Sprintf(`static %s.Json.setupObjectMapper`, jsonPackage.PackageName)
 }
 
-func (g *JacksonGenerator) CreateJsonMapperField(w *sources.Writer, annotation string) {
+func (g *JacksonGenerator) CreateJsonMapperField(w *generator.Writer, annotation string) {
 	if annotation != "" {
 		w.Line(annotation)
 	}
@@ -56,7 +56,7 @@ func (g *JacksonGenerator) CreateJsonMapperField(w *sources.Writer, annotation s
 	w.Line(`}`)
 }
 
-func (g *JacksonGenerator) InitJsonMapper(w *sources.Writer) {
+func (g *JacksonGenerator) InitJsonMapper(w *generator.Writer) {
 	w.Line(`this.objectMapper = new ObjectMapper();`)
 	w.Line(`setupObjectMapper(objectMapper);`)
 }
@@ -73,7 +73,7 @@ func (g *JacksonGenerator) WriteJsonNoCheckedException(varData string, typ *spec
 	return fmt.Sprintf(`writeJson(%s)`, varData)
 }
 
-func (g *JacksonGenerator) SetupLibrary(thePackage packages.Module) []sources.CodeFile {
+func (g *JacksonGenerator) SetupLibrary(thePackage packages.Module) []generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -91,14 +91,14 @@ public class Json {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return []sources.CodeFile{{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return []generator.CodeFile{{
 		Path:    thePackage.GetPath("Json.java"),
 		Content: strings.TrimSpace(code),
 	}}
 }
 
-func (g *JacksonGenerator) GenerateJsonParseException(thePackage, modelsPackage packages.Module) *sources.CodeFile {
+func (g *JacksonGenerator) GenerateJsonParseException(thePackage, modelsPackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -143,21 +143,21 @@ public class JsonParseException extends RuntimeException {
 	}
 }
 `
-	code, _ = sources.ExecuteTemplate(code, struct {
+	code, _ = generator.ExecuteTemplate(code, struct {
 		PackageName   string
 		ModelsPackage string
 	}{
 		thePackage.PackageName,
 		modelsPackage.PackageStar,
 	})
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("JsonParseException.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	for _, model := range version.ResolvedModels {
 		if model.IsObject() {
 			files = append(files, *g.modelObject(model, thePackage))
@@ -178,7 +178,7 @@ func jacksonJsonPropertyAnnotation(field *spec.NamedDefinition) string {
 	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.Source, required)
 }
 
-func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
+func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packages.Module) *generator.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -232,13 +232,13 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 	addObjectModelMethods(w.Indented(), model)
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath(className + ".java"),
 		Content: w.String(),
 	}
 }
 
-func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
+func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages.Module) *generator.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -254,13 +254,13 @@ func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages
 	}
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath(enumName + ".java"),
 		Content: w.String(),
 	}
 }
 
-func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.Module) *sources.CodeFile {
+func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.Module) *generator.CodeFile {
 	interfaceName := model.Name.PascalCase()
 	w := writer.NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
@@ -296,13 +296,13 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 	}
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath(interfaceName + ".java"),
 		Content: w.String(),
 	}
 }
 
-func (g *JacksonGenerator) modelOneOfImplementation(w *sources.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
+func (g *JacksonGenerator) modelOneOfImplementation(w *generator.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
 	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
 	w.Line(`  @JsonUnwrapped`)
 	w.Line(`  public %s data;`, g.Types.Java(&item.Type.Definition))

@@ -5,7 +5,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
 	"github.com/specgen-io/specgen/v2/gen/ts/types"
 	"github.com/specgen-io/specgen/v2/gen/ts/validations"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -65,7 +65,7 @@ func clientResponseBody(validation validations.Validation, response *spec.Respon
 	}
 }
 
-func generateParamsBuilder(module modules.Module) *sources.CodeFile {
+func generateParamsBuilder(module modules.Module) *generator.CodeFile {
 	code := `
 export function stringify(value: ScalarParam): string {
   if (value instanceof Date) {
@@ -106,5 +106,5 @@ export function strParamsObject(params: Record<string, ParamType>): Record<strin
       .reduce((obj, paramName) => ({...obj, [paramName]: stringifyX(params[paramName]!)}), {} as Record<string, string | string[]>)
 }`
 
-	return &sources.CodeFile{module.GetPath(), strings.TrimSpace(code)}
+	return &generator.CodeFile{module.GetPath(), strings.TrimSpace(code)}
 }

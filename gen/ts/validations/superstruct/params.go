@@ -5,11 +5,11 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/ts/common"
 	types2 "github.com/specgen-io/specgen/v2/gen/ts/types"
 	common2 "github.com/specgen-io/specgen/v2/gen/ts/validations/common"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (g *Generator) WriteParamsType(w *sources.Writer, typeName string, params []spec.NamedParam) {
+func (g *Generator) WriteParamsType(w *generator.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		w.Line("const %s = t.type({", common2.ParamsRuntimeTypeName(typeName))

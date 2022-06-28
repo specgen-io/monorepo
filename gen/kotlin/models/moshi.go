@@ -6,7 +6,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/types"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -42,7 +42,7 @@ func (g *MoshiGenerator) CreateJsonMapperField() string {
 	return `private val moshi: Moshi`
 }
 
-func (g *MoshiGenerator) InitJsonMapper(w *sources.Writer) {
+func (g *MoshiGenerator) InitJsonMapper(w *generator.Writer) {
 	w.Line(`val moshiBuilder = Moshi.Builder()`)
 	w.Line(`setupMoshiAdapters(moshiBuilder)`)
 	w.Line(`moshi = moshiBuilder.build()`)
@@ -78,7 +78,7 @@ func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, s
 
 }
 
-func (g *MoshiGenerator) GenerateJsonParseException(thePackage, modelsPackage modules.Module) *sources.CodeFile {
+func (g *MoshiGenerator) GenerateJsonParseException(thePackage, modelsPackage modules.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -109,20 +109,20 @@ class JsonParseException(exception: Throwable) :
     }
 }
 `
-	code, _ = sources.ExecuteTemplate(code, struct {
+	code, _ = generator.ExecuteTemplate(code, struct {
 		PackageName   string
 		ModelsPackage string
 	}{
 		thePackage.PackageName,
 		modelsPackage.PackageStar,
 	})
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("JsonParseException.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage modules.Module, jsonPackage modules.Module) []sources.CodeFile {
+func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage modules.Module, jsonPackage modules.Module) []generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -142,8 +142,8 @@ func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage modules
 		}
 	}
 
-	files := []sources.CodeFile{}
-	files = append(files, sources.CodeFile{Path: thePackage.GetPath("models.kt"), Content: w.String()})
+	files := []generator.CodeFile{}
+	files = append(files, generator.CodeFile{Path: thePackage.GetPath("models.kt"), Content: w.String()})
 
 	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.setupModelsMoshiAdapters`, thePackage.PackageName))
 	adaptersPackage := jsonPackage.Subpackage("adapters")
@@ -154,7 +154,7 @@ func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage modules
 	return files
 }
 
-func (g *MoshiGenerator) modelObject(w *sources.Writer, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelObject(w *generator.Writer, model *spec.NamedModel) {
 	className := model.Name.PascalCase()
 	w.Line(`data class %s(`, className)
 	for _, field := range model.Object.Fields {
@@ -164,7 +164,7 @@ func (g *MoshiGenerator) modelObject(w *sources.Writer, model *spec.NamedModel) 
 	w.Line(`)`)
 }
 
-func (g *MoshiGenerator) modelEnum(w *sources.Writer, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelEnum(w *generator.Writer, model *spec.NamedModel) {
 	enumName := model.Name.PascalCase()
 	w.Line(`enum class %s {`, enumName)
 	for _, enumItem := range model.Enum.Items {
@@ -174,7 +174,7 @@ func (g *MoshiGenerator) modelEnum(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func (g *MoshiGenerator) modelOneOf(w *sources.Writer, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelOneOf(w *generator.Writer, model *spec.NamedModel) {
 	sealedClassName := model.Name.PascalCase()
 	w.Line(`sealed class %s {`, sealedClassName)
 	for _, item := range model.OneOf.Items {
@@ -183,10 +183,10 @@ func (g *MoshiGenerator) modelOneOf(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func (g *MoshiGenerator) SetupLibrary(thePackage modules.Module) []sources.CodeFile {
+func (g *MoshiGenerator) SetupLibrary(thePackage modules.Module) []generator.CodeFile {
 	adaptersPackage := thePackage.Subpackage("adapters")
 
-	files := []sources.CodeFile{}
+	files := []generator.CodeFile{}
 	files = append(files, *g.setupAdapters(thePackage, adaptersPackage))
 	files = append(files, *bigDecimalAdapter(adaptersPackage))
 	files = append(files, *localDateAdapter(adaptersPackage))
@@ -197,7 +197,7 @@ func (g *MoshiGenerator) SetupLibrary(thePackage modules.Module) []sources.CodeF
 	return files
 }
 
-func (g *MoshiGenerator) setupAdapters(thePackage modules.Module, adaptersPackage modules.Module) *sources.CodeFile {
+func (g *MoshiGenerator) setupAdapters(thePackage modules.Module, adaptersPackage modules.Module) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line("package %s", thePackage.PackageName)
 	w.EmptyLine()
@@ -222,13 +222,13 @@ func (g *MoshiGenerator) setupAdapters(thePackage modules.Module, adaptersPackag
 	w.Line(`    .add(KotlinJsonAdapterFactory())`)
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("Json.kt"),
 		Content: w.String(),
 	}
 }
 
-func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage modules.Module, adaptersPackage modules.Module) *sources.CodeFile {
+func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage modules.Module, adaptersPackage modules.Module) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -261,13 +261,13 @@ func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage mo
 	}
 	w.Line(`}`)
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("Json.kt"),
 		Content: w.String(),
 	}
 }
 
-func bigDecimalAdapter(thePackage modules.Module) *sources.CodeFile {
+func bigDecimalAdapter(thePackage modules.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -298,14 +298,14 @@ class BigDecimalAdapter {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("BigDecimalAdapter.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func localDateAdapter(thePackage modules.Module) *sources.CodeFile {
+func localDateAdapter(thePackage modules.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -326,14 +326,14 @@ class LocalDateAdapter {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("LocalDateAdapter.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func localDateTimeAdapter(thePackage modules.Module) *sources.CodeFile {
+func localDateTimeAdapter(thePackage modules.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -354,14 +354,14 @@ class LocalDateTimeAdapter {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("LocalDateTimeAdapter.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func uuidAdapter(thePackage modules.Module) *sources.CodeFile {
+func uuidAdapter(thePackage modules.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -382,14 +382,14 @@ class UuidAdapter {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("UuidAdapter.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func unionAdapterFactory(thePackage modules.Module) *sources.CodeFile {
+func unionAdapterFactory(thePackage modules.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -596,14 +596,14 @@ class UnionAdapterFactory<T> internal constructor(
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("UnionAdapterFactory.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func unwrapFieldAdapterFactory(thePackage modules.Module) *sources.CodeFile {
+func unwrapFieldAdapterFactory(thePackage modules.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -676,8 +676,8 @@ class UnwrapFieldAdapterFactory<T>(private val type: Class<T>) : JsonAdapter.Fac
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("UnwrapFieldAdapterFactory.kt"),
 		Content: strings.TrimSpace(code),
 	}

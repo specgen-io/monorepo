@@ -2,13 +2,13 @@ package superstruct
 
 import (
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
 )
 
 var Superstruct = "superstruct"
 
-func (g *Generator) SetupLibrary(module modules.Module) *sources.CodeFile {
+func (g *Generator) SetupLibrary(module modules.Module) *generator.CodeFile {
 	code := `
 export * from "superstruct"
 
@@ -92,5 +92,5 @@ export const StrBoolean = t.coerce<boolean, unknown, string>(t.boolean(), t.stri
     }
 })`
 
-	return &sources.CodeFile{module.GetPath(), strings.TrimSpace(code)}
+	return &generator.CodeFile{module.GetPath(), strings.TrimSpace(code)}
 }

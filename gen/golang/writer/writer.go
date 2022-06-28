@@ -1,12 +1,12 @@
 package writer
 
 import (
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
 )
 
-func NewGoWriter() *sources.Writer {
-	return sources.NewWriter("\t", 2)
+func NewGoWriter() *generator.Writer {
+	return generator.NewWriter("\t", 2)
 }
 
 func colWidth(lines [][]string, colIndex int) int {
@@ -24,7 +24,7 @@ func space(value string, length int, spacer string) string {
 	return value + strings.Repeat(spacer, length-len(value))
 }
 
-func WriteAlignedLines(w *sources.Writer, lines [][]string) {
+func WriteAlignedLines(w *generator.Writer, lines [][]string) {
 	widths := make([]int, len(lines[0]))
 	for colIndex, _ := range lines[0] {
 		widths[colIndex] = colWidth(lines, colIndex)

@@ -2,11 +2,11 @@ package client
 
 import (
 	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
 )
 
-func clientException(thePackage modules.Module) *sources.CodeFile {
+func clientException(thePackage modules.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -20,8 +20,8 @@ class ClientException : RuntimeException {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("ClientException.kt"),
 		Content: strings.TrimSpace(code),
 	}

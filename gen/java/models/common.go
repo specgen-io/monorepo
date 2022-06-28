@@ -2,12 +2,12 @@ package models
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func addObjectModelMethods(w *sources.Writer, model *spec.NamedModel) {
+func addObjectModelMethods(w *generator.Writer, model *spec.NamedModel) {
 	w.Line(`@Override`)
 	w.Line(`public boolean equals(Object o) {`)
 	w.Line(`  if (this == o) return true;`)
@@ -46,7 +46,7 @@ func oneOfItemClassName(item *spec.NamedDefinition) string {
 	return item.Name.PascalCase()
 }
 
-func addOneOfModelMethods(w *sources.Writer, item *spec.NamedDefinition) {
+func addOneOfModelMethods(w *generator.Writer, item *spec.NamedDefinition) {
 	w.Line(`@Override`)
 	w.Line(`public boolean equals(Object o) {`)
 	w.Line(`  if (this == o) return true;`)

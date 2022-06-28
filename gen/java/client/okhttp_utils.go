@@ -2,12 +2,12 @@ package client
 
 import (
 	"github.com/specgen-io/specgen/v2/gen/java/packages"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
 )
 
-func generateUtils(thePackage packages.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func generateUtils(thePackage packages.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 
 	files = append(files, *generateRequestBuilder(thePackage))
 	files = append(files, *generateUrlBuilder(thePackage))
@@ -16,7 +16,7 @@ func generateUtils(thePackage packages.Module) []sources.CodeFile {
 	return files
 }
 
-func generateRequestBuilder(thePackage packages.Module) *sources.CodeFile {
+func generateRequestBuilder(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -51,14 +51,14 @@ public class RequestBuilder {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("RequestBuilder.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func generateUrlBuilder(thePackage packages.Module) *sources.CodeFile {
+func generateUrlBuilder(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -104,14 +104,14 @@ public class UrlBuilder {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("UrlBuilder.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func generateStringify(thePackage packages.Module) *sources.CodeFile {
+func generateStringify(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -125,8 +125,8 @@ public class Stringify {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thePackage.GetPath("Stringify.java"),
 		Content: strings.TrimSpace(code),
 	}

@@ -5,7 +5,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/java/packages"
 	"github.com/specgen-io/specgen/v2/gen/java/types"
 	"github.com/specgen-io/specgen/v2/gen/java/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -51,8 +51,8 @@ func parameters(operation *spec.NamedOperation, types *types.Types) []string {
 	return params
 }
 
-func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Module, modelsVersionPackage packages.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Module, modelsVersionPackage packages.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -67,14 +67,14 @@ func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage p
 	}
 	w.Line(`}`)
 
-	files = append(files, sources.CodeFile{
+	files = append(files, generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", InterfaceName(operation))),
 		Content: w.String(),
 	})
 	return files
 }
 
-func implementation(w *sources.Writer, types *types.Types, response *spec.OperationResponse) {
+func implementation(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
 	w.Line(`class %s implements %s {`, serviceResponseImplementationName, InterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {

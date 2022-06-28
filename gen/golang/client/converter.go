@@ -3,7 +3,7 @@ package client
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -59,7 +59,7 @@ func converterMethodNamePlain(typ *spec.TypeDef) string {
 	}
 }
 
-func generateConverter(module module.Module) *sources.CodeFile {
+func generateConverter(module module.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -280,6 +280,6 @@ func (self *ParamsConverter) StringEnumArray(key string, values []interface{}) {
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
-	return &sources.CodeFile{module.GetPath("converter.go"), strings.TrimSpace(code)}
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
+	return &generator.CodeFile{module.GetPath("converter.go"), strings.TrimSpace(code)}
 }

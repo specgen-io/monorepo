@@ -1,4 +1,4 @@
-package gen
+package generator
 
 const ModuleName = "module-name"
 const ModuleNameTitle = "Module name"
@@ -43,12 +43,6 @@ const ServerDescription = "server HTTP library/framework"
 const OutFile = "out-file"
 const OutFileTitle = "Output file path"
 const OutFileDescription = "path to output file"
-
-type Arg struct {
-	Name        string
-	Title       string
-	Description string
-}
 
 var ArgSpecFile = Arg{SpecFile, SpecFileTitle, SpecFileDescription}
 var ArgOutFile = Arg{OutFile, OutFileTitle, OutFileDescription}

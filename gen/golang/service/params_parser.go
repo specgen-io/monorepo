@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -62,7 +62,7 @@ func parserMethodNamePlain(typ *spec.TypeDef) string {
 	}
 }
 
-func generateParamsParser(module module.Module, models module.Module) *sources.CodeFile {
+func generateParamsParser(module module.Module, models module.Module) *generator.CodeFile {
 	data := struct {
 		PackageName     string
 		ModelsPackage   string
@@ -622,6 +622,6 @@ func (parser *ParamsParser) StringEnumArray(name string, values []string) []stri
 }
 `
 
-	code, _ = sources.ExecuteTemplate(code, data)
-	return &sources.CodeFile{module.GetPath("params_parsing.go"), strings.TrimSpace(code)}
+	code, _ = generator.ExecuteTemplate(code, data)
+	return &generator.CodeFile{module.GetPath("params_parsing.go"), strings.TrimSpace(code)}
 }

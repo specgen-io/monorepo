@@ -1,11 +1,11 @@
 package ruby
 
 import (
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
 )
 
-func generateBaseClient(moduleName string, path string) *sources.CodeFile {
+func generateBaseClient(moduleName string, path string) *generator.CodeFile {
 	code := `
 require "net/http"
 require "net/https"
@@ -75,16 +75,16 @@ module [[.ModuleName]]
   end
 end
 `
-	code, _ = sources.ExecuteTemplate(code, struct{ ModuleName string }{moduleName})
-	return &sources.CodeFile{path, strings.TrimSpace(code)}
+	code, _ = generator.ExecuteTemplate(code, struct{ ModuleName string }{moduleName})
+	return &generator.CodeFile{path, strings.TrimSpace(code)}
 }
 
-func generateClientRoot(gemName string, path string) *sources.CodeFile {
+func generateClientRoot(gemName string, path string) *generator.CodeFile {
 	code := `
 require "emery"
 require "[[.GemName]]/models"
 require "[[.GemName]]/baseclient"
 require "[[.GemName]]/client"`
-	code, _ = sources.ExecuteTemplate(code, struct{ GemName string }{gemName})
-	return &sources.CodeFile{path, strings.TrimSpace(code)}
+	code, _ = generator.ExecuteTemplate(code, struct{ GemName string }{gemName})
+	return &generator.CodeFile{path, strings.TrimSpace(code)}
 }

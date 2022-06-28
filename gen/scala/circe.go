@@ -2,19 +2,19 @@ package scala
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func GenerateCirceModels(specification *spec.Spec, packageName string, generatePath string) *sources.Sources {
+func GenerateCirceModels(specification *spec.Spec, packageName string, generatePath string) *generator.Sources {
 	if packageName == "" {
 		packageName = specification.Name.FlatCase()
 	}
 	mainPackage := NewPackage(generatePath, packageName, "")
 	jsonPackage := mainPackage
 
-	sources := sources.NewSources()
+	sources := generator.NewSources()
 	jsonHelpers := generateJson(jsonPackage)
 	taggedUnion := generateTaggedUnion(jsonPackage)
 	sources.AddGenerated(taggedUnion, jsonHelpers)
@@ -29,7 +29,7 @@ func GenerateCirceModels(specification *spec.Spec, packageName string, generateP
 	return sources
 }
 
-func generateCirceModels(version *spec.Version, thepackage, taggedUnionPackage Package) *sources.CodeFile {
+func generateCirceModels(version *spec.Version, thepackage, taggedUnionPackage Package) *generator.CodeFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
@@ -53,13 +53,13 @@ func generateCirceModels(version *spec.Version, thepackage, taggedUnionPackage P
 		}
 	}
 
-	return &sources.CodeFile{
+	return &generator.CodeFile{
 		Path:    thepackage.GetPath("Models.scala"),
 		Content: w.String(),
 	}
 }
 
-func generateCirceObjectModel(w *sources.Writer, model *spec.NamedModel) {
+func generateCirceObjectModel(w *generator.Writer, model *spec.NamedModel) {
 	w.Line(`case class %s(`, model.Name.PascalCase())
 	for index, field := range model.Object.Fields {
 		comma := ","
@@ -76,7 +76,7 @@ func generateCirceObjectModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateCirceEnumModel(w *sources.Writer, model *spec.NamedModel) {
+func generateCirceEnumModel(w *generator.Writer, model *spec.NamedModel) {
 	className := model.Name.PascalCase()
 	w.Line(`sealed abstract class %s(val value: String) extends StringEnumEntry`, className)
 	w.EmptyLine()
@@ -88,7 +88,7 @@ func generateCirceEnumModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateCirceUnionModel(w *sources.Writer, model *spec.NamedModel) {
+func generateCirceUnionModel(w *generator.Writer, model *spec.NamedModel) {
 	traitName := model.Name.PascalCase()
 	w.Line(`sealed trait %s`, traitName)
 	w.EmptyLine()
@@ -112,7 +112,7 @@ func generateCirceUnionModel(w *sources.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateJson(thepackage Package) *sources.CodeFile {
+func generateJson(thepackage Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -145,14 +145,14 @@ object Jsoner {
     }
   }
 }`
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thepackage.GetPath("Json.scala"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func generateTaggedUnion(thepackage Package) *sources.CodeFile {
+func generateTaggedUnion(thepackage Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -291,8 +291,8 @@ object taggedunion {
     }
   }
 }`
-	code, _ = sources.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
-	return &sources.CodeFile{
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
+	return &generator.CodeFile{
 		Path:    thepackage.GetPath("TaggedUnion.scala"),
 		Content: strings.TrimSpace(code),
 	}

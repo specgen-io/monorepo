@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/types"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
 type Generator interface {
-	SetupLibrary(thePackage modules.Module) []sources.CodeFile
+	SetupLibrary(thePackage modules.Module) []generator.CodeFile
 	SetupImport(jsonPackage modules.Module) string
-	VersionModels(version *spec.Version, thePackage modules.Module, jsonPackage modules.Module) []sources.CodeFile
+	VersionModels(version *spec.Version, thePackage modules.Module, jsonPackage modules.Module) []generator.CodeFile
 	ReadJson(jsonStr string, typ *spec.TypeDef) (string, string)
 	WriteJson(varData string, typ *spec.TypeDef) (string, string)
 	CreateJsonMapperField() string
-	InitJsonMapper(w *sources.Writer)
+	InitJsonMapper(w *generator.Writer)
 	ModelsDefinitionsImports() []string
 	ModelsUsageImports() []string
 
-	GenerateJsonParseException(thePackage, modelsPackage modules.Module) *sources.CodeFile
+	GenerateJsonParseException(thePackage, modelsPackage modules.Module) *generator.CodeFile
 }
 
 func NewGenerator(jsonlib string) Generator {

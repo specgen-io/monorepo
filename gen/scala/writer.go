@@ -1,7 +1,9 @@
 package scala
 
-import "github.com/specgen-io/specgen/v2/sources"
+import (
+	"github.com/specgen-io/specgen/v2/generator"
+)
 
-func NewScalaWriter() *sources.Writer {
-	return sources.NewWriter("  ", 2)
+func NewScalaWriter() *generator.Writer {
+	return generator.NewWriter("  ", 2)
 }

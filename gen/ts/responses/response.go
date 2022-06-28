@@ -3,11 +3,11 @@ package responses
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen/ts/types"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func GenerateOperationResponse(w *sources.Writer, operation *spec.NamedOperation) {
+func GenerateOperationResponse(w *generator.Writer, operation *spec.NamedOperation) {
 	w.Line("export type %s =", responseTypeName(operation))
 	for _, response := range operation.Responses {
 		if !response.Type.Definition.IsEmpty() {

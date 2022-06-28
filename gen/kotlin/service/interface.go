@@ -6,12 +6,12 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/responses"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func (g *Generator) ServicesInterfaces(version *spec.Version, thePackage, modelsVersionPackage modules.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func (g *Generator) ServicesInterfaces(version *spec.Version, thePackage, modelsVersionPackage modules.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, g.serviceInterface(&api, apiPackage, modelsVersionPackage)...)
@@ -19,8 +19,8 @@ func (g *Generator) ServicesInterfaces(version *spec.Version, thePackage, models
 	return files
 }
 
-func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPackage modules.Module) []sources.CodeFile {
-	files := []sources.CodeFile{}
+func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPackage modules.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -42,7 +42,7 @@ func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPac
 		}
 	}
 
-	files = append(files, sources.CodeFile{
+	files = append(files, generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", serviceInterfaceName(api))),
 		Content: w.String(),
 	})

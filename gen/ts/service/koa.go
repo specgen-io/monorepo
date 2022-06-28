@@ -7,7 +7,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/ts/types"
 	"github.com/specgen-io/specgen/v2/gen/ts/validations"
 	"github.com/specgen-io/specgen/v2/gen/ts/writer"
-	"github.com/specgen-io/specgen/v2/sources"
+	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
@@ -16,7 +16,7 @@ type koaGenerator struct {
 	validation validations.Validation
 }
 
-func (g *koaGenerator) SpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *sources.CodeFile {
+func (g *koaGenerator) SpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *generator.CodeFile {
 	w := writer.NewTsWriter()
 	w.Line("import Router from '@koa/router'")
 	for _, version := range specification.Versions {
@@ -60,10 +60,10 @@ func (g *koaGenerator) SpecRouter(specification *spec.Spec, rootModule modules.M
 	w.Line("  return router")
 	w.Line("}")
 
-	return &sources.CodeFile{module.GetPath(), w.String()}
+	return &generator.CodeFile{module.GetPath(), w.String()}
 }
 
-func (g *koaGenerator) VersionRouting(version *spec.Version, validationModule, paramsModule, module modules.Module) *sources.CodeFile {
+func (g *koaGenerator) VersionRouting(version *spec.Version, validationModule, paramsModule, module modules.Module) *generator.CodeFile {
 	w := writer.NewTsWriter()
 
 	w.Line(`import Router from '@koa/router'`)
@@ -85,10 +85,10 @@ func (g *koaGenerator) VersionRouting(version *spec.Version, validationModule, p
 		g.apiRouting(w, &api)
 	}
 
-	return &sources.CodeFile{module.GetPath(), w.String()}
+	return &generator.CodeFile{module.GetPath(), w.String()}
 }
 
-func (g *koaGenerator) apiRouting(w *sources.Writer, api *spec.Api) {
+func (g *koaGenerator) apiRouting(w *generator.Writer, api *spec.Api) {
 	w.EmptyLine()
 	w.Line("export const %s = (service: %s) => {", apiRouterName(api), serviceInterfaceName(api))
 	g.generateErrors(w.Indented())
@@ -111,7 +111,7 @@ func getKoaUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
-func (g *koaGenerator) response(w *sources.Writer, response *spec.Response, dataParam string) {
+func (g *koaGenerator) response(w *generator.Writer, response *spec.Response, dataParam string) {
 	w.Line("ctx.status = %s", spec.HttpStatusCode(response.Name))
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line("return")
@@ -126,7 +126,7 @@ func (g *koaGenerator) response(w *sources.Writer, response *spec.Response, data
 	}
 }
 
-func (g *koaGenerator) responses(w *sources.Writer, responses spec.OperationResponses) {
+func (g *koaGenerator) responses(w *generator.Writer, responses spec.OperationResponses) {
 	if len(responses) == 1 {
 		g.response(w, &responses[0].Response, "result")
 	} else {
@@ -139,7 +139,7 @@ func (g *koaGenerator) responses(w *sources.Writer, responses spec.OperationResp
 	}
 }
 
-func (g *koaGenerator) checkContentType(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) checkContentType(w *generator.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`if (!assertContentType(ctx, "text/plain")) {`)
 		w.Line(`  return`)
@@ -152,7 +152,7 @@ func (g *koaGenerator) checkContentType(w *sources.Writer, operation *spec.Named
 	}
 }
 
-func (g *koaGenerator) operationRouting(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) operationRouting(w *generator.Writer, operation *spec.NamedOperation) {
 	w.Line("router.%s('%s', async (ctx) => {", strings.ToLower(operation.Endpoint.Method), getKoaUrl(operation.Endpoint))
 	w.Indent()
 	w.Line("try {")
@@ -172,7 +172,7 @@ func (g *koaGenerator) operationRouting(w *sources.Writer, operation *spec.Named
 	w.Line("})")
 }
 
-func (g *koaGenerator) urlParamsParsing(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) urlParamsParsing(w *generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.Endpoint.UrlParams) > 0 {
 		w.Line("const urlParamsDecode = t.decodeR(%s, ctx.params)", urlParamsRuntimeType(operation))
 		w.Line("if (urlParamsDecode.error) {")
@@ -182,7 +182,7 @@ func (g *koaGenerator) urlParamsParsing(w *sources.Writer, operation *spec.Named
 	}
 }
 
-func (g *koaGenerator) headerParsing(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) headerParsing(w *generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.HeaderParams) > 0 {
 		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(ctx.req.rawHeaders))", headersRuntimeType(operation))
 		w.Line("if (headerParamsDecode.error) {")
@@ -192,7 +192,7 @@ func (g *koaGenerator) headerParsing(w *sources.Writer, operation *spec.NamedOpe
 	}
 }
 
-func (g *koaGenerator) queryParsing(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) queryParsing(w *generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.QueryParams) > 0 {
 		w.Line("const queryParamsDecode = t.decodeR(%s, ctx.request.query)", queryRuntimeType(operation))
 		w.Line("if (queryParamsDecode.error) {")
@@ -202,7 +202,7 @@ func (g *koaGenerator) queryParsing(w *sources.Writer, operation *spec.NamedOper
 	}
 }
 
-func (g *koaGenerator) bodyParsing(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) bodyParsing(w *generator.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`const body: string = ctx.request.rawBody`)
 	}
@@ -215,22 +215,22 @@ func (g *koaGenerator) bodyParsing(w *sources.Writer, operation *spec.NamedOpera
 	}
 }
 
-func (g *koaGenerator) respondBadRequest(w *sources.Writer, operation *spec.NamedOperation, location, errorsVar, message string) {
+func (g *koaGenerator) respondBadRequest(w *generator.Writer, operation *spec.NamedOperation, location, errorsVar, message string) {
 	w.Line(`respondBadRequest(ctx, { message: "%s", location: models.ErrorLocation.%s, errors: %s })`, message, location, errorsVar)
 	w.Line(`return`)
 }
 
-func (g *koaGenerator) respondNotFound(w *sources.Writer, operation *spec.NamedOperation, message string) {
+func (g *koaGenerator) respondNotFound(w *generator.Writer, operation *spec.NamedOperation, message string) {
 	w.Line(`respondNotFound(ctx, { message: "%s" })`, message)
 	w.Line(`return`)
 }
 
-func (g *koaGenerator) respondInternalServerError(w *sources.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) respondInternalServerError(w *generator.Writer, operation *spec.NamedOperation) {
 	w.Line(`respondInternalServerError(ctx, { message: error instanceof Error ? error.message : "Unknown error" })`)
 	w.Line(`return`)
 }
 
-func (g *koaGenerator) generateErrors(w *sources.Writer) {
+func (g *koaGenerator) generateErrors(w *generator.Writer) {
 	code := `
 const respondInternalServerError = (ctx: ExtendableContext, error: models.InternalServerError) => {
   const body = t.encode(models.TInternalServerError, error)
