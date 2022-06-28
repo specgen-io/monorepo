@@ -3,15 +3,15 @@ package cmd
 import (
 	"github.com/specgen-io/specgen/v2/console"
 	"github.com/specgen-io/specgen/v2/fail"
-	"github.com/specgen-io/specgen/v2/gen"
 	"github.com/specgen-io/specgen/v2/generator"
+	"github.com/specgen-io/specgen/v2/generators"
 	"github.com/spf13/cobra"
 	"strings"
 )
 
 func init() {
-	for index := range gen.Generators {
-		rootCmd.AddCommand(generatorCommand(&gen.Generators[index]))
+	for index := range generators.All {
+		rootCmd.AddCommand(generatorCommand(&generators.All[index]))
 	}
 }
 

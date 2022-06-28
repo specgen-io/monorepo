@@ -2,8 +2,13 @@ package openapi
 
 import (
 	"github.com/specgen-io/specgen/v2/generator"
+	"github.com/specgen-io/specgen/v2/generators"
 	"github.com/specgen-io/specgen/v2/spec"
 )
+
+func init() {
+	generators.Add(Openapi)
+}
 
 var Openapi = generator.Generator{
 	"openapi",
