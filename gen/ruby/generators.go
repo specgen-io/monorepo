@@ -2,8 +2,13 @@ package ruby
 
 import (
 	"github.com/specgen-io/specgen/v2/generator"
+	"github.com/specgen-io/specgen/v2/generators"
 	"github.com/specgen-io/specgen/v2/spec"
 )
+
+func init() {
+	generators.Add(Models, Client)
+}
 
 var Models = generator.Generator{
 	"models-ruby",
