@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/specgen-io/specgen/v2/gen/golang/common"
-	imports2 "github.com/specgen-io/specgen/v2/gen/golang/imports"
+	"github.com/specgen-io/specgen/v2/gen/golang/imports"
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
 	"github.com/specgen-io/specgen/v2/gen/golang/responses"
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
@@ -24,7 +24,7 @@ func generateServiceInterface(api *spec.Api, apiModule, modelsModule, emptyModul
 	w := writer.NewGoWriter()
 	w.Line("package %s", apiModule.Name)
 
-	imports := imports2.Imports()
+	imports := imports.New()
 	imports.AddApiTypes(api)
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 && types.OperationHasType(&operation, spec.TypeEmpty) {

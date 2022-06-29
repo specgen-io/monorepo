@@ -35,7 +35,7 @@ func generateVersionModelsCode(version *spec.Version, module module.Module) *gen
 	w := writer.NewGoWriter()
 	w.Line("package %s", module.Name)
 
-	imports := imports.Imports()
+	imports := imports.New()
 	imports.AddModelsTypes(version)
 	imports.Write(w)
 
