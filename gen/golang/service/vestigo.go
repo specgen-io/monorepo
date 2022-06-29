@@ -35,7 +35,7 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 	w := writer.NewGoWriter()
 	w.Line("package %s", versionModule.Name)
 
-	imports := imports.Imports()
+	imports := imports.New()
 	imports.Add("encoding/json")
 	imports.Add("github.com/husobee/vestigo")
 	imports.AddAlias("github.com/sirupsen/logrus", "log")
@@ -284,7 +284,7 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *genera
 	w := writer.NewGoWriter()
 	w.Line("package %s", module.Name)
 
-	imports := imports.Imports()
+	imports := imports.New()
 	imports.Add("github.com/husobee/vestigo")
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Version.FlatCase())

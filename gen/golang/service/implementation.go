@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen/golang/common"
-	imports2 "github.com/specgen-io/specgen/v2/gen/golang/imports"
+	"github.com/specgen-io/specgen/v2/gen/golang/imports"
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
 	"github.com/specgen-io/specgen/v2/generator"
@@ -23,7 +23,7 @@ func generateServiceImplementation(api *spec.Api, apiModule, modelsModule, targe
 	w := writer.NewGoWriter()
 	w.Line("package %s", targetModule.Name)
 
-	imports := imports2.Imports()
+	imports := imports.New()
 	imports.Add("errors")
 	imports.AddApiTypes(api)
 	imports.Add(apiModule.Package)

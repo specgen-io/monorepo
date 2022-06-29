@@ -11,7 +11,7 @@ type imports struct {
 	imports map[string]string
 }
 
-func Imports() *imports {
+func New() *imports {
 	return &imports{imports: make(map[string]string)}
 }
 

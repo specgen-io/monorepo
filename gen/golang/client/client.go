@@ -50,7 +50,7 @@ func generateClientImplementation(api *spec.Api, versionModule, modelsModule, em
 	w := writer.NewGoWriter()
 	w.Line("package %s", versionModule.Name)
 
-	imports := imports.Imports().
+	imports := imports.New().
 		Add("fmt").
 		Add("errors").
 		Add("io/ioutil").
