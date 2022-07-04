@@ -69,12 +69,12 @@
     </profiles>
 
     <groupId>io.specgen</groupId>
-    <artifactId>specgen-maven-plugin</artifactId>
+    <artifactId>java-maven-plugin</artifactId>
     <version>${project.version}</version>
     <packaging>maven-plugin</packaging>
 
-    <name>Specgen Maven Plugin</name>
-    <description>Maven plugin for specgen code generation.</description>
+    <name>Specgen Java Maven Plugin</name>
+    <description>Maven plugin for specgen java code generation.</description>
     <url>https://specgen.io</url>
     <scm>
         <connection>git@github.com:specgen-io/specgen.git</connection>
@@ -90,8 +90,8 @@
         <developer>
             <id>vsapronov</id>
             <name>Vladimir Sapronov</name>
-            <email>vladimir.sapronov@gmail.com</email>
-            <url>https://github.com/vsapronov</url>
+            <email>vladimir@specgen.io</email>
+            <url>https://github.com/specgen-io</url>
         </developer>
     </developers>
 

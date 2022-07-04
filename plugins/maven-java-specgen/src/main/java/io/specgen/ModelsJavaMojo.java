@@ -1,12 +1,12 @@
-package io.specgen;
+package io.specgen.java;
 
 import org.apache.maven.plugins.annotations.*;
-import org.apache.maven.project.*;
+import org.apache.maven.project.MavenProject;
 
 import java.util.*;
 
-@Mojo(name = "client-kotlin", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
-public class ClientKotlinMojo extends SpecgenAbstractMojo {
+@Mojo(name = "models-java", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
+public class ModelsJavaMojo extends SpecgenAbstractMojo {
 	@Parameter(property = "specFile", defaultValue = "${project.basedir}/spec.yaml", required = true)
 	private String specFile;
 
@@ -16,18 +16,17 @@ public class ClientKotlinMojo extends SpecgenAbstractMojo {
 	@Parameter(property = "packageName")
 	private String packageName;
 
-	@Parameter(property = "generatePath", defaultValue = "${project.build.directory}/generated-sources/kotlin/spec", required = true)
+	@Parameter(property = "generatePath", defaultValue = "${project.build.directory}/generated-sources/java", required = true)
 	private String generatePath;
 
 	@Parameter(defaultValue = "${project}", readonly = true, required = true)
 	private MavenProject project;
 
-	@Override
 	public void execute() {
 		getLog().info("Running codegen plugin");
 
 		List<String> commandlineArgs = new ArrayList<>(List.of(
-			"client-kotlin",
+			"models-java",
 			"--jsonlib", jsonlib,
 			"--spec-file", specFile,
 			"--generate-path", generatePath
@@ -47,4 +46,3 @@ public class ClientKotlinMojo extends SpecgenAbstractMojo {
 		project.addCompileSourceRoot(generatePath);
 	}
 }
-
