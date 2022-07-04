@@ -1,4 +1,4 @@
-package io.specgen;
+package io.specgen.java;
 
 import org.apache.maven.plugin.AbstractMojo;
 

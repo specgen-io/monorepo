@@ -176,52 +176,102 @@ jobs:
               echo "Will not release - not running on main branch"
             fi
 
-  build-maven-specgen:
+  build-maven-java-specgen:
     docker:
       - image: circleci/openjdk:11-jdk
     steps:
       - checkout
       - attach_workspace:
-          at: ./plugins/maven-specgen/src/main/resources
+          at: ./plugins/maven-java-specgen/src/main/resources
       - restore_cache:
-          key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
+          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
       - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
       - run:
           name: Build Maven plugin
           command: |
-            cd ./plugins/maven-specgen
+            cd ./plugins/maven-java-specgen
             mvn clean install -Dproject.version=<<pipeline.parameters.specgen-version>>
       - run:
           name: Deploy Maven plugin
           command: |
-            cd ./plugins/maven-specgen
+            cd ./plugins/maven-java-specgen
             mvn deploy -Dproject.version=<<pipeline.parameters.specgen-version>> -Dartifactory=true
       - save_cache:
-          key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
+          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
           paths:
             - ~/.ivy2
             - ~/.m2
 
-  maven-sonatype:
+  build-maven-kotlin-specgen:
     docker:
       - image: circleci/openjdk:11-jdk
     steps:
       - checkout
       - attach_workspace:
-          at: ./plugins/maven-specgen/src/main/resources
+          at: ./plugins/maven-kotlin-specgen/src/main/resources
       - restore_cache:
-          key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
+          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - run:
+          name: Build Maven plugin
+          command: |
+            cd ./plugins/maven-kotlin-specgen
+            mvn clean install -Dproject.version=<<pipeline.parameters.specgen-version>>
+      - run:
+          name: Deploy Maven plugin
+          command: |
+            cd ./plugins/maven-kotlin-specgen
+            mvn deploy -Dproject.version=<<pipeline.parameters.specgen-version>> -Dartifactory=true
+      - save_cache:
+          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
+          paths:
+            - ~/.ivy2
+            - ~/.m2
+
+  maven-java-sonatype:
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/maven-java-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
       - setup-sonatype-maven
       - run:
           name: Deploy Maven plugin
           command: |
-            cd ./plugins/maven-specgen
+            cd ./plugins/maven-java-specgen
             export GPG_TTY=$(tty)
             mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true -Dproject.version=<<pipeline.parameters.specgen-version>>
       - save_cache:
-          key: cache-{{ checksum "./plugins/maven-specgen/pom.xml" }}
+          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
+          paths:
+            - ~/.ivy2
+            - ~/.m2
+
+  maven-kotlin-sonatype:
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/maven-kotlin-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
+      - setup-sonatype-maven
+      - run:
+          name: Deploy Maven plugin
+          command: |
+            cd ./plugins/maven-kotlin-specgen
+            export GPG_TTY=$(tty)
+            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true -Dproject.version=<<pipeline.parameters.specgen-version>>
+      - save_cache:
+          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
           paths:
             - ~/.ivy2
             - ~/.m2
@@ -382,7 +432,11 @@ workflows:
           context: specgen
           requires:
             - build-specgen
-      - build-maven-specgen:
+      - build-maven-java-specgen:
+          context: specgen
+          requires:
+            - build-specgen
+      - build-maven-kotlin-specgen:
           context: specgen
           requires:
             - build-specgen
@@ -397,7 +451,8 @@ workflows:
       - build-complete:
           requires:
             - build-sbt-specgen
-            - build-maven-specgen
+            - build-maven-java-specgen
+            - build-maven-kotlin-specgen
             - build-gradle-specgen
             - build-gem-specgen
             - build-npm-specgen
@@ -438,14 +493,18 @@ workflows:
           context: specgen
           requires:
             - approve-release
-      - maven-sonatype:
+      - maven-java-sonatype:
           context: specgen
           requires:
             - approve-release
+      - maven-kotlin-sonatype:
+          context: specgen
+          requires:
+            - maven-java-sonatype
       - sbt-sonatype:
           context: specgen
           requires:
-            - maven-sonatype
+            - maven-kotlin-sonatype
       - gradle-pluginportal:
           context: specgen
           requires:
