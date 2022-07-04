@@ -15,12 +15,14 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 	appPackage := rootPackage.Subpackage("app")
 	jsonPackage := rootPackage.Subpackage("json")
 	paramsPackage := rootPackage.Subpackage("params")
+	exceptionsPackage := rootPackage.Subpackage("exceptions")
 
 	sources := generator.NewSources()
 
 	playParamsFile := generatePlayParams(paramsPackage)
 	scalaHttpStaticFile := generateStringParams(paramsPackage)
-	sources.AddGenerated(scalaHttpStaticFile, playParamsFile)
+	exceptionsFile := generateExceptions(exceptionsPackage)
+	sources.AddGenerated(scalaHttpStaticFile, playParamsFile, exceptionsFile)
 	jsonHelpers := generateJson(jsonPackage)
 	taggedUnion := generateTaggedUnion(jsonPackage)
 	sources.AddGenerated(taggedUnion, jsonHelpers)
@@ -37,8 +39,8 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 		for _, api := range version.Http.Apis {
 			apiPackage := servicesPackage.Subpackage(api.Name.FlatCase())
 			apiTrait := generateApiTrait(&api, apiPackage, modelsPackage, servicesImplPackage)
-			apiController := generateApiController(&api, controllersPackage, apiPackage, modelsPackage, jsonPackage, paramsPackage)
-			apiRouter := generateApiRouter(&api, routersPackage, controllersPackage, modelsPackage, paramsPackage)
+			apiController := generateApiController(&api, controllersPackage, apiPackage, modelsPackage, jsonPackage, paramsPackage, exceptionsPackage)
+			apiRouter := generateApiRouter(&api, routersPackage, controllersPackage, modelsPackage, jsonPackage, paramsPackage)
 			sources.AddGenerated(apiRouter, apiController, apiTrait)
 		}
 		versionModels := generateCirceModels(&version, modelsPackage, jsonPackage)
@@ -160,29 +162,42 @@ func generateApiImpl(api spec.Api, thepackage, apiPackage, modelsPackage Package
 	}
 }
 
-func addParamsParsing(w *generator.Writer, params []spec.NamedParam, paramsName string, values string) {
+func addParamsParsing(w *generator.Writer, params []spec.NamedParam, location string, paramsVar string, valuesVar string) {
 	if params != nil && len(params) > 0 {
-		w.Line(`val %s = new StringParamsReader(%s)`, paramsName, values)
+		w.Line(`val %s = new StringParamsReader(%s, %s)`, paramsVar, location, valuesVar)
 		for _, param := range params {
-			paramBaseType := param.Type.Definition.BaseType()
-			paramLine := fmt.Sprintf(`val %s = %s.read[%s]("%s")`, param.Name.CamelCase(), paramsName, ScalaType(paramBaseType), param.Name.Source)
-			if paramBaseType.Node == spec.ArrayType {
-				paramItemType := paramBaseType.Child
-				paramLine = fmt.Sprintf(`val %s = %s.readList[%s]("%s")`, param.Name.CamelCase(), paramsName, ScalaType(paramItemType), param.Name.Source)
-			}
-			if !param.Type.Definition.IsNullable() {
-				if param.Default != nil {
-					paramLine += fmt.Sprintf(`.getOrElse(%s)`, DefaultValue(&param.Type.Definition, *param.Default))
-				} else {
-					paramLine += fmt.Sprintf(`.get`)
-				}
-			}
-			w.Line(paramLine)
+			w.Line(`val %s = %s.%s`, param.Name.CamelCase(), paramsVar, addParamParsingCall(&param))
 		}
 	}
 }
 
-func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage, jsonPackage, paramsPackage Package) *generator.CodeFile {
+func addParamParsingCall(param *spec.NamedParam) string {
+	paramBaseType := param.Type.Definition.BaseType()
+	if paramBaseType.Node == spec.ArrayType {
+		paramItemType := paramBaseType.Child
+		if param.Type.Definition.IsNullable() {
+			return fmt.Sprintf(`getOptionList[%s]("%s")`, ScalaType(paramItemType), param.Name.Source)
+		} else {
+			if param.Default != nil {
+				return fmt.Sprintf(`getList[%s]("%s", Some(%s))`, ScalaType(paramItemType), param.Name.Source, DefaultValue(&param.Type.Definition, *param.Default))
+			} else {
+				return fmt.Sprintf(`getList[%s]("%s")`, ScalaType(paramItemType), param.Name.Source)
+			}
+		}
+	} else {
+		if param.Type.Definition.IsNullable() {
+			return fmt.Sprintf(`getOption[%s]("%s")`, ScalaType(paramBaseType), param.Name.Source)
+		} else {
+			if param.Default != nil {
+				return fmt.Sprintf(`get[%s]("%s", Some(%s))`, ScalaType(paramBaseType), param.Name.Source, DefaultValue(&param.Type.Definition, *param.Default))
+			} else {
+				return fmt.Sprintf(`get[%s]("%s")`, ScalaType(paramBaseType), param.Name.Source)
+			}
+		}
+	}
+}
+
+func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage, jsonPackage, paramsPackage, exceptionsPackage Package) *generator.CodeFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
@@ -190,7 +205,10 @@ func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage,
 	w.Line(`import scala.util._`)
 	w.Line(`import scala.concurrent._`)
 	w.Line(`import play.api.mvc._`)
+	w.Line(`import io.circe._`)
+	w.Line(`import %s`, exceptionsPackage.PackageStar)
 	w.Line(`import %s.ParamsTypesBindings._`, paramsPackage.PackageName)
+	w.Line(`import %s`, paramsPackage.PackageStar)
 	w.Line(`import %s.Jsoner`, jsonPackage.PackageName)
 	w.Line(`import %s`, apiPackage.PackageStar)
 	w.Line(`import %s`, modelsPackage.PackageStar)
@@ -198,9 +216,46 @@ func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage,
 	w.EmptyLine()
 	w.Line(`@Singleton`)
 	w.Line(`class %s @Inject()(api: %s, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {`, controllerType(api.Name), apiTraitType(api.Name))
+	w.Indent()
+	w.Lines(`
+def error(e: Throwable): Result = {
+  e match {
+    case ex: ContentTypeMismatchException =>
+      val validationError = ValidationError("Content-Type", "missing", Some(ex.getMessage))
+      val body = BadRequestError("Failed to parse header", ErrorLocation.Header, Some(List(validationError)))
+      new Status(400)(Jsoner.write(body)).as("application/json")
+    case ex: DecodingFailure =>
+      val path = CursorOp.opsToPath(ex.history)
+      val validationError = ValidationError(if (path.startsWith(".")) path.substring(1, path.length) else path, "parsing_failed", Some(ex.getMessage))
+      val body = BadRequestError("Failed to parse body", ErrorLocation.Body, Some(List(validationError)))
+      new Status(400)(Jsoner.write(body)).as("application/json")
+    case ex: ParamReadException =>
+      val validationError = ValidationError(ex.paramName, ex.code, Some(ex.getMessage))
+      val location = ex.location match {
+        case _: ParamLocation.Query => ErrorLocation.Query
+        case _: ParamLocation.Header => ErrorLocation.Header
+      }
+      val locationStr = ex.location match {
+        case _: ParamLocation.Query => "query"
+        case _: ParamLocation.Header => "header"
+      }
+      val body = BadRequestError(s"Failed to parse $locationStr", location, Some(List(validationError)))
+      new Status(400)(Jsoner.write(body)).as("application/json")
+    case _ => InternalServerError
+  }
+}
+`)
+	w.Lines(`
+def checkContentType(request: RequestHeader, expectedContentType: String) = {
+  if (request.contentType != Some(expectedContentType)) {
+    throw new ContentTypeMismatchException(expectedContentType, request.contentType)
+  }
+}
+`)
 	for _, operation := range api.Operations {
-		generateControllerMethod(w.Indented(), &operation)
+		generateControllerMethod(w, &operation)
 	}
+	w.Unindent()
 	w.Line(`}`)
 
 	return &generator.CodeFile{
@@ -210,30 +265,16 @@ func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage,
 }
 
 func generateControllerMethod(w *generator.Writer, operation *spec.NamedOperation) {
-	params := []string{}
-	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
-	}
-	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf(`%s: %s`, param.Name.Source, ScalaType(&param.Type.Definition)))
-	}
+	params := getControllerParams(operation, true)
 
 	payload := ``
 	if operation.Body != nil {
 		payload = `(parse.byteString)`
 	}
 
-	w.Line(`def %s(%s) = Action%s.async {`, operation.Name.CamelCase(), JoinParams(params), payload)
+	w.Line(`def %s(%s) = Action%s.async {`, operation.Name.CamelCase(), strings.Join(params, ", "), payload)
 	w.Line(`  implicit request =>`)
-	if operation.BodyIs(spec.BodyString) {
-		w.Line(`    request.contentType match {`)
-		w.Line(`      case Some("text/plain") =>`)
-		generateControllerMethodRequest(w.IndentedWith(4), operation)
-		w.Line(`      case _ => Future { BadRequest }`)
-		w.Line(`    }`)
-	} else {
-		generateControllerMethodRequest(w.IndentedWith(2), operation)
-	}
+	generateControllerMethodRequest(w.IndentedWith(2), operation)
 	w.Line(`}`)
 }
 
@@ -243,31 +284,32 @@ func generateControllerMethodRequest(w *generator.Writer, operation *spec.NamedO
 
 	if len(parseParams) > 0 {
 		w.Line(`val params = Try {`)
-		addParamsParsing(w.Indented(), operation.HeaderParams, "header", "request.headers.toMap")
-		if operation.BodyIs(spec.BodyString) {
-			w.Line(`  val body = request.body.utf8String`)
-		}
-		if operation.BodyIs(spec.BodyJson) {
-			w.Line(`  val body = Jsoner.readThrowing[%s](request.body.utf8String)`, ScalaType(&operation.Body.Type.Definition))
-		}
+		addParamsParsing(w.Indented(), operation.HeaderParams, "ParamLocation.HEADER", "header", "request.headers.toMap")
+		addParamsParsing(w.Indented(), operation.QueryParams, "ParamLocation.QUERY", "query", "request.queryString")
+		genBodyParsing(w.Indented(), operation)
 		w.Line(`  (%s)`, JoinParams(parseParams))
 		w.Line(`}`)
 		w.Line(`params match {`)
-		w.Line(`  case Failure(ex) => Future { BadRequest }`)
+		w.Line(`  case Failure(ex) => Future { error(ex) }`)
 		w.Line(`  case Success(params) =>`)
 		w.Line(`    val (%s) = params`, JoinParams(parseParams))
 		w.Line(`    val result = api.%s(%s)`, operation.Name.CamelCase(), JoinParams(allParams))
-		w.Line(`    val response = result.map {`)
-		genResponseCases(w.IndentedWith(3), operation)
-		w.Line(`    }`)
-		w.Line(`    response.recover { case _: Exception => InternalServerError }`)
+		genMatchResult(w.IndentedWith(2), operation, "result")
 		w.Line(`}`)
 	} else {
 		w.Line(`val result = api.%s(%s)`, operation.Name.CamelCase(), JoinParams(allParams))
-		w.Line(`val response = result.map {`)
-		genResponseCases(w.Indented(), operation)
-		w.Line(`}`)
-		w.Line(`response.recover { case _: Exception => InternalServerError }`)
+		genMatchResult(w, operation, "result")
+	}
+}
+
+func genBodyParsing(w *generator.Writer, operation *spec.NamedOperation) {
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`checkContentType(request, "text/plain")`)
+		w.Line(`val body = request.body.utf8String`)
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`checkContentType(request, "application/json")`)
+		w.Line(`val body = Jsoner.readThrowing[%s](request.body.utf8String)`, ScalaType(&operation.Body.Type.Definition))
 	}
 }
 
@@ -282,7 +324,9 @@ func getPlayStatus(response *spec.Response) string {
 	}
 }
 
-func genResponseCases(w *generator.Writer, operation *spec.NamedOperation) {
+func genMatchResult(w *generator.Writer, operation *spec.NamedOperation, resultVarName string) {
+	w.Line(`%s.map {`, resultVarName)
+	w.Indent()
 	if len(operation.Responses) == 1 {
 		r := operation.Responses[0]
 		if !r.Type.Definition.IsEmpty() {
@@ -299,6 +343,8 @@ func genResponseCases(w *generator.Writer, operation *spec.NamedOperation) {
 			}
 		}
 	}
+	w.Unindent()
+	w.Line(`} recover { case ex: Exception => error(ex) }`)
 }
 
 func getOperationCallParams(operation *spec.NamedOperation) []string {
@@ -316,7 +362,7 @@ func getOperationCallParams(operation *spec.NamedOperation) []string {
 	}
 	if operation.QueryParams != nil {
 		for _, param := range operation.QueryParams {
-			params = append(params, param.Name.Source)
+			params = append(params, param.Name.CamelCase())
 		}
 	}
 	return params
@@ -329,13 +375,18 @@ func getParsedOperationParams(operation *spec.NamedOperation) []string {
 			params = append(params, param.Name.CamelCase())
 		}
 	}
+	if operation.QueryParams != nil {
+		for _, param := range operation.QueryParams {
+			params = append(params, param.Name.CamelCase())
+		}
+	}
 	if operation.Body != nil {
 		params = append(params, "body")
 	}
 	return params
 }
 
-func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPackage, paramsPackage Package) *generator.CodeFile {
+func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPackage, jsonPackage, paramsPackage Package) *generator.CodeFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 
@@ -348,6 +399,7 @@ func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPack
 	w.Line(`import %s.PlayParamsTypesBindings._`, paramsPackage.PackageName)
 	w.Line(`import %s`, controllersPackage.PackageStar)
 	w.Line(`import %s`, modelsPackage.PackageStar)
+	w.Line(`import %s`, jsonPackage.PackageStar)
 
 	w.EmptyLine()
 	generateApiRouterClass(w, api)
@@ -426,45 +478,54 @@ func generateApiRouterClass(w *generator.Writer, api *spec.Api) {
 
 	w.Line(`  def routes: Router.Routes = {`)
 	for _, operation := range api.Operations {
-		arguments := JoinParams(getControllerParams(&operation))
+		controllerParams := getControllerParams(&operation, false)
+		controllerParamsStr := strings.Join(controllerParams, ", ")
 		w.Line(`    case %s(params@_) =>`, routeName(operation.Name))
-		if len(arguments) > 0 {
+		if len(controllerParams) > 0 {
 			w.Line(`      val arguments =`)
 			w.Line(`        for {`)
 			for _, p := range operation.Endpoint.UrlParams {
 				w.Line(`          %s <- params.fromPath[%s]("%s").value`, p.Name.CamelCase(), ScalaType(&p.Type.Definition), p.Name.Source)
 			}
-			for _, p := range operation.QueryParams {
-				defaultValue := `None`
-				if p.Default != nil {
-					defaultValue = fmt.Sprintf(`Some(%s)`, DefaultValue(&p.Type.Definition, *p.Default))
-				}
-				w.Line(`          %s <- params.fromQuery[%s]("%s", %s).value`, p.Name.CamelCase(), ScalaType(&p.Type.Definition), p.Name.Source, defaultValue)
-			}
+			//for _, p := range operation.QueryParams {
+			//	defaultValue := `None`
+			//	if p.Default != nil {
+			//		defaultValue = fmt.Sprintf(`Some(%s)`, DefaultValue(&p.Type.Definition, *p.Default))
+			//	}
+			//	w.Line(`          %s <- params.fromQuery[%s]("%s", %s).value`, p.Name.CamelCase(), ScalaType(&p.Type.Definition), p.Name.Source, defaultValue)
+			//}
 			w.Line(`        }`)
-			w.Line(`        yield (%s)`, arguments)
+			w.Line(`        yield (%s)`, controllerParamsStr)
 			w.Line(`      arguments match{`)
-			w.Line(`        case Left(_) => Action { Results.BadRequest }`)
-			w.Line(`        case Right((%s)) => controller.%s(%s)`, arguments, controllerMethodName(&operation), arguments)
+			w.Line(`        case Left(_) => Action { Results.NotFound(Jsoner.write(NotFoundError("Failed to parse url parameters"))).as("application/json") }`)
+			w.Line(`        case Right((%s)) => controller.%s(%s)`, controllerParamsStr, controllerMethodName(&operation), controllerParamsStr)
 			w.Line(`      }`)
 		} else {
-			w.Line(`      controller.%s(%s)`, controllerMethodName(&operation), arguments)
+			w.Line(`      controller.%s(%s)`, controllerMethodName(&operation), controllerParamsStr)
 		}
 	}
 	w.Line(`  }`)
 	w.Line(`}`)
 }
 
-func getControllerParams(operation *spec.NamedOperation) []string {
+func getControllerParams(operation *spec.NamedOperation, withTypes bool) []string {
 	params := []string{}
-	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, param.Name.CamelCase())
-	}
-	if operation.QueryParams != nil {
-		for _, param := range operation.QueryParams {
-			params = append(params, param.Name.CamelCase())
+	for _, p := range operation.Endpoint.UrlParams {
+		param := p.Name.CamelCase()
+		if withTypes {
+			param += ": " + ScalaType(&p.Type.Definition)
 		}
+		params = append(params, param)
 	}
+	//if operation.QueryParams != nil {
+	//	for _, p := range operation.QueryParams {
+	//		param := p.Name.CamelCase()
+	//		if withTypes {
+	//			param += ": " + ScalaType(&p.Type.Definition)
+	//		}
+	//		params = append(params, p)
+	//	}
+	//}
 	return params
 }
 

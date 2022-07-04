@@ -12,12 +12,10 @@ package [[.PackageName]]
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
-
 import enumeratum.values.{StringEnum, StringEnumEntry}
 
 import scala.collection.mutable.ListBuffer
-
-import scala.collection.immutable.List
+import scala.util.{Failure, Success, Try}
 
 trait Codec[T] {
   def decode(s: String): T
@@ -71,7 +69,7 @@ object ParamsTypesBindings {
   }
 
   implicit val CharCodec: Codec[Char] = new Codec[Char] {
-    def decode(s: String): Char = if (s.length == 1) { s.charAt(0) } else { throw new Exception("Char query parameter supposed to have one symbol") }
+    def decode(s: String): Char = if (s.length == 1) { s.charAt(0) } else { throw new Exception("Char type supposed to have one symbol") }
     def encode(v: Char): String = v.toString
   }
 
@@ -100,14 +98,55 @@ object ParamsTypesBindings {
     def encode(v: T): String = v.value
   }
 
-  class StringParamsReader(val values: Map[String, Seq[String]]) {
-    def read[T](name: String)(implicit codec: Codec[T]): Option[T] =
-      values.get(name).flatMap(_.headOption).map(codec.decode)
-    def readList[T](name: String)(implicit codec: Codec[T]): Option[List[T]] =
-      values.get(name).map(_.map(codec.decode).toList)
-  }
+  class StringParamsReader(val location: ParamLocation, val values: Map[String, Seq[String]]) {
+    def getOption[T](name: String)(implicit codec: Codec[T]): Option[T] = {
+      val strValue = values.get(name).flatMap(_.headOption)
+      strValue match {
+        case None => None
+        case Some(strValue) =>
+          Try {
+            codec.decode(strValue)
+          } match {
+            case Success(value) => Some(value)
+            case Failure(ex) => throw new ParamReadException(name, location, "parsing_failed", s"Parsing parameter $name failed: ${ex.getMessage}")
+          }
+      }
+    }
 
-  def stringify[T](value: T)(implicit codec: Codec[T]): String = codec.encode(value)
+    def get[T](name: String, default: Option[T] = None)(implicit codec: Codec[T]): T = {
+      getOption[T](name) match {
+        case None => default match {
+          case Some(default) => default
+          case None => throw new ParamReadException(name, location, "missing", s"Parameter $name is required but missing")
+        }
+        case Some(value) => value
+      }
+    }
+
+    def getOptionList[T](name: String)(implicit codec: Codec[T]): Option[List[T]] = {
+      val strValues = values.get(name)
+      strValues match {
+        case None => None
+        case Some(strValues) =>
+          Try {
+            strValues.map(v => codec.decode(v)).toList
+          } match {
+            case Success(values) => Some(values)
+            case Failure(ex) => throw new ParamReadException(name, location, "parsing_failed", s"Parsing parameter $name failed: ${ex.getMessage}")
+          }
+      }
+    }
+
+    def getList[T](name: String, default: Option[List[T]] = None)(implicit codec: Codec[T]): List[T] = {
+      getOptionList[T](name) match {
+        case None => default match {
+          case Some(default) => default
+          case None => throw new ParamReadException(name, location, "missing", s"Parameter $name is required but missing")
+        }
+        case Some(values) => values
+      }
+    }
+  }
 
   class StringParamsWriter {
     val paramsList = ListBuffer[(String, String)]()
@@ -126,12 +165,41 @@ object ParamsTypesBindings {
     }
 
     def write[T](name: String, value: T)(implicit codec: Codec[T]): Unit = {
-      paramsList += ((name, stringify(value)))
+      paramsList += ((name, codec.encode(value)))
     }
   }
-}`
+}
+
+sealed trait ParamLocation
+
+object ParamLocation {
+  case class Query() extends ParamLocation
+  case class Header() extends ParamLocation
+
+  val QUERY = Query()
+  val HEADER = Header()
+}
+
+class ParamReadException(val paramName: String, val location: ParamLocation, val code: String, val message: String)
+  extends RuntimeException(message) {
+}
+`
 	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
 	return &generator.CodeFile{
 		Path:    thepackage.GetPath("StringParams.scala"),
+		Content: strings.TrimSpace(code)}
+}
+
+func generateExceptions(thepackage Package) *generator.CodeFile {
+	code := `
+package [[.PackageName]]
+
+class ContentTypeMismatchException(val expected: String, val actual: Option[String])
+  extends RuntimeException(s"Expected Content-Type header: '$expected' was not provided, found: '${actual.getOrElse("none")}'") {
+}
+`
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thepackage.PackageName})
+	return &generator.CodeFile{
+		Path:    thepackage.GetPath("ContentTypeMismatchException.scala"),
 		Content: strings.TrimSpace(code)}
 }
