@@ -1,4 +1,4 @@
-package io.specgen.java;
+package io.specgen;
 
 import org.apache.maven.plugins.annotations.*;
 import org.apache.maven.project.*;
