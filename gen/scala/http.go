@@ -148,6 +148,8 @@ object ParamsTypesBindings {
     }
   }
 
+  def stringify[T](value: T)(implicit codec: Codec[T]): String = codec.encode(value)
+
   class StringParamsWriter {
     val paramsList = ListBuffer[(String, String)]()
 
@@ -165,7 +167,7 @@ object ParamsTypesBindings {
     }
 
     def write[T](name: String, value: T)(implicit codec: Codec[T]): Unit = {
-      paramsList += ((name, codec.encode(value)))
+      paramsList += ((name, stringify(value)))
     }
   }
 }
