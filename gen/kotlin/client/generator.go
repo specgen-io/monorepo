@@ -30,6 +30,13 @@ func NewGenerator(jsonlib, client string) *Generator {
 			NewOkHttpGenerator(types, models),
 		}
 	}
+	if client == MicronautDecl {
+		return &Generator{
+			types,
+			models,
+			NewMicronautDeclGenerator(types, models),
+		}
+	}
 
 	panic(fmt.Sprintf(`Unsupported client: %s`, client))
 }

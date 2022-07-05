@@ -25,7 +25,7 @@ var Models = generator.Generator{
 	},
 }
 
-var ClientKotlinValues = []string{"okhttp"}
+var ClientKotlinValues = []string{"okhttp", "micronaut-declarative"}
 
 var Client = generator.Generator{
 	"client-kotlin",

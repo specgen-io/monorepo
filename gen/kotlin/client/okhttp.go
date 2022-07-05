@@ -68,7 +68,7 @@ func (g *OkHttpGenerator) client(api *spec.Api, apiPackage modules.Module, model
 
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		g.generateClientMethod(w.Indented(), &operation)
+		g.clientMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 
@@ -86,7 +86,7 @@ func (g *OkHttpGenerator) client(api *spec.Api, apiPackage modules.Module, model
 	return files
 }
 
-func (g *OkHttpGenerator) generateClientMethod(w *generator.Writer, operation *spec.NamedOperation) {
+func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 

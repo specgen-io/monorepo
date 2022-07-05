@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/spec"
+	"strings"
 )
 
 func clientName(api *spec.Api) string {
@@ -14,4 +15,8 @@ func addBuilderParam(param *spec.NamedParam) string {
 		return fmt.Sprintf(`%s!!`, param.Name.CamelCase())
 	}
 	return param.Name.CamelCase()
+}
+
+func joinParams(params []string) string {
+	return strings.Join(params, ", ")
 }
