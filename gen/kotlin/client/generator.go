@@ -37,6 +37,13 @@ func NewGenerator(jsonlib, client string) *Generator {
 			NewMicronautDeclGenerator(types, models),
 		}
 	}
+	if client == MicronautLow {
+		return &Generator{
+			types,
+			models,
+			NewMicronautLowGenerator(types, models),
+		}
+	}
 
 	panic(fmt.Sprintf(`Unsupported client: %s`, client))
 }

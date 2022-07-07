@@ -10,7 +10,6 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/kotlin/writer"
 	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
-	"strconv"
 )
 
 var MicronautDecl = "micronaut-declarative"
@@ -175,22 +174,4 @@ func createObjectMethod(w *generator.Writer, types *types.Types, operation *spec
 
 func responseName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
-}
-
-func isSuccessfulStatusCode(statusCodeStr string) bool {
-	statusCode, _ := strconv.Atoi(statusCodeStr)
-	if statusCode >= 200 && statusCode <= 299 {
-		return true
-	}
-	return false
-}
-
-func responsesNumber(operation *spec.NamedOperation) int {
-	count := 0
-	for _, response := range operation.Responses {
-		if isSuccessfulStatusCode(spec.HttpStatusCode(response.Name)) {
-			count++
-		}
-	}
-	return count
 }
