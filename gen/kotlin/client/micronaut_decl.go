@@ -25,11 +25,12 @@ func NewMicronautDeclGenerator(types *types.Types, models models.Generator) *Mic
 
 func (g *MicronautDeclGenerator) ClientImplementation(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
-
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, jsonPackage, mainPackage)...)
 	}
+	files = append(files, converters(mainPackage)...)
+	files = append(files, staticConfigFiles(mainPackage)...)
 
 	return files
 }
