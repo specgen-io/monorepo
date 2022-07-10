@@ -28,7 +28,7 @@ gradlePlugin {
     val specgen by plugins.creating {
         id = "io.specgen.java.gradle"
         displayName = "Gradle Java Specgen plugin"
-        implementationClass = "io.specgen.gradle.java.SpecgenPlugin"
+        implementationClass = "io.specgen.java.gradle.SpecgenPlugin"
     }
 }
 
