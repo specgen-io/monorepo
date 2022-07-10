@@ -43,6 +43,7 @@ func (c *Converter) pathItem(pathItem *PathItem) *spec.Operation {
 		c.requestBody(pathItem.Operation.RequestBody),
 		c.responses(pathItem.Operation.Responses),
 		nil,
+		nil,
 	}
 	return &operation
 }

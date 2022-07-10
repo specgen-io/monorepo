@@ -33,7 +33,8 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPack
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.serviceController(&api, thePackage, modelsVersionPackage, serviceVersionSubpackage)...)
+		securityPackage := mainPackage.Subpackage("security")
+		files = append(files, g.serviceController(&api, thePackage, securityPackage, modelsVersionPackage, serviceVersionSubpackage)...)
 	}
 	files = append(
 		files,
@@ -45,7 +46,7 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPack
 	return files
 }
 
-func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, modelsVersionPackage, serviceVersionPackage modules.Module) []generator.CodeFile {
+func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, securityPackage, modelsVersionPackage, serviceVersionPackage modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -54,6 +55,8 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, models
 	imports.Add(`org.slf4j.*`)
 	imports.Add(`io.micronaut.http.*`)
 	imports.Add(`io.micronaut.http.annotation.*`)
+	imports.Add(`io.micronaut.security.authentication.Authentication`)
+	imports.Add(securityPackage.Get(`BearerAuthorizer`))
 	imports.Add(`jakarta.inject.Inject`)
 	imports.Add(apiPackage.Subpackage("ErrorsHelpers").Get("getBadRequestError"))
 	imports.Add(apiPackage.Subpackage("ErrorsHelpers").Get("getNotFoundError"))
@@ -67,6 +70,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, models
 	className := controllerName(api)
 	w.Line(`class %s(`, className)
 	w.Line(`  @Inject private val %s: %s,`, serviceVarName(api), serviceInterfaceName(api))
+	w.Line(`  @Inject private val authorizer: BearerAuthorizer,`)
 	w.Line(`  @Inject %s`, g.Models.CreateJsonMapperField())
 	w.Line(`) {`)
 	w.Indent()
@@ -101,13 +105,35 @@ func (g *MicronautGenerator) controllerMethod(w *generator.Writer, operation *sp
 	url := operation.FullUrl()
 	w.Line(`@%s("%s")`, casee.ToPascalCase(methodName), url)
 	w.Line(`fun %s(%s): HttpResponse<*> {`, controllerMethodName(operation), joinParams(micronautMethodParams(operation, g.Types)))
-	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Indent()
+	g.checkSecurity(w, operation)
+	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	g.parseBody(w, operation, "bodyStr", "requestBody")
 	g.serviceCall(w, operation, "bodyStr", "requestBody", "result")
 	g.processResponses(w, operation, "result")
 	w.Unindent()
 	w.Line(`}`)
+}
+
+func listOf(values []string) string {
+	items := []string{}
+	for _, value := range values {
+		items = append(items, fmt.Sprintf(`"%s"`, value))
+	}
+	return fmt.Sprintf(`listOf(%s)`, strings.Join(items, ", "))
+}
+
+func (g *MicronautGenerator) checkSecurity(w *generator.Writer, operation *spec.NamedOperation) {
+	if operation.Security != nil {
+		securityRef := operation.Security[0]
+		args := ""
+		if len(securityRef.Args) > 0 {
+			args = fmt.Sprintf(`, %s`, listOf(securityRef.Args))
+		}
+		w.Line(`if (!authorizer.check(authentication%s)) {`, args)
+		w.Line(`  return HttpResponse.status<Any>(HttpStatus.FORBIDDEN)`)
+		w.Line(`}`)
+	}
 }
 
 func (g *MicronautGenerator) parseBody(w *generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
@@ -326,6 +352,10 @@ object ErrorsHelpers {
 
 func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"request: HttpRequest<*>"}
+
+	if operation.Security != nil {
+		methodParams = append(methodParams, "authentication: Authentication")
+	}
 
 	if operation.Body != nil {
 		methodParams = append(methodParams, "@Body bodyStr: String")
