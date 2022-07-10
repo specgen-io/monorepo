@@ -1,4 +1,4 @@
-package io.specgen.gradle
+package io.specgen.gradle.java
 
 import org.gradle.api.DefaultTask
 import org.gradle.work.DisableCachingByDefault
