@@ -1,2 +1,2 @@
 enableFeaturePreview("VERSION_CATALOGS")
-rootProject.name = "specgen-gradle-plugin"
+rootProject.name = "specgen-kotlin-gradle-plugin"
