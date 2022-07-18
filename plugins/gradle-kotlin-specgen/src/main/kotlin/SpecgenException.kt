@@ -1,4 +1,4 @@
-package io.specgen.gradle
+package io.specgen.kotlin.gradle
 
 import org.gradle.api.GradleException
 

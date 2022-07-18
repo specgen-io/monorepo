@@ -276,49 +276,94 @@ jobs:
             - ~/.ivy2
             - ~/.m2
 
-  build-gradle-specgen:
+  build-gradle-java-specgen:
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
       - checkout
       - attach_workspace:
-          at: ./plugins/gradle-specgen/src/main/resources
+          at: ./plugins/gradle-java-specgen/src/main/resources
       - restore_cache:
-          key: cache-{{ checksum "./plugins/gradle-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-specgen/settings.gradle.kts" }}
+          key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
       - run:
           name: Build Gradle plugin
           command: |
-            cd ./plugins/gradle-specgen
+            cd ./plugins/gradle-java-specgen
             ./gradlew build --build-cache --no-daemon -Pproject.version=<<pipeline.parameters.specgen-version>>
       - run:
           name: Deploy Gradle plugin
           command: |
-            cd ./plugins/gradle-specgen
+            cd ./plugins/gradle-java-specgen
             ./gradlew publishAllPublicationsToArtifactoryRepository --build-cache --no-daemon \
             -Djfrog.user=$JFROG_USER \
             -Djfrog.pass=$JFROG_PASS \
             -Dproject.version=<<pipeline.parameters.specgen-version>>
       - save_cache:
-          key: cache-{{ checksum "./plugins/gradle-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-specgen/settings.gradle.kts" }}
+          key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
 
-  gradle-pluginportal:
+  build-gradle-kotlin-specgen:
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
       - checkout
       - attach_workspace:
-          at: ./plugins/gradle-specgen/src/main/resources
+          at: ./plugins/gradle-kotlin-specgen/src/main/resources
       - restore_cache:
-          key: cache-{{ checksum "./plugins/gradle-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-specgen/settings.gradle.kts" }}
+          key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
+      - run:
+          name: Build Gradle plugin
+          command: |
+            cd ./plugins/gradle-kotlin-specgen
+            ./gradlew build --build-cache --no-daemon -Pproject.version=<<pipeline.parameters.specgen-version>>
       - run:
           name: Deploy Gradle plugin
           command: |
-            cd ./plugins/gradle-specgen
+            cd ./plugins/gradle-kotlin-specgen
+            ./gradlew publishAllPublicationsToArtifactoryRepository --build-cache --no-daemon \
+            -Djfrog.user=$JFROG_USER \
+            -Djfrog.pass=$JFROG_PASS \
+            -Dproject.version=<<pipeline.parameters.specgen-version>>
+      - save_cache:
+          key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
+          paths: [ ~/.gradle ]
+
+  gradle-java-pluginportal:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/gradle-java-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
+      - run:
+          name: Deploy Gradle Java plugin
+          command: |
+            cd ./plugins/gradle-java-specgen
             ./gradlew publishPlugins --build-cache --no-daemon \
             -Pgradle.publish.key=$GRADLE_PUBLISH_KEY \
             -Pgradle.publish.secret=$GRADLE_PUBLISH_SECRET \
             -Dproject.version=<<pipeline.parameters.specgen-version>>
+
+  gradle-kotlin-pluginportal:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./plugins/gradle-kotlin-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
+      - run:
+          name: Deploy Gradle Kotlin plugin
+          command: |
+            cd ./plugins/gradle-kotlin-specgen
+            ./gradlew publishPlugins --build-cache --no-daemon \
+            -Pgradle.publish.key=$GRADLE_PUBLISH_KEY \
+            -Pgradle.publish.secret=$GRADLE_PUBLISH_SECRET \
+            -Dproject.version=<<pipeline.parameters.specgen-version>>
+
 
   build-complete:
     docker:
@@ -440,7 +485,11 @@ workflows:
           context: specgen
           requires:
             - build-specgen
-      - build-gradle-specgen:
+      - build-gradle-java-specgen:
+          context: specgen
+          requires:
+            - build-specgen
+      - build-gradle-kotlin-specgen:
           context: specgen
           requires:
             - build-specgen
@@ -453,7 +502,8 @@ workflows:
             - build-sbt-specgen
             - build-maven-java-specgen
             - build-maven-kotlin-specgen
-            - build-gradle-specgen
+            - build-gradle-java-specgen
+            - build-gradle-kotlin-specgen
             - build-gem-specgen
             - build-npm-specgen
       - circleci/start-pipeline:
@@ -505,7 +555,11 @@ workflows:
           context: specgen
           requires:
             - maven-kotlin-sonatype
-      - gradle-pluginportal:
+      - gradle-java-pluginportal:
+          context: specgen
+          requires:
+            - approve-release
+      - gradle-kotlin-pluginportal:
           context: specgen
           requires:
             - approve-release
