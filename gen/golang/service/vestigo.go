@@ -36,7 +36,9 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 	w.Line("package %s", versionModule.Name)
 
 	imports := imports.New()
-	imports.Add("encoding/json")
+	if types.ApiHasBody(api) {
+		imports.Add("encoding/json")
+	}
 	imports.Add("github.com/husobee/vestigo")
 	imports.AddAlias("github.com/sirupsen/logrus", "log")
 	imports.Add("net/http")
@@ -47,7 +49,7 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 	}
 	apiModule := versionModule.Submodule(api.Name.SnakeCase())
 	imports.Add(apiModule.Package)
-	if paramsContainsModel(api) {
+	if isContainsModel(api) {
 		imports.Add(modelsModule.Package)
 	}
 	imports.Write(w)
