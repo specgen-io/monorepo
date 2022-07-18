@@ -6,7 +6,7 @@ import (
 	"github.com/specgen-io/specgen/v2/spec"
 )
 
-func Generate(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *generator.Sources {
+func Generate(specification *spec.Spec, jsonlib, client, packageName, generatePath string) *generator.Sources {
 	sources := generator.NewSources()
 
 	if packageName == "" {
@@ -15,12 +15,9 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, gene
 
 	mainPackage := modules.Package(generatePath, packageName)
 
-	generator := NewGenerator(jsonlib)
+	generator := NewGenerator(jsonlib, client)
 
 	sources.AddGenerated(clientException(mainPackage))
-
-	utilsPackage := mainPackage.Subpackage("utils")
-	sources.AddGeneratedAll(generateUtils(utilsPackage))
 
 	jsonPackage := mainPackage.Subpackage("json")
 
@@ -31,7 +28,8 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, gene
 		sources.AddGeneratedAll(generator.Models.VersionModels(&version, modelsVersionPackage, jsonPackage))
 
 		clientVersionPackage := versionPackage.Subpackage("clients")
-		sources.AddGeneratedAll(generator.Clients(&version, clientVersionPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage))
+
+		sources.AddGeneratedAll(generator.Client.ClientImplementation(&version, clientVersionPackage, modelsVersionPackage, jsonPackage, mainPackage))
 	}
 
 	sources.AddGeneratedAll(generator.Models.SetupLibrary(jsonPackage))
