@@ -14,14 +14,14 @@ func Signature(types *types.Types, operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
 			if !response.Type.Definition.IsEmpty() {
-				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinDelimParams(parameters(operation, types)), types.Kotlin(&response.Type.Definition))
+				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinDelimParams(Parameters(operation, types)), types.Kotlin(&response.Type.Definition))
 			} else {
-				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinDelimParams(parameters(operation, types)))
+				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinDelimParams(Parameters(operation, types)))
 			}
 		}
 	}
 	if len(operation.Responses) > 1 {
-		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinDelimParams(parameters(operation, types)), InterfaceName(operation))
+		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinDelimParams(Parameters(operation, types)), InterfaceName(operation))
 	}
 	return ""
 }
@@ -33,7 +33,7 @@ func CreateResponse(response *spec.OperationResponse, resultVar string) string {
 	return resultVar
 }
 
-func parameters(operation *spec.NamedOperation, types *types.Types) []string {
+func Parameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
 	if operation.Body != nil {
 		params = append(params, fmt.Sprintf("body: %s", types.Kotlin(&operation.Body.Type.Definition)))

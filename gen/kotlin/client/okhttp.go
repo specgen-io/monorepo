@@ -3,24 +3,39 @@ package client
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/imports"
+	"github.com/specgen-io/specgen/v2/gen/kotlin/models"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/responses"
+	"github.com/specgen-io/specgen/v2/gen/kotlin/types"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/writer"
 	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 
-func (g *Generator) Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+var OkHttp = "okhttp"
+
+type OkHttpGenerator struct {
+	Types  *types.Types
+	Models models.Generator
+}
+
+func NewOkHttpGenerator(types *types.Types, models models.Generator) *OkHttpGenerator {
+	return &OkHttpGenerator{types, models}
+}
+
+func (g *OkHttpGenerator) ClientImplementation(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
+	utilsPackage := thePackage.Subpackage("utils")
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage)...)
 	}
+	files = append(files, g.utils(utilsPackage)...)
 	return files
 }
 
-func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+func (g *OkHttpGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	w := writer.NewKotlinWriter()
@@ -53,7 +68,7 @@ func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersi
 
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		g.generateClientMethod(w.Indented(), &operation)
+		g.clientMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 
@@ -71,7 +86,7 @@ func (g *Generator) client(api *spec.Api, apiPackage modules.Module, modelsVersi
 	return files
 }
 
-func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.NamedOperation) {
+func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 
@@ -156,34 +171,99 @@ func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.Na
 	w.Line(`}`)
 }
 
-func generateTryCatch(w *generator.Writer, valName string, exceptionObject string, codeBlock func(w *generator.Writer), exceptionHandler func(w *generator.Writer)) {
-	w.Line(`val %s = try {`, valName)
-	codeBlock(w.Indented())
-	w.Line(`} catch (%s) {`, exceptionObject)
-	exceptionHandler(w.Indented())
-	w.Line(`}`)
+func (g *OkHttpGenerator) utils(thePackage modules.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
+	files = append(files, *g.requestBuilder(thePackage))
+	files = append(files, *g.urlBuilder(thePackage))
+	return files
 }
 
-func generateClientTryCatch(w *generator.Writer, valName string, statement string, exceptionType, exceptionVar, errorMessage string) {
-	generateTryCatch(w, valName, exceptionVar+`: `+exceptionType,
-		func(w *generator.Writer) {
-			w.Line(statement)
-		},
-		func(w *generator.Writer) {
-			generateThrowClientException(w, errorMessage, exceptionVar)
-		})
-}
+func (g *OkHttpGenerator) requestBuilder(thePackage modules.Module) *generator.CodeFile {
+	code := `
+package [[.PackageName]]
 
-func generateThrowClientException(w *generator.Writer, errorMessage string, wrapException string) {
-	w.Line(`val errorMessage = %s`, errorMessage)
-	w.Line(`logger.error(errorMessage)`)
-	params := "errorMessage"
-	if wrapException != "" {
-		params += ", " + wrapException
+import okhttp3.*
+
+class RequestBuilder(method: String, url: HttpUrl, body: RequestBody?) {
+    private val requestBuilder: Request.Builder
+
+    init {
+        requestBuilder = Request.Builder().url(url).method(method, body)
+    }
+
+    fun addHeaderParameter(name: String, value: Any): RequestBuilder {
+        val valueStr = value.toString()
+        this.requestBuilder.addHeader(name, valueStr)
+        return this
+    }
+
+    fun <T> addHeaderParameter(name: String, values: List<T>): RequestBuilder {
+        for (value in values) {
+            this.addHeaderParameter(name, value!!)
+        }
+        return this
+    }
+
+    fun build(): Request {
+        return this.requestBuilder.build()
+    }
+}
+`
+
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath("RequestBuilder.kt"),
+		Content: strings.TrimSpace(code),
 	}
-	w.Line(`throw ClientException(%s)`, params)
 }
 
-func trimSlash(param string) string {
-	return strings.Trim(param, "/")
+func (g *OkHttpGenerator) urlBuilder(thePackage modules.Module) *generator.CodeFile {
+	code := `
+package [[.PackageName]]
+
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
+
+class UrlBuilder(baseUrl: String) {
+    private val urlBuilder: HttpUrl.Builder
+
+    init {
+        this.urlBuilder = baseUrl.toHttpUrl().newBuilder()
+    }
+
+    fun addQueryParameter(name: String, value: Any): UrlBuilder {
+        val valueStr = value.toString()
+        urlBuilder.addQueryParameter(name, valueStr)
+        return this
+    }
+
+    fun <T> addQueryParameter(name: String, values: List<T>): UrlBuilder {
+        for (value in values) {
+            this.addQueryParameter(name, value!!)
+        }
+        return this
+    }
+
+    fun addPathSegments(value: String): UrlBuilder {
+        this.urlBuilder.addPathSegments(value)
+        return this
+    }
+
+    fun addPathParameter(value: Any): UrlBuilder {
+        val valueStr = value.toString()
+        this.urlBuilder.addPathSegment(valueStr)
+        return this
+    }
+
+    fun build(): HttpUrl {
+        return this.urlBuilder.build()
+    }
+}
+`
+
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath("UrlBuilder.kt"),
+		Content: strings.TrimSpace(code),
+	}
 }

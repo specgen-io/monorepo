@@ -25,6 +25,8 @@ var Models = generator.Generator{
 	},
 }
 
+var ClientKotlinValues = []string{"okhttp", "micronaut-declarative", "micronaut-low-level"}
+
 var Client = generator.Generator{
 	"client-kotlin",
 	"Kotlin Client",
@@ -32,11 +34,12 @@ var Client = generator.Generator{
 	[]generator.GeneratorArg{
 		{Arg: generator.ArgSpecFile, Required: true},
 		{Arg: generator.ArgJsonlib, Required: false, Values: JsonlibKotlinValues},
+		{Arg: generator.ArgClient, Required: true, Values: ClientKotlinValues},
 		{Arg: generator.ArgPackageName, Required: false},
 		{Arg: generator.ArgGeneratePath, Required: true},
 	},
 	func(specification *spec.Spec, params generator.GeneratorArgsValues) *generator.Sources {
-		return client.Generate(specification, params[generator.ArgJsonlib], params[generator.ArgPackageName], params[generator.ArgGeneratePath])
+		return client.Generate(specification, params[generator.ArgJsonlib], params[generator.ArgClient], params[generator.ArgPackageName], params[generator.ArgGeneratePath])
 	},
 }
 
