@@ -5,6 +5,7 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/golang/common"
 	"github.com/specgen-io/specgen/v2/gen/golang/imports"
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
+	"github.com/specgen-io/specgen/v2/gen/golang/types"
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
 	"github.com/specgen-io/specgen/v2/generator"
 	"github.com/specgen-io/specgen/v2/spec"
@@ -26,8 +27,10 @@ func generateServiceImplementation(api *spec.Api, apiModule, modelsModule, targe
 	imports := imports.New()
 	imports.Add("errors")
 	imports.AddApiTypes(api)
-	imports.Add(apiModule.Package)
-	if paramsContainsModel(api) {
+	if types.ApiHasBody(api) {
+		imports.Add(apiModule.Package)
+	}
+	if isContainsModel(api) {
 		imports.Add(modelsModule.Package)
 	}
 	imports.Write(w)
@@ -53,7 +56,7 @@ func generateServiceImplementation(api *spec.Api, apiModule, modelsModule, targe
 	}
 }
 
-func paramsContainsModel(api *spec.Api) bool {
+func isContainsModel(api *spec.Api) bool {
 	for _, operation := range api.Operations {
 		if operation.Body != nil {
 			if isModel(&operation.Body.Type.Definition) {
@@ -72,6 +75,11 @@ func paramsContainsModel(api *spec.Api) bool {
 		}
 		for _, param := range operation.Endpoint.UrlParams {
 			if isModel(&param.Type.Definition) {
+				return true
+			}
+		}
+		for _, response := range operation.Responses {
+			if isModel(&response.Type.Definition) {
 				return true
 			}
 		}
