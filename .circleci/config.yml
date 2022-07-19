@@ -192,12 +192,13 @@ jobs:
           name: Build Maven plugin
           command: |
             cd ./plugins/maven-java-specgen
-            mvn clean install -Dproject.version=<<pipeline.parameters.specgen-version>>
+            sed -i 's/PROJECT_VERSION/<pipeline.parameters.specgen-version>>/g' pom.xml > pom.xml
+            mvn clean install
       - run:
           name: Deploy Maven plugin
           command: |
             cd ./plugins/maven-java-specgen
-            mvn deploy -Dproject.version=<<pipeline.parameters.specgen-version>> -Dartifactory=true
+            mvn deploy -Dartifactory=true
       - save_cache:
           key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
           paths:
