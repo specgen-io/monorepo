@@ -7,16 +7,38 @@ import (
 	"strings"
 )
 
-type Writer struct {
-	buffer                    *bytes.Buffer
-	indentationStr            string
-	leadSpacesIndentationSize int
+type Config struct {
+	IndentationStr            string
+	LeadSpacesIndentationSize int
+	Substitutions             map[string]string
+}
 
+type Writer struct {
+	config      Config
+	buffer      *bytes.Buffer
 	indentation int
 }
 
-func NewWriter(indentationStr string, leadSpacesIndentationSize int) *Writer {
-	return &Writer{new(bytes.Buffer), indentationStr, leadSpacesIndentationSize, 0}
+func NewWriter(config Config) *Writer {
+	return &Writer{
+		config,
+		new(bytes.Buffer),
+		0,
+	}
+}
+
+func substitute(s string, substitutions map[string]string) string {
+	result := s
+	if substitutions != nil {
+		for oldStr, newStr := range substitutions {
+			result = strings.Replace(result, oldStr, newStr, -1)
+		}
+	}
+	return result
+}
+
+func (writer Writer) Write(s string) {
+	io.WriteString(writer.buffer, substitute(s, writer.config.Substitutions))
 }
 
 func trimPrefix(str string, prefix string) (string, int) {
@@ -32,14 +54,14 @@ func trimPrefix(str string, prefix string) (string, int) {
 func (writer *Writer) Line(format string, args ...interface{}) {
 	line := fmt.Sprintf(format, args...)
 	indentation := 0
-	if writer.leadSpacesIndentationSize > 0 {
-		prefix := strings.Repeat(" ", writer.leadSpacesIndentationSize)
+	if writer.config.LeadSpacesIndentationSize > 0 {
+		prefix := strings.Repeat(" ", writer.config.LeadSpacesIndentationSize)
 		line, indentation = trimPrefix(line, prefix)
 	}
 	realIndentation := indentation + writer.indentation
-	indentationStr := strings.Repeat(writer.indentationStr, realIndentation)
+	indentationStr := strings.Repeat(writer.config.IndentationStr, realIndentation)
 	line = indentationStr + line + "\n"
-	io.WriteString(writer.buffer, line)
+	writer.Write(line)
 }
 
 func (writer *Writer) Lines(format string, args ...interface{}) {
@@ -51,7 +73,7 @@ func (writer *Writer) Lines(format string, args ...interface{}) {
 }
 
 func (writer *Writer) EmptyLine() {
-	io.WriteString(writer.buffer, "\n")
+	writer.Write("\n")
 }
 
 func (writer *Writer) Indent() {
@@ -72,18 +94,16 @@ func (writer *Writer) UnindentWith(size int) {
 
 func (writer *Writer) Indented() *Writer {
 	return &Writer{
+		writer.config,
 		writer.buffer,
-		writer.indentationStr,
-		writer.leadSpacesIndentationSize,
 		writer.indentation + 1,
 	}
 }
 
 func (writer *Writer) IndentedWith(size int) *Writer {
 	return &Writer{
+		writer.config,
 		writer.buffer,
-		writer.indentationStr,
-		writer.leadSpacesIndentationSize,
 		writer.indentation + size,
 	}
 }

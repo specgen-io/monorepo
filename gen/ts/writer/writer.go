@@ -4,6 +4,8 @@ import (
 	"github.com/specgen-io/specgen/v2/generator"
 )
 
+var TsConfig = generator.Config{"    ", 2, nil}
+
 func NewTsWriter() *generator.Writer {
-	return generator.NewWriter("    ", 2)
+	return generator.NewWriter(TsConfig)
 }

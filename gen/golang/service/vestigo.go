@@ -237,7 +237,7 @@ func generateBodyParsing(w *generator.Writer, operation *spec.NamedOperation) {
 		w.Line(`if err != nil {`)
 		w.Line(`  var errors []models.ValidationError = nil`)
 		w.Line(`  if unmarshalError, ok := err.(*json.UnmarshalTypeError); ok {`)
-		w.Line(`    message := %s`, genFmtSprintf("Failed to parse JSON, field: %s", "unmarshalError.Field"))
+		w.Line(`    message := fmt.Sprintf("Failed to parse JSON, field: PERCENT_s", unmarshalError.Field)`)
 		w.Line(`    errors = []models.ValidationError{{Path: unmarshalError.Field, Code: "parsing_failed", Message: &message}}`)
 		w.Line(`  }`)
 		respondBadRequest(w.Indented(), operation, "body", `"Failed to parse body"`, "errors")
