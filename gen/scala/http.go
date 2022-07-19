@@ -44,7 +44,7 @@ object ParamsTypesBindings {
   }
 
   implicit val LongCodec: Codec[Long] = new Codec[Long] {
-    def decode(s: String): Long = s.toShort
+    def decode(s: String): Long = s.toLong
     def encode(v: Long): String = v.toString
   }
 
