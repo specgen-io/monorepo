@@ -192,7 +192,7 @@ jobs:
           name: Build Maven plugin
           command: |
             cd ./plugins/maven-java-specgen
-            sed -i 's/PROJECT_VERSION/<pipeline.parameters.specgen-version>>/g' pom.xml > pom.xml
+            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml > pom.xml
             mvn clean install
       - run:
           name: Deploy Maven plugin
