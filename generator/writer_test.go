@@ -11,7 +11,7 @@ func Test_Basic_Lines(t *testing.T) {
 line1
 line2
 `
-	w := NewWriter("", 0)
+	w := NewWriter(Config{"", 0, nil})
 	w.Line("line1")
 	w.Line("line2")
 	assert.Equal(t, strings.TrimSpace(w.String()), strings.TrimSpace(expected))
@@ -23,7 +23,7 @@ line1
   line2
     line3
 `
-	w := NewWriter("  ", 0)
+	w := NewWriter(Config{"  ", 0, nil})
 	w.Line("line1")
 	w.Indent()
 	w.Line("line2")
@@ -38,7 +38,7 @@ line1
   line2
     line3
 `
-	w := NewWriter("  ", 4)
+	w := NewWriter(Config{"  ", 4, nil})
 	w.Line("line1")
 	w.Line("    line2")
 	w.Line("        line3")
