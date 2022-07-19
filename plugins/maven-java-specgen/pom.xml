@@ -70,7 +70,7 @@
 
     <groupId>io.specgen</groupId>
     <artifactId>java-maven-plugin</artifactId>
-    <version>PROJECT_VERSION</version>
+    <version>2.1.1828</version>
     <packaging>maven-plugin</packaging>
 
     <name>Specgen Java Maven Plugin</name>

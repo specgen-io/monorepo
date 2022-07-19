@@ -221,12 +221,14 @@ jobs:
           name: Build Maven plugin
           command: |
             cd ./plugins/maven-kotlin-specgen
-            mvn clean install -Dproject.version=<<pipeline.parameters.specgen-version>>
+            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml
+            mvn clean install
       - run:
           name: Deploy Maven plugin
           command: |
             cd ./plugins/maven-kotlin-specgen
-            mvn deploy -Dproject.version=<<pipeline.parameters.specgen-version>> -Dartifactory=true
+            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml
+            mvn deploy -Dartifactory=true
       - save_cache:
           key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
           paths:
@@ -247,8 +249,9 @@ jobs:
           name: Deploy Maven plugin
           command: |
             cd ./plugins/maven-java-specgen
+            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml
             export GPG_TTY=$(tty)
-            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true -Dproject.version=<<pipeline.parameters.specgen-version>>
+            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true
       - save_cache:
           key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
           paths:
@@ -269,8 +272,9 @@ jobs:
           name: Deploy Maven plugin
           command: |
             cd ./plugins/maven-kotlin-specgen
+            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml            
             export GPG_TTY=$(tty)
-            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true -Dproject.version=<<pipeline.parameters.specgen-version>>
+            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true
       - save_cache:
           key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
           paths:
