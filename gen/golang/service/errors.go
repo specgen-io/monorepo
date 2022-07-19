@@ -36,7 +36,7 @@ func generateCheckContentType(w *generator.Writer) {
 checkContentType := func(logFields log.Fields, expectedContentType string, req *http.Request, res http.ResponseWriter) bool {
 	contentType := req.Header.Get("Content-Type")
 	if !strings.Contains(contentType, expectedContentType) {
-		message := fmt.Sprintf("Expected Content-Type header: '%s' was not provided, found: '%s'", expectedContentType, contentType)
+		message := fmt.Sprintf("Expected Content-Type header: 'PERCENT_s' was not provided, found: 'PERCENT_s'", expectedContentType, contentType)
 		respondBadRequest(logFields, res, &models.BadRequestError{Location: "header", Message: "Failed to parse header", Errors: []models.ValidationError{{Path: "Content-Type", Code: "missing", Message: &message}}})
 		return false
 	}

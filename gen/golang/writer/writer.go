@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
+var GoConfig = generator.Config{"\t", 2, map[string]string{"PERCENT_": "%"}}
+
 func NewGoWriter() *generator.Writer {
-	return generator.NewWriter("\t", 2)
+	return generator.NewWriter(GoConfig)
 }
 
 func colWidth(lines [][]string, colIndex int) int {
@@ -18,10 +20,6 @@ func colWidth(lines [][]string, colIndex int) int {
 		}
 	}
 	return width
-}
-
-func space(value string, length int, spacer string) string {
-	return value + strings.Repeat(spacer, length-len(value))
 }
 
 func WriteAlignedLines(w *generator.Writer, lines [][]string) {
