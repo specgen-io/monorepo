@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec/old"
 )
 import "gopkg.in/specgen-io/yaml.v3"
 
@@ -48,16 +47,8 @@ func checkSpecVersion(data []byte) ([]byte, *Messages, error) {
 	}
 
 	if *specVersion != SpecVersion {
-		messages.Add(Warning("warning: unexpected spec format version: %s; please format you spec to format %s", *specVersion, SpecVersion).At(locationFromNode(versionNode)))
-		messages.Add(Info("will try to convert spec to format %s on the fly...", SpecVersion))
-
-		convertedData, err := old.FormatSpec(data, SpecVersion)
-		if err != nil {
-			messages.Add(Error(`format conversion failed from: %s to: %s with error: %s`, SpecVersion, *specVersion, err.Error()).At(locationFromNode(versionNode)))
-			return nil, messages, errors.New(fmt.Sprintf(`failed to convert specification to format %s`, SpecVersion))
-		}
-		messages.Add(Info("convert spec to format %s succeeded", SpecVersion))
-		return convertedData, messages, nil
+		messages.Add(Error("unexpected spec format version: %s; please format you spec to format %s", *specVersion, SpecVersion).At(locationFromNode(versionNode)))
+		return nil, messages, errors.New(fmt.Sprintf(`unexpected spec format version: %s`, *specVersion))
 	}
 	return data, messages, nil
 }
