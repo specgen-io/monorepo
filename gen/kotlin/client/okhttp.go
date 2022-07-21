@@ -26,12 +26,15 @@ func NewOkHttpGenerator(types *types.Types, models models.Generator) *OkHttpGene
 
 func (g *OkHttpGenerator) ClientImplementation(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
+
 	utilsPackage := thePackage.Subpackage("utils")
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage)...)
 	}
 	files = append(files, g.utils(utilsPackage)...)
+	files = append(files, *clientException(mainPackage))
+
 	return files
 }
 

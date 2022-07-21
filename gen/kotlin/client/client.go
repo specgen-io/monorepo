@@ -17,8 +17,6 @@ func Generate(specification *spec.Spec, jsonlib, client, packageName, generatePa
 
 	generator := NewGenerator(jsonlib, client)
 
-	sources.AddGenerated(clientException(mainPackage))
-
 	jsonPackage := mainPackage.Subpackage("json")
 
 	for _, version := range specification.Versions {

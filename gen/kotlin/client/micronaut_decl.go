@@ -45,13 +45,14 @@ func (g *MicronautDeclGenerator) client(api *spec.Api, apiPackage modules.Module
 	imports.Add(`io.micronaut.http.*`)
 	imports.Add(`io.micronaut.http.annotation.*`)
 	imports.Add(`io.micronaut.http.client.annotation.Client`)
-	imports.Add(mainPackage.PackageName + `.ServerConfiguration`)
+	imports.Add(mainPackage.PackageStar)
 	imports.Add(modelsVersionPackage.PackageStar)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
 	interfaceName := clientName(api)
-	w.Line(`@Client(ServerConfiguration.BASE_URL)`)
+	//TODO
+	w.Line(`@Client(ClientConfiguration.BASE_URL)`)
 	w.Line(`interface %s {`, interfaceName)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
@@ -105,18 +106,21 @@ func declSignature(types *types.Types, operation *spec.NamedOperation) string {
 
 func parameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
+
 	if operation.Body != nil {
 		params = append(params, fmt.Sprintf("@Body body: %s", types.Kotlin(&operation.Body.Type.Definition)))
 	}
+
 	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf("@QueryValue %s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf(`@QueryValue(value = "%s") %s: %s`, param.Name.Source, param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
 	}
 	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf("@Header %s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf(`@Header(value = "%s") %s: %s`, param.Name.Source, param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, fmt.Sprintf("@PathVariable %s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf(`@PathVariable(value = "%s") %s: %s`, param.Name.Source, param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
 	}
+
 	return params
 }
 
