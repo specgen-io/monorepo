@@ -35,6 +35,7 @@ func (g *MicronautLowGenerator) ClientImplementation(version *spec.Version, theP
 	files = append(files, g.utils(utilsPackage)...)
 	files = append(files, converters(mainPackage)...)
 	files = append(files, staticConfigFiles(mainPackage)...)
+	files = append(files, *clientException(mainPackage))
 
 	return files
 }
@@ -63,7 +64,7 @@ func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage modules.Module,
 	w.Line(`@Singleton`)
 	w.Line(`class %s(`, className)
 	//TODO
-	w.Line(`  @param:Client(ServerConfiguration.BASE_URL)`)
+	w.Line(`  @param:Client(ClientConfiguration.BASE_URL)`)
 	w.Line(`  private val client: HttpClient,`)
 	w.Line(`  private val objectMapper: ObjectMapper`)
 	w.Line(`) {`)
@@ -105,7 +106,8 @@ func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spe
 		requestBody = "bodyJson"
 	}
 
-	w.Line(`  val url = UrlBuilder("%s")`, strings.TrimRight(operation.Endpoint.UrlParts[0].Part, "/"))
+	w.Line(`  val url = UrlBuilder("%s")`, getUrl(operation))
+
 	for _, urlPart := range operation.Endpoint.UrlParts {
 		if urlPart.Param != nil {
 			w.Line(`  url.pathParam("%s", %s)`, urlPart.Param.Name.CamelCase(), urlPart.Param.Name.CamelCase())
@@ -118,6 +120,9 @@ func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spe
 	w.Line(`  val request = RequestBuilder(%s)`, requestBuilderParams(methodName, requestBody, operation))
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`  request.headerParam(CONTENT_TYPE, "application/json")`)
+	}
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`  request.headerParam(CONTENT_TYPE, "text/plain")`)
 	}
 	for _, param := range operation.HeaderParams {
 		w.Line(`  request.headerParam("%s", %s)`, param.Name.Source, addBuilderParam(&param))
@@ -166,6 +171,15 @@ func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spe
 	w.Line(`  }`)
 	w.Line(`}`)
 }
+
+func getUrl(operation *spec.NamedOperation) string {
+	url := strings.TrimRight(operation.Endpoint.UrlParts[0].Part, "/")
+	if operation.Api.Http.GetUrl() != "" {
+		return strings.TrimRight(operation.Api.Http.GetUrl(), "/") + url
+	}
+	return url
+}
+
 func requestBuilderParams(methodName, requestBody string, operation *spec.NamedOperation) string {
 	urlParam := "url.build()"
 	if &operation.Endpoint.UrlParams != nil {
@@ -233,7 +247,7 @@ class RequestBuilder {
         return this
     }
 
-    fun <T> headerParam(name: String, values: Array<T>): RequestBuilder {
+    fun <T> headerParam(name: String, values: List<T>): RequestBuilder {
         for (value in values) {
             this.headerParam(name, value!!)
         }
@@ -258,7 +272,6 @@ func (g *MicronautLowGenerator) urlBuilder(thePackage modules.Module) *generator
 package [[.PackageName]]
 
 import io.micronaut.http.uri.UriBuilder
-import test_client.ServerConfiguration.Companion.BASE_URL
 import java.net.URI
 import java.util.*
 
@@ -272,7 +285,7 @@ class UrlBuilder(url: String) {
         return this
     }
 
-    fun <T> queryParam(name: String, values: Array<T>): UrlBuilder {
+    fun <T> queryParam(name: String, values: List<T>): UrlBuilder {
         for (value in values) {
             this.queryParam(name, value!!)
         }
