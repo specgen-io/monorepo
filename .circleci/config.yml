@@ -17,12 +17,9 @@ jobs:
     steps:
       - checkout
       - run:
-          name: List current directory
-          command: ls -la
-      - run:
           name: Write version
           command: |
-            cd ./specgen
+            cd specgen
             tee > ./version/version.go \<<END
             package version
 
@@ -32,12 +29,12 @@ jobs:
       - run:
           name: Build
           command: |
-            cd ./specgen
+            cd specgen
             ./build.sh <<pipeline.parameters.specgen-version>>
       - run:
           name: Unit tests
           command: |
-            cd ./specgen
+            cd specgen
             mkdir -p /tmp/test-results
             go install github.com/jstemmer/go-junit-report@latest
             go test ./... -v 2>&1 | go-junit-report > /tmp/test-results/go-test-report.xml
@@ -394,7 +391,7 @@ jobs:
       - run:
           name: Release
           command: |
-            cd ./specgen
+            cd specgen
             ./release.sh <<pipeline.parameters.specgen-version>> ${GITHUB_TOKEN}
 
 commands:
