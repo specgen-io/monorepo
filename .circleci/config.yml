@@ -19,6 +19,7 @@ jobs:
       - run:
           name: Write version
           command: |
+            cd specgen
             tee > ./version/version.go \<<END
             package version
 
@@ -27,10 +28,13 @@ jobs:
             END
       - run:
           name: Build
-          command: ./build.sh <<pipeline.parameters.specgen-version>>
+          command: |
+            cd specgen
+            ./build.sh <<pipeline.parameters.specgen-version>>
       - run:
           name: Unit tests
           command: |
+            cd specgen
             mkdir -p /tmp/test-results
             go install github.com/jstemmer/go-junit-report@latest
             go test ./... -v 2>&1 | go-junit-report > /tmp/test-results/go-test-report.xml
@@ -39,7 +43,7 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - dist
+            - specgen/dist
       - run:
           name: Create git tag
           command: |
@@ -386,7 +390,9 @@ jobs:
           at: .
       - run:
           name: Release
-          command: ./release.sh <<pipeline.parameters.specgen-version>> ${GITHUB_TOKEN}
+          command: |
+            cd specgen
+            ./release.sh <<pipeline.parameters.specgen-version>> ${GITHUB_TOKEN}
 
 commands:
   setup-sonatype-maven:

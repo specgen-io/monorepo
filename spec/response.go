@@ -2,7 +2,8 @@ package spec
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/yamlx"
+
+	"github.com/specgen-io/specgen/yamlx/v2"
 	"gopkg.in/specgen-io/yaml.v3"
 )
 

@@ -78,7 +78,7 @@
     <url>https://specgen.io</url>
     <scm>
         <connection>git@github.com:specgen-io/specgen.git</connection>
-        <url>https://github.com/specgen-io/specgen/v2</url>
+        <url>https://github.com/specgen-io/specgen</url>
     </scm>
     <licenses>
         <license>
