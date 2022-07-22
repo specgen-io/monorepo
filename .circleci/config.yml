@@ -54,7 +54,9 @@ jobs:
       - image: cimg/go:1.18.3
     working_directory: ~/golang
     steps:
-      - git clone https://github.com/specgen-io/specgen-go.git .
+      - run:
+          name: Checkout specgen-go tool repo
+          command: git clone https://github.com/specgen-io/specgen-go.git .
       - run:
           name: Update and build golang tool
           command: |
