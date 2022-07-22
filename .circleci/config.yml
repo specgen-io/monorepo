@@ -504,6 +504,8 @@ workflows:
           context: specgen
       - build-specgen-go:
           context: specgen
+          requires:
+            - build-specgen
       - build-gem-specgen:
           context: specgen
           requires:
@@ -534,6 +536,7 @@ workflows:
             - build-specgen
       - build-complete:
           requires:
+            - build-specgen-go
             - build-sbt-specgen
             - build-maven-java-specgen
             - build-maven-kotlin-specgen
