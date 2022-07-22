@@ -51,6 +51,7 @@ jobs:
             git config --global user.name $GITHUB_USER
             git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen.git
             git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen verison: v<<pipeline.parameters.specgen-version>>"
+            git tag -f -a specgen/v<<pipeline.parameters.specgen-version>> -m "Specgen verison: v<<pipeline.parameters.specgen-version>>"
             git push -f --tags
 
   build-gem-specgen:
