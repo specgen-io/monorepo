@@ -49,6 +49,32 @@ jobs:
             git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen verison: v<<pipeline.parameters.specgen-version>>"
             git push -f --tags
 
+  build-specgen-go:
+    docker:
+      - image: cimg/go:1.18.3
+    working_directory: ~/golang
+    steps:
+      - git clone https://github.com/specgen-io/specgen-go.git .
+      - run:
+          name: Update and build golang tool
+          command: |
+            ./build.sh <pipeline.parameters.specgen-version>>
+      - run:
+          name: Commit changes
+          command: |
+            git add --all
+            git config --global user.email $GITHUB_EMAIL
+            git config --global user.name $GITHUB_USER
+            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen-go.git
+            if [[ `git status --porcelain` ]]; then
+              git commit -m "Specgen <<pipeline.parameters.specgen-version>>"
+              git push
+            else
+              echo "No changes detected - nothing to commit"
+            fi
+            git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen verison: v<<pipeline.parameters.specgen-version>>"
+            git push -f --tags
+
   build-gem-specgen:
     docker:
       - image: circleci/ruby:2.4.9
@@ -473,6 +499,8 @@ workflows:
   build-release:
     jobs:
       - build-specgen:
+          context: specgen
+      - build-specgen-go:
           context: specgen
       - build-gem-specgen:
           context: specgen
