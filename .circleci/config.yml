@@ -74,6 +74,9 @@ jobs:
           name: Copy vendored code
           command: |
             cp -a ./specgen/. ./specgen-go/
+            cd ./specgen-go
+            rm ./build.sh
+            rm ./release.sh
       - run:
           name: Commit changes
           command: |
