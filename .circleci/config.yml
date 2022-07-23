@@ -73,7 +73,7 @@ jobs:
       - run:
           name: Copy vendored code
           command: |
-            cp -a /specgen/. /specgen-go/
+            cp -a ./specgen/. ./specgen-go/
       - run:
           name: Commit changes
           command: |
