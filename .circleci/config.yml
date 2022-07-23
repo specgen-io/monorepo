@@ -69,7 +69,7 @@ jobs:
           command: |
             git clone https://github.com/specgen-io/specgen-go.git specgen-go
             cd specgen-go
-            find . ! -name .git -maxdepth 1 -delete
+            find . ! -name . ! -name .git -maxdepth 1 -exec rm -rv {} +
       - run:
           name: Copy vendored code
           command: |
