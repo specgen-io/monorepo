@@ -60,7 +60,7 @@ jobs:
       - run:
           name: Update and build golang tool
           command: |
-            ./build.sh <pipeline.parameters.specgen-version>>
+            ./build.sh <<pipeline.parameters.specgen-version>>
       - run:
           name: Commit changes
           command: |
