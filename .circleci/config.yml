@@ -19,6 +19,7 @@ jobs:
       - run:
           name: Write version
           command: |
+            cd specgen
             tee > ./version/version.go \<<END
             package version
 
@@ -27,17 +28,20 @@ jobs:
             END
       - run:
           name: Build
-          command: ./build.sh <<pipeline.parameters.specgen-version>>
+          command: |
+            cd specgen
+            ./build.sh <<pipeline.parameters.specgen-version>>
       - run:
           name: Unit tests
           command: |
-            mkdir -p /tmp/test-results
+            cd specgen
+            mkdir -p ./test-results
             go install github.com/jstemmer/go-junit-report@latest
-            go test ./... -v 2>&1 | go-junit-report > /tmp/test-results/go-test-report.xml
+            go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
       - store_test_results:
-          path: /tmp/test-results
+          path: ./specgen/test-results
       - persist_to_workspace:
-          root: .
+          root: ./specgen
           paths:
             - dist
       - run:
@@ -54,16 +58,26 @@ jobs:
       - image: cimg/go:1.18.3
     working_directory: ~/golang
     steps:
+      - checkout
       - run:
-          name: Checkout specgen-go tool repo
-          command: git clone https://github.com/specgen-io/specgen-go.git .
-      - run:
-          name: Update and build golang tool
+          name: Vendor dependencies
           command: |
-            ./build.sh <<pipeline.parameters.specgen-version>>
+            cd specgen
+            go mod vendor
+      - run:
+          name: Checkout specgen-go tool repo and clean it
+          command: |
+            git clone https://github.com/specgen-io/specgen-go.git specgen-go
+            cd specgen-go
+            find . ! -name .git -maxdepth 1 -delete
+      - run:
+          name: Copy vendored code
+          command: |
+            cp -a /specgen/. /specgen-go/
       - run:
           name: Commit changes
           command: |
+            cd specgen-go
             git add --all
             git config --global user.email $GITHUB_EMAIL
             git config --global user.name $GITHUB_USER
