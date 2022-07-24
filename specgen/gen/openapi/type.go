@@ -3,7 +3,7 @@ package openapi
 import (
 	"fmt"
 	"github.com/specgen-io/specgen/v2/spec"
-	"github.com/specgen-io/specgen/v2/yamlx"
+	"github.com/specgen-io/specgen/yamlx/v2"
 )
 
 func OpenApiType(types ...*spec.TypeDef) *yamlx.YamlMap {
