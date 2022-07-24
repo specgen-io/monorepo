@@ -69,12 +69,12 @@ jobs:
           command: |
             git clone https://github.com/specgen-io/specgen-go.git specgen-go
             cd specgen-go
-            find . ! -name . ! -name .git -maxdepth 1 -exec rm -rv {} +
+            rm -rf v2
       - run:
           name: Copy vendored code
           command: |
-            cp -a ./specgen/. ./specgen-go/
-            cd ./specgen-go
+            cp -a ./specgen/. ./specgen-go/v2
+            cd ./specgen-go/v2
             rm ./build.sh
             rm ./release.sh
             sed -i 's#module github.com/specgen-io/specgen/v2#module github.com/specgen-io/specgen-go/v2#g' go.mod
