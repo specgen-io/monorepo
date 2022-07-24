@@ -64,6 +64,7 @@ jobs:
           command: |
             cd specgen
             go mod vendor
+            go mod edit -dropreplace github.com/specgen-io/specgen/yamlx/v2
       - run:
           name: Checkout specgen-go tool repo and clean it
           command: |
