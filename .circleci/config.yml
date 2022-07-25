@@ -98,7 +98,7 @@ jobs:
           name: Check installation
           command: |
             cd specgen-go
-            go install github.com/specgen-io/specgen-go/v2@v<<pipeline.parameters.specgen-version>>"
+            go install github.com/specgen-io/specgen-go/v2@v<<pipeline.parameters.specgen-version>>
 
   build-gem-specgen:
     docker:
