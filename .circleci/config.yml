@@ -60,11 +60,11 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Vendor dependencies
+          name: Localize specgen dependencies
           command: |
+            go install github.com/vsapronov/gotore
             cd specgen
-            go mod vendor
-            go mod edit -dropreplace github.com/specgen-io/specgen/yamlx/v2
+            gotore ./go.mod github.com/specgen-io/specgen-go/v2
       - run:
           name: Checkout specgen-go tool repo and clean it
           command: |
@@ -78,7 +78,6 @@ jobs:
             cd ./specgen-go/v2
             rm ./build.sh
             rm ./release.sh
-            sed -i 's#module github.com/specgen-io/specgen/v2#module github.com/specgen-io/specgen-go/v2#g' go.mod
       - run:
           name: Commit changes
           command: |
@@ -95,6 +94,11 @@ jobs:
             fi
             git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen verison: v<<pipeline.parameters.specgen-version>>"
             git push -f --tags
+      - run:
+          name: Check installation
+          command: |
+            cd specgen-go
+            go install github.com/specgen-io/specgen-go/v2@v<<pipeline.parameters.specgen-version>>"
 
   build-gem-specgen:
     docker:
