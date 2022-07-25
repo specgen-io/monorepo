@@ -6,7 +6,7 @@ replace github.com/specgen-io/specgen/yamlx/v2 => ../yamlx
 
 require (
 	github.com/pinzolo/casee v1.0.0
-	github.com/specgen-io/specgen/yamlx/v2 v2.0.0-20220725031650-1ad77eb8406e
+	github.com/specgen-io/specgen/yamlx/v2 v2.0.0-00010101000000-000000000000
 	gopkg.in/specgen-io/yaml.v3 v3.0.0-20211212030207-33c98a79c251
 	gotest.tools v2.2.0+incompatible
 )

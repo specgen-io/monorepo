@@ -2,7 +2,10 @@ package client
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/pinzolo/casee"
+	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/golang/common"
 	"github.com/specgen-io/specgen/v2/gen/golang/imports"
@@ -11,8 +14,6 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/golang/responses"
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
-	"github.com/specgen-io/specgen/v2/generator"
-	"strings"
 )
 
 var ToPascalCase = casee.ToPascalCase

@@ -2,10 +2,11 @@ package client
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
-	"github.com/specgen-io/specgen/v2/generator"
-	"strings"
 )
 
 func callRawConvert(typ *spec.TypeDef, paramNameVar string) string {

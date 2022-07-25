@@ -2,13 +2,14 @@ package client
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/java/imports"
 	"github.com/specgen-io/specgen/v2/gen/java/packages"
 	"github.com/specgen-io/specgen/v2/gen/java/responses"
 	"github.com/specgen-io/specgen/v2/gen/java/writer"
-	"github.com/specgen-io/specgen/v2/generator"
-	"strings"
 )
 
 func (g *Generator) Clients(version *spec.Version, thePackage packages.Module, modelsVersionPackage packages.Module, jsonPackage packages.Module, utilsPackage packages.Module, mainPackage packages.Module) []generator.CodeFile {

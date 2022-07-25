@@ -1,10 +1,11 @@
 package imports
 
 import (
+	"sort"
+
+	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
-	"github.com/specgen-io/specgen/v2/generator"
-	"sort"
 )
 
 type imports struct {

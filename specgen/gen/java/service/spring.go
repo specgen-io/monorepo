@@ -2,7 +2,10 @@ package service
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/pinzolo/casee"
+	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/java/imports"
 	"github.com/specgen-io/specgen/v2/gen/java/models"
@@ -10,8 +13,6 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/java/responses"
 	"github.com/specgen-io/specgen/v2/gen/java/types"
 	"github.com/specgen-io/specgen/v2/gen/java/writer"
-	"github.com/specgen-io/specgen/v2/generator"
-	"strings"
 )
 
 var Spring = "spring"

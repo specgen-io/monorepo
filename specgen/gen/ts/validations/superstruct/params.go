@@ -2,11 +2,12 @@ package superstruct
 
 import (
 	"fmt"
+
+	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/ts/common"
 	types2 "github.com/specgen-io/specgen/v2/gen/ts/types"
 	common2 "github.com/specgen-io/specgen/v2/gen/ts/validations/common"
-	"github.com/specgen-io/specgen/v2/generator"
 )
 
 func (g *Generator) WriteParamsType(w *generator.Writer, typeName string, params []spec.NamedParam) {

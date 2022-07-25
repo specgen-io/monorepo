@@ -2,6 +2,9 @@ package service
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/golang/client"
 	"github.com/specgen-io/specgen/v2/gen/golang/imports"
@@ -9,8 +12,6 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
-	"github.com/specgen-io/specgen/v2/generator"
-	"strings"
 )
 
 func generateRoutings(version *spec.Version, versionModule module.Module, modelsModule module.Module) []generator.CodeFile {

@@ -1,7 +1,7 @@
 package scala
 
 import (
-	"github.com/specgen-io/specgen/v2/generator"
+	"github.com/specgen-io/specgen/generator/v2"
 )
 
 var ScalaConfig = generator.Config{"  ", 2, nil}

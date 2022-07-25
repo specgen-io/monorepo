@@ -1,9 +1,10 @@
 package client
 
 import (
-	"github.com/specgen-io/specgen/v2/gen/java/packages"
-	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
+	"github.com/specgen-io/specgen/v2/gen/java/packages"
 )
 
 func generateUtils(thePackage packages.Module) []generator.CodeFile {

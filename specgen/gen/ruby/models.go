@@ -1,9 +1,10 @@
 package ruby
 
 import (
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/v2/generator"
 	"path/filepath"
+
+	"github.com/specgen-io/specgen/generator/v2"
+	"github.com/specgen-io/specgen/spec/v2"
 )
 
 func GenerateModels(specification *spec.Spec, generatePath string) *generator.Sources {

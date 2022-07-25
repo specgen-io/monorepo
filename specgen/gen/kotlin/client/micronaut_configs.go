@@ -1,9 +1,10 @@
 package client
 
 import (
-	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
-	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
+	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
 )
 
 func staticConfigFiles(thePackage modules.Module) []generator.CodeFile {

@@ -2,8 +2,9 @@ package service
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
 
 	"github.com/pinzolo/casee"
 	"github.com/specgen-io/specgen/spec/v2"

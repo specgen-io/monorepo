@@ -1,11 +1,11 @@
 package superstruct
 
 import (
+	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/ts/common"
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
 	"github.com/specgen-io/specgen/v2/gen/ts/writer"
-	"github.com/specgen-io/specgen/v2/generator"
 )
 
 func (g *Generator) VersionModels(version *spec.Version, superstructModule modules.Module, module modules.Module) *generator.CodeFile {

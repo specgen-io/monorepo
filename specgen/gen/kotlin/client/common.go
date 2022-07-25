@@ -2,9 +2,10 @@ package client
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/v2/generator"
 	"strconv"
+
+	"github.com/specgen-io/specgen/generator/v2"
+	"github.com/specgen-io/specgen/spec/v2"
 )
 
 func addBuilderParam(param *spec.NamedParam) string {

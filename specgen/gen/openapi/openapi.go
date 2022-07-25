@@ -1,11 +1,12 @@
 package openapi
 
 import (
-	"github.com/pinzolo/casee"
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/v2/generator"
-	"github.com/specgen-io/specgen/yamlx/v2"
 	"strings"
+
+	"github.com/pinzolo/casee"
+	"github.com/specgen-io/specgen/generator/v2"
+	"github.com/specgen-io/specgen/spec/v2"
+	"github.com/specgen-io/specgen/yamlx/v2"
 )
 
 func GenerateOpenapi(spec *spec.Spec, outFile string) *generator.CodeFile {

@@ -2,9 +2,10 @@ package models
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
+	"github.com/specgen-io/specgen/spec/v2"
 )
 
 func addObjectModelMethods(w *generator.Writer, model *spec.NamedModel) {

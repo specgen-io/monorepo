@@ -1,9 +1,10 @@
 package models
 
 import (
-	"github.com/specgen-io/specgen/v2/gen/golang/module"
-	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
+	"github.com/specgen-io/specgen/v2/gen/golang/module"
 )
 
 func generateEnumsHelperFunctions(module module.Module) *generator.CodeFile {

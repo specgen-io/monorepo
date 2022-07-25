@@ -2,13 +2,14 @@ package models
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/golang/imports"
 	"github.com/specgen-io/specgen/v2/gen/golang/module"
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
 	"github.com/specgen-io/specgen/v2/gen/golang/writer"
-	"github.com/specgen-io/specgen/v2/generator"
-	"strings"
 )
 
 func GenerateModels(specification *spec.Spec, moduleName string, generatePath string) *generator.Sources {

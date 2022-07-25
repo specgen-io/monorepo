@@ -2,9 +2,10 @@ package scala
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
+	"github.com/specgen-io/specgen/spec/v2"
 )
 
 func GenerateCirceModels(specification *spec.Spec, packageName string, generatePath string) *generator.Sources {

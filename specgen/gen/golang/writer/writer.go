@@ -1,8 +1,9 @@
 package writer
 
 import (
-	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
 )
 
 var GoConfig = generator.Config{"\t", 2, map[string]string{"PERCENT_": "%"}}

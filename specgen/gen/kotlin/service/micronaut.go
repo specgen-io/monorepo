@@ -2,7 +2,10 @@ package service
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/pinzolo/casee"
+	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/imports"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/models"
@@ -10,8 +13,6 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/kotlin/responses"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/types"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/writer"
-	"github.com/specgen-io/specgen/v2/generator"
-	"strings"
 )
 
 var Micronaut = "micronaut"

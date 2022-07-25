@@ -1,8 +1,9 @@
 package ruby
 
 import (
-	"github.com/specgen-io/specgen/v2/generator"
 	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
 )
 
 func generateBaseClient(moduleName string, path string) *generator.CodeFile {

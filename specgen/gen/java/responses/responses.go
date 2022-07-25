@@ -2,12 +2,13 @@ package responses
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/java/packages"
 	"github.com/specgen-io/specgen/v2/gen/java/types"
 	"github.com/specgen-io/specgen/v2/gen/java/writer"
-	"github.com/specgen-io/specgen/v2/generator"
-	"strings"
 )
 
 func Signature(types *types.Types, operation *spec.NamedOperation) string {
