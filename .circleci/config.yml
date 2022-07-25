@@ -62,7 +62,7 @@ jobs:
       - run:
           name: Localize specgen dependencies
           command: |
-            go install github.com/vsapronov/gotore
+            go install github.com/vsapronov/gotore@546df4d
             cd specgen
             gotore ./go.mod github.com/specgen-io/specgen-go/v2
       - run:
