@@ -1,11 +1,11 @@
 package kotlin
 
 import (
+	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/client"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/models"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/service"
 	"github.com/specgen-io/specgen/v2/generator"
-	"github.com/specgen-io/specgen/v2/spec"
 )
 
 var JsonlibKotlinValues = []string{"jackson", "moshi"}

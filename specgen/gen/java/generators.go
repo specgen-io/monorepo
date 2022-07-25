@@ -1,11 +1,11 @@
 package java
 
 import (
+	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/java/client"
 	"github.com/specgen-io/specgen/v2/gen/java/models"
 	"github.com/specgen-io/specgen/v2/gen/java/service"
 	"github.com/specgen-io/specgen/v2/generator"
-	"github.com/specgen-io/specgen/v2/spec"
 )
 
 var JsonlibJavaValues = []string{"jackson", "moshi"}

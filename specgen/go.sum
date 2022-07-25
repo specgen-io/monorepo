@@ -207,8 +207,8 @@ github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lN
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.9.3/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
-github.com/pinzolo/casee v0.0.0-20210416022938-38877fea886d h1:H0yi75/fE5pxq1DXcFiHLNM4bXbxG/48WvwIbB4RgVQ=
-github.com/pinzolo/casee v0.0.0-20210416022938-38877fea886d/go.mod h1:dNs9tp0e1Tst75lQVHa7QJNLdGOaddO3fdyEMHkMKxQ=
+github.com/pinzolo/casee v1.0.0 h1:IAgq79IXZxacw9Gt9W+Nlq0TZagANOFcDP53KWlU4us=
+github.com/pinzolo/casee v1.0.0/go.mod h1:DDCwVFkYQJTGR9Un3KNuxe8gIP+Hw/y+CI+/AQwTu9Y=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

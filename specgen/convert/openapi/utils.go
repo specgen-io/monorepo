@@ -1,6 +1,6 @@
 package openapi
 
-import "github.com/specgen-io/specgen/v2/spec"
+import "github.com/specgen-io/specgen/spec/v2"
 
 func name(source string) spec.Name {
 	return spec.Name{source, nil}

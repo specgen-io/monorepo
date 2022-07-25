@@ -1,10 +1,10 @@
 package client
 
 import (
+	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
 	"github.com/specgen-io/specgen/v2/gen/ts/validations"
 	"github.com/specgen-io/specgen/v2/generator"
-	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func GenerateClient(specification *spec.Spec, generatePath string, client string, validationName string) *generator.Sources {

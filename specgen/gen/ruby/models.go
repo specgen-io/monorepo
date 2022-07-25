@@ -1,8 +1,8 @@
 package ruby
 
 import (
+	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/generator"
-	"github.com/specgen-io/specgen/v2/spec"
 	"path/filepath"
 )
 

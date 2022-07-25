@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/imports"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/models"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
@@ -9,7 +10,6 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/kotlin/types"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/writer"
 	"github.com/specgen-io/specgen/v2/generator"
-	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 

@@ -1,9 +1,9 @@
 package models
 
 import (
+	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/kotlin/modules"
 	"github.com/specgen-io/specgen/v2/generator"
-	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func Generate(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *generator.Sources {

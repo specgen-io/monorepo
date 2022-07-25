@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/pinzolo/casee"
-	"github.com/specgen-io/specgen/v2/spec"
+	"github.com/specgen-io/specgen/spec/v2"
 )
 
 func (c *Converter) apis(doc *openapi3.T) spec.Apis {

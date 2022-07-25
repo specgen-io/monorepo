@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/console"
 	"github.com/specgen-io/specgen/v2/fail"
-	"github.com/specgen-io/specgen/v2/spec"
 	"io/ioutil"
 	"sort"
 )

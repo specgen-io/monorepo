@@ -2,11 +2,11 @@ package validations
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
 	iots2 "github.com/specgen-io/specgen/v2/gen/ts/validations/iots"
 	superstruct2 "github.com/specgen-io/specgen/v2/gen/ts/validations/superstruct"
 	"github.com/specgen-io/specgen/v2/generator"
-	"github.com/specgen-io/specgen/v2/spec"
 )
 
 type Validation interface {

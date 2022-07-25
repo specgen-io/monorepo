@@ -2,13 +2,13 @@ package service
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/ts/modules"
 	"github.com/specgen-io/specgen/v2/gen/ts/types"
 	"github.com/specgen-io/specgen/v2/gen/ts/validations"
 	"github.com/specgen-io/specgen/v2/gen/ts/validations/common"
 	"github.com/specgen-io/specgen/v2/gen/ts/writer"
 	"github.com/specgen-io/specgen/v2/generator"
-	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 

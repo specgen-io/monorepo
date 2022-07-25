@@ -2,9 +2,9 @@ package common
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/golang/responses"
 	"github.com/specgen-io/specgen/v2/gen/golang/types"
-	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 

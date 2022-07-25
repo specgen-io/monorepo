@@ -2,7 +2,7 @@ package service
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
+	"github.com/specgen-io/specgen/spec/v2"
 	"strings"
 )
 

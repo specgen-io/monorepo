@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/pinzolo/casee"
+	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/java/imports"
 	"github.com/specgen-io/specgen/v2/gen/java/models"
 	"github.com/specgen-io/specgen/v2/gen/java/packages"
@@ -10,7 +11,6 @@ import (
 	"github.com/specgen-io/specgen/v2/gen/java/types"
 	"github.com/specgen-io/specgen/v2/gen/java/writer"
 	"github.com/specgen-io/specgen/v2/generator"
-	"github.com/specgen-io/specgen/v2/spec"
 	"strings"
 )
 

@@ -2,11 +2,11 @@ package iots
 
 import (
 	"fmt"
+	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/specgen-io/specgen/v2/gen/ts/common"
 	"github.com/specgen-io/specgen/v2/gen/ts/types"
 	validations "github.com/specgen-io/specgen/v2/gen/ts/validations/common"
 	"github.com/specgen-io/specgen/v2/generator"
-	"github.com/specgen-io/specgen/v2/spec"
 )
 
 func (g *Generator) WriteParamsType2(w *generator.Writer, typeName string, params []spec.NamedParam) {

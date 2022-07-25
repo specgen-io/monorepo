@@ -2,7 +2,7 @@ package ruby
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/v2/spec"
+	"github.com/specgen-io/specgen/spec/v2"
 )
 
 func versionedModule(moduleName string, version spec.Name) string {
