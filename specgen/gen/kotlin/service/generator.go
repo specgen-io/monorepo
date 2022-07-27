@@ -11,7 +11,7 @@ import (
 )
 
 type ServerGenerator interface {
-	ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage modules.Module) []generator.CodeFile
+	ServicesControllers(version *spec.Version, mainPackage, thePackage, modelsVersionPackage, serviceVersionPackage modules.Module) []generator.CodeFile
 	ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string)
 }
 
@@ -26,6 +26,14 @@ func NewGenerator(jsonlib, server string) *Generator {
 	types := models.NewTypes(jsonlib)
 	models := models.NewGenerator(jsonlib)
 
+	if server == Spring {
+		return &Generator{
+			jsonlib,
+			types,
+			models,
+			NewSpringGenerator(types, models),
+		}
+	}
 	if server == Micronaut {
 		return &Generator{
 			jsonlib,
