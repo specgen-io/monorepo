@@ -77,7 +77,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, models
 		g.controllerMethod(w, &operation)
 	}
 	w.EmptyLine()
-	checkContentType(w)
+	g.checkContentType(w)
 	w.EmptyLine()
 	g.errorHandler(w, api.Http.Errors)
 	w.Unindent()
@@ -155,6 +155,17 @@ func (g *MicronautGenerator) processResponse(w *generator.Writer, response *spec
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s).body(bodyJson).contentType("application/json")`, response.Name.UpperCase())
 	}
+}
+
+func (g *MicronautGenerator) checkContentType(w *generator.Writer) {
+	w.Lines(`
+private fun checkContentType(request: HttpRequest<*>, expectedContentType: String) {
+	val contentType = request.headers.contentType
+	if (!(contentType.isPresent && contentType.get().contains(expectedContentType))) {
+		throw ContentTypeMismatchException(expectedContentType, if (contentType.isPresent) contentType.get() else null )
+	}
+}
+`)
 }
 
 func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Responses) {

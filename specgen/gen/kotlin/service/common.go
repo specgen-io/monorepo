@@ -41,17 +41,6 @@ func serviceCall(w *generator.Writer, operation *spec.NamedOperation, bodyString
 	}
 }
 
-func checkContentType(w *generator.Writer) {
-	w.Lines(`
-private fun checkContentType(request: HttpRequest<*>, expectedContentType: String) {
-	val contentType = request.headers.contentType
-	if (!(contentType.isPresent && contentType.get().contains(expectedContentType))) {
-		throw ContentTypeMismatchException(expectedContentType, if (contentType.isPresent) contentType.get() else null )
-	}
-}
-`)
-}
-
 func contentTypeMismatchException(thePackage modules.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]]

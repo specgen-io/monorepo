@@ -79,7 +79,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api, apiPackage, modelsVer
 		g.controllerMethod(w, &operation)
 	}
 	w.EmptyLine()
-	checkContentType(w)
+	g.checkContentType(w)
 	w.EmptyLine()
 	g.errorHandler(w, api.Http.Errors)
 	w.Unindent()
@@ -155,6 +155,17 @@ func (g *SpringGenerator) processResponse(w *generator.Writer, response *spec.Re
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return ResponseEntity(bodyJson, headers, HttpStatus.%s)`, response.Name.UpperCase())
 	}
+}
+
+func (g *SpringGenerator) checkContentType(w *generator.Writer) {
+	w.Lines(`
+private fun checkContentType(request: HttpServletRequest, expectedContentType: MediaType) {
+	val contentType = request.getHeader("Content-Type")
+	if (contentType == null || !contentType.contains(expectedContentType.toString())) {
+		throw ContentTypeMismatchException(expectedContentType.toString(), contentType)
+	}
+}
+`)
 }
 
 func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Responses) {
