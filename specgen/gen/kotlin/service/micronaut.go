@@ -40,7 +40,7 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPack
 		files,
 		*g.errorsHelpers(thePackage, modelsVersionPackage),
 		*g.Models.GenerateJsonParseException(thePackage, modelsVersionPackage),
-		*g.contentTypeMismatchException(thePackage),
+		*contentTypeMismatchException(thePackage),
 	)
 	files = append(files, dateConverters(mainPackage)...)
 	return files
@@ -77,7 +77,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, models
 		g.controllerMethod(w, &operation)
 	}
 	w.EmptyLine()
-	g.checkContentType(w)
+	checkContentType(w)
 	w.EmptyLine()
 	g.errorHandler(w, api.Http.Errors)
 	w.Unindent()
@@ -157,17 +157,6 @@ func (g *MicronautGenerator) processResponse(w *generator.Writer, response *spec
 	}
 }
 
-func (g *MicronautGenerator) checkContentType(w *generator.Writer) {
-	w.Lines(`
-private fun checkContentType(request: HttpRequest<*>, expectedContentType: String) {
-	val contentType = request.headers.contentType
-	if (!(contentType.isPresent && contentType.get().contains(expectedContentType))) {
-		throw ContentTypeMismatchException(expectedContentType, if (contentType.isPresent) contentType.get() else null )
-	}
-}
-`)
-}
-
 func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Responses) {
 	notFoundError := errors.GetByStatusName(spec.HttpStatusNotFound)
 	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)
@@ -185,30 +174,6 @@ func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Respo
 	w.Line(`  val internalServerError = InternalServerError(exception.message ?: "Unknown error")`)
 	g.processResponse(w.IndentedWith(1), internalServerError, "internalServerError")
 	w.Line(`}`)
-}
-
-func (g *MicronautGenerator) contentTypeMismatchException(thePackage modules.Module) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
-class ContentTypeMismatchException(expected: String, actual: String?) :
-    RuntimeException(
-        String.format(
-            "Expected Content-Type header: '%s' was not provided, found: '%s'",
-            expected,
-            actual
-        )
-    )
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName string
-	}{
-		thePackage.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ContentTypeMismatchException.kt"),
-		Content: strings.TrimSpace(code),
-	}
 }
 
 func (g *MicronautGenerator) errorsHelpers(thePackage, modelsPackage modules.Module) *generator.CodeFile {

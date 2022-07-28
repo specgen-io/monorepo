@@ -40,7 +40,7 @@ func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage
 		files,
 		*g.errorsHelpers(thePackage, modelsVersionPackage),
 		*g.Models.GenerateJsonParseException(thePackage, modelsVersionPackage),
-		*g.contentTypeMismatchException(thePackage),
+		*contentTypeMismatchException(thePackage),
 	)
 	return files
 }
@@ -79,7 +79,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api, apiPackage, modelsVer
 		g.controllerMethod(w, &operation)
 	}
 	w.EmptyLine()
-	g.checkContentType(w)
+	checkContentType(w)
 	w.EmptyLine()
 	g.errorHandler(w, api.Http.Errors)
 	w.Unindent()
@@ -157,17 +157,6 @@ func (g *SpringGenerator) processResponse(w *generator.Writer, response *spec.Re
 	}
 }
 
-func (g *SpringGenerator) checkContentType(w *generator.Writer) {
-	w.Lines(`
-private fun checkContentType(request: HttpServletRequest, expectedContentType: MediaType) {
-	val contentType = request.getHeader("Content-Type")
-	if (contentType == null || !contentType.contains(expectedContentType.toString())) {
-		throw ContentTypeMismatchException(expectedContentType.toString(), contentType)
-	}
-}
-`)
-}
-
 func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Responses) {
 	notFoundError := errors.GetByStatusName(spec.HttpStatusNotFound)
 	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)
@@ -185,30 +174,6 @@ func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Response
 	w.Line(`  val internalServerError = InternalServerError(exception.message ?: "Unknown error")`)
 	g.processResponse(w.IndentedWith(1), internalServerError, "internalServerError")
 	w.Line(`}`)
-}
-
-func (g *SpringGenerator) contentTypeMismatchException(thePackage modules.Module) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
-class ContentTypeMismatchException(expected: String, actual: String?) :
-    RuntimeException(
-        String.format(
-            "Expected Content-Type header: '%s' was not provided, found: '%s'",
-            expected,
-            actual
-        )
-    )
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName string
-	}{
-		thePackage.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ContentTypeMismatchException.kt"),
-		Content: strings.TrimSpace(code),
-	}
 }
 
 func (g *SpringGenerator) errorsHelpers(thePackage, modelsPackage modules.Module) *generator.CodeFile {
