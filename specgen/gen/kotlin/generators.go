@@ -43,7 +43,7 @@ var Client = generator.Generator{
 	},
 }
 
-var ServerKotlinValues = []string{"micronaut"}
+var ServerKotlinValues = []string{"spring", "micronaut"}
 
 var Service = generator.Generator{
 	"service-kotlin",

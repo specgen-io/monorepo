@@ -30,7 +30,7 @@ func (g *MicronautGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImp
 	return `io.micronaut.context.annotation.Bean`, `Bean`
 }
 
-func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage modules.Module) []generator.CodeFile {
+func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, modelsVersionPackage, serviceVersionPackage modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
@@ -40,7 +40,7 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPack
 		files,
 		*g.errorsHelpers(thePackage, modelsVersionPackage),
 		*g.Models.GenerateJsonParseException(thePackage, modelsVersionPackage),
-		*g.contentTypeMismatchException(thePackage),
+		*contentTypeMismatchException(thePackage),
 	)
 	files = append(files, dateConverters(mainPackage)...)
 	return files
@@ -49,7 +49,7 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPack
 func (g *MicronautGenerator) serviceController(api *spec.Api, apiPackage, modelsVersionPackage, serviceVersionPackage modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	w := writer.NewKotlinWriter()
-	w.Line(`package %s;`, apiPackage.PackageName)
+	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(`org.slf4j.*`)
@@ -105,7 +105,7 @@ func (g *MicronautGenerator) controllerMethod(w *generator.Writer, operation *sp
 	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
 	w.Indent()
 	g.parseBody(w, operation, "bodyStr", "requestBody")
-	g.serviceCall(w, operation, "bodyStr", "requestBody", "result")
+	serviceCall(w, operation, "bodyStr", "requestBody", "result")
 	g.processResponses(w, operation, "result")
 	w.Unindent()
 	w.Line(`}`)
@@ -123,15 +123,6 @@ func (g *MicronautGenerator) parseBody(w *generator.Writer, operation *spec.Name
 		w.Line(`} catch (exception: %s) {`, exception)
 		w.Line(`  throw JsonParseException(exception)`)
 		w.Line(`}`)
-	}
-}
-
-func (g *MicronautGenerator) serviceCall(w *generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar)))
-	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
-		w.Line(serviceCall)
-	} else {
-		w.Line(`val %s = %s`, resultVarName, serviceCall)
 	}
 }
 
@@ -194,30 +185,6 @@ func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Respo
 	w.Line(`  val internalServerError = InternalServerError(exception.message ?: "Unknown error")`)
 	g.processResponse(w.IndentedWith(1), internalServerError, "internalServerError")
 	w.Line(`}`)
-}
-
-func (g *MicronautGenerator) contentTypeMismatchException(thePackage modules.Module) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
-class ContentTypeMismatchException(expected: String, actual: String?) :
-    RuntimeException(
-        String.format(
-            "Expected Content-Type header: '%s' was not provided, found: '%s'",
-            expected,
-            actual
-        )
-    )
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName string
-	}{
-		thePackage.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ContentTypeMismatchException.kt"),
-		Content: strings.TrimSpace(code),
-	}
 }
 
 func (g *MicronautGenerator) errorsHelpers(thePackage, modelsPackage modules.Module) *generator.CodeFile {
@@ -373,7 +340,7 @@ func dateConverters(thePackage modules.Module) []generator.CodeFile {
 
 func localDateConverter(thePackage modules.Module) *generator.CodeFile {
 	code := `
-package [[.PackageName]];
+package [[.PackageName]]
 
 import io.micronaut.core.convert.*
 import jakarta.inject.Singleton
@@ -409,7 +376,7 @@ class LocalDateConverter : TypeConverter<String, LocalDate> {
 
 func localDateTimeConverter(thePackage modules.Module) *generator.CodeFile {
 	code := `
-package [[.PackageName]];
+package [[.PackageName]]
 
 import io.micronaut.core.convert.*
 import jakarta.inject.Singleton

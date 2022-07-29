@@ -24,7 +24,7 @@ func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPac
 	files := []generator.CodeFile{}
 
 	w := writer.NewKotlinWriter()
-	w.Line(`package %s;`, apiPackage.PackageName)
+	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.Types.Imports()...)
