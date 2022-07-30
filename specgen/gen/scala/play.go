@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/specgen-io/specgen/generator/v2"
+	"github.com/specgen-io/specgen/openapi/v2"
 	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/v2/gen/openapi"
 )
 
 func GeneratePlayService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string) *generator.Sources {
