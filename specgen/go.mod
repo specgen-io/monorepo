@@ -10,12 +10,15 @@ replace github.com/specgen-io/specgen/generator/v2 => ../generator
 
 replace github.com/specgen-io/specgen/openapi/v2 => ../openapi
 
+replace github.com/specgen-io/specgen/ruby/v2 => ../ruby
+
 require (
 	github.com/dollarshaveclub/line v0.0.0-20171219191008-fc7a351a8b58
 	github.com/getkin/kin-openapi v0.85.0
 	github.com/pinzolo/casee v1.0.0
 	github.com/specgen-io/specgen/generator/v2 v2.0.0-00010101000000-000000000000
 	github.com/specgen-io/specgen/openapi/v2 v2.0.0-00010101000000-000000000000
+	github.com/specgen-io/specgen/ruby/v2 v2.0.0-00010101000000-000000000000
 	github.com/specgen-io/specgen/spec/v2 v2.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
