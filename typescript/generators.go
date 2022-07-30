@@ -1,4 +1,4 @@
-package ts
+package typescript
 
 import (
 	"github.com/specgen-io/specgen/generator/v2"
