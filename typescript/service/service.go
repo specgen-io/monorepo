@@ -4,8 +4,8 @@ import (
 	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/openapi/v2"
 	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/v2/gen/ts/modules"
-	"github.com/specgen-io/specgen/v2/gen/ts/validations"
+	"github.com/specgen-io/specgen/typescript/v2/modules"
+	"github.com/specgen-io/specgen/typescript/v2/validations"
 )
 
 func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validationName string) *generator.Sources {

@@ -6,9 +6,9 @@ import (
 
 	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/v2/gen/ts/modules"
-	"github.com/specgen-io/specgen/v2/gen/ts/types"
-	"github.com/specgen-io/specgen/v2/gen/ts/validations"
+	"github.com/specgen-io/specgen/typescript/v2/modules"
+	"github.com/specgen-io/specgen/typescript/v2/types"
+	"github.com/specgen-io/specgen/typescript/v2/validations"
 )
 
 func getUrl(endpoint spec.Endpoint) string {

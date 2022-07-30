@@ -3,9 +3,9 @@ package ts
 import (
 	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/v2/gen/ts/client"
-	"github.com/specgen-io/specgen/v2/gen/ts/service"
-	"github.com/specgen-io/specgen/v2/gen/ts/validations"
+	"github.com/specgen-io/specgen/typescript/v2/client"
+	"github.com/specgen-io/specgen/typescript/v2/service"
+	"github.com/specgen-io/specgen/typescript/v2/validations"
 )
 
 var ValidationTsValues = []string{"superstruct", "io-ts"}

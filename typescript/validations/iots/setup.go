@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/v2/gen/ts/modules"
+	"github.com/specgen-io/specgen/typescript/v2/modules"
 )
 
 var IoTs = "io-ts"
