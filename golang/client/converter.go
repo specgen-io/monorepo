@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/specgen-io/specgen/generator/v2"
+	"github.com/specgen-io/specgen/golang/v2/module"
 	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/v2/gen/golang/module"
 )
 
 func callRawConvert(typ *spec.TypeDef, paramNameVar string) string {

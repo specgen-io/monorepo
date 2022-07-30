@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/v2/gen/golang/module"
+	"github.com/specgen-io/specgen/golang/v2/module"
 )
 
 func respondJson(logFields, resVar, statusCode, dataVar string) string {
