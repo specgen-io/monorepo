@@ -4,10 +4,10 @@ import (
 	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/openapi/v2"
 	"github.com/specgen-io/specgen/ruby/v2"
+	"github.com/specgen-io/specgen/scala/v2"
 	"github.com/specgen-io/specgen/v2/gen/golang"
 	"github.com/specgen-io/specgen/v2/gen/java"
 	"github.com/specgen-io/specgen/v2/gen/kotlin"
-	"github.com/specgen-io/specgen/v2/gen/scala"
 	"github.com/specgen-io/specgen/v2/gen/ts"
 )
 
