@@ -3,12 +3,12 @@ package gen
 import (
 	"github.com/specgen-io/specgen/generator/v2"
 	"github.com/specgen-io/specgen/golang/v2"
+	"github.com/specgen-io/specgen/java/v2"
+	"github.com/specgen-io/specgen/kotlin/v2"
 	"github.com/specgen-io/specgen/openapi/v2"
 	"github.com/specgen-io/specgen/ruby/v2"
 	"github.com/specgen-io/specgen/scala/v2"
 	"github.com/specgen-io/specgen/typescript/v2"
-	"github.com/specgen-io/specgen/v2/gen/java"
-	"github.com/specgen-io/specgen/v2/gen/kotlin"
 )
 
 var Generators = []generator.Generator{
