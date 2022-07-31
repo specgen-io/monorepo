@@ -94,7 +94,8 @@ jobs:
       - image: circleci/ruby:2.4.9
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/gem-specgen/lib
       - run:
           name: Build gem
