@@ -590,11 +590,11 @@ workflows:
           context: specgen
           requires:
             - build-specgen-java
-      - build-maven-kotlin-specgen:
+      - build-gradle-java-specgen:
           context: specgen
           requires:
             - build-specgen-java
-      - build-gradle-java-specgen:
+      - build-maven-kotlin-specgen:
           context: specgen
           requires:
             - build-specgen
