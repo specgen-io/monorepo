@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"github.com/specgen-io/specgen/v2/console"
+	"github.com/specgen-io/specgen/console/v2"
 	"github.com/specgen-io/specgen/v2/convert/openapi"
-	"github.com/specgen-io/specgen/v2/fail"
 	"github.com/spf13/cobra"
 )
 
@@ -21,17 +20,17 @@ var cmdSpecConvert = &cobra.Command{
 	Short: "Convert spec from older versions to latest",
 	Run: func(cmd *cobra.Command, args []string) {
 		inFile, err := cmd.Flags().GetString(InFile)
-		fail.IfError(err)
+		FailIfError(err)
 
 		specFormat, err := cmd.Flags().GetString(Format)
-		fail.IfError(err)
+		FailIfError(err)
 
 		outFile, err := cmd.Flags().GetString(OutFile)
-		fail.IfError(err)
+		FailIfError(err)
 
 		if specFormat == "openapi" {
 			err = openapi.ConvertFromOpenapi(inFile, outFile)
-			fail.IfError(err)
+			FailIfError(err)
 		}
 
 		console.PrintLnF(`Spec %s was successfully converted`, outFile)

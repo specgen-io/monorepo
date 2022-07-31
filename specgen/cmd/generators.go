@@ -1,58 +1,37 @@
 package cmd
 
 import (
-	"strings"
-
 	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/v2/console"
-	"github.com/specgen-io/specgen/v2/fail"
-	"github.com/specgen-io/specgen/v2/gen"
-	"github.com/spf13/cobra"
+	"github.com/specgen-io/specgen/golang/v2"
+	"github.com/specgen-io/specgen/java/v2"
+	"github.com/specgen-io/specgen/kotlin/v2"
+	"github.com/specgen-io/specgen/openapi/v2"
+	"github.com/specgen-io/specgen/ruby/v2"
+	"github.com/specgen-io/specgen/scala/v2"
+	"github.com/specgen-io/specgen/typescript/v2"
 )
 
 func init() {
-	for index := range gen.Generators {
-		rootCmd.AddCommand(generatorCommand(&gen.Generators[index]))
+	var generators = []generator.Generator{
+		golang.Models,
+		golang.Client,
+		golang.Service,
+		java.Models,
+		java.Client,
+		java.Service,
+		kotlin.Models,
+		kotlin.Client,
+		kotlin.Service,
+		ruby.Models,
+		ruby.Client,
+		scala.Models,
+		scala.Client,
+		scala.Service,
+		typescript.Models,
+		typescript.Client,
+		typescript.Service,
+		openapi.Openapi,
 	}
-}
 
-func generatorCommand(g *generator.Generator) *cobra.Command {
-	command := &cobra.Command{
-		Use:   g.Name,
-		Short: g.Usage,
-		Run: func(cmd *cobra.Command, args []string) {
-			params := generator.GeneratorArgsValues{}
-			for _, arg := range g.Args {
-				value, err := cmd.Flags().GetString(arg.Name)
-				fail.IfError(err)
-				if arg.Values != nil {
-					if !contains(arg.Values, value) {
-						fail.FailF(`Argument %s provided value "%s" is not among allowed: %s`, arg.Name, value, strings.Join(arg.Values, ", "))
-					}
-				}
-				params[arg.Arg] = value
-			}
-			specification := readSpecFile(params[generator.ArgSpecFile])
-			sources := g.Generator(specification, params)
-			err := sources.Write(false, func(wrote bool, fullpath string) {
-				if wrote {
-					console.PrintLn("Writing:", fullpath)
-				} else {
-					console.PrintLn("Skipping:", fullpath)
-				}
-			})
-			fail.IfErrorF(err, "Failed to write source code")
-		},
-	}
-	for _, arg := range g.Args {
-		description := arg.Description
-		if arg.Values != nil {
-			description += "; allowed values: " + strings.Join(arg.Values, ", ")
-		}
-		command.Flags().String(arg.Name, arg.Default, description)
-		if arg.Required {
-			command.MarkFlagRequired(arg.Name)
-		}
-	}
-	return command
+	generator.AddCobraCommands(rootCmd, generators)
 }

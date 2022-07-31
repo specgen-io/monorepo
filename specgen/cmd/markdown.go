@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/specgen-io/specgen/v2/fail"
 	"github.com/specgen-io/specgen/v2/markdown"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -21,10 +20,10 @@ var cmdMarkdown = &cobra.Command{
 	Short: "Generate markdown documentation",
 	Run: func(cmd *cobra.Command, args []string) {
 		outFile, err := cmd.Flags().GetString(OutFile)
-		fail.IfError(err)
+		FailIfError(err)
 
 		err = GenMarkdownDocumentation(rootCmd, outFile, []string{"completion", "markdown"})
-		fail.IfError(err, "Failed to write markdown documentation")
+		FailIfError(err, "Failed to write markdown documentation")
 	},
 }
 

@@ -1,9 +1,8 @@
 package cmd
 
 import (
+	"github.com/specgen-io/specgen/console/v2"
 	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/v2/console"
-	"github.com/specgen-io/specgen/v2/fail"
 	"io/ioutil"
 	"sort"
 )
@@ -11,7 +10,7 @@ import (
 func readSpecFile(specFile string) *spec.Spec {
 	console.PrintLnF("Reading spec file: %s", specFile)
 	data, err := ioutil.ReadFile(specFile)
-	fail.IfErrorF(err, "Failed to read spec file: %s", specFile)
+	FailIfErrorF(err, "Failed to read spec file: %s", specFile)
 
 	console.PrintLn("Parsing spec")
 	specification, messages, err := spec.ReadSpec(data)
@@ -28,6 +27,6 @@ func readSpecFile(specFile string) *spec.Spec {
 		}
 	}
 
-	fail.IfErrorF(err, "Failed to parse spec: %s", specFile)
+	FailIfErrorF(err, "Failed to parse spec: %s", specFile)
 	return specification
 }

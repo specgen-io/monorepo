@@ -2,7 +2,6 @@ package console
 
 import (
 	"fmt"
-	"github.com/dollarshaveclub/line"
 )
 
 const VERBOSITY_QUIET = 0
@@ -81,23 +80,20 @@ func SuccessLnF(format string, args ...interface{}) {
 	outSuccess(VERBOSITY_QUIET, log)
 }
 
-func out(out *line.Output, minVerbosity int, content interface{}) {
+func out(minVerbosity int, content interface{}) {
 	if Verbosity >= minVerbosity {
-		out.Print(content)
+		print(content)
 	}
 }
 
 func outNormal(minVerbosity int, content interface{}) {
-	output := line.White()
-	out(output, minVerbosity, content)
+	out(minVerbosity, content)
 }
 
 func outProblem(minVerbosity int, content interface{}) {
-	output := line.Red()
-	out(output, minVerbosity, content)
+	out(minVerbosity, content)
 }
 
 func outSuccess(minVerbosity int, content interface{}) {
-	output := line.Green()
-	out(output, minVerbosity, content)
+	out(minVerbosity, content)
 }
