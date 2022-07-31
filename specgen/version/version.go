@@ -1,4 +1,4 @@
 package version
 
-var Current = "unknown"
+var Current = "0.0.0"
 

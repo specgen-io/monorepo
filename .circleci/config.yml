@@ -17,16 +17,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Write version
-          command: |
-            cd specgen
-            tee > ./version/version.go \<<END
-            package version
-
-            var Current = "<<pipeline.parameters.specgen-version>>"
-
-            END
-      - run:
           name: Build
           command: |
             cd specgen
@@ -44,6 +34,14 @@ jobs:
           root: .
           paths:
             - specgen/dist
+
+  build-specgen-java:
+    docker:
+      - image: cimg/go:1.18.3
+    working_directory: ~/specgen
+    steps:
+      - build_specgen_plugin:
+          plugin: java
 
   build-specgen-go:
     docker:
@@ -228,7 +226,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: specgen
+          folder: java
           at: ./plugins/maven-java-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
@@ -289,7 +287,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: specgen
+          folder: java
           at: ./plugins/maven-java-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
@@ -337,7 +335,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: specgen
+          folder: java
           at: ./plugins/gradle-java-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
@@ -391,7 +389,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: specgen
+          folder: java
           at: ./plugins/gradle-java-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
@@ -470,6 +468,22 @@ commands:
       - run:
           name: Inspect local folder
           command: find <<parameters.at>>
+
+  build_specgen_plugin:
+    parameters:
+      plugin:
+        type: string
+    steps:
+      - checkout
+      - run:
+          name: Build
+          command: |
+            cd <<parameters.plugin>>
+            ../build.sh <<pipeline.parameters.specgen-version>>
+      - persist_to_workspace:
+          root: .
+          paths:
+            - <<parameters.plugin>>/dist
 
   setup-sonatype-maven:
     steps:
@@ -556,6 +570,10 @@ workflows:
     jobs:
       - build-specgen:
           context: specgen
+      - build-specgen-java:
+          context: specgen
+          requires:
+            - build-specgen
       - build-specgen-go:
           context: specgen
           requires:
@@ -571,11 +589,11 @@ workflows:
       - build-maven-java-specgen:
           context: specgen
           requires:
-            - build-specgen
+            - build-specgen-java
       - build-maven-kotlin-specgen:
           context: specgen
           requires:
-            - build-specgen
+            - build-specgen-java
       - build-gradle-java-specgen:
           context: specgen
           requires:
