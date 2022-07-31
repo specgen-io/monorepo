@@ -44,14 +44,6 @@ jobs:
           root: ./specgen
           paths:
             - dist
-      - run:
-          name: Create git tag
-          command: |
-            git config --global user.email $GITHUB_EMAIL
-            git config --global user.name $GITHUB_USER
-            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen.git
-            git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen verison: v<<pipeline.parameters.specgen-version>>"
-            git push -f --tags
 
   build-specgen-go:
     docker:
@@ -435,6 +427,14 @@ jobs:
       - run:
           name: Release
           command: ./release.sh <<pipeline.parameters.specgen-version>> ${GITHUB_TOKEN}
+      - run:
+          name: Create git tag
+          command: |
+            git config --global user.email $GITHUB_EMAIL
+            git config --global user.name $GITHUB_USER
+            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen.git
+            git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen verison: v<<pipeline.parameters.specgen-version>>"
+            git push -f --tags
 
 commands:
   setup-sonatype-maven:
