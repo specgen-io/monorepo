@@ -63,7 +63,7 @@ jobs:
           name: Localize specgen dependencies
           command: |
             go install github.com/vsapronov/gotore@8848599
-            cd specgen
+            cd golang
             gotore ./go.mod github.com/specgen-io/specgen-go/v2
       - run:
           name: Checkout specgen-go tool repo and clean it
@@ -74,10 +74,7 @@ jobs:
       - run:
           name: Copy vendored code
           command: |
-            cp -a ./specgen/. ./specgen-go/v2
-            cd ./specgen-go/v2
-            rm ./build.sh
-            rm ./release.sh
+            cp -a ./golang/. ./specgen-go/v2
       - run:
           name: Commit changes
           command: |
