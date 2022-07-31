@@ -41,9 +41,9 @@ jobs:
       - store_test_results:
           path: ./specgen/test-results
       - persist_to_workspace:
-          root: ./specgen
+          root: .
           paths:
-            - dist
+            - specgen/dist
 
   build-specgen-go:
     docker:
@@ -117,7 +117,8 @@ jobs:
       - image: circleci/ruby:2.4.9
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/gem-specgen/lib
       - run:
           name: Build gem
@@ -138,7 +139,8 @@ jobs:
       - image: circleci/openjdk:8-jdk
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/sbt-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
@@ -167,7 +169,8 @@ jobs:
       - image: circleci/openjdk:8-jdk
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/sbt-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
@@ -183,7 +186,8 @@ jobs:
       - image: cimg/node:16.8.0
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/npm-specgen
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
@@ -202,7 +206,8 @@ jobs:
       - image: cimg/node:16.8.0
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/npm-specgen
       - run:
           name: npm publish package
@@ -221,7 +226,8 @@ jobs:
       - image: circleci/openjdk:11-jdk
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/maven-java-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
@@ -250,7 +256,8 @@ jobs:
       - image: circleci/openjdk:11-jdk
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/maven-kotlin-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
@@ -280,7 +287,8 @@ jobs:
       - image: circleci/openjdk:11-jdk
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/maven-java-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
@@ -303,7 +311,8 @@ jobs:
       - image: circleci/openjdk:11-jdk
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/maven-kotlin-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
@@ -326,7 +335,8 @@ jobs:
       - image: circleci/openjdk:8-jdk
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/gradle-java-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
@@ -352,7 +362,8 @@ jobs:
       - image: circleci/openjdk:8-jdk
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/gradle-kotlin-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
@@ -378,7 +389,8 @@ jobs:
       - image: circleci/openjdk:8-jdk
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/gradle-java-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
@@ -396,7 +408,8 @@ jobs:
       - image: circleci/openjdk:8-jdk
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: ./plugins/gradle-kotlin-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
@@ -422,7 +435,8 @@ jobs:
     working_directory: ~/specgen
     steps:
       - checkout
-      - attach_workspace:
+      - attach_workspace_folder:
+          folder: specgen
           at: .
       - run:
           name: Release
@@ -437,6 +451,25 @@ jobs:
             git push -f --tags
 
 commands:
+  attach_workspace_folder:
+    parameters:
+      workspace:
+        type: string
+        default: ./workspace
+      folder:
+        type: string
+      at:
+        type: string
+    steps:
+      - attach_workspace:
+          at: <<parameters.workspace>>
+      - run:
+          name: Copy folder from attached workspace
+          command: cp -a <<parameters.workspace>>/<<parameters.folder>>/. <<parameters.at>>
+      - run:
+          name: Inspect local folder
+          command: find <<parameters.at>>
+
   setup-sonatype-maven:
     steps:
       - run:
