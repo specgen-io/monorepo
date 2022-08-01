@@ -1,4 +1,4 @@
-package java
+package generators
 
 import (
 	"github.com/specgen-io/specgen/generator/v2"
@@ -58,4 +58,10 @@ var Service = generator.Generator{
 	func(specification *spec.Spec, params generator.GeneratorArgsValues) *generator.Sources {
 		return service.Generate(specification, params[generator.ArgJsonlib], params[generator.ArgServer], params[generator.ArgPackageName], params[generator.ArgSwaggerPath], params[generator.ArgGeneratePath], params[generator.ArgServicesPath])
 	},
+}
+
+var All = []generator.Generator{
+	Models,
+	Client,
+	Service,
 }
