@@ -1,4 +1,4 @@
-package typescript
+package generators
 
 import (
 	"github.com/specgen-io/specgen/generator/v2"
@@ -56,4 +56,10 @@ var Service = generator.Generator{
 	func(specification *spec.Spec, params generator.GeneratorArgsValues) *generator.Sources {
 		return service.GenerateService(specification, params[generator.ArgSwaggerPath], params[generator.ArgGeneratePath], params[generator.ArgServicesPath], params[generator.ArgServer], params[generator.ArgValidation])
 	},
+}
+
+var All = []generator.Generator{
+	Models,
+	Client,
+	Service,
 }

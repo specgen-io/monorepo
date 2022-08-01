@@ -181,13 +181,22 @@ jobs:
             cd ./plugins/sbt-specgen
             sbt -Dversion=<<pipeline.parameters.specgen-version>> publishSigned sonatypeRelease
 
+
+  build-specgen-typescript:
+    docker:
+      - image: cimg/go:1.18.3
+    working_directory: ~/specgen
+    steps:
+      - build_specgen_plugin:
+          plugin: typescript
+
   build-npm-specgen:
     docker:
       - image: cimg/node:16.8.0
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: specgen
+          folder: typescript
           at: ./plugins/npm-specgen
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
@@ -207,7 +216,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: specgen
+          folder: typescript
           at: ./plugins/npm-specgen
       - run:
           name: npm publish package
@@ -622,10 +631,12 @@ workflows:
           context: specgen
           requires:
             - build-specgen-kotlin
+      - build-specgen-typescript:
+          context: specgen
       - build-npm-specgen:
           context: specgen
           requires:
-            - build-specgen
+            - build-specgen-typescript
       - build-complete:
           requires:
             - build-specgen-go

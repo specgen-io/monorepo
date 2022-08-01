@@ -8,7 +8,7 @@ import (
 	"github.com/specgen-io/specgen/openapi/v2"
 	"github.com/specgen-io/specgen/ruby/v2"
 	scala "github.com/specgen-io/specgen/scala/v2/generators"
-	"github.com/specgen-io/specgen/typescript/v2"
+	typescript "github.com/specgen-io/specgen/typescript/v2/generators"
 )
 
 func init() {
