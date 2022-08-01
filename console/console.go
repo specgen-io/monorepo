@@ -82,7 +82,7 @@ func SuccessLnF(format string, args ...interface{}) {
 
 func out(minVerbosity int, content interface{}) {
 	if Verbosity >= minVerbosity {
-		print(content)
+		print(content.(string))
 	}
 }
 
