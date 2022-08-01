@@ -10,7 +10,7 @@ parameters:
     default: 2.1.<<pipeline.number>>
 
 jobs:
-  build-specgen:
+  specgen:
     docker:
       - image: cimg/go:1.18.3
     working_directory: ~/specgen
@@ -35,7 +35,7 @@ jobs:
           paths:
             - specgen/dist
 
-  build-specgen-go:
+  golang:
     docker:
       - image: cimg/go:1.18.3
     working_directory: ~/golang
@@ -80,7 +80,7 @@ jobs:
             go install github.com/specgen-io/specgen-go/v2@v<<pipeline.parameters.specgen-version>>
 
 
-  build-specgen-ruby:
+  ruby:
     docker:
       - image: cimg/go:1.18.3
     working_directory: ~/specgen
@@ -88,7 +88,7 @@ jobs:
       - build_specgen_plugin:
           plugin: ruby
 
-  build-gem-specgen:
+  gem:
     docker:
       - image: circleci/ruby:2.4.9
     steps:
@@ -135,7 +135,7 @@ jobs:
             gem push --key rubygems specgen-$VERSION.gem
 
 
-  build-specgen-scala:
+  scala:
     docker:
       - image: cimg/go:1.18.3
     working_directory: ~/specgen
@@ -143,7 +143,7 @@ jobs:
       - build_specgen_plugin:
           plugin: scala
 
-  build-sbt-specgen:
+  sbt:
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
@@ -191,7 +191,7 @@ jobs:
             sbt -Dversion=<<pipeline.parameters.specgen-version>> publishSigned sonatypeRelease
 
 
-  build-specgen-typescript:
+  typescript:
     docker:
       - image: cimg/go:1.18.3
     working_directory: ~/specgen
@@ -199,7 +199,7 @@ jobs:
       - build_specgen_plugin:
           plugin: typescript
 
-  build-npm-specgen:
+  npm:
     docker:
       - image: cimg/node:16.8.0
     steps:
@@ -239,7 +239,7 @@ jobs:
               echo "Will not release - not running on main branch"
             fi
 
-  build-specgen-java:
+  java:
     docker:
       - image: cimg/go:1.18.3
     working_directory: ~/specgen
@@ -247,7 +247,7 @@ jobs:
       - build_specgen_plugin:
           plugin: java
 
-  build-maven-java-specgen:
+  maven-java:
     docker:
       - image: circleci/openjdk:11-jdk
     steps:
@@ -301,7 +301,7 @@ jobs:
             - ~/.ivy2
             - ~/.m2
 
-  build-gradle-java-specgen:
+  gradle-java:
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
@@ -348,7 +348,7 @@ jobs:
             -Dproject.version=<<pipeline.parameters.specgen-version>>
 
 
-  build-specgen-kotlin:
+  kotlin:
     docker:
       - image: cimg/go:1.18.3
     working_directory: ~/specgen
@@ -356,7 +356,7 @@ jobs:
       - build_specgen_plugin:
           plugin: kotlin
 
-  build-maven-kotlin-specgen:
+  maven-kotlin:
     docker:
       - image: circleci/openjdk:11-jdk
     steps:
@@ -411,7 +411,7 @@ jobs:
             - ~/.ivy2
             - ~/.m2
 
-  build-gradle-kotlin-specgen:
+  gradle-kotlin:
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
@@ -604,59 +604,59 @@ commands:
 workflows:
   build-release:
     jobs:
-      - build-specgen:
+      - specgen:
           context: specgen
-      - build-specgen-go:
+      - golang:
           context: specgen
-      - build-specgen-ruby:
+      - ruby:
           context: specgen
-      - build-gem-specgen:
-          context: specgen
-          requires:
-            - build-specgen-ruby
-      - build-specgen-scala:
-          context: specgen
-      - build-sbt-specgen:
+      - gem:
           context: specgen
           requires:
-            - build-specgen-scala
-      - build-specgen-java:
+            - ruby
+      - scala:
           context: specgen
-      - build-maven-java-specgen:
-          context: specgen
-          requires:
-            - build-specgen-java
-      - build-gradle-java-specgen:
+      - sbt:
           context: specgen
           requires:
-            - build-specgen-java
-      - build-specgen-kotlin:
+            - scala
+      - java:
           context: specgen
-      - build-maven-kotlin-specgen:
-          context: specgen
-          requires:
-            - build-specgen-kotlin
-      - build-gradle-kotlin-specgen:
+      - maven-java:
           context: specgen
           requires:
-            - build-specgen-kotlin
-      - build-specgen-typescript:
-          context: specgen
-      - build-npm-specgen:
+            - java
+      - gradle-java:
           context: specgen
           requires:
-            - build-specgen-typescript
+            - java
+      - kotlin:
+          context: specgen
+      - maven-kotlin:
+          context: specgen
+          requires:
+            - kotlin
+      - gradle-kotlin:
+          context: specgen
+          requires:
+            - kotlin
+      - typescript:
+          context: specgen
+      - npm:
+          context: specgen
+          requires:
+            - typescript
       - build-complete:
           requires:
-            - build-specgen
-            - build-specgen-go
-            - build-sbt-specgen
-            - build-maven-java-specgen
-            - build-maven-kotlin-specgen
-            - build-gradle-java-specgen
-            - build-gradle-kotlin-specgen
-            - build-gem-specgen
-            - build-npm-specgen
+            - specgen
+            - golang
+            - sbt
+            - maven-java
+            - maven-kotlin
+            - gradle-java
+            - gradle-kotlin
+            - gem
+            - npm
       - circleci/start-pipeline:
           name: test-models
           repository: specgen-io/test-models
