@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/specgen-io/specgen/generator/v2"
 	golang "github.com/specgen-io/specgen/golang/v2/generators"
-	"github.com/specgen-io/specgen/java/v2"
+	java "github.com/specgen-io/specgen/java/v2/generators"
 	"github.com/specgen-io/specgen/kotlin/v2"
 	"github.com/specgen-io/specgen/openapi/v2"
 	"github.com/specgen-io/specgen/ruby/v2"
