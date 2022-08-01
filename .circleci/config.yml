@@ -125,13 +125,22 @@ jobs:
             export VERSION=<<pipeline.parameters.specgen-version>>
             gem push --key rubygems specgen-$VERSION.gem
 
+
+  build-specgen-scala:
+    docker:
+      - image: cimg/go:1.18.3
+    working_directory: ~/specgen
+    steps:
+      - build_specgen_plugin:
+          plugin: scala
+
   build-sbt-specgen:
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: specgen
+          folder: scala
           at: ./plugins/sbt-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
@@ -161,7 +170,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: specgen
+          folder: scala
           at: ./plugins/sbt-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
@@ -587,10 +596,12 @@ workflows:
           context: specgen
           requires:
             - build-specgen
+      - build-specgen-scala:
+          context: specgen
       - build-sbt-specgen:
           context: specgen
           requires:
-            - build-specgen
+            - build-specgen-scala
       - build-specgen-java:
           context: specgen
       - build-maven-java-specgen:

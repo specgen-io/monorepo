@@ -1,4 +1,4 @@
-package scala
+package generators
 
 import (
 	"github.com/specgen-io/specgen/generator/v2"
