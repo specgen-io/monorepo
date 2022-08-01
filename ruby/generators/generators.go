@@ -1,4 +1,4 @@
-package ruby
+package generators
 
 import (
 	"github.com/specgen-io/specgen/generator/v2"
@@ -29,4 +29,9 @@ var Client = generator.Generator{
 	func(specification *spec.Spec, params generator.GeneratorArgsValues) *generator.Sources {
 		return GenerateClient(specification, params[generator.ArgGeneratePath])
 	},
+}
+
+var All = []generator.Generator{
+	Models,
+	Client,
 }

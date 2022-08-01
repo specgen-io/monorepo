@@ -1,4 +1,4 @@
-package ruby
+package generators
 
 import (
 	"path/filepath"

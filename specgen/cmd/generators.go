@@ -6,7 +6,7 @@ import (
 	java "github.com/specgen-io/specgen/java/v2/generators"
 	kotlin "github.com/specgen-io/specgen/kotlin/v2/generators"
 	"github.com/specgen-io/specgen/openapi/v2"
-	"github.com/specgen-io/specgen/ruby/v2"
+	ruby "github.com/specgen-io/specgen/ruby/v2/generators"
 	scala "github.com/specgen-io/specgen/scala/v2/generators"
 	typescript "github.com/specgen-io/specgen/typescript/v2/generators"
 )
