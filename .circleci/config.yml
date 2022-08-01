@@ -35,14 +35,6 @@ jobs:
           paths:
             - specgen/dist
 
-  build-specgen-java:
-    docker:
-      - image: cimg/go:1.18.3
-    working_directory: ~/specgen
-    steps:
-      - build_specgen_plugin:
-          plugin: java
-
   build-specgen-go:
     docker:
       - image: cimg/go:1.18.3
@@ -220,6 +212,14 @@ jobs:
               echo "Will not release - not running on main branch"
             fi
 
+  build-specgen-java:
+    docker:
+      - image: cimg/go:1.18.3
+    working_directory: ~/specgen
+    steps:
+      - build_specgen_plugin:
+          plugin: java
+
   build-maven-java-specgen:
     docker:
       - image: circleci/openjdk:11-jdk
@@ -250,37 +250,6 @@ jobs:
             - ~/.ivy2
             - ~/.m2
 
-  build-maven-kotlin-specgen:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - attach_workspace_folder:
-          folder: specgen
-          at: ./plugins/maven-kotlin-specgen/src/main/resources
-      - restore_cache:
-          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
-      - artifactory/setup-maven:
-          jfrog-server-url: specgen.jfrog.io
-          repo-name: maven
-      - run:
-          name: Build Maven plugin
-          command: |
-            cd ./plugins/maven-kotlin-specgen
-            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml
-            mvn clean install
-      - run:
-          name: Deploy Maven plugin
-          command: |
-            cd ./plugins/maven-kotlin-specgen
-            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml
-            mvn deploy -Dartifactory=true
-      - save_cache:
-          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
-          paths:
-            - ~/.ivy2
-            - ~/.m2
-
   maven-java-sonatype:
     docker:
       - image: circleci/openjdk:11-jdk
@@ -301,30 +270,6 @@ jobs:
             mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true
       - save_cache:
           key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
-          paths:
-            - ~/.ivy2
-            - ~/.m2
-
-  maven-kotlin-sonatype:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - attach_workspace_folder:
-          folder: specgen
-          at: ./plugins/maven-kotlin-specgen/src/main/resources
-      - restore_cache:
-          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
-      - setup-sonatype-maven
-      - run:
-          name: Deploy Maven plugin
-          command: |
-            cd ./plugins/maven-kotlin-specgen
-            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml            
-            export GPG_TTY=$(tty)
-            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true
-      - save_cache:
-          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
           paths:
             - ~/.ivy2
             - ~/.m2
@@ -356,13 +301,96 @@ jobs:
           key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
 
+  gradle-java-pluginportal:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - attach_workspace_folder:
+          folder: java
+          at: ./plugins/gradle-java-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
+      - run:
+          name: Deploy Gradle Java plugin
+          command: |
+            cd ./plugins/gradle-java-specgen
+            ./gradlew publishPlugins --build-cache --no-daemon \
+            -Pgradle.publish.key=$GRADLE_PUBLISH_KEY \
+            -Pgradle.publish.secret=$GRADLE_PUBLISH_SECRET \
+            -Dproject.version=<<pipeline.parameters.specgen-version>>
+
+
+  build-specgen-kotlin:
+    docker:
+      - image: cimg/go:1.18.3
+    working_directory: ~/specgen
+    steps:
+      - build_specgen_plugin:
+          plugin: kotlin
+
+  build-maven-kotlin-specgen:
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace_folder:
+          folder: kotlin
+          at: ./plugins/maven-kotlin-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - run:
+          name: Build Maven plugin
+          command: |
+            cd ./plugins/maven-kotlin-specgen
+            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml
+            mvn clean install
+      - run:
+          name: Deploy Maven plugin
+          command: |
+            cd ./plugins/maven-kotlin-specgen
+            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml
+            mvn deploy -Dartifactory=true
+      - save_cache:
+          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
+          paths:
+            - ~/.ivy2
+            - ~/.m2
+
+  maven-kotlin-sonatype:
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace_folder:
+          folder: kotlin
+          at: ./plugins/maven-kotlin-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
+      - setup-sonatype-maven
+      - run:
+          name: Deploy Maven plugin
+          command: |
+            cd ./plugins/maven-kotlin-specgen
+            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml            
+            export GPG_TTY=$(tty)
+            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true
+      - save_cache:
+          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
+          paths:
+            - ~/.ivy2
+            - ~/.m2
+
   build-gradle-kotlin-specgen:
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: specgen
+          folder: kotlin
           at: ./plugins/gradle-kotlin-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
@@ -383,32 +411,13 @@ jobs:
           key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
 
-  gradle-java-pluginportal:
-    docker:
-      - image: circleci/openjdk:8-jdk
-    steps:
-      - checkout
-      - attach_workspace_folder:
-          folder: java
-          at: ./plugins/gradle-java-specgen/src/main/resources
-      - restore_cache:
-          key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
-      - run:
-          name: Deploy Gradle Java plugin
-          command: |
-            cd ./plugins/gradle-java-specgen
-            ./gradlew publishPlugins --build-cache --no-daemon \
-            -Pgradle.publish.key=$GRADLE_PUBLISH_KEY \
-            -Pgradle.publish.secret=$GRADLE_PUBLISH_SECRET \
-            -Dproject.version=<<pipeline.parameters.specgen-version>>
-
   gradle-kotlin-pluginportal:
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: specgen
+          folder: kotlin
           at: ./plugins/gradle-kotlin-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
@@ -570,10 +579,6 @@ workflows:
     jobs:
       - build-specgen:
           context: specgen
-      - build-specgen-java:
-          context: specgen
-          requires:
-            - build-specgen
       - build-specgen-go:
           context: specgen
           requires:
@@ -586,6 +591,8 @@ workflows:
           context: specgen
           requires:
             - build-specgen
+      - build-specgen-java:
+          context: specgen
       - build-maven-java-specgen:
           context: specgen
           requires:
@@ -594,14 +601,16 @@ workflows:
           context: specgen
           requires:
             - build-specgen-java
+      - build-specgen-kotlin:
+          context: specgen
       - build-maven-kotlin-specgen:
           context: specgen
           requires:
-            - build-specgen
+            - build-specgen-kotlin
       - build-gradle-kotlin-specgen:
           context: specgen
           requires:
-            - build-specgen
+            - build-specgen-kotlin
       - build-npm-specgen:
           context: specgen
           requires:
