@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/console/v2"
 	"github.com/specgen-io/specgen/generator/v2"
+	"github.com/specgen-io/specgen/generator/v2/console"
 	"github.com/specgen-io/specgen/ruby/v2/generators"
 	"github.com/specgen-io/specgen/ruby/v2/version"
 	"github.com/spf13/cobra"

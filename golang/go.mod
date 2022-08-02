@@ -8,13 +8,10 @@ replace github.com/specgen-io/specgen/spec/v2 => ../spec
 
 replace github.com/specgen-io/specgen/generator/v2 => ../generator
 
-replace github.com/specgen-io/specgen/console/v2 => ../console
-
 replace github.com/specgen-io/specgen/openapi/v2 => ../openapi
 
 require (
 	github.com/pinzolo/casee v1.0.0
-	github.com/specgen-io/specgen/console/v2 v2.0.0-00010101000000-000000000000
 	github.com/specgen-io/specgen/generator/v2 v2.0.0-00010101000000-000000000000
 	github.com/specgen-io/specgen/openapi/v2 v2.0.0-00010101000000-000000000000
 	github.com/specgen-io/specgen/spec/v2 v2.0.0-00010101000000-000000000000

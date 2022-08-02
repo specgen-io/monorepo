@@ -2,14 +2,11 @@ module github.com/specgen-io/specgen/generator/v2
 
 go 1.18
 
-replace github.com/specgen-io/specgen/console/v2 => ../console
-
 replace github.com/specgen-io/specgen/yamlx/v2 => ../yamlx
 
 replace github.com/specgen-io/specgen/spec/v2 => ../spec
 
 require (
-	github.com/specgen-io/specgen/console/v2 v2.0.0-00010101000000-000000000000
 	github.com/specgen-io/specgen/spec/v2 v2.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.5.0
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e

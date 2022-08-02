@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/specgen-io/specgen/console/v2"
+	"github.com/specgen-io/specgen/generator/v2/console"
 	"github.com/specgen-io/specgen/spec/v2"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slices"
