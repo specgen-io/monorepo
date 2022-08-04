@@ -48,6 +48,8 @@ jobs:
             cd golang
             go mod vendor
             goven -name github.com/specgen-io/specgen-go/v2 -required -out vendored
+            cd vendored
+            go mod tidy
       - run:
           name: Checkout specgen-go tool repo and clean it
           command: |
