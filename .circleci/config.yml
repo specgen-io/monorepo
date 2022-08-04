@@ -57,7 +57,7 @@ jobs:
       - run:
           name: Copy vendored code
           command: |
-            cp -a ./golang/vendored. ./specgen-go/v2
+            cp -a ./golang/vendored/. ./specgen-go/v2
       - run:
           name: Commit changes
           command: |
