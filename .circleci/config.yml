@@ -715,7 +715,7 @@ workflows:
             - typescript
       - build-complete:
           requires:
-            - specgen
+            - specgen-release-alpha
             - golang
             - sbt
             - maven-java
