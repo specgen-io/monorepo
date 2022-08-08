@@ -2,7 +2,6 @@ package spec
 
 import (
 	"errors"
-	"fmt"
 	"gopkg.in/specgen-io/yaml.v3"
 	"strings"
 )
@@ -66,8 +65,8 @@ func getDescriptionFromComment(node *yaml.Node) *string {
 	return &lineComment
 }
 
-func yamlError(node *yaml.Node, message string) error {
-	return errors.New(fmt.Sprintf("yaml: line %d: %s", node.Line, message))
+func yamlError(node *yaml.Node, message string) yaml.YamlError {
+	return yaml.YamlError{errors.New(message), node.Line, node.Column}
 }
 
 func contains(values []string, node *yaml.Node) bool {

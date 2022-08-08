@@ -16,19 +16,35 @@ type ReadSpecificationCase struct {
 
 func assertMessages(t *testing.T, expected []Message, messages *Messages) {
 	assert.Equal(t, len(expected), len(messages.Items), `Expected %s messages, found %s`, len(expected), len(messages.Items))
+	notFoundMessages := []string{}
 	for _, expected := range expected {
 		found := messages.Contains(func(m Message) bool {
-			return m.Level == expected.Level && strings.HasPrefix(m.Message, expected.Message)
+			sameLevel := m.Level == expected.Level
+			messageMatched := strings.HasPrefix(m.Message, expected.Message)
+			sameLocation := true
+			if expected.Location != nil || m.Location != nil {
+				if expected.Location != nil && m.Location != nil {
+					sameLocation = m.Location.Line == expected.Location.Line && m.Location.Column == expected.Location.Column
+				} else {
+					sameLocation = false
+				}
+			}
+			return sameLevel && messageMatched && sameLocation
 		})
 		if !found {
-			actualMessages := []string{}
-			for _, msg := range messages.Items {
-				actualMessages = append(actualMessages, msg.String())
-			}
-			t.Errorf("Expected %s message was not found: '%s'\nFound:\n%s", expected.Level, expected.Message, strings.Join(actualMessages, "\n"))
+			notFoundMessages = append(notFoundMessages, expected.String())
 		}
 	}
+	if len(notFoundMessages) > 0 {
+		actualMessages := []string{}
+		for _, msg := range messages.Items {
+			actualMessages = append(actualMessages, msg.String())
+		}
+		t.Errorf("Expected messages were not found:\n%s\nFound:\n%s", strings.Join(notFoundMessages, "\n"), strings.Join(actualMessages, "\n"))
+	}
 }
+
+const specificationMetaLines = 5
 
 func runReadSpecificationCases(t *testing.T, cases []ReadSpecificationCase) {
 	for _, testcase := range cases {

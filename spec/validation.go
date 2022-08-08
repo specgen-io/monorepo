@@ -4,13 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"gopkg.in/specgen-io/yaml.v3"
-	"strconv"
 	"strings"
 )
 
 func (self Message) String() string {
 	if self.Location != nil {
-		return fmt.Sprintf("%s - line %s: %s", self.Level, strconv.Itoa(self.Location.Line), self.Message)
+		return fmt.Sprintf(`%s - at (%d, %d): %s`, self.Level, self.Location.Line, self.Location.Column, self.Message)
 	}
 	return fmt.Sprintf("%s - %s", self.Level, self.Message)
 }

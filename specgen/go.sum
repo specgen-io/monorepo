@@ -45,8 +45,8 @@ golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e/go.mod h1:Kr81I6Kryrl9sr8s2F
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 h1:qIbj1fsPNlZgppZ+VLlY7N33q108Sa+fhmuc+sWQYwY=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
-gopkg.in/specgen-io/yaml.v3 v3.0.0-20211212030207-33c98a79c251 h1:3JodOc/F3vzazjO4Qxr6+jFk2NRMPs7NyymV0ZmuLZc=
-gopkg.in/specgen-io/yaml.v3 v3.0.0-20211212030207-33c98a79c251/go.mod h1:mQJ85cvpYaRvYyFXeSaIzJCII7yRNofFLXzoMrvq4jE=
+gopkg.in/specgen-io/yaml.v3 v3.0.0-20220807035601-846c18c37062 h1:Tx2yxOX6u6IJSWiY8J9uN9Ok7e5nHULVfaKnjnUgxXc=
+gopkg.in/specgen-io/yaml.v3 v3.0.0-20220807035601-846c18c37062/go.mod h1:mQJ85cvpYaRvYyFXeSaIzJCII7yRNofFLXzoMrvq4jE=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.3.0/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.4.0 h1:D8xgwECY7CYvx+Y2n4sBz93Jn9JRvxdiyyo8CTfuKaY=

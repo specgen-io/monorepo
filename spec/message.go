@@ -3,8 +3,6 @@ package spec
 import (
 	"fmt"
 	"gopkg.in/specgen-io/yaml.v3"
-	"strconv"
-	"strings"
 )
 
 type Level string
@@ -51,11 +49,9 @@ func (message Message) At(location *Location) Message {
 }
 
 func convertYamlError(err error, node *yaml.Node) Message {
-	if strings.HasPrefix(err.Error(), "yaml: line ") {
-		parts := strings.SplitN(strings.TrimPrefix(err.Error(), "yaml: line "), ":", 2)
-		line, err := strconv.Atoi(parts[0])
-		if err == nil {
-			return Error(strings.TrimSpace(parts[1])).At(&Location{line, 0})
+	if yamlError, ok := err.(yaml.YamlError); ok {
+		if yamlError.Line != 0 {
+			return Error(err.Error()).At(&Location{yamlError.Line, yamlError.Column})
 		}
 	}
 	return Error(err.Error()).At(locationFromNode(node))

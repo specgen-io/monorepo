@@ -20,7 +20,7 @@ models:
       theField: string
 `,
 		errors.New(`failed to validate specification`),
-		[]Message{Error(`object model MyObject fields names are too similiar to each other: the_field, theField`)},
+		[]Message{Error(`object model MyObject fields names are too similiar to each other: the_field, theField`).At(&Location{specificationMetaLines + 3, 5})},
 		nil,
 	},
 	{
@@ -32,7 +32,7 @@ models:
       the_field: empty
 `,
 		errors.New(`failed to validate specification`),
-		[]Message{Error(`type empty can not be used in models`)},
+		[]Message{Error(`type empty can not be used in models`).At(&Location{specificationMetaLines + 4, 18})},
 		nil,
 	},
 	{
@@ -45,7 +45,7 @@ models:
       theItem: string
 `,
 		errors.New(`failed to validate specification`),
-		[]Message{Error(`oneOf model MyUnion items names are too similiar to each other: the_item, theItem`)},
+		[]Message{Error(`oneOf model MyUnion items names are too similiar to each other: the_item, theItem`).At(&Location{specificationMetaLines + 3, 5})},
 		nil,
 	},
 	{
@@ -57,7 +57,7 @@ models:
       the_item: empty
 `,
 		errors.New(`failed to validate specification`),
-		[]Message{Error(`type empty can not be used in models`)},
+		[]Message{Error(`type empty can not be used in models`).At(&Location{specificationMetaLines + 4, 17})},
 		nil,
 	},
 	{
@@ -70,7 +70,7 @@ models:
       - the_item
 `,
 		errors.New(`failed to validate specification`),
-		[]Message{Error(`enum model MyUnion items names are too similiar to each other: the_item, the_item`)},
+		[]Message{Error(`enum model MyUnion items names are too similiar to each other: the_item, the_item`).At(&Location{specificationMetaLines + 3, 5})},
 		nil,
 	},
 }

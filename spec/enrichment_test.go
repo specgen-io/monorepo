@@ -8,7 +8,6 @@ import (
 
 func Test_Enrichment(t *testing.T) {
 	runReadSpecificationCases(t, enrichmentCases)
-	runReadSpecificationCases(t, enrichmentCases)
 }
 
 var enrichmentCases = []ReadSpecificationCase{
@@ -46,9 +45,9 @@ http:
 `,
 		errors.New(`failed to parse specification`),
 		[]Message{
-			Error(`unknown type: nonexisting1`),
-			Error(`unknown type: nonexisting2`),
-			Error(`unknown type: nonexisting3`),
+			Error(`unknown type: nonexisting1`).At(&Location{specificationMetaLines + 4, 17}),
+			Error(`unknown type: nonexisting2`).At(&Location{specificationMetaLines + 6, 20}),
+			Error(`unknown type: nonexisting3`).At(&Location{specificationMetaLines + 8, 21}),
 		},
 		nil,
 	},
@@ -103,7 +102,7 @@ models:
       field1: NonExisting
 `,
 		errors.New(`failed to parse specification`),
-		[]Message{Error(`unknown type: NonExisting`)},
+		[]Message{Error(`unknown type: NonExisting`).At(&Location{specificationMetaLines + 4, 15})},
 		nil,
 	},
 	{
@@ -133,7 +132,7 @@ models:
       nope: NonExisting
 `,
 		errors.New(`failed to parse specification`),
-		[]Message{Error(`unknown type: NonExisting`)},
+		[]Message{Error(`unknown type: NonExisting`).At(&Location{specificationMetaLines + 4, 13})},
 		nil,
 	},
 	{

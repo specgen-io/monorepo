@@ -24,5 +24,5 @@ require (
 	github.com/spf13/cobra v1.5.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
-	gopkg.in/specgen-io/yaml.v3 v3.0.0-20211212030207-33c98a79c251 // indirect
+	gopkg.in/specgen-io/yaml.v3 v3.0.0-20220807035601-846c18c37062 // indirect
 )

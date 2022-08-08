@@ -36,6 +36,7 @@ func (value *DefinitionDefault) UnmarshalYAML(node *yaml.Node) error {
 		Type:        Type{*typ, node},
 		Default:     defaultValue,
 		Description: getDescriptionFromComment(node),
+		Location:    node,
 	}
 	*value = internal
 	return nil

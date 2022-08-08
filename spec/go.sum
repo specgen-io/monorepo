@@ -10,5 +10,7 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/specgen-io/yaml.v3 v3.0.0-20211212030207-33c98a79c251 h1:3JodOc/F3vzazjO4Qxr6+jFk2NRMPs7NyymV0ZmuLZc=
 gopkg.in/specgen-io/yaml.v3 v3.0.0-20211212030207-33c98a79c251/go.mod h1:mQJ85cvpYaRvYyFXeSaIzJCII7yRNofFLXzoMrvq4jE=
+gopkg.in/specgen-io/yaml.v3 v3.0.0-20220807035601-846c18c37062 h1:Tx2yxOX6u6IJSWiY8J9uN9Ok7e5nHULVfaKnjnUgxXc=
+gopkg.in/specgen-io/yaml.v3 v3.0.0-20220807035601-846c18c37062/go.mod h1:mQJ85cvpYaRvYyFXeSaIzJCII7yRNofFLXzoMrvq4jE=
 gotest.tools v2.2.0+incompatible h1:VsBPFP1AI068pPrMxtb/S8Zkgf9xEmTLJjfM+P5UIEo=
 gotest.tools v2.2.0+incompatible/go.mod h1:DsYFclhRJ6vuDpmuTbkuFWG+y2sxOXAzmJt81HFBacw=

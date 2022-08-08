@@ -51,7 +51,7 @@ http:
           ok: empty
 `,
 		errors.New("failed to validate specification"),
-		[]Message{Error("body should be object, array or string type, found int")},
+		[]Message{Error("body should be object, array or string type, found int").At(&Location{specificationMetaLines + 5, 15})},
 		nil,
 	},
 	{
@@ -66,7 +66,7 @@ http:
           ok: empty
 `,
 		errors.New("failed to validate specification"),
-		[]Message{Error("body should be object, array or string type, found int")},
+		[]Message{Error("body should be object, array or string type, found int").At(&Location{specificationMetaLines + 5, 15})},
 		nil,
 	},
 	{
@@ -80,7 +80,7 @@ http:
         ok: int
 `,
 		errors.New("failed to validate specification"),
-		[]Message{Error("response ok should be either empty or some type with structure of an object or array, found int")},
+		[]Message{Error("response ok should be either empty or some type with structure of an object or array, found int").At(&Location{specificationMetaLines + 6, 13})},
 		nil,
 	},
 	{
@@ -97,9 +97,9 @@ http:
 `,
 		nil,
 		[]Message{
-			Warning("response internal_server_error is recommended to have standard error type"),
-			Warning("response not_found is recommended to have standard error type"),
-			Warning("response bad_request is recommended to have standard error type"),
+			Warning("response internal_server_error is recommended to have standard error type").At(&Location{specificationMetaLines + 6, 32}),
+			Warning("response not_found is recommended to have standard error type").At(&Location{specificationMetaLines + 7, 20}),
+			Warning("response bad_request is recommended to have standard error type").At(&Location{specificationMetaLines + 8, 22}),
 		},
 		nil,
 	},
@@ -138,8 +138,8 @@ models:
 `,
 		errors.New("failed to validate specification"),
 		[]Message{
-			Error("parameter param1 should be of scalar type or array of scalar type, found int[]?"),
-			Error("parameter param2 should be of scalar type or array of scalar type, found TheModel"),
+			Error("parameter param1 should be of scalar type or array of scalar type, found int[]?").At(&Location{specificationMetaLines + 6, 17}),
+			Error("parameter param2 should be of scalar type or array of scalar type, found TheModel").At(&Location{specificationMetaLines + 7, 17}),
 		},
 		nil,
 	},
@@ -159,7 +159,7 @@ http:
 `,
 		errors.New("failed to validate specification"),
 		[]Message{
-			Error("parameter name 'The-Param' conflicts with the other parameter name 'the_param'"),
+			Error("parameter name 'The-Param' conflicts with the other parameter name 'the_param'").At(&Location{specificationMetaLines + 8, 9}),
 		},
 		nil,
 	},
@@ -179,8 +179,8 @@ http:
 `,
 		errors.New("failed to validate specification"),
 		[]Message{
-			Error("type string? can not have default value"),
-			Error("type date? can not have default value"),
+			Error("type string? can not have default value").At(&Location{specificationMetaLines + 6, 26}),
+			Error("type date? can not have default value").At(&Location{specificationMetaLines + 8, 27}),
 		},
 		nil,
 	},
@@ -244,16 +244,16 @@ models:
 `,
 		errors.New("failed to validate specification"),
 		[]Message{
-			Error("default value format error: '-' is in wrong format, should be integer; examples: 123"),
-			Error("default value format error: '1.2' is in wrong format, should be integer; examples: 123"),
-			Error("default value format error: 'abc' is in wrong format, should be float; examples: 123.4"),
-			Error("default value format error: '.4' is in wrong format, should be float; examples: 123.4"),
-			Error("default value format error: '-.' is in wrong format, should be float; examples: 123.4"),
-			Error("default value format error: 'yes' is in wrong format, should be boolean; examples: true or false"),
-			Error("default value format error: '58d5e212165b4ca0909bc86b9cee0111' is in wrong format, should be uuid; examples: fbd3036f-0f1c-4e98-b71c-d4cd61213f90"),
-			Error("default value format error: '2019/08/07' is in wrong format, should be date; examples: 2019-12-31"),
-			Error("default value format error: '2019/08/07 10:20:30' is in wrong format, should be datetime; examples: 2019-12-31T15:53:45"),
-			Error("default value nonexisting is not defined in the enum Enum"),
+			Error("default value format error: '-' is in wrong format, should be integer; examples: 123").At(&Location{specificationMetaLines + 6, 14}),
+			Error("default value format error: '1.2' is in wrong format, should be integer; examples: 123").At(&Location{specificationMetaLines + 7, 15}),
+			Error("default value format error: 'abc' is in wrong format, should be float; examples: 123.4").At(&Location{specificationMetaLines + 8, 16}),
+			Error("default value format error: '.4' is in wrong format, should be float; examples: 123.4").At(&Location{specificationMetaLines + 9, 17}),
+			Error("default value format error: '-.' is in wrong format, should be float; examples: 123.4").At(&Location{specificationMetaLines + 10, 18}),
+			Error("default value format error: 'yes' is in wrong format, should be boolean; examples: true or false").At(&Location{specificationMetaLines + 11, 18}),
+			Error("default value format error: '58d5e212165b4ca0909bc86b9cee0111' is in wrong format, should be uuid; examples: fbd3036f-0f1c-4e98-b71c-d4cd61213f90").At(&Location{specificationMetaLines + 13, 15}),
+			Error("default value format error: '2019/08/07' is in wrong format, should be date; examples: 2019-12-31").At(&Location{specificationMetaLines + 14, 15}),
+			Error("default value format error: '2019/08/07 10:20:30' is in wrong format, should be datetime; examples: 2019-12-31T15:53:45").At(&Location{specificationMetaLines + 15, 19}),
+			Error("default value nonexisting is not defined in the enum Enum").At(&Location{specificationMetaLines + 16, 19}),
 		},
 		nil,
 	},
@@ -272,7 +272,7 @@ http:
         ok: empty
 `,
 		nil,
-		[]Message{Warning(`endpoint "GET /some/url" is used for 2 operations: test.first, test.second`)},
+		[]Message{Warning(`endpoint "GET /some/url" is used for 2 operations: test.first, test.second`).At(&Location{specificationMetaLines + 4, 7})},
 		nil,
 	},
 }
