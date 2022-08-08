@@ -88,27 +88,27 @@ jobs:
             go install github.com/specgen-io/goven@v0.0.3
             cd golang
             go mod vendor
-            goven -name github.com/specgen-io/specgen-go/v2 -required -out vendored
+            goven -name github.com/specgen-io/specgen-golang/v2 -required -out vendored
             cd vendored
             go mod tidy
       - run:
-          name: Checkout specgen-go tool repo and clean it
+          name: Checkout specgen-golang tool repo and clean it
           command: |
-            git clone https://github.com/specgen-io/specgen-go.git specgen-go
-            cd specgen-go
+            git clone https://github.com/specgen-io/specgen-golang.git specgen-golang
+            cd specgen-golang
             rm -rf v2
       - run:
           name: Copy vendored code
           command: |
-            cp -a ./golang/vendored/. ./specgen-go/v2
+            cp -a ./golang/vendored/. ./specgen-golang/v2
       - run:
           name: Commit changes
           command: |
-            cd specgen-go
+            cd specgen-golang
             git add --all
             git config --global user.email $GITHUB_EMAIL
             git config --global user.name $GITHUB_USER
-            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen-go.git
+            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen-golang.git
             if [[ `git status --porcelain` ]]; then
               git commit -m "Specgen <<pipeline.parameters.specgen-version>>"
               git push
@@ -120,8 +120,8 @@ jobs:
       - run:
           name: Check installation
           command: |
-            cd specgen-go
-            go install github.com/specgen-io/specgen-go/v2@v<<pipeline.parameters.specgen-version>>-alpha
+            cd specgen-golang
+            go install github.com/specgen-io/specgen-golang/v2@v<<pipeline.parameters.specgen-version>>-alpha
 
   golang-release:
     docker:
@@ -129,17 +129,17 @@ jobs:
     working_directory: ~/golang
     steps:
       - run:
-          name: Checkout specgen-go tool repo and clean it
+          name: Checkout specgen-golang tool repo and clean it
           command: |
-            git clone https://github.com/specgen-io/specgen-go.git specgen-go
+            git clone https://github.com/specgen-io/specgen-golang.git specgen-golang
       - run:
           name: Commit changes
           command: |
-            cd specgen-go
+            cd specgen-golang
             git add --all
             git config --global user.email $GITHUB_EMAIL
             git config --global user.name $GITHUB_USER
-            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen-go.git
+            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen-golang.git
             git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen verison: v<<pipeline.parameters.specgen-version>>"
             git push -f --tags
 
