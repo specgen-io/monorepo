@@ -91,6 +91,7 @@ jobs:
             goven -name github.com/specgen-io/specgen-golang/v2 -required -out vendored
             cd vendored
             go mod tidy
+            go build main.go
       - run:
           name: Checkout specgen-golang tool repo and clean it
           command: |
