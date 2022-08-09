@@ -44,7 +44,7 @@ jobs:
       - run:
           name: Localize specgen dependencies
           command: |
-            go install github.com/specgen-io/goven@v0.0.4
+            go install github.com/specgen-io/goven@v0.0.5
             cd specgen
             goven -name github.com/specgen-io/specgenrelease/v2 -out vendored
             cd vendored
@@ -85,7 +85,7 @@ jobs:
       - run:
           name: Localize specgen dependencies
           command: |
-            go install github.com/specgen-io/goven@v0.0.4
+            go install github.com/specgen-io/goven@v0.0.5
             cd golang
             go mod vendor
             goven -name github.com/specgen-io/specgen-golang/v2 -required -out vendored
