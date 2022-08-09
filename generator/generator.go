@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/specgen-io/specgen/spec/v2"
+	"spec"
 )
 
 type Arg struct {

@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/golang/v2/client"
-	"github.com/specgen-io/specgen/golang/v2/imports"
-	"github.com/specgen-io/specgen/golang/v2/models"
-	"github.com/specgen-io/specgen/golang/v2/module"
-	"github.com/specgen-io/specgen/golang/v2/types"
-	"github.com/specgen-io/specgen/golang/v2/writer"
-	"github.com/specgen-io/specgen/spec/v2"
+	"generator"
+	"golang/client"
+	"golang/imports"
+	"golang/models"
+	"golang/module"
+	"golang/types"
+	"golang/writer"
+	"spec"
 )
 
 func generateRoutings(version *spec.Version, versionModule module.Module, modelsModule module.Module) []generator.CodeFile {

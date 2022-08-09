@@ -3,12 +3,12 @@ package service
 import (
 	"fmt"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/java/v2/imports"
-	"github.com/specgen-io/specgen/java/v2/packages"
-	"github.com/specgen-io/specgen/java/v2/responses"
-	"github.com/specgen-io/specgen/java/v2/writer"
-	"github.com/specgen-io/specgen/spec/v2"
+	"generator"
+	"java/imports"
+	"java/packages"
+	"java/responses"
+	"java/writer"
+	"spec"
 )
 
 func (g *Generator) ServicesInterfaces(version *spec.Version, thePackage, modelsVersionPackage packages.Module) []generator.CodeFile {

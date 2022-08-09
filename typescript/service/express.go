@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/typescript/v2/modules"
-	"github.com/specgen-io/specgen/typescript/v2/types"
-	"github.com/specgen-io/specgen/typescript/v2/validations"
-	"github.com/specgen-io/specgen/typescript/v2/validations/common"
-	"github.com/specgen-io/specgen/typescript/v2/writer"
+	"generator"
+	"spec"
+	"typescript/modules"
+	"typescript/types"
+	"typescript/validations"
+	"typescript/validations/common"
+	"typescript/writer"
 )
 
 type expressGenerator struct {

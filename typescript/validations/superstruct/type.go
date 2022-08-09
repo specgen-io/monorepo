@@ -2,7 +2,7 @@ package superstruct
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/spec/v2"
+	"spec"
 )
 
 func (g *Generator) RuntimeType(typ *spec.TypeDef) string {

@@ -3,9 +3,9 @@ package responses
 import (
 	"fmt"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/typescript/v2/types"
+	"generator"
+	"spec"
+	"typescript/types"
 )
 
 func GenerateOperationResponse(w *generator.Writer, operation *spec.NamedOperation) {

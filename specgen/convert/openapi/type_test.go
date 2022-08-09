@@ -2,7 +2,7 @@ package openapi
 
 import (
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/specgen-io/specgen/spec/v2"
+	"spec"
 	"gotest.tools/assert"
 	"reflect"
 	"testing"

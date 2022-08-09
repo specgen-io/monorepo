@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/generator/v2/console"
-	"github.com/specgen-io/specgen/typescript/v2/generators"
-	"github.com/specgen-io/specgen/typescript/v2/version"
+	"generator"
+	"generator/console"
 	"github.com/spf13/cobra"
 	"os"
+	"typescript/generators"
+	"typescript/version"
 )
 
 func main() {

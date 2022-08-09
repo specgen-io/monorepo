@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/kotlin/v2/imports"
-	"github.com/specgen-io/specgen/kotlin/v2/modules"
-	"github.com/specgen-io/specgen/kotlin/v2/types"
-	"github.com/specgen-io/specgen/kotlin/v2/writer"
-	"github.com/specgen-io/specgen/spec/v2"
+	"generator"
+	"kotlin/imports"
+	"kotlin/modules"
+	"kotlin/types"
+	"kotlin/writer"
+	"spec"
 )
 
 var Jackson = "jackson"

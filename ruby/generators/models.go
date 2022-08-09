@@ -3,8 +3,8 @@ package generators
 import (
 	"path/filepath"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/spec/v2"
+	"generator"
+	"spec"
 )
 
 func GenerateModels(specification *spec.Spec, generatePath string) *generator.Sources {

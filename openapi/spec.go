@@ -1,6 +1,6 @@
 package openapi
 
-import "github.com/specgen-io/specgen/spec/v2"
+import "spec"
 
 type UrlOperations struct {
 	Url        string

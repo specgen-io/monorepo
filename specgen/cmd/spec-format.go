@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/specgen-io/specgen/spec/v2"
+	"spec"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 )

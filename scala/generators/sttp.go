@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/spec/v2"
+	"generator"
+	"spec"
 )
 
 func GenerateSttpClient(specification *spec.Spec, packageName string, generatePath string) *generator.Sources {

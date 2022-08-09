@@ -1,11 +1,11 @@
 package iots
 
 import (
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/typescript/v2/common"
-	"github.com/specgen-io/specgen/typescript/v2/modules"
-	"github.com/specgen-io/specgen/typescript/v2/writer"
+	"generator"
+	"spec"
+	"typescript/common"
+	"typescript/modules"
+	"typescript/writer"
 )
 
 func (g *Generator) VersionModels(version *spec.Version, codecModule modules.Module, module modules.Module) *generator.CodeFile {

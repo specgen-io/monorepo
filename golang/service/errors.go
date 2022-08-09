@@ -3,9 +3,9 @@ package service
 import (
 	"fmt"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/golang/v2/types"
-	"github.com/specgen-io/specgen/spec/v2"
+	"generator"
+	"golang/types"
+	"spec"
 )
 
 func generateErrors(w *generator.Writer, version *spec.Version) {

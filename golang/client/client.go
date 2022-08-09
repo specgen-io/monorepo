@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"generator"
 	"github.com/pinzolo/casee"
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/golang/v2/common"
-	"github.com/specgen-io/specgen/golang/v2/imports"
-	"github.com/specgen-io/specgen/golang/v2/models"
-	"github.com/specgen-io/specgen/golang/v2/module"
-	"github.com/specgen-io/specgen/golang/v2/responses"
-	"github.com/specgen-io/specgen/golang/v2/types"
-	"github.com/specgen-io/specgen/golang/v2/writer"
-	"github.com/specgen-io/specgen/spec/v2"
+	"golang/common"
+	"golang/imports"
+	"golang/models"
+	"golang/module"
+	"golang/responses"
+	"golang/types"
+	"golang/writer"
+	"spec"
 )
 
 var ToPascalCase = casee.ToPascalCase

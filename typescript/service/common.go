@@ -1,6 +1,6 @@
 package service
 
-import "github.com/specgen-io/specgen/spec/v2"
+import "spec"
 
 func apiRouterName(api *spec.Api) string {
 	return api.Name.CamelCase() + "Router"

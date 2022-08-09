@@ -2,7 +2,7 @@ package models
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/spec/v2"
+	"spec"
 )
 
 func equalsExpression(typ *spec.TypeDef, left string, right string) string {

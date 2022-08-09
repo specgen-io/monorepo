@@ -3,7 +3,7 @@ package generators
 import (
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
+	"generator"
 )
 
 func generateStringParams(thepackage Package) *generator.CodeFile {

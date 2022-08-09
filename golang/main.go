@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/generator/v2/console"
-	"github.com/specgen-io/specgen/golang/v2/generators"
+	"generator"
+	"generator/console"
+	"golang/generators"
 	"github.com/spf13/cobra"
 	"os"
 )

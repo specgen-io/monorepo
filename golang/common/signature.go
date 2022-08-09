@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/specgen-io/specgen/golang/v2/responses"
-	"github.com/specgen-io/specgen/golang/v2/types"
-	"github.com/specgen-io/specgen/spec/v2"
+	"golang/responses"
+	"golang/types"
+	"spec"
 )
 
 func OperationSignature(operation *spec.NamedOperation, apiPackage *string) string {

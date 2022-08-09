@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/specgen-io/specgen/generator/v2/console"
+	"generator/console"
 	"os"
 )
 

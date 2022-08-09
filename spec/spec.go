@@ -2,8 +2,8 @@ package spec
 
 import (
 	"errors"
-	"github.com/specgen-io/specgen/yamlx/v2"
 	"gopkg.in/specgen-io/yaml.v3"
+	"yamlx"
 )
 
 type Spec struct {

@@ -1,7 +1,7 @@
 package generators
 
 import (
-	"github.com/specgen-io/specgen/generator/v2"
+	"generator"
 )
 
 var RubyConfig = generator.Config{"  ", 2, nil}

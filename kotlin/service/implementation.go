@@ -3,12 +3,12 @@ package service
 import (
 	"fmt"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/kotlin/v2/imports"
-	"github.com/specgen-io/specgen/kotlin/v2/modules"
-	"github.com/specgen-io/specgen/kotlin/v2/responses"
-	"github.com/specgen-io/specgen/kotlin/v2/writer"
-	"github.com/specgen-io/specgen/spec/v2"
+	"generator"
+	"kotlin/imports"
+	"kotlin/modules"
+	"kotlin/responses"
+	"kotlin/writer"
+	"spec"
 )
 
 func (g *Generator) ServicesImplementations(version *spec.Version, thePackage, modelsVersionPackage, servicesVersionPackage modules.Module) []generator.CodeFile {

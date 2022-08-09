@@ -3,13 +3,13 @@ package service
 import (
 	"fmt"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/golang/v2/common"
-	"github.com/specgen-io/specgen/golang/v2/imports"
-	"github.com/specgen-io/specgen/golang/v2/module"
-	"github.com/specgen-io/specgen/golang/v2/types"
-	"github.com/specgen-io/specgen/golang/v2/writer"
-	"github.com/specgen-io/specgen/spec/v2"
+	"generator"
+	"golang/common"
+	"golang/imports"
+	"golang/module"
+	"golang/types"
+	"golang/writer"
+	"spec"
 )
 
 func generateServiceImplementations(version *spec.Version, versionModule, modelsModule, targetModule module.Module) []generator.CodeFile {

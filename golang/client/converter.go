@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/golang/v2/module"
-	"github.com/specgen-io/specgen/spec/v2"
+	"generator"
+	"golang/module"
+	"spec"
 )
 
 func callRawConvert(typ *spec.TypeDef, paramNameVar string) string {

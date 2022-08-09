@@ -2,7 +2,7 @@ package openapi
 
 import (
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/specgen-io/specgen/spec/v2"
+	"spec"
 )
 
 func (c *Converter) Specification(doc *openapi3.T) *spec.Spec {
