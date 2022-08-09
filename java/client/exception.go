@@ -3,8 +3,8 @@ package client
 import (
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/java/v2/packages"
+	"generator"
+	"java/packages"
 )
 
 func clientException(thePackage packages.Module) *generator.CodeFile {

@@ -1,11 +1,11 @@
 package openapi
 
 import (
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/yamlx/v2"
 	"gotest.tools/assert"
+	"spec"
 	"strings"
 	"testing"
+	"yamlx"
 )
 
 func checkOpenApi(t *testing.T, specYaml, expectedOpenApiYaml string) {

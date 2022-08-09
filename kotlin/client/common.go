@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/spec/v2"
+	"generator"
+	"spec"
 )
 
 func addBuilderParam(param *spec.NamedParam) string {

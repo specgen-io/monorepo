@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/typescript/v2/modules"
-	"github.com/specgen-io/specgen/typescript/v2/validations/common"
+	"generator"
+	"typescript/modules"
+	"typescript/validations/common"
+	"spec"
 )
 
 func paramsTypeName(operation *spec.NamedOperation, namePostfix string) string {

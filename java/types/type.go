@@ -2,7 +2,7 @@ package types
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/spec/v2"
+	"spec"
 )
 
 type Types struct {

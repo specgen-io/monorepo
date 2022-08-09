@@ -3,8 +3,8 @@ package client
 import (
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/kotlin/v2/modules"
+	"generator"
+	"kotlin/modules"
 )
 
 func converters(thePackage modules.Module) []generator.CodeFile {

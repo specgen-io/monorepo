@@ -3,10 +3,10 @@ package openapi
 import (
 	"strings"
 
+	"generator"
 	"github.com/pinzolo/casee"
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/yamlx/v2"
+	"spec"
+	"yamlx"
 )
 
 func GenerateOpenapi(spec *spec.Spec, outFile string) *generator.CodeFile {

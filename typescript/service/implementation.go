@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/typescript/v2/modules"
-	"github.com/specgen-io/specgen/typescript/v2/responses"
-	"github.com/specgen-io/specgen/typescript/v2/writer"
+	"generator"
+	"spec"
+	"typescript/modules"
+	"typescript/responses"
+	"typescript/writer"
 )
 
 func generateServicesImplementations(specification *spec.Spec, generatedModule modules.Module, module modules.Module) []generator.CodeFile {

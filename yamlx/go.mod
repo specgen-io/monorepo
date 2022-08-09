@@ -1,4 +1,4 @@
-module github.com/specgen-io/specgen/yamlx/v2
+module yamlx
 
 go 1.18
 

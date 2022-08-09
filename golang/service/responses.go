@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/golang/v2/module"
+	"generator"
+	"golang/module"
 )
 
 func respondJson(logFields, resVar, statusCode, dataVar string) string {

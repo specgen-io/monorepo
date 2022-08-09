@@ -1,8 +1,8 @@
 package types
 
 import (
-	"github.com/specgen-io/specgen/spec/v2"
 	"gotest.tools/assert"
+	"spec"
 	"testing"
 )
 

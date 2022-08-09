@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
+	"generator"
 
 	"github.com/pinzolo/casee"
-	"github.com/specgen-io/specgen/java/v2/imports"
-	"github.com/specgen-io/specgen/java/v2/models"
-	"github.com/specgen-io/specgen/java/v2/packages"
-	"github.com/specgen-io/specgen/java/v2/responses"
-	"github.com/specgen-io/specgen/java/v2/types"
-	"github.com/specgen-io/specgen/java/v2/writer"
-	"github.com/specgen-io/specgen/spec/v2"
+	"java/imports"
+	"java/models"
+	"java/packages"
+	"java/responses"
+	"java/types"
+	"java/writer"
+	"spec"
 )
 
 var Micronaut = "micronaut"

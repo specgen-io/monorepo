@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/specgen-io/specgen/generator/v2/console"
-	"github.com/specgen-io/specgen/spec/v2"
+	"generator/console"
+	"spec"
 	"io/ioutil"
 	"sort"
 )

@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/generator/v2/console"
-	"github.com/specgen-io/specgen/kotlin/v2/generators"
-	"github.com/specgen-io/specgen/kotlin/v2/version"
+	"generator"
+	"generator/console"
+	"kotlin/generators"
+	"kotlin/version"
 	"github.com/spf13/cobra"
 	"os"
 )

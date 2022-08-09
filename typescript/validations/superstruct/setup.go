@@ -3,8 +3,8 @@ package superstruct
 import (
 	"strings"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/typescript/v2/modules"
+	"generator"
+	"typescript/modules"
 )
 
 var Superstruct = "superstruct"

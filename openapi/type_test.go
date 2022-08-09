@@ -1,11 +1,11 @@
 package openapi
 
 import (
-	"github.com/specgen-io/specgen/spec/v2"
-	"github.com/specgen-io/specgen/yamlx/v2"
+	"spec"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
+	"yamlx"
 )
 
 func checkType(t *testing.T, typ *spec.TypeDef, expected string) {

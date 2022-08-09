@@ -1,19 +1,19 @@
-module github.com/specgen-io/specgen/openapi/v2
+module openapi
 
 go 1.18
 
-replace github.com/specgen-io/specgen/yamlx/v2 => ../yamlx
+replace yamlx => ../yamlx
 
-replace github.com/specgen-io/specgen/spec/v2 => ../spec
+replace spec => ../spec
 
-replace github.com/specgen-io/specgen/generator/v2 => ../generator
+replace generator => ../generator
 
 require (
+	generator v0.0.0-00010101000000-000000000000
 	github.com/pinzolo/casee v1.0.0
-	github.com/specgen-io/specgen/generator/v2 v2.0.0-00010101000000-000000000000
-	github.com/specgen-io/specgen/spec/v2 v2.0.0-00010101000000-000000000000
-	github.com/specgen-io/specgen/yamlx/v2 v2.0.0-00010101000000-000000000000
 	gotest.tools v2.2.0+incompatible
+	spec v0.0.0-00010101000000-000000000000
+	yamlx v0.0.0-00010101000000-000000000000
 )
 
 require (

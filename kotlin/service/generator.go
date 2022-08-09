@@ -3,11 +3,11 @@ package service
 import (
 	"fmt"
 
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/kotlin/v2/models"
-	"github.com/specgen-io/specgen/kotlin/v2/modules"
-	"github.com/specgen-io/specgen/kotlin/v2/types"
-	"github.com/specgen-io/specgen/spec/v2"
+	"generator"
+	"kotlin/models"
+	"kotlin/modules"
+	"kotlin/types"
+	"spec"
 )
 
 type ServerGenerator interface {

@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/specgen-io/specgen/generator/v2"
-	"github.com/specgen-io/specgen/v2/generators"
+	"generator"
+	"specgen/v2/generators"
 )
 
 func init() {

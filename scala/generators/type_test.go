@@ -1,7 +1,7 @@
 package generators
 
 import (
-	"github.com/specgen-io/specgen/spec/v2"
+	"spec"
 	"gotest.tools/assert"
 	"testing"
 )

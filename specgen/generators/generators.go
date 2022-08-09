@@ -1,14 +1,14 @@
 package generators
 
 import (
-	"github.com/specgen-io/specgen/generator/v2"
-	golang "github.com/specgen-io/specgen/golang/v2/generators"
-	java "github.com/specgen-io/specgen/java/v2/generators"
-	kotlin "github.com/specgen-io/specgen/kotlin/v2/generators"
-	"github.com/specgen-io/specgen/openapi/v2"
-	ruby "github.com/specgen-io/specgen/ruby/v2/generators"
-	scala "github.com/specgen-io/specgen/scala/v2/generators"
-	typescript "github.com/specgen-io/specgen/typescript/v2/generators"
+	"generator"
+	golang "golang/generators"
+	java "java/generators"
+	kotlin "kotlin/generators"
+	"openapi"
+	ruby "ruby/generators"
+	scala "scala/generators"
+	typescript "typescript/generators"
 )
 
 var All = []generator.Generator{
