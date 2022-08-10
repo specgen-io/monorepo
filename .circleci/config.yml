@@ -55,6 +55,7 @@ jobs:
           name: Copy vendored code
           command: |
             cp -a ./specgen/vendored/. ./release/v2
+            rm ./release/v2/release.sh
       - run:
           name: Commit changes
           command: |
