@@ -29,14 +29,14 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 	sources.AddGenerated(taggedUnion, jsonHelpers)
 
 	for _, version := range specification.Versions {
-		versionPackage := rootPackage.Subpackage(version.Version.FlatCase())
+		versionPackage := rootPackage.Subpackage(version.Name.FlatCase())
 
 		routersPackage := versionPackage.Subpackage("routers")
 		controllersPackage := versionPackage.Subpackage("controllers")
 		servicesPackage := versionPackage.Subpackage("services")
 		modelsPackage := versionPackage.Subpackage("models")
 
-		servicesImplPackage := implRootPackage.Subpackage(version.Version.FlatCase()).Subpackage("services")
+		servicesImplPackage := implRootPackage.Subpackage(version.Name.FlatCase()).Subpackage("services")
 		for _, api := range version.Http.Apis {
 			apiPackage := servicesPackage.Subpackage(api.Name.FlatCase())
 			apiTrait := generateApiTrait(&api, apiPackage, modelsPackage, servicesImplPackage)
@@ -56,8 +56,8 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 
 	if servicesPath != "" {
 		for _, version := range specification.Versions {
-			servicesImplPackage := implRootPackage.Subpackage(version.Version.FlatCase()).Subpackage("services")
-			versionPackage := rootPackage.Subpackage(version.Version.FlatCase())
+			servicesImplPackage := implRootPackage.Subpackage(version.Name.FlatCase()).Subpackage("services")
+			versionPackage := rootPackage.Subpackage(version.Name.FlatCase())
 			modelsPackage := versionPackage.Subpackage("models")
 			servicesPackage := versionPackage.Subpackage("services")
 			for _, api := range version.Http.Apis {
@@ -431,7 +431,7 @@ func generateSpecRouterMainClass(w *generator.Writer, versions []spec.Version) {
 	params := []string{}
 	for _, version := range versions {
 		for _, api := range version.Http.Apis {
-			apiParamName := api.Name.CamelCase() + version.Version.PascalCase()
+			apiParamName := api.Name.CamelCase() + version.Name.PascalCase()
 			params = append(params, fmt.Sprintf(`%s: %s`, apiParamName, routerTypeName(&api)))
 		}
 	}
@@ -443,7 +443,7 @@ func generateSpecRouterMainClass(w *generator.Writer, versions []spec.Version) {
 	w.Line(`    Seq(`)
 	for _, version := range versions {
 		for _, api := range version.Http.Apis {
-			apiParamName := api.Name.CamelCase() + version.Version.PascalCase()
+			apiParamName := api.Name.CamelCase() + version.Name.PascalCase()
 			w.Line(`      %s.routes,`, apiParamName)
 		}
 	}
@@ -532,8 +532,8 @@ func getControllerParams(operation *spec.NamedOperation, withTypes bool) []strin
 
 func routerTypeName(api *spec.Api) string {
 	typeName := fmt.Sprintf(`routers.%s`, routerType(api.Name))
-	if api.Http.Version.Version.Source != "" {
-		typeName = fmt.Sprintf(`%s.%s`, api.Http.Version.Version.FlatCase(), typeName)
+	if api.Http.Version.Name.Source != "" {
+		typeName = fmt.Sprintf(`%s.%s`, api.Http.Version.Name.FlatCase(), typeName)
 	}
 	return typeName
 }

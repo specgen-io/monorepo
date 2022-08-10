@@ -22,7 +22,7 @@ func (g *expressGenerator) SpecRouter(specification *spec.Spec, rootModule modul
 	w.Line("import {Router} from 'express'")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			versionModule := rootModule.Submodule(version.Version.FlatCase())
+			versionModule := rootModule.Submodule(version.Name.FlatCase())
 			apiModule := versionModule.Submodule(serviceName(&api)) //TODO: This logic is repeated here, it also exists where api module is created
 			routerModule := versionModule.Submodule("routing")      //TODO: This logic is repeated here, it also exists where router module is created
 			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), apiModule.GetImport(module))

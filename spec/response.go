@@ -11,6 +11,14 @@ type Response struct {
 	Definition
 }
 
+func (response *Response) BodyKind() BodyKind {
+	return kindOf(&response.Definition)
+}
+
+func (response *Response) BodyIs(kind BodyKind) bool {
+	return kindOf(&response.Definition) == kind
+}
+
 type OperationResponse struct {
 	Response
 	Operation *NamedOperation

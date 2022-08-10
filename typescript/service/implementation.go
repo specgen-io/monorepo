@@ -14,11 +14,11 @@ import (
 func generateServicesImplementations(specification *spec.Spec, generatedModule modules.Module, module modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, version := range specification.Versions {
-		versionGeneratedModule := generatedModule.Submodule(version.Version.FlatCase())
+		versionGeneratedModule := generatedModule.Submodule(version.Name.FlatCase())
 		modelsModule := versionGeneratedModule.Submodule("models")
 		for _, api := range version.Http.Apis {
 			apiModule := versionGeneratedModule.Submodule(serviceName(&api)) //TODO: This logic is duplicated, other place is where API module is generated
-			implModule := module.Submodule(version.Version.FlatCase()).Submodule(api.Name.SnakeCase() + "_service")
+			implModule := module.Submodule(version.Name.FlatCase()).Submodule(api.Name.SnakeCase() + "_service")
 			files = append(files, *generateServiceImplementation(&api, apiModule, modelsModule, implModule))
 		}
 	}

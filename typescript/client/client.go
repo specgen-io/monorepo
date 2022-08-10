@@ -19,7 +19,7 @@ func GenerateClient(specification *spec.Spec, generatePath string, client string
 	paramsModule := rootModule.Submodule("params")
 	sources.AddGenerated(generateParamsBuilder(paramsModule))
 	for _, version := range specification.Versions {
-		versionModule := rootModule.Submodule(version.Version.FlatCase())
+		versionModule := rootModule.Submodule(version.Name.FlatCase())
 		modelsModule := versionModule.Submodule("models")
 		sources.AddGenerated(validation.VersionModels(&version, validationModule, modelsModule))
 		for _, api := range version.Http.Apis {

@@ -24,13 +24,13 @@ func generateModels(specification *spec.Spec, moduleName string, generatePath st
 	w.Line(`require "emery"`)
 
 	for _, version := range specification.Versions {
-		if version.Version.Source == "" {
+		if version.Name.Source == "" {
 			generateVersionModelsModule(w, &version, moduleName)
 		}
 	}
 
 	for _, version := range specification.Versions {
-		if version.Version.Source != "" {
+		if version.Name.Source != "" {
 			generateVersionModelsModule(w, &version, moduleName)
 		}
 	}
@@ -40,7 +40,7 @@ func generateModels(specification *spec.Spec, moduleName string, generatePath st
 
 func generateVersionModelsModule(w *generator.Writer, version *spec.Version, moduleName string) {
 	w.EmptyLine()
-	w.Line(`module %s`, versionedModule(moduleName, version.Version))
+	w.Line(`module %s`, versionedModule(moduleName, version.Name))
 	for index, model := range version.ResolvedModels {
 		if index != 0 {
 			w.EmptyLine()

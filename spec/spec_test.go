@@ -52,10 +52,10 @@ models:
 
 	assert.Equal(t, len(spec.Versions), 2)
 	v2Version := spec.Versions[0]
-	assert.Equal(t, v2Version.Version.Source, "v2")
+	assert.Equal(t, v2Version.Name.Source, "v2")
 	assert.Equal(t, len(v2Version.Models), 1)
 	defaultVersion := spec.Versions[1]
-	assert.Equal(t, defaultVersion.Version.Source, "")
+	assert.Equal(t, defaultVersion.Name.Source, "")
 	assert.Equal(t, len(defaultVersion.Models), 1)
 }
 

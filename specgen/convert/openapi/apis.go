@@ -7,13 +7,13 @@ import (
 	"spec"
 )
 
-func (c *Converter) apis(doc *openapi3.T) spec.Apis {
+func (c *Converter) apis(doc *openapi3.T) spec.Http {
 	apis := collectApis(doc)
 	specApis := []spec.Api{}
 	for _, api := range apis {
 		specApis = append(specApis, *c.api(api))
 	}
-	return spec.Apis{nil, specApis, nil, nil}
+	return spec.Http{nil, specApis, nil, nil}
 }
 
 func (c *Converter) api(api *Api) *spec.Api {

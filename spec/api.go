@@ -8,27 +8,27 @@ import (
 type Api struct {
 	Name       Name
 	Operations Operations
-	Http       *Apis
+	Http       *Http
 }
 
-type Apis struct {
+type Http struct {
 	Url     *string
 	Apis    []Api
 	Errors  Responses
 	Version *Version
 }
 
-func (apis *Apis) GetUrl() string {
+func (apis *Http) GetUrl() string {
 	if apis.Url != nil {
 		return *apis.Url
 	}
-	if apis.Version.Version.Source != "" {
-		return "/" + apis.Version.Version.Source
+	if apis.Version.Name.Source != "" {
+		return "/" + apis.Version.Name.Source
 	}
 	return ""
 }
 
-func (value *Apis) UnmarshalYAML(node *yaml.Node) error {
+func (value *Http) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
 		return yamlError(node, "apis should be YAML mapping")
 	}
@@ -62,11 +62,11 @@ func (value *Apis) UnmarshalYAML(node *yaml.Node) error {
 		}
 	}
 
-	*value = Apis{Url: url, Apis: array}
+	*value = Http{Url: url, Apis: array}
 	return nil
 }
 
-func (value Apis) MarshalYAML() (interface{}, error) {
+func (value Http) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
 	yamlMap.AddOmitNil("url", value.Url)
 	for index := 0; index < len(value.Apis); index++ {

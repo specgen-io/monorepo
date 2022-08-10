@@ -20,7 +20,7 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 
 	jsonPackage := mainPackage.Subpackage("json")
 	for _, version := range specification.Versions {
-		versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
+		versionPackage := mainPackage.Subpackage(version.Name.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
 		sources.AddGeneratedAll(generator.Models.VersionModels(&version, modelsVersionPackage, jsonPackage))
@@ -42,9 +42,9 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 		servicesImplPackage := modules.Package(servicesPath, packageName)
 		for _, version := range specification.Versions {
 			servicesImplVersionPath := servicesImplPackage.Subpackage("services")
-			serviceImplVersionPackage := servicesImplVersionPath.Subpackage(version.Version.FlatCase())
+			serviceImplVersionPackage := servicesImplVersionPath.Subpackage(version.Name.FlatCase())
 
-			versionPackage := mainPackage.Subpackage(version.Version.FlatCase())
+			versionPackage := mainPackage.Subpackage(version.Name.FlatCase())
 			modelsVersionPackage := versionPackage.Subpackage("models")
 			serviceVersionPackage := versionPackage.Subpackage("services")
 

@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pinzolo/casee"
 	"generator"
+	"github.com/pinzolo/casee"
 	"spec"
 )
 
@@ -42,14 +42,14 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 	w.Line(`require "emery"`)
 
 	for _, version := range specification.Versions {
-		if version.Version.Source == "" {
+		if version.Name.Source == "" {
 			w.EmptyLine()
 			generateVersionClientModule(w, &version, moduleName)
 		}
 	}
 
 	for _, version := range specification.Versions {
-		if version.Version.Source != "" {
+		if version.Name.Source != "" {
 			w.EmptyLine()
 			generateVersionClientModule(w, &version, moduleName)
 		}
@@ -59,7 +59,7 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 }
 
 func generateVersionClientModule(w *generator.Writer, version *spec.Version, moduleName string) {
-	w.Line("module %s", versionedModule(moduleName, version.Version))
+	w.Line("module %s", versionedModule(moduleName, version.Name))
 	for index, api := range version.Http.Apis {
 		if index != 0 {
 			w.EmptyLine()

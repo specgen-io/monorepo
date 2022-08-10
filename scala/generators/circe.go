@@ -21,7 +21,7 @@ func GenerateCirceModels(specification *spec.Spec, packageName string, generateP
 	sources.AddGenerated(taggedUnion, jsonHelpers)
 
 	for _, version := range specification.Versions {
-		versionClientPackage := mainPackage.Subpackage(version.Version.FlatCase())
+		versionClientPackage := mainPackage.Subpackage(version.Name.FlatCase())
 		versionModelsPackage := versionClientPackage.Subpackage("models")
 		versionFile := generateCirceModels(&version, versionModelsPackage, jsonPackage)
 		sources.AddGenerated(versionFile)

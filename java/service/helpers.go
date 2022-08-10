@@ -14,7 +14,7 @@ func serviceImplName(api *spec.Api) string {
 }
 
 func versionServiceName(serviceName string, version *spec.Version) string {
-	return fmt.Sprintf(`%s%s`, serviceName, version.Version.PascalCase())
+	return fmt.Sprintf(`%s%s`, serviceName, version.Name.PascalCase())
 }
 
 func serviceVarName(api *spec.Api) string {
@@ -30,7 +30,7 @@ func controllerName(api *spec.Api) string {
 }
 
 func versionControllerName(controllerName string, version *spec.Version) string {
-	return fmt.Sprintf(`%s%s`, controllerName, version.Version.PascalCase())
+	return fmt.Sprintf(`%s%s`, controllerName, version.Name.PascalCase())
 }
 
 func controllerMethodName(operation *spec.NamedOperation) string {

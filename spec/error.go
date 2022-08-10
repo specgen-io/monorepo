@@ -34,14 +34,6 @@ func (responses Responses) HttpStatusCodes() []string {
 	return codes
 }
 
-func (response *Response) BodyKind() BodyKind {
-	return kindOf(&response.Definition)
-}
-
-func (response *Response) BodyIs(kind BodyKind) bool {
-	return kindOf(&response.Definition) == kind
-}
-
 func (responses *Responses) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
 		return yamlError(node, "response should be YAML mapping")

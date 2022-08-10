@@ -28,7 +28,7 @@ func GenerateClient(specification *spec.Spec, moduleName string, generatePath st
 	sources.AddGenerated(types.GenerateEmpty(emptyModule))
 
 	for _, version := range specification.Versions {
-		versionModule := rootModule.Submodule(version.Version.FlatCase())
+		versionModule := rootModule.Submodule(version.Name.FlatCase())
 		modelsModule := versionModule.Submodule(types.ModelsPackage)
 
 		sources.AddGeneratedAll(models.GenerateVersionModels(&version, modelsModule))

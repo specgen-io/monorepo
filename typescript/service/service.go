@@ -2,10 +2,10 @@ package service
 
 import (
 	"generator"
-	"typescript/modules"
-	"typescript/validations"
 	"openapi"
 	"spec"
+	"typescript/modules"
+	"typescript/validations"
 )
 
 func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validationName string) *generator.Sources {
@@ -22,7 +22,7 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 	sources.AddGenerated(generateParamsStaticCode(paramsModule))
 
 	for _, version := range specification.Versions {
-		versionModule := rootModule.Submodule(version.Version.FlatCase())
+		versionModule := rootModule.Submodule(version.Name.FlatCase())
 		modelsModule := versionModule.Submodule("models")
 		sources.AddGenerated(validation.VersionModels(&version, validationModule, modelsModule))
 		sources.AddGeneratedAll(generateServiceApis(&version, modelsModule, versionModule))

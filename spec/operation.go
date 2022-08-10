@@ -81,8 +81,8 @@ func (op *NamedOperation) FullUrl() string {
 
 func (op *NamedOperation) FullName() string {
 	fullName := fmt.Sprintf(`%s.%s`, op.Api.Name.Source, op.Name.Source)
-	if op.Api.Http.Version.Version.Source != "" {
-		fullName = fmt.Sprintf(`%s.%s`, op.Api.Http.Version.Version.Source, fullName)
+	if op.Api.Http.Version.Name.Source != "" {
+		fullName = fmt.Sprintf(`%s.%s`, op.Api.Http.Version.Name.Source, fullName)
 	}
 	return fullName
 }

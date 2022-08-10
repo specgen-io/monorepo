@@ -290,8 +290,8 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *genera
 	imports := imports.New()
 	imports.Add("github.com/husobee/vestigo")
 	for _, version := range specification.Versions {
-		versionModule := module.Submodule(version.Version.FlatCase())
-		if version.Version.Source != "" {
+		versionModule := module.Submodule(version.Name.FlatCase())
+		if version.Name.Source != "" {
 			imports.Add(versionModule.Package)
 		}
 		for _, api := range version.Http.Apis {
@@ -323,7 +323,7 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *genera
 }
 
 func versionedApiImportAlias(api *spec.Api) string {
-	version := api.Http.Version.Version
+	version := api.Http.Version.Name
 	if version.Source != "" {
 		return api.Name.CamelCase() + version.PascalCase()
 	}
@@ -331,12 +331,12 @@ func versionedApiImportAlias(api *spec.Api) string {
 }
 
 func serviceApiNameVersioned(api *spec.Api) string {
-	return fmt.Sprintf(`%sService%s`, api.Name.Source, api.Http.Version.Version.PascalCase())
+	return fmt.Sprintf(`%sService%s`, api.Name.Source, api.Http.Version.Name.PascalCase())
 }
 
 func packageFrom(version *spec.Version) string {
-	if version.Version.Source != "" {
-		return fmt.Sprintf(`%s.`, version.Version.FlatCase())
+	if version.Name.Source != "" {
+		return fmt.Sprintf(`%s.`, version.Name.FlatCase())
 	}
 	return ""
 }

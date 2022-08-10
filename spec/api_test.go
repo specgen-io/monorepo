@@ -22,7 +22,7 @@ test:
         response:
             ok: empty
 `
-	var apis Apis
+	var apis Http
 	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &apis)
 	assert.Equal(t, err, nil)
 
@@ -61,6 +61,6 @@ test:
     response:
       ok: empty
 `, "\n")
-	var apis Apis
+	var apis Http
 	checkUnmarshalMarshal(t, expectedYaml, &apis)
 }

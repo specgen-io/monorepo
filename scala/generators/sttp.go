@@ -25,7 +25,7 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 	sources.AddGenerated(scalaHttpStaticFile)
 
 	for _, version := range specification.Versions {
-		versionClientPackage := mainPackage.Subpackage(version.Version.FlatCase())
+		versionClientPackage := mainPackage.Subpackage(version.Name.FlatCase())
 		versionModelsPackage := versionClientPackage.Subpackage("models")
 		clientImplementations := generateClientImplementations(&version, versionClientPackage, versionModelsPackage, jsonPackage, paramsPackage)
 		sources.AddGeneratedAll(clientImplementations)
