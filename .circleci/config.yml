@@ -20,7 +20,7 @@ jobs:
           name: Build
           command: |
             cd specgen
-            ./build.sh <<pipeline.parameters.specgen-version>>
+            ../build.sh <<pipeline.parameters.specgen-version>>
       - run:
           name: Unit tests
           command: |
@@ -34,13 +34,9 @@ jobs:
           root: .
           paths:
             - specgen/dist
-
-  specgen-release-alpha:
-    docker:
-      - image: cimg/go:1.18.3
-    working_directory: ~/work
-    steps:
-      - checkout
+      - run:
+          name: Localize specgen dependencies
+          command: rm -rf ./specgen/dist
       - run:
           name: Localize specgen dependencies
           command: |
@@ -528,7 +524,7 @@ jobs:
     steps:
       - run: echo "Build for <<pipeline.parameters.specgen-version>> is complete!!!"
 
-  release-specgen:
+  specgen-release:
     docker:
       - image: cimg/go:1.16.4
     working_directory: ~/specgen
@@ -539,15 +535,9 @@ jobs:
           at: .
       - run:
           name: Release
-          command: ./release.sh <<pipeline.parameters.specgen-version>> ${GITHUB_TOKEN}
-      - run:
-          name: Create git tag
           command: |
-            git config --global user.email $GITHUB_EMAIL
-            git config --global user.name $GITHUB_USER
-            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/monorepo.git
-            git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen version: v<<pipeline.parameters.specgen-version>>"
-            git push -f --tags
+            cd specgen
+            ./release.sh <<pipeline.parameters.specgen-version>> specgen-io specgen ${GITHUB_TOKEN}
 
 commands:
   attach_workspace_folder:
@@ -670,10 +660,6 @@ workflows:
     jobs:
       - specgen:
           context: specgen
-      - specgen-release-alpha:
-          context: specgen
-          requires:
-            - specgen
       - golang:
           context: specgen
       - ruby:
@@ -716,7 +702,7 @@ workflows:
             - typescript
       - build-complete:
           requires:
-            - specgen-release-alpha
+            - specgen
             - golang
             - sbt
             - maven-java
@@ -758,7 +744,7 @@ workflows:
               only:
                 - main
                 - /v.*/
-      - release-specgen:
+      - specgen-release:
           context: specgen
           requires:
             - approve-release
