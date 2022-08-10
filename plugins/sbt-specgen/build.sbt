@@ -8,8 +8,8 @@ name := "sbt-specgen"
 version := versionValue
 
 homepage := Some(url("https://specgen.io"))
-scmInfo := Some(ScmInfo(url("https://github.com/specgen-io/specgen/v2"), "git@github.com:specgen-io/specgen.git"))
-developers := List(Developer("vsapronov", "vsapronov", "vladimir.sapronov@gmail.com", url("https://github.com/vsapronov")))
+scmInfo := Some(ScmInfo(url("https://github.com/specgen-io"), "git@github.com:specgen-io/monorepo.git"))
+developers := List(Developer("specgen", "specgen", "dev@specgen.io", url("https://github.com/specgen-io")))
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
 publishMavenStyle := true

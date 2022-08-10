@@ -77,8 +77,8 @@
     <description>Maven plugin for specgen kotlin code generation.</description>
     <url>https://specgen.io</url>
     <scm>
-        <connection>git@github.com:specgen-io/specgen.git</connection>
-        <url>https://github.com/specgen-io/specgen/v2</url>
+        <connection>git@github.com:specgen-io/monorepo.git</connection>
+        <url>https://github.com/specgen-io</url>
     </scm>
     <licenses>
         <license>

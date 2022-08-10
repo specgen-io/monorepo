@@ -33,8 +33,8 @@ gradlePlugin {
 }
 
 pluginBundle {
-    website = "https://github.com/specgen-io/specgen"
-    vcsUrl = "https://github.com/specgen-io/specgen.git"
+    website = "https://github.com/specgen-io"
+    vcsUrl = "https://github.com/specgen-io/monorepo.git"
     description = project.description
     tags = listOf("specgen", "codegeneration", "codegen", "kotlin")
 }
