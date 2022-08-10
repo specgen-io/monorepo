@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"io/ioutil"
+	"specgen/markdown"
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"io/ioutil"
-	"specgen/v2/markdown"
-	"strings"
 )
 
 func init() {

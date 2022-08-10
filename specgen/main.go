@@ -1,6 +1,6 @@
 package main
 
-import "specgen/v2/cmd"
+import "specgen/cmd"
 
 func main() {
 	cmd.Execute()

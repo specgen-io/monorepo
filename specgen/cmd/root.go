@@ -3,9 +3,10 @@ package cmd
 import (
 	"fmt"
 	"generator/console"
-	"github.com/spf13/cobra"
 	"os"
-	"specgen/v2/version"
+	"specgen/version"
+
+	"github.com/spf13/cobra"
 )
 
 var verbose bool

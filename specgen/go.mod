@@ -1,4 +1,4 @@
-module specgen/v2
+module specgen
 
 go 1.18
 

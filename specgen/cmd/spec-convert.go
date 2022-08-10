@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"generator/console"
+	"specgen/convert/openapi"
+
 	"github.com/spf13/cobra"
-	"specgen/v2/convert/openapi"
 )
 
 func init() {

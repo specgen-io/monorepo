@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"generator"
-	"specgen/v2/generators"
+	"specgen/generators"
 )
 
 func init() {
