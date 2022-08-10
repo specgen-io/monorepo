@@ -46,34 +46,34 @@ jobs:
           command: |
             go install github.com/specgen-io/goven@v0.0.6
             cd specgen
-            goven -name github.com/specgen-io/specgenrelease/v2 -out vendored
+            goven -name github.com/specgen-io/specgen/v2 -out vendored
             cd vendored
             go mod tidy
       - run:
           name: Checkout specgen release repo and clean it
           command: |
-            git clone https://github.com/specgen-io/specgenrelease.git specgenrelease
-            cd specgenrelease
+            git clone https://github.com/specgen-io/specgen.git release
+            cd release
             rm -rf v2
       - run:
           name: Copy vendored code
           command: |
-            cp -a ./specgen/vendored/. ./specgenrelease/v2
+            cp -a ./specgen/vendored/. ./release/v2
       - run:
           name: Commit changes
           command: |
-            cd specgenrelease
+            cd release
             git add --all
             git config --global user.email $GITHUB_EMAIL
             git config --global user.name $GITHUB_USER
-            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgenrelease.git
+            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen.git
             if [[ `git status --porcelain` ]]; then
-              git commit -m "Specgen <<pipeline.parameters.specgen-version>>"
+              git commit -m "Build <<pipeline.parameters.specgen-version>>-alpha"
               git push
             else
               echo "No changes detected - nothing to commit"
             fi
-            git tag -f -a v<<pipeline.parameters.specgen-version>>-alpha -m "Specgen verison: v<<pipeline.parameters.specgen-version>>-alpha"
+            git tag -f -a v<<pipeline.parameters.specgen-version>>-alpha -m "Specgen version: v<<pipeline.parameters.specgen-version>>-alpha"
             git push -f --tags
 
   golang:
@@ -111,12 +111,12 @@ jobs:
             git config --global user.name $GITHUB_USER
             git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen-golang.git
             if [[ `git status --porcelain` ]]; then
-              git commit -m "Specgen <<pipeline.parameters.specgen-version>>"
+              git commit -m "Build <<pipeline.parameters.specgen-version>>-alpha"
               git push
             else
               echo "No changes detected - nothing to commit"
             fi
-            git tag -f -a v<<pipeline.parameters.specgen-version>>-alpha -m "Specgen verison: v<<pipeline.parameters.specgen-version>>-alpha"
+            git tag -f -a v<<pipeline.parameters.specgen-version>>-alpha -m "Specgen version: v<<pipeline.parameters.specgen-version>>-alpha"
             git push -f --tags
       - run:
           name: Check installation
@@ -141,7 +141,7 @@ jobs:
             git config --global user.email $GITHUB_EMAIL
             git config --global user.name $GITHUB_USER
             git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen-golang.git
-            git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen verison: v<<pipeline.parameters.specgen-version>>"
+            git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen version: v<<pipeline.parameters.specgen-version>>"
             git push -f --tags
 
   ruby:
@@ -546,7 +546,7 @@ jobs:
             git config --global user.email $GITHUB_EMAIL
             git config --global user.name $GITHUB_USER
             git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/monorepo.git
-            git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen verison: v<<pipeline.parameters.specgen-version>>"
+            git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen version: v<<pipeline.parameters.specgen-version>>"
             git push -f --tags
 
 commands:
