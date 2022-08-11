@@ -6,13 +6,16 @@ import (
 	"gopkg.in/specgen-io/yaml.v3"
 )
 
-func enrich(options SpecOptions, spec *Spec) (*Messages, error) {
+func enrich(options SpecOptions, specification *Spec) (*Messages, error) {
 	messages := NewMessages()
-	for verIndex := range spec.Versions {
-		version := &spec.Versions[verIndex]
+	if options.AddErrors {
+		enrichErrors(&specification.HttpErrors, messages)
+	}
+	for verIndex := range specification.Versions {
+		version := &specification.Versions[verIndex]
 		if options.AddErrors {
 			if len(version.Http.Apis) > 0 {
-				errorResponses, err := createErrorResponsesModels()
+				errorResponses, err := createErrorModels()
 				if err != nil {
 					return nil, err
 				}
@@ -24,15 +27,29 @@ func enrich(options SpecOptions, spec *Spec) (*Messages, error) {
 				version.Http.Errors = errors
 			}
 		}
-		modelsMap := buildModelsMap(version.Models)
-		enricher := &enricher{modelsMap, make(map[string]interface{}), messages, nil}
-		enricher.Version(version)
-		version.ResolvedModels = enricher.ResolvedModels
+		enrichVersion(version, messages)
 	}
 	if messages.ContainsLevel(LevelError) {
 		return messages, errors.New("failed to parse specification")
 	}
 	return messages, nil
+}
+
+func enrichVersion(version *Version, messages *Messages) {
+	modelsMap := buildModelsMap(version.Models)
+	enricher := &enricher{modelsMap, make(map[string]interface{}), messages, nil}
+	enricher.Version(version)
+	version.ResolvedModels = enricher.ResolvedModels
+}
+
+func enrichErrors(httpErrors *HttpErrors, messages *Messages) {
+	modelsMap := buildModelsMap(httpErrors.Models)
+	enricher := &enricher{modelsMap, make(map[string]interface{}), messages, nil}
+	enricher.HttpErrors(httpErrors)
+	for index := range httpErrors.Responses {
+		enricher.Definition(&httpErrors.Responses[index].Definition)
+	}
+	httpErrors.ResolvedModels = enricher.ResolvedModels
 }
 
 type ModelsMap map[string]*NamedModel
@@ -53,7 +70,7 @@ type enricher struct {
 	ResolvedModels  []*NamedModel
 }
 
-func (enricher *enricher) processedModels(name string) bool {
+func (enricher *enricher) modelAlreadyVisited(name string) bool {
 	if _, ok := enricher.ProcessedModels[name]; ok {
 		return true
 	}
@@ -79,25 +96,39 @@ func (enricher *enricher) addResolvedModel(model *NamedModel) {
 
 func (enricher *enricher) Version(version *Version) {
 	for modIndex := range version.Models {
-		model := &version.Models[modIndex]
-		model.Version = version
-		enricher.Model(model)
+		version.Models[modIndex].Version = version
 	}
-	apis := &version.Http
-	apis.Version = version
+	enricher.Models(version.Models)
 
-	for index := range apis.Errors {
-		enricher.Definition(&apis.Errors[index].Definition)
+	http := &version.Http
+	http.Version = version
+
+	for index := range http.Errors {
+		enricher.Definition(&http.Errors[index].Definition)
 	}
 
-	for apiIndex := range apis.Apis {
+	for apiIndex := range http.Apis {
 		api := &version.Http.Apis[apiIndex]
-		api.Http = apis
+		api.Http = http
 		for opIndex := range api.Operations {
 			operation := &api.Operations[opIndex]
 			operation.Api = api
 			enricher.Operation(operation)
 		}
+	}
+}
+
+func (enricher *enricher) HttpErrors(httpErrors *HttpErrors) {
+	for modIndex := range httpErrors.Models {
+		model := &httpErrors.Models[modIndex]
+		enricher.Model(model)
+	}
+}
+
+func (enricher *enricher) Models(models Models) {
+	for modIndex := range models {
+		model := &models[modIndex]
+		enricher.Model(model)
 	}
 }
 
@@ -123,7 +154,7 @@ func (enricher *enricher) Params(params []NamedParam) {
 }
 
 func (enricher *enricher) Model(model *NamedModel) {
-	if !enricher.processedModels(model.Name.Source) {
+	if !enricher.modelAlreadyVisited(model.Name.Source) {
 		if model.IsObject() {
 			for index := range model.Object.Fields {
 				enricher.Definition(&model.Object.Fields[index].Definition)
@@ -184,60 +215,4 @@ func (enricher *enricher) TypeDef(typ *TypeDef, node *yaml.Node) *TypeInfo {
 		return typ.Info
 	}
 	return nil
-}
-
-func createErrorResponsesModels() (Models, error) {
-	data := `
-BadRequestError:
-  object:
-    message: string
-    location: ErrorLocation
-    errors: ValidationError[]?
-
-ValidationError:
-  object:
-    path: string
-    code: string
-    message: string?
-
-ErrorLocation:
-  enum:
-    - query
-    - header
-    - body
-
-NotFoundError:
-  object:
-    message: string
-
-InternalServerError:
-  object:
-    message: string
-`
-	var models Models
-	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &models)
-	if err != nil {
-		return nil, err
-	}
-	return models, nil
-}
-
-const InternalServerError string = "InternalServerError"
-const BadRequestError string = "BadRequestError"
-const NotFoundError string = "NotFound"
-const ValidationError string = "ValidationError"
-const ErrorLocation string = "ErrorLocation"
-
-func createErrorResponses() (Responses, error) {
-	data := `
-bad_request: BadRequestError   # Service will return this if parameters are not provided or couldn't be parsed correctly
-not_found: NotFoundError   # Service will return this if the endpoint is not found
-internal_server_error: InternalServerError   # Service will return this if unexpected internal error happens
-`
-	var responses Responses
-	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &responses)
-	if err != nil {
-		return nil, err
-	}
-	return responses, nil
 }

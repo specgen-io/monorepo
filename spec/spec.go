@@ -8,7 +8,8 @@ import (
 
 type Spec struct {
 	Meta
-	Versions []Version
+	Versions   []Version
+	HttpErrors HttpErrors
 }
 
 type VersionSpecification struct {
@@ -70,7 +71,12 @@ func (value *Spec) UnmarshalYAML(node *yaml.Node) error {
 	meta := Meta{}
 	node.DecodeWith(decodeStrict, &meta)
 
-	*value = Spec{meta, versions}
+	httpErrors, err := createHttpErrors()
+	if err != nil {
+		return err
+	}
+
+	*value = Spec{meta, versions, *httpErrors}
 	return nil
 }
 

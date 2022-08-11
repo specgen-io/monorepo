@@ -6,9 +6,14 @@ import (
 	"yamlx"
 )
 
-type Responses []Response
+type OperationResponse struct {
+	Response
+	Operation *NamedOperation
+}
 
-func (responses Responses) GetByStatusName(httpStatus string) *Response {
+type OperationResponses []OperationResponse
+
+func (responses OperationResponses) Get(httpStatus string) *OperationResponse {
 	for _, response := range responses {
 		if response.Name.Source == httpStatus {
 			return &response
@@ -17,7 +22,7 @@ func (responses Responses) GetByStatusName(httpStatus string) *Response {
 	return nil
 }
 
-func (responses Responses) GetByStatusCode(statusCode string) *Response {
+func (responses OperationResponses) GetByStatusCode(statusCode string) *OperationResponse {
 	for _, response := range responses {
 		if response.Name.Source == HttpStatusName(statusCode) {
 			return &response
@@ -26,7 +31,7 @@ func (responses Responses) GetByStatusCode(statusCode string) *Response {
 	return nil
 }
 
-func (responses Responses) HttpStatusCodes() []string {
+func (responses OperationResponses) HttpStatusCodes() []string {
 	codes := []string{}
 	for _, response := range responses {
 		codes = append(codes, HttpStatusCode(response.Name))
@@ -34,12 +39,12 @@ func (responses Responses) HttpStatusCodes() []string {
 	return codes
 }
 
-func (responses *Responses) UnmarshalYAML(node *yaml.Node) error {
+func (value *OperationResponses) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
 		return yamlError(node, "response should be YAML mapping")
 	}
 	count := len(node.Content) / 2
-	array := make([]Response, count)
+	array := make([]OperationResponse, count)
 	for index := 0; index < count; index++ {
 		keyNode := node.Content[index*2]
 		valueNode := node.Content[index*2+1]
@@ -60,16 +65,16 @@ func (responses *Responses) UnmarshalYAML(node *yaml.Node) error {
 		if err != nil {
 			return err
 		}
-		array[index] = Response{Name: name, Definition: definition}
+		array[index] = OperationResponse{Response{Name: name, Definition: definition}, nil}
 	}
-	*responses = array
+	*value = array
 	return nil
 }
 
-func (responses Responses) MarshalYAML() (interface{}, error) {
+func (value OperationResponses) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
-	for index := 0; index < len(responses); index++ {
-		response := responses[index]
+	for index := 0; index < len(value); index++ {
+		response := value[index]
 		err := yamlMap.AddWithComment(response.Name, response.Definition, response.Description)
 		if err != nil {
 			return nil, err
