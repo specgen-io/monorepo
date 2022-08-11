@@ -35,11 +35,14 @@ jobs:
           paths:
             - specgen/dist
       - run:
-          name: Localize specgen dependencies
-          command: rm -rf ./specgen/dist
+          name: Cleanup
+          command: |
+            rm -rf ./specgen/dist
+            rm -rf ./specgen/test-results
       - run:
           name: Localize specgen dependencies
           command: |
+            rm -rf ./specgen/dist
             go install github.com/specgen-io/goven@v0.0.6
             cd specgen
             goven -name github.com/specgen-io/specgen/v2 -out vendored
@@ -88,27 +91,14 @@ jobs:
           name: Copy vendored code
           command: |
             cp -a ./golang/vendored/. ./specgen-golang/v2
-      - run:
-          name: Commit changes
-          command: |
-            cd specgen-golang
-            git add --all
-            git config --global user.email $GITHUB_EMAIL
-            git config --global user.name $GITHUB_USER
-            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen-golang.git
-            if [[ `git status --porcelain` ]]; then
-              git commit -m "Build <<pipeline.parameters.specgen-version>>-alpha"
-              git push
-            else
-              echo "No changes detected - nothing to commit"
-            fi
-            git tag -f -a v<<pipeline.parameters.specgen-version>>-alpha -m "Specgen version: v<<pipeline.parameters.specgen-version>>-alpha"
-            git push -f --tags
+      - github-push-tag:
+          path: specgen-golang
+          slug: specgen-io/specgen-golang
+          tag: v<<pipeline.parameters.specgen-version>>-alpha
+          commit: true
       - run:
           name: Check installation
-          command: |
-            cd specgen-golang
-            go install github.com/specgen-io/specgen-golang/v2@v<<pipeline.parameters.specgen-version>>-alpha
+          command: go install github.com/specgen-io/specgen-golang/v2@v<<pipeline.parameters.specgen-version>>-alpha
 
   golang-release:
     docker:
@@ -563,7 +553,7 @@ commands:
         default: false
     steps:
       - run:
-          name: Copy folder from attached workspace
+          name: Create tag and push to github
           command: |
             cd << parameters.path >>
             git config --global user.email $GITHUB_EMAIL
