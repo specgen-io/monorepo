@@ -56,22 +56,11 @@ jobs:
           command: |
             cp -a ./specgen/vendored/. ./release/v2
             rm ./release/v2/release.sh
-      - run:
-          name: Commit changes
-          command: |
-            cd release
-            git add --all
-            git config --global user.email $GITHUB_EMAIL
-            git config --global user.name $GITHUB_USER
-            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen.git
-            if [[ `git status --porcelain` ]]; then
-              git commit -m "Build <<pipeline.parameters.specgen-version>>-alpha"
-              git push
-            else
-              echo "No changes detected - nothing to commit"
-            fi
-            git tag -f -a v<<pipeline.parameters.specgen-version>>-alpha -m "Specgen version: v<<pipeline.parameters.specgen-version>>-alpha"
-            git push -f --tags
+      - github-push-tag:
+          path: release
+          slug: specgen-io/specgen
+          tag: v<<pipeline.parameters.specgen-version>>-alpha
+          commit: true
 
   golang:
     docker:
