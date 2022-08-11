@@ -106,19 +106,12 @@ jobs:
     working_directory: ~/golang
     steps:
       - run:
-          name: Checkout specgen-golang tool repo and clean it
-          command: |
-            git clone https://github.com/specgen-io/specgen-golang.git specgen-golang
-      - run:
-          name: Commit changes
-          command: |
-            cd specgen-golang
-            git add --all
-            git config --global user.email $GITHUB_EMAIL
-            git config --global user.name $GITHUB_USER
-            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/specgen-io/specgen-golang.git
-            git tag -f -a v<<pipeline.parameters.specgen-version>> -m "Specgen version: v<<pipeline.parameters.specgen-version>>"
-            git push -f --tags
+          name: Checkout specgen-golang repo
+          command: git clone https://github.com/specgen-io/specgen-golang.git specgen-golang
+      - github-push-tag:
+          path: specgen-golang
+          slug: specgen-io/specgen-golang
+          tag: v<<pipeline.parameters.specgen-version>>
 
   ruby:
     docker:
