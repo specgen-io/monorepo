@@ -560,6 +560,41 @@ commands:
           name: Inspect local folder
           command: find <<parameters.at>>
 
+  github-push-tag:
+    parameters:
+      path:
+        type: string
+        default: .
+      slug:
+        type: string
+      tag:
+        type: string
+      commit:
+        type: boolean
+        default: false
+    steps:
+      - run:
+          name: Copy folder from attached workspace
+          command: |
+            cd << parameters.path >>
+            git config --global user.email $GITHUB_EMAIL
+            git config --global user.name $GITHUB_USER
+            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/<< parameters.slug >>.git
+            if [[ "<< parameters.commit >>" == "true" ]]; then
+              git add --all
+              if [[ `git status --porcelain` ]]; then
+                git commit -m "Build << parameters.tag >>"
+                git push
+              else
+                echo "No changes detected - nothing to commit"
+              fi
+            else
+              echo "Changes commit was not requested"
+            fi
+            git tag -f -a << parameters.tag >> -m "Version: << parameters.tag >>"
+            git push -f --tags
+
+
   build_specgen_plugin:
     parameters:
       plugin:
