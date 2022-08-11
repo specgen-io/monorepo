@@ -42,7 +42,6 @@ jobs:
       - run:
           name: Localize specgen dependencies
           command: |
-            rm -rf ./specgen/dist
             go install github.com/specgen-io/goven@v0.0.6
             cd specgen
             goven -name github.com/specgen-io/specgen/v2 -out vendored
@@ -531,6 +530,44 @@ commands:
       - run:
           name: Inspect local folder
           command: find <<parameters.at>>
+
+  go-release-vendored:
+    parameters:
+      path:
+        type: string
+        default: .
+      name:
+        type: string
+      slug:
+        type: string
+      major:
+        type: string
+        default: .
+      version:
+        type: string
+    steps:
+      - run:
+          name: Localize dependencies
+          command: |
+            cd << parameters.path >>
+            goven -name << parameters.name >> -out vendored
+            cd vendored
+            go mod tidy
+      - run:
+          name: Checkout specgen release repo and clean it
+          command: |
+            git clone https://github.com/<< parameters.slug >>.git release
+            cd release
+            rm -rf << parameters.major >>
+      - run:
+          name: Copy vendored code
+          command: |
+            cp -a << parameters.path >>/vendored/. ./release/<< parameters.major >>
+      - github-push-tag:
+          path: release
+          slug: << parameters.slug >>
+          tag: <<pipeline.version>>
+          commit: true
 
   github-push-tag:
     parameters:
