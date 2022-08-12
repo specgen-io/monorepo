@@ -39,30 +39,18 @@ jobs:
           command: |
             rm -rf ./specgen/dist
             rm -rf ./specgen/test-results
+            rm ./specgen/release/v2/release.sh
       - run:
-          name: Localize specgen dependencies
-          command: |
-            go install github.com/specgen-io/goven@v0.0.6
-            cd specgen
-            goven -name github.com/specgen-io/specgen/v2 -out vendored
-            cd vendored
-            go mod tidy
-      - run:
-          name: Checkout specgen release repo and clean it
-          command: |
-            git clone https://github.com/specgen-io/specgen.git release
-            cd release
-            rm -rf v2
-      - run:
-          name: Copy vendored code
-          command: |
-            cp -a ./specgen/vendored/. ./release/v2
-            rm ./release/v2/release.sh
-      - github-push-tag:
-          path: release
+          name: Install goven
+          command: go install github.com/specgen-io/goven@v0.0.6
+      - github-release-vendored:
+          path: ./specgen
           slug: specgen-io/specgen
+          major: v2
           tag: v<<pipeline.parameters.specgen-version>>-alpha
-          commit: true
+      - run:
+          name: Check installation
+          command: go install github.com/specgen-io/specgen/v2@v<<pipeline.parameters.specgen-version>>-alpha
 
   golang:
     docker:
@@ -71,30 +59,13 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Localize specgen dependencies
-          command: |
-            go install github.com/specgen-io/goven@v0.0.6
-            cd golang
-            go mod vendor
-            goven -name github.com/specgen-io/specgen-golang/v2 -required -out vendored
-            cd vendored
-            go mod tidy
-            go build main.go
-      - run:
-          name: Checkout specgen-golang tool repo and clean it
-          command: |
-            git clone https://github.com/specgen-io/specgen-golang.git specgen-golang
-            cd specgen-golang
-            rm -rf v2
-      - run:
-          name: Copy vendored code
-          command: |
-            cp -a ./golang/vendored/. ./specgen-golang/v2
-      - github-push-tag:
-          path: specgen-golang
+          name: Install goven
+          command: go install github.com/specgen-io/goven@v0.0.6
+      - github-release-vendored:
+          path: ./golang
           slug: specgen-io/specgen-golang
+          major: v2
           tag: v<<pipeline.parameters.specgen-version>>-alpha
-          commit: true
       - run:
           name: Check installation
           command: go install github.com/specgen-io/specgen-golang/v2@v<<pipeline.parameters.specgen-version>>-alpha
@@ -531,26 +502,24 @@ commands:
           name: Inspect local folder
           command: find <<parameters.at>>
 
-  go-release-vendored:
+  github-release-vendored:
     parameters:
       path:
         type: string
         default: .
-      name:
-        type: string
       slug:
         type: string
       major:
         type: string
         default: .
-      version:
+      tag:
         type: string
     steps:
       - run:
           name: Localize dependencies
           command: |
             cd << parameters.path >>
-            goven -name << parameters.name >> -out vendored
+            goven -name github.com/<< parameters.slug >>/<< parameters.major >> -out vendored
             cd vendored
             go mod tidy
       - run:
@@ -566,7 +535,7 @@ commands:
       - github-push-tag:
           path: release
           slug: << parameters.slug >>
-          tag: <<pipeline.version>>
+          tag: << pipeline.tag >>
           commit: true
 
   github-push-tag:
