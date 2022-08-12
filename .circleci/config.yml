@@ -42,7 +42,7 @@ jobs:
             rm ./specgen/release.sh
       - run:
           name: Install goven
-          command: go install github.com/specgen-io/goven@v0.0.6
+          command: go install github.com/specgen-io/goven@v0.0.7
       - github-release-vendored:
           path: ./specgen
           slug: specgen-io/specgen
@@ -60,7 +60,7 @@ jobs:
       - checkout
       - run:
           name: Install goven
-          command: go install github.com/specgen-io/goven@v0.0.6
+          command: go install github.com/specgen-io/goven@v0.0.7
       - github-release-vendored:
           path: ./golang
           slug: specgen-io/specgen-golang
@@ -520,8 +520,6 @@ commands:
           command: |
             cd << parameters.path >>
             goven -name github.com/<< parameters.slug >>/<< parameters.major >> -out vendored
-            cd vendored
-            go mod tidy
       - run:
           name: Checkout specgen release repo and clean it
           command: |
