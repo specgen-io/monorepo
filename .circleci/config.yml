@@ -535,7 +535,7 @@ commands:
       - github-push-tag:
           path: release
           slug: << parameters.slug >>
-          tag: << pipeline.tag >>
+          tag: << parameters.tag >>
           commit: true
 
   github-push-tag:
