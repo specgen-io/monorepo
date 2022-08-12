@@ -39,7 +39,7 @@ jobs:
           command: |
             rm -rf ./specgen/dist
             rm -rf ./specgen/test-results
-            rm ./specgen/release/v2/release.sh
+            rm ./specgen/release.sh
       - run:
           name: Install goven
           command: go install github.com/specgen-io/goven@v0.0.6
