@@ -28,6 +28,15 @@ var cmdMarkdown = &cobra.Command{
 	},
 }
 
+func contains(array []string, that string) bool {
+	for _, item := range array {
+		if item == that {
+			return true
+		}
+	}
+	return false
+}
+
 func GenMarkdownDocumentation(cmd *cobra.Command, filePath string, skipCommands []string) error {
 	m := markdown.NewMarkdown()
 	GenRootCommandMarkdown(m, cmd, skipCommands)

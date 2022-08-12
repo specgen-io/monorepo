@@ -2,9 +2,16 @@ package cmd
 
 import (
 	"generator"
+	"github.com/spf13/cobra"
 	"specgen/generators"
 )
 
 func init() {
-	generator.AddCobraCommands(rootCmd, generators.All)
+	generator.AddCobraCommands(cmdCodegen, generators.All)
+	rootCmd.AddCommand(cmdCodegen)
+}
+
+var cmdCodegen = &cobra.Command{
+	Use:   "codegen",
+	Short: "Generate code",
 }
