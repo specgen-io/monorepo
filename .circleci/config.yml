@@ -41,16 +41,12 @@ jobs:
             rm -rf ./specgen/test-results
             rm ./specgen/release.sh
       - run:
-          name: Install goven
-          command: go install github.com/specgen-io/goven@v0.0.9
-      - github-release-vendored:
-          path: ./specgen
-          slug: specgen-io/specgen
-          major: v2
-          tag: v<<pipeline.parameters.specgen-version>>-alpha
-      - run:
-          name: Check installation
-          command: go install github.com/specgen-io/specgen/v2@v<<pipeline.parameters.specgen-version>>-alpha
+          name: Release vendored module
+          command: |
+            go install github.com/specgen-io/goven@v0.0.9
+            cd ./specgen
+            goven release -name github.com/specgen-io/specgen/v2 -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
+            go install github.com/specgen-io/specgen/v2@v<<pipeline.parameters.specgen-version>>-alpha
 
   golang:
     docker:
@@ -59,28 +55,21 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install goven
-          command: go install github.com/specgen-io/goven@v0.0.9
-      - github-release-vendored:
-          path: ./golang
-          slug: specgen-io/specgen-golang
-          major: v2
-          tag: v<<pipeline.parameters.specgen-version>>-alpha
-      - run:
-          name: Check installation
-          command: go install github.com/specgen-io/specgen-golang/v2@v<<pipeline.parameters.specgen-version>>-alpha
+          name: Release vendored module
+          command: |
+            go install github.com/specgen-io/goven@v0.0.9
+            cd ./golang
+            goven release -name github.com/specgen-io/specgen-golang/v2 -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
+            go install github.com/specgen-io/specgen-golang/v2@v<<pipeline.parameters.specgen-version>>-alpha
 
   golang-release:
     docker:
       - image: cimg/go:1.18.3
     working_directory: ~/golang
     steps:
-      - run:
-          name: Checkout specgen-golang repo
-          command: git clone https://github.com/specgen-io/specgen-golang.git specgen-golang
       - github-push-tag:
           path: specgen-golang
-          slug: specgen-io/specgen-golang
+          repo: github.com/specgen-io/specgen-golang.git
           tag: v<<pipeline.parameters.specgen-version>>
 
   ruby:
@@ -502,59 +491,28 @@ commands:
           name: Inspect local folder
           command: find <<parameters.at>>
 
-  github-release-vendored:
-    parameters:
-      path:
-        type: string
-        default: .
-      slug:
-        type: string
-      major:
-        type: string
-        default: .
-      tag:
-        type: string
-    steps:
-      - run:
-          name: Localize dependencies
-          command: |
-            cd << parameters.path >>
-            goven release -name github.com/<< parameters.slug >>/<< parameters.major >> -version << parameters.tag >> -out vendored
-
   github-push-tag:
     parameters:
       path:
         type: string
         default: .
-      slug:
+      repo:
         type: string
       tag:
         type: string
-      commit:
-        type: boolean
-        default: false
     steps:
+      - run:
+          name: Checkout repo
+          command: git clone https://<< parameters.repo >> << parameters.path >>
       - run:
           name: Create tag and push to github
           command: |
             cd << parameters.path >>
             git config --global user.email $GITHUB_EMAIL
             git config --global user.name $GITHUB_USER
-            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/<< parameters.slug >>.git
-            if [[ "<< parameters.commit >>" == "true" ]]; then
-              git add --all
-              if [[ `git status --porcelain` ]]; then
-                git commit -m "Build << parameters.tag >>"
-                git push
-              else
-                echo "No changes detected - nothing to commit"
-              fi
-            else
-              echo "Changes commit was not requested"
-            fi
+            git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@<< parameters.repo >>
             git tag -f -a << parameters.tag >> -m "Version: << parameters.tag >>"
             git push -f --tags
-
 
   build_specgen_plugin:
     parameters:
