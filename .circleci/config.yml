@@ -8,6 +8,9 @@ parameters:
   specgen-version:
     type: string
     default: 2.1.<<pipeline.number>>
+  specgen-version-major:
+    type: string
+    default: v2
 
 jobs:
   specgen:
@@ -45,8 +48,8 @@ jobs:
           command: |
             go install github.com/specgen-io/goven@v0.0.9
             cd ./specgen
-            goven release -name github.com/specgen-io/specgen/v2 -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
-            go install github.com/specgen-io/specgen/v2@v<<pipeline.parameters.specgen-version>>-alpha
+            goven release -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
+            go install github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>-alpha
 
   golang:
     docker:
@@ -59,8 +62,8 @@ jobs:
           command: |
             go install github.com/specgen-io/goven@v0.0.9
             cd ./golang
-            goven release -name github.com/specgen-io/specgen-golang/v2 -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
-            go install github.com/specgen-io/specgen-golang/v2@v<<pipeline.parameters.specgen-version>>-alpha
+            goven release -name github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
+            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>-alpha
 
   golang-release:
     docker:
@@ -670,7 +673,7 @@ workflows:
           name: test-models
           repository: specgen-io/test-models
           branch: main
-          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>", "specgen-version-major": "<<pipeline.parameters.specgen-version-major>>"}'
           context: specgen
           requires:
             - build-complete
@@ -678,7 +681,7 @@ workflows:
           name: test-clients
           repository: specgen-io/test-clients
           branch: main
-          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>", "specgen-version-major": "<<pipeline.parameters.specgen-version-major>>"}'
           context: specgen
           requires:
             - build-complete
@@ -686,7 +689,7 @@ workflows:
           name: test-services
           repository: specgen-io/test-services
           branch: main
-          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>"}'
+          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>", "specgen-version-major": "<<pipeline.parameters.specgen-version-major>>"}'
           context: specgen
           requires:
             - build-complete
