@@ -42,7 +42,7 @@ jobs:
             rm ./specgen/release.sh
       - run:
           name: Install goven
-          command: go install github.com/specgen-io/goven@v0.0.8
+          command: go install github.com/specgen-io/goven@v0.0.9
       - github-release-vendored:
           path: ./specgen
           slug: specgen-io/specgen
@@ -60,7 +60,7 @@ jobs:
       - checkout
       - run:
           name: Install goven
-          command: go install github.com/specgen-io/goven@v0.0.8
+          command: go install github.com/specgen-io/goven@v0.0.9
       - github-release-vendored:
           path: ./golang
           slug: specgen-io/specgen-golang
@@ -519,7 +519,7 @@ commands:
           name: Localize dependencies
           command: |
             cd << parameters.path >>
-            goven release -repo << parameters.slug >> -major << parameters.major >> -version << parameters.tag >> -out vendored
+            goven release -name github.com/<< parameters.slug >>/<< parameters.major >> -version << parameters.tag >> -out vendored
 
   github-push-tag:
     parameters:
