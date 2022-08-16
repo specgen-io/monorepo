@@ -18,7 +18,7 @@ func init() {
 
 var cmdSpecConvert = &cobra.Command{
 	Use:   "spec-convert",
-	Short: "Convert spec from older versions to latest",
+	Short: "Convert OpenAPI specification into spec",
 	Run: func(cmd *cobra.Command, args []string) {
 		inFile, err := cmd.Flags().GetString(InFile)
 		FailIfError(err)

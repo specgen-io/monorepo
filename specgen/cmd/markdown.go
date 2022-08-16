@@ -11,7 +11,6 @@ import (
 
 func init() {
 	cmdMarkdown.Flags().String(OutFile, "", OutFileDescription)
-	cmdMarkdown.MarkFlagRequired(OutFile)
 
 	rootCmd.AddCommand(cmdMarkdown)
 }
@@ -41,7 +40,12 @@ func GenMarkdownDocumentation(cmd *cobra.Command, filePath string, skipCommands 
 	m := markdown.NewMarkdown()
 	GenRootCommandMarkdown(m, cmd, skipCommands)
 	GenCommandsMarkdown(m, make([]string, 0), cmd, skipCommands)
-	return ioutil.WriteFile(filePath, []byte(m.String()), 0644)
+	if filePath == "" {
+		println(m.String())
+		return nil
+	} else {
+		return ioutil.WriteFile(filePath, []byte(m.String()), 0644)
+	}
 }
 
 func GenRootCommandMarkdown(m *markdown.Markdown, command *cobra.Command, skipCommands []string) {

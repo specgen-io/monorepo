@@ -13,5 +13,5 @@ func init() {
 
 var cmdCodegen = &cobra.Command{
 	Use:   "codegen",
-	Short: "Generate code",
+	Short: "Generate code from spec using specgen code generators",
 }

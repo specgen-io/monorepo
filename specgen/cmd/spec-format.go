@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"spec"
 	"github.com/spf13/cobra"
 	"io/ioutil"
+	"spec"
 )
 
 func init() {
@@ -14,7 +14,7 @@ func init() {
 
 var cmdSpecFormat = &cobra.Command{
 	Use:   "spec-format",
-	Short: "Format spec",
+	Short: "Format spec file into canonical form",
 	Run: func(cmd *cobra.Command, args []string) {
 		specFile, err := cmd.Flags().GetString(SpecFile)
 		FailIfError(err)
