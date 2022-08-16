@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pinzolo/casee"
 	"generator"
+	"github.com/pinzolo/casee"
 	"java/imports"
 	"java/models"
 	"java/packages"
@@ -30,39 +30,88 @@ func (g *SpringGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport
 	return `org.springframework.stereotype.Service`, fmt.Sprintf(`Service("%s")`, versionServiceName(serviceName(api), api.Http.Version))
 }
 
-func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
+func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.serviceController(&api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
+		files = append(files, g.serviceController(&api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
 	}
-	files = append(
-		files,
-		*g.errorsHelpers(thePackage, modelsVersionPackage),
-		*g.Models.GenerateJsonParseException(thePackage, modelsVersionPackage),
-		*g.contentTypeMismatchException(thePackage),
-	)
 	return files
 }
 
-func (g *SpringGenerator) serviceController(api *spec.Api, thePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
+func (g *SpringGenerator) ServiceImports() []string {
+	return []string{
+		`org.apache.logging.log4j.*`,
+		`org.springframework.beans.factory.annotation.Autowired`,
+		`org.springframework.format.annotation.*`,
+		`org.springframework.http.*`,
+		`org.springframework.web.bind.annotation.*`,
+	}
+}
+
+func (g *SpringGenerator) ExceptionController(responses *spec.Responses, thePackage, errorsPackage, errorsModelsPackage, jsonPackage packages.Module) *generator.CodeFile {
+	w := writer.NewJavaWriter()
+	w.Line(`package %s;`, thePackage.PackageName)
+	w.EmptyLine()
+	imports := imports.New()
+	imports.Add(g.ServiceImports()...)
+	imports.Add(jsonPackage.PackageStar)
+	imports.Add(errorsModelsPackage.PackageStar)
+	imports.AddStatic(errorsPackage.Subpackage("ErrorsHelpers").PackageStar)
+	imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
+	imports.Write(w)
+	w.EmptyLine()
+	w.Line(`@ControllerAdvice`)
+	className := `ExceptionController`
+	w.Line(`public class %s {`, className)
+	w.Line(`  private static final Logger logger = LogManager.getLogger(%s.class);`, className)
+	w.EmptyLine()
+	w.Line(`  @Autowired`)
+	w.Line(`  private Json json;`)
+	w.EmptyLine()
+	g.errorHandler(w.Indented(), *responses)
+	w.Line(`}`)
+
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath(fmt.Sprintf("%s.java", className)),
+		Content: w.String(),
+	}
+}
+
+func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Responses) {
+	notFoundError := errors.GetByStatusName(spec.HttpStatusNotFound)
+	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)
+	internalServerError := errors.GetByStatusName(spec.HttpStatusInternalServerError)
+	w.Line(`@ExceptionHandler(Throwable.class)`)
+	w.Line(`public ResponseEntity<String> error(Throwable exception) {`)
+	w.Line(`  var notFoundError = getNotFoundError(exception);`)
+	w.Line(`  if (notFoundError != null) {`)
+	g.processResponse(w.IndentedWith(2), notFoundError, "notFoundError")
+	w.Line(`  }`)
+	w.Line(`  var badRequestError = getBadRequestError(exception);`)
+	w.Line(`  if (badRequestError != null) {`)
+	g.processResponse(w.IndentedWith(2), badRequestError, "badRequestError")
+	w.Line(`  }`)
+	w.Line(`  var internalServerError = new InternalServerError(exception.getMessage());`)
+	g.processResponse(w.IndentedWith(1), internalServerError, "internalServerError")
+	w.Line(`}`)
+}
+
+func (g *SpringGenerator) serviceController(api *spec.Api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(`org.apache.logging.log4j.*`)
-	imports.Add(`org.springframework.beans.factory.annotation.Autowired`)
-	imports.Add(`org.springframework.format.annotation.DateTimeFormat`)
-	imports.Add(`org.springframework.http.*`)
-	imports.Add(`org.springframework.web.bind.annotation.*`)
+	imports.Add(g.ServiceImports()...)
 	imports.Add(`javax.servlet.http.HttpServletRequest`)
-	imports.AddStatic(thePackage.Subpackage("ErrorsHelpers").PackageStar)
+	imports.Add(contentTypePackage.PackageStar)
+	imports.Add(jsonPackage.PackageStar)
 	imports.Add(modelsVersionPackage.PackageStar)
 	imports.Add(serviceVersionPackage.PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
-	imports.Add(`static org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
+	imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.Http.Version))
@@ -73,15 +122,13 @@ func (g *SpringGenerator) serviceController(api *spec.Api, thePackage, jsonPacka
 	w.Line(`  @Autowired`)
 	w.Line(`  private %s %s;`, serviceInterfaceName(api), serviceVarName(api))
 	w.EmptyLine()
-	g.Models.CreateJsonMapperField(w.Indented(), "@Autowired")
+	w.Line(`  @Autowired`)
+	w.Line(`  private Json json;`)
+
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		g.controllerMethod(w.Indented(), &operation)
 	}
-	w.EmptyLine()
-	g.checkContentType(w.Indented())
-	w.EmptyLine()
-	g.errorHandler(w.Indented(), api.Http.Errors)
 	w.Line(`}`)
 
 	files = append(files, generator.CodeFile{
@@ -108,17 +155,12 @@ func (g *SpringGenerator) controllerMethod(w *generator.Writer, operation *spec.
 
 func (g *SpringGenerator) parseBody(w *generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
 	if operation.BodyIs(spec.BodyString) {
-		w.Line(`checkContentType(request, MediaType.TEXT_PLAIN);`)
+		w.Line(`ContentType.check(request, MediaType.TEXT_PLAIN);`)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`checkContentType(request, MediaType.APPLICATION_JSON);`)
-		requestBody, exception := g.Models.ReadJson(bodyStringVar, &operation.Body.Type.Definition)
-		w.Line(`%s %s;`, g.Types.Java(&operation.Body.Type.Definition), bodyJsonVar)
-		w.Line(`try {`)
-		w.Line(`  %s = %s;`, bodyJsonVar, requestBody)
-		w.Line(`} catch (%s exception) {`, exception)
-		w.Line(`  throw new JsonParseException(exception);`)
-		w.Line(`}`)
+		w.Line(`ContentType.check(request, MediaType.APPLICATION_JSON);`)
+		typ := g.Types.Java(&operation.Body.Type.Definition)
+		w.Line(`%s %s = json.read(%s);`, typ, bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
 	}
 }
 
@@ -161,7 +203,7 @@ func (g *SpringGenerator) processResponse(w *generator.Writer, response *spec.Re
 		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, bodyVar, response.Name.UpperCase())
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`var bodyJson = %s;`, g.Models.WriteJsonNoCheckedException(bodyVar, &response.Type.Definition))
+		w.Line(`var bodyJson = json.write(%s);`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json");`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
@@ -169,46 +211,11 @@ func (g *SpringGenerator) processResponse(w *generator.Writer, response *spec.Re
 	}
 }
 
-func (g *SpringGenerator) badRequest(w *generator.Writer, operation *spec.NamedOperation, message string) {
-	w.Line(`logger.error(%s);`, message)
-	w.Line(`logger.info("Completed request with status code: {}", HttpStatus.BAD_REQUEST);`)
-	w.Line(`return new ResponseEntity<>(HttpStatus.BAD_REQUEST);`)
-}
-
-func (g *SpringGenerator) internalServerError(w *generator.Writer, operation *spec.NamedOperation, message string) {
-	w.Line(`logger.error(%s);`, message)
-	w.Line(`logger.info("Completed request with status code: {}", HttpStatus.INTERNAL_SERVER_ERROR);`)
-	w.Line(`return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);`)
-}
-
-func (g *SpringGenerator) checkContentType(w *generator.Writer) {
-	w.Lines(`
-private void checkContentType(HttpServletRequest request, MediaType expectedContentType) {
-	var contentType = request.getHeader("Content-Type");
-	if (contentType == null || !contentType.contains(expectedContentType.toString())) {
-		throw new ContentTypeMismatchException(expectedContentType.toString(), contentType);
-	}
-}
-`)
-}
-
-func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Responses) {
-	notFoundError := errors.GetByStatusName(spec.HttpStatusNotFound)
-	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)
-	internalServerError := errors.GetByStatusName(spec.HttpStatusInternalServerError)
-	w.Line(`@ExceptionHandler(Throwable.class)`)
-	w.Line(`public ResponseEntity<String> error(HttpServletRequest request, Throwable exception) {`)
-	w.Line(`  var notFoundError = getNotFoundError(exception);`)
-	w.Line(`  if (notFoundError != null) {`)
-	g.processResponse(w.IndentedWith(2), notFoundError, "notFoundError")
-	w.Line(`  }`)
-	w.Line(`  var badRequestError = getBadRequestError(exception);`)
-	w.Line(`  if (badRequestError != null) {`)
-	g.processResponse(w.IndentedWith(2), badRequestError, "badRequestError")
-	w.Line(`  }`)
-	w.Line(`  var internalServerError = new InternalServerError(exception.getMessage());`)
-	g.processResponse(w.IndentedWith(1), internalServerError, "internalServerError")
-	w.Line(`}`)
+func (g *SpringGenerator) ContentType(thePackage packages.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
+	files = append(files, *g.contentTypeMismatchException(thePackage))
+	files = append(files, *g.checkContentType(thePackage))
+	return files
 }
 
 func (g *SpringGenerator) contentTypeMismatchException(thePackage packages.Module) *generator.CodeFile {
@@ -216,8 +223,6 @@ func (g *SpringGenerator) contentTypeMismatchException(thePackage packages.Modul
 package [[.PackageName]];
 
 public class ContentTypeMismatchException extends RuntimeException {
-    String expected;
-    String actual;
     public ContentTypeMismatchException(String expected, String actual) {
         super(String.format("Expected Content-Type header: '%s' was not provided, found: '%s'", expected, actual));
     }
@@ -234,23 +239,59 @@ public class ContentTypeMismatchException extends RuntimeException {
 	}
 }
 
-func (g *SpringGenerator) errorsHelpers(thePackage, modelsPackage packages.Module) *generator.CodeFile {
+func (g *SpringGenerator) checkContentType(thePackage packages.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
-import org.springframework.web.bind.MissingRequestHeaderException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.MediaType;
+
+import javax.servlet.http.HttpServletRequest;
+
+public class ContentType {
+	public static void check(HttpServletRequest request, MediaType expectedContentType) {
+		var contentType = request.getHeader("Content-Type");
+		if (contentType == null || !contentType.contains(expectedContentType.toString())) {
+			throw new ContentTypeMismatchException(expectedContentType.toString(), contentType);
+		}
+	}
+}
+`
+	code, _ = generator.ExecuteTemplate(code, struct {
+		PackageName string
+	}{
+		thePackage.PackageName,
+	})
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath("ContentType.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func (g *SpringGenerator) Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
+	files = append(files, *g.errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage))
+	files = append(files, *g.Models.ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage))
+	return files
+}
+
+func (g *SpringGenerator) errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Module) *generator.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import org.springframework.web.bind.*;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 
-import [[.ModelsPackage]].*;
+import [[.ErrorsModelsPackage]].*;
+import [[.ContentTypePackage]].*;
+import [[.JsonPackage]].*;
+
+import static [[.PackageName]].ValidationErrorsHelpers.extractValidationErrors;
 
 public class ErrorsHelpers {
-    private static NotFoundError NOT_FOUND_ERROR = new NotFoundError("Failed to parse url parameters");
+    private static final NotFoundError NOT_FOUND_ERROR = new NotFoundError("Failed to parse url parameters");
 
     public static NotFoundError getNotFoundError(Throwable exception) {
         if (exception instanceof MethodArgumentTypeMismatchException) {
@@ -264,23 +305,22 @@ public class ErrorsHelpers {
 
     public static BadRequestError getBadRequestError(Throwable exception) {
         if (exception instanceof JsonParseException) {
-            var e = (JsonParseException) exception;
-            return new BadRequestError("Failed to parse body", ErrorLocation.BODY, e.getErrors());
+            var errors = extractValidationErrors((JsonParseException)exception);
+            return new BadRequestError("Failed to parse body", ErrorLocation.BODY, errors);
         }
         if (exception instanceof ContentTypeMismatchException) {
             var error = new ValidationError("Content-Type", "missing", exception.getMessage());
             return new BadRequestError("Failed to parse header", ErrorLocation.HEADER, List.of(error));
-
         }
         if (exception instanceof MissingServletRequestParameterException) {
             var e = (MissingServletRequestParameterException) exception;
-            var message = String.format("Failed to parse query");
+            var message = "Failed to parse query";
             var validation = new ValidationError(e.getParameterName(), "missing", e.getMessage());
             return new BadRequestError(message, ErrorLocation.QUERY, List.of(validation));
         }
         if (exception instanceof MethodArgumentTypeMismatchException) {
             var e = (MethodArgumentTypeMismatchException) exception;
-            var message = String.format("Failed to parse query");
+            var message = "Failed to parse query";
             var validation = new ValidationError(e.getName(), "parsing_failed", e.getMessage());
             if (e.getParameter().hasParameterAnnotation(RequestParam.class)) {
                 return new BadRequestError(message, ErrorLocation.QUERY, List.of(validation));
@@ -290,7 +330,7 @@ public class ErrorsHelpers {
         }
         if (exception instanceof MissingRequestHeaderException) {
             var e = (MissingRequestHeaderException) exception;
-            var message = String.format("Failed to parse header");
+            var message = "Failed to parse header";
             var validation = new ValidationError(e.getHeaderName(), "missing", e.getMessage());
             return new BadRequestError(message, ErrorLocation.HEADER, List.of(validation));
         }
@@ -300,12 +340,54 @@ public class ErrorsHelpers {
 `
 
 	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName   string
-		ModelsPackage string
-	}{thePackage.PackageName, modelsPackage.PackageName})
+		PackageName         string
+		ErrorsModelsPackage string
+		ContentTypePackage  string
+		JsonPackage         string
+	}{
+		thePackage.PackageName,
+		errorsModelsPackage.PackageName,
+		contentTypePackage.PackageName,
+		jsonPackage.PackageName,
+	})
 	return &generator.CodeFile{
 		Path:    thePackage.GetPath("ErrorsHelpers.java"),
 		Content: strings.TrimSpace(code),
+	}
+}
+
+func (g *SpringGenerator) JsonHelpers(thePackage packages.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
+
+	files = append(files, *g.Json(thePackage))
+	files = append(files, *g.Models.JsonParseException(thePackage))
+	files = append(files, g.Models.SetupLibrary(thePackage)...)
+
+	return files
+}
+
+func (g *SpringGenerator) Json(thePackage packages.Module) *generator.CodeFile {
+	w := writer.NewJavaWriter()
+	w.Line(`package %s;`, thePackage.PackageName)
+	w.EmptyLine()
+	imports := imports.New()
+	imports.Add(g.Models.ModelsUsageImports()...)
+	imports.Add(`org.springframework.beans.factory.annotation.Autowired`)
+	imports.Add(`org.springframework.stereotype.Component`)
+	imports.Add(`java.io.IOException`)
+	imports.Write(w)
+	w.EmptyLine()
+	w.Line(`@Component`)
+	className := `Json`
+	w.Line(`public class %s {`, className)
+	w.EmptyLine()
+	g.Models.CreateJsonMapperField(w.Indented(), "@Autowired")
+	w.Line(g.Models.JsonHelpersMethods())
+	w.Line(`}`)
+
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath(fmt.Sprintf("%s.java", className)),
+		Content: w.String(),
 	}
 }
 

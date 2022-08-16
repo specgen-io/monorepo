@@ -2,14 +2,14 @@ package models
 
 import (
 	"fmt"
+	"java/imports"
+	"java/writer"
+	"spec"
 	"strings"
 
 	"generator"
-	"java/imports"
 	"java/packages"
 	"java/types"
-	"java/writer"
-	"spec"
 )
 
 var Jackson = "jackson"
@@ -22,144 +22,9 @@ func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 	return &JacksonGenerator{types}
 }
 
-func (g *JacksonGenerator) ModelsDefinitionsImports() []string {
-	return []string{
-		`com.fasterxml.jackson.databind.*`,
-		`com.fasterxml.jackson.annotation.*`,
-		`com.fasterxml.jackson.annotation.JsonSubTypes.*`,
-		`com.fasterxml.jackson.core.type.TypeReference`,
-	}
-}
-
-func (g *JacksonGenerator) ModelsUsageImports() []string {
-	return []string{
-		`com.fasterxml.jackson.databind.ObjectMapper`,
-		`com.fasterxml.jackson.core.type.TypeReference`,
-	}
-}
-
-func (g *JacksonGenerator) SetupImport(jsonPackage packages.Module) string {
-	return fmt.Sprintf(`static %s.Json.setupObjectMapper`, jsonPackage.PackageName)
-}
-
-func (g *JacksonGenerator) CreateJsonMapperField(w *generator.Writer, annotation string) {
-	if annotation != "" {
-		w.Line(annotation)
-	}
-	w.Line(`private ObjectMapper objectMapper;`)
-	w.EmptyLine()
-	w.Line(`private String writeJson(Object result) {`)
-	w.Line(`  try {`)
-	w.Line(`    return objectMapper.writeValueAsString(result);`)
-	w.Line(`  } catch (Exception exception) {`)
-	w.Line(`    throw new RuntimeException(exception);`)
-	w.Line(`  }`)
-	w.Line(`}`)
-}
-
-func (g *JacksonGenerator) InitJsonMapper(w *generator.Writer) {
-	w.Line(`this.objectMapper = new ObjectMapper();`)
-	w.Line(`setupObjectMapper(objectMapper);`)
-}
-
-func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
-	return fmt.Sprintf(`objectMapper.readValue(%s, new TypeReference<%s>() {})`, varJson, g.Types.Java(typ)), `IOException`
-}
-
-func (g *JacksonGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
-	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `Exception`
-}
-
-func (g *JacksonGenerator) WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string {
-	return fmt.Sprintf(`writeJson(%s)`, varData)
-}
-
-func (g *JacksonGenerator) SetupLibrary(thePackage packages.Module) []generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.datatype.jsr310.*;
-
-public class Json {
-	public static void setupObjectMapper(ObjectMapper objectMapper) {
-		objectMapper
-			.registerModule(new JavaTimeModule())
-			.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-			.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-	}
-}
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return []generator.CodeFile{{
-		Path:    thePackage.GetPath("Json.java"),
-		Content: strings.TrimSpace(code),
-	}}
-}
-
-func (g *JacksonGenerator) GenerateJsonParseException(thePackage, modelsPackage packages.Module) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import java.util.*;
-import [[.ModelsPackage]];
-
-public class JsonParseException extends RuntimeException {
-    private List<ValidationError> errors;
-    public List<ValidationError> getErrors() {
-        return errors;
-    }
-
-    public JsonParseException(Throwable exception) {
-        super ("Failed to parse body: "+exception.getMessage(), exception);
-        this.errors = extractErrors(exception);
-    }
-
-	private static List<ValidationError> extractErrors(Throwable exception) {
-		if (exception instanceof InvalidFormatException) {
-			var jsonPath = getJsonPath((InvalidFormatException)exception);
-			var validation = new ValidationError(jsonPath, "parsing_failed", exception.getMessage());
-			return List.of(validation);
-		}
-		return null;
-	}
-
-	private static String getJsonPath(InvalidFormatException exception) {
-		var path = new StringBuilder("");
-		for (int i = 0; i < exception.getPath().size(); i++) {
-			var reference = exception.getPath().get(i);
-			if (reference.getIndex() != -1) {
-				path.append("[").append(reference.getIndex()).append("]");
-			} else {
-				if (i != 0) {
-					path.append(".");
-				}
-				path.append(reference.getFieldName());
-			}
-		}
-		return path.toString();
-	}
-}
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName   string
-		ModelsPackage string
-	}{
-		thePackage.PackageName,
-		modelsPackage.PackageStar,
-	})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("JsonParseException.java"),
-		Content: strings.TrimSpace(code),
-	}
-}
-
-func (g *JacksonGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile {
+func (g *JacksonGenerator) ResolvedModels(models []*spec.NamedModel, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
-	for _, model := range version.ResolvedModels {
+	for _, model := range models {
 		if model.IsObject() {
 			files = append(files, *g.modelObject(model, thePackage))
 		} else if model.IsOneOf() {
@@ -333,4 +198,172 @@ func (g *JacksonGenerator) modelOneOfImplementation(w *generator.Writer, item *s
 	addOneOfModelMethods(w, item)
 	w.Unindent()
 	w.Line(`}`)
+}
+
+func (g *JacksonGenerator) JsonRead(varJson string, typ *spec.TypeDef) string {
+	return fmt.Sprintf(`%s, new TypeReference<%s>() {}`, varJson, g.Types.Java(typ))
+}
+
+func (g *JacksonGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
+	return varData
+}
+
+func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
+	return fmt.Sprintf(`objectMapper.readValue(%s, new TypeReference<%s>() {})`, varJson, g.Types.Java(typ)), `IOException`
+}
+
+func (g *JacksonGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
+	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `Exception`
+}
+
+func (g *JacksonGenerator) WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string {
+	return fmt.Sprintf(`writeJson(%s)`, varData)
+}
+
+func (g *JacksonGenerator) ModelsDefinitionsImports() []string {
+	return []string{
+		`com.fasterxml.jackson.databind.*`,
+		`com.fasterxml.jackson.annotation.*`,
+		`com.fasterxml.jackson.annotation.JsonSubTypes.*`,
+		`com.fasterxml.jackson.core.type.TypeReference`,
+	}
+}
+
+func (g *JacksonGenerator) ModelsUsageImports() []string {
+	return []string{
+		`com.fasterxml.jackson.core.type.TypeReference`,
+		`com.fasterxml.jackson.databind.ObjectMapper`,
+	}
+}
+
+func (g *JacksonGenerator) SetupImport(jsonPackage packages.Module) string {
+	return fmt.Sprintf(`static %s.CustomObjectMapper.setup`, jsonPackage.PackageName)
+}
+
+func (g *JacksonGenerator) JsonParseException(thePackage packages.Module) *generator.CodeFile {
+	code := `
+package [[.PackageName]];
+
+public class JsonParseException extends RuntimeException {
+	public JsonParseException(Throwable exception) {
+		super("Failed to parse body: " + exception.getMessage(), exception);
+	}
+}
+`
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath("JsonParseException.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func (g *JacksonGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Module) *generator.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import [[.JsonPackage]].*;
+import [[.ErrorsModelsPackage]].*;
+
+import java.util.List;
+
+public class ValidationErrorsHelpers {
+	public static List<ValidationError> extractValidationErrors(JsonParseException exception) {
+		var causeException = exception.getCause();
+		if (causeException instanceof InvalidFormatException) {
+			var jsonPath = getJsonPath((InvalidFormatException) causeException);
+			var validation = new ValidationError(jsonPath, "parsing_failed", exception.getMessage());
+			return List.of(validation);
+		}
+		return null;
+	}
+
+	private static String getJsonPath(InvalidFormatException exception) {
+		var path = new StringBuilder();
+		for (int i = 0; i < exception.getPath().size(); i++) {
+			var reference = exception.getPath().get(i);
+			if (reference.getIndex() != -1) {
+				path.append("[").append(reference.getIndex()).append("]");
+			} else {
+				if (i != 0) {
+					path.append(".");
+				}
+				path.append(reference.getFieldName());
+			}
+		}
+		return path.toString();
+	}
+}
+`
+
+	code, _ = generator.ExecuteTemplate(code, struct {
+		PackageName         string
+		ErrorsModelsPackage string
+		JsonPackage         string
+	}{
+		thePackage.PackageName,
+		errorsModelsPackage.PackageName,
+		jsonPackage.PackageName,
+	})
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath("ValidationErrorsHelpers.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func (g *JacksonGenerator) CreateJsonMapperField(w *generator.Writer, annotation string) {
+	if annotation != "" {
+		w.Line(annotation)
+	}
+	w.Line(`private ObjectMapper objectMapper;`)
+}
+
+func (g *JacksonGenerator) InitJsonMapper(w *generator.Writer) {
+	w.Line(`this.objectMapper = new ObjectMapper();`)
+	w.Line(`CustomObjectMapper.setup(objectMapper);`)
+}
+
+func (g *JacksonGenerator) JsonHelpersMethods() string {
+	return `
+	public String write(Object data) {
+		try {
+			return objectMapper.writeValueAsString(data);
+		} catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
+	}
+	
+	public <T> T read(String jsonStr, TypeReference<T> typeReference) {
+		try {
+			return objectMapper.readValue(jsonStr, typeReference);
+		} catch (IOException exception) {
+			throw new JsonParseException(exception);
+		}
+	}
+`
+}
+
+func (g *JacksonGenerator) SetupLibrary(thePackage packages.Module) []generator.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.datatype.jsr310.*;
+
+public class CustomObjectMapper {
+	public static void setup(ObjectMapper objectMapper) {
+		objectMapper
+			.registerModule(new JavaTimeModule())
+			.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+			.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+	}
+}
+`
+
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return []generator.CodeFile{{
+		Path:    thePackage.GetPath("CustomObjectMapper.java"),
+		Content: strings.TrimSpace(code),
+	}}
 }
