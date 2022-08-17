@@ -406,7 +406,6 @@ func (g *MicronautGenerator) Json(thePackage packages.Module) *generator.CodeFil
 	imports := imports.New()
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(`jakarta.inject.*`)
-	imports.Add(`java.lang.reflect.ParameterizedType`)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Singleton`)
