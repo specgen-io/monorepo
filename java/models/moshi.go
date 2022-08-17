@@ -452,7 +452,7 @@ public class BigDecimalAdapter {
 	public BigDecimal fromJson(JsonReader reader) throws IOException {
 		var token = reader.peek();
 		if (token != JsonReader.Token.NUMBER) {
-			throw new ValidationError("BigDecimal should be represented as number in JSON, found: "+token.name());
+			throw new JsonDataException("BigDecimal should be represented as number in JSON, found: "+token.name());
 		}
 		var source = reader.nextSource();
 		return new BigDecimal(new String(source.readByteArray(), StandardCharsets.UTF_8));
@@ -736,12 +736,12 @@ public final class UnionAdapterFactory<T> implements JsonAdapter.Factory {
 
                     int tagIndex = peeked.selectString(tagsOptions);
                     if (tagIndex == -1 && this.fallbackAdapter == null) {
-                        throw new ValidationError("Expected one of " + tags + " for key '" + discriminator + "' but found '" + peeked.nextString() + "'. Register a subtype for this tag.");
+                        throw new JsonDataException("Expected one of " + tags + " for key '" + discriminator + "' but found '" + peeked.nextString() + "'. Register a subtype for this tag.");
                     }
                     return tagIndex;
                 }
 
-                throw new ValidationError("Missing discriminator field " + discriminator);
+                throw new JsonDataException("Missing discriminator field " + discriminator);
             } finally {
                 peeked.close();
             }
@@ -818,7 +818,7 @@ public final class UnionAdapterFactory<T> implements JsonAdapter.Factory {
                 peeked.beginObject();
                 int tagIndex = peeked.selectName(tagsOptions);
                 if (tagIndex == -1 && this.fallbackAdapter == null) {
-                    throw new ValidationError("Expected one of keys:" + tags + "' but found '" + peeked.nextString() + "'. Register a subtype for this tag.");
+                    throw new JsonDataException("Expected one of keys:" + tags + "' but found '" + peeked.nextString() + "'. Register a subtype for this tag.");
                 }
                 return tagIndex;
             } finally {
