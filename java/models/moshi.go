@@ -275,7 +275,7 @@ func (g *MoshiGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage
 	code := `
 package [[.PackageName]];
 
-import com.squareup.moshi.JsonDataException;
+import [[.JsonPackage]].*;
 import [[.ErrorsModelsPackage]].*;
 
 import java.util.List;
@@ -284,14 +284,11 @@ import java.util.regex.Pattern;
 public class ValidationErrorsHelpers {
 	private static final Pattern pathPattern = Pattern.compile("\\$\\.([^ ]+)");
 
-	public static List<ValidationError> extractValidationErrors(Throwable exception) {
-		if (exception instanceof JsonDataException) {
-			var e = (JsonDataException) exception;
-			var matcher = pathPattern.matcher(e.getMessage());
-			if (matcher.find()) {
-				var jsonPath = matcher.group(1);
-				return List.of(new ValidationError(jsonPath, "parsing_failed", exception.getMessage()));
-			}
+	public static List<ValidationError> extractValidationErrors(JsonParseException exception) {
+		var matcher = pathPattern.matcher(exception.getMessage());
+		if (matcher.find()) {
+			var jsonPath = matcher.group(1);
+			return List.of(new ValidationError(jsonPath, "parsing_failed", exception.getMessage()));
 		}
 		return null;
 	}
@@ -301,9 +298,11 @@ public class ValidationErrorsHelpers {
 	code, _ = generator.ExecuteTemplate(code, struct {
 		PackageName         string
 		ErrorsModelsPackage string
+		JsonPackage         string
 	}{
 		thePackage.PackageName,
 		errorsModelsPackage.PackageName,
+		jsonPackage.PackageName,
 	})
 	return &generator.CodeFile{
 		Path:    thePackage.GetPath("ValidationErrorsHelpers.java"),
