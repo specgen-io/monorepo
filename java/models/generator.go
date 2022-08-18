@@ -10,18 +10,23 @@ import (
 )
 
 type Generator interface {
-	SetupLibrary(thePackage packages.Module) []generator.CodeFile
+	ResolvedModels(models []*spec.NamedModel, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile
+	ModelsDefinitionsImports() []string
+	ModelsUsageImports() []string
 	SetupImport(jsonPackage packages.Module) string
-	VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile
+	SetupLibrary(thePackage packages.Module) []generator.CodeFile
+	JsonHelpersMethods() string
+	JsonParseException(thePackage packages.Module) *generator.CodeFile
+	ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Module) *generator.CodeFile
+	CreateJsonMapperField(w *generator.Writer, annotation string)
+	InitJsonMapper(w *generator.Writer)
+
+	JsonRead(varJson string, typ *spec.TypeDef) string
+	JsonWrite(varData string, typ *spec.TypeDef) string
+
 	ReadJson(jsonStr string, typ *spec.TypeDef) (string, string)
 	WriteJson(varData string, typ *spec.TypeDef) (string, string)
 	WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string
-	CreateJsonMapperField(w *generator.Writer, annotation string)
-	InitJsonMapper(w *generator.Writer)
-	ModelsDefinitionsImports() []string
-	ModelsUsageImports() []string
-
-	GenerateJsonParseException(thePackage, modelsPackage packages.Module) *generator.CodeFile
 }
 
 func NewGenerator(jsonlib string) Generator {
@@ -37,10 +42,10 @@ func NewGenerator(jsonlib string) Generator {
 
 func NewTypes(jsonlib string) *types.Types {
 	if jsonlib == Jackson {
-		return &types.Types{"JsonNode"}
+		return &types.Types{RawJsonType: "JsonNode"}
 	}
 	if jsonlib == Moshi {
-		return &types.Types{"Map<String, Object>"}
+		return &types.Types{RawJsonType: "Map<String, Object>"}
 	}
 	panic(fmt.Sprintf(`Unsupported jsonlib: %s`, jsonlib))
 }
