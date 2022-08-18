@@ -35,8 +35,8 @@ build()
   fi
   echo 'Successfully built'
 
-  #zip "./zips/${NAME}_${GOOS}_${GOARCH}.zip" "./dist/${GOOS}_${GOARCH}/${EXECNAME}" -q -j
-  #echo 'Successfully zipped'
+  zip "./zips/${NAME}_${GOOS}_${GOARCH}.zip" "./dist/${GOOS}_${GOARCH}/${EXECNAME}" -q -j
+  echo 'Successfully zipped'
 }
 
 build windows amd64
