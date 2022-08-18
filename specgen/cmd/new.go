@@ -55,7 +55,7 @@ var cmdNew = &cobra.Command{
 		var valuesJsonData []byte = nil
 		if valuesJsonPath != "" {
 			data, err := ioutil.ReadFile(valuesJsonPath)
-			FailIfError(err, `Failed to read arguments JSON file "%s"`, valuesJsonPath)
+			FailIfErrorF(err, `Failed to read arguments JSON file "%s"`, valuesJsonPath)
 			valuesJsonData = data
 		}
 
