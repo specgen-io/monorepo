@@ -5,7 +5,9 @@ if [ -n "$1" ]; then
     VERSION=$1
 fi
 
-echo "Building version: $VERSION"
+NAME="specgen"
+
+echo "Building $NAME version: $VERSION"
 
 echo "Stamping version to the source code: $VERSION"
 cat <<END > ./version/version.go
@@ -15,12 +17,15 @@ var Current = "$VERSION"
 
 END
 
-
 build()
 {
   GOOS=$1
   GOARCH=$2
-  EXECNAME=$3
+
+  EXECNAME=$NAME
+  if [[ $GOOS == windows ]]]; then
+    EXECNAME=${NAME}.exe
+  fi
 
   echo "Building ${GOOS}_${GOARCH}/${EXECNAME}"
   env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-s -w" -o ./dist/${GOOS}_${GOARCH}/${EXECNAME} main.go
@@ -31,9 +36,9 @@ build()
   echo 'Successfully built'
 }
 
-build windows amd64 specgen.exe
-build darwin amd64 specgen
-build darwin arm64 specgen
-build linux amd64 specgen
+build windows amd64
+build darwin amd64
+build darwin arm64
+build linux amd64
 
 echo "Done building version: $VERSION"
