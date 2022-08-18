@@ -22,8 +22,8 @@ build()
   GOOS=$1
   GOARCH=$2
 
-  EXECNAME=$NAME
-  if [[ $GOOS == windows ]]]; then
+  EXECNAME=${NAME}
+  if [[ $GOOS == windows ]]; then
     EXECNAME=${NAME}.exe
   fi
 
@@ -34,6 +34,9 @@ build()
       exit 1
   fi
   echo 'Successfully built'
+
+  #zip "./zips/${NAME}_${GOOS}_${GOARCH}.zip" "./dist/${GOOS}_${GOARCH}/${EXECNAME}" -q -j
+  #echo 'Successfully zipped'
 }
 
 build windows amd64
