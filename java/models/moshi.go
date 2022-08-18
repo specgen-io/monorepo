@@ -23,124 +23,10 @@ func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
 	return &MoshiGenerator{[]string{}, types}
 }
 
-func (g *MoshiGenerator) ModelsDefinitionsImports() []string {
-	return []string{
-		`com.squareup.moshi.Json`,
-		`com.squareup.moshi.Moshi`,
-		`com.squareup.moshi.Types`,
-	}
-}
-
-func (g *MoshiGenerator) ModelsUsageImports() []string {
-	return []string{
-		`com.squareup.moshi.Moshi`,
-		`com.squareup.moshi.Types`,
-	}
-}
-
-func (g *MoshiGenerator) SetupImport(jsonPackage packages.Module) string {
-	return fmt.Sprintf(`static %s.Json.setupMoshiAdapters`, jsonPackage.PackageName)
-}
-
-func (g *MoshiGenerator) CreateJsonMapperField(w *generator.Writer, annotation string) {
-	if annotation != "" {
-		w.Line(annotation)
-	}
-	w.Line(`private Moshi moshi;`)
-}
-
-func (g *MoshiGenerator) InitJsonMapper(w *generator.Writer) {
-	w.Line(`Moshi.Builder moshiBuilder = new Moshi.Builder();`)
-	w.Line(`setupMoshiAdapters(moshiBuilder);`)
-	w.Line(`this.moshi = moshiBuilder.build();`)
-}
-
-func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
-	adapter := fmt.Sprintf(`adapter(%s.class)`, g.Types.Java(typ))
-
-	if typ.Node == spec.MapType {
-		typeJava := g.Types.Java(typ.Child)
-		adapter = fmt.Sprintf(`<Map<String, %s>>adapter(Types.newParameterizedType(Map.class, String.class, %s.class))`, typeJava, typeJava)
-	}
-	if typ.Node == spec.ArrayType {
-		typeJava := g.Types.Java(typ.Child)
-		adapter = fmt.Sprintf(`<List<%s>>adapter(Types.newParameterizedType(List.class, %s.class))`, typeJava, typeJava)
-	}
-
-	return fmt.Sprintf(`moshi.%s.fromJson(%s)`, adapter, varJson), `Exception`
-}
-
-func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
-	adapterParam := fmt.Sprintf(`%s.class`, g.Types.Java(typ))
-
-	if typ.Node == spec.MapType {
-		typeJava := g.Types.Java(typ.Child)
-		adapterParam = fmt.Sprintf(`Types.newParameterizedType(Map.class, String.class, %s.class)`, typeJava)
-	}
-	if typ.Node == spec.ArrayType {
-		typeJava := g.Types.Java(typ.Child)
-		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List.class, %s.class)`, typeJava)
-	}
-
-	return fmt.Sprintf(`moshi.adapter(%s).toJson(%s)`, adapterParam, varData), `AssertionError`
-}
-
-func (g *MoshiGenerator) WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string {
-	statement, _ := g.WriteJson(varData, typ)
-	return statement
-}
-
-func (g *MoshiGenerator) GenerateJsonParseException(thePackage, modelsPackage packages.Module) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
-import java.util.*;
-import java.util.regex.Pattern;
-import com.squareup.moshi.JsonDataException;
-import [[.ModelsPackage]];
-
-public class JsonParseException extends RuntimeException {
-    private List<ValidationError> errors;
-    public List<ValidationError> getErrors() {
-        return errors;
-    }
-
-    public JsonParseException(Throwable exception) {
-        super ("Failed to parse body: "+exception.getMessage(), exception);
-        this.errors = extractErrors(exception);
-    }
-
-    private static final Pattern pathPattern = Pattern.compile("\\$\\.([^ ]+)");
-    private static List<ValidationError> extractErrors(Throwable exception) {
-        if (exception instanceof JsonDataException) {
-            var e = (JsonDataException) exception;
-            var matcher = pathPattern.matcher(e.getMessage());
-            if (matcher.find()) {
-                var jsonPath = matcher.group(1);
-                return List.of(new ValidationError(jsonPath, "parsing_failed", exception.getMessage()));
-            }
-        }
-        return null;
-    }
-}
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName   string
-		ModelsPackage string
-	}{
-		thePackage.PackageName,
-		modelsPackage.PackageStar,
-	})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("JsonParseException.java"),
-		Content: strings.TrimSpace(code),
-	}
-}
-
-func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile {
+func (g *MoshiGenerator) ResolvedModels(models []*spec.NamedModel, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
-	for _, model := range version.ResolvedModels {
+	for _, model := range models {
 		if model.IsObject() {
 			files = append(files, *g.modelObject(model, thePackage))
 		} else if model.IsOneOf() {
@@ -150,10 +36,10 @@ func (g *MoshiGenerator) VersionModels(version *spec.Version, thePackage package
 		}
 	}
 
-	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.Json.setupModelsMoshiAdapters`, thePackage.PackageName))
+	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.ModelsMoshiAdapters.setup`, thePackage.PackageName))
 	adaptersPackage := jsonPackage.Subpackage("adapters")
 	for range g.generatedSetupMoshiMethods {
-		files = append(files, *g.setupOneOfAdapters(version, thePackage, adaptersPackage))
+		files = append(files, *g.setupOneOfAdapters(models, thePackage, adaptersPackage))
 	}
 
 	return files
@@ -283,6 +169,188 @@ func (g *MoshiGenerator) modelOneOfImplementation(w *generator.Writer, item *spe
 	w.Line(`}`)
 }
 
+func (g *MoshiGenerator) JsonRead(varJson string, typ *spec.TypeDef) string {
+	adapterParam := fmt.Sprintf(`%s.class`, g.Types.Java(typ))
+
+	if typ.Node == spec.MapType {
+		typeJava := g.Types.Java(typ.Child)
+		adapterParam = fmt.Sprintf(`Types.newParameterizedType(Map.class, String.class, %s.class)`, typeJava)
+	}
+	if typ.Node == spec.ArrayType {
+		typeJava := g.Types.Java(typ.Child)
+		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List.class, %s.class)`, typeJava)
+	}
+
+	return fmt.Sprintf(`%s, %s`, varJson, adapterParam)
+}
+
+func (g *MoshiGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
+	adapterParam := fmt.Sprintf(`%s.class`, g.Types.Java(typ))
+
+	if typ.Node == spec.MapType {
+		typeJava := g.Types.Java(typ.Child)
+		adapterParam = fmt.Sprintf(`Types.newParameterizedType(Map.class, String.class, %s.class)`, typeJava)
+	}
+	if typ.Node == spec.ArrayType {
+		typeJava := g.Types.Java(typ.Child)
+		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List.class, %s.class)`, typeJava)
+	}
+
+	return fmt.Sprintf(`%s, %s`, adapterParam, varData)
+}
+
+func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
+	adapter := fmt.Sprintf(`adapter(%s.class)`, g.Types.Java(typ))
+
+	if typ.Node == spec.MapType {
+		typeJava := g.Types.Java(typ.Child)
+		adapter = fmt.Sprintf(`<Map<String, %s>>adapter(Types.newParameterizedType(Map.class, String.class, %s.class))`, typeJava, typeJava)
+	}
+	if typ.Node == spec.ArrayType {
+		typeJava := g.Types.Java(typ.Child)
+		adapter = fmt.Sprintf(`<List<%s>>adapter(Types.newParameterizedType(List.class, %s.class))`, typeJava, typeJava)
+	}
+
+	return fmt.Sprintf(`moshi.%s.fromJson(%s)`, adapter, varJson), `Exception`
+}
+
+func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
+	adapterParam := fmt.Sprintf(`%s.class`, g.Types.Java(typ))
+
+	if typ.Node == spec.MapType {
+		typeJava := g.Types.Java(typ.Child)
+		adapterParam = fmt.Sprintf(`Types.newParameterizedType(Map.class, String.class, %s.class)`, typeJava)
+	}
+	if typ.Node == spec.ArrayType {
+		typeJava := g.Types.Java(typ.Child)
+		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List.class, %s.class)`, typeJava)
+	}
+
+	return fmt.Sprintf(`moshi.adapter(%s).toJson(%s)`, adapterParam, varData), `AssertionError`
+}
+
+func (g *MoshiGenerator) WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string {
+	statement, _ := g.WriteJson(varData, typ)
+	return statement
+}
+
+func (g *MoshiGenerator) ModelsDefinitionsImports() []string {
+	return []string{
+		`com.squareup.moshi.Json`,
+		`com.squareup.moshi.Moshi`,
+		`com.squareup.moshi.Types`,
+	}
+}
+
+func (g *MoshiGenerator) ModelsUsageImports() []string {
+	return []string{
+		`com.squareup.moshi.Moshi`,
+		`com.squareup.moshi.Types`,
+		`java.lang.reflect.ParameterizedType`,
+	}
+}
+
+func (g *MoshiGenerator) SetupImport(jsonPackage packages.Module) string {
+	return fmt.Sprintf(`static %s.CustomMoshiAdapters.setup`, jsonPackage.PackageName)
+}
+
+func (g *MoshiGenerator) JsonParseException(thePackage packages.Module) *generator.CodeFile {
+	code := `
+package [[.PackageName]];
+
+public class JsonParseException extends RuntimeException {
+	public JsonParseException(Throwable exception) {
+		super("Failed to parse body: " + exception.getMessage(), exception);
+	}
+}
+`
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath("JsonParseException.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func (g *MoshiGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Module) *generator.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import [[.JsonPackage]].*;
+import [[.ErrorsModelsPackage]].*;
+
+import java.util.List;
+import java.util.regex.Pattern;
+
+public class ValidationErrorsHelpers {
+	private static final Pattern pathPattern = Pattern.compile("\\$\\.([^ ]+)");
+
+	public static List<ValidationError> extractValidationErrors(JsonParseException exception) {
+		var matcher = pathPattern.matcher(exception.getMessage());
+		if (matcher.find()) {
+			var jsonPath = matcher.group(1);
+			return List.of(new ValidationError(jsonPath, "parsing_failed", exception.getMessage()));
+		}
+		return null;
+	}
+}
+`
+
+	code, _ = generator.ExecuteTemplate(code, struct {
+		PackageName         string
+		ErrorsModelsPackage string
+		JsonPackage         string
+	}{
+		thePackage.PackageName,
+		errorsModelsPackage.PackageName,
+		jsonPackage.PackageName,
+	})
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath("ValidationErrorsHelpers.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func (g *MoshiGenerator) CreateJsonMapperField(w *generator.Writer, annotation string) {
+	if annotation != "" {
+		w.Line(annotation)
+	}
+	w.Line(`private Moshi moshi;`)
+}
+
+func (g *MoshiGenerator) InitJsonMapper(w *generator.Writer) {
+	w.Line(`Moshi.Builder moshiBuilder = new Moshi.Builder();`)
+	w.Line(`CustomMoshiAdapters.setup(moshiBuilder);`)
+	w.Line(`this.moshi = moshiBuilder.build();`)
+}
+
+func (g *MoshiGenerator) JsonHelpersMethods() string {
+	return `
+	public <T> String write(Class<T> type, T data) {
+		return moshi.adapter(type).toJson(data);
+	}
+
+	public <T> String write(ParameterizedType type, T data) {
+		return moshi.adapter(type).toJson(data);
+	}
+
+	public <T> T read(String jsonStr, Class<T> type) {
+		try {
+			return moshi.adapter(type).fromJson(jsonStr);
+		} catch (Exception exception) {
+			throw new JsonParseException(exception);
+		}
+	}
+
+	public <T> T read(String jsonStr, ParameterizedType type) {
+		try {
+			return moshi.<T>adapter(type).fromJson(jsonStr);
+		} catch (Exception exception) {
+			throw new JsonParseException(exception);
+		}
+	}
+`
+}
+
 func (g *MoshiGenerator) SetupLibrary(thePackage packages.Module) []generator.CodeFile {
 	adaptersPackage := thePackage.Subpackage("adapters")
 
@@ -306,8 +374,8 @@ func (g *MoshiGenerator) setupAdapters(thePackage packages.Module, adaptersPacka
 	imports.Add(adaptersPackage.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`public class Json {`)
-	w.Line(`  public static void setupMoshiAdapters(Moshi.Builder moshiBuilder) {`)
+	w.Line(`public class CustomMoshiAdapters {`)
+	w.Line(`  public static void setup(Moshi.Builder moshiBuilder) {`)
 	w.Line(`    moshiBuilder`)
 	w.Line(`      .add(new BigDecimalAdapter())`)
 	w.Line(`      .add(new UuidAdapter())`)
@@ -321,12 +389,12 @@ func (g *MoshiGenerator) setupAdapters(thePackage packages.Module, adaptersPacka
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("Json.java"),
+		Path:    thePackage.GetPath("CustomMoshiAdapters.java"),
 		Content: w.String(),
 	}
 }
 
-func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage packages.Module, adaptersPackage packages.Module) *generator.CodeFile {
+func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, thePackage packages.Module, adaptersPackage packages.Module) *generator.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -335,9 +403,9 @@ func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage pa
 	imports.Add(adaptersPackage.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`public class Json {`)
-	w.Line(`  public static void setupModelsMoshiAdapters(Moshi.Builder moshiBuilder) {`)
-	for _, model := range version.ResolvedModels {
+	w.Line(`public class ModelsMoshiAdapters {`)
+	w.Line(`  public static void setup(Moshi.Builder moshiBuilder) {`)
+	for _, model := range models {
 		if model.IsOneOf() {
 			w.IndentWith(2)
 			w.Line(`moshiBuilder`)
@@ -362,7 +430,7 @@ func (g *MoshiGenerator) setupOneOfAdapters(version *spec.Version, thePackage pa
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("Json.java"),
+		Path:    thePackage.GetPath("ModelsMoshiAdapters.java"),
 		Content: w.String(),
 	}
 }
