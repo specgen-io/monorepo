@@ -46,7 +46,7 @@ jobs:
       - run:
           name: Release vendored module
           command: |
-            go install github.com/specgen-io/goven@v0.0.9
+            go install github.com/specgen-io/goven@v0.0.10
             cd ./specgen
             goven release -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
             go install github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>-alpha
@@ -60,7 +60,7 @@ jobs:
       - run:
           name: Release vendored module
           command: |
-            go install github.com/specgen-io/goven@v0.0.9
+            go install github.com/specgen-io/goven@v0.0.10
             cd ./golang
             goven release -name github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
             go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>-alpha
