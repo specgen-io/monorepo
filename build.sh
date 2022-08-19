@@ -17,6 +17,8 @@ var Current = "$VERSION"
 
 END
 
+mkdir zips
+
 build()
 {
   GOOS=$1
