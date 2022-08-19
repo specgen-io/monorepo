@@ -38,17 +38,23 @@ jobs:
           paths:
             - specgen/dist
       - run:
+          name: Release
+          command: |
+            cd specgen
+            ./release.sh <<pipeline.parameters.specgen-version>> artifactory
+      - run:
           name: Cleanup
           command: |
-            rm -rf ./specgen/zips
-            rm -rf ./specgen/dist
-            rm -rf ./specgen/test-results
-            rm ./specgen/release.sh
+            cd specgen
+            rm -rf ./zips
+            rm -rf ./dist
+            rm -rf ./test-results
+            rm ./release.sh
       - run:
           name: Release vendored module
           command: |
+            cd specgen
             go install github.com/specgen-io/goven@v0.0.10
-            cd ./specgen
             goven release -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
             go install github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>-alpha
 
@@ -473,7 +479,7 @@ jobs:
           name: Release
           command: |
             cd specgen
-            ./release.sh <<pipeline.parameters.specgen-version>> specgen-io specgen ${GITHUB_TOKEN}
+            ./release.sh <<pipeline.parameters.specgen-version>> github+artifactory
 
 commands:
   attach_workspace_folder:

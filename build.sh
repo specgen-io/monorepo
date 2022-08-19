@@ -17,8 +17,6 @@ var Current = "$VERSION"
 
 END
 
-mkdir zips
-
 build()
 {
   GOOS=$1
@@ -36,9 +34,6 @@ build()
       exit 1
   fi
   echo 'Successfully built'
-
-  zip "./zips/${NAME}_${GOOS}_${GOARCH}.zip" "./dist/${GOOS}_${GOARCH}/${EXECNAME}" -q -j
-  echo 'Successfully zipped'
 }
 
 build windows amd64
