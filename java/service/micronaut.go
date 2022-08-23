@@ -46,6 +46,7 @@ func (g *MicronautGenerator) ServiceImports() []string {
 		`org.slf4j.*`,
 		`io.micronaut.http.*`,
 		`io.micronaut.http.annotation.*`,
+		`jakarta.inject.Inject`,
 	}
 }
 
@@ -56,7 +57,6 @@ func (g *MicronautGenerator) ExceptionController(responses *spec.Responses, theP
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`io.micronaut.http.annotation.Error`)
-	imports.Add(`jakarta.inject.Inject`)
 	imports.Add(jsonPackage.PackageStar)
 	imports.Add(errorsModelsPackage.PackageStar)
 	imports.AddStatic(errorsPackage.Subpackage("ErrorsHelpers").PackageStar)
@@ -106,7 +106,6 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, conten
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`io.micronaut.core.annotation.Nullable`)
-	imports.Add(`jakarta.inject.Inject`)
 	imports.Add(contentTypePackage.PackageStar)
 	imports.Add(jsonPackage.PackageStar)
 	imports.Add(modelsVersionPackage.PackageStar)
@@ -405,15 +404,14 @@ func (g *MicronautGenerator) Json(thePackage packages.Module) *generator.CodeFil
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(`jakarta.inject.*`)
 	imports.Add(`java.io.IOException`)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Singleton`)
 	className := `Json`
 	w.Line(`public class %s {`, className)
-	w.EmptyLine()
 	g.Models.CreateJsonMapperField(w.Indented(), "@Inject")
+	w.EmptyLine()
 	w.Line(g.Models.JsonHelpersMethods())
 	w.Line(`}`)
 

@@ -23,7 +23,7 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, gene
 		versionPackage := mainPackage.Subpackage(version.Name.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		sources.AddGeneratedAll(generator.VersionModels(&version, modelsVersionPackage, jsonPackage))
+		sources.AddGeneratedAll(generator.Models(version.ResolvedModels, modelsVersionPackage, jsonPackage))
 	}
 
 	sources.AddGeneratedAll(generator.SetupLibrary(jsonPackage))
