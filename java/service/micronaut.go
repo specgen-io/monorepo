@@ -404,6 +404,7 @@ func (g *MicronautGenerator) Json(thePackage packages.Module) *generator.CodeFil
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.Models.ModelsUsageImports()...)
+	imports.Add(`jakarta.inject.*`)
 	imports.Add(`java.io.IOException`)
 	imports.Write(w)
 	w.EmptyLine()

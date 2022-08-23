@@ -207,6 +207,7 @@ func (g *SpringGenerator) checkContentType(thePackage modules.Module) *generator
 package [[.PackageName]]
 
 import javax.servlet.http.HttpServletRequest
+import org.springframework.http.MediaType
 
 fun checkContentType(request: HttpServletRequest, expectedContentType: MediaType) {
 	val contentType = request.getHeader("Content-Type")
