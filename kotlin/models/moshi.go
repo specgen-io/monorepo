@@ -319,7 +319,7 @@ func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, thePackag
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("Json.kt"),
+		Path:    thePackage.GetPath("ModelsMoshiAdapters.kt"),
 		Content: w.String(),
 	}
 }
