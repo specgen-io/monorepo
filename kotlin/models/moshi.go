@@ -225,7 +225,7 @@ func (g *MoshiGenerator) JsonHelpersMethods() string {
     fun <T> read(jsonStr: String, type: Class<T>): T {
         return try {
             moshi.adapter(type).fromJson(jsonStr)!!
-        } catch (exception: IOException) {
+        } catch (exception: JsonDataException) {
             throw JsonParseException(exception)
         }
     }
@@ -233,7 +233,7 @@ func (g *MoshiGenerator) JsonHelpersMethods() string {
     fun <T> read(jsonStr: String, type: ParameterizedType): T {
         return try {
             moshi.adapter<T>(type).fromJson(jsonStr)!!
-        } catch (exception: IOException) {
+        } catch (exception: JsonDataException) {
             throw JsonParseException(exception)
         }
     }
