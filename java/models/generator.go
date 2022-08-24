@@ -10,7 +10,7 @@ import (
 )
 
 type Generator interface {
-	ResolvedModels(models []*spec.NamedModel, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile
+	Models(models []*spec.NamedModel, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile
 	ModelsDefinitionsImports() []string
 	ModelsUsageImports() []string
 	SetupImport(jsonPackage packages.Module) string

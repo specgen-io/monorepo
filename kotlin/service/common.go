@@ -65,3 +65,21 @@ class ContentTypeMismatchException(expected: String, actual: String?) :
 		Content: strings.TrimSpace(code),
 	}
 }
+
+func jsonParseException(thePackage modules.Module) *generator.CodeFile {
+	code := `
+package [[.PackageName]]
+
+class JsonParseException(exception: Throwable) :
+    RuntimeException("Failed to parse body: " + exception.message, exception)
+`
+	code, _ = generator.ExecuteTemplate(code, struct {
+		PackageName string
+	}{
+		thePackage.PackageName,
+	})
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath("JsonParseException.kt"),
+		Content: strings.TrimSpace(code),
+	}
+}

@@ -10,17 +10,21 @@ import (
 )
 
 type Generator interface {
-	SetupLibrary(thePackage modules.Module) []generator.CodeFile
-	SetupImport(jsonPackage modules.Module) string
-	VersionModels(version *spec.Version, thePackage modules.Module, jsonPackage modules.Module) []generator.CodeFile
-	ReadJson(jsonStr string, typ *spec.TypeDef) (string, string)
-	WriteJson(varData string, typ *spec.TypeDef) (string, string)
-	CreateJsonMapperField() string
-	InitJsonMapper(w *generator.Writer)
+	Models(models []*spec.NamedModel, thePackage, jsonPackage modules.Module) []generator.CodeFile
 	ModelsDefinitionsImports() []string
 	ModelsUsageImports() []string
+	SetupImport(jsonPackage modules.Module) string
+	SetupLibrary(thePackage modules.Module) []generator.CodeFile
+	JsonHelpersMethods() string
+	ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage modules.Module) *generator.CodeFile
+	CreateJsonMapperField(annotation string) string
+	InitJsonMapper(w *generator.Writer)
 
-	GenerateJsonParseException(thePackage, modelsPackage modules.Module) *generator.CodeFile
+	JsonRead(varJson string, typ *spec.TypeDef) string
+	JsonWrite(varData string, typ *spec.TypeDef) string
+
+	ReadJson(jsonStr string, typ *spec.TypeDef) (string, string)
+	WriteJson(varData string, typ *spec.TypeDef) (string, string)
 }
 
 func NewGenerator(jsonlib string) Generator {

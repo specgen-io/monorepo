@@ -23,7 +23,7 @@ func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
 	return &MoshiGenerator{[]string{}, types}
 }
 
-func (g *MoshiGenerator) ResolvedModels(models []*spec.NamedModel, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile {
+func (g *MoshiGenerator) Models(models []*spec.NamedModel, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	for _, model := range models {
