@@ -11,13 +11,15 @@ const Set = "set"
 const Values = "values"
 const NoInput = "noinput"
 const ForceInput = "forceinput"
+const Source = "source"
 
 func init() {
-	cmdNew.Flags().String(OutPath, ".", `Path to output rendered template.`)
-	cmdNew.Flags().StringArray(Set, []string{}, `Set arguments overrides in format "arg=value". Repeat for setting multiple arguments values.`)
-	cmdNew.Flags().String(Values, "", `Path to arguments values JSON file.`)
-	cmdNew.Flags().Bool(NoInput, false, `Do not request user input for missing arguments values.`)
-	cmdNew.Flags().Bool(ForceInput, false, `Force user input requests even for noinput arguments.`)
+	cmdNew.Flags().String(OutPath, ".", `path to output rendered template`)
+	cmdNew.Flags().StringArray(Set, []string{}, `set arguments overrides in format "arg=value", repeat for setting multiple arguments values`)
+	cmdNew.Flags().String(Values, "", `path to arguments values JSON file`)
+	cmdNew.Flags().String(Source, "https://github.com/specgen-io/templates", `location of templates`)
+	cmdNew.Flags().Bool(NoInput, false, `do not request user input for missing arguments values`)
+	cmdNew.Flags().Bool(ForceInput, false, `force user input requests even for noinput arguments`)
 
 	rootCmd.AddCommand(cmdNew)
 }
@@ -29,13 +31,16 @@ var cmdNew = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		template := args[0]
 
+		outPath, err := cmd.Flags().GetString(OutPath)
+		FailIfError(err)
+
 		overrides, err := cmd.Flags().GetStringArray(Set)
 		FailIfError(err)
 
 		valuesJsonPath, err := cmd.Flags().GetString(Values)
 		FailIfError(err)
 
-		outPath, err := cmd.Flags().GetString(OutPath)
+		source, err := cmd.Flags().GetString(Source)
 		FailIfError(err)
 
 		noInput, err := cmd.Flags().GetBool(NoInput)
@@ -59,13 +64,13 @@ var cmdNew = &cobra.Command{
 			valuesJsonData = data
 		}
 
-		err = renderTemplate(template, outPath, inputMode, valuesJsonData, overrides)
+		err = renderTemplate(source, template, outPath, inputMode, valuesJsonData, overrides)
 		FailIfError(err, "Failed to render template")
 	},
 }
 
-func renderTemplate(name string, outPath string, inputMode render.InputMode, valuesJsonData []byte, overrides []string) error {
-	template := render.Template{"https://github.com/specgen-io/templates", name, "rendr.yaml"}
+func renderTemplate(source string, name string, outPath string, inputMode render.InputMode, valuesJsonData []byte, overrides []string) error {
+	template := render.Template{source, name, "rendr.yaml"}
 	renderedFiles, err := template.Render(inputMode, valuesJsonData, overrides)
 	if err != nil {
 		return err
