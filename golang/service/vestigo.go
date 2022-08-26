@@ -14,12 +14,11 @@ import (
 	"spec"
 )
 
-func generateRoutings(version *spec.Version, versionModule module.Module, modelsModule module.Module) []generator.CodeFile {
+func generateRoutings(version *spec.Version, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *generateRouting(modelsModule, versionModule, &api))
+		files = append(files, *generateRouting(&api, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule))
 	}
-	files = append(files, *generateRespondFunctions(versionModule))
 	return files
 }
 
@@ -32,9 +31,9 @@ func callAddRouting(api *spec.Api, serviceVar string) string {
 	return fmt.Sprintf(`%s(router, %s)`, addRoutesMethodName(api), serviceVar)
 }
 
-func generateRouting(modelsModule module.Module, versionModule module.Module, api *spec.Api) *generator.CodeFile {
+func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module) *generator.CodeFile {
 	w := writer.NewGoWriter()
-	w.Line("package %s", versionModule.Name)
+	w.Line("package %s", module.Name)
 
 	imports := imports.New()
 	if types.ApiHasBody(api) {
@@ -44,25 +43,27 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 	imports.AddAlias("github.com/sirupsen/logrus", "log")
 	imports.Add("net/http")
 	imports.Add("fmt")
-	imports.Add("strings")
 	if types.BodyHasType(api, spec.TypeString) {
 		imports.Add("io/ioutil")
 	}
+	imports.Add(contentTypeModule.Package)
 	apiModule := versionModule.Submodule(api.Name.SnakeCase())
 	imports.Add(apiModule.Package)
+	imports.Add(errorsModule.Package)
+	imports.AddAlias(errorsModelsModule.Package, "errmodels")
 	if isContainsModel(api) {
 		imports.Add(modelsModule.Package)
 	}
+	if operationHasParams(api) {
+		imports.Add(paramsParserModule.Package)
+	}
+	imports.Add(respondModule.Package)
 	imports.Write(w)
 
 	w.EmptyLine()
 	w.Line(`func %s {`, signatureAddRouting(api))
 	w.Indent()
-	generateErrors(w, api.Http.Version)
-	w.EmptyLine()
-	generateCheckContentType(w)
 	for _, operation := range api.Operations {
-		w.EmptyLine()
 		url := getEndpointUrl(&operation)
 		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, client.ToUpperCase(operation.Endpoint.Method), url)
 		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, client.ToPascalCase(operation.Endpoint.Method), url)
@@ -71,14 +72,36 @@ func generateRouting(modelsModule module.Module, versionModule module.Module, ap
 		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
 			addSetCors(w, &operation)
 		}
+		w.EmptyLine()
 	}
 	w.Unindent()
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    versionModule.GetPath(fmt.Sprintf("%s_routing.go", api.Name.SnakeCase())),
+		Path:    module.GetPath(fmt.Sprintf("%s.go", api.Name.SnakeCase())),
 		Content: w.String(),
 	}
+}
+
+func operationHasParams(api *spec.Api) bool {
+	for _, operation := range api.Operations {
+		for _, param := range operation.QueryParams {
+			if &param != nil {
+				return true
+			}
+		}
+		for _, param := range operation.HeaderParams {
+			if &param != nil {
+				return true
+			}
+		}
+		for _, param := range operation.Endpoint.UrlParams {
+			if &param != nil {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func getEndpointUrl(operation *spec.NamedOperation) string {
@@ -137,7 +160,7 @@ func generateQueryParsing(w *generator.Writer, operation *spec.NamedOperation) {
 
 func generateUrlParamsParsing(w *generator.Writer, operation *spec.NamedOperation) {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		w.Line(`urlParams := NewParamsParser(req.URL.Query(), false)`)
+		w.Line(`urlParams := paramsparser.New(req.URL.Query(), false)`)
 		for _, param := range operation.Endpoint.UrlParams {
 			w.Line(`%s := %s`, param.Name.CamelCase(), parserParameterCall(true, &param, "urlParams"))
 		}
@@ -149,13 +172,13 @@ func generateUrlParamsParsing(w *generator.Writer, operation *spec.NamedOperatio
 
 func generateParametersParsing(w *generator.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramsValuesVar string) {
 	if namedParams != nil && len(namedParams) > 0 {
-		w.Line(`%s := NewParamsParser(%s, true)`, paramsParserName, paramsValuesVar)
+		w.Line(`%s := paramsparser.New(%s, true)`, paramsParserName, paramsValuesVar)
 		for _, param := range namedParams {
 			w.Line(`%s := %s`, param.Name.CamelCase(), parserParameterCall(false, &param, paramsParserName))
 		}
 
 		w.Line(`if len(%s.Errors) > 0 {`, paramsParserName)
-		respondBadRequest(w.Indented(), operation, paramsParserName, fmt.Sprintf(`"Failed to parse %s"`, paramsParserName), fmt.Sprintf(`%s.Errors`, paramsParserName))
+		respondBadRequest(w.Indented(), operation, paramsParserName, fmt.Sprintf(`"Failed to parse %s"`, paramsParserName), fmt.Sprintf(`httperrors.Convert(%s.Errors)`, paramsParserName))
 		w.Line(`}`)
 	}
 }
@@ -200,10 +223,10 @@ func generateOperationMethod(w *generator.Writer, operation *spec.NamedOperation
 	generateQueryParsing(w, operation)
 	generateBodyParsing(w, operation)
 	generateServiceCall(w, operation, `response`)
-	generateReponse(w, operation, `response`)
+	generateResponse(w, operation, `response`)
 }
 
-func generateReponse(w *generator.Writer, operation *spec.NamedOperation, responseVar string) {
+func generateResponse(w *generator.Writer, operation *spec.NamedOperation, responseVar string) {
 	if len(operation.Responses) == 1 {
 		generateResponseWriting(w, logFieldsName(operation), &operation.Responses[0].Response, responseVar)
 	} else {
@@ -236,10 +259,10 @@ func generateBodyParsing(w *generator.Writer, operation *spec.NamedOperation) {
 		w.Line(`var body %s`, types.GoType(&operation.Body.Type.Definition))
 		w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
 		w.Line(`if err != nil {`)
-		w.Line(`  var errors []models.ValidationError = nil`)
+		w.Line(`  var errors []errmodels.ValidationError = nil`)
 		w.Line(`  if unmarshalError, ok := err.(*json.UnmarshalTypeError); ok {`)
 		w.Line(`    message := fmt.Sprintf("Failed to parse JSON, field: PERCENT_s", unmarshalError.Field)`)
-		w.Line(`    errors = []models.ValidationError{{Path: unmarshalError.Field, Code: "parsing_failed", Message: &message}}`)
+		w.Line(`    errors = []errmodels.ValidationError{{Path: unmarshalError.Field, Code: "parsing_failed", Message: &message}}`)
 		w.Line(`  }`)
 		respondBadRequest(w.Indented(), operation, "body", `"Failed to parse body"`, "errors")
 		w.Line(`}`)
@@ -291,9 +314,12 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *genera
 	imports.Add("github.com/husobee/vestigo")
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Name.FlatCase())
+		routingModule := versionModule.Submodule("routing")
+		imports.AddAlias(routingModule.Package, "root")
 		if version.Name.Source != "" {
-			imports.Add(versionModule.Package)
+			imports.AddAlias(routingModule.Package, version.Name.Source)
 		}
+
 		for _, api := range version.Http.Apis {
 			apiModule := versionModule.Submodule(api.Name.SnakeCase())
 			imports.AddAlias(apiModule.Package, versionedApiImportAlias(&api))
@@ -317,7 +343,7 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *genera
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    module.GetPath("spec_routing.go"),
+		Path:    module.GetPath("spec.go"),
 		Content: w.String(),
 	}
 }
@@ -338,5 +364,87 @@ func packageFrom(version *spec.Version) string {
 	if version.Name.Source != "" {
 		return fmt.Sprintf(`%s.`, version.Name.FlatCase())
 	}
-	return ""
+	return fmt.Sprintf(`root.`)
+}
+
+func checkContentType(module, errorsModule, errorsModelsModule module.Module) *generator.CodeFile {
+	code := `
+package [[.ModuleName]]
+
+import (
+	"fmt"
+	log "github.com/sirupsen/logrus"
+	"net/http"
+	"strings"
+	"[[.ErrorsPackage]]"
+	errmodels "[[.ErrorsModelsPackage]]"
+)
+
+func Check(logFields log.Fields, expectedContentType string, req *http.Request, res http.ResponseWriter) bool {
+	contentType := req.Header.Get("Content-Type")
+	if !strings.Contains(contentType, expectedContentType) {
+		message := fmt.Sprintf("Expected Content-Type header: '%s' was not provided, found: '%s'", expectedContentType, contentType)
+		httperrors.RespondBadRequest(logFields, res, &errmodels.BadRequestError{Location: "header", Message: "Failed to parse header", Errors: []errmodels.ValidationError{{Path: "Content-Type", Code: "missing", Message: &message}}})
+		return false
+	}
+	return true
+}
+`
+	code, _ = generator.ExecuteTemplate(code, struct {
+		ModuleName          string
+		ErrorsPackage       string
+		ErrorsModelsPackage string
+	}{
+		module.Name,
+		errorsModule.Package,
+		errorsModelsModule.Package,
+	})
+	return &generator.CodeFile{
+		Path:    module.GetPath("check.go"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func httpErrors(converterModule, errorsModelsModule, paramsParserModule, respondModule module.Module, responses *spec.Responses) []generator.CodeFile {
+	files := []generator.CodeFile{}
+
+	files = append(files, *errorsModelsConverter(converterModule, errorsModelsModule, paramsParserModule))
+	files = append(files, *generateErrors(converterModule, errorsModelsModule, respondModule, responses))
+
+	return files
+}
+
+func errorsModelsConverter(module, errorsModelsModule, paramsParserModule module.Module) *generator.CodeFile {
+	code := `
+package [[.ModuleName]]
+
+import (
+	errmodels "[[.ErrorsModelsPackage]]"
+	"[[.ParamsParserModule]]"
+)
+
+func Convert(parsingErrors []paramsparser.ParsingError) []errmodels.ValidationError {
+	var validationErrors []errmodels.ValidationError
+
+	for _, parsingError := range parsingErrors {
+		validationError := errmodels.ValidationError(parsingError)
+		validationErrors = append(validationErrors, validationError)
+	}
+
+	return validationErrors
+}
+`
+	code, _ = generator.ExecuteTemplate(code, struct {
+		ModuleName          string
+		ErrorsModelsPackage string
+		ParamsParserModule  string
+	}{
+		module.Name,
+		errorsModelsModule.Package,
+		paramsParserModule.Package,
+	})
+	return &generator.CodeFile{
+		Path:    module.GetPath("converter.go"),
+		Content: strings.TrimSpace(code),
+	}
 }

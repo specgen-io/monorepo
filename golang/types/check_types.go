@@ -77,8 +77,8 @@ func paramHasType(namedParams []spec.NamedParam, typ string) bool {
 	return false
 }
 
-func VersionModelsHasType(version *spec.Version, typ string) bool {
-	for _, model := range version.ResolvedModels {
+func VersionModelsHasType(models []*spec.NamedModel, typ string) bool {
+	for _, model := range models {
 		if model.IsObject() {
 			for _, field := range model.Object.Fields {
 				if checkType(&field.Type.Definition, typ) {

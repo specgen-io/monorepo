@@ -9,15 +9,15 @@ import (
 )
 
 func respondJson(logFields, resVar, statusCode, dataVar string) string {
-	return fmt.Sprintf(`respondJson(%s, %s, %s, %s)`, logFields, resVar, statusCode, dataVar)
+	return fmt.Sprintf(`respond.Json(%s, %s, %s, %s)`, logFields, resVar, statusCode, dataVar)
 }
 
 func respondText(logFields, resVar, statusCode, dataVar string) string {
-	return fmt.Sprintf(`respondText(%s, %s, %s, %s)`, logFields, resVar, statusCode, dataVar)
+	return fmt.Sprintf(`respond.Text(%s, %s, %s, %s)`, logFields, resVar, statusCode, dataVar)
 }
 
 func respondEmpty(logFields, resVar, statusCode string) string {
-	return fmt.Sprintf(`respondEmpty(%s, %s, %s)`, logFields, resVar, statusCode)
+	return fmt.Sprintf(`respond.Empty(%s, %s, %s)`, logFields, resVar, statusCode)
 }
 
 func generateRespondFunctions(module module.Module) *generator.CodeFile {
@@ -35,26 +35,26 @@ import (
 	"net/http"
 )
 
-func respondJson(logFields log.Fields, res http.ResponseWriter, statusCode int, data interface{}) {
+func Json(logFields log.Fields, res http.ResponseWriter, statusCode int, data interface{}) {
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(statusCode)
 	json.NewEncoder(res).Encode(data)
 	log.WithFields(logFields).WithField("status", statusCode).Info("Completed request")
 }
 
-func respondText(logFields log.Fields, res http.ResponseWriter, statusCode int, data string) {
+func Text(logFields log.Fields, res http.ResponseWriter, statusCode int, data string) {
 	res.Header().Set("Content-Type", "text/plain")
 	res.WriteHeader(statusCode)
 	res.Write([]byte(data))
 	log.WithFields(logFields).WithField("status", statusCode).Info("Completed request")
 }
 
-func respondEmpty(logFields log.Fields, res http.ResponseWriter, statusCode int) {
+func Empty(logFields log.Fields, res http.ResponseWriter, statusCode int) {
 	res.WriteHeader(statusCode)
 	log.WithFields(logFields).WithField("status", statusCode).Info("Completed request")
 }
 `
 
 	code, _ = generator.ExecuteTemplate(code, data)
-	return &generator.CodeFile{module.GetPath("responses.go"), strings.TrimSpace(code)}
+	return &generator.CodeFile{module.GetPath("respond.go"), strings.TrimSpace(code)}
 }
