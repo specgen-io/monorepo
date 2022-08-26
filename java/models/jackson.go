@@ -22,7 +22,7 @@ func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 	return &JacksonGenerator{types}
 }
 
-func (g *JacksonGenerator) ResolvedModels(models []*spec.NamedModel, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile {
+func (g *JacksonGenerator) Models(models []*spec.NamedModel, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, model := range models {
 		if model.IsObject() {

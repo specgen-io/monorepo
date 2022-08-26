@@ -27,13 +27,13 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 	errorsModelsPackage := errorsPackage.Subpackage("models")
 
 	sources.AddGeneratedAll(generator.Server.Errors(errorsPackage, errorsModelsPackage, contentTypePackage, jsonPackage))
-	sources.AddGeneratedAll(generator.Models.ResolvedModels(specification.HttpErrors.ResolvedModels, errorsModelsPackage, jsonPackage))
+	sources.AddGeneratedAll(generator.Models.Models(specification.HttpErrors.ResolvedModels, errorsModelsPackage, jsonPackage))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Name.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		sources.AddGeneratedAll(generator.Models.ResolvedModels(version.ResolvedModels, modelsVersionPackage, jsonPackage))
+		sources.AddGeneratedAll(generator.Models.Models(version.ResolvedModels, modelsVersionPackage, jsonPackage))
 
 		serviceVersionPackage := versionPackage.Subpackage("services")
 		sources.AddGeneratedAll(generator.ServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage))

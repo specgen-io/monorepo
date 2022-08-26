@@ -11,8 +11,13 @@ import (
 )
 
 type ServerGenerator interface {
-	ServicesControllers(version *spec.Version, mainPackage, thePackage, modelsVersionPackage, serviceVersionPackage modules.Module) []generator.CodeFile
+	ServiceImports() []string
+	ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage modules.Module) []generator.CodeFile
 	ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string)
+	ExceptionController(responses *spec.Responses, thePackage, errorsPackage, errorsModelsPackage, jsonPackage modules.Module) *generator.CodeFile
+	Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage modules.Module) []generator.CodeFile
+	ContentType(thePackage modules.Module) []generator.CodeFile
+	JsonHelpers(thePackage modules.Module) []generator.CodeFile
 }
 
 type Generator struct {
