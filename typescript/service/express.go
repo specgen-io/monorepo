@@ -66,14 +66,15 @@ func expressVersionUrl(version *spec.Version) string {
 	return url
 }
 
-func (g *expressGenerator) VersionRouting(version *spec.Version, validationModule, paramsModule, module modules.Module) *generator.CodeFile {
+func (g *expressGenerator) VersionRouting(version *spec.Version, targetModule modules.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule modules.Module) *generator.CodeFile {
 	w := writer.NewTsWriter()
 
-	w.Line("import {Router} from 'express'")
-	w.Line("import {Request, Response} from 'express'") //TODO: Join with above
-	w.Line(`import {zipHeaders} from '%s'`, paramsModule.GetImport(module))
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
-	w.Line("import * as models from './models'")
+	w.Line(`import {Router, Request, Response} from 'express'`)
+	w.Line(`import {zipHeaders} from '%s'`, paramsModule.GetImport(targetModule))
+	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
+	w.Line(`import * as models from '%s'`, modelsModule.GetImport(targetModule))
+	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(targetModule))
+	w.Line(`import * as responses from '%s'`, responsesModule.GetImport(targetModule))
 
 	for _, api := range version.Http.Apis {
 		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), serviceName(&api))
@@ -89,14 +90,12 @@ func (g *expressGenerator) VersionRouting(version *spec.Version, validationModul
 		g.apiRouting(w, &api)
 	}
 
-	return &generator.CodeFile{module.GetPath(), w.String()}
+	return &generator.CodeFile{targetModule.GetPath(), w.String()}
 }
 
 func (g *expressGenerator) apiRouting(w *generator.Writer, api *spec.Api) {
 	w.EmptyLine()
 	w.Line("export const %s = (service: %s) => {", apiRouterName(api), serviceInterfaceName(api))
-	g.generateErrors(w.Indented())
-	w.EmptyLine()
 	w.Line("  const router = Router()")
 	for _, operation := range api.Operations {
 		w.EmptyLine()
@@ -145,12 +144,12 @@ func (g *expressGenerator) responses(w *generator.Writer, responses spec.Operati
 
 func (g *expressGenerator) checkContentType(w *generator.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
-		w.Line(`if (!assertContentType(request, response, "text/plain")) {`)
+		w.Line(`if (!responses.assertContentType(request, response, "text/plain")) {`)
 		w.Line(`  return`)
 		w.Line(`}`)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`if (!assertContentType(request, response, "application/json")) {`)
+		w.Line(`if (!responses.assertContentType(request, response, "application/json")) {`)
 		w.Line(`  return`)
 		w.Line(`}`)
 	}
@@ -170,7 +169,7 @@ func (g *expressGenerator) operationRouting(w *generator.Writer, operation *spec
 	g.responses(w, operation.Responses)
 	w.Unindent()
 	w.Line("} catch (error) {")
-	g.respondInternalServerError(w.Indented(), operation)
+	g.respondInternalServerError(w.Indented())
 	w.Line("}")
 	w.Unindent()
 	w.Line("})")
@@ -180,7 +179,7 @@ func (g *expressGenerator) urlParamsParsing(w *generator.Writer, operation *spec
 	if len(operation.Endpoint.UrlParams) > 0 {
 		w.Line("const urlParamsDecode = t.decodeR(%s, request.params)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "UrlParams")))
 		w.Line("if (urlParamsDecode.error) {")
-		g.respondNotFound(w.Indented(), operation, "Failed to parse url parameters")
+		g.respondNotFound(w.Indented(), "Failed to parse url parameters")
 		w.Line("}")
 		w.Line("const urlParams = urlParamsDecode.value")
 	}
@@ -190,7 +189,7 @@ func (g *expressGenerator) headerParsing(w *generator.Writer, operation *spec.Na
 	if len(operation.HeaderParams) > 0 {
 		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(request.rawHeaders))", common.ParamsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")))
 		w.Line("if (headerParamsDecode.error) {")
-		g.respondBadRequest(w.Indented(), operation, "HEADER", "headerParamsDecode.error", "Failed to parse header")
+		g.respondBadRequest(w.Indented(), "HEADER", "headerParamsDecode.error", "Failed to parse header")
 		w.Line("}")
 		w.Line("const headerParams = headerParamsDecode.value")
 	}
@@ -200,7 +199,7 @@ func (g *expressGenerator) queryParsing(w *generator.Writer, operation *spec.Nam
 	if len(operation.QueryParams) > 0 {
 		w.Line("const queryParamsDecode = t.decodeR(%s, request.query)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams")))
 		w.Line("if (queryParamsDecode.error) {")
-		g.respondBadRequest(w.Indented(), operation, "QUERY", "queryParamsDecode.error", "Failed to parse query")
+		g.respondBadRequest(w.Indented(), "QUERY", "queryParamsDecode.error", "Failed to parse query")
 		w.Line("}")
 		w.Line("const queryParams = queryParamsDecode.value")
 	}
@@ -213,57 +212,66 @@ func (g *expressGenerator) bodyParsing(w *generator.Writer, operation *spec.Name
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line("const bodyDecode = t.decodeR(%s, request.body)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
-		g.respondBadRequest(w.Indented(), operation, "BODY", "bodyDecode.error", "Failed to parse body")
+		g.respondBadRequest(w.Indented(), "BODY", "bodyDecode.error", "Failed to parse body")
 		w.Line("}")
 		w.Line("const body = bodyDecode.value")
 	}
 }
 
-func (g *expressGenerator) respondBadRequest(w *generator.Writer, operation *spec.NamedOperation, location, errorsVar, message string) {
-	w.Line(`respondBadRequest(response, { message: "%s", location: models.ErrorLocation.%s, errors: %s })`, message, location, errorsVar)
+func (g *expressGenerator) respondBadRequest(w *generator.Writer, location, errorsVar, message string) {
+	w.Line(`responses.badRequest(response, { message: "%s", location: errors.ErrorLocation.%s, errors: %s })`, message, location, errorsVar)
 	w.Line(`return`)
 }
 
-func (g *expressGenerator) respondNotFound(w *generator.Writer, operation *spec.NamedOperation, message string) {
-	w.Line(`respondNotFound(response, { message: "%s" })`, message)
+func (g *expressGenerator) respondNotFound(w *generator.Writer, message string) {
+	w.Line(`responses.notFound(response, { message: "%s" })`, message)
 	w.Line(`return`)
 }
 
-func (g *expressGenerator) respondInternalServerError(w *generator.Writer, operation *spec.NamedOperation) {
-	w.Line(`respondInternalServerError(response, { message: error instanceof Error ? error.message : "Unknown error" })`)
+func (g *expressGenerator) respondInternalServerError(w *generator.Writer) {
+	w.Line(`responses.internalServerError(response, { message: error instanceof Error ? error.message : "Unknown error" })`)
 	w.Line(`return`)
 }
 
-func (g *expressGenerator) generateErrors(w *generator.Writer) {
+func (g *expressGenerator) Responses(targetModule, validationModule, errorsModule modules.Module) *generator.CodeFile {
+	w := writer.NewTsWriter()
+
+	w.Line(`import {Request, Response} from 'express'`)
+	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
+	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(targetModule))
+
+	w.EmptyLine()
 	code := `
-const respondInternalServerError = (response: Response, error: models.InternalServerError) => {
-  const body = t.encode(models.TInternalServerError, error)
+export const internalServerError = (response: Response, error: errors.InternalServerError) => {
+  const body = t.encode(errors.TInternalServerError, error)
   response.status(500).type("json").send(JSON.stringify(body))
 }
 
-const respondNotFound = (response: Response, error: models.NotFoundError) => {
-  const body = t.encode(models.TNotFoundError, error)
+export const notFound = (response: Response, error: errors.NotFoundError) => {
+  const body = t.encode(errors.TNotFoundError, error)
   response.status(404).type("json").send(JSON.stringify(body))
 }
 
-const respondBadRequest = (response: Response, error: models.BadRequestError) => {
-  const body = t.encode(models.TBadRequestError, error)
+export const badRequest = (response: Response, error: errors.BadRequestError) => {
+  const body = t.encode(errors.TBadRequestError, error)
   response.status(400).type("json").send(JSON.stringify(body))
 }
 
-const assertContentType = (request: Request, response: Response, contentType: string): boolean => {
+export const assertContentType = (request: Request, response: Response, contentType: string): boolean => {
   if (!request.is(contentType)) {
     const error = {
       message: "Failed to parse header", 
-      location: models.ErrorLocation.HEADER,
+      location: errors.ErrorLocation.HEADER,
       errors: [{path: "Content-Type", code: "missing", message: 'Expected Content-Type header: ${contentType}'}]
     }
-    respondBadRequest(response, error)
+    badRequest(response, error)
     return false
   }
   return true
 }
 `
 	code = strings.Replace(code, "'", "`", -1)
-	w.Lines(strings.Replace(code, "'", "`", -1))
+	w.Lines(code)
+
+	return &generator.CodeFile{targetModule.GetPath(), w.String()}
 }

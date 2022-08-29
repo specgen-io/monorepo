@@ -2,16 +2,16 @@ package superstruct
 
 import (
 	"generator"
+	"spec"
 	"typescript/common"
 	"typescript/modules"
 	"typescript/writer"
-	"spec"
 )
 
-func (g *Generator) VersionModels(version *spec.Version, superstructModule modules.Module, module modules.Module) *generator.CodeFile {
+func (g *Generator) Models(models []*spec.NamedModel, superstructModule modules.Module, module modules.Module) *generator.CodeFile {
 	w := writer.NewTsWriter()
 	w.Line(`import * as t from '%s'`, superstructModule.GetImport(module))
-	for _, model := range version.ResolvedModels {
+	for _, model := range models {
 		w.EmptyLine()
 		if model.IsObject() {
 			g.objectModel(w, model)

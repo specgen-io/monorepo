@@ -18,7 +18,7 @@ func GenerateModels(specification *spec.Spec, validation string, generatePath st
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Name.FlatCase())
 		modelsModule := versionModule.Submodule("models")
-		sources.AddGenerated(generator.VersionModels(&version, validationModule, modelsModule))
+		sources.AddGenerated(generator.Models(version.ResolvedModels, validationModule, modelsModule))
 	}
 	return sources
 }

@@ -8,12 +8,12 @@ import (
 	"typescript/writer"
 )
 
-func (g *Generator) VersionModels(version *spec.Version, codecModule modules.Module, module modules.Module) *generator.CodeFile {
+func (g *Generator) Models(models []*spec.NamedModel, codecModule modules.Module, module modules.Module) *generator.CodeFile {
 	w := writer.NewTsWriter()
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
 	w.Line(`import * as t from '%s'`, codecModule.GetImport(module))
-	for _, model := range version.ResolvedModels {
+	for _, model := range models {
 		w.EmptyLine()
 		if model.IsObject() {
 			g.objectModel(w, model)

@@ -64,14 +64,17 @@ func (g *koaGenerator) SpecRouter(specification *spec.Spec, rootModule modules.M
 	return &generator.CodeFile{module.GetPath(), w.String()}
 }
 
-func (g *koaGenerator) VersionRouting(version *spec.Version, validationModule, paramsModule, module modules.Module) *generator.CodeFile {
+func (g *koaGenerator) VersionRouting(version *spec.Version, targetModule modules.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule modules.Module) *generator.CodeFile {
 	w := writer.NewTsWriter()
 
 	w.Line(`import Router from '@koa/router'`)
 	w.Line(`import { ExtendableContext } from 'koa'`)
-	w.Line(`import {zipHeaders} from '%s'`, paramsModule.GetImport(module))
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
-	w.Line(`import * as models from './models'`)
+	w.Line(`import {zipHeaders} from '%s'`, paramsModule.GetImport(targetModule))
+	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
+	w.Line(`import * as models from '%s'`, modelsModule.GetImport(targetModule))
+	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(targetModule))
+	w.Line(`import * as responses from '%s'`, responsesModule.GetImport(targetModule))
+
 	for _, api := range version.Http.Apis {
 		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), serviceName(&api))
 	}
@@ -86,14 +89,12 @@ func (g *koaGenerator) VersionRouting(version *spec.Version, validationModule, p
 		g.apiRouting(w, &api)
 	}
 
-	return &generator.CodeFile{module.GetPath(), w.String()}
+	return &generator.CodeFile{targetModule.GetPath(), w.String()}
 }
 
 func (g *koaGenerator) apiRouting(w *generator.Writer, api *spec.Api) {
 	w.EmptyLine()
 	w.Line("export const %s = (service: %s) => {", apiRouterName(api), serviceInterfaceName(api))
-	g.generateErrors(w.Indented())
-	w.EmptyLine()
 	w.Line("  const router = new Router()")
 	for _, operation := range api.Operations {
 		w.EmptyLine()
@@ -142,12 +143,12 @@ func (g *koaGenerator) responses(w *generator.Writer, responses spec.OperationRe
 
 func (g *koaGenerator) checkContentType(w *generator.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
-		w.Line(`if (!assertContentType(ctx, "text/plain")) {`)
+		w.Line(`if (!responses.assertContentType(ctx, "text/plain")) {`)
 		w.Line(`  return`)
 		w.Line(`}`)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`if (!assertContentType(ctx, "application/json")) {`)
+		w.Line(`if (!responses.assertContentType(ctx, "application/json")) {`)
 		w.Line(`  return`)
 		w.Line(`}`)
 	}
@@ -167,7 +168,7 @@ func (g *koaGenerator) operationRouting(w *generator.Writer, operation *spec.Nam
 	g.responses(w, operation.Responses)
 	w.Unindent()
 	w.Line("} catch (error) {")
-	g.respondInternalServerError(w.Indented(), operation)
+	g.respondInternalServerError(w.Indented())
 	w.Line("}")
 	w.Unindent()
 	w.Line("})")
@@ -177,7 +178,7 @@ func (g *koaGenerator) urlParamsParsing(w *generator.Writer, operation *spec.Nam
 	if len(operation.Endpoint.UrlParams) > 0 {
 		w.Line("const urlParamsDecode = t.decodeR(%s, ctx.params)", urlParamsRuntimeType(operation))
 		w.Line("if (urlParamsDecode.error) {")
-		g.respondNotFound(w.Indented(), operation, "Failed to parse url parameters")
+		g.respondNotFound(w.Indented(), "Failed to parse url parameters")
 		w.Line("}")
 		w.Line("const urlParams = urlParamsDecode.value")
 	}
@@ -187,7 +188,7 @@ func (g *koaGenerator) headerParsing(w *generator.Writer, operation *spec.NamedO
 	if len(operation.HeaderParams) > 0 {
 		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(ctx.req.rawHeaders))", headersRuntimeType(operation))
 		w.Line("if (headerParamsDecode.error) {")
-		g.respondBadRequest(w.Indented(), operation, "HEADER", "headerParamsDecode.error", "Failed to parse header")
+		g.respondBadRequest(w.Indented(), "HEADER", "headerParamsDecode.error", "Failed to parse header")
 		w.Line("}")
 		w.Line("const headerParams = headerParamsDecode.value")
 	}
@@ -197,7 +198,7 @@ func (g *koaGenerator) queryParsing(w *generator.Writer, operation *spec.NamedOp
 	if len(operation.QueryParams) > 0 {
 		w.Line("const queryParamsDecode = t.decodeR(%s, ctx.request.query)", queryRuntimeType(operation))
 		w.Line("if (queryParamsDecode.error) {")
-		g.respondBadRequest(w.Indented(), operation, "QUERY", "queryParamsDecode.error", "Failed to parse query")
+		g.respondBadRequest(w.Indented(), "QUERY", "queryParamsDecode.error", "Failed to parse query")
 		w.Line("}")
 		w.Line("const queryParams = queryParamsDecode.value")
 	}
@@ -210,59 +211,70 @@ func (g *koaGenerator) bodyParsing(w *generator.Writer, operation *spec.NamedOpe
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line("const bodyDecode = t.decodeR(%s, ctx.request.body)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
-		g.respondBadRequest(w.Indented(), operation, "BODY", "bodyDecode.error", "Failed to parse body")
+		g.respondBadRequest(w.Indented(), "BODY", "bodyDecode.error", "Failed to parse body")
 		w.Line("}")
 		w.Line("const body = bodyDecode.value")
 	}
 }
 
-func (g *koaGenerator) respondBadRequest(w *generator.Writer, operation *spec.NamedOperation, location, errorsVar, message string) {
-	w.Line(`respondBadRequest(ctx, { message: "%s", location: models.ErrorLocation.%s, errors: %s })`, message, location, errorsVar)
+func (g *koaGenerator) respondBadRequest(w *generator.Writer, location, errorsVar, message string) {
+	w.Line(`responses.badRequest(ctx, { message: "%s", location: errors.ErrorLocation.%s, errors: %s })`, message, location, errorsVar)
 	w.Line(`return`)
 }
 
-func (g *koaGenerator) respondNotFound(w *generator.Writer, operation *spec.NamedOperation, message string) {
-	w.Line(`respondNotFound(ctx, { message: "%s" })`, message)
+func (g *koaGenerator) respondNotFound(w *generator.Writer, message string) {
+	w.Line(`responses.notFound(ctx, { message: "%s" })`, message)
 	w.Line(`return`)
 }
 
-func (g *koaGenerator) respondInternalServerError(w *generator.Writer, operation *spec.NamedOperation) {
-	w.Line(`respondInternalServerError(ctx, { message: error instanceof Error ? error.message : "Unknown error" })`)
+func (g *koaGenerator) respondInternalServerError(w *generator.Writer) {
+	w.Line(`responses.internalServerError(ctx, { message: error instanceof Error ? error.message : "Unknown error" })`)
 	w.Line(`return`)
 }
 
-func (g *koaGenerator) generateErrors(w *generator.Writer) {
+func (g *koaGenerator) Responses(targetModule, validationModule, errorsModule modules.Module) *generator.CodeFile {
+	w := writer.NewTsWriter()
+
+	w.Line(`import { ExtendableContext } from 'koa'`)
+	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
+	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(targetModule))
+
+	w.EmptyLine()
 	code := `
-const respondInternalServerError = (ctx: ExtendableContext, error: models.InternalServerError) => {
-  const body = t.encode(models.TInternalServerError, error)
+export const internalServerError = (ctx: ExtendableContext, error: errors.InternalServerError) => {
+  const body = t.encode(errors.TInternalServerError, error)
   ctx.status = 500
   ctx.body = body
 }
 
-const respondNotFound = (ctx: ExtendableContext, error: models.NotFoundError) => {
-  const body = t.encode(models.TNotFoundError, error)
+export const notFound = (ctx: ExtendableContext, error: errors.NotFoundError) => {
+  const body = t.encode(errors.TNotFoundError, error)
   ctx.status = 404
   ctx.body = body
 }
 
-const respondBadRequest = (ctx: ExtendableContext, error: models.BadRequestError) => {
-  const body = t.encode(models.TBadRequestError, error)
+export const badRequest = (ctx: ExtendableContext, error: errors.BadRequestError) => {
+  const body = t.encode(errors.TBadRequestError, error)
   ctx.status = 400
   ctx.body = body
 }
 
-const assertContentType = (ctx: ExtendableContext, contentType: string): boolean => {
+export const assertContentType = (ctx: ExtendableContext, contentType: string): boolean => {
   if (ctx.request.type != contentType) {
     const error = {
       message: "Failed to parse header", 
-      location: models.ErrorLocation.HEADER,
+      location: errors.ErrorLocation.HEADER,
       errors: [{path: "Content-Type", code: "missing", message: "Expected Content-Type header: ${contentType}"}]
     }
-    respondBadRequest(ctx, error)
+    badRequest(ctx, error)
     return false
   }
   return true
 }
 `
-	w.Lines(strings.Replace(code, "'", "`", -1))
+	code = strings.Replace(code, "'", "`", -1)
+	w.Lines(code)
+
+	return &generator.CodeFile{targetModule.GetPath(), w.String()}
+
 }

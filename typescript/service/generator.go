@@ -10,8 +10,9 @@ import (
 )
 
 type ServiceGenerator interface {
-	VersionRouting(version *spec.Version, validationModule, paramsModule, module modules.Module) *generator.CodeFile
+	VersionRouting(version *spec.Version, targetModule modules.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule modules.Module) *generator.CodeFile
 	SpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *generator.CodeFile
+	Responses(targetModule, validationModule, errorsModule modules.Module) *generator.CodeFile
 }
 
 func NewServiceGenerator(server string, validation validations.Validation) ServiceGenerator {
