@@ -63,15 +63,11 @@ func parserMethodNamePlain(typ *spec.TypeDef) string {
 	}
 }
 
-func generateParamsParser(module module.Module, models module.Module) *generator.CodeFile {
+func generateParamsParser(module module.Module) *generator.CodeFile {
 	data := struct {
-		PackageName     string
-		ModelsPackage   string
-		ValidationError string
+		PackageName string
 	}{
 		module.Name,
-		models.Package,
-		types.PlainGoType(spec.ValidationError, types.ModelsPackage),
 	}
 	code := `
 package [[.PackageName]]
@@ -85,17 +81,22 @@ import (
 	"cloud.google.com/go/civil"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
-	"[[.ModelsPackage]]"
 )
 
 type ParamsParser struct {
 	values                   map[string][]string
 	parseCommaSeparatedArray bool
-	Errors                   [][[.ValidationError]]
+	Errors                   []ParsingError
 }
 
-func NewParamsParser(values map[string][]string, parseCommaSeparatedArray bool) *ParamsParser {
-	return &ParamsParser{values, parseCommaSeparatedArray, [][[.ValidationError]]{}}
+type ParsingError struct {
+	Path    string
+	Code    string
+	Message *string
+}
+
+func New(values map[string][]string, parseCommaSeparatedArray bool) *ParamsParser {
+	return &ParamsParser{values, parseCommaSeparatedArray, []ParsingError{}}
 }
 
 func (parser *ParamsParser) parseInt(name string, s string) int {
@@ -174,7 +175,7 @@ func (parser *ParamsParser) addParsingError(name string, format string, err erro
 }
 
 func (parser *ParamsParser) addValidationError(name string, code, message string) {
-	parser.Errors = append(parser.Errors, [[.ValidationError]]{name, code, &message})
+	parser.Errors = append(parser.Errors, ParsingError{name, code, &message})
 }
 
 func (parser *ParamsParser) exactlyOneValue(name string) bool {
@@ -624,5 +625,5 @@ func (parser *ParamsParser) StringEnumArray(name string, values []string) []stri
 `
 
 	code, _ = generator.ExecuteTemplate(code, data)
-	return &generator.CodeFile{module.GetPath("params_parsing.go"), strings.TrimSpace(code)}
+	return &generator.CodeFile{module.GetPath("parser.go"), strings.TrimSpace(code)}
 }

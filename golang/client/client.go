@@ -31,7 +31,7 @@ func GenerateClient(specification *spec.Spec, moduleName string, generatePath st
 		versionModule := rootModule.Submodule(version.Name.FlatCase())
 		modelsModule := versionModule.Submodule(types.ModelsPackage)
 
-		sources.AddGeneratedAll(models.GenerateVersionModels(&version, modelsModule))
+		sources.AddGeneratedAll(models.GenerateVersionModels(version.ResolvedModels, modelsModule))
 		sources.AddGeneratedAll(generateClientsImplementations(&version, versionModule, modelsModule, emptyModule))
 	}
 	return sources

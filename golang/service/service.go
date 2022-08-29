@@ -13,19 +13,33 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 	sources := generator.NewSources()
 
 	rootModule := module.New(moduleName, generatePath)
+	sources.AddGenerated(generateSpecRouting(specification, rootModule))
 
 	emptyModule := rootModule.Submodule("empty")
 	sources.AddGenerated(types.GenerateEmpty(emptyModule))
-	sources.AddGenerated(generateSpecRouting(specification, rootModule))
+
+	paramsParserModule := rootModule.Submodule("paramsparser")
+	sources.AddGenerated(generateParamsParser(paramsParserModule))
+
+	respondModule := rootModule.Submodule("respond")
+	sources.AddGenerated(generateRespondFunctions(respondModule))
+
+	errorsModule := rootModule.Submodule("httperrors")
+	errorsModelsModule := errorsModule.Submodule("models")
+	sources.AddGeneratedAll(models.GenerateVersionModels(specification.HttpErrors.ResolvedModels, errorsModelsModule))
+	sources.AddGeneratedAll(httpErrors(errorsModule, errorsModelsModule, paramsParserModule, respondModule, &specification.HttpErrors.Responses))
+
+	contentTypeModule := rootModule.Submodule("contenttype")
+	sources.AddGenerated(checkContentType(contentTypeModule, errorsModule, errorsModelsModule))
 
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Name.FlatCase())
 		modelsModule := versionModule.Submodule(types.ModelsPackage)
+		routingModule := versionModule.Submodule("routing")
 
-		sources.AddGenerated(generateParamsParser(versionModule, modelsModule))
-		sources.AddGeneratedAll(generateRoutings(&version, versionModule, modelsModule))
+		sources.AddGeneratedAll(generateRoutings(&version, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule))
 		sources.AddGeneratedAll(generateServiceInterfaces(&version, versionModule, modelsModule, emptyModule))
-		sources.AddGeneratedAll(models.GenerateVersionModels(&version, modelsModule))
+		sources.AddGeneratedAll(models.GenerateVersionModels(version.ResolvedModels, modelsModule))
 	}
 
 	if swaggerPath != "" {
