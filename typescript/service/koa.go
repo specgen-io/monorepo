@@ -218,17 +218,17 @@ func (g *koaGenerator) bodyParsing(w *generator.Writer, operation *spec.NamedOpe
 }
 
 func (g *koaGenerator) respondBadRequest(w *generator.Writer, location, errorsVar, message string) {
-	w.Line(`respondBadRequest(ctx, { message: "%s", location: models.ErrorLocation.%s, errors: %s })`, message, location, errorsVar)
+	w.Line(`responses.badRequest(ctx, { message: "%s", location: errors.ErrorLocation.%s, errors: %s })`, message, location, errorsVar)
 	w.Line(`return`)
 }
 
 func (g *koaGenerator) respondNotFound(w *generator.Writer, message string) {
-	w.Line(`respondNotFound(ctx, { message: "%s" })`, message)
+	w.Line(`responses.notFound(ctx, { message: "%s" })`, message)
 	w.Line(`return`)
 }
 
 func (g *koaGenerator) respondInternalServerError(w *generator.Writer) {
-	w.Line(`respondInternalServerError(ctx, { message: error instanceof Error ? error.message : "Unknown error" })`)
+	w.Line(`responses.internalServerError(ctx, { message: error instanceof Error ? error.message : "Unknown error" })`)
 	w.Line(`return`)
 }
 
