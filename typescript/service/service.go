@@ -20,6 +20,10 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 	sources.AddGenerated(validation.SetupLibrary(validationModule))
 	paramsModule := rootModule.Submodule("params")
 	sources.AddGenerated(generateParamsStaticCode(paramsModule))
+	errorsModule := rootModule.Submodule("errors")
+	sources.AddGenerated(validation.Models(specification.HttpErrors.ResolvedModels, validationModule, errorsModule))
+	responsesModule := rootModule.Submodule("responses")
+	sources.AddGenerated(g.Responses(responsesModule, validationModule, errorsModule))
 
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Name.FlatCase())
@@ -27,7 +31,7 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 		sources.AddGenerated(validation.Models(version.ResolvedModels, validationModule, modelsModule))
 		sources.AddGeneratedAll(generateServiceApis(&version, modelsModule, versionModule))
 		routingModule := versionModule.Submodule("routing")
-		sources.AddGenerated(g.VersionRouting(&version, validationModule, paramsModule, routingModule))
+		sources.AddGenerated(g.VersionRouting(&version, routingModule, modelsModule, validationModule, paramsModule, errorsModule, responsesModule))
 	}
 	specRouterModule := rootModule.Submodule("spec_router")
 	sources.AddGenerated(g.SpecRouter(specification, rootModule, specRouterModule))
