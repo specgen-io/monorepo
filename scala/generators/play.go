@@ -224,12 +224,12 @@ def error(e: Throwable): Result = {
     case ex: ContentTypeMismatchException =>
       val validationError = ValidationError("Content-Type", "missing", Some(ex.getMessage))
       val body = BadRequestError("Failed to parse header", ErrorLocation.Header, Some(List(validationError)))
-      new Status(400)(Jsoner.write(body)).as("application/json")
+      new Result(header = ResponseHeader(400), body = HttpEntity.Strict(ByteString(Jsoner.write(body)), Some("application/json")))
     case ex: DecodingFailure =>
       val path = CursorOp.opsToPath(ex.history)
       val validationError = ValidationError(if (path.startsWith(".")) path.substring(1, path.length) else path, "parsing_failed", Some(ex.getMessage))
       val body = BadRequestError("Failed to parse body", ErrorLocation.Body, Some(List(validationError)))
-      new Status(400)(Jsoner.write(body)).as("application/json")
+      new Result(header = ResponseHeader(400), body = HttpEntity.Strict(ByteString(Jsoner.write(body)), Some("application/json")))
     case ex: ParamReadException =>
       val validationError = ValidationError(ex.paramName, ex.code, Some(ex.getMessage))
       val location = ex.location match {
@@ -241,8 +241,8 @@ def error(e: Throwable): Result = {
         case _: ParamLocation.Header => "header"
       }
       val body = BadRequestError(s"Failed to parse $locationStr", location, Some(List(validationError)))
-      new Status(400)(Jsoner.write(body)).as("application/json")
-    case _ => InternalServerError
+      new Result(header = ResponseHeader(400), body = HttpEntity.Strict(ByteString(Jsoner.write(body)), Some("application/json")))
+    case _ => new Result(header = ResponseHeader(500), body = HttpEntity.NoEntity)
   }
 }
 `)
