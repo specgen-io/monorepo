@@ -11,6 +11,7 @@ func (c *Converter) Specification(doc *openapi3.T) *spec.Spec {
 		name(""),
 		spec.VersionSpecification{c.apis(doc), c.models(doc.Components.Schemas)},
 		nil,
+		nil,
 	}
 	specification := spec.Spec{meta, []spec.Version{version}, spec.HttpErrors{nil, nil, nil}}
 	return &specification

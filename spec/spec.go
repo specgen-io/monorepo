@@ -20,6 +20,7 @@ type VersionSpecification struct {
 type Version struct {
 	Name Name
 	VersionSpecification
+	Spec           *Spec
 	ResolvedModels []*NamedModel
 }
 
@@ -58,7 +59,7 @@ func (value *Spec) UnmarshalYAML(node *yaml.Node) error {
 
 			theSpec := VersionSpecification{}
 			valueNode.DecodeWith(decodeStrict, &theSpec)
-			versions = append(versions, Version{version, theSpec, nil})
+			versions = append(versions, Version{version, theSpec, nil, nil})
 		}
 	}
 	theSpec := VersionSpecification{}
@@ -66,7 +67,7 @@ func (value *Spec) UnmarshalYAML(node *yaml.Node) error {
 	if err != nil {
 		return err
 	}
-	versions = append(versions, Version{Name{}, theSpec, nil})
+	versions = append(versions, Version{Name{}, theSpec, nil, nil})
 
 	meta := Meta{}
 	node.DecodeWith(decodeStrict, &meta)
