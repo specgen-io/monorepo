@@ -45,7 +45,7 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 			apiPackage := servicesPackage.Subpackage(api.Name.FlatCase())
 			apiTrait := generateApiTrait(&api, apiPackage, modelsPackage, servicesImplPackage)
 			apiController := generateApiController(&api, controllersPackage, apiPackage, modelsPackage, jsonPackage, paramsPackage, exceptionsPackage, errorsPackage)
-			apiRouter := generateApiRouter(&api, routersPackage, controllersPackage, modelsPackage, jsonPackage, paramsPackage)
+			apiRouter := generateApiRouter(&api, routersPackage, controllersPackage, modelsPackage, jsonPackage, paramsPackage, errorsPackage)
 			sources.AddGenerated(apiRouter, apiController, apiTrait)
 		}
 		versionModels := generateCirceModels(version.ResolvedModels, modelsPackage, jsonPackage)
@@ -411,7 +411,7 @@ func getParsedOperationParams(operation *spec.NamedOperation) []string {
 	return params
 }
 
-func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPackage, jsonPackage, paramsPackage Package) *generator.CodeFile {
+func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPackage, jsonPackage, paramsPackage, errorsPackage Package) *generator.CodeFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 
@@ -425,6 +425,7 @@ func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPack
 	w.Line(`import %s`, controllersPackage.PackageStar)
 	w.Line(`import %s`, modelsPackage.PackageStar)
 	w.Line(`import %s`, jsonPackage.PackageStar)
+	w.Line(`import %s`, errorsPackage.PackageStar)
 
 	w.EmptyLine()
 	generateApiRouterClass(w, api)
