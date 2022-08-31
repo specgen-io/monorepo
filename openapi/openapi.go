@@ -127,12 +127,12 @@ func generateJsonContent(types ...*spec.TypeDef) *yamlx.YamlMap {
 }
 
 func generateResponses(operation *spec.NamedOperation) *yamlx.YamlMap {
-	statusCodes := spec.MergeHttpStatusCodes(operation.Api.Http.Errors.HttpStatusCodes(), operation.Responses.HttpStatusCodes())
+	statusCodes := spec.MergeHttpStatusCodes(operation.Api.Http.Version.Spec.HttpErrors.Responses.HttpStatusCodes(), operation.Responses.HttpStatusCodes())
 
 	result := yamlx.Map()
 	for _, statusCode := range statusCodes {
 		response := operation.Responses.GetByStatusCode(statusCode)
-		errorResponse := operation.Api.Http.Errors.GetByStatusCode(statusCode)
+		errorResponse := operation.Api.Http.Version.Spec.HttpErrors.Responses.GetByStatusCode(statusCode)
 		var responseDefinition *spec.Definition = nil
 		var alternateDefinition *spec.Definition = nil
 
