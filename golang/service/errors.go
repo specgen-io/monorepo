@@ -54,21 +54,24 @@ func callCheckContentType(logFieldsVar, expectedContentType, requestVar, respons
 }
 
 func respondNotFound(w *generator.Writer, operation *spec.NamedOperation, message string) {
-	badRequest := operation.Api.Http.Errors.GetByStatusName(spec.HttpStatusNotFound)
+	specification := operation.Api.Http.Version.Spec
+	badRequest := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusNotFound)
 	errorMessage := fmt.Sprintf(`%s{Message: %s}`, types.GoErrType(&badRequest.Type.Definition), message)
 	w.Line(`httperrors.RespondNotFound(%s, res, &%s)`, logFieldsName(operation), errorMessage)
 	w.Line(`return`)
 }
 
 func respondBadRequest(w *generator.Writer, operation *spec.NamedOperation, location string, message string, params string) {
-	badRequest := operation.Api.Http.Errors.GetByStatusName(spec.HttpStatusBadRequest)
+	specification := operation.Api.Http.Version.Spec
+	badRequest := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusBadRequest)
 	errorMessage := fmt.Sprintf(`%s{Location: "%s", Message: %s, Errors: %s}`, types.GoErrType(&badRequest.Type.Definition), location, message, params)
 	w.Line(`httperrors.RespondBadRequest(%s, res, &%s)`, logFieldsName(operation), errorMessage)
 	w.Line(`return`)
 }
 
 func respondInternalServerError(w *generator.Writer, operation *spec.NamedOperation, message string) {
-	internalServerError := operation.Api.Http.Errors.GetByStatusName(spec.HttpStatusInternalServerError)
+	specification := operation.Api.Http.Version.Spec
+	internalServerError := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusInternalServerError)
 	errorMessage := fmt.Sprintf(`%s{Message: %s}`, types.GoErrType(&internalServerError.Type.Definition), message)
 	w.Line(`httperrors.RespondInternalServerError(%s, res, &%s)`, logFieldsName(operation), errorMessage)
 	w.Line(`return`)

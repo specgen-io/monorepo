@@ -27,6 +27,7 @@ func enrich(options SpecOptions, specification *Spec) (*Messages, error) {
 				version.Http.Errors = errors
 			}
 		}
+		version.Spec = specification
 		enrichVersion(version, messages)
 	}
 	if messages.ContainsLevel(LevelError) {
