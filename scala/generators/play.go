@@ -17,6 +17,7 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 	jsonPackage := rootPackage.Subpackage("json")
 	paramsPackage := rootPackage.Subpackage("params")
 	exceptionsPackage := rootPackage.Subpackage("exceptions")
+	errorsPackage := rootPackage.Subpackage("errors")
 
 	sources := generator.NewSources()
 
@@ -24,6 +25,9 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 	scalaHttpStaticFile := generateStringParams(paramsPackage)
 	exceptionsFile := generateExceptions(exceptionsPackage)
 	sources.AddGenerated(scalaHttpStaticFile, playParamsFile, exceptionsFile)
+	responsesHelpersFile := generateResponseHelpers(errorsPackage, jsonPackage, paramsPackage, exceptionsPackage)
+	errorsModels := generateCirceModels(specification.HttpErrors.ResolvedModels, errorsPackage, jsonPackage)
+	sources.AddGenerated(errorsModels, responsesHelpersFile)
 	jsonHelpers := generateJson(jsonPackage)
 	taggedUnion := generateTaggedUnion(jsonPackage)
 	sources.AddGenerated(taggedUnion, jsonHelpers)
@@ -40,11 +44,11 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 		for _, api := range version.Http.Apis {
 			apiPackage := servicesPackage.Subpackage(api.Name.FlatCase())
 			apiTrait := generateApiTrait(&api, apiPackage, modelsPackage, servicesImplPackage)
-			apiController := generateApiController(&api, controllersPackage, apiPackage, modelsPackage, jsonPackage, paramsPackage, exceptionsPackage)
+			apiController := generateApiController(&api, controllersPackage, apiPackage, modelsPackage, jsonPackage, paramsPackage, exceptionsPackage, errorsPackage)
 			apiRouter := generateApiRouter(&api, routersPackage, controllersPackage, modelsPackage, jsonPackage, paramsPackage)
 			sources.AddGenerated(apiRouter, apiController, apiTrait)
 		}
-		versionModels := generateCirceModels(&version, modelsPackage, jsonPackage)
+		versionModels := generateCirceModels(version.ResolvedModels, modelsPackage, jsonPackage)
 		sources.AddGenerated(versionModels)
 	}
 	routesFile := generateMainRouter(specification.Versions, appPackage)
@@ -198,7 +202,60 @@ func addParamParsingCall(param *spec.NamedParam) string {
 	}
 }
 
-func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage, jsonPackage, paramsPackage, exceptionsPackage Package) *generator.CodeFile {
+func generateResponseHelpers(thepackage, jsonPackage, paramsPackage, exceptionsPackage Package) *generator.CodeFile {
+	w := NewScalaWriter()
+	w.Line(`package %s`, thepackage.PackageName)
+	w.EmptyLine()
+	w.Line(`import akka.util.ByteString`)
+	w.Line(`import play.api.mvc._`)
+	w.Line(`import play.api.http.HttpEntity`)
+	w.Line(`import io.circe._`)
+	w.Line(`import %s`, exceptionsPackage.PackageStar)
+	w.Line(`import %s`, paramsPackage.PackageStar)
+	w.Line(`import %s.Jsoner`, jsonPackage.PackageName)
+	w.EmptyLine()
+	w.Lines(`
+object Responses {
+  def error(e: Throwable): Result = {
+    e match {
+      case ex: ContentTypeMismatchException =>
+        val validationError = ValidationError("Content-Type", "missing", Some(ex.getMessage))
+        val body = BadRequestError("Failed to parse header", ErrorLocation.Header, Some(List(validationError)))
+        new Result(header = ResponseHeader(400), body = HttpEntity.Strict(ByteString(Jsoner.write(body)), Some("application/json")))
+      case ex: DecodingFailure =>
+        val path = CursorOp.opsToPath(ex.history)
+        val validationError = ValidationError(if (path.startsWith(".")) path.substring(1, path.length) else path, "parsing_failed", Some(ex.getMessage))
+        val body = BadRequestError("Failed to parse body", ErrorLocation.Body, Some(List(validationError)))
+        new Result(header = ResponseHeader(400), body = HttpEntity.Strict(ByteString(Jsoner.write(body)), Some("application/json")))
+      case ex: ParamReadException =>
+        val validationError = ValidationError(ex.paramName, ex.code, Some(ex.getMessage))
+        val location = ex.location match {
+          case _: ParamLocation.Query => ErrorLocation.Query
+          case _: ParamLocation.Header => ErrorLocation.Header
+        }
+        val locationStr = ex.location match {
+          case _: ParamLocation.Query => "query"
+          case _: ParamLocation.Header => "header"
+        }
+        val body = BadRequestError(s"Failed to parse $locationStr", location, Some(List(validationError)))
+        new Result(header = ResponseHeader(400), body = HttpEntity.Strict(ByteString(Jsoner.write(body)), Some("application/json")))
+      case _ => new Result(header = ResponseHeader(500), body = HttpEntity.NoEntity)
+    }
+  }
+
+  def checkContentType(request: RequestHeader, expectedContentType: String) = {
+    if (request.contentType != Some(expectedContentType)) {
+      throw new ContentTypeMismatchException(expectedContentType, request.contentType)
+    }
+  }
+}`)
+	return &generator.CodeFile{
+		Path:    thepackage.GetPath(`Responses.scala`),
+		Content: w.String(),
+	}
+}
+
+func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage, jsonPackage, paramsPackage, exceptionsPackage, errorsPackage Package) *generator.CodeFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
@@ -210,6 +267,8 @@ func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage,
 	w.Line(`import play.api.http.HttpEntity`)
 	w.Line(`import io.circe._`)
 	w.Line(`import %s`, exceptionsPackage.PackageStar)
+	w.Line(`import %s`, errorsPackage.PackageStar)
+	w.Line(`import %s.Responses._`, errorsPackage.PackageName)
 	w.Line(`import %s.ParamsTypesBindings._`, paramsPackage.PackageName)
 	w.Line(`import %s`, paramsPackage.PackageStar)
 	w.Line(`import %s.Jsoner`, jsonPackage.PackageName)
@@ -219,46 +278,9 @@ func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage,
 	w.EmptyLine()
 	w.Line(`@Singleton`)
 	w.Line(`class %s @Inject()(api: %s, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {`, controllerType(api.Name), apiTraitType(api.Name))
-	w.Indent()
-	w.Lines(`
-def error(e: Throwable): Result = {
-  e match {
-    case ex: ContentTypeMismatchException =>
-      val validationError = ValidationError("Content-Type", "missing", Some(ex.getMessage))
-      val body = BadRequestError("Failed to parse header", ErrorLocation.Header, Some(List(validationError)))
-      new Result(header = ResponseHeader(400), body = HttpEntity.Strict(ByteString(Jsoner.write(body)), Some("application/json")))
-    case ex: DecodingFailure =>
-      val path = CursorOp.opsToPath(ex.history)
-      val validationError = ValidationError(if (path.startsWith(".")) path.substring(1, path.length) else path, "parsing_failed", Some(ex.getMessage))
-      val body = BadRequestError("Failed to parse body", ErrorLocation.Body, Some(List(validationError)))
-      new Result(header = ResponseHeader(400), body = HttpEntity.Strict(ByteString(Jsoner.write(body)), Some("application/json")))
-    case ex: ParamReadException =>
-      val validationError = ValidationError(ex.paramName, ex.code, Some(ex.getMessage))
-      val location = ex.location match {
-        case _: ParamLocation.Query => ErrorLocation.Query
-        case _: ParamLocation.Header => ErrorLocation.Header
-      }
-      val locationStr = ex.location match {
-        case _: ParamLocation.Query => "query"
-        case _: ParamLocation.Header => "header"
-      }
-      val body = BadRequestError(s"Failed to parse $locationStr", location, Some(List(validationError)))
-      new Result(header = ResponseHeader(400), body = HttpEntity.Strict(ByteString(Jsoner.write(body)), Some("application/json")))
-    case _ => new Result(header = ResponseHeader(500), body = HttpEntity.NoEntity)
-  }
-}
-`)
-	w.Lines(`
-def checkContentType(request: RequestHeader, expectedContentType: String) = {
-  if (request.contentType != Some(expectedContentType)) {
-    throw new ContentTypeMismatchException(expectedContentType, request.contentType)
-  }
-}
-`)
 	for _, operation := range api.Operations {
-		generateControllerMethod(w, &operation)
+		generateControllerMethod(w.Indented(), &operation)
 	}
-	w.Unindent()
 	w.Line(`}`)
 
 	return &generator.CodeFile{

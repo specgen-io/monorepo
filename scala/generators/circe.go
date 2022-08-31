@@ -23,14 +23,14 @@ func GenerateCirceModels(specification *spec.Spec, packageName string, generateP
 	for _, version := range specification.Versions {
 		versionClientPackage := mainPackage.Subpackage(version.Name.FlatCase())
 		versionModelsPackage := versionClientPackage.Subpackage("models")
-		versionFile := generateCirceModels(&version, versionModelsPackage, jsonPackage)
+		versionFile := generateCirceModels(version.ResolvedModels, versionModelsPackage, jsonPackage)
 		sources.AddGenerated(versionFile)
 	}
 
 	return sources
 }
 
-func generateCirceModels(version *spec.Version, thepackage, taggedUnionPackage Package) *generator.CodeFile {
+func generateCirceModels(models []*spec.NamedModel, thepackage, taggedUnionPackage Package) *generator.CodeFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
@@ -43,7 +43,7 @@ func generateCirceModels(version *spec.Version, thepackage, taggedUnionPackage P
 	w.Line(`import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveUnwrappedCodec}`)
 	w.Line(`import %s.taggedunion._`, taggedUnionPackage.PackageName)
 
-	for _, model := range version.ResolvedModels {
+	for _, model := range models {
 		w.EmptyLine()
 		if model.IsObject() {
 			generateCirceObjectModel(w, model)
