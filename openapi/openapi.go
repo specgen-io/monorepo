@@ -47,9 +47,9 @@ func generateSpecification(spec *spec.Spec) *yamlx.YamlMap {
 	return openapi
 }
 
-func versionedModelName(version string, modelName string) string {
-	if version != "" {
-		return version + "." + modelName
+func versionedModelName(version *spec.Version, modelName string) string {
+	if version != nil && version.Name.Source != "" {
+		return version.Name.Source + "." + modelName
 	}
 	return modelName
 }
@@ -209,12 +209,12 @@ func generateOneOfWrapperModel(model *spec.NamedModel) *yamlx.YamlMap {
 	}
 	schema.Add("oneOf", oneOfItems)
 	result := yamlx.Map()
-	result.Add(versionedModelName(model.Version.Name.Source, model.Name.Source), schema)
+	result.Add(versionedModelName(model.Version, model.Name.Source), schema)
 	return result
 }
 
 func itemTypeName(model *spec.NamedModel, item *spec.NamedDefinition) string {
-	return versionedModelName(model.Version.Name.Source, model.Name.Source+item.Name.PascalCase())
+	return versionedModelName(model.Version, model.Name.Source+item.Name.PascalCase())
 }
 
 func generateOneOfDiscriminatorModel(model *spec.NamedModel) *yamlx.YamlMap {
@@ -242,7 +242,7 @@ func generateOneOfDiscriminatorModel(model *spec.NamedModel) *yamlx.YamlMap {
 	schema.Add("discriminator", discriminator)
 
 	result := yamlx.Map()
-	result.Add(versionedModelName(model.Version.Name.Source, model.Name.Source), schema)
+	result.Add(versionedModelName(model.Version, model.Name.Source), schema)
 	for _, item := range model.OneOf.Items {
 		result.Add(itemTypeName(model, &item), generateOneOfDiscriminatorItemModel(model, &item))
 	}
@@ -301,7 +301,7 @@ func generateObjectModel(model *spec.NamedModel) *yamlx.YamlMap {
 	schema.Add("properties", properties)
 
 	result := yamlx.Map()
-	result.Add(versionedModelName(model.Version.Name.Source, model.Name.Source), schema)
+	result.Add(versionedModelName(model.Version, model.Name.Source), schema)
 	return result
 }
 
@@ -320,6 +320,6 @@ func generateEnumModel(model *spec.NamedModel) *yamlx.YamlMap {
 	schema.Add("enum", openApiItems)
 
 	result := yamlx.Map()
-	result.Add(versionedModelName(model.Version.Name.Source, model.Name.Source), schema)
+	result.Add(versionedModelName(model.Version, model.Name.Source), schema)
 	return result
 }
