@@ -29,7 +29,7 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 		versionModelsPackage := versionClientPackage.Subpackage("models")
 		clientImplementations := generateClientImplementations(&version, versionClientPackage, versionModelsPackage, jsonPackage, paramsPackage)
 		sources.AddGeneratedAll(clientImplementations)
-		models := generateCirceModels(&version, versionModelsPackage, jsonPackage)
+		models := generateCirceModels(version.ResolvedModels, versionModelsPackage, jsonPackage)
 		sources.AddGenerated(models)
 	}
 
