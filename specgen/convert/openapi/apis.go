@@ -13,7 +13,7 @@ func (c *Converter) apis(doc *openapi3.T) spec.Http {
 	for _, api := range apis {
 		specApis = append(specApis, *c.api(api))
 	}
-	return spec.Http{nil, specApis, nil, nil}
+	return spec.Http{nil, specApis, nil}
 }
 
 func (c *Converter) api(api *Api) *spec.Api {

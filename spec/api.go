@@ -14,7 +14,6 @@ type Api struct {
 type Http struct {
 	Url     *string
 	Apis    []Api
-	Errors  Responses
 	Version *Version
 }
 

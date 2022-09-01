@@ -101,14 +101,14 @@ func (validator *validator) Operation(operation *NamedOperation) {
 	}
 
 	for index := range operation.Responses {
-		validator.Response(&operation.Responses[index])
+		validator.OperationResponse(&operation.Responses[index])
 	}
 }
 
-func (validator *validator) Response(response *OperationResponse) {
+func (validator *validator) OperationResponse(response *OperationResponse) {
 	if response.Name.Source == HttpStatusInternalServerError || response.Name.Source == HttpStatusNotFound || response.Name.Source == HttpStatusBadRequest {
-		errors := response.Operation.Api.Http.Errors
-		errorResponse := errors.GetByStatusName(response.Name.Source)
+		errors := response.Operation.Api.Http.Version.Spec.HttpErrors
+		errorResponse := errors.Responses.GetByStatusName(response.Name.Source)
 		if response.Type.Definition.String() != errorResponse.Type.Definition.String() {
 			messageFormat :=
 				`response %s is recommended to have standard error type "%s", if declared, found: "%s", ` +

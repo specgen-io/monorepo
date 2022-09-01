@@ -13,20 +13,6 @@ func enrich(options SpecOptions, specification *Spec) (*Messages, error) {
 	}
 	for verIndex := range specification.Versions {
 		version := &specification.Versions[verIndex]
-		if options.AddErrors {
-			if len(version.Http.Apis) > 0 {
-				errorResponses, err := createErrorModels()
-				if err != nil {
-					return nil, err
-				}
-				version.Models = append(version.Models, errorResponses...)
-				errors, err := createErrorResponses()
-				if err != nil {
-					return nil, err
-				}
-				version.Http.Errors = errors
-			}
-		}
 		version.Spec = specification
 		enrichVersion(version, messages)
 	}
@@ -103,10 +89,6 @@ func (enricher *enricher) Version(version *Version) {
 
 	http := &version.Http
 	http.Version = version
-
-	for index := range http.Errors {
-		enricher.Definition(&http.Errors[index].Definition)
-	}
 
 	for apiIndex := range http.Apis {
 		api := &version.Http.Apis[apiIndex]
