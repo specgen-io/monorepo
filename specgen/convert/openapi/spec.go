@@ -13,6 +13,6 @@ func (c *Converter) Specification(doc *openapi3.T) *spec.Spec {
 		nil,
 		nil,
 	}
-	specification := spec.Spec{meta, []spec.Version{version}, &spec.HttpErrors{nil, nil, nil}}
+	specification := spec.Spec{meta, []spec.Version{version}, &spec.HttpErrors{nil, nil, nil, nil}}
 	return &specification
 }
