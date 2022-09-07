@@ -16,21 +16,26 @@ func GenerateOpenapi(spec *spec.Spec, outFile string) *generator.CodeFile {
 	return openapiFile
 }
 
-func generateSpecification(spec *spec.Spec) *yamlx.YamlMap {
+func generateSpecification(specification *spec.Spec) *yamlx.YamlMap {
 	info := yamlx.Map()
-	title := spec.Name.Source
-	if spec.Title != nil {
-		title = *spec.Title
+	title := specification.Name.Source
+	if specification.Title != nil {
+		title = *specification.Title
 	}
 	info.Add("title", title)
-	if spec.Description != nil {
-		info.Add("description", spec.Description)
+	if specification.Description != nil {
+		info.Add("description", specification.Description)
 	}
-	info.Add("version", spec.Version)
+	info.Add("version", specification.Version)
 
 	schemas := yamlx.Map()
-	for _, version := range spec.Versions {
+	for _, version := range specification.Versions {
 		for _, model := range version.Models {
+			schemas.Merge(generateModel(&model).Node)
+		}
+	}
+	if specification.HttpErrors != nil {
+		for _, model := range specification.HttpErrors.Models {
 			schemas.Merge(generateModel(&model).Node)
 		}
 	}
@@ -40,7 +45,7 @@ func generateSpecification(spec *spec.Spec) *yamlx.YamlMap {
 	openapi := yamlx.Map(
 		yamlx.Pair{"openapi", "3.0.0"},
 		yamlx.Pair{"info", info},
-		yamlx.Pair{"paths", generateApis(spec)},
+		yamlx.Pair{"paths", generateApis(specification)},
 		yamlx.Pair{"components", components},
 	)
 
