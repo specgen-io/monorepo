@@ -17,7 +17,8 @@ type Model struct {
 type NamedModel struct {
 	Name Name
 	Model
-	Version *Version
+	Version    *Version
+	HttpErrors *HttpErrors
 }
 
 type Models []NamedModel
@@ -147,4 +148,15 @@ func (value Models) MarshalYAML() (interface{}, error) {
 		}
 	}
 	return yamlMap.Node, nil
+}
+
+type ModelsMap map[string]*NamedModel
+
+func buildModelsMap(models Models) ModelsMap {
+	result := make(map[string]*NamedModel)
+	for modIndex := range models {
+		name := models[modIndex].Name.Source
+		result[name] = &models[modIndex]
+	}
+	return result
 }

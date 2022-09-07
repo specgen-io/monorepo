@@ -3,18 +3,30 @@ package spec
 import (
 	"errors"
 	"fmt"
-	"gopkg.in/specgen-io/yaml.v3"
 )
 
-func enrich(options SpecOptions, specification *Spec) (*Messages, error) {
+func enrich(specification *Spec) (*Messages, error) {
 	messages := NewMessages()
-	if options.AddErrors {
-		enrichErrors(&specification.HttpErrors, messages)
+	if specification.HttpErrors != nil {
+		httpErrors := specification.HttpErrors
+		httpErrors.ResolvedModels = enrichModels(httpErrors.Models, messages)
+		errorModels := buildModelsMap(httpErrors.Models)
+		enricher := &httpEnricher{errorModels, messages}
+		enricher.httpErrors(httpErrors)
 	}
-	for verIndex := range specification.Versions {
-		version := &specification.Versions[verIndex]
+	for index := range specification.Versions {
+		version := &specification.Versions[index]
+		version.ResolvedModels = enrichModels(version.Models, messages)
 		version.Spec = specification
-		enrichVersion(version, messages)
+		models := buildModelsMap(version.Models)
+		if specification.HttpErrors != nil {
+			errorModels := buildModelsMap(specification.HttpErrors.Models)
+			for name, model := range errorModels {
+				models[name] = model
+			}
+		}
+		enricher := &httpEnricher{models, messages}
+		enricher.version(version)
 	}
 	if messages.ContainsLevel(LevelError) {
 		return messages, errors.New("failed to parse specification")
@@ -22,70 +34,15 @@ func enrich(options SpecOptions, specification *Spec) (*Messages, error) {
 	return messages, nil
 }
 
-func enrichVersion(version *Version, messages *Messages) {
-	modelsMap := buildModelsMap(version.Models)
-	enricher := &enricher{modelsMap, make(map[string]interface{}), messages, nil}
-	enricher.Version(version)
-	version.ResolvedModels = enricher.ResolvedModels
+type httpEnricher struct {
+	models   ModelsMap
+	Messages *Messages
 }
 
-func enrichErrors(httpErrors *HttpErrors, messages *Messages) {
-	modelsMap := buildModelsMap(httpErrors.Models)
-	enricher := &enricher{modelsMap, make(map[string]interface{}), messages, nil}
-	enricher.HttpErrors(httpErrors)
-	for index := range httpErrors.Responses {
-		enricher.Definition(&httpErrors.Responses[index].Definition)
-	}
-	httpErrors.ResolvedModels = enricher.ResolvedModels
-}
-
-type ModelsMap map[string]*NamedModel
-
-func buildModelsMap(models Models) ModelsMap {
-	result := make(map[string]*NamedModel)
-	for modIndex := range models {
-		name := models[modIndex].Name.Source
-		result[name] = &models[modIndex]
-	}
-	return result
-}
-
-type enricher struct {
-	ModelsMap       ModelsMap
-	ProcessedModels map[string]interface{}
-	Messages        *Messages
-	ResolvedModels  []*NamedModel
-}
-
-func (enricher *enricher) modelAlreadyVisited(name string) bool {
-	if _, ok := enricher.ProcessedModels[name]; ok {
-		return true
-	}
-	enricher.ProcessedModels[name] = nil
-	return false
-}
-
-func (enricher *enricher) findModel(name string) (*NamedModel, bool) {
-	if model, ok := enricher.ModelsMap[name]; ok {
-		return model, true
-	}
-	return nil, false
-}
-
-func (enricher *enricher) addResolvedModel(model *NamedModel) {
-	for _, m := range enricher.ResolvedModels {
-		if m.Name.Source == model.Name.Source {
-			return
-		}
-	}
-	enricher.ResolvedModels = append(enricher.ResolvedModels, model)
-}
-
-func (enricher *enricher) Version(version *Version) {
+func (enricher *httpEnricher) version(version *Version) {
 	for modIndex := range version.Models {
 		version.Models[modIndex].Version = version
 	}
-	enricher.Models(version.Models)
 
 	http := &version.Http
 	http.Version = version
@@ -96,106 +53,77 @@ func (enricher *enricher) Version(version *Version) {
 		for opIndex := range api.Operations {
 			operation := &api.Operations[opIndex]
 			operation.Api = api
-			enricher.Operation(operation)
+			enricher.operation(operation)
 		}
 	}
 }
 
-func (enricher *enricher) HttpErrors(httpErrors *HttpErrors) {
-	for modIndex := range httpErrors.Models {
-		model := &httpErrors.Models[modIndex]
-		enricher.Model(model)
+func (enricher *httpEnricher) httpErrors(httpErrors *HttpErrors) {
+	for index := range httpErrors.Models {
+		httpErrors.Models[index].HttpErrors = httpErrors
+	}
+
+	for index := range httpErrors.Responses {
+		enricher.definition(&httpErrors.Responses[index].Definition)
 	}
 }
 
-func (enricher *enricher) Models(models Models) {
-	for modIndex := range models {
-		model := &models[modIndex]
-		enricher.Model(model)
-	}
-}
-
-func (enricher *enricher) Operation(operation *NamedOperation) {
-	enricher.Params(operation.Endpoint.UrlParams)
-	enricher.Params(operation.QueryParams)
-	enricher.Params(operation.HeaderParams)
+func (enricher *httpEnricher) operation(operation *NamedOperation) {
+	enricher.params(operation.Endpoint.UrlParams)
+	enricher.params(operation.QueryParams)
+	enricher.params(operation.HeaderParams)
 
 	if operation.Body != nil {
-		enricher.Definition(operation.Body)
+		enricher.definition(operation.Body)
 	}
 
 	for index := range operation.Responses {
 		operation.Responses[index].Operation = operation
-		enricher.Definition(&operation.Responses[index].Definition)
+		enricher.definition(&operation.Responses[index].Definition)
 	}
 }
 
-func (enricher *enricher) Params(params []NamedParam) {
+func (enricher *httpEnricher) params(params []NamedParam) {
 	for index := range params {
-		enricher.DefinitionDefault(&params[index].DefinitionDefault)
+		enricher.typ(&params[index].DefinitionDefault.Type)
 	}
 }
 
-func (enricher *enricher) Model(model *NamedModel) {
-	if !enricher.modelAlreadyVisited(model.Name.Source) {
-		if model.IsObject() {
-			for index := range model.Object.Fields {
-				enricher.Definition(&model.Object.Fields[index].Definition)
-			}
-		}
-		if model.IsOneOf() {
-			for index := range model.OneOf.Items {
-				enricher.Definition(&model.OneOf.Items[index].Definition)
-			}
-		}
-		enricher.addResolvedModel(model)
-	}
-}
-
-func (enricher *enricher) DefinitionDefault(definition *DefinitionDefault) {
+func (enricher *httpEnricher) definition(definition *Definition) {
 	if definition != nil {
-		enricher.Type(&definition.Type)
+		enricher.typ(&definition.Type)
 	}
 }
 
-func (enricher *enricher) Definition(definition *Definition) {
-	if definition != nil {
-		enricher.Type(&definition.Type)
-	}
+func (enricher *httpEnricher) typ(typ *Type) {
+	enricher.typeDef(typ, &typ.Definition)
 }
 
-func (enricher *enricher) Type(typ *Type) {
-	enricher.TypeDef(&typ.Definition, typ.Location)
-}
-
-func (enricher *enricher) TypeDef(typ *TypeDef, node *yaml.Node) *TypeInfo {
+func (enricher *httpEnricher) typeDef(starter *Type, typ *TypeDef) {
 	if typ != nil {
 		switch typ.Node {
 		case PlainType:
-			if model, ok := enricher.findModel(typ.Plain); ok {
+			if model, found := enricher.models[typ.Plain]; found {
 				typ.Info = ModelTypeInfo(model)
-				enricher.Model(model)
 			} else {
-				if info, ok := Types[typ.Plain]; ok {
+				if info, found := Types[typ.Plain]; found {
 					typ.Info = &info
 				} else {
-					e := Error("unknown type: %s", typ.Plain).At(locationFromNode(node))
+					e := Error("unknown type: %s", typ.Plain).At(locationFromNode(starter.Location))
 					enricher.Messages.Add(e)
 				}
 			}
 		case NullableType:
-			childInfo := enricher.TypeDef(typ.Child, node)
-			typ.Info = NullableTypeInfo(childInfo)
+			enricher.typeDef(starter, typ.Child)
+			typ.Info = NullableTypeInfo(typ.Child.Info)
 		case ArrayType:
-			enricher.TypeDef(typ.Child, node)
+			enricher.typeDef(starter, typ.Child)
 			typ.Info = ArrayTypeInfo()
 		case MapType:
-			enricher.TypeDef(typ.Child, node)
+			enricher.typeDef(starter, typ.Child)
 			typ.Info = MapTypeInfo()
 		default:
-			panic(fmt.Sprintf("Unknown type: %v", typ))
+			panic(fmt.Sprintf("unknown kind of type: %v", typ))
 		}
-		return typ.Info
 	}
-	return nil
 }
