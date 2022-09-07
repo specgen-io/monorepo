@@ -34,7 +34,7 @@ func ReadSpecWithOptions(options SpecOptions, data []byte) (*Spec, *Messages, er
 		return nil, allMessages, err
 	}
 
-	messages, err = enrich(options, spec)
+	messages, err = enrich(spec)
 	allMessages.AddAll(messages.Items...)
 	if err != nil {
 		return nil, allMessages, err

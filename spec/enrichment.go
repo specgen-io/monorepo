@@ -5,20 +5,26 @@ import (
 	"fmt"
 )
 
-func enrich(options SpecOptions, specification *Spec) (*Messages, error) {
+func enrich(specification *Spec) (*Messages, error) {
 	messages := NewMessages()
 	if specification.HttpErrors != nil {
 		httpErrors := specification.HttpErrors
-		errorModels := buildModelsMap(httpErrors.Models)
 		httpErrors.ResolvedModels = enrichModels(httpErrors.Models, messages)
+		errorModels := buildModelsMap(httpErrors.Models)
 		enricher := &httpEnricher{errorModels, messages}
 		enricher.httpErrors(httpErrors)
 	}
 	for index := range specification.Versions {
 		version := &specification.Versions[index]
+		version.ResolvedModels = enrichModels(version.Models, messages)
 		version.Spec = specification
 		models := buildModelsMap(version.Models)
-		version.ResolvedModels = enrichModels(version.Models, messages)
+		if specification.HttpErrors != nil {
+			errorModels := buildModelsMap(specification.HttpErrors.Models)
+			for name, model := range errorModels {
+				models[name] = model
+			}
+		}
 		enricher := &httpEnricher{models, messages}
 		enricher.version(version)
 	}
