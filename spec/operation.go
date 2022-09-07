@@ -27,10 +27,6 @@ func (operation *Operation) GetResponse(status string) *OperationResponse {
 	return nil
 }
 
-func (operation *Operation) BodyKind() BodyKind {
-	return kindOf(operation.Body)
-}
-
 func (operation *Operation) BodyIs(kind BodyKind) bool {
 	return kindOf(operation.Body) == kind
 }

@@ -20,12 +20,12 @@ func (c *Converter) api(api *Api) *spec.Api {
 	operations := []spec.NamedOperation{}
 	for _, pathItem := range api.Items {
 		operation := c.pathItem(&pathItem)
-		operations = append(operations, spec.NamedOperation{name(casee.ToSnakeCase(pathItem.Operation.OperationID)), *operation, nil})
+		operations = append(operations, *operation)
 	}
 	return &spec.Api{name(api.Name), operations, nil}
 }
 
-func (c *Converter) pathItem(pathItem *PathItem) *spec.Operation {
+func (c *Converter) pathItem(pathItem *PathItem) *spec.NamedOperation {
 	pathParams := collectParams(pathItem.Operation.Parameters, "path")
 	headerParams := collectParams(pathItem.Operation.Parameters, "header")
 	queryParams := collectParams(pathItem.Operation.Parameters, "query")
@@ -44,7 +44,7 @@ func (c *Converter) pathItem(pathItem *PathItem) *spec.Operation {
 		c.responses(pathItem.Operation.Responses),
 		nil,
 	}
-	return &operation
+	return &spec.NamedOperation{name(casee.ToSnakeCase(pathItem.Operation.OperationID)), operation, nil}
 }
 
 func (c *Converter) responses(responses openapi3.Responses) []spec.OperationResponse {
