@@ -14,7 +14,7 @@ func (c *Converter) models(schemas map[string]*openapi3.SchemaRef) []spec.NamedM
 	for schemaName, schema := range schemas {
 		specModel := c.schema(schema)
 		if specModel != nil {
-			models = append(models, spec.NamedModel{name(schemaName), *specModel, nil})
+			models = append(models, spec.NamedModel{name(schemaName), *specModel, nil, nil})
 		}
 	}
 	return models

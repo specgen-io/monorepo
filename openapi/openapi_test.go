@@ -17,8 +17,31 @@ func checkOpenApi(t *testing.T, specYaml, expectedOpenApiYaml string) {
 	openapiYaml, err := yamlx.ToYamlString(generateSpecification(spec))
 	assert.NilError(t, err)
 
+	expectedOpenApiYaml = strings.Replace(expectedOpenApiYaml, `{{ global errors }}`, strings.TrimSpace(openapiGlobalErrors), -1)
+
 	assert.Equal(t, strings.TrimSpace(expectedOpenApiYaml), strings.TrimSpace(openapiYaml))
 }
+
+var openapiGlobalErrors = `
+        "400":
+          description: Service will return this if parameters are not provided or couldn't be parsed correctly
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "404":
+          description: Service will return this if the endpoint is not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "500":
+          description: Service will return this if unexpected internal error happens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+`
 
 func TestEnumModel(t *testing.T) {
 	specYaml := `
@@ -299,6 +322,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyModel'
+        {{ global errors }}
 components:
   schemas:
     MyModel:
@@ -386,6 +410,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Model1'
+        {{ global errors }}
   /ping:
     get:
       operationId: testPing
@@ -400,6 +425,7 @@ paths:
       responses:
         "200":
           description: ""
+        {{ global errors }}
 components:
   schemas:
     Model1:
@@ -466,6 +492,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/v2.Message'
+        {{ global errors }}
 components:
   schemas:
     v2.Message:
