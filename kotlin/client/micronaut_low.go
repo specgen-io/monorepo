@@ -129,7 +129,7 @@ func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spe
 		w.Line(`  request.headerParam("%s", %s)`, param.Name.Source, addBuilderParam(&param))
 	}
 	w.EmptyLine()
-	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s")`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
+	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	w.EmptyLine()
 	w.Line(`  val response = client.toBlocking().exchange(request.build(), String::class.java)`)
 	w.EmptyLine()
@@ -175,8 +175,8 @@ func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spe
 
 func getUrl(operation *spec.NamedOperation) string {
 	url := strings.TrimRight(operation.Endpoint.UrlParts[0].Part, "/")
-	if operation.Api.Http.GetUrl() != "" {
-		return strings.TrimRight(operation.Api.Http.GetUrl(), "/") + url
+	if operation.InApi.InHttp.GetUrl() != "" {
+		return strings.TrimRight(operation.InApi.InHttp.GetUrl(), "/") + url
 	}
 	return url
 }

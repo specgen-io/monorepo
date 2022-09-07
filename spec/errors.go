@@ -9,6 +9,7 @@ import (
 type HttpErrors struct {
 	Responses      Responses
 	Models         Models
+	InSpec         *Spec
 	ResolvedModels []*NamedModel
 }
 
@@ -149,5 +150,5 @@ func createHttpErrors() (*HttpErrors, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &HttpErrors{responses, models, nil}, nil
+	return &HttpErrors{responses, models, nil, nil}, nil
 }

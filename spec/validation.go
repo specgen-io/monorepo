@@ -107,7 +107,7 @@ func (validator *validator) Operation(operation *NamedOperation) {
 
 func (validator *validator) OperationResponse(response *OperationResponse) {
 	if response.Name.Source == HttpStatusInternalServerError || response.Name.Source == HttpStatusNotFound || response.Name.Source == HttpStatusBadRequest {
-		errors := response.Operation.Api.Http.Version.Spec.HttpErrors
+		errors := response.Operation.InApi.InHttp.InVersion.InSpec.HttpErrors
 		errorResponse := errors.Responses.GetByStatusName(response.Name.Source)
 		if response.Type.Definition.String() != errorResponse.Type.Definition.String() {
 			messageFormat :=

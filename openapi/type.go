@@ -103,7 +103,7 @@ func PlainOpenApiType(typeInfo *spec.TypeInfo, typ string) *yamlx.YamlMap {
 		return result
 	default:
 		result := yamlx.Map()
-		result.Add("$ref", componentSchemas(versionedModelName(typeInfo.Model.Version, typ)))
+		result.Add("$ref", componentSchemas(versionedModelName(typeInfo.Model.InVersion, typ)))
 		return result
 	}
 }

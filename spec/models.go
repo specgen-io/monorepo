@@ -17,8 +17,8 @@ type Model struct {
 type NamedModel struct {
 	Name Name
 	Model
-	Version    *Version
-	HttpErrors *HttpErrors
+	InVersion    *Version
+	InHttpErrors *HttpErrors
 }
 
 type Models []NamedModel

@@ -27,7 +27,7 @@ func NewSpringGenerator(types *types.Types, models models.Generator) *SpringGene
 }
 
 func (g *SpringGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string) {
-	return `org.springframework.stereotype.Service`, fmt.Sprintf(`Service("%s")`, versionServiceName(serviceName(api), api.Http.Version))
+	return `org.springframework.stereotype.Service`, fmt.Sprintf(`Service("%s")`, versionServiceName(serviceName(api), api.InHttp.InVersion))
 }
 
 func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
@@ -114,7 +114,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api, thePackage, contentTy
 	imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.Http.Version))
+	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.InHttp.InVersion))
 	className := controllerName(api)
 	w.Line(`public class %s {`, className)
 	w.Line(`  private static final Logger logger = LogManager.getLogger(%s.class);`, className)
@@ -145,7 +145,7 @@ func (g *SpringGenerator) controllerMethod(w *generator.Writer, operation *spec.
 	w.Line(`@%sMapping("%s")`, casee.ToPascalCase(methodName), url)
 	w.Line(`public ResponseEntity<String> %s(%s) {`, controllerMethodName(operation), strings.Join(springMethodParams(operation, g.Types), ", "))
 	w.Indent()
-	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
+	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	g.parseBody(w, operation, "bodyStr", "requestBody")
 	g.serviceCall(w, operation, "bodyStr", "requestBody", "result")
 	g.processResponses(w, operation, "result")
@@ -165,7 +165,7 @@ func (g *SpringGenerator) parseBody(w *generator.Writer, operation *spec.NamedOp
 }
 
 func (g *SpringGenerator) serviceCall(w *generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.Api), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar)))
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar)))
 	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
 		w.Line(`%s;`, serviceCall)
 	} else {

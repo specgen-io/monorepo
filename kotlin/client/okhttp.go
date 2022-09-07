@@ -112,8 +112,8 @@ func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.Name
 	}
 
 	w.Line(`  val url = UrlBuilder(baseUrl)`)
-	if operation.Api.Http.GetUrl() != "" {
-		w.Line(`  url.addPathSegments("%s")`, trimSlash(operation.Api.Http.GetUrl()))
+	if operation.InApi.InHttp.GetUrl() != "" {
+		w.Line(`  url.addPathSegments("%s")`, trimSlash(operation.InApi.InHttp.GetUrl()))
 	}
 	for _, urlPart := range operation.Endpoint.UrlParts {
 		part := trimSlash(urlPart.Part)
@@ -132,7 +132,7 @@ func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.Name
 		w.Line(`  request.addHeaderParameter("%s", %s)`, param.Name.Source, addBuilderParam(&param))
 	}
 	w.EmptyLine()
-	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s")`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
+	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	generateClientTryCatch(w.Indented(), "response",
 		`client.newCall(request.build()).execute()`,
 		`IOException`, `e`,

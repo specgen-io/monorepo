@@ -68,11 +68,11 @@ func generateApis(spec *spec.Spec) *yamlx.YamlMap {
 }
 
 func generateOperation(o *spec.NamedOperation) *yamlx.YamlMap {
-	version := o.Api.Http.Version.Name
-	operationId := casee.ToCamelCase(version.PascalCase() + o.Api.Name.PascalCase() + o.Name.PascalCase())
+	version := o.InApi.InHttp.InVersion.Name
+	operationId := casee.ToCamelCase(version.PascalCase() + o.InApi.Name.PascalCase() + o.Name.PascalCase())
 	operation := yamlx.Map()
 	operation.Add("operationId", operationId)
-	operation.Add("tags", yamlx.Array(o.Api.Name.Source))
+	operation.Add("tags", yamlx.Array(o.InApi.Name.Source))
 
 	if o.Operation.Description != nil {
 		operation.Add("description", o.Operation.Description)
@@ -128,14 +128,14 @@ func generateJsonContent(types ...*spec.TypeDef) *yamlx.YamlMap {
 
 func generateResponses(operation *spec.NamedOperation) *yamlx.YamlMap {
 	statusCodes := operation.Responses.HttpStatusCodes()
-	if operation.Api.Http.Version.Spec.HttpErrors != nil {
-		statusCodes = spec.MergeHttpStatusCodes(statusCodes, operation.Api.Http.Version.Spec.HttpErrors.Responses.HttpStatusCodes())
+	if operation.InApi.InHttp.InVersion.InSpec.HttpErrors != nil {
+		statusCodes = spec.MergeHttpStatusCodes(statusCodes, operation.InApi.InHttp.InVersion.InSpec.HttpErrors.Responses.HttpStatusCodes())
 	}
 
 	result := yamlx.Map()
 	for _, statusCode := range statusCodes {
 		response := operation.Responses.GetByStatusCode(statusCode)
-		errorResponse := operation.Api.Http.Version.Spec.HttpErrors.Responses.GetByStatusCode(statusCode)
+		errorResponse := operation.InApi.InHttp.InVersion.InSpec.HttpErrors.Responses.GetByStatusCode(statusCode)
 		var responseDefinition *spec.Definition = nil
 		var alternateDefinition *spec.Definition = nil
 
@@ -212,12 +212,12 @@ func generateOneOfWrapperModel(model *spec.NamedModel) *yamlx.YamlMap {
 	}
 	schema.Add("oneOf", oneOfItems)
 	result := yamlx.Map()
-	result.Add(versionedModelName(model.Version, model.Name.Source), schema)
+	result.Add(versionedModelName(model.InVersion, model.Name.Source), schema)
 	return result
 }
 
 func itemTypeName(model *spec.NamedModel, item *spec.NamedDefinition) string {
-	return versionedModelName(model.Version, model.Name.Source+item.Name.PascalCase())
+	return versionedModelName(model.InVersion, model.Name.Source+item.Name.PascalCase())
 }
 
 func generateOneOfDiscriminatorModel(model *spec.NamedModel) *yamlx.YamlMap {
@@ -245,7 +245,7 @@ func generateOneOfDiscriminatorModel(model *spec.NamedModel) *yamlx.YamlMap {
 	schema.Add("discriminator", discriminator)
 
 	result := yamlx.Map()
-	result.Add(versionedModelName(model.Version, model.Name.Source), schema)
+	result.Add(versionedModelName(model.InVersion, model.Name.Source), schema)
 	for _, item := range model.OneOf.Items {
 		result.Add(itemTypeName(model, &item), generateOneOfDiscriminatorItemModel(model, &item))
 	}
@@ -304,7 +304,7 @@ func generateObjectModel(model *spec.NamedModel) *yamlx.YamlMap {
 	schema.Add("properties", properties)
 
 	result := yamlx.Map()
-	result.Add(versionedModelName(model.Version, model.Name.Source), schema)
+	result.Add(versionedModelName(model.InVersion, model.Name.Source), schema)
 	return result
 }
 
@@ -323,6 +323,6 @@ func generateEnumModel(model *spec.NamedModel) *yamlx.YamlMap {
 	schema.Add("enum", openApiItems)
 
 	result := yamlx.Map()
-	result.Add(versionedModelName(model.Version, model.Name.Source), schema)
+	result.Add(versionedModelName(model.InVersion, model.Name.Source), schema)
 	return result
 }

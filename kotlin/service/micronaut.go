@@ -143,7 +143,7 @@ func (g *MicronautGenerator) controllerMethod(w *generator.Writer, operation *sp
 	url := operation.FullUrl()
 	w.Line(`@%s("%s")`, casee.ToPascalCase(methodName), url)
 	w.Line(`fun %s(%s): HttpResponse<*> {`, controllerMethodName(operation), joinParams(micronautMethodParams(operation, g.Types)))
-	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
+	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	w.Indent()
 	g.parseBody(w, operation, "bodyStr", "requestBody")
 	serviceCall(w, operation, "bodyStr", "requestBody", "result")

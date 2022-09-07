@@ -72,17 +72,17 @@ func (value Operation) MarshalYAML() (interface{}, error) {
 type NamedOperation struct {
 	Name Name
 	Operation
-	Api *Api
+	InApi *Api
 }
 
 func (op *NamedOperation) FullUrl() string {
-	return op.Api.Http.GetUrl() + op.Endpoint.Url
+	return op.InApi.InHttp.GetUrl() + op.Endpoint.Url
 }
 
 func (op *NamedOperation) FullName() string {
-	fullName := fmt.Sprintf(`%s.%s`, op.Api.Name.Source, op.Name.Source)
-	if op.Api.Http.Version.Name.Source != "" {
-		fullName = fmt.Sprintf(`%s.%s`, op.Api.Http.Version.Name.Source, fullName)
+	fullName := fmt.Sprintf(`%s.%s`, op.InApi.Name.Source, op.Name.Source)
+	if op.InApi.InHttp.InVersion.Name.Source != "" {
+		fullName = fmt.Sprintf(`%s.%s`, op.InApi.InHttp.InVersion.Name.Source, fullName)
 	}
 	return fullName
 }

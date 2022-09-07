@@ -28,7 +28,7 @@ func NewSpringGenerator(types *types.Types, models models.Generator) *SpringGene
 }
 
 func (g *SpringGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string) {
-	return `org.springframework.stereotype.Service`, fmt.Sprintf(`Service("%s")`, versionServiceName(serviceName(api), api.Http.Version))
+	return `org.springframework.stereotype.Service`, fmt.Sprintf(`Service("%s")`, versionServiceName(serviceName(api), api.InHttp.InVersion))
 }
 
 func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage modules.Module) []generator.CodeFile {
@@ -114,7 +114,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api, thePackage, contentTy
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.Http.Version))
+	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.InHttp.InVersion))
 	className := controllerName(api)
 	w.Line(`class %s(`, className)
 	w.Line(`  @Autowired private val %s: %s,`, serviceVarName(api), serviceInterfaceName(api))
@@ -142,7 +142,7 @@ func (g *SpringGenerator) controllerMethod(w *generator.Writer, operation *spec.
 	w.Line(`@%sMapping("%s")`, casee.ToPascalCase(methodName), url)
 	w.Line(`fun %s(%s): ResponseEntity<String> {`, controllerMethodName(operation), strings.Join(springMethodParams(operation, g.Types), ", "))
 	w.Indent()
-	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
+	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	g.parseBody(w, operation, "bodyStr", "requestBody")
 	serviceCall(w, operation, "bodyStr", "requestBody", "result")
 	g.processResponses(w, operation, "result")

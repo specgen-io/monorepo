@@ -489,8 +489,8 @@ func generateApiRouterClass(w *generator.Writer, api *spec.Api) {
 
 	for _, operation := range api.Operations {
 		w.Line(`  lazy val %s = Route("%s", PathPattern(List(`, routeName(operation.Name), operation.Endpoint.Method)
-		if operation.Api.Http.GetUrl() != "" {
-			w.Line(`    StaticPart("%s"),`, operation.Api.Http.GetUrl())
+		if operation.InApi.InHttp.GetUrl() != "" {
+			w.Line(`    StaticPart("%s"),`, operation.InApi.InHttp.GetUrl())
 		}
 		for _, part := range operation.Endpoint.UrlParts {
 			if part.Param != nil {
@@ -557,8 +557,8 @@ func getControllerParams(operation *spec.NamedOperation, withTypes bool) []strin
 
 func routerTypeName(api *spec.Api) string {
 	typeName := fmt.Sprintf(`routers.%s`, routerType(api.Name))
-	if api.Http.Version.Name.Source != "" {
-		typeName = fmt.Sprintf(`%s.%s`, api.Http.Version.Name.FlatCase(), typeName)
+	if api.InHttp.InVersion.Name.Source != "" {
+		typeName = fmt.Sprintf(`%s.%s`, api.InHttp.InVersion.Name.FlatCase(), typeName)
 	}
 	return typeName
 }

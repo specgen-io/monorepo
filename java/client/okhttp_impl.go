@@ -93,8 +93,8 @@ func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.Na
 		requestBody = "requestBody"
 	}
 	w.Line(`  var url = new UrlBuilder(baseUrl);`)
-	if operation.Api.Http.GetUrl() != "" {
-		w.Line(`  url.addPathSegments("%s");`, strings.Trim(operation.Api.Http.GetUrl(), "/"))
+	if operation.InApi.InHttp.GetUrl() != "" {
+		w.Line(`  url.addPathSegments("%s");`, strings.Trim(operation.InApi.InHttp.GetUrl(), "/"))
 	}
 	for _, urlPart := range operation.Endpoint.UrlParts {
 		part := strings.Trim(urlPart.Part, "/")
@@ -113,7 +113,7 @@ func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.Na
 		w.Line(`  request.addHeaderParameter("%s", %s);`, param.Name.Source, param.Name.CamelCase())
 	}
 	w.EmptyLine()
-	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s");`, operation.Api.Name.Source, operation.Name.Source, methodName, url)
+	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s");`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  Response response;`)
 	generateClientTryCatch(w.Indented(),
 		`response = client.newCall(request.build()).execute();`,

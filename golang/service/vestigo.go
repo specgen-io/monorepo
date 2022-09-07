@@ -65,7 +65,7 @@ func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, er
 	w.Indent()
 	for _, operation := range api.Operations {
 		url := getEndpointUrl(&operation)
-		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.Api.Name.Source, operation.Name.Source, client.ToUpperCase(operation.Endpoint.Method), url)
+		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.InApi.Name.Source, operation.Name.Source, client.ToUpperCase(operation.Endpoint.Method), url)
 		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, client.ToPascalCase(operation.Endpoint.Method), url)
 		generateOperationMethod(w.Indented(), &operation)
 		w.Line(`})`)
@@ -185,7 +185,7 @@ func generateParametersParsing(w *generator.Writer, operation *spec.NamedOperati
 
 func generateServiceCall(w *generator.Writer, operation *spec.NamedOperation, responseVar string) {
 	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
-	serviceCall := serviceCall(serviceInterfaceTypeVar(operation.Api), operation)
+	serviceCall := serviceCall(serviceInterfaceTypeVar(operation.InApi), operation)
 	if singleEmptyResponse {
 		w.Line(`err = %s`, serviceCall)
 	} else {
@@ -349,7 +349,7 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *genera
 }
 
 func versionedApiImportAlias(api *spec.Api) string {
-	version := api.Http.Version.Name
+	version := api.InHttp.InVersion.Name
 	if version.Source != "" {
 		return api.Name.CamelCase() + version.PascalCase()
 	}
@@ -357,7 +357,7 @@ func versionedApiImportAlias(api *spec.Api) string {
 }
 
 func serviceApiNameVersioned(api *spec.Api) string {
-	return fmt.Sprintf(`%sService%s`, api.Name.Source, api.Http.Version.Name.PascalCase())
+	return fmt.Sprintf(`%sService%s`, api.Name.Source, api.InHttp.InVersion.Name.PascalCase())
 }
 
 func packageFrom(version *spec.Version) string {

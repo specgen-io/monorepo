@@ -9,6 +9,7 @@ func enrich(specification *Spec) (*Messages, error) {
 	messages := NewMessages()
 	if specification.HttpErrors != nil {
 		httpErrors := specification.HttpErrors
+		httpErrors.InSpec = specification
 		httpErrors.ResolvedModels = enrichModels(httpErrors.Models, messages)
 		errorModels := buildModelsMap(httpErrors.Models)
 		enricher := &httpEnricher{errorModels, messages}
@@ -16,8 +17,8 @@ func enrich(specification *Spec) (*Messages, error) {
 	}
 	for index := range specification.Versions {
 		version := &specification.Versions[index]
+		version.InSpec = specification
 		version.ResolvedModels = enrichModels(version.Models, messages)
-		version.Spec = specification
 		models := buildModelsMap(version.Models)
 		if specification.HttpErrors != nil {
 			errorModels := buildModelsMap(specification.HttpErrors.Models)
@@ -41,18 +42,18 @@ type httpEnricher struct {
 
 func (enricher *httpEnricher) version(version *Version) {
 	for modIndex := range version.Models {
-		version.Models[modIndex].Version = version
+		version.Models[modIndex].InVersion = version
 	}
 
 	http := &version.Http
-	http.Version = version
+	http.InVersion = version
 
 	for apiIndex := range http.Apis {
 		api := &version.Http.Apis[apiIndex]
-		api.Http = http
+		api.InHttp = http
 		for opIndex := range api.Operations {
 			operation := &api.Operations[opIndex]
-			operation.Api = api
+			operation.InApi = api
 			enricher.operation(operation)
 		}
 	}
@@ -60,7 +61,7 @@ func (enricher *httpEnricher) version(version *Version) {
 
 func (enricher *httpEnricher) httpErrors(httpErrors *HttpErrors) {
 	for index := range httpErrors.Models {
-		httpErrors.Models[index].HttpErrors = httpErrors
+		httpErrors.Models[index].InHttpErrors = httpErrors
 	}
 
 	for index := range httpErrors.Responses {

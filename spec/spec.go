@@ -20,7 +20,7 @@ type VersionSpecification struct {
 type Version struct {
 	Name Name
 	VersionSpecification
-	Spec           *Spec
+	InSpec         *Spec
 	ResolvedModels []*NamedModel
 }
 

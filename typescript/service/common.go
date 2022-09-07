@@ -8,7 +8,7 @@ func apiRouterName(api *spec.Api) string {
 
 func apiRouterNameVersioned(api *spec.Api) string {
 	result := apiRouterName(api)
-	version := api.Http.Version.Name
+	version := api.InHttp.InVersion.Name
 	if version.Source != "" {
 		result = result + version.PascalCase()
 	}
@@ -16,7 +16,7 @@ func apiRouterNameVersioned(api *spec.Api) string {
 }
 
 func apiServiceParamName(api *spec.Api) string {
-	version := api.Http.Version
+	version := api.InHttp.InVersion
 	name := api.Name.CamelCase() + "Service"
 	if version.Name.Source != "" {
 		name = name + version.Name.PascalCase()

@@ -54,7 +54,7 @@ func serviceInterfaceName(api *spec.Api) string {
 
 func serviceInterfaceNameVersioned(api *spec.Api) string {
 	result := serviceInterfaceName(api)
-	version := api.Http.Version.Name
+	version := api.InHttp.InVersion.Name
 	if version.Source != "" {
 		result = result + version.PascalCase()
 	}

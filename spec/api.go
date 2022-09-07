@@ -8,21 +8,21 @@ import (
 type Api struct {
 	Name       Name
 	Operations Operations
-	Http       *Http
+	InHttp     *Http
 }
 
 type Http struct {
-	Url     *string
-	Apis    []Api
-	Version *Version
+	Url       *string
+	Apis      []Api
+	InVersion *Version
 }
 
 func (apis *Http) GetUrl() string {
 	if apis.Url != nil {
 		return *apis.Url
 	}
-	if apis.Version.Name.Source != "" {
-		return "/" + apis.Version.Name.Source
+	if apis.InVersion.Name.Source != "" {
+		return "/" + apis.InVersion.Name.Source
 	}
 	return ""
 }

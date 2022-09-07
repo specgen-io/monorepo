@@ -178,11 +178,11 @@ models:
 			models := version.ResolvedModels
 			assert.Equal(t, len(models), 3)
 			assert.Equal(t, models[0].Name.Source, "Model3")
-			assert.Equal(t, models[0].Version, version)
+			assert.Equal(t, models[0].InVersion, version)
 			assert.Equal(t, models[1].Name.Source, "Model2")
-			assert.Equal(t, models[1].Version, version)
+			assert.Equal(t, models[1].InVersion, version)
 			assert.Equal(t, models[2].Name.Source, "Model1")
-			assert.Equal(t, models[2].Version, version)
+			assert.Equal(t, models[2].InVersion, version)
 		},
 	},
 	{
@@ -203,9 +203,9 @@ http:
 			api := &apis.Apis[0]
 			operation := &api.Operations[0]
 			response := operation.Responses[0]
-			assert.Equal(t, apis.Version, version)
-			assert.Equal(t, api.Http, apis)
-			assert.Equal(t, operation.Api, api)
+			assert.Equal(t, apis.InVersion, version)
+			assert.Equal(t, api.InHttp, apis)
+			assert.Equal(t, operation.InApi, api)
 			assert.Equal(t, response.Operation, operation)
 		},
 	},
