@@ -11,16 +11,16 @@ import (
 	"spec"
 )
 
-func generateServiceInterfaces(version *spec.Version, versionModule, modelsModule, emptyModule module.Module) []generator.CodeFile {
+func generateServiceInterfaces(version *spec.Version, versionModule, modelsModule, errorsModelsModule, emptyModule module.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
-		files = append(files, *generateServiceInterface(&api, apiModule, modelsModule, emptyModule))
+		files = append(files, *generateServiceInterface(&api, apiModule, modelsModule, errorsModelsModule, emptyModule))
 	}
 	return files
 }
 
-func generateServiceInterface(api *spec.Api, apiModule, modelsModule, emptyModule module.Module) *generator.CodeFile {
+func generateServiceInterface(api *spec.Api, apiModule, modelsModule, errorsModelsModule, emptyModule module.Module) *generator.CodeFile {
 	w := writer.NewGoWriter()
 	w.Line("package %s", apiModule.Name)
 
@@ -33,6 +33,9 @@ func generateServiceInterface(api *spec.Api, apiModule, modelsModule, emptyModul
 	}
 	//TODO - potential bug, could be unused import
 	imports.Add(modelsModule.Package)
+	if usingErrorModels(api) {
+		imports.AddAlias(errorsModelsModule.Package, types.ErrorsModelsPackage)
+	}
 	imports.Write(w)
 
 	for _, operation := range api.Operations {
@@ -54,3 +57,15 @@ func generateServiceInterface(api *spec.Api, apiModule, modelsModule, emptyModul
 }
 
 const serviceInterfaceName = "Service"
+
+func usingErrorModels(api *spec.Api) bool {
+	foundErrorModels := false
+	walk := spec.NewWalker().
+		OnTypeDef(func(typ *spec.TypeDef) {
+			if typ.Info.Model != nil && typ.Info.Model.InHttpErrors != nil {
+				foundErrorModels = true
+			}
+		})
+	walk.Api(api)
+	return foundErrorModels
+}

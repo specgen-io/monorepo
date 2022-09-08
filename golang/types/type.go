@@ -9,37 +9,33 @@ import (
 	"spec"
 )
 
-var ModelsPackage = "models"
+var VersionModelsPackage = "models"
 var ErrorsModelsPackage = "errmodels"
 
 func GoType(typ *spec.TypeDef) string {
-	return goType(typ, ModelsPackage)
-}
-
-func GoErrType(typ *spec.TypeDef) string {
-	return goType(typ, ErrorsModelsPackage)
+	return goType(typ, false)
 }
 
 func GoTypeSamePackage(typ *spec.TypeDef) string {
-	return goType(typ, "")
+	return goType(typ, true)
 }
 
-func goType(typ *spec.TypeDef, modelsPackage string) string {
+func goType(typ *spec.TypeDef, samePackage bool) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainGoType(typ.Plain, modelsPackage)
+		return plainType(typ, samePackage)
 	case spec.NullableType:
-		child := goType(typ.Child, modelsPackage)
+		child := goType(typ.Child, samePackage)
 		if typ.Child.Node == spec.PlainType {
 			return "*" + child
 		}
 		return child
 	case spec.ArrayType:
-		child := goType(typ.Child, modelsPackage)
+		child := goType(typ.Child, samePackage)
 		result := "[]" + child
 		return result
 	case spec.MapType:
-		child := goType(typ.Child, modelsPackage)
+		child := goType(typ.Child, samePackage)
 		result := "map[string]" + child
 		return result
 	default:
@@ -47,8 +43,8 @@ func goType(typ *spec.TypeDef, modelsPackage string) string {
 	}
 }
 
-func PlainGoType(typ string, modelsPackage string) string {
-	switch typ {
+func plainType(typ *spec.TypeDef, samePackage bool) string {
+	switch typ.Plain {
 	case spec.TypeInt32:
 		return "int"
 	case spec.TypeInt64:
@@ -74,10 +70,19 @@ func PlainGoType(typ string, modelsPackage string) string {
 	case spec.TypeEmpty:
 		return EmptyType
 	default:
-		if modelsPackage != "" {
-			return fmt.Sprintf("%s.%s", modelsPackage, typ)
+		if typ.Info.Model != nil {
+			if !samePackage {
+				if typ.Info.Model.InVersion != nil {
+					return fmt.Sprintf("%s.%s", VersionModelsPackage, typ)
+				}
+				if typ.Info.Model.InHttpErrors != nil {
+					return fmt.Sprintf("%s.%s", ErrorsModelsPackage, typ)
+				}
+			}
+			return typ.Plain
+		} else {
+			panic(fmt.Sprintf(`unknown type %s`, typ.Plain))
 		}
-		return typ
 	}
 }
 
