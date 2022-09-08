@@ -8,7 +8,6 @@ import (
 	"github.com/pinzolo/casee"
 	"spec"
 	"typescript/modules"
-	"typescript/types"
 	"typescript/validations"
 	"typescript/writer"
 )
@@ -123,7 +122,7 @@ func (g *koaGenerator) response(w *generator.Writer, response *spec.Response, da
 		w.Line("return")
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line("ctx.body = t.encode(%s, %s)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), dataParam)
+		w.Line("ctx.body = t.encode(%s, %s)", g.validation.RuntimeType(&response.Type.Definition), dataParam)
 		w.Line("return")
 	}
 }
@@ -209,7 +208,7 @@ func (g *koaGenerator) bodyParsing(w *generator.Writer, operation *spec.NamedOpe
 		w.Line(`const body: string = ctx.request.rawBody`)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line("const bodyDecode = t.decodeR(%s, ctx.request.body)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition))
+		w.Line("const bodyDecode = t.decodeR(%s, ctx.request.body)", g.validation.RuntimeType(&operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
 		g.respondBadRequest(w.Indented(), "BODY", "bodyDecode.error", "Failed to parse body")
 		w.Line("}")

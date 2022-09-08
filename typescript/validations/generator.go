@@ -11,8 +11,8 @@ import (
 )
 
 type Validation interface {
+	RuntimeTypeSamePackage(typ *spec.TypeDef) string
 	RuntimeType(typ *spec.TypeDef) string
-	RuntimeTypeFromPackage(customTypesPackage string, typ *spec.TypeDef) string
 	SetupLibrary(validationModule modules.Module) *generator.CodeFile
 	Models(models []*spec.NamedModel, validationModule modules.Module, module modules.Module) *generator.CodeFile
 	WriteParamsType(w *generator.Writer, typeName string, params []spec.NamedParam)

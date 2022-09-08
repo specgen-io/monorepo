@@ -61,7 +61,7 @@ func clientResponseBody(validation validations.Validation, response *spec.Respon
 	if response.BodyIs(spec.BodyString) {
 		return textResponseData
 	} else {
-		data := fmt.Sprintf(`t.decode(%s, %s)`, validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), jsonResponseData)
+		data := fmt.Sprintf(`t.decode(%s, %s)`, validation.RuntimeType(&response.Type.Definition), jsonResponseData)
 		return data
 	}
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"strings"
+	"typescript/types"
 
 	"generator"
 	"spec"
@@ -11,7 +12,7 @@ import (
 	"typescript/writer"
 )
 
-func generateServicesImplementations(specification *spec.Spec, generatedModule modules.Module, module modules.Module) []generator.CodeFile {
+func generateServicesImplementations(specification *spec.Spec, generatedModule modules.Module, errorsModule modules.Module, module modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, version := range specification.Versions {
 		versionGeneratedModule := generatedModule.Submodule(version.Name.FlatCase())
@@ -19,17 +20,18 @@ func generateServicesImplementations(specification *spec.Spec, generatedModule m
 		for _, api := range version.Http.Apis {
 			apiModule := versionGeneratedModule.Submodule(serviceName(&api)) //TODO: This logic is duplicated, other place is where API module is generated
 			implModule := module.Submodule(version.Name.FlatCase()).Submodule(api.Name.SnakeCase() + "_service")
-			files = append(files, *generateServiceImplementation(&api, apiModule, modelsModule, implModule))
+			files = append(files, *generateServiceImplementation(&api, apiModule, modelsModule, errorsModule, implModule))
 		}
 	}
 	return files
 }
 
-func generateServiceImplementation(api *spec.Api, apiModule modules.Module, modelsModule modules.Module, module modules.Module) *generator.CodeFile {
+func generateServiceImplementation(api *spec.Api, apiModule modules.Module, modelsModule modules.Module, errorsModule modules.Module, module modules.Module) *generator.CodeFile {
 	w := writer.NewTsWriter()
 
 	w.Line("import * as service from '%s'", apiModule.GetImport(module))
-	w.Line("import * as models from '%s'", modelsModule.GetImport(module))
+	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(module))
+	w.Line("import * as %s from '%s'", types.ErrorsPackage, errorsModule.GetImport(module))
 	w.EmptyLine()
 	w.Line("export const %sService = (): service.%s => {", api.Name.CamelCase(), serviceInterfaceName(api)) //TODO: remove services
 

@@ -81,7 +81,7 @@ func (g *fetchGenerator) operation(w *generator.Writer, operation *spec.NamedOpe
 		fetchConfigParts = append(fetchConfigParts, `body: parameters.body`)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &body.Type.Definition))
+		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeType(&body.Type.Definition))
 		fetchConfigParts = append(fetchConfigParts, `body: JSON.stringify(bodyJson)`)
 	}
 	fetchConfig := strings.Join(fetchConfigParts, ", ")

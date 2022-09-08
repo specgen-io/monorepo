@@ -46,14 +46,14 @@ func (g *Generator) objectModel(w *generator.Writer, model *spec.NamedModel) {
 		w.Line("  t.interface({")
 		for _, field := range model.Object.Fields {
 			if !field.Type.Definition.IsNullable() {
-				w.Line("    %s: %s,", field.Name.Source, g.RuntimeType(&field.Type.Definition))
+				w.Line("    %s: %s,", field.Name.Source, g.RuntimeTypeSamePackage(&field.Type.Definition))
 			}
 		}
 		w.Line("  }),")
 		w.Line("  t.partial({")
 		for _, field := range model.Object.Fields {
 			if field.Type.Definition.IsNullable() {
-				w.Line("    %s: %s,", field.Name.Source, g.RuntimeType(&field.Type.Definition))
+				w.Line("    %s: %s,", field.Name.Source, g.RuntimeTypeSamePackage(&field.Type.Definition))
 			}
 		}
 		w.Line("  })")
@@ -65,7 +65,7 @@ func (g *Generator) objectModel(w *generator.Writer, model *spec.NamedModel) {
 		}
 		w.Line("export const T%s = %s({", model.Name.PascalCase(), modelTsType)
 		for _, field := range model.Object.Fields {
-			w.Line("  %s: %s,", field.Name.Source, g.RuntimeType(&field.Type.Definition))
+			w.Line("  %s: %s,", field.Name.Source, g.RuntimeTypeSamePackage(&field.Type.Definition))
 		}
 		w.Line("})")
 	}
@@ -87,13 +87,13 @@ func (g *Generator) unionModel(w *generator.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {
-			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", common.TSIdentifier(*model.OneOf.Discriminator), item.Name.Source, g.RuntimeType(&item.Type.Definition))
+			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", common.TSIdentifier(*model.OneOf.Discriminator), item.Name.Source, g.RuntimeTypeSamePackage(&item.Type.Definition))
 		}
 		w.Line("])")
 	} else {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {
-			w.Line("  t.interface({%s: %s}),", item.Name.Source, g.RuntimeType(&item.Type.Definition))
+			w.Line("  t.interface({%s: %s}),", item.Name.Source, g.RuntimeTypeSamePackage(&item.Type.Definition))
 		}
 		w.Line("])")
 	}

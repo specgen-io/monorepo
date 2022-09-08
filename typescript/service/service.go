@@ -29,7 +29,7 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 		versionModule := rootModule.Submodule(version.Name.FlatCase())
 		modelsModule := versionModule.Submodule("models")
 		sources.AddGenerated(validation.Models(version.ResolvedModels, validationModule, modelsModule))
-		sources.AddGeneratedAll(generateServiceApis(&version, modelsModule, versionModule))
+		sources.AddGeneratedAll(generateServiceApis(&version, modelsModule, errorsModule, versionModule))
 		routingModule := versionModule.Submodule("routing")
 		sources.AddGenerated(g.VersionRouting(&version, routingModule, modelsModule, validationModule, paramsModule, errorsModule, responsesModule))
 	}
@@ -41,7 +41,7 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 	}
 
 	if servicesPath != "" {
-		sources.AddScaffoldedAll(generateServicesImplementations(specification, rootModule, modules.New(servicesPath)))
+		sources.AddScaffoldedAll(generateServicesImplementations(specification, rootModule, errorsModule, modules.New(servicesPath)))
 	}
 
 	return sources

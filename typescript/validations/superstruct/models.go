@@ -27,7 +27,7 @@ func (g *Generator) Models(models []*spec.NamedModel, superstructModule modules.
 func (g *Generator) objectModel(w *generator.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.type({", model.Name.PascalCase())
 	for _, field := range model.Object.Fields {
-		w.Line("  %s: %s,", field.Name.Source, g.RuntimeType(&field.Type.Definition))
+		w.Line("  %s: %s,", field.Name.Source, g.RuntimeTypeSamePackage(&field.Type.Definition))
 	}
 	w.Line("})")
 	w.Line("")
@@ -54,13 +54,13 @@ func (g *Generator) unionModel(w *generator.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {
-			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", common.TSIdentifier(*model.OneOf.Discriminator), item.Name.Source, g.RuntimeType(&item.Type.Definition))
+			w.Line("  t.intersection([t.type({%s: t.literal('%s')}), %s]),", common.TSIdentifier(*model.OneOf.Discriminator), item.Name.Source, g.RuntimeTypeSamePackage(&item.Type.Definition))
 		}
 		w.Line("])")
 	} else {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {
-			w.Line("  t.object({%s: %s}),", item.Name.Source, g.RuntimeType(&item.Type.Definition))
+			w.Line("  t.object({%s: %s}),", item.Name.Source, g.RuntimeTypeSamePackage(&item.Type.Definition))
 		}
 		w.Line("])")
 	}
