@@ -50,7 +50,7 @@ func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, er
 	apiModule := versionModule.Submodule(api.Name.SnakeCase())
 	imports.Add(apiModule.Package)
 	imports.Add(errorsModule.Package)
-	imports.AddAlias(errorsModelsModule.Package, "errmodels")
+	imports.AddAlias(errorsModelsModule.Package, types.ErrorsModelsPackage)
 	if isContainsModel(api) {
 		imports.Add(modelsModule.Package)
 	}
@@ -138,14 +138,14 @@ func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserNa
 	isEnum := param.Type.Definition.Info.Model != nil && param.Type.Definition.Info.Model.IsEnum()
 	enumModel := param.Type.Definition.Info.Model
 	if isEnum {
-		parserParams = append(parserParams, fmt.Sprintf("%s.%s", types.ModelsPackage, models.EnumValuesStrings(enumModel)))
+		parserParams = append(parserParams, fmt.Sprintf("%s.%s", types.VersionModelsPackage, models.EnumValuesStrings(enumModel)))
 	}
 	if defaultParam != nil {
 		parserParams = append(parserParams, *defaultParam)
 	}
 	call := fmt.Sprintf(`%s.%s(%s)`, paramsParserName, methodName, strings.Join(parserParams, ", "))
 	if isEnum {
-		call = fmt.Sprintf(`%s.%s(%s)`, types.ModelsPackage, enumModel.Name.PascalCase(), call)
+		call = fmt.Sprintf(`%s.%s(%s)`, types.VersionModelsPackage, enumModel.Name.PascalCase(), call)
 	}
 	return call
 }

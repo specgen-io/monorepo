@@ -19,7 +19,7 @@ func GenerateModels(specification *spec.Spec, moduleName string, generatePath st
 
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Name.FlatCase())
-		modelsModule := versionModule.Submodule(types.ModelsPackage)
+		modelsModule := versionModule.Submodule(types.VersionModelsPackage)
 		sources.AddGeneratedAll(GenerateVersionModels(version.ResolvedModels, modelsModule))
 	}
 	return sources
