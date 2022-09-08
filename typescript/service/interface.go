@@ -12,19 +12,20 @@ import (
 	"typescript/writer"
 )
 
-func generateServiceApis(version *spec.Version, modelsModule modules.Module, module modules.Module) []generator.CodeFile {
+func generateServiceApis(version *spec.Version, modelsModule modules.Module, errorsModule modules.Module, module modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := module.Submodule(serviceName(&api))
-		serviceFile := generateApiService(&api, modelsModule, apiModule)
+		serviceFile := generateApiService(&api, modelsModule, errorsModule, apiModule)
 		files = append(files, *serviceFile)
 	}
 	return files
 }
 
-func generateApiService(api *spec.Api, modelsModule modules.Module, module modules.Module) *generator.CodeFile {
+func generateApiService(api *spec.Api, modelsModule modules.Module, errorsModule modules.Module, module modules.Module) *generator.CodeFile {
 	w := writer.NewTsWriter()
 	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(module))
+	w.Line("import * as %s from '%s'", types.ErrorsPackage, errorsModule.GetImport(module))
 	for _, operation := range api.Operations {
 		if operation.Body != nil || operation.HasParams() {
 			w.EmptyLine()

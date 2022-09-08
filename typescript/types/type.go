@@ -8,7 +8,7 @@ import (
 func TsType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return PlainTsType(typ.Plain)
+		return PlainTsType(typ)
 	case spec.NullableType:
 		child := TsType(typ.Child)
 		result := child + " | undefined"
@@ -26,8 +26,8 @@ func TsType(typ *spec.TypeDef) string {
 	}
 }
 
-func PlainTsType(typ string) string {
-	switch typ {
+func PlainTsType(typ *spec.TypeDef) string {
+	switch typ.Plain {
 	case spec.TypeInt32:
 		return "number"
 	case spec.TypeInt64:
@@ -51,9 +51,19 @@ func PlainTsType(typ string) string {
 	case spec.TypeJson:
 		return "unknown"
 	default:
-		return fmt.Sprintf("%s.%s", ModelsPackage, typ)
+		if typ.Info.Model != nil {
+			if typ.Info.Model.InVersion != nil {
+				return fmt.Sprintf("%s.%s", ModelsPackage, typ)
+			}
+			if typ.Info.Model.InHttpErrors != nil {
+				return fmt.Sprintf("%s.%s", ErrorsPackage, typ)
+			}
+			panic(fmt.Sprintf(`unknown location of type %s`, typ.Plain))
+		} else {
+			panic(fmt.Sprintf(`unknown type %s`, typ.Plain))
+		}
 	}
 }
 
-//TODO: Consider removing
 var ModelsPackage = "models"
+var ErrorsPackage = "errors"

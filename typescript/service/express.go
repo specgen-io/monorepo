@@ -7,7 +7,6 @@ import (
 	"generator"
 	"spec"
 	"typescript/modules"
-	"typescript/types"
 	"typescript/validations"
 	"typescript/validations/common"
 	"typescript/writer"
@@ -124,7 +123,7 @@ func (g *expressGenerator) response(w *generator.Writer, response *spec.Response
 		w.Line("return")
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &response.Type.Definition), dataParam)
+		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.validation.RuntimeType(&response.Type.Definition), dataParam)
 		w.Line("return")
 	}
 }
@@ -210,7 +209,7 @@ func (g *expressGenerator) bodyParsing(w *generator.Writer, operation *spec.Name
 		w.Line(`const body: string = request.body`)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line("const bodyDecode = t.decodeR(%s, request.body)", g.validation.RuntimeTypeFromPackage(types.ModelsPackage, &operation.Body.Type.Definition))
+		w.Line("const bodyDecode = t.decodeR(%s, request.body)", g.validation.RuntimeType(&operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
 		g.respondBadRequest(w.Indented(), "BODY", "bodyDecode.error", "Failed to parse body")
 		w.Line("}")

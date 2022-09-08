@@ -3,26 +3,31 @@ package superstruct
 import (
 	"fmt"
 	"spec"
+	"typescript/types"
 )
 
-func (g *Generator) RuntimeType(typ *spec.TypeDef) string {
-	return g.RuntimeTypeFromPackage("", typ)
+func (g *Generator) RuntimeTypeSamePackage(typ *spec.TypeDef) string {
+	return g.runtimeType(typ, true)
 }
 
-func (g *Generator) RuntimeTypeFromPackage(customTypesPackage string, typ *spec.TypeDef) string {
+func (g *Generator) RuntimeType(typ *spec.TypeDef) string {
+	return g.runtimeType(typ, false)
+}
+
+func (g *Generator) runtimeType(typ *spec.TypeDef, samePackage bool) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return g.plainSuperstructType(customTypesPackage, typ.Plain)
+		return g.plainSuperstructType(typ, samePackage)
 	case spec.NullableType:
-		child := g.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
+		child := g.runtimeType(typ.Child, samePackage)
 		result := "t.optional(t.nullable(" + child + "))"
 		return result
 	case spec.ArrayType:
-		child := g.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
+		child := g.runtimeType(typ.Child, samePackage)
 		result := "t.array(" + child + ")"
 		return result
 	case spec.MapType:
-		child := g.RuntimeTypeFromPackage(customTypesPackage, typ.Child)
+		child := g.runtimeType(typ.Child, samePackage)
 		result := "t.record(t.string(), " + child + ")"
 		return result
 	default:
@@ -30,8 +35,8 @@ func (g *Generator) RuntimeTypeFromPackage(customTypesPackage string, typ *spec.
 	}
 }
 
-func (g *Generator) plainSuperstructType(customTypesPackage string, typ string) string {
-	switch typ {
+func (g *Generator) plainSuperstructType(typ *spec.TypeDef, samePackage bool) string {
+	switch typ.Plain {
 	case spec.TypeInt32:
 		return "t.number()"
 	case spec.TypeInt64:
@@ -55,10 +60,18 @@ func (g *Generator) plainSuperstructType(customTypesPackage string, typ string) 
 	case spec.TypeJson:
 		return "t.unknown()"
 	default:
-		if customTypesPackage == "" {
-			return "T" + typ
+		if typ.Info.Model != nil {
+			if !samePackage {
+				if typ.Info.Model.InVersion != nil {
+					return types.ModelsPackage + ".T" + typ.Plain
+				}
+				if typ.Info.Model.InHttpErrors != nil {
+					return types.ErrorsPackage + ".T" + typ.Plain
+				}
+			}
+			return "T" + typ.Plain
 		} else {
-			return customTypesPackage + ".T" + typ
+			panic(fmt.Sprintf(`unknown type %s`, typ.Plain))
 		}
 	}
 }
