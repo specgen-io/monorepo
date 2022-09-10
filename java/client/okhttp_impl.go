@@ -12,16 +12,16 @@ import (
 	"spec"
 )
 
-func (g *Generator) Clients(version *spec.Version, thePackage packages.Module, modelsVersionPackage packages.Module, jsonPackage packages.Module, utilsPackage packages.Module, mainPackage packages.Module) []generator.CodeFile {
+func (g *Generator) Clients(version *spec.Version, thePackage packages.Module, modelsVersionPackage packages.Module, errorModelsPackage packages.Module, jsonPackage packages.Module, utilsPackage packages.Module, mainPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage)...)
+		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage)...)
 	}
 	return files
 }
 
-func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVersionPackage packages.Module, jsonPackage packages.Module, utilsPackage packages.Module, mainPackage packages.Module) []generator.CodeFile {
+func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVersionPackage packages.Module, errorModelsPackage packages.Module, jsonPackage packages.Module, utilsPackage packages.Module, mainPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	w := writer.NewJavaWriter()
@@ -59,7 +59,7 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVers
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage)...)
+			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
 		}
 	}
 

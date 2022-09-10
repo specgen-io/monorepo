@@ -11,16 +11,16 @@ import (
 	"spec"
 )
 
-func (g *Generator) ServicesInterfaces(version *spec.Version, thePackage, modelsVersionPackage packages.Module) []generator.CodeFile {
+func (g *Generator) ServicesInterfaces(version *spec.Version, thePackage, modelsVersionPackage packages.Module, errorModelsPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.serviceInterface(&api, apiPackage, modelsVersionPackage)...)
+		files = append(files, g.serviceInterface(&api, apiPackage, modelsVersionPackage, errorModelsPackage)...)
 	}
 	return files
 }
 
-func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPackage packages.Module) []generator.CodeFile {
+func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPackage packages.Module, errorModelsPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	w := writer.NewJavaWriter()
@@ -39,7 +39,7 @@ func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPac
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage)...)
+			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
 		}
 	}
 

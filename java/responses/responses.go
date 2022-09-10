@@ -52,12 +52,13 @@ func parameters(operation *spec.NamedOperation, types *types.Types) []string {
 	return params
 }
 
-func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Module, modelsVersionPackage packages.Module) []generator.CodeFile {
+func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Module, modelsVersionPackage packages.Module, errorModelsPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
 	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
+	w.Line(`import %s;`, errorModelsPackage.PackageStar)
 	w.EmptyLine()
 	w.Line(`public interface %s {`, InterfaceName(operation))
 	for index, response := range operation.Responses {
