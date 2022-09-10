@@ -43,7 +43,7 @@ func GeneratePlayService(specification *spec.Spec, swaggerPath string, generateP
 		servicesImplPackage := implRootPackage.Subpackage(version.Name.FlatCase()).Subpackage("services")
 		for _, api := range version.Http.Apis {
 			apiPackage := servicesPackage.Subpackage(api.Name.FlatCase())
-			apiTrait := generateApiTrait(&api, apiPackage, modelsPackage, servicesImplPackage)
+			apiTrait := generateApiTrait(&api, apiPackage, modelsPackage, errorsPackage, servicesImplPackage)
 			apiController := generateApiController(&api, controllersPackage, apiPackage, modelsPackage, jsonPackage, paramsPackage, exceptionsPackage, errorsPackage)
 			apiRouter := generateApiRouter(&api, routersPackage, controllersPackage, modelsPackage, jsonPackage, paramsPackage, errorsPackage)
 			sources.AddGenerated(apiRouter, apiController, apiTrait)
@@ -109,13 +109,14 @@ func operationSignature(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`def %s(%s): Future[%s]`, controllerMethodName(operation), JoinParams(params), responseType(operation))
 }
 
-func generateApiTrait(api *spec.Api, thepackage, modelsPackage, servicesImplPackage Package) *generator.CodeFile {
+func generateApiTrait(api *spec.Api, thepackage, modelsPackage, errorModelsPackage, servicesImplPackage Package) *generator.CodeFile {
 	w := NewScalaWriter()
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
 	w.Line(`import com.google.inject.ImplementedBy`)
 	w.Line(`import scala.concurrent.Future`)
 	w.Line(`import %s`, modelsPackage.PackageStar)
+	w.Line(`import %s`, errorModelsPackage.PackageStar)
 
 	apiTraitName := apiTraitType(api.Name)
 
