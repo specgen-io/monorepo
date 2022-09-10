@@ -90,7 +90,7 @@ func createErrorModels() (Models, error) {
 BadRequestError:
   object:
     message: string
-    location: ErrorLocation?
+    location: ErrorLocation
     errors: ValidationError[]?
 
 ValidationError:
@@ -101,6 +101,7 @@ ValidationError:
 
 ErrorLocation:
   enum:
+    - unknown
     - query
     - header
     - body
