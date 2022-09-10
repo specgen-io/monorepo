@@ -90,7 +90,7 @@ func createErrorModels() (Models, error) {
 BadRequestError:
   object:
     message: string
-    location: ErrorLocation
+    location: ErrorLocation?
     errors: ValidationError[]?
 
 ValidationError:
