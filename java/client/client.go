@@ -27,6 +27,8 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, gene
 	errorsPackage := mainPackage.Subpackage("errors")
 	errorsModelsPackage := errorsPackage.Subpackage("models")
 
+	sources.AddGeneratedAll(generator.Models.Models(specification.HttpErrors.ResolvedModels, errorsModelsPackage, jsonPackage))
+
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Name.FlatCase())
 
