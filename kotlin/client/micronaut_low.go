@@ -25,13 +25,13 @@ func NewMicronautLowGenerator(types *types.Types, models models.Generator) *Micr
 	return &MicronautLowGenerator{types, models}
 }
 
-func (g *MicronautLowGenerator) ClientImplementation(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+func (g *MicronautLowGenerator) ClientImplementation(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
 	utilsPackage := mainPackage.Subpackage("utils")
 
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, jsonPackage, utilsPackage, mainPackage)...)
+		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage)...)
 	}
 	files = append(files, g.utils(utilsPackage)...)
 	files = append(files, converters(mainPackage)...)
@@ -41,7 +41,7 @@ func (g *MicronautLowGenerator) ClientImplementation(version *spec.Version, theP
 	return files
 }
 
-func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	w := writer.NewKotlinWriter()
@@ -79,7 +79,7 @@ func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage modules.Module,
 
 	for _, operation := range api.Operations {
 		if responsesNumber(&operation) > 1 {
-			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage)...)
+			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
 		}
 	}
 
