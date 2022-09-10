@@ -36,7 +36,7 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 		sources.AddGeneratedAll(generator.Models.Models(version.ResolvedModels, modelsVersionPackage, jsonPackage))
 
 		serviceVersionPackage := versionPackage.Subpackage("services")
-		sources.AddGeneratedAll(generator.ServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage))
+		sources.AddGeneratedAll(generator.ServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage, errorsModelsPackage))
 
 		controllerVersionPackage := versionPackage.Subpackage("controllers")
 		sources.AddGeneratedAll(generator.Server.ServicesControllers(&version, mainPackage, controllerVersionPackage, contentTypePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage))
