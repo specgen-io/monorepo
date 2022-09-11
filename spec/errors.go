@@ -101,6 +101,7 @@ ValidationError:
 
 ErrorLocation:
   enum:
+    - unknown
     - query
     - header
     - body
