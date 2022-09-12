@@ -31,11 +31,11 @@ func (g *MicronautGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImp
 	return `io.micronaut.context.annotation.Bean`, `Bean`
 }
 
-func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
+func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorsModelsPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.serviceController(&api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, serviceVersionSubpackage)...)
+		files = append(files, g.serviceController(&api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorsModelsPackage, serviceVersionSubpackage)...)
 	}
 	files = append(files, dateConverters(mainPackage)...)
 	return files
@@ -98,7 +98,7 @@ func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Respo
 	w.Line(`}`)
 }
 
-func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
+func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorsModelsPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
@@ -109,6 +109,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, conten
 	imports.Add(contentTypePackage.PackageStar)
 	imports.Add(jsonPackage.PackageStar)
 	imports.Add(modelsVersionPackage.PackageStar)
+	imports.Add(errorsModelsPackage.PackageStar)
 	imports.Add(serviceVersionPackage.PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
