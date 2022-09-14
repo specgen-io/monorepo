@@ -12,6 +12,7 @@ const Values = "values"
 const NoInput = "noinput"
 const ForceInput = "forceinput"
 const Source = "source"
+const NoOverwrites = "nooverwrites"
 
 func init() {
 	cmdNew.Flags().String(OutPath, ".", `path to output rendered template`)
@@ -20,6 +21,7 @@ func init() {
 	cmdNew.Flags().String(Source, "https://github.com/specgen-io/templates", `location of templates`)
 	cmdNew.Flags().Bool(NoInput, false, `do not request user input for missing arguments values`)
 	cmdNew.Flags().Bool(ForceInput, false, `force user input requests even for noinput arguments`)
+	cmdNew.Flags().Bool(NoOverwrites, false, `do not overwrite files with rendered from template`)
 
 	rootCmd.AddCommand(cmdNew)
 }
@@ -49,6 +51,9 @@ var cmdNew = &cobra.Command{
 		forceInput, err := cmd.Flags().GetBool(ForceInput)
 		FailIfError(err)
 
+		noOverwrites, err := cmd.Flags().GetBool(NoOverwrites)
+		FailIfError(err)
+
 		inputMode := render.RegularInputMode
 		if forceInput {
 			inputMode = render.ForceInputMode
@@ -64,19 +69,19 @@ var cmdNew = &cobra.Command{
 			valuesJsonData = data
 		}
 
-		err = renderTemplate(source, template, outPath, inputMode, valuesJsonData, overrides)
+		err = renderTemplate(source, template, outPath, inputMode, valuesJsonData, overrides, !noOverwrites)
 		FailIfError(err, "Failed to render template")
 	},
 }
 
-func renderTemplate(source string, name string, outPath string, inputMode render.InputMode, valuesJsonData []byte, overrides []string) error {
+func renderTemplate(source string, name string, outPath string, inputMode render.InputMode, valuesJsonData []byte, overrides []string, overwriteFiles bool) error {
 	template := render.Template{source, name, "rendr.yaml"}
 	renderedFiles, err := template.Render(inputMode, valuesJsonData, overrides)
 	if err != nil {
 		return err
 	}
 
-	err = renderedFiles.WriteAll(outPath, true)
+	err = renderedFiles.WriteAll(outPath, overwriteFiles)
 	if err != nil {
 		return err
 	}
