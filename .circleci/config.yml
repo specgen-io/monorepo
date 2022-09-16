@@ -474,7 +474,7 @@ jobs:
       - checkout
       - attach_workspace_folder:
           folder: specgen
-          at: .
+          at: ./specgen
       - run:
           name: Release
           command: |
