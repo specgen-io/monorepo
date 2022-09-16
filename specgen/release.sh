@@ -46,13 +46,13 @@ if [[ $TARGET == *"github"* ]]; then
     sleep 10
 
     echo "Releasing specgen_darwin_amd64.zip"
-    $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_darwin_amd64.zip  --file ./zips/specgen_darwin_amd64.zip
+    $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_darwin_amd64.zip  --file ./specgen_darwin_amd64.zip
     echo "Releasing specgen_darwin_arm64.zip"
-    $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_darwin_arm64.zip  --file ./zips/specgen_darwin_arm64.zip
+    $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_darwin_arm64.zip  --file ./specgen_darwin_arm64.zip
     echo "Releasing specgen_linux_amd64.zip"
-    $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_linux_amd64.zip   --file ./zips/specgen_linux_amd64.zip
+    $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_linux_amd64.zip   --file ./specgen_linux_amd64.zip
     echo "Releasing specgen_windows_amd64.zip"
-    $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_windows_amd64.zip --file ./zips/specgen_windows_amd64.zip
+    $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_windows_amd64.zip --file ./specgen_windows_amd64.zip
 
     echo "Done releasing to Github $RELEASE_NAME"
 
