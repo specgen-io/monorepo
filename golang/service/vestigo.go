@@ -32,6 +32,8 @@ func callAddRouting(api *spec.Api, serviceVar string) string {
 }
 
 func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module) *generator.CodeFile {
+	apiModule := versionModule.Submodule(api.Name.SnakeCase())
+
 	w := writer.NewGoWriter()
 	w.Line("package %s", module.Name)
 
@@ -46,12 +48,13 @@ func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, er
 	if types.BodyHasType(api, spec.TypeString) {
 		imports.Add("io/ioutil")
 	}
-	imports.Add(contentTypeModule.Package)
-	apiModule := versionModule.Submodule(api.Name.SnakeCase())
+	if hasNonEmptyBody(api) {
+		imports.Add(contentTypeModule.Package)
+	}
 	imports.Add(apiModule.Package)
 	imports.Add(errorsModule.Package)
 	imports.AddAlias(errorsModelsModule.Package, types.ErrorsModelsPackage)
-	if isContainsModel(api) {
+	if isRouterUsingModels(api) {
 		imports.Add(modelsModule.Package)
 	}
 	if operationHasParams(api) {
@@ -447,4 +450,35 @@ func Convert(parsingErrors []paramsparser.ParsingError) []errmodels.ValidationEr
 		Path:    module.GetPath("converter.go"),
 		Content: strings.TrimSpace(code),
 	}
+}
+
+func hasNonEmptyBody(api *spec.Api) bool {
+	hasNonEmptyBody := false
+	walk := spec.NewWalker().
+		OnOperation(func(operation *spec.NamedOperation) {
+			if operation.BodyIs(spec.BodyJson) || operation.BodyIs(spec.BodyString) {
+				hasNonEmptyBody = true
+			}
+		})
+	walk.Api(api)
+	return hasNonEmptyBody
+}
+
+func isRouterUsingModels(api *spec.Api) bool {
+	usingModels := false
+	walk := spec.NewWalker().
+		OnOperation(func(operation *spec.NamedOperation) {
+			if operation.Body != nil {
+				if isModel(&operation.Body.Type.Definition) {
+					usingModels = true
+				}
+			}
+		}).
+		OnParam(func(param *spec.NamedParam) {
+			if param.Type.Definition.Info.Model != nil {
+				usingModels = true
+			}
+		})
+	walk.Api(api)
+	return usingModels
 }
