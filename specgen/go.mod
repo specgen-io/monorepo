@@ -26,7 +26,7 @@ require (
 	generator v0.0.0-00010101000000-000000000000
 	github.com/getkin/kin-openapi v0.98.0
 	github.com/pinzolo/casee v1.0.0
-	github.com/specgen-io/rendr v0.0.56
+	github.com/specgen-io/rendr v0.0.57
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
 	golang v0.0.0-00010101000000-000000000000
