@@ -20,7 +20,7 @@ func init() {
 	cmdNew.Flags().String(OutPath, ".", `path to output rendered template`)
 	cmdNew.Flags().StringArray(Set, []string{}, `set arguments overrides in format "arg=value", repeat for setting multiple arguments values`)
 	cmdNew.Flags().String(Values, "", `path to arguments values JSON file`)
-	cmdNew.Flags().String(Source, "https://github.com/specgen-io/templates", `location of templates`)
+	cmdNew.Flags().String(Source, "https://github.com/specgen-io/templates.git", `location of templates`)
 	cmdNew.Flags().Bool(NoInput, false, `do not request user input for missing arguments values`)
 	cmdNew.Flags().Bool(ForceInput, false, `force user input requests even for noinput arguments`)
 	cmdNew.Flags().Bool(NoOverwrites, false, `do not overwrite files with rendered from template`)
