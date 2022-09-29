@@ -10,7 +10,7 @@ import (
 )
 
 func callRawConvert(typ *spec.TypeDef, paramNameVar string) string {
-	return fmt.Sprintf("convert%s(%s)", converterMethodName(typ), paramNameVar)
+	return fmt.Sprintf("convert.%s(%s)", converterMethodName(typ), paramNameVar)
 }
 
 func callConverter(typ *spec.TypeDef, paramName string, paramNameVar string) string {
@@ -70,47 +70,46 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"strconv"
-	"test-client/spec/models"
 )
 
-func convertInt(value int) string {
+func Int(value int) string {
 	return strconv.Itoa(value)
 }
 
-func convertInt64(value int64) string {
+func Int64(value int64) string {
 	return strconv.FormatInt(value, 10)
 }
 
-func convertFloat32(value float32) string {
+func Float32(value float32) string {
 	return strconv.FormatFloat(float64(value), 'f', -1, 32)
 }
 
-func convertFloat64(value float64) string {
+func Float64(value float64) string {
 	return strconv.FormatFloat(value, 'f', -1, 64)
 }
 
-func convertDecimal(value decimal.Decimal) string {
+func Decimal(value decimal.Decimal) string {
 	return value.String()
 }
 
-func convertBool(value bool) string {
+func Bool(value bool) string {
 	return strconv.FormatBool(value)
 }
 
-func convertUuid(value uuid.UUID) string {
+func Uuid(value uuid.UUID) string {
 	return value.String()
 }
 
-func convertDate(value civil.Date) string {
+func Date(value civil.Date) string {
 	return value.String()
 }
 
-func convertDateTime(value civil.DateTime) string {
+func DateTime(value civil.DateTime) string {
 	return value.String()
 }
 
-func convertStringEnum(value models.Choice) string {
-	return string(value)
+func StringEnum(value any) string {
+	return fmt.Sprintf("%v", value)
 }
 
 type ParamsSetter interface {
@@ -141,128 +140,128 @@ func (self *ParamsConverter) StringArray(key string, values []string) {
 }
 
 func (self *ParamsConverter) Int(key string, value int) {
-	self.parser.Set(key, convertInt(value))
+	self.parser.Set(key, Int(value))
 }
 
 func (self *ParamsConverter) IntNullable(key string, value *int) {
-	self.parser.Set(key, convertInt(*value))
+	self.parser.Set(key, Int(*value))
 }
 
 func (self *ParamsConverter) IntArray(key string, values []int) {
 	for _, value := range values {
-		self.parser.Add(key, convertInt(value))
+		self.parser.Add(key, Int(value))
 	}
 }
 
 func (self *ParamsConverter) Int64(key string, value int64) {
-	self.parser.Set(key, convertInt64(value))
+	self.parser.Set(key, Int64(value))
 }
 
 func (self *ParamsConverter) Int64Nullable(key string, value *int64) {
-	self.parser.Set(key, convertInt64(*value))
+	self.parser.Set(key, Int64(*value))
 }
 
 func (self *ParamsConverter) Int64Array(key string, values []int64) {
 	for _, value := range values {
-		self.parser.Add(key, convertInt64(value))
+		self.parser.Add(key, Int64(value))
 	}
 }
 
 func (self *ParamsConverter) Float32(key string, value float32) {
-	self.parser.Set(key, convertFloat32(value))
+	self.parser.Set(key, Float32(value))
 }
 
 func (self *ParamsConverter) Float32Nullable(key string, value *float32) {
-	self.parser.Set(key, convertFloat32(*value))
+	self.parser.Set(key, Float32(*value))
 }
 
 func (self *ParamsConverter) Float32Array(key string, values []float32) {
 	for _, value := range values {
-		self.parser.Add(key, convertFloat32(value))
+		self.parser.Add(key, Float32(value))
 	}
 }
 
 func (self *ParamsConverter) Float64(key string, value float64) {
-	self.parser.Set(key, convertFloat64(value))
+	self.parser.Set(key, Float64(value))
 }
 
 func (self *ParamsConverter) Float64Nullable(key string, value *float64) {
-	self.parser.Set(key, convertFloat64(*value))
+	self.parser.Set(key, Float64(*value))
 }
 
 func (self *ParamsConverter) Float64Array(key string, values []float64) {
 	for _, value := range values {
-		self.parser.Add(key, convertFloat64(value))
+		self.parser.Add(key, Float64(value))
 	}
 }
 
 func (self *ParamsConverter) Decimal(key string, value decimal.Decimal) {
-	self.parser.Set(key, convertDecimal(value))
+	self.parser.Set(key, Decimal(value))
 }
 
 func (self *ParamsConverter) DecimalNullable(key string, value *decimal.Decimal) {
-	self.parser.Set(key, convertDecimal(*value))
+	self.parser.Set(key, Decimal(*value))
 }
 
 func (self *ParamsConverter) DecimalArray(key string, values []decimal.Decimal) {
 	for _, value := range values {
-		self.parser.Add(key, convertDecimal(value))
+		self.parser.Add(key, Decimal(value))
 	}
 }
 
 func (self *ParamsConverter) Bool(key string, value bool) {
-	self.parser.Set(key, convertBool(value))
+	self.parser.Set(key, Bool(value))
 }
 
 func (self *ParamsConverter) BoolNullable(key string, value *bool) {
-	self.parser.Set(key, convertBool(*value))
+	self.parser.Set(key, Bool(*value))
 }
 
 func (self *ParamsConverter) BoolArray(key string, values []bool) {
 	for _, value := range values {
-		self.parser.Add(key, convertBool(value))
+		self.parser.Add(key, Bool(value))
 	}
 }
 
 func (self *ParamsConverter) Uuid(key string, value uuid.UUID) {
-	self.parser.Set(key, convertUuid(value))
+	self.parser.Set(key, Uuid(value))
 }
 
 func (self *ParamsConverter) UuidNullable(key string, value *uuid.UUID) {
-	self.parser.Set(key, convertUuid(*value))
+	self.parser.Set(key, Uuid(*value))
 }
 
 func (self *ParamsConverter) UuidArray(key string, values []uuid.UUID) {
 	for _, value := range values {
-		self.parser.Add(key, convertUuid(value))
+		self.parser.Add(key, Uuid(value))
 	}
 }
 
 func (self *ParamsConverter) Date(key string, value civil.Date) {
-	self.parser.Set(key, convertDate(value))
+	self.parser.Set(key, Date(value))
 }
 
 func (self *ParamsConverter) DateNullable(key string, value *civil.Date) {
-	self.parser.Set(key, convertDate(*value))
+	self.parser.Set(key, Date(*value))
 }
 
 func (self *ParamsConverter) DateArray(key string, values []civil.Date) {
 	for _, value := range values {
-		self.parser.Add(key, convertDate(value))
+		self.parser.Add(key, Date(value))
 	}
 }
 
 func (self *ParamsConverter) DateTime(key string, value civil.DateTime) {
-	self.parser.Set(key, convertDateTime(value))
+	self.parser.Set(key, DateTime(value))
 }
 
 func (self *ParamsConverter) DateTimeNullable(key string, value *civil.DateTime) {
-	self.parser.Set(key, convertDateTime(*value))
+	self.parser.Set(key, DateTime(*value))
 }
 
 func (self *ParamsConverter) DateTimeArray(key string, values []civil.DateTime) {
 	for _, value := range values {
-		self.parser.Add(key, convertDateTime(value))
+		self.parser.Add(key, DateTime(value))
 	}
 }
 
@@ -282,5 +281,5 @@ func (self *ParamsConverter) StringEnumArray(key string, values []interface{}) {
 `
 
 	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
-	return &generator.CodeFile{module.GetPath("converter.go"), strings.TrimSpace(code)}
+	return &generator.CodeFile{module.GetPath("convert.go"), strings.TrimSpace(code)}
 }

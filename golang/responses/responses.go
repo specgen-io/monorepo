@@ -2,12 +2,15 @@ package responses
 
 import (
 	"fmt"
-
 	"generator"
 	"golang/types"
 	"golang/writer"
 	"spec"
 )
+
+func NewErrorResponse(response spec.Response, body string) string {
+	return fmt.Sprintf(`&httperrors.%s{Body: %s}`, response.Name.PascalCase(), body)
+}
 
 func NewResponse(response *spec.OperationResponse, body string) string {
 	return fmt.Sprintf(`%s{%s: &%s}`, ResponseTypeName(response.Operation), response.Name.PascalCase(), body)

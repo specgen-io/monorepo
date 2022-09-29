@@ -17,27 +17,26 @@ func GenerateModels(specification *spec.Spec, moduleName string, generatePath st
 
 	rootModule := module.New(moduleName, generatePath)
 
+	enumsModule := rootModule.Submodule("enums")
+	sources.AddGenerated(GenerateEnumsHelperFunctions(enumsModule))
+
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Name.FlatCase())
 		modelsModule := versionModule.Submodule(types.VersionModelsPackage)
-		sources.AddGeneratedAll(GenerateVersionModels(version.ResolvedModels, modelsModule))
+		sources.AddGenerated(GenerateVersionModels(version.ResolvedModels, modelsModule, enumsModule))
 	}
 	return sources
 }
 
-func GenerateVersionModels(models []*spec.NamedModel, module module.Module) []generator.CodeFile {
-	return []generator.CodeFile{
-		*generateVersionModelsCode(models, module),
-		*generateEnumsHelperFunctions(module),
-	}
-}
-
-func generateVersionModelsCode(models []*spec.NamedModel, module module.Module) *generator.CodeFile {
+func GenerateVersionModels(models []*spec.NamedModel, module, enumsModule module.Module) *generator.CodeFile {
 	w := writer.NewGoWriter()
 	w.Line("package %s", module.Name)
 
 	imports := imports.New()
 	imports.AddModelsTypes(models)
+	if types.ModelsHasEnum(models) {
+		imports.Add(enumsModule.Package)
+	}
 	imports.Write(w)
 
 	for _, model := range models {
@@ -153,7 +152,7 @@ func generateEnumModel(w *generator.Writer, model *spec.NamedModel) {
 	w.Line("var %s = []%s{%s}", enumValues(model), modelName, strings.Join(choiceValuesParams, ", "))
 	w.EmptyLine()
 	w.Line("func (self *%s) UnmarshalJSON(b []byte) error {", modelName)
-	w.Line("  str, err := readEnumStringValue(b, %sValuesStrings)", modelName)
+	w.Line("  str, err := enums.ReadStringValue(b, %sValuesStrings)", modelName)
 	w.Line("  if err != nil {")
 	w.Line("    return err")
 	w.Line("  }")
