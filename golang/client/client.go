@@ -179,13 +179,22 @@ func addRequestUrlParams(operation *spec.NamedOperation) string {
 func addUrlParam(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
-		if types.GoType(&param.Type.Definition) != "string" {
-			urlParams = append(urlParams, callRawConvert(&param.Type.Definition, param.Name.CamelCase()))
-		} else {
+		if paramIsEnumModel(&param.Type.Definition) || types.GoType(&param.Type.Definition) == "string" {
 			urlParams = append(urlParams, param.Name.CamelCase())
+		} else {
+			urlParams = append(urlParams, callRawConvert(&param.Type.Definition, param.Name.CamelCase()))
 		}
 	}
 	return urlParams
+}
+
+func paramIsEnumModel(typ *spec.TypeDef) bool {
+	if types.IsModel(typ) {
+		if typ.Info.Model.IsEnum() {
+			return true
+		}
+	}
+	return false
 }
 
 func parseParams(w *generator.Writer, operation *spec.NamedOperation) {

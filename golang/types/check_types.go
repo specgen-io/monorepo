@@ -5,6 +5,10 @@ import (
 	"spec"
 )
 
+func IsModel(def *spec.TypeDef) bool {
+	return def.Info.Model != nil
+}
+
 func ModelsHasEnum(models []*spec.NamedModel) bool {
 	for _, model := range models {
 		if model.IsEnum() {

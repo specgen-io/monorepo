@@ -108,10 +108,6 @@ func DateTime(value civil.DateTime) string {
 	return value.String()
 }
 
-func StringEnum(value any) string {
-	return fmt.Sprintf("%v", value)
-}
-
 type ParamsSetter interface {
 	Add(key string, value string)
 	Set(key string, value string)
