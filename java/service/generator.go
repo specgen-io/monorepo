@@ -14,7 +14,7 @@ type ServerGenerator interface {
 	ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string)
 	ServicesControllers(version *spec.Version) []generator.CodeFile
 	ExceptionController(responses *spec.Responses) *generator.CodeFile
-	Errors() []generator.CodeFile
+	Errors(models []*spec.NamedModel) []generator.CodeFile
 	ContentType() []generator.CodeFile
 	JsonHelpers() []generator.CodeFile
 }
@@ -53,4 +53,8 @@ func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath strin
 	}
 
 	panic(fmt.Sprintf(`Unsupported server: %s`, server))
+}
+
+func (g *Generator) GenModels(version *spec.Version) []generator.CodeFile {
+	return g.Models.Models(version.ResolvedModels, g.Packages.Version(version).Models, g.Packages.Json)
 }
