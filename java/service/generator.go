@@ -2,8 +2,8 @@ package service
 
 import (
 	"fmt"
-
 	"generator"
+
 	"java/models"
 	"java/types"
 	"spec"
@@ -20,11 +20,11 @@ type ServerGenerator interface {
 }
 
 type Generator struct {
-	Jsonlib  string
-	Types    *types.Types
-	Models   models.Generator
-	Packages *ServicePackages
-	Server   ServerGenerator
+	ServerGenerator
+	jsonlib         string
+	Types           *types.Types
+	ModelsGenerator models.Generator
+	Packages        *ServicePackages
 }
 
 func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath string) *Generator {
@@ -33,28 +33,27 @@ func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath strin
 
 	servicePackages := NewServicePackages(packageName, generatePath, servicesPath)
 
-	if server == Spring {
-		return &Generator{
-			jsonlib,
-			types,
-			models,
-			servicePackages,
-			NewSpringGenerator(types, models, servicePackages),
-		}
-	}
-	if server == Micronaut {
-		return &Generator{
-			jsonlib,
-			types,
-			models,
-			servicePackages,
-			NewMicronautGenerator(types, models, servicePackages),
-		}
+	var serverGenerator ServerGenerator = nil
+	switch server {
+	case Spring:
+		serverGenerator = NewSpringGenerator(types, models, servicePackages)
+		break
+	case Micronaut:
+		serverGenerator = NewMicronautGenerator(types, models, servicePackages)
+		break
+	default:
+		panic(fmt.Sprintf(`Unsupported server: %s`, server))
 	}
 
-	panic(fmt.Sprintf(`Unsupported server: %s`, server))
+	return &Generator{
+		serverGenerator,
+		jsonlib,
+		types,
+		models,
+		servicePackages,
+	}
 }
 
-func (g *Generator) GenModels(version *spec.Version) []generator.CodeFile {
-	return g.Models.Models(version.ResolvedModels, g.Packages.Version(version).Models, g.Packages.Json)
+func (g *Generator) Models(version *spec.Version) []generator.CodeFile {
+	return g.ModelsGenerator.Models(version.ResolvedModels, g.Packages.Version(version).Models, g.Packages.Json)
 }

@@ -22,7 +22,7 @@ func (g *Generator) serviceImplementation(api *spec.Api) *generator.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, packages.ServicesImpl.PackageName)
 	w.EmptyLine()
-	annotationImport, annotation := g.Server.ServiceImplAnnotation(api)
+	annotationImport, annotation := g.ServiceImplAnnotation(api)
 	imports := imports.New()
 	imports.Add(annotationImport)
 	imports.Add(packages.Models.PackageStar)
