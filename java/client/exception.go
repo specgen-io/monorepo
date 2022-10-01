@@ -7,7 +7,7 @@ import (
 	"java/packages"
 )
 
-func clientException(thePackage packages.Module) *generator.CodeFile {
+func clientException(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 

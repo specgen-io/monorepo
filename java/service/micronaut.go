@@ -20,10 +20,10 @@ var Micronaut = "micronaut"
 type MicronautGenerator struct {
 	Types    *types.Types
 	Models   models.Generator
-	Packages *ServicePackages
+	Packages *Packages
 }
 
-func NewMicronautGenerator(types *types.Types, models models.Generator, servicePackages *ServicePackages) *MicronautGenerator {
+func NewMicronautGenerator(types *types.Types, models models.Generator, servicePackages *Packages) *MicronautGenerator {
 	return &MicronautGenerator{types, models, servicePackages}
 }
 
@@ -464,14 +464,14 @@ func getMicronautParameterAnnotation(paramAnnotation string, param *spec.NamedPa
 	return fmt.Sprintf(`@%s(%s)`, paramAnnotation, strings.Join(annotationParams, ", "))
 }
 
-func dateConverters(convertersPackage packages.Module) []generator.CodeFile {
+func dateConverters(convertersPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *localDateConverter(convertersPackage))
 	files = append(files, *localDateTimeConverter(convertersPackage))
 	return files
 }
 
-func localDateConverter(thePackage packages.Module) *generator.CodeFile {
+func localDateConverter(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -505,7 +505,7 @@ public class LocalDateConverter implements TypeConverter<String, LocalDate> {
 	}
 }
 
-func localDateTimeConverter(thePackage packages.Module) *generator.CodeFile {
+func localDateTimeConverter(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 

@@ -18,10 +18,10 @@ var Spring = "spring"
 type SpringGenerator struct {
 	Types    *types.Types
 	Models   models.Generator
-	Packages *ServicePackages
+	Packages *Packages
 }
 
-func NewSpringGenerator(types *types.Types, models models.Generator, servicePackages *ServicePackages) *SpringGenerator {
+func NewSpringGenerator(types *types.Types, models models.Generator, servicePackages *Packages) *SpringGenerator {
 	return &SpringGenerator{types, models, servicePackages}
 }
 

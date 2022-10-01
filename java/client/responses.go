@@ -21,7 +21,7 @@ func responseCreate(response *spec.OperationResponse, resultVar string) string {
 	}
 }
 
-func reponseInterface(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Module, modelsVersionPackage packages.Module, errorModelsPackage packages.Module) []generator.CodeFile {
+func reponseInterface(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)

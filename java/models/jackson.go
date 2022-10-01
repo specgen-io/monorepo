@@ -22,7 +22,7 @@ func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 	return &JacksonGenerator{types}
 }
 
-func (g *JacksonGenerator) Models(models []*spec.NamedModel, thePackage packages.Module, jsonPackage packages.Module) []generator.CodeFile {
+func (g *JacksonGenerator) Models(models []*spec.NamedModel, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, model := range models {
 		if model.IsObject() {
@@ -44,7 +44,7 @@ func jacksonJsonPropertyAnnotation(field *spec.NamedDefinition) string {
 	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.Source, required)
 }
 
-func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packages.Module) *generator.CodeFile {
+func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -104,7 +104,7 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 	}
 }
 
-func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages.Module) *generator.CodeFile {
+func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
@@ -126,7 +126,7 @@ func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages
 	}
 }
 
-func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.Module) *generator.CodeFile {
+func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
 	interfaceName := model.Name.PascalCase()
 	w := writer.NewJavaWriter()
 	w.Line("package %s;", thePackage.PackageName)
@@ -236,11 +236,11 @@ func (g *JacksonGenerator) ModelsUsageImports() []string {
 	}
 }
 
-func (g *JacksonGenerator) SetupImport(jsonPackage packages.Module) string {
+func (g *JacksonGenerator) SetupImport(jsonPackage packages.Package) string {
 	return fmt.Sprintf(`static %s.CustomObjectMapper.setup`, jsonPackage.PackageName)
 }
 
-func (g *JacksonGenerator) JsonParseException(thePackage packages.Module) *generator.CodeFile {
+func (g *JacksonGenerator) JsonParseException(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -257,7 +257,7 @@ public class JsonParseException extends RuntimeException {
 	}
 }
 
-func (g *JacksonGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Module) *generator.CodeFile {
+func (g *JacksonGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -343,7 +343,7 @@ func (g *JacksonGenerator) JsonHelpersMethods() string {
 `
 }
 
-func (g *JacksonGenerator) SetupLibrary(thePackage packages.Module) []generator.CodeFile {
+func (g *JacksonGenerator) SetupLibrary(thePackage packages.Package) []generator.CodeFile {
 	code := `
 package [[.PackageName]];
 

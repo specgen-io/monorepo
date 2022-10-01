@@ -24,7 +24,7 @@ type Generator struct {
 	jsonlib         string
 	Types           *types.Types
 	ModelsGenerator models.Generator
-	Packages        *ServicePackages
+	Packages        *Packages
 }
 
 func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath string) *Generator {

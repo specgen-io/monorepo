@@ -7,24 +7,24 @@ import (
 	"strings"
 )
 
-type Module struct {
+type Package struct {
 	RootPath    string
 	Path        string
 	PackageName string
 	PackageStar string
 }
 
-func New(rootPath string, packageName string) Module {
+func New(rootPath string, packageName string) Package {
 	path := fmt.Sprintf(`%s/%s`, rootPath, packageToPath(packageName))
-	return Module{RootPath: rootPath, Path: path, PackageName: packageName, PackageStar: packageName + ".*"}
+	return Package{RootPath: rootPath, Path: path, PackageName: packageName, PackageStar: packageName + ".*"}
 }
 
-func (m Module) GetPath(filename string) string {
+func (m Package) GetPath(filename string) string {
 	path := filepath.Join(m.Path, filename)
 	return path
 }
 
-func (m Module) Subpackage(name string) Module {
+func (m Package) Subpackage(name string) Package {
 	if name != "" {
 		return New(m.RootPath, fmt.Sprintf(`%s.%s`, m.PackageName, name))
 	}

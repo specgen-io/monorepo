@@ -11,7 +11,7 @@ import (
 	"spec"
 )
 
-func (g *Generator) Clients(version *spec.Version, thePackage packages.Module, modelsVersionPackage packages.Module, errorModelsPackage packages.Module, jsonPackage packages.Module, utilsPackage packages.Module, mainPackage packages.Module) []generator.CodeFile {
+func (g *Generator) Clients(version *spec.Version, thePackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, utilsPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
@@ -20,7 +20,7 @@ func (g *Generator) Clients(version *spec.Version, thePackage packages.Module, m
 	return files
 }
 
-func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVersionPackage packages.Module, errorModelsPackage packages.Module, jsonPackage packages.Module, utilsPackage packages.Module, mainPackage packages.Module) []generator.CodeFile {
+func (g *Generator) client(api *spec.Api, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, utilsPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	w := writer.NewJavaWriter()

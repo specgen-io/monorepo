@@ -5,30 +5,30 @@ import (
 	"spec"
 )
 
-type ServicePackages struct {
-	generated       packages.Module
-	implementations packages.Module
+type Packages struct {
+	generated       packages.Package
+	implementations packages.Package
 	versions        map[string]*VersionPackages
-	ContentType     packages.Module
-	Json            packages.Module
-	Errors          packages.Module
-	ErrorsModels    packages.Module
-	Converters      packages.Module
-	Controllers     packages.Module
+	ContentType     packages.Package
+	Json            packages.Package
+	Errors          packages.Package
+	ErrorsModels    packages.Package
+	Converters      packages.Package
+	Controllers     packages.Package
 }
 
 type VersionPackages struct {
-	Models       packages.Module
-	Services     packages.Module
-	Controllers  packages.Module
-	ServicesImpl packages.Module
+	Models       packages.Package
+	Services     packages.Package
+	Controllers  packages.Package
+	ServicesImpl packages.Package
 }
 
-func (p *VersionPackages) ServicesApi(api *spec.Api) packages.Module {
+func (p *VersionPackages) ServicesApi(api *spec.Api) packages.Package {
 	return p.Services.Subpackage(api.Name.SnakeCase())
 }
 
-func newVersionPackages(generated, implementations packages.Module, version *spec.Version) *VersionPackages {
+func newVersionPackages(generated, implementations packages.Package, version *spec.Version) *VersionPackages {
 	main := generated.Subpackage(version.Name.FlatCase())
 	models := main.Subpackage("models")
 	services := main.Subpackage("services")
@@ -43,7 +43,7 @@ func newVersionPackages(generated, implementations packages.Module, version *spe
 	}
 }
 
-func NewServicePackages(packageName, generatePath, servicesPath string) *ServicePackages {
+func NewServicePackages(packageName, generatePath, servicesPath string) *Packages {
 	generated := packages.New(generatePath, packageName)
 	contenttype := generated.Subpackage("contenttype")
 	json := generated.Subpackage("json")
@@ -53,7 +53,7 @@ func NewServicePackages(packageName, generatePath, servicesPath string) *Service
 	controllers := generated.Subpackage("controllers")
 	implementations := packages.New(servicesPath, packageName)
 
-	return &ServicePackages{
+	return &Packages{
 		generated,
 		implementations,
 		map[string]*VersionPackages{},
@@ -66,7 +66,7 @@ func NewServicePackages(packageName, generatePath, servicesPath string) *Service
 	}
 }
 
-func (p *ServicePackages) Version(version *spec.Version) *VersionPackages {
+func (p *Packages) Version(version *spec.Version) *VersionPackages {
 	versionPackages, found := p.versions[version.Name.Source]
 	if !found {
 		versionPackages = newVersionPackages(p.generated, p.implementations, version)

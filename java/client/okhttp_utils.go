@@ -7,7 +7,7 @@ import (
 	"java/packages"
 )
 
-func generateUtils(thePackage packages.Module) []generator.CodeFile {
+func generateUtils(thePackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	files = append(files, *generateRequestBuilder(thePackage))
@@ -17,7 +17,7 @@ func generateUtils(thePackage packages.Module) []generator.CodeFile {
 	return files
 }
 
-func generateRequestBuilder(thePackage packages.Module) *generator.CodeFile {
+func generateRequestBuilder(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -59,7 +59,7 @@ public class RequestBuilder {
 	}
 }
 
-func generateUrlBuilder(thePackage packages.Module) *generator.CodeFile {
+func generateUrlBuilder(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -112,7 +112,7 @@ public class UrlBuilder {
 	}
 }
 
-func generateStringify(thePackage packages.Module) *generator.CodeFile {
+func generateStringify(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
