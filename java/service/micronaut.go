@@ -10,7 +10,6 @@ import (
 	"java/imports"
 	"java/models"
 	"java/packages"
-	"java/responses"
 	"java/types"
 	"java/writer"
 	"spec"
@@ -172,13 +171,13 @@ func (g *MicronautGenerator) parseBody(w *generator.Writer, operation *spec.Name
 }
 
 func (g *MicronautGenerator) serviceCall(w *generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar)))
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), strings.Join(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar), ", "))
 	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
 		w.Line(`%s;`, serviceCall)
 	} else {
 		w.Line(`var %s = %s;`, resultVarName, serviceCall)
 		w.Line(`if (%s == null) {`, resultVarName)
-		w.Line(`  throw new RuntimeException("Service implementation didn't return any value'");`)
+		w.Line(`  throw new RuntimeException("Service responseImpl didn't return any value'");`)
 		w.Line(`}`)
 	}
 }
@@ -189,12 +188,12 @@ func (g *MicronautGenerator) processResponses(w *generator.Writer, operation *sp
 	}
 	if len(operation.Responses) > 1 {
 		for _, response := range operation.Responses {
-			w.Line(`if (%s instanceof %s.%s) {`, resultVarName, responses.InterfaceName(operation), response.Name.PascalCase())
-			g.processResponse(w.Indented(), &response.Response, responses.GetBody(&response, resultVarName))
+			w.Line(`if (%s instanceof %s.%s) {`, resultVarName, responseInterfaceName(operation), response.Name.PascalCase())
+			g.processResponse(w.Indented(), &response.Response, getResponseBody(&response, resultVarName))
 			w.Line(`}`)
 		}
 		w.EmptyLine()
-		w.Line(`throw new RuntimeException("Service implementation didn't return any value'");`)
+		w.Line(`throw new RuntimeException("Service responseImpl didn't return any value'");`)
 	}
 }
 
@@ -461,7 +460,7 @@ func getMicronautParameterAnnotation(paramAnnotation string, param *spec.NamedPa
 		annotationParams = append(annotationParams, fmt.Sprintf(`defaultValue = "%s"`, *param.DefinitionDefault.Default))
 	}
 
-	return fmt.Sprintf(`@%s(%s)`, paramAnnotation, joinParams(annotationParams))
+	return fmt.Sprintf(`@%s(%s)`, paramAnnotation, strings.Join(annotationParams, ", "))
 }
 
 func dateConverters(convertersPackage packages.Module) []generator.CodeFile {

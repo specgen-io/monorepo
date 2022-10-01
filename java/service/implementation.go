@@ -6,7 +6,6 @@ import (
 	"generator"
 	"java/imports"
 	"java/packages"
-	"java/responses"
 	"java/writer"
 	"spec"
 )
@@ -36,7 +35,7 @@ func (g *Generator) serviceImplementation(api *spec.Api, thePackage, modelsVersi
 	w.Line(`public class %s implements %s {`, serviceImplName(api), serviceInterfaceName(api))
 	for _, operation := range api.Operations {
 		w.Line(`  @Override`)
-		w.Line(`  public %s {`, responses.Signature(g.Types, &operation))
+		w.Line(`  public %s {`, operationSignature(g.Types, &operation))
 		w.Line(`    throw new UnsupportedOperationException("Implementation has not added yet");`)
 		w.Line(`  }`)
 	}

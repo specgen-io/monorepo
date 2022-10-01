@@ -8,7 +8,6 @@ import (
 	"github.com/pinzolo/casee"
 	"java/imports"
 	"java/models"
-	"java/responses"
 	"java/types"
 	"java/writer"
 	"spec"
@@ -166,13 +165,13 @@ func (g *SpringGenerator) parseBody(w *generator.Writer, operation *spec.NamedOp
 }
 
 func (g *SpringGenerator) serviceCall(w *generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar)))
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), strings.Join(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar), ", "))
 	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
 		w.Line(`%s;`, serviceCall)
 	} else {
 		w.Line(`var %s = %s;`, resultVarName, serviceCall)
 		w.Line(`if (%s == null) {`, resultVarName)
-		w.Line(`  throw new RuntimeException("Service implementation didn't return any value'");`)
+		w.Line(`  throw new RuntimeException("Service responseImpl didn't return any value'");`)
 		w.Line(`}`)
 	}
 }
@@ -183,12 +182,12 @@ func (g *SpringGenerator) processResponses(w *generator.Writer, operation *spec.
 	}
 	if len(operation.Responses) > 1 {
 		for _, response := range operation.Responses {
-			w.Line(`if (result instanceof %s.%s) {`, responses.InterfaceName(operation), response.Name.PascalCase())
-			g.processResponse(w.Indented(), &response.Response, responses.GetBody(&response, resultVarName))
+			w.Line(`if (result instanceof %s.%s) {`, responseInterfaceName(operation), response.Name.PascalCase())
+			g.processResponse(w.Indented(), &response.Response, getResponseBody(&response, resultVarName))
 			w.Line(`}`)
 		}
 		w.EmptyLine()
-		w.Line(`throw new RuntimeException("Service implementation didn't return any value'");`)
+		w.Line(`throw new RuntimeException("Service responseImpl didn't return any value'");`)
 	}
 }
 
@@ -434,7 +433,7 @@ func getSpringParameterAnnotation(paramAnnotationName string, param *spec.NamedP
 		annotationParams = append(annotationParams, fmt.Sprintf(`defaultValue = "%s"`, *param.DefinitionDefault.Default))
 	}
 
-	return fmt.Sprintf(`@%s(%s)`, paramAnnotationName, joinParams(annotationParams))
+	return fmt.Sprintf(`@%s(%s)`, paramAnnotationName, strings.Join(annotationParams, ", "))
 }
 
 func dateFormatSpringAnnotation(typ *spec.TypeDef) string {

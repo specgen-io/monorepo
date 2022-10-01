@@ -1,38 +1,25 @@
-package responses
+package service
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"java/packages"
 	"java/types"
 	"java/writer"
 	"spec"
+	"strings"
 )
 
-func Signature(types *types.Types, operation *spec.NamedOperation) string {
+func operationSignature(types *types.Types, operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
-			return fmt.Sprintf(`%s %s(%s)`, types.Java(&response.Type.Definition), operation.Name.CamelCase(), joinParams(parameters(operation, types)))
+			return fmt.Sprintf(`%s %s(%s)`, types.Java(&response.Type.Definition), operation.Name.CamelCase(), strings.Join(parameters(operation, types), ", "))
 		}
 	}
 	if len(operation.Responses) > 1 {
-		return fmt.Sprintf(`%s %s(%s)`, InterfaceName(operation), operation.Name.CamelCase(), joinParams(parameters(operation, types)))
+		return fmt.Sprintf(`%s %s(%s)`, responseInterfaceName(operation), operation.Name.CamelCase(), strings.Join(parameters(operation, types), ", "))
 	}
 	return ""
-}
-
-func CreateResponse(response *spec.OperationResponse, resultVar string) string {
-	if len(response.Operation.Responses) > 1 {
-		return fmt.Sprintf(`return new %s.%s(%s);`, InterfaceName(response.Operation), response.Name.PascalCase(), resultVar)
-	} else {
-		if resultVar != "" {
-			return fmt.Sprintf(`return %s;`, resultVar)
-		} else {
-			return `return;`
-		}
-	}
 }
 
 func parameters(operation *spec.NamedOperation, types *types.Types) []string {
@@ -52,7 +39,7 @@ func parameters(operation *spec.NamedOperation, types *types.Types) []string {
 	return params
 }
 
-func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Module, modelsVersionPackage packages.Module, errorModelsPackage packages.Module) []generator.CodeFile {
+func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Module, modelsVersionPackage packages.Module, errorModelsPackage packages.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
@@ -60,25 +47,25 @@ func Interfaces(types *types.Types, operation *spec.NamedOperation, apiPackage p
 	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
 	w.Line(`import %s;`, errorModelsPackage.PackageStar)
 	w.EmptyLine()
-	w.Line(`public interface %s {`, InterfaceName(operation))
+	w.Line(`public interface %s {`, responseInterfaceName(operation))
 	for index, response := range operation.Responses {
 		if index > 0 {
 			w.EmptyLine()
 		}
-		implementation(w.Indented(), types, &response)
+		responseImpl(w.Indented(), types, &response)
 	}
 	w.Line(`}`)
 
 	files = append(files, generator.CodeFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", InterfaceName(operation))),
+		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", responseInterfaceName(operation))),
 		Content: w.String(),
 	})
 	return files
 }
 
-func implementation(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {
+func responseImpl(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
-	w.Line(`class %s implements %s {`, serviceResponseImplementationName, InterfaceName(response.Operation))
+	w.Line(`class %s implements %s {`, serviceResponseImplementationName, responseInterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {
 		w.Line(`  public %s body;`, types.Java(&response.Type.Definition))
 		w.EmptyLine()
@@ -92,14 +79,10 @@ func implementation(w *generator.Writer, types *types.Types, response *spec.Oper
 	w.Line(`}`)
 }
 
-func InterfaceName(operation *spec.NamedOperation) string {
+func responseInterfaceName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
 }
 
-func GetBody(response *spec.OperationResponse, responseVarName string) string {
-	return fmt.Sprintf(`((%s.%s) %s).body`, InterfaceName(response.Operation), response.Name.PascalCase(), responseVarName)
-}
-
-func joinParams(params []string) string {
-	return strings.Join(params, ", ")
+func getResponseBody(response *spec.OperationResponse, responseVarName string) string {
+	return fmt.Sprintf(`((%s.%s) %s).body`, responseInterfaceName(response.Operation), response.Name.PascalCase(), responseVarName)
 }

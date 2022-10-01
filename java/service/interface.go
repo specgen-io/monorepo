@@ -5,7 +5,6 @@ import (
 
 	"generator"
 	"java/imports"
-	"java/responses"
 	"java/writer"
 	"spec"
 )
@@ -34,13 +33,13 @@ func (g *Generator) serviceInterface(api *spec.Api) []generator.CodeFile {
 	w.EmptyLine()
 	w.Line(`public interface %s {`, serviceInterfaceName(api))
 	for _, operation := range api.Operations {
-		w.Line(`  %s;`, responses.Signature(g.Types, &operation))
+		w.Line(`  %s;`, operationSignature(g.Types, &operation))
 	}
 	w.Line(`}`)
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, packages.Models, g.Packages.ErrorsModels)...)
+			files = append(files, responseInterface(g.Types, &operation, apiPackage, packages.Models, g.Packages.ErrorsModels)...)
 		}
 	}
 
