@@ -39,7 +39,7 @@ func (g *Generator) serviceInterface(api *spec.Api) []generator.CodeFile {
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, responseInterface(g.Types, &operation, apiPackage, packages.Models, g.Packages.ErrorsModels)...)
+			files = append(files, *g.responseInterface(&operation))
 		}
 	}
 

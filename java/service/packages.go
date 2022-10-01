@@ -6,72 +6,70 @@ import (
 )
 
 type ServicePackages struct {
-	Root             packages.Module
-	ContentType      packages.Module
-	Json             packages.Module
-	Errors           packages.Module
-	ErrorsModels     packages.Module
-	ErrorsController packages.Module
-	ServicesImpl     packages.Module
-	Converters       packages.Module
-	Controllers      packages.Module
-	versions         map[string]*VersionPackages
+	generated       packages.Module
+	implementations packages.Module
+	versions        map[string]*VersionPackages
+	ContentType     packages.Module
+	Json            packages.Module
+	Errors          packages.Module
+	ErrorsModels    packages.Module
+	Converters      packages.Module
+	Controllers     packages.Module
 }
 
 type VersionPackages struct {
-	Main        packages.Module
-	Models      packages.Module
-	Services    packages.Module
-	Controllers packages.Module
+	Models       packages.Module
+	Services     packages.Module
+	Controllers  packages.Module
+	ServicesImpl packages.Module
 }
 
 func (p *VersionPackages) ServicesApi(api *spec.Api) packages.Module {
 	return p.Services.Subpackage(api.Name.SnakeCase())
 }
 
-func newVersionPackages(rootPackage packages.Module, version *spec.Version) *VersionPackages {
-	mainPackage := rootPackage.Subpackage(version.Name.FlatCase())
-	modelsPackage := mainPackage.Subpackage("models")
-	servicePackage := mainPackage.Subpackage("services")
-	controllersPackage := mainPackage.Subpackage("controllers")
+func newVersionPackages(generated, implementations packages.Module, version *spec.Version) *VersionPackages {
+	main := generated.Subpackage(version.Name.FlatCase())
+	models := main.Subpackage("models")
+	services := main.Subpackage("services")
+	controllers := main.Subpackage("controllers")
+	servicesImpl := implementations.Subpackage("services").Subpackage(version.Name.FlatCase())
 
 	return &VersionPackages{
-		mainPackage,
-		modelsPackage,
-		servicePackage,
-		controllersPackage,
+		models,
+		services,
+		controllers,
+		servicesImpl,
 	}
 }
 
 func NewServicePackages(packageName, generatePath, servicesPath string) *ServicePackages {
-	rootPackage := packages.New(generatePath, packageName)
-	contentTypePackage := rootPackage.Subpackage("contenttype")
-	jsonPackage := rootPackage.Subpackage("json")
-	errorsPackage := rootPackage.Subpackage("errors")
-	errorsModelsPackage := errorsPackage.Subpackage("models")
-	errorsControllerPackage := rootPackage.Subpackage("controllers")
-	servicesImplPackage := packages.New(servicesPath, packageName)
-	convertersPackage := rootPackage.Subpackage("converters")
-	controllerPackage := rootPackage.Subpackage("controllers")
+	generated := packages.New(generatePath, packageName)
+	contenttype := generated.Subpackage("contenttype")
+	json := generated.Subpackage("json")
+	errors := generated.Subpackage("errors")
+	errorsModels := errors.Subpackage("models")
+	converters := generated.Subpackage("converters")
+	controllers := generated.Subpackage("controllers")
+	implementations := packages.New(servicesPath, packageName)
 
 	return &ServicePackages{
-		rootPackage,
-		contentTypePackage,
-		jsonPackage,
-		errorsPackage,
-		errorsModelsPackage,
-		errorsControllerPackage,
-		servicesImplPackage,
-		convertersPackage,
-		controllerPackage,
+		generated,
+		implementations,
 		map[string]*VersionPackages{},
+		contenttype,
+		json,
+		errors,
+		errorsModels,
+		converters,
+		controllers,
 	}
 }
 
 func (p *ServicePackages) Version(version *spec.Version) *VersionPackages {
 	versionPackages, found := p.versions[version.Name.Source]
 	if !found {
-		versionPackages = newVersionPackages(p.Root, version)
+		versionPackages = newVersionPackages(p.generated, p.implementations, version)
 	}
 	return versionPackages
 }

@@ -27,9 +27,11 @@ type Generator struct {
 	Server   ServerGenerator
 }
 
-func NewGenerator(jsonlib, server string, servicePackages *ServicePackages) *Generator {
+func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath string) *Generator {
 	types := models.NewTypes(jsonlib)
 	models := models.NewGenerator(jsonlib)
+
+	servicePackages := NewServicePackages(packageName, generatePath, servicesPath)
 
 	if server == Spring {
 		return &Generator{

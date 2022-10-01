@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"generator"
-	"java/packages"
 	"java/types"
 	"java/writer"
 	"spec"
@@ -39,28 +38,29 @@ func parameters(operation *spec.NamedOperation, types *types.Types) []string {
 	return params
 }
 
-func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Module, modelsVersionPackage packages.Module, errorModelsPackage packages.Module) []generator.CodeFile {
-	files := []generator.CodeFile{}
+func (g *Generator) responseInterface(operation *spec.NamedOperation) *generator.CodeFile {
+	packages := g.Packages.Version(operation.InApi.InHttp.InVersion)
+	apiPackage := packages.ServicesApi(operation.InApi)
+
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
-	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
-	w.Line(`import %s;`, errorModelsPackage.PackageStar)
+	w.Line(`import %s;`, packages.Models.PackageStar)
+	w.Line(`import %s;`, g.Packages.ErrorsModels.PackageStar)
 	w.EmptyLine()
 	w.Line(`public interface %s {`, responseInterfaceName(operation))
 	for index, response := range operation.Responses {
 		if index > 0 {
 			w.EmptyLine()
 		}
-		responseImpl(w.Indented(), types, &response)
+		responseImpl(w.Indented(), g.Types, &response)
 	}
 	w.Line(`}`)
 
-	files = append(files, generator.CodeFile{
+	return &generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", responseInterfaceName(operation))),
 		Content: w.String(),
-	})
-	return files
+	}
 }
 
 func responseImpl(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {
