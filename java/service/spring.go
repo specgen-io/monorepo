@@ -8,7 +8,6 @@ import (
 	"github.com/pinzolo/casee"
 	"java/imports"
 	"java/models"
-	"java/packages"
 	"java/responses"
 	"java/types"
 	"java/writer"
@@ -18,23 +17,23 @@ import (
 var Spring = "spring"
 
 type SpringGenerator struct {
-	Types  *types.Types
-	Models models.Generator
+	Types    *types.Types
+	Models   models.Generator
+	Packages *ServicePackages
 }
 
-func NewSpringGenerator(types *types.Types, models models.Generator) *SpringGenerator {
-	return &SpringGenerator{types, models}
+func NewSpringGenerator(types *types.Types, models models.Generator, servicePackages *ServicePackages) *SpringGenerator {
+	return &SpringGenerator{types, models, servicePackages}
 }
 
 func (g *SpringGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string) {
 	return `org.springframework.stereotype.Service`, fmt.Sprintf(`Service("%s")`, versionServiceName(serviceName(api), api.InHttp.InVersion))
 }
 
-func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorsModelsPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
+func (g *SpringGenerator) ServicesControllers(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.serviceController(&api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorsModelsPackage, serviceVersionSubpackage)...)
+		files = append(files, g.serviceController(&api)...)
 	}
 	return files
 }
@@ -49,15 +48,15 @@ func (g *SpringGenerator) ServiceImports() []string {
 	}
 }
 
-func (g *SpringGenerator) ExceptionController(responses *spec.Responses, thePackage, errorsPackage, errorsModelsPackage, jsonPackage packages.Module) *generator.CodeFile {
+func (g *SpringGenerator) ExceptionController(responses *spec.Responses) *generator.CodeFile {
 	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, thePackage.PackageName)
+	w.Line(`package %s;`, g.Packages.Controllers.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
-	imports.Add(jsonPackage.PackageStar)
-	imports.Add(errorsModelsPackage.PackageStar)
-	imports.AddStatic(errorsPackage.Subpackage("ErrorsHelpers").PackageStar)
+	imports.Add(g.Packages.Errors.PackageStar)
+	imports.Add(g.Packages.ErrorsModels.PackageStar)
+	imports.AddStatic(g.Packages.Errors.Subpackage("ErrorsHelpers").PackageStar)
 	imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Write(w)
 	w.EmptyLine()
@@ -73,7 +72,7 @@ func (g *SpringGenerator) ExceptionController(responses *spec.Responses, thePack
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath(fmt.Sprintf("%s.java", className)),
+		Path:    g.Packages.Controllers.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
 	}
 }
@@ -97,19 +96,20 @@ func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Response
 	w.Line(`}`)
 }
 
-func (g *SpringGenerator) serviceController(api *spec.Api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorsModelsPackage, serviceVersionPackage packages.Module) []generator.CodeFile {
+func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile {
+	packages := g.Packages.Version(api.InHttp.InVersion)
 	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, thePackage.PackageName)
+	w.Line(`package %s;`, packages.Controllers.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`javax.servlet.http.HttpServletRequest`)
-	imports.Add(contentTypePackage.PackageStar)
-	imports.Add(jsonPackage.PackageStar)
-	imports.Add(modelsVersionPackage.PackageStar)
-	imports.Add(errorsModelsPackage.PackageStar)
-	imports.Add(serviceVersionPackage.PackageStar)
+	imports.Add(g.Packages.ContentType.PackageStar)
+	imports.Add(g.Packages.Json.PackageStar)
+	imports.Add(g.Packages.ErrorsModels.PackageStar)
+	imports.Add(packages.Models.PackageStar)
+	imports.Add(packages.Services.PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
@@ -133,7 +133,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api, thePackage, contentTy
 	w.Line(`}`)
 
 	files = append(files, generator.CodeFile{
-		Path:    thePackage.GetPath(fmt.Sprintf("%s.java", className)),
+		Path:    packages.Controllers.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
 	})
 
@@ -212,14 +212,14 @@ func (g *SpringGenerator) processResponse(w *generator.Writer, response *spec.Re
 	}
 }
 
-func (g *SpringGenerator) ContentType(thePackage packages.Module) []generator.CodeFile {
+func (g *SpringGenerator) ContentType() []generator.CodeFile {
 	files := []generator.CodeFile{}
-	files = append(files, *g.contentTypeMismatchException(thePackage))
-	files = append(files, *g.checkContentType(thePackage))
+	files = append(files, *g.contentTypeMismatchException())
+	files = append(files, *g.checkContentType())
 	return files
 }
 
-func (g *SpringGenerator) contentTypeMismatchException(thePackage packages.Module) *generator.CodeFile {
+func (g *SpringGenerator) contentTypeMismatchException() *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -232,15 +232,15 @@ public class ContentTypeMismatchException extends RuntimeException {
 	code, _ = generator.ExecuteTemplate(code, struct {
 		PackageName string
 	}{
-		thePackage.PackageName,
+		g.Packages.ContentType.PackageName,
 	})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ContentTypeMismatchException.java"),
+		Path:    g.Packages.ContentType.GetPath("ContentTypeMismatchException.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *SpringGenerator) checkContentType(thePackage packages.Module) *generator.CodeFile {
+func (g *SpringGenerator) checkContentType() *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -260,22 +260,22 @@ public class ContentType {
 	code, _ = generator.ExecuteTemplate(code, struct {
 		PackageName string
 	}{
-		thePackage.PackageName,
+		g.Packages.ContentType.PackageName,
 	})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ContentType.java"),
+		Path:    g.Packages.ContentType.GetPath("ContentType.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *SpringGenerator) Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Module) []generator.CodeFile {
+func (g *SpringGenerator) Errors() []generator.CodeFile {
 	files := []generator.CodeFile{}
-	files = append(files, *g.errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage))
-	files = append(files, *g.Models.ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage))
+	files = append(files, *g.errorsHelpers())
+	files = append(files, *g.Models.ValidationErrorsHelpers(g.Packages.Errors, g.Packages.ErrorsModels, g.Packages.Json))
 	return files
 }
 
-func (g *SpringGenerator) errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Module) *generator.CodeFile {
+func (g *SpringGenerator) errorsHelpers() *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -346,30 +346,30 @@ public class ErrorsHelpers {
 		ContentTypePackage  string
 		JsonPackage         string
 	}{
-		thePackage.PackageName,
-		errorsModelsPackage.PackageName,
-		contentTypePackage.PackageName,
-		jsonPackage.PackageName,
+		g.Packages.Errors.PackageName,
+		g.Packages.ErrorsModels.PackageName,
+		g.Packages.ContentType.PackageName,
+		g.Packages.Json.PackageName,
 	})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ErrorsHelpers.java"),
+		Path:    g.Packages.Errors.GetPath("ErrorsHelpers.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *SpringGenerator) JsonHelpers(thePackage packages.Module) []generator.CodeFile {
+func (g *SpringGenerator) JsonHelpers() []generator.CodeFile {
 	files := []generator.CodeFile{}
 
-	files = append(files, *g.Json(thePackage))
-	files = append(files, *g.Models.JsonParseException(thePackage))
-	files = append(files, g.Models.SetupLibrary(thePackage)...)
+	files = append(files, *g.Json())
+	files = append(files, *g.Models.JsonParseException(g.Packages.Json))
+	files = append(files, g.Models.SetupLibrary(g.Packages.Json)...)
 
 	return files
 }
 
-func (g *SpringGenerator) Json(thePackage packages.Module) *generator.CodeFile {
+func (g *SpringGenerator) Json() *generator.CodeFile {
 	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, thePackage.PackageName)
+	w.Line(`package %s;`, g.Packages.Json.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(`org.springframework.beans.factory.annotation.Autowired`)
@@ -387,7 +387,7 @@ func (g *SpringGenerator) Json(thePackage packages.Module) *generator.CodeFile {
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath(fmt.Sprintf("%s.java", className)),
+		Path:    g.Packages.Json.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
 	}
 }

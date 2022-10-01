@@ -5,7 +5,6 @@ import (
 
 	"generator"
 	"java/models"
-	"java/packages"
 	"java/types"
 	"spec"
 )
@@ -13,21 +12,22 @@ import (
 type ServerGenerator interface {
 	ServiceImports() []string
 	ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string)
-	ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorsModelsPackage, serviceVersionPackage packages.Module) []generator.CodeFile
-	ExceptionController(responses *spec.Responses, thePackage, errorsPackage, errorsModelsPackage, jsonPackage packages.Module) *generator.CodeFile
-	Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Module) []generator.CodeFile
-	ContentType(thePackage packages.Module) []generator.CodeFile
-	JsonHelpers(thePackage packages.Module) []generator.CodeFile
+	ServicesControllers(version *spec.Version) []generator.CodeFile
+	ExceptionController(responses *spec.Responses) *generator.CodeFile
+	Errors() []generator.CodeFile
+	ContentType() []generator.CodeFile
+	JsonHelpers() []generator.CodeFile
 }
 
 type Generator struct {
-	Jsonlib string
-	Types   *types.Types
-	Models  models.Generator
-	Server  ServerGenerator
+	Jsonlib  string
+	Types    *types.Types
+	Models   models.Generator
+	Packages *ServicePackages
+	Server   ServerGenerator
 }
 
-func NewGenerator(jsonlib, server string) *Generator {
+func NewGenerator(jsonlib, server string, servicePackages *ServicePackages) *Generator {
 	types := models.NewTypes(jsonlib)
 	models := models.NewGenerator(jsonlib)
 
@@ -36,7 +36,8 @@ func NewGenerator(jsonlib, server string) *Generator {
 			jsonlib,
 			types,
 			models,
-			NewSpringGenerator(types, models),
+			servicePackages,
+			NewSpringGenerator(types, models, servicePackages),
 		}
 	}
 	if server == Micronaut {
@@ -44,7 +45,8 @@ func NewGenerator(jsonlib, server string) *Generator {
 			jsonlib,
 			types,
 			models,
-			NewMicronautGenerator(types, models),
+			servicePackages,
+			NewMicronautGenerator(types, models, servicePackages),
 		}
 	}
 

@@ -14,37 +14,26 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 		packageName = specification.Name.SnakeCase()
 	}
 
+	servicePackages := NewServicePackages(packageName, generatePath, servicesPath)
+
 	mainPackage := packages.New(generatePath, packageName)
 
-	generator := NewGenerator(jsonlib, server)
+	generator := NewGenerator(jsonlib, server, servicePackages)
 
-	contentTypePackage := mainPackage.Subpackage("contenttype")
-	sources.AddGeneratedAll(generator.Server.ContentType(contentTypePackage))
+	sources.AddGeneratedAll(generator.Server.ContentType())
 
-	jsonPackage := mainPackage.Subpackage("json")
-
-	errorsPackage := mainPackage.Subpackage("errors")
-	errorsModelsPackage := errorsPackage.Subpackage("models")
-
-	sources.AddGeneratedAll(generator.Server.Errors(errorsPackage, errorsModelsPackage, contentTypePackage, jsonPackage))
-	sources.AddGeneratedAll(generator.Models.Models(specification.HttpErrors.ResolvedModels, errorsModelsPackage, jsonPackage))
+	sources.AddGeneratedAll(generator.Server.Errors())
+	sources.AddGeneratedAll(generator.Models.Models(specification.HttpErrors.ResolvedModels, servicePackages.ErrorsModels, servicePackages.Json))
 
 	for _, version := range specification.Versions {
-		versionPackage := mainPackage.Subpackage(version.Name.FlatCase())
-
-		modelsVersionPackage := versionPackage.Subpackage("models")
-		sources.AddGeneratedAll(generator.Models.Models(version.ResolvedModels, modelsVersionPackage, jsonPackage))
-
-		serviceVersionPackage := versionPackage.Subpackage("services")
-		sources.AddGeneratedAll(generator.ServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage, errorsModelsPackage))
-
-		controllerVersionPackage := versionPackage.Subpackage("controllers")
-		sources.AddGeneratedAll(generator.Server.ServicesControllers(&version, mainPackage, controllerVersionPackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorsModelsPackage, serviceVersionPackage))
+		versionPackages := servicePackages.Version(&version)
+		sources.AddGeneratedAll(generator.Models.Models(version.ResolvedModels, versionPackages.Models, servicePackages.Json))
+		sources.AddGeneratedAll(generator.ServicesInterfaces(&version))
+		sources.AddGeneratedAll(generator.Server.ServicesControllers(&version))
 	}
-	controllerPackage := mainPackage.Subpackage("controllers")
-	sources.AddGenerated(generator.Server.ExceptionController(&specification.HttpErrors.Responses, controllerPackage, errorsPackage, errorsModelsPackage, jsonPackage))
+	sources.AddGenerated(generator.Server.ExceptionController(&specification.HttpErrors.Responses))
 
-	sources.AddGeneratedAll(generator.Server.JsonHelpers(jsonPackage))
+	sources.AddGeneratedAll(generator.Server.JsonHelpers())
 
 	if swaggerPath != "" {
 		sources.AddGenerated(openapi.GenerateOpenapi(specification, swaggerPath))
