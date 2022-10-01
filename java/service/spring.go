@@ -53,7 +53,7 @@ func (g *SpringGenerator) ExceptionController(responses *spec.Responses) *genera
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
-	imports.Add(g.Packages.Errors.PackageStar)
+	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
 	imports.AddStatic(g.Packages.Errors.Subpackage("ErrorsHelpers").PackageStar)
 	imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
