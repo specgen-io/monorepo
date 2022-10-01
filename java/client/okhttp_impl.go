@@ -7,7 +7,6 @@ import (
 	"generator"
 	"java/imports"
 	"java/packages"
-	"java/responses"
 	"java/writer"
 	"spec"
 )
@@ -59,7 +58,7 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Module, modelsVers
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
+			files = append(files, reponseInterface(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
 		}
 	}
 
@@ -76,7 +75,7 @@ func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.Na
 	url := operation.FullUrl()
 	requestBody := "null"
 
-	w.Line(`public %s {`, responses.Signature(g.Types, operation))
+	w.Line(`public %s {`, operationSignature(g.Types, operation))
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`  var requestBody = RequestBody.create(body, MediaType.parse("text/plain"));`)
 		requestBody = "requestBody"
@@ -126,7 +125,7 @@ func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.Na
 		w.IndentWith(3)
 		w.Line(`logger.info("Received response with status code {}", response.code());`)
 		if response.BodyIs(spec.BodyEmpty) {
-			w.Line(responses.CreateResponse(&response, ""))
+			w.Line(responseCreate(&response, ""))
 		}
 		if response.BodyIs(spec.BodyString) {
 			w.Line(`%s responseBody;`, g.Types.Java(&response.Type.Definition))
@@ -134,7 +133,7 @@ func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.Na
 				fmt.Sprintf(`responseBody = response.body().string();`),
 				`IOException`, `e`,
 				`"Failed to convert response body to string " + e.getMessage()`)
-			w.Line(responses.CreateResponse(&response, `responseBody`))
+			w.Line(responseCreate(&response, `responseBody`))
 		}
 		if response.BodyIs(spec.BodyJson) {
 			w.Line(`%s responseBody;`, g.Types.Java(&response.Type.Definition))
@@ -143,7 +142,7 @@ func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.Na
 				fmt.Sprintf(`responseBody = %s;`, responseBody),
 				exception, `e`,
 				`"Failed to deserialize response body " + e.getMessage()`)
-			w.Line(responses.CreateResponse(&response, `responseBody`))
+			w.Line(responseCreate(&response, `responseBody`))
 		}
 		w.UnindentWith(3)
 		w.Line(`    }`)

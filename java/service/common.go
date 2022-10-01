@@ -2,7 +2,6 @@ package service
 
 import (
 	"spec"
-	"strings"
 )
 
 func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) []string {
@@ -23,8 +22,4 @@ func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJ
 		methodParams = append(methodParams, param.Name.CamelCase())
 	}
 	return methodParams
-}
-
-func joinParams(params []string) string {
-	return strings.Join(params, ", ")
 }

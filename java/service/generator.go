@@ -2,10 +2,9 @@ package service
 
 import (
 	"fmt"
-
 	"generator"
+
 	"java/models"
-	"java/packages"
 	"java/types"
 	"spec"
 )
@@ -13,40 +12,48 @@ import (
 type ServerGenerator interface {
 	ServiceImports() []string
 	ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string)
-	ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorsModelsPackage, serviceVersionPackage packages.Module) []generator.CodeFile
-	ExceptionController(responses *spec.Responses, thePackage, errorsPackage, errorsModelsPackage, jsonPackage packages.Module) *generator.CodeFile
-	Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Module) []generator.CodeFile
-	ContentType(thePackage packages.Module) []generator.CodeFile
-	JsonHelpers(thePackage packages.Module) []generator.CodeFile
+	ServicesControllers(version *spec.Version) []generator.CodeFile
+	ExceptionController(responses *spec.Responses) *generator.CodeFile
+	Errors(models []*spec.NamedModel) []generator.CodeFile
+	ContentType() []generator.CodeFile
+	JsonHelpers() []generator.CodeFile
 }
 
 type Generator struct {
-	Jsonlib string
-	Types   *types.Types
-	Models  models.Generator
-	Server  ServerGenerator
+	ServerGenerator
+	jsonlib         string
+	Types           *types.Types
+	ModelsGenerator models.Generator
+	Packages        *ServicePackages
 }
 
-func NewGenerator(jsonlib, server string) *Generator {
+func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath string) *Generator {
 	types := models.NewTypes(jsonlib)
 	models := models.NewGenerator(jsonlib)
 
-	if server == Spring {
-		return &Generator{
-			jsonlib,
-			types,
-			models,
-			NewSpringGenerator(types, models),
-		}
-	}
-	if server == Micronaut {
-		return &Generator{
-			jsonlib,
-			types,
-			models,
-			NewMicronautGenerator(types, models),
-		}
+	servicePackages := NewServicePackages(packageName, generatePath, servicesPath)
+
+	var serverGenerator ServerGenerator = nil
+	switch server {
+	case Spring:
+		serverGenerator = NewSpringGenerator(types, models, servicePackages)
+		break
+	case Micronaut:
+		serverGenerator = NewMicronautGenerator(types, models, servicePackages)
+		break
+	default:
+		panic(fmt.Sprintf(`Unsupported server: %s`, server))
 	}
 
-	panic(fmt.Sprintf(`Unsupported server: %s`, server))
+	return &Generator{
+		serverGenerator,
+		jsonlib,
+		types,
+		models,
+		servicePackages,
+	}
+}
+
+func (g *Generator) Models(version *spec.Version) []generator.CodeFile {
+	return g.ModelsGenerator.Models(version.ResolvedModels, g.Packages.Version(version).Models, g.Packages.Json)
 }
