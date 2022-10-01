@@ -469,7 +469,7 @@ func isRouterUsingModels(api *spec.Api) bool {
 	walk := spec.NewWalker().
 		OnOperation(func(operation *spec.NamedOperation) {
 			if operation.Body != nil {
-				if isModel(&operation.Body.Type.Definition) {
+				if types.IsModel(&operation.Body.Type.Definition) {
 					usingModels = true
 				}
 			}

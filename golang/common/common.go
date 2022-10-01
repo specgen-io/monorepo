@@ -2,37 +2,30 @@ package common
 
 import (
 	"fmt"
-	"strings"
-
-	"golang/responses"
 	"golang/types"
 	"spec"
+	"strconv"
 )
 
-func OperationSignature(operation *spec.NamedOperation, apiPackage *string) string {
-	return fmt.Sprintf(`%s(%s) %s`,
-		operation.Name.PascalCase(),
-		strings.Join(operationParams(operation), ", "),
-		operationReturn(operation, apiPackage),
-	)
+func IsSuccessfulStatusCode(statusCodeStr string) bool {
+	statusCode, _ := strconv.Atoi(statusCodeStr)
+	if statusCode >= 200 && statusCode <= 299 {
+		return true
+	}
+	return false
 }
 
-func operationReturn(operation *spec.NamedOperation, responsePackageName *string) string {
-	if len(operation.Responses) == 1 {
-		response := operation.Responses[0]
-		if response.Type.Definition.IsEmpty() {
-			return `error`
+func ResponsesNumber(operation *spec.NamedOperation) int {
+	count := 0
+	for _, response := range operation.Responses {
+		if IsSuccessfulStatusCode(spec.HttpStatusCode(response.Name)) {
+			count++
 		}
-		return fmt.Sprintf(`(*%s, error)`, types.GoType(&response.Type.Definition))
 	}
-	responseType := responses.ResponseTypeName(operation)
-	if responsePackageName != nil {
-		responseType = *responsePackageName + "." + responseType
-	}
-	return fmt.Sprintf(`(*%s, error)`, responseType)
+	return count
 }
 
-func operationParams(operation *spec.NamedOperation) []string {
+func OperationParams(operation *spec.NamedOperation) []string {
 	params := []string{}
 	if operation.BodyIs(spec.BodyString) {
 		params = append(params, fmt.Sprintf("body %s", types.GoType(&operation.Body.Type.Definition)))

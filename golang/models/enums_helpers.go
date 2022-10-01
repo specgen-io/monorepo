@@ -1,13 +1,12 @@
 package models
 
 import (
-	"strings"
-
 	"generator"
 	"golang/module"
+	"strings"
 )
 
-func generateEnumsHelperFunctions(module module.Module) *generator.CodeFile {
+func GenerateEnumsHelperFunctions(module module.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -18,7 +17,7 @@ import (
 )
 
 func contains(lookFor string, arr []string) bool {
-	for _, value := range arr{
+	for _, value := range arr {
 		if lookFor == value {
 			return true
 		}
@@ -26,7 +25,7 @@ func contains(lookFor string, arr []string) bool {
 	return false
 }
 
-func readEnumStringValue(b []byte, values []string) (string, error) {
+func ReadStringValue(b []byte, values []string) (string, error) {
 	var str string
 	if err := json.Unmarshal(b, &str); err != nil {
 		return "", err
@@ -38,5 +37,5 @@ func readEnumStringValue(b []byte, values []string) (string, error) {
 }
 `
 	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
-	return &generator.CodeFile{module.GetPath("enums_helpers.go"), strings.TrimSpace(code)}
+	return &generator.CodeFile{module.GetPath("helpers.go"), strings.TrimSpace(code)}
 }

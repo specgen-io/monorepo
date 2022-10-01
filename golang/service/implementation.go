@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"generator"
-	"golang/common"
 	"golang/imports"
 	"golang/module"
 	"golang/types"
@@ -41,7 +40,7 @@ func generateServiceImplementation(api *spec.Api, apiModule, modelsModule, targe
 	w.EmptyLine()
 	apiPackage := api.Name.SnakeCase()
 	for _, operation := range api.Operations {
-		w.Line(`func (service *%s) %s {`, serviceTypeName(api), common.OperationSignature(&operation, &apiPackage))
+		w.Line(`func (service *%s) %s {`, serviceTypeName(api), OperationSignature(&operation, &apiPackage))
 		singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
 		if singleEmptyResponse {
 			w.Line(`  return errors.New("implementation has not added yet")`)
@@ -60,36 +59,32 @@ func generateServiceImplementation(api *spec.Api, apiModule, modelsModule, targe
 func isContainsModel(api *spec.Api) bool {
 	for _, operation := range api.Operations {
 		if operation.Body != nil {
-			if isModel(&operation.Body.Type.Definition) {
+			if types.IsModel(&operation.Body.Type.Definition) {
 				return true
 			}
 		}
 		for _, param := range operation.QueryParams {
-			if isModel(&param.Type.Definition) {
+			if types.IsModel(&param.Type.Definition) {
 				return true
 			}
 		}
 		for _, param := range operation.HeaderParams {
-			if isModel(&param.Type.Definition) {
+			if types.IsModel(&param.Type.Definition) {
 				return true
 			}
 		}
 		for _, param := range operation.Endpoint.UrlParams {
-			if isModel(&param.Type.Definition) {
+			if types.IsModel(&param.Type.Definition) {
 				return true
 			}
 		}
 		for _, response := range operation.Responses {
-			if isModel(&response.Type.Definition) {
+			if types.IsModel(&response.Type.Definition) {
 				return true
 			}
 		}
 	}
 	return false
-}
-
-func isModel(def *spec.TypeDef) bool {
-	return def.Info.Model != nil
 }
 
 func serviceTypeName(api *spec.Api) string {

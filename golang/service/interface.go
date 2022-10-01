@@ -2,7 +2,6 @@ package service
 
 import (
 	"generator"
-	"golang/common"
 	"golang/imports"
 	"golang/module"
 	"golang/responses"
@@ -47,7 +46,7 @@ func generateServiceInterface(api *spec.Api, apiModule, modelsModule, errorsMode
 	w.EmptyLine()
 	w.Line(`type %s interface {`, serviceInterfaceName)
 	for _, operation := range api.Operations {
-		w.Line(`  %s`, common.OperationSignature(&operation, nil))
+		w.Line(`  %s`, OperationSignature(&operation, nil))
 	}
 	w.Line(`}`)
 	return &generator.CodeFile{
