@@ -108,7 +108,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile 
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
 	imports.Add(packages.Models.PackageStar)
-	imports.Add(packages.Services.PackageStar)
+	imports.Add(packages.ServicesApi(api).PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)

@@ -110,7 +110,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) []generator.CodeFi
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
 	imports.Add(packages.Models.PackageStar)
-	imports.Add(packages.Services.PackageStar)
+	imports.Add(packages.ServicesApi(api).PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
