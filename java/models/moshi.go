@@ -23,7 +23,15 @@ func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
 	return &MoshiGenerator{[]string{}, types}
 }
 
-func (g *MoshiGenerator) Models(models []*spec.NamedModel, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {
+func (g *MoshiGenerator) Models(version *spec.Version, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {
+	return g.models(version.ResolvedModels, thePackage, jsonPackage)
+}
+
+func (g *MoshiGenerator) ErrorModels(httperrors *spec.HttpErrors, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {
+	return g.models(httperrors.ResolvedModels, thePackage, jsonPackage)
+}
+
+func (g *MoshiGenerator) models(models []*spec.NamedModel, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	for _, model := range models {
@@ -250,10 +258,6 @@ func (g *MoshiGenerator) ModelsUsageImports() []string {
 	}
 }
 
-func (g *MoshiGenerator) SetupImport(jsonPackage packages.Package) string {
-	return fmt.Sprintf(`static %s.CustomMoshiAdapters.setup`, jsonPackage.PackageName)
-}
-
 func (g *MoshiGenerator) JsonParseException(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
@@ -271,7 +275,7 @@ public class JsonParseException extends RuntimeException {
 	}
 }
 
-func (g *MoshiGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
+func (g *MoshiGenerator) ModelsValidation(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 

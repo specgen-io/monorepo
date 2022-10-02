@@ -10,14 +10,14 @@ import (
 )
 
 type Generator interface {
-	Models(models []*spec.NamedModel, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile
+	Models(version *spec.Version, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile
+	ErrorModels(httperrors *spec.HttpErrors, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile
 	ModelsDefinitionsImports() []string
 	ModelsUsageImports() []string
-	SetupImport(jsonPackage packages.Package) string
 	SetupLibrary(thePackage packages.Package) []generator.CodeFile
 	JsonHelpersMethods() string
 	JsonParseException(thePackage packages.Package) *generator.CodeFile
-	ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile
+	ModelsValidation(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile
 	CreateJsonMapperField(w *generator.Writer, annotation string)
 	InitJsonMapper(w *generator.Writer)
 

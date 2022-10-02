@@ -14,7 +14,7 @@ type ServerGenerator interface {
 	ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string)
 	ServicesControllers(version *spec.Version) []generator.CodeFile
 	ExceptionController(responses *spec.Responses) *generator.CodeFile
-	Errors(models []*spec.NamedModel) []generator.CodeFile
+	ErrorsHelpers() *generator.CodeFile
 	ContentType() []generator.CodeFile
 	JsonHelpers() []generator.CodeFile
 }
@@ -55,5 +55,13 @@ func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath strin
 }
 
 func (g *Generator) Models(version *spec.Version) []generator.CodeFile {
-	return g.ModelsGenerator.Models(version.ResolvedModels, g.Packages.Version(version).Models, g.Packages.Json)
+	return g.ModelsGenerator.Models(version, g.Packages.Version(version).Models, g.Packages.Json)
+}
+
+func (g *Generator) ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile {
+	return g.ModelsGenerator.ErrorModels(httperrors, g.Packages.ErrorsModels, g.Packages.Json)
+}
+
+func (g *Generator) ModelsValidation() *generator.CodeFile {
+	return g.ModelsGenerator.ModelsValidation(g.Packages.Errors, g.Packages.ErrorsModels, g.Packages.Json)
 }

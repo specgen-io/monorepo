@@ -22,7 +22,15 @@ func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 	return &JacksonGenerator{types}
 }
 
-func (g *JacksonGenerator) Models(models []*spec.NamedModel, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {
+func (g *JacksonGenerator) Models(version *spec.Version, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {
+	return g.models(version.ResolvedModels, thePackage, jsonPackage)
+}
+
+func (g *JacksonGenerator) ErrorModels(httperrors *spec.HttpErrors, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {
+	return g.models(httperrors.ResolvedModels, thePackage, jsonPackage)
+}
+
+func (g *JacksonGenerator) models(models []*spec.NamedModel, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, model := range models {
 		if model.IsObject() {
@@ -236,10 +244,6 @@ func (g *JacksonGenerator) ModelsUsageImports() []string {
 	}
 }
 
-func (g *JacksonGenerator) SetupImport(jsonPackage packages.Package) string {
-	return fmt.Sprintf(`static %s.CustomObjectMapper.setup`, jsonPackage.PackageName)
-}
-
 func (g *JacksonGenerator) JsonParseException(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
@@ -257,7 +261,7 @@ public class JsonParseException extends RuntimeException {
 	}
 }
 
-func (g *JacksonGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
+func (g *JacksonGenerator) ModelsValidation(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 

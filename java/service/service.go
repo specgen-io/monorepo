@@ -17,14 +17,16 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 
 	sources.AddGeneratedAll(generator.ContentType())
 	sources.AddGeneratedAll(generator.JsonHelpers())
-	sources.AddGeneratedAll(generator.Errors(specification.HttpErrors.ResolvedModels))
+	sources.AddGenerated(generator.ModelsValidation())
+	sources.AddGeneratedAll(generator.ErrorModels(specification.HttpErrors))
 
+	sources.AddGenerated(generator.ErrorsHelpers())
+	sources.AddGenerated(generator.ExceptionController(&specification.HttpErrors.Responses))
 	for _, version := range specification.Versions {
 		sources.AddGeneratedAll(generator.Models(&version))
 		sources.AddGeneratedAll(generator.ServicesInterfaces(&version))
 		sources.AddGeneratedAll(generator.ServicesControllers(&version))
 	}
-	sources.AddGenerated(generator.ExceptionController(&specification.HttpErrors.Responses))
 
 	if swaggerPath != "" {
 		sources.AddGenerated(openapi.GenerateOpenapi(specification, swaggerPath))

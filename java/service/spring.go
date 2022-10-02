@@ -267,15 +267,7 @@ public class ContentType {
 	}
 }
 
-func (g *SpringGenerator) Errors(models []*spec.NamedModel) []generator.CodeFile {
-	files := []generator.CodeFile{}
-	files = append(files, *g.errorsHelpers())
-	files = append(files, *g.Models.ValidationErrorsHelpers(g.Packages.Errors, g.Packages.ErrorsModels, g.Packages.Json))
-	files = append(files, g.Models.Models(models, g.Packages.ErrorsModels, g.Packages.Json)...)
-	return files
-}
-
-func (g *SpringGenerator) errorsHelpers() *generator.CodeFile {
+func (g *SpringGenerator) ErrorsHelpers() *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
