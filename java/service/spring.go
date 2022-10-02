@@ -96,10 +96,10 @@ func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Response
 }
 
 func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile {
-	packages := g.Packages.Version(api.InHttp.InVersion)
+	controllersPackage := g.Packages.Version(api.InHttp.InVersion).Controllers
 	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, packages.Controllers.PackageName)
+	w.Line(`package %s;`, controllersPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
@@ -107,8 +107,8 @@ func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile 
 	imports.Add(g.Packages.ContentType.PackageStar)
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(packages.Models.PackageStar)
-	imports.Add(packages.ServicesApi(api).PackageStar)
+	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
+	imports.Add(g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
@@ -132,7 +132,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile 
 	w.Line(`}`)
 
 	files = append(files, generator.CodeFile{
-		Path:    packages.Controllers.GetPath(fmt.Sprintf("%s.java", className)),
+		Path:    controllersPackage.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
 	})
 

@@ -18,8 +18,8 @@ func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFi
 }
 
 func (g *Generator) serviceInterface(api *spec.Api) []generator.CodeFile {
-	packages := g.Packages.Version(api.InHttp.InVersion)
-	apiPackage := packages.ServicesApi(api)
+	version := api.InHttp.InVersion
+	apiPackage := g.Packages.Version(version).ServicesApi(api)
 
 	files := []generator.CodeFile{}
 
@@ -28,7 +28,7 @@ func (g *Generator) serviceInterface(api *spec.Api) []generator.CodeFile {
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.Types.Imports()...)
-	imports.Add(packages.Models.PackageStar)
+	imports.Add(g.Packages.Models(version).PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`public interface %s {`, serviceInterfaceName(api))

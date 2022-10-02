@@ -13,7 +13,7 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 		packageName = specification.Name.SnakeCase()
 	}
 
-	generator := NewGenerator(jsonlib, server, packageName, generatePath, servicesPath)
+	generator := NewGenerator(jsonlib, server, packageName, generatePath, servicesPath, specification)
 
 	sources.AddGeneratedAll(generator.ContentType())
 	sources.AddGeneratedAll(generator.JsonHelpers())

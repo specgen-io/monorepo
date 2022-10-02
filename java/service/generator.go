@@ -27,11 +27,11 @@ type Generator struct {
 	Packages        *Packages
 }
 
-func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath string) *Generator {
+func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath string, specification *spec.Spec) *Generator {
 	types := models.NewTypes(jsonlib)
 	models := models.NewGenerator(jsonlib)
 
-	servicePackages := NewServicePackages(packageName, generatePath, servicesPath)
+	servicePackages := NewPackages(packageName, generatePath, servicesPath, specification)
 
 	var serverGenerator ServerGenerator = nil
 	switch server {
@@ -55,7 +55,7 @@ func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath strin
 }
 
 func (g *Generator) Models(version *spec.Version) []generator.CodeFile {
-	return g.ModelsGenerator.Models(version, g.Packages.Version(version).Models, g.Packages.Json)
+	return g.ModelsGenerator.Models(version, g.Packages.Models(version), g.Packages.Json)
 }
 
 func (g *Generator) ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile {
