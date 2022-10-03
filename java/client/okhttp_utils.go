@@ -7,12 +7,12 @@ import (
 	"java/packages"
 )
 
-func generateUtils(thePackage packages.Package) []generator.CodeFile {
+func (g *Generator) Utils() []generator.CodeFile {
 	files := []generator.CodeFile{}
 
-	files = append(files, *generateRequestBuilder(thePackage))
-	files = append(files, *generateUrlBuilder(thePackage))
-	files = append(files, *generateStringify(thePackage))
+	files = append(files, *generateRequestBuilder(g.Packages.Utils))
+	files = append(files, *generateUrlBuilder(g.Packages.Utils))
+	files = append(files, *generateStringify(g.Packages.Utils))
 
 	return files
 }

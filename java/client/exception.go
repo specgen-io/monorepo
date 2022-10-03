@@ -4,10 +4,9 @@ import (
 	"strings"
 
 	"generator"
-	"java/packages"
 )
 
-func clientException(thePackage packages.Package) *generator.CodeFile {
+func (g *Generator) Exceptions() *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -30,9 +29,9 @@ public class ClientException extends RuntimeException {
 }
 `
 
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Root.PackageName})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ClientException.java"),
+		Path:    g.Packages.Root.GetPath("ClientException.java"),
 		Content: strings.TrimSpace(code),
 	}
 }

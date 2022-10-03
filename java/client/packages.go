@@ -9,6 +9,7 @@ import (
 type Packages struct {
 	models.Packages
 	clients map[string]map[string]packages.Package
+	Root    packages.Package
 	Utils   packages.Package
 }
 
@@ -33,6 +34,7 @@ func NewPackages(packageName, generatePath string, specification *spec.Spec) *Pa
 	return &Packages{
 		*models.NewPackages(packageName, generatePath, specification),
 		clients,
+		generated,
 		utils,
 	}
 }
