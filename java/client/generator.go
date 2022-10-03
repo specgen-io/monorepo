@@ -6,15 +6,17 @@ import (
 )
 
 type Generator struct {
-	Jsonlib string
-	Types   *types.Types
-	Models  models.Generator
+	models.Generator
+	Jsonlib  string
+	Types    *types.Types
+	Packages *Packages
 }
 
-func NewGenerator(jsonlib string) *Generator {
+func NewGenerator(jsonlib string, packages *Packages) *Generator {
 	return &Generator{
+		models.NewGenerator(jsonlib, &(packages.Packages)),
 		jsonlib,
 		models.NewTypes(jsonlib),
-		models.NewGenerator(jsonlib),
+		packages,
 	}
 }

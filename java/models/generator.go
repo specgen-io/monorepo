@@ -4,20 +4,18 @@ import (
 	"fmt"
 
 	"generator"
-	"java/packages"
 	"java/types"
 	"spec"
 )
 
 type Generator interface {
-	Models(models []*spec.NamedModel, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile
-	ModelsDefinitionsImports() []string
+	Models(version *spec.Version) []generator.CodeFile
+	ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile
 	ModelsUsageImports() []string
-	SetupImport(jsonPackage packages.Package) string
-	SetupLibrary(thePackage packages.Package) []generator.CodeFile
+	SetupLibrary() []generator.CodeFile
 	JsonHelpersMethods() string
-	JsonParseException(thePackage packages.Package) *generator.CodeFile
-	ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile
+	JsonParseException() *generator.CodeFile
+	ModelsValidation() *generator.CodeFile
 	CreateJsonMapperField(w *generator.Writer, annotation string)
 	InitJsonMapper(w *generator.Writer)
 
@@ -29,13 +27,13 @@ type Generator interface {
 	WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string
 }
 
-func NewGenerator(jsonlib string) Generator {
+func NewGenerator(jsonlib string, packages *Packages) Generator {
 	types := NewTypes(jsonlib)
 	if jsonlib == Jackson {
-		return NewJacksonGenerator(types)
+		return NewJacksonGenerator(types, packages)
 	}
 	if jsonlib == Moshi {
-		return NewMoshiGenerator(types)
+		return NewMoshiGenerator(types, packages)
 	}
 	panic(fmt.Sprintf(`Unsupported jsonlib: %s`, jsonlib))
 }

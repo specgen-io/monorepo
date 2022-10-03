@@ -2,44 +2,25 @@ package client
 
 import (
 	"generator"
-	"java/packages"
 	"spec"
 )
 
 func Generate(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *generator.Sources {
 	sources := generator.NewSources()
 
-	if packageName == "" {
-		packageName = specification.Name.SnakeCase()
-	}
+	packages := NewPackages(packageName, generatePath, specification)
+	generator := NewGenerator(jsonlib, packages)
 
-	mainPackage := packages.New(generatePath, packageName)
-
-	generator := NewGenerator(jsonlib)
-
-	sources.AddGenerated(clientException(mainPackage))
-
-	utilsPackage := mainPackage.Subpackage("utils")
-	sources.AddGeneratedAll(generateUtils(utilsPackage))
-
-	jsonPackage := mainPackage.Subpackage("json")
-
-	errorsPackage := mainPackage.Subpackage("errors")
-	errorsModelsPackage := errorsPackage.Subpackage("models")
-
-	sources.AddGeneratedAll(generator.Models.Models(specification.HttpErrors.ResolvedModels, errorsModelsPackage, jsonPackage))
+	sources.AddGenerated(generator.Exceptions())
+	sources.AddGeneratedAll(generator.Utils())
+	sources.AddGeneratedAll(generator.ErrorModels(specification.HttpErrors))
 
 	for _, version := range specification.Versions {
-		versionPackage := mainPackage.Subpackage(version.Name.FlatCase())
-
-		modelsVersionPackage := versionPackage.Subpackage("models")
-		sources.AddGeneratedAll(generator.Models.Models(version.ResolvedModels, modelsVersionPackage, jsonPackage))
-
-		clientVersionPackage := versionPackage.Subpackage("clients")
-		sources.AddGeneratedAll(generator.Clients(&version, clientVersionPackage, modelsVersionPackage, errorsModelsPackage, jsonPackage, utilsPackage, mainPackage))
+		sources.AddGeneratedAll(generator.Models(&version))
+		sources.AddGeneratedAll(generator.Clients(&version))
 	}
 
-	sources.AddGeneratedAll(generator.Models.SetupLibrary(jsonPackage))
+	sources.AddGeneratedAll(generator.SetupLibrary())
 
 	return sources
 }

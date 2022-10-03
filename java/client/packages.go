@@ -1,4 +1,4 @@
-package service
+package client
 
 import (
 	"java/models"
@@ -8,39 +8,39 @@ import (
 
 type Packages struct {
 	models.Packages
-	versions    map[string]*VersionPackages
-	ContentType packages.Package
-	Converters  packages.Package
-	Controllers packages.Package
+	clients map[string]map[string]packages.Package
+	Root    packages.Package
+	Utils   packages.Package
 }
 
-func NewPackages(packageName, generatePath, servicesPath string, specification *spec.Spec) *Packages {
+func NewPackages(packageName, generatePath string, specification *spec.Spec) *Packages {
 	if packageName == "" {
 		packageName = specification.Name.SnakeCase()
 	}
 
 	generated := packages.New(generatePath, packageName)
-	contenttype := generated.Subpackage("contenttype")
-	converters := generated.Subpackage("converters")
-	controllers := generated.Subpackage("controllers")
-	implementations := packages.New(servicesPath, packageName)
+	utils := generated.Subpackage("utils")
 
-	versions := map[string]*VersionPackages{}
+	clients := map[string]map[string]packages.Package{}
 	for _, version := range specification.Versions {
-		versions[version.Name.Source] = newVersionPackages(generated, implementations, &version)
+		clients[version.Name.Source] = map[string]packages.Package{}
+		versionPackage := generated.Subpackage(version.Name.FlatCase())
+		versionClientsPackage := versionPackage.Subpackage("clients")
+		for _, api := range version.Http.Apis {
+			clients[version.Name.Source][api.Name.Source] = versionClientsPackage.Subpackage(api.Name.SnakeCase())
+		}
 	}
 
 	return &Packages{
 		*models.NewPackages(packageName, generatePath, specification),
-		versions,
-		contenttype,
-		converters,
-		controllers,
+		clients,
+		generated,
+		utils,
 	}
 }
 
-func (p *Packages) Version(version *spec.Version) *VersionPackages {
-	return p.versions[version.Name.Source]
+func (p *Packages) Client(api *spec.Api) packages.Package {
+	return p.clients[api.InHttp.InVersion.Name.Source][api.Name.Source]
 }
 
 type VersionPackages struct {

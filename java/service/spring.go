@@ -96,10 +96,10 @@ func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Response
 }
 
 func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile {
-	packages := g.Packages.Version(api.InHttp.InVersion)
+	controllersPackage := g.Packages.Version(api.InHttp.InVersion).Controllers
 	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, packages.Controllers.PackageName)
+	w.Line(`package %s;`, controllersPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
@@ -107,8 +107,8 @@ func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile 
 	imports.Add(g.Packages.ContentType.PackageStar)
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(packages.Models.PackageStar)
-	imports.Add(packages.ServicesApi(api).PackageStar)
+	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
+	imports.Add(g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
@@ -132,7 +132,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile 
 	w.Line(`}`)
 
 	files = append(files, generator.CodeFile{
-		Path:    packages.Controllers.GetPath(fmt.Sprintf("%s.java", className)),
+		Path:    controllersPackage.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
 	})
 
@@ -160,7 +160,7 @@ func (g *SpringGenerator) parseBody(w *generator.Writer, operation *spec.NamedOp
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`ContentType.check(request, MediaType.APPLICATION_JSON);`)
 		typ := g.Types.Java(&operation.Body.Type.Definition)
-		w.Line(`%s %s = json.read(%s);`, typ, bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+		w.Line(`%s %s = json.%s;`, typ, bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
 	}
 }
 
@@ -203,7 +203,7 @@ func (g *SpringGenerator) processResponse(w *generator.Writer, response *spec.Re
 		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, bodyVar, response.Name.UpperCase())
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`var bodyJson = json.write(%s);`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
+		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json");`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
@@ -267,15 +267,7 @@ public class ContentType {
 	}
 }
 
-func (g *SpringGenerator) Errors(models []*spec.NamedModel) []generator.CodeFile {
-	files := []generator.CodeFile{}
-	files = append(files, *g.errorsHelpers())
-	files = append(files, *g.Models.ValidationErrorsHelpers(g.Packages.Errors, g.Packages.ErrorsModels, g.Packages.Json))
-	files = append(files, g.Models.Models(models, g.Packages.ErrorsModels, g.Packages.Json)...)
-	return files
-}
-
-func (g *SpringGenerator) errorsHelpers() *generator.CodeFile {
+func (g *SpringGenerator) ErrorsHelpers() *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -361,8 +353,8 @@ func (g *SpringGenerator) JsonHelpers() []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	files = append(files, *g.Json())
-	files = append(files, *g.Models.JsonParseException(g.Packages.Json))
-	files = append(files, g.Models.SetupLibrary(g.Packages.Json)...)
+	files = append(files, *g.Models.JsonParseException())
+	files = append(files, g.Models.SetupLibrary()...)
 
 	return files
 }

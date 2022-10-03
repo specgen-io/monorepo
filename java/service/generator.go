@@ -14,32 +14,30 @@ type ServerGenerator interface {
 	ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string)
 	ServicesControllers(version *spec.Version) []generator.CodeFile
 	ExceptionController(responses *spec.Responses) *generator.CodeFile
-	Errors(models []*spec.NamedModel) []generator.CodeFile
+	ErrorsHelpers() *generator.CodeFile
 	ContentType() []generator.CodeFile
 	JsonHelpers() []generator.CodeFile
 }
 
 type Generator struct {
 	ServerGenerator
-	jsonlib         string
-	Types           *types.Types
-	ModelsGenerator models.Generator
-	Packages        *Packages
+	models.Generator
+	jsonlib  string
+	Types    *types.Types
+	Packages *Packages
 }
 
-func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath string) *Generator {
+func NewGenerator(jsonlib, server string, packages *Packages) *Generator {
 	types := models.NewTypes(jsonlib)
-	models := models.NewGenerator(jsonlib)
-
-	servicePackages := NewServicePackages(packageName, generatePath, servicesPath)
+	models := models.NewGenerator(jsonlib, &(packages.Packages))
 
 	var serverGenerator ServerGenerator = nil
 	switch server {
 	case Spring:
-		serverGenerator = NewSpringGenerator(types, models, servicePackages)
+		serverGenerator = NewSpringGenerator(types, models, packages)
 		break
 	case Micronaut:
-		serverGenerator = NewMicronautGenerator(types, models, servicePackages)
+		serverGenerator = NewMicronautGenerator(types, models, packages)
 		break
 	default:
 		panic(fmt.Sprintf(`Unsupported server: %s`, server))
@@ -47,13 +45,9 @@ func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath strin
 
 	return &Generator{
 		serverGenerator,
+		models,
 		jsonlib,
 		types,
-		models,
-		servicePackages,
+		packages,
 	}
-}
-
-func (g *Generator) Models(version *spec.Version) []generator.CodeFile {
-	return g.ModelsGenerator.Models(version.ResolvedModels, g.Packages.Version(version).Models, g.Packages.Json)
 }

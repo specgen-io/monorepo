@@ -98,10 +98,10 @@ func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Respo
 }
 
 func (g *MicronautGenerator) serviceController(api *spec.Api) []generator.CodeFile {
-	packages := g.Packages.Version(api.InHttp.InVersion)
+	controllersPackage := g.Packages.Version(api.InHttp.InVersion).Controllers
 	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, packages.Controllers.PackageName)
+	w.Line(`package %s;`, controllersPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
@@ -109,8 +109,8 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) []generator.CodeFi
 	imports.Add(g.Packages.ContentType.PackageStar)
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(packages.Models.PackageStar)
-	imports.Add(packages.ServicesApi(api).PackageStar)
+	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
+	imports.Add(g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
@@ -133,7 +133,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) []generator.CodeFi
 	w.Line(`}`)
 
 	files = append(files, generator.CodeFile{
-		Path:    packages.Controllers.GetPath(fmt.Sprintf("%s.java", className)),
+		Path:    controllersPackage.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
 	})
 
@@ -166,7 +166,7 @@ func (g *MicronautGenerator) parseBody(w *generator.Writer, operation *spec.Name
 	}
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`ContentType.check(request, MediaType.APPLICATION_JSON);`)
-		w.Line(`%s %s = json.read(%s);`, g.Types.Java(&operation.Body.Type.Definition), bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+		w.Line(`%s %s = json.%s;`, g.Types.Java(&operation.Body.Type.Definition), bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
 	}
 }
 
@@ -207,7 +207,7 @@ func (g *MicronautGenerator) processResponse(w *generator.Writer, response *spec
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s).contentType("text/plain");`, response.Name.UpperCase(), bodyVar)
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`var bodyJson = json.write(%s);`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
+		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(bodyJson).contentType("application/json");`, response.Name.UpperCase())
 	}
@@ -267,15 +267,7 @@ public class ContentType {
 	}
 }
 
-func (g *MicronautGenerator) Errors(models []*spec.NamedModel) []generator.CodeFile {
-	files := []generator.CodeFile{}
-	files = append(files, *g.errorsHelpers())
-	files = append(files, *g.Models.ValidationErrorsHelpers(g.Packages.Errors, g.Packages.ErrorsModels, g.Packages.Json))
-	files = append(files, g.Models.Models(models, g.Packages.ErrorsModels, g.Packages.Json)...)
-	return files
-}
-
-func (g *MicronautGenerator) errorsHelpers() *generator.CodeFile {
+func (g *MicronautGenerator) ErrorsHelpers() *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -394,8 +386,8 @@ func (g *MicronautGenerator) JsonHelpers() []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	files = append(files, *g.Json())
-	files = append(files, *g.Models.JsonParseException(g.Packages.Json))
-	files = append(files, g.Models.SetupLibrary(g.Packages.Json)...)
+	files = append(files, *g.Models.JsonParseException())
+	files = append(files, g.Models.SetupLibrary()...)
 
 	return files
 }
@@ -415,6 +407,31 @@ func (g *MicronautGenerator) Json() *generator.CodeFile {
 	w.Line(`public class %s {`, className)
 	g.Models.CreateJsonMapperField(w.Indented(), "@Inject")
 	w.EmptyLine()
+	w.Line(g.Models.JsonHelpersMethods())
+	w.Line(`}`)
+
+	return &generator.CodeFile{
+		Path:    g.Packages.Json.GetPath(fmt.Sprintf("%s.java", className)),
+		Content: w.String(),
+	}
+}
+
+func (g *SpringGenerator) Json2() *generator.CodeFile {
+	w := writer.NewJavaWriter()
+	w.Line(`package %s;`, g.Packages.Json.PackageName)
+	w.EmptyLine()
+	imports := imports.New()
+	imports.Add(`org.springframework.beans.factory.annotation.Autowired`)
+	imports.Add(`org.springframework.stereotype.Component`)
+	imports.Add(g.Models.ModelsUsageImports()...)
+	imports.Add(`java.io.IOException`)
+	imports.Write(w)
+	w.EmptyLine()
+	w.Line(`@Component`)
+	className := `Json`
+	w.Line(`public class %s {`, className)
+	w.EmptyLine()
+	g.Models.CreateJsonMapperField(w.Indented(), "@Autowired")
 	w.Line(g.Models.JsonHelpersMethods())
 	w.Line(`}`)
 

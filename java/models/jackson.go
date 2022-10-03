@@ -15,14 +15,23 @@ import (
 var Jackson = "jackson"
 
 type JacksonGenerator struct {
-	Types *types.Types
+	Types    *types.Types
+	Packages *Packages
 }
 
-func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
-	return &JacksonGenerator{types}
+func NewJacksonGenerator(types *types.Types, packages *Packages) *JacksonGenerator {
+	return &JacksonGenerator{types, packages}
 }
 
-func (g *JacksonGenerator) Models(models []*spec.NamedModel, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {
+func (g *JacksonGenerator) Models(version *spec.Version) []generator.CodeFile {
+	return g.models(version.ResolvedModels, g.Packages.Models(version))
+}
+
+func (g *JacksonGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile {
+	return g.models(httperrors.ResolvedModels, g.Packages.ErrorsModels)
+}
+
+func (g *JacksonGenerator) models(models []*spec.NamedModel, thePackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, model := range models {
 		if model.IsObject() {
@@ -49,7 +58,7 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -109,7 +118,7 @@ func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -132,7 +141,7 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -201,11 +210,11 @@ func (g *JacksonGenerator) modelOneOfImplementation(w *generator.Writer, item *s
 }
 
 func (g *JacksonGenerator) JsonRead(varJson string, typ *spec.TypeDef) string {
-	return fmt.Sprintf(`%s, new TypeReference<%s>() {}`, varJson, g.Types.Java(typ))
+	return fmt.Sprintf(`read(%s, new TypeReference<%s>() {})`, varJson, g.Types.Java(typ))
 }
 
 func (g *JacksonGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
-	return varData
+	return fmt.Sprintf(`write(%s)`, varData)
 }
 
 func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
@@ -220,7 +229,7 @@ func (g *JacksonGenerator) WriteJsonNoCheckedException(varData string, typ *spec
 	return fmt.Sprintf(`writeJson(%s)`, varData)
 }
 
-func (g *JacksonGenerator) ModelsDefinitionsImports() []string {
+func (g *JacksonGenerator) modelsDefinitionsImports() []string {
 	return []string{
 		`com.fasterxml.jackson.databind.*`,
 		`com.fasterxml.jackson.annotation.*`,
@@ -236,11 +245,7 @@ func (g *JacksonGenerator) ModelsUsageImports() []string {
 	}
 }
 
-func (g *JacksonGenerator) SetupImport(jsonPackage packages.Package) string {
-	return fmt.Sprintf(`static %s.CustomObjectMapper.setup`, jsonPackage.PackageName)
-}
-
-func (g *JacksonGenerator) JsonParseException(thePackage packages.Package) *generator.CodeFile {
+func (g *JacksonGenerator) JsonParseException() *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -250,14 +255,14 @@ public class JsonParseException extends RuntimeException {
 	}
 }
 `
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Json.PackageName})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("JsonParseException.java"),
+		Path:    g.Packages.Json.GetPath("JsonParseException.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *JacksonGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
+func (g *JacksonGenerator) ModelsValidation() *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -301,12 +306,12 @@ public class ValidationErrorsHelpers {
 		ErrorsModelsPackage string
 		JsonPackage         string
 	}{
-		thePackage.PackageName,
-		errorsModelsPackage.PackageName,
-		jsonPackage.PackageName,
+		g.Packages.Errors.PackageName,
+		g.Packages.ErrorsModels.PackageName,
+		g.Packages.Json.PackageName,
 	})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ValidationErrorsHelpers.java"),
+		Path:    g.Packages.Errors.GetPath("ValidationErrorsHelpers.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
@@ -343,7 +348,7 @@ func (g *JacksonGenerator) JsonHelpersMethods() string {
 `
 }
 
-func (g *JacksonGenerator) SetupLibrary(thePackage packages.Package) []generator.CodeFile {
+func (g *JacksonGenerator) SetupLibrary() []generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -361,9 +366,9 @@ public class CustomObjectMapper {
 }
 `
 
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Json.PackageName})
 	return []generator.CodeFile{{
-		Path:    thePackage.GetPath("CustomObjectMapper.java"),
+		Path:    g.Packages.Json.GetPath("CustomObjectMapper.java"),
 		Content: strings.TrimSpace(code),
 	}}
 }

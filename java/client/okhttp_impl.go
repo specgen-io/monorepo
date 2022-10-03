@@ -6,35 +6,33 @@ import (
 
 	"generator"
 	"java/imports"
-	"java/packages"
 	"java/writer"
 	"spec"
 )
 
-func (g *Generator) Clients(version *spec.Version, thePackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, utilsPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
+func (g *Generator) Clients(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage)...)
+		files = append(files, g.client(&api)...)
 	}
 	return files
 }
 
-func (g *Generator) client(api *spec.Api, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, utilsPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
+func (g *Generator) client(api *spec.Api) []generator.CodeFile {
+	clientPackage := g.Packages.Client(api)
 	files := []generator.CodeFile{}
-
 	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, apiPackage.PackageName)
+	w.Line(`package %s;`, clientPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.Models.ModelsDefinitionsImports()...)
+	imports.Add(g.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Add(`okhttp3.*`)
 	imports.Add(`org.slf4j.*`)
-	imports.Add(mainPackage.PackageStar)
-	imports.Add(jsonPackage.PackageStar)
-	imports.Add(utilsPackage.PackageStar)
-	imports.Add(modelsVersionPackage.PackageStar)
+	imports.Add(g.Packages.Root.PackageStar)
+	imports.Add(g.Packages.Json.PackageStar)
+	imports.Add(g.Packages.Utils.PackageStar)
+	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
 	className := clientName(api)
@@ -43,11 +41,11 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Package, modelsVer
 	w.EmptyLine()
 	w.Line(`  private String baseUrl;`)
 	w.Line(`  private OkHttpClient client;`)
-	g.Models.CreateJsonMapperField(w.Indented(), "")
+	g.CreateJsonMapperField(w.Indented(), "")
 	w.EmptyLine()
 	w.Line(`  public %s(String baseUrl) {`, className)
 	w.Line(`    this.baseUrl = baseUrl;`)
-	g.Models.InitJsonMapper(w.IndentedWith(2))
+	g.InitJsonMapper(w.IndentedWith(2))
 	w.Line(`    this.client = new OkHttpClient();`)
 	w.Line(`  }`)
 	for _, operation := range api.Operations {
@@ -58,12 +56,12 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Package, modelsVer
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, reponseInterface(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
+			files = append(files, g.reponseInterface(g.Types, &operation)...)
 		}
 	}
 
 	files = append(files, generator.CodeFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", className)),
+		Path:    clientPackage.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
 	})
 
@@ -82,7 +80,7 @@ func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.Na
 	}
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`  String bodyJson;`)
-		bodyJson, exception := g.Models.WriteJson("body", &operation.Body.Type.Definition)
+		bodyJson, exception := g.WriteJson("body", &operation.Body.Type.Definition)
 		generateClientTryCatch(w.Indented(),
 			fmt.Sprintf(`bodyJson = %s;`, bodyJson),
 			exception, `e`,
@@ -137,7 +135,7 @@ func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.Na
 		}
 		if response.BodyIs(spec.BodyJson) {
 			w.Line(`%s responseBody;`, g.Types.Java(&response.Type.Definition))
-			responseBody, exception := g.Models.ReadJson("response.body().string()", &response.Type.Definition)
+			responseBody, exception := g.ReadJson("response.body().string()", &response.Type.Definition)
 			generateClientTryCatch(w,
 				fmt.Sprintf(`responseBody = %s;`, responseBody),
 				exception, `e`,

@@ -39,13 +39,13 @@ func parameters(operation *spec.NamedOperation, types *types.Types) []string {
 }
 
 func (g *Generator) responseInterface(operation *spec.NamedOperation) *generator.CodeFile {
-	packages := g.Packages.Version(operation.InApi.InHttp.InVersion)
-	apiPackage := packages.ServicesApi(operation.InApi)
+	version := operation.InApi.InHttp.InVersion
+	apiPackage := g.Packages.Version(version).ServicesApi(operation.InApi)
 
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
-	w.Line(`import %s;`, packages.Models.PackageStar)
+	w.Line(`import %s;`, g.Packages.Models(version).PackageStar)
 	w.Line(`import %s;`, g.Packages.ErrorsModels.PackageStar)
 	w.EmptyLine()
 	w.Line(`public interface %s {`, responseInterfaceName(operation))

@@ -17,13 +17,22 @@ var Moshi = "moshi"
 type MoshiGenerator struct {
 	generatedSetupMoshiMethods []string
 	Types                      *types.Types
+	Packages                   *Packages
 }
 
-func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
-	return &MoshiGenerator{[]string{}, types}
+func NewMoshiGenerator(types *types.Types, packages *Packages) *MoshiGenerator {
+	return &MoshiGenerator{[]string{}, types, packages}
 }
 
-func (g *MoshiGenerator) Models(models []*spec.NamedModel, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {
+func (g *MoshiGenerator) Models(version *spec.Version) []generator.CodeFile {
+	return g.models(version.ResolvedModels, g.Packages.Models(version), g.Packages.Json)
+}
+
+func (g *MoshiGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile {
+	return g.models(httperrors.ResolvedModels, g.Packages.ErrorsModels, g.Packages.Json)
+}
+
+func (g *MoshiGenerator) models(models []*spec.NamedModel, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	for _, model := range models {
@@ -50,7 +59,7 @@ func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -96,7 +105,7 @@ func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.P
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -119,7 +128,7 @@ func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -181,7 +190,7 @@ func (g *MoshiGenerator) JsonRead(varJson string, typ *spec.TypeDef) string {
 		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List.class, %s.class)`, typeJava)
 	}
 
-	return fmt.Sprintf(`%s, %s`, varJson, adapterParam)
+	return fmt.Sprintf(`read(%s, %s)`, varJson, adapterParam)
 }
 
 func (g *MoshiGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
@@ -196,7 +205,7 @@ func (g *MoshiGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
 		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List.class, %s.class)`, typeJava)
 	}
 
-	return fmt.Sprintf(`%s, %s`, adapterParam, varData)
+	return fmt.Sprintf(`write(%s, %s)`, adapterParam, varData)
 }
 
 func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
@@ -234,7 +243,7 @@ func (g *MoshiGenerator) WriteJsonNoCheckedException(varData string, typ *spec.T
 	return statement
 }
 
-func (g *MoshiGenerator) ModelsDefinitionsImports() []string {
+func (g *MoshiGenerator) modelsDefinitionsImports() []string {
 	return []string{
 		`com.squareup.moshi.Json`,
 		`com.squareup.moshi.Moshi`,
@@ -250,11 +259,7 @@ func (g *MoshiGenerator) ModelsUsageImports() []string {
 	}
 }
 
-func (g *MoshiGenerator) SetupImport(jsonPackage packages.Package) string {
-	return fmt.Sprintf(`static %s.CustomMoshiAdapters.setup`, jsonPackage.PackageName)
-}
-
-func (g *MoshiGenerator) JsonParseException(thePackage packages.Package) *generator.CodeFile {
+func (g *MoshiGenerator) JsonParseException() *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -264,14 +269,14 @@ public class JsonParseException extends RuntimeException {
 	}
 }
 `
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Json.PackageName})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("JsonParseException.java"),
+		Path:    g.Packages.Json.GetPath("JsonParseException.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *MoshiGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
+func (g *MoshiGenerator) ModelsValidation() *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -300,12 +305,12 @@ public class ValidationErrorsHelpers {
 		ErrorsModelsPackage string
 		JsonPackage         string
 	}{
-		thePackage.PackageName,
-		errorsModelsPackage.PackageName,
-		jsonPackage.PackageName,
+		g.Packages.Errors.PackageName,
+		g.Packages.ErrorsModels.PackageName,
+		g.Packages.Json.PackageName,
 	})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ValidationErrorsHelpers.java"),
+		Path:    g.Packages.Errors.GetPath("ValidationErrorsHelpers.java"),
 		Content: strings.TrimSpace(code),
 	}
 }
@@ -351,11 +356,11 @@ func (g *MoshiGenerator) JsonHelpersMethods() string {
 `
 }
 
-func (g *MoshiGenerator) SetupLibrary(thePackage packages.Package) []generator.CodeFile {
-	adaptersPackage := thePackage.Subpackage("adapters")
+func (g *MoshiGenerator) SetupLibrary() []generator.CodeFile {
+	adaptersPackage := g.Packages.Json.Subpackage("adapters")
 
 	files := []generator.CodeFile{}
-	files = append(files, *g.setupAdapters(thePackage, adaptersPackage))
+	files = append(files, *g.setupAdapters())
 	files = append(files, *bigDecimalAdapter(adaptersPackage))
 	files = append(files, *localDateAdapter(adaptersPackage))
 	files = append(files, *localDateTimeAdapter(adaptersPackage))
@@ -365,9 +370,10 @@ func (g *MoshiGenerator) SetupLibrary(thePackage packages.Package) []generator.C
 	return files
 }
 
-func (g *MoshiGenerator) setupAdapters(thePackage packages.Package, adaptersPackage packages.Package) *generator.CodeFile {
+func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
+	adaptersPackage := g.Packages.Json.Subpackage("adapters")
 	w := writer.NewJavaWriter()
-	w.Line("package %s;", thePackage.PackageName)
+	w.Line("package %s;", g.Packages.Json.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
@@ -389,7 +395,7 @@ func (g *MoshiGenerator) setupAdapters(thePackage packages.Package, adaptersPack
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("CustomMoshiAdapters.java"),
+		Path:    g.Packages.Json.GetPath("CustomMoshiAdapters.java"),
 		Content: w.String(),
 	}
 }
