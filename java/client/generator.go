@@ -11,10 +11,10 @@ type Generator struct {
 	Models  models.Generator
 }
 
-func NewGenerator(jsonlib string, packages *models.Packages) *Generator {
+func NewGenerator(jsonlib string, packages *Packages) *Generator {
 	return &Generator{
 		jsonlib,
 		models.NewTypes(jsonlib),
-		models.NewGenerator(jsonlib, packages),
+		models.NewGenerator(jsonlib, &(packages.Packages)),
 	}
 }

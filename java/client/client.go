@@ -2,7 +2,6 @@ package client
 
 import (
 	"generator"
-	"java/models"
 	"java/packages"
 	"spec"
 )
@@ -10,7 +9,7 @@ import (
 func Generate(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *generator.Sources {
 	sources := generator.NewSources()
 
-	thepackages := models.NewPackages(packageName, generatePath, specification)
+	thepackages := NewPackages(packageName, generatePath, specification)
 	generator := NewGenerator(jsonlib, thepackages)
 
 	if packageName == "" {
