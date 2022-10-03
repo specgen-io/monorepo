@@ -28,7 +28,7 @@ func NewPackages(packageName, generatePath, servicesPath string, specification *
 
 	return &Packages{
 		*models.NewPackages(packageName, generatePath, specification),
-		map[string]*VersionPackages{},
+		versions,
 		contenttype,
 		converters,
 		controllers,
