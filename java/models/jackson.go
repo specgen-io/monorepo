@@ -15,11 +15,12 @@ import (
 var Jackson = "jackson"
 
 type JacksonGenerator struct {
-	Types *types.Types
+	Types    *types.Types
+	Packages *Packages
 }
 
-func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
-	return &JacksonGenerator{types}
+func NewJacksonGenerator(types *types.Types, packages *Packages) *JacksonGenerator {
+	return &JacksonGenerator{types, packages}
 }
 
 func (g *JacksonGenerator) Models(version *spec.Version, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {

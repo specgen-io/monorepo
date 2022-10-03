@@ -28,13 +28,13 @@ type Generator interface {
 	WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string
 }
 
-func NewGenerator(jsonlib string) Generator {
+func NewGenerator(jsonlib string, packages *Packages) Generator {
 	types := NewTypes(jsonlib)
 	if jsonlib == Jackson {
-		return NewJacksonGenerator(types)
+		return NewJacksonGenerator(types, packages)
 	}
 	if jsonlib == Moshi {
-		return NewMoshiGenerator(types)
+		return NewMoshiGenerator(types, packages)
 	}
 	panic(fmt.Sprintf(`Unsupported jsonlib: %s`, jsonlib))
 }

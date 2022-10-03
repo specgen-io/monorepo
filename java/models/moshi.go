@@ -17,10 +17,11 @@ var Moshi = "moshi"
 type MoshiGenerator struct {
 	generatedSetupMoshiMethods []string
 	Types                      *types.Types
+	Packages                   *Packages
 }
 
-func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
-	return &MoshiGenerator{[]string{}, types}
+func NewMoshiGenerator(types *types.Types, packages *Packages) *MoshiGenerator {
+	return &MoshiGenerator{[]string{}, types, packages}
 }
 
 func (g *MoshiGenerator) Models(version *spec.Version, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile {

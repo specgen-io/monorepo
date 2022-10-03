@@ -13,6 +13,9 @@ type Packages struct {
 }
 
 func NewPackages(packageName, generatePath string, specification *spec.Spec) *Packages {
+	if packageName == "" {
+		packageName = specification.Name.SnakeCase()
+	}
 	generated := packages.New(generatePath, packageName)
 	json := generated.Subpackage("json")
 	errors := generated.Subpackage("errors")

@@ -15,6 +15,10 @@ type Packages struct {
 }
 
 func NewPackages(packageName, generatePath, servicesPath string, specification *spec.Spec) *Packages {
+	if packageName == "" {
+		packageName = specification.Name.SnakeCase()
+	}
+
 	generated := packages.New(generatePath, packageName)
 	contenttype := generated.Subpackage("contenttype")
 	converters := generated.Subpackage("converters")

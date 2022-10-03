@@ -27,19 +27,17 @@ type Generator struct {
 	Packages        *Packages
 }
 
-func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath string, specification *spec.Spec) *Generator {
+func NewGenerator(jsonlib, server string, packages *Packages) *Generator {
 	types := models.NewTypes(jsonlib)
-	models := models.NewGenerator(jsonlib)
-
-	servicePackages := NewPackages(packageName, generatePath, servicesPath, specification)
+	models := models.NewGenerator(jsonlib, &(packages.Packages))
 
 	var serverGenerator ServerGenerator = nil
 	switch server {
 	case Spring:
-		serverGenerator = NewSpringGenerator(types, models, servicePackages)
+		serverGenerator = NewSpringGenerator(types, models, packages)
 		break
 	case Micronaut:
-		serverGenerator = NewMicronautGenerator(types, models, servicePackages)
+		serverGenerator = NewMicronautGenerator(types, models, packages)
 		break
 	default:
 		panic(fmt.Sprintf(`Unsupported server: %s`, server))
@@ -50,7 +48,7 @@ func NewGenerator(jsonlib, server, packageName, generatePath, servicesPath strin
 		jsonlib,
 		types,
 		models,
-		servicePackages,
+		packages,
 	}
 }
 

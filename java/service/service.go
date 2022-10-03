@@ -9,11 +9,8 @@ import (
 func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPath, generatePath, servicesPath string) *generator.Sources {
 	sources := generator.NewSources()
 
-	if packageName == "" {
-		packageName = specification.Name.SnakeCase()
-	}
-
-	generator := NewGenerator(jsonlib, server, packageName, generatePath, servicesPath, specification)
+	servicePackages := NewPackages(packageName, generatePath, servicesPath, specification)
+	generator := NewGenerator(jsonlib, server, servicePackages)
 
 	sources.AddGeneratedAll(generator.ContentType())
 	sources.AddGeneratedAll(generator.JsonHelpers())
