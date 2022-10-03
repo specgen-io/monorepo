@@ -27,7 +27,7 @@ func (g *Generator) client(api *spec.Api, apiPackage packages.Package, modelsVer
 	w.Line(`package %s;`, apiPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.Models.ModelsDefinitionsImports()...)
+	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Add(`okhttp3.*`)
 	imports.Add(`org.slf4j.*`)
