@@ -353,8 +353,8 @@ func (g *SpringGenerator) JsonHelpers() []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	files = append(files, *g.Json())
-	files = append(files, *g.Models.JsonParseException(g.Packages.Json))
-	files = append(files, g.Models.SetupLibrary(g.Packages.Json)...)
+	files = append(files, *g.Models.JsonParseException())
+	files = append(files, g.Models.SetupLibrary()...)
 
 	return files
 }

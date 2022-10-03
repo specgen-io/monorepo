@@ -4,19 +4,18 @@ import (
 	"fmt"
 
 	"generator"
-	"java/packages"
 	"java/types"
 	"spec"
 )
 
 type Generator interface {
-	Models(version *spec.Version, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile
-	ErrorModels(httperrors *spec.HttpErrors, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile
+	Models(version *spec.Version) []generator.CodeFile
+	ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile
 	ModelsUsageImports() []string
-	SetupLibrary(thePackage packages.Package) []generator.CodeFile
+	SetupLibrary() []generator.CodeFile
 	JsonHelpersMethods() string
-	JsonParseException(thePackage packages.Package) *generator.CodeFile
-	ModelsValidation(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile
+	JsonParseException() *generator.CodeFile
+	ModelsValidation() *generator.CodeFile
 	CreateJsonMapperField(w *generator.Writer, annotation string)
 	InitJsonMapper(w *generator.Writer)
 
