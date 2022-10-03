@@ -209,11 +209,11 @@ func (g *JacksonGenerator) modelOneOfImplementation(w *generator.Writer, item *s
 }
 
 func (g *JacksonGenerator) JsonRead(varJson string, typ *spec.TypeDef) string {
-	return fmt.Sprintf(`%s, new TypeReference<%s>() {}`, varJson, g.Types.Java(typ))
+	return fmt.Sprintf(`read(%s, new TypeReference<%s>() {})`, varJson, g.Types.Java(typ))
 }
 
 func (g *JacksonGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
-	return varData
+	return fmt.Sprintf(`write(%s)`, varData)
 }
 
 func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {

@@ -160,7 +160,7 @@ func (g *SpringGenerator) parseBody(w *generator.Writer, operation *spec.NamedOp
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`ContentType.check(request, MediaType.APPLICATION_JSON);`)
 		typ := g.Types.Java(&operation.Body.Type.Definition)
-		w.Line(`%s %s = json.read(%s);`, typ, bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+		w.Line(`%s %s = json.%s;`, typ, bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
 	}
 }
 
@@ -203,7 +203,7 @@ func (g *SpringGenerator) processResponse(w *generator.Writer, response *spec.Re
 		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, bodyVar, response.Name.UpperCase())
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`var bodyJson = json.write(%s);`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
+		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json");`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())

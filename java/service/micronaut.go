@@ -166,7 +166,7 @@ func (g *MicronautGenerator) parseBody(w *generator.Writer, operation *spec.Name
 	}
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`ContentType.check(request, MediaType.APPLICATION_JSON);`)
-		w.Line(`%s %s = json.read(%s);`, g.Types.Java(&operation.Body.Type.Definition), bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+		w.Line(`%s %s = json.%s;`, g.Types.Java(&operation.Body.Type.Definition), bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
 	}
 }
 
@@ -207,7 +207,7 @@ func (g *MicronautGenerator) processResponse(w *generator.Writer, response *spec
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s).contentType("text/plain");`, response.Name.UpperCase(), bodyVar)
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`var bodyJson = json.write(%s);`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
+		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(bodyJson).contentType("application/json");`, response.Name.UpperCase())
 	}
@@ -407,6 +407,31 @@ func (g *MicronautGenerator) Json() *generator.CodeFile {
 	w.Line(`public class %s {`, className)
 	g.Models.CreateJsonMapperField(w.Indented(), "@Inject")
 	w.EmptyLine()
+	w.Line(g.Models.JsonHelpersMethods())
+	w.Line(`}`)
+
+	return &generator.CodeFile{
+		Path:    g.Packages.Json.GetPath(fmt.Sprintf("%s.java", className)),
+		Content: w.String(),
+	}
+}
+
+func (g *SpringGenerator) Json2() *generator.CodeFile {
+	w := writer.NewJavaWriter()
+	w.Line(`package %s;`, g.Packages.Json.PackageName)
+	w.EmptyLine()
+	imports := imports.New()
+	imports.Add(`org.springframework.beans.factory.annotation.Autowired`)
+	imports.Add(`org.springframework.stereotype.Component`)
+	imports.Add(g.Models.ModelsUsageImports()...)
+	imports.Add(`java.io.IOException`)
+	imports.Write(w)
+	w.EmptyLine()
+	w.Line(`@Component`)
+	className := `Json`
+	w.Line(`public class %s {`, className)
+	w.EmptyLine()
+	g.Models.CreateJsonMapperField(w.Indented(), "@Autowired")
 	w.Line(g.Models.JsonHelpersMethods())
 	w.Line(`}`)
 

@@ -189,7 +189,7 @@ func (g *MoshiGenerator) JsonRead(varJson string, typ *spec.TypeDef) string {
 		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List.class, %s.class)`, typeJava)
 	}
 
-	return fmt.Sprintf(`%s, %s`, varJson, adapterParam)
+	return fmt.Sprintf(`read(%s, %s)`, varJson, adapterParam)
 }
 
 func (g *MoshiGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
@@ -204,7 +204,7 @@ func (g *MoshiGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
 		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List.class, %s.class)`, typeJava)
 	}
 
-	return fmt.Sprintf(`%s, %s`, adapterParam, varData)
+	return fmt.Sprintf(`write(%s, %s)`, adapterParam, varData)
 }
 
 func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
