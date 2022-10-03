@@ -11,10 +11,10 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, gene
 	thepackages := NewPackages(packageName, generatePath, specification)
 	generator := NewGenerator(jsonlib, thepackages)
 
-	sources.AddGeneratedAll(generator.SetupLibrary())
 	for _, version := range specification.Versions {
 		sources.AddGeneratedAll(generator.Models(&version))
 	}
+	sources.AddGeneratedAll(generator.SetupLibrary())
 
 	return sources
 }
