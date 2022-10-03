@@ -12,7 +12,6 @@ import (
 type Generator interface {
 	Models(version *spec.Version, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile
 	ErrorModels(httperrors *spec.HttpErrors, thePackage packages.Package, jsonPackage packages.Package) []generator.CodeFile
-	ModelsDefinitionsImports() []string
 	ModelsUsageImports() []string
 	SetupLibrary(thePackage packages.Package) []generator.CodeFile
 	JsonHelpersMethods() string

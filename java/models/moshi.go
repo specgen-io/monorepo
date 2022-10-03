@@ -58,7 +58,7 @@ func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -104,7 +104,7 @@ func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.P
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -127,7 +127,7 @@ func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -242,7 +242,7 @@ func (g *MoshiGenerator) WriteJsonNoCheckedException(varData string, typ *spec.T
 	return statement
 }
 
-func (g *MoshiGenerator) ModelsDefinitionsImports() []string {
+func (g *MoshiGenerator) modelsDefinitionsImports() []string {
 	return []string{
 		`com.squareup.moshi.Json`,
 		`com.squareup.moshi.Moshi`,

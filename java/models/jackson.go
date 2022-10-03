@@ -57,7 +57,7 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -117,7 +117,7 @@ func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -140,7 +140,7 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 	w.Line("package %s;", thePackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -228,7 +228,7 @@ func (g *JacksonGenerator) WriteJsonNoCheckedException(varData string, typ *spec
 	return fmt.Sprintf(`writeJson(%s)`, varData)
 }
 
-func (g *JacksonGenerator) ModelsDefinitionsImports() []string {
+func (g *JacksonGenerator) modelsDefinitionsImports() []string {
 	return []string{
 		`com.fasterxml.jackson.databind.*`,
 		`com.fasterxml.jackson.annotation.*`,
