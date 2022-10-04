@@ -2,11 +2,12 @@ package service
 
 import (
 	"fmt"
+	"strings"
 
 	"generator"
 	"kotlin/imports"
 	"kotlin/modules"
-	"kotlin/responses"
+	"kotlin/types"
 	"kotlin/writer"
 	"spec"
 )
@@ -33,13 +34,13 @@ func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPac
 	w.EmptyLine()
 	w.Line(`interface %s {`, serviceInterfaceName(api))
 	for _, operation := range api.Operations {
-		w.Line(`  fun %s`, responses.Signature(g.Types, &operation))
+		w.Line(`  fun %s`, operationSignature(g.Types, &operation))
 	}
 	w.Line(`}`)
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
+			files = append(files, *g.responseInterface(&operation, apiPackage, modelsVersionPackage, errorModelsPackage))
 		}
 	}
 
@@ -49,4 +50,37 @@ func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPac
 	})
 
 	return files
+}
+
+func operationSignature(types *types.Types, operation *spec.NamedOperation) string {
+	if len(operation.Responses) == 1 {
+		for _, response := range operation.Responses {
+			if !response.Type.Definition.IsEmpty() {
+				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "), types.Kotlin(&response.Type.Definition))
+			} else {
+				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "))
+			}
+		}
+	}
+	if len(operation.Responses) > 1 {
+		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "), responseInterfaceName(operation))
+	}
+	return ""
+}
+
+func operationParameters(operation *spec.NamedOperation, types *types.Types) []string {
+	params := []string{}
+	if operation.Body != nil {
+		params = append(params, fmt.Sprintf("body: %s", types.Kotlin(&operation.Body.Type.Definition)))
+	}
+	for _, param := range operation.QueryParams {
+		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
+	}
+	for _, param := range operation.HeaderParams {
+		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
+	}
+	for _, param := range operation.Endpoint.UrlParams {
+		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
+	}
+	return params
 }

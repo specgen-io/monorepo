@@ -8,7 +8,6 @@ import (
 	"kotlin/imports"
 	"kotlin/models"
 	"kotlin/modules"
-	"kotlin/responses"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -31,6 +30,11 @@ func (g *MicronautLowGenerator) ClientImplementation(version *spec.Version, theP
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
+		for _, operation := range api.Operations {
+			if responsesNumber(&operation) > 1 {
+				files = append(files, responseInterface(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
+			}
+		}
 		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage)...)
 	}
 	files = append(files, g.utils(utilsPackage)...)
@@ -76,12 +80,6 @@ func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage modules.Module,
 		g.clientMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
-
-	for _, operation := range api.Operations {
-		if responsesNumber(&operation) > 1 {
-			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
-		}
-	}
 
 	files = append(files, generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", className)),
@@ -198,21 +196,21 @@ func lowSignature(types *types.Types, operation *spec.NamedOperation) string {
 	if responsesNumber(operation) == 1 {
 		for _, response := range operation.Responses {
 			if !response.Type.Definition.IsEmpty() {
-				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(responses.Parameters(operation, types)), types.Kotlin(&response.Type.Definition))
+				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(operationParameters(operation, types)), types.Kotlin(&response.Type.Definition))
 			} else {
-				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinParams(responses.Parameters(operation, types)))
+				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinParams(operationParameters(operation, types)))
 			}
 		}
 	}
 	if responsesNumber(operation) > 1 {
-		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(responses.Parameters(operation, types)), responses.InterfaceName(operation))
+		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(operationParameters(operation, types)), reponseInterfaceName(operation))
 	}
 	return ""
 }
 
 func createResponse(operation *spec.NamedOperation, response *spec.OperationResponse, resultVar string) string {
 	if responsesNumber(operation) > 1 {
-		return fmt.Sprintf(`%s.%s(%s)`, responses.InterfaceName(operation), response.Name.PascalCase(), resultVar)
+		return fmt.Sprintf(`%s.%s(%s)`, reponseInterfaceName(operation), response.Name.PascalCase(), resultVar)
 	}
 	return resultVar
 }

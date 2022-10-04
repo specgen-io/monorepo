@@ -9,7 +9,6 @@ import (
 	"kotlin/imports"
 	"kotlin/models"
 	"kotlin/modules"
-	"kotlin/responses"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -170,8 +169,8 @@ func (g *MicronautGenerator) processResponses(w *generator.Writer, operation *sp
 	}
 	if len(operation.Responses) > 1 {
 		for _, response := range operation.Responses {
-			w.Line(`if (%s is %s.%s) {`, resultVarName, responses.InterfaceName(operation), response.Name.PascalCase())
-			g.processResponse(w.Indented(), &response.Response, responses.GetBody(resultVarName))
+			w.Line(`if (%s is %s.%s) {`, resultVarName, responseInterfaceName(operation), response.Name.PascalCase())
+			g.processResponse(w.Indented(), &response.Response, getResponseBody(resultVarName))
 			w.Line(`}`)
 		}
 		w.Line(`throw RuntimeException("Service implementation didn't return any value'")`)
