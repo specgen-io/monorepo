@@ -30,13 +30,10 @@ func (g *MicronautLowGenerator) Clients(version *spec.Version, thePackage packag
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		for _, operation := range api.Operations {
-			if responsesNumber(&operation) > 1 {
-				files = append(files, responseInterface(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
-			}
-		}
+		files = append(files, responses(&api, g.Types, apiPackage, modelsVersionPackage, errorModelsPackage)...)
 		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage))
 	}
+
 	files = append(files, g.utils(utilsPackage)...)
 	files = append(files, converters(mainPackage)...)
 	files = append(files, staticConfigFiles(mainPackage)...)
@@ -89,7 +86,7 @@ func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spe
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 
-	w.Line(`fun %s {`, lowSignature(g.Types, operation))
+	w.Line(`fun %s {`, operationSignature(g.Types, operation))
 	requestBody := "body"
 	if operation.BodyIs(spec.BodyJson) {
 		bodyJson, exception := g.Models.WriteJson("body", &operation.Body.Type.Definition)
@@ -136,7 +133,7 @@ func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spe
 			w.Line(`logger.info("Received response with status code {}", response.code())`)
 
 			if response.BodyIs(spec.BodyEmpty) {
-				responseCode := createResponse(operation, &response, ``)
+				responseCode := responseCreate(&response, ``)
 				if responseCode != "" {
 					w.Line(responseCode)
 				}
@@ -146,7 +143,7 @@ func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spe
 					`response.body()!!.toString()`,
 					`IOException`, `e`,
 					`"Failed to convert response body to string " + e.message`)
-				w.Line(createResponse(operation, &response, `responseBody`))
+				w.Line(responseCreate(&response, `responseBody`))
 			}
 			if response.BodyIs(spec.BodyJson) {
 				responseBody, exception := g.Models.ReadJson(`response.body()!!.toString()`, &response.Type.Definition)
@@ -154,7 +151,7 @@ func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spe
 					responseBody,
 					exception, `e`,
 					`"Failed to deserialize response body " + e.message`)
-				w.Line(createResponse(operation, &response, `responseBody!!`))
+				w.Line(responseCreate(&response, `responseBody!!`))
 			}
 			w.UnindentWith(3)
 			w.Line(`    }`)
@@ -186,29 +183,6 @@ func requestBuilderParams(methodName, requestBody string, operation *spec.NamedO
 	}
 
 	return params
-}
-
-func lowSignature(types *types.Types, operation *spec.NamedOperation) string {
-	if responsesNumber(operation) == 1 {
-		for _, response := range operation.Responses {
-			if !response.Type.Definition.IsEmpty() {
-				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(operationParameters(operation, types)), types.Kotlin(&response.Type.Definition))
-			} else {
-				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinParams(operationParameters(operation, types)))
-			}
-		}
-	}
-	if responsesNumber(operation) > 1 {
-		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(operationParameters(operation, types)), reponseInterfaceName(operation))
-	}
-	return ""
-}
-
-func createResponse(operation *spec.NamedOperation, response *spec.OperationResponse, resultVar string) string {
-	if responsesNumber(operation) > 1 {
-		return fmt.Sprintf(`%s.%s(%s)`, reponseInterfaceName(operation), response.Name.PascalCase(), resultVar)
-	}
-	return resultVar
 }
 
 func (g *MicronautLowGenerator) utils(thePackage packages.Package) []generator.CodeFile {

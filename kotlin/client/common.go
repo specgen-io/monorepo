@@ -51,12 +51,12 @@ func isSuccessfulStatusCode(statusCodeStr string) bool {
 	return false
 }
 
-func responsesNumber(operation *spec.NamedOperation) int {
-	count := 0
+func successResponses(operation *spec.NamedOperation) spec.Responses {
+	responses := spec.Responses{}
 	for _, response := range operation.Responses {
 		if isSuccessfulStatusCode(spec.HttpStatusCode(response.Name)) {
-			count++
+			responses = append(responses, response.Response)
 		}
 	}
-	return count
+	return responses
 }
