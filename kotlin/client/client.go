@@ -2,7 +2,7 @@ package client
 
 import (
 	"generator"
-	"kotlin/modules"
+	"kotlin/packages"
 	"spec"
 )
 
@@ -13,7 +13,7 @@ func Generate(specification *spec.Spec, jsonlib, client, packageName, generatePa
 		packageName = specification.Name.SnakeCase()
 	}
 
-	mainPackage := modules.Package(generatePath, packageName)
+	mainPackage := packages.New(generatePath, packageName)
 
 	generator := NewGenerator(jsonlib, client)
 

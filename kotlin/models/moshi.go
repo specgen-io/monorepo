@@ -6,7 +6,7 @@ import (
 
 	"generator"
 	"kotlin/imports"
-	"kotlin/modules"
+	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -23,7 +23,7 @@ func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
 	return &MoshiGenerator{[]string{}, types}
 }
 
-func (g *MoshiGenerator) Models(models []*spec.NamedModel, thePackage, jsonPackage modules.Module) []generator.CodeFile {
+func (g *MoshiGenerator) Models(models []*spec.NamedModel, thePackage, jsonPackage packages.Package) []generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -157,11 +157,11 @@ func (g *MoshiGenerator) ModelsUsageImports() []string {
 	}
 }
 
-func (g *MoshiGenerator) SetupImport(jsonPackage modules.Module) string {
+func (g *MoshiGenerator) SetupImport(jsonPackage packages.Package) string {
 	return fmt.Sprintf(`%s.setupMoshiAdapters`, jsonPackage.PackageName)
 }
 
-func (g *MoshiGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage modules.Module) *generator.CodeFile {
+func (g *MoshiGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -240,7 +240,7 @@ func (g *MoshiGenerator) JsonHelpersMethods() string {
 `
 }
 
-func (g *MoshiGenerator) SetupLibrary(thePackage modules.Module) []generator.CodeFile {
+func (g *MoshiGenerator) SetupLibrary(thePackage packages.Package) []generator.CodeFile {
 	adaptersPackage := thePackage.Subpackage("adapters")
 
 	files := []generator.CodeFile{}
@@ -254,7 +254,7 @@ func (g *MoshiGenerator) SetupLibrary(thePackage modules.Module) []generator.Cod
 	return files
 }
 
-func (g *MoshiGenerator) setupAdapters(thePackage modules.Module, adaptersPackage modules.Module) *generator.CodeFile {
+func (g *MoshiGenerator) setupAdapters(thePackage packages.Package, adaptersPackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line("package %s", thePackage.PackageName)
 	w.EmptyLine()
@@ -285,7 +285,7 @@ func (g *MoshiGenerator) setupAdapters(thePackage modules.Module, adaptersPackag
 	}
 }
 
-func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, thePackage, adaptersPackage modules.Module) *generator.CodeFile {
+func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, thePackage, adaptersPackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -324,7 +324,7 @@ func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, thePackag
 	}
 }
 
-func bigDecimalAdapter(thePackage modules.Module) *generator.CodeFile {
+func bigDecimalAdapter(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -362,7 +362,7 @@ class BigDecimalAdapter {
 	}
 }
 
-func localDateAdapter(thePackage modules.Module) *generator.CodeFile {
+func localDateAdapter(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -390,7 +390,7 @@ class LocalDateAdapter {
 	}
 }
 
-func localDateTimeAdapter(thePackage modules.Module) *generator.CodeFile {
+func localDateTimeAdapter(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -418,7 +418,7 @@ class LocalDateTimeAdapter {
 	}
 }
 
-func uuidAdapter(thePackage modules.Module) *generator.CodeFile {
+func uuidAdapter(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -446,7 +446,7 @@ class UuidAdapter {
 	}
 }
 
-func unionAdapterFactory(thePackage modules.Module) *generator.CodeFile {
+func unionAdapterFactory(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -660,7 +660,7 @@ class UnionAdapterFactory<T> internal constructor(
 	}
 }
 
-func unwrapFieldAdapterFactory(thePackage modules.Module) *generator.CodeFile {
+func unwrapFieldAdapterFactory(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 

@@ -6,7 +6,7 @@ import (
 
 	"kotlin/imports"
 	"kotlin/models"
-	"kotlin/modules"
+	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
 
@@ -30,7 +30,7 @@ func (g *SpringGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport
 	return `org.springframework.stereotype.Service`, fmt.Sprintf(`Service("%s")`, versionServiceName(serviceName(api), api.InHttp.InVersion))
 }
 
-func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionPackage modules.Module) []generator.CodeFile {
+func (g *SpringGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
@@ -49,7 +49,7 @@ func (g *SpringGenerator) ServiceImports() []string {
 	}
 }
 
-func (g *SpringGenerator) ExceptionController(responses *spec.Responses, thePackage, errorsPackage, errorsModelsPackage, jsonPackage modules.Module) *generator.CodeFile {
+func (g *SpringGenerator) ExceptionController(responses *spec.Responses, thePackage, errorsPackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -96,7 +96,7 @@ func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Response
 	w.Line(`}`)
 }
 
-func (g *SpringGenerator) serviceController(api *spec.Api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionPackage modules.Module) []generator.CodeFile {
+func (g *SpringGenerator) serviceController(api *spec.Api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
@@ -195,14 +195,14 @@ func (g *SpringGenerator) processResponse(w *generator.Writer, response *spec.Re
 	}
 }
 
-func (g *SpringGenerator) ContentType(thePackage modules.Module) []generator.CodeFile {
+func (g *SpringGenerator) ContentType(thePackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *contentTypeMismatchException(thePackage))
 	files = append(files, *g.checkContentType(thePackage))
 	return files
 }
 
-func (g *SpringGenerator) checkContentType(thePackage modules.Module) *generator.CodeFile {
+func (g *SpringGenerator) checkContentType(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -227,14 +227,14 @@ fun checkContentType(request: HttpServletRequest, expectedContentType: MediaType
 	}
 }
 
-func (g *SpringGenerator) Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage modules.Module) []generator.CodeFile {
+func (g *SpringGenerator) Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage))
 	files = append(files, *g.Models.ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage))
 	return files
 }
 
-func (g *SpringGenerator) errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage modules.Module) *generator.CodeFile {
+func (g *SpringGenerator) errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -308,7 +308,7 @@ object ErrorsHelpers {
 	}
 }
 
-func (g *SpringGenerator) JsonHelpers(thePackage modules.Module) []generator.CodeFile {
+func (g *SpringGenerator) JsonHelpers(thePackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	files = append(files, *g.Json(thePackage))
@@ -318,7 +318,7 @@ func (g *SpringGenerator) JsonHelpers(thePackage modules.Module) []generator.Cod
 	return files
 }
 
-func (g *SpringGenerator) Json(thePackage modules.Module) *generator.CodeFile {
+func (g *SpringGenerator) Json(thePackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()

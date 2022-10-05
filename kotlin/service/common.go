@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"generator"
-	"kotlin/modules"
+	"kotlin/packages"
 	"spec"
 )
 
@@ -42,7 +42,7 @@ func serviceCall(w *generator.Writer, operation *spec.NamedOperation, bodyString
 	}
 }
 
-func contentTypeMismatchException(thePackage modules.Module) *generator.CodeFile {
+func contentTypeMismatchException(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -66,7 +66,7 @@ class ContentTypeMismatchException(expected: String, actual: String?) :
 	}
 }
 
-func jsonParseException(thePackage modules.Module) *generator.CodeFile {
+func jsonParseException(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 

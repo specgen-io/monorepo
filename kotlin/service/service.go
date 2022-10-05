@@ -2,7 +2,7 @@ package service
 
 import (
 	"generator"
-	"kotlin/modules"
+	"kotlin/packages"
 	"openapi"
 	"spec"
 )
@@ -14,7 +14,7 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 		packageName = specification.Name.SnakeCase()
 	}
 
-	mainPackage := modules.Package(generatePath, packageName)
+	mainPackage := packages.New(generatePath, packageName)
 
 	generator := NewGenerator(jsonlib, server)
 
@@ -51,7 +51,7 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 	}
 
 	if servicesPath != "" {
-		servicesImplPackage := modules.Package(servicesPath, packageName)
+		servicesImplPackage := packages.New(servicesPath, packageName)
 		for _, version := range specification.Versions {
 			servicesImplVersionPath := servicesImplPackage.Subpackage("services")
 			serviceImplVersionPackage := servicesImplVersionPath.Subpackage(version.Name.FlatCase())

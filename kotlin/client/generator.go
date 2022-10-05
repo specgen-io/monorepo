@@ -5,13 +5,13 @@ import (
 
 	"generator"
 	"kotlin/models"
-	"kotlin/modules"
+	"kotlin/packages"
 	"kotlin/types"
 	"spec"
 )
 
 type ClientGenerator interface {
-	Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile
+	Clients(version *spec.Version, thePackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile
 }
 
 type Generator struct {

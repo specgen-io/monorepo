@@ -3,7 +3,7 @@ package client
 import (
 	"fmt"
 	"generator"
-	"kotlin/modules"
+	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -16,7 +16,7 @@ func responseCreate(response *spec.OperationResponse, resultVar string) string {
 	return resultVar
 }
 
-func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module) []generator.CodeFile {
+func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)

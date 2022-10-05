@@ -5,19 +5,19 @@ import (
 
 	"generator"
 	"kotlin/models"
-	"kotlin/modules"
+	"kotlin/packages"
 	"kotlin/types"
 	"spec"
 )
 
 type ServerGenerator interface {
 	ServiceImports() []string
-	ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionPackage modules.Module) []generator.CodeFile
+	ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionPackage packages.Package) []generator.CodeFile
 	ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string)
-	ExceptionController(responses *spec.Responses, thePackage, errorsPackage, errorsModelsPackage, jsonPackage modules.Module) *generator.CodeFile
-	Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage modules.Module) []generator.CodeFile
-	ContentType(thePackage modules.Module) []generator.CodeFile
-	JsonHelpers(thePackage modules.Module) []generator.CodeFile
+	ExceptionController(responses *spec.Responses, thePackage, errorsPackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile
+	Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Package) []generator.CodeFile
+	ContentType(thePackage packages.Package) []generator.CodeFile
+	JsonHelpers(thePackage packages.Package) []generator.CodeFile
 }
 
 type Generator struct {

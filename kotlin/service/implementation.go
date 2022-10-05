@@ -5,12 +5,12 @@ import (
 
 	"generator"
 	"kotlin/imports"
-	"kotlin/modules"
+	"kotlin/packages"
 	"kotlin/writer"
 	"spec"
 )
 
-func (g *Generator) ServicesImplementations(version *spec.Version, thePackage, modelsVersionPackage, servicesVersionPackage modules.Module) []generator.CodeFile {
+func (g *Generator) ServicesImplementations(version *spec.Version, thePackage, modelsVersionPackage, servicesVersionPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := servicesVersionPackage.Subpackage(api.Name.SnakeCase())
@@ -19,7 +19,7 @@ func (g *Generator) ServicesImplementations(version *spec.Version, thePackage, m
 	return files
 }
 
-func (g *Generator) serviceImplementation(api *spec.Api, thePackage, modelsVersionPackage, serviceVersionSubpackage modules.Module) *generator.CodeFile {
+func (g *Generator) serviceImplementation(api *spec.Api, thePackage, modelsVersionPackage, serviceVersionSubpackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()

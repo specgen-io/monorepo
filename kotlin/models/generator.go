@@ -4,19 +4,19 @@ import (
 	"fmt"
 
 	"generator"
-	"kotlin/modules"
+	"kotlin/packages"
 	"kotlin/types"
 	"spec"
 )
 
 type Generator interface {
-	Models(models []*spec.NamedModel, thePackage, jsonPackage modules.Module) []generator.CodeFile
+	Models(models []*spec.NamedModel, thePackage, jsonPackage packages.Package) []generator.CodeFile
 	ModelsDefinitionsImports() []string
 	ModelsUsageImports() []string
-	SetupImport(jsonPackage modules.Module) string
-	SetupLibrary(thePackage modules.Module) []generator.CodeFile
+	SetupImport(jsonPackage packages.Package) string
+	SetupLibrary(thePackage packages.Package) []generator.CodeFile
 	JsonHelpersMethods() string
-	ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage modules.Module) *generator.CodeFile
+	ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile
 	CreateJsonMapperField(annotation string) string
 	InitJsonMapper(w *generator.Writer)
 

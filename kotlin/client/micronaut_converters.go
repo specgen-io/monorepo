@@ -4,10 +4,10 @@ import (
 	"strings"
 
 	"generator"
-	"kotlin/modules"
+	"kotlin/packages"
 )
 
-func converters(thePackage modules.Module) []generator.CodeFile {
+func converters(thePackage packages.Package) []generator.CodeFile {
 	convertersPackage := thePackage.Subpackage("converters")
 
 	files := []generator.CodeFile{}
@@ -19,7 +19,7 @@ func converters(thePackage modules.Module) []generator.CodeFile {
 	return files
 }
 
-func convertersRegistrar(thePackage modules.Module) *generator.CodeFile {
+func convertersRegistrar(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -42,7 +42,7 @@ class ConvertersRegistrar: TypeConverterRegistrar {
 	}
 }
 
-func localDateConverter(thePackage modules.Module) *generator.CodeFile {
+func localDateConverter(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -77,7 +77,7 @@ class LocalDateConverter : TypeConverter<LocalDate, String> {
 	}
 }
 
-func localDateTimeConverter(thePackage modules.Module) *generator.CodeFile {
+func localDateTimeConverter(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -112,7 +112,7 @@ class LocalDateTimeConverter : TypeConverter<LocalDateTime, String> {
 	}
 }
 
-func stringArrayConverter(thePackage modules.Module) *generator.CodeFile {
+func stringArrayConverter(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 

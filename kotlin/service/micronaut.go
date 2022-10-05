@@ -8,7 +8,7 @@ import (
 	"github.com/pinzolo/casee"
 	"kotlin/imports"
 	"kotlin/models"
-	"kotlin/modules"
+	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -29,7 +29,7 @@ func (g *MicronautGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImp
 	return `io.micronaut.context.annotation.Bean`, `Bean`
 }
 
-func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionPackage modules.Module) []generator.CodeFile {
+func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
@@ -48,7 +48,7 @@ func (g *MicronautGenerator) ServiceImports() []string {
 	}
 }
 
-func (g *MicronautGenerator) ExceptionController(responses *spec.Responses, thePackage, errorsPackage, errorsModelsPackage, jsonPackage modules.Module) *generator.CodeFile {
+func (g *MicronautGenerator) ExceptionController(responses *spec.Responses, thePackage, errorsPackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -94,7 +94,7 @@ func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Respo
 	w.Line(`}`)
 }
 
-func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionPackage modules.Module) []generator.CodeFile {
+func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
@@ -193,14 +193,14 @@ func (g *MicronautGenerator) processResponse(w *generator.Writer, response *spec
 	}
 }
 
-func (g *MicronautGenerator) ContentType(thePackage modules.Module) []generator.CodeFile {
+func (g *MicronautGenerator) ContentType(thePackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *contentTypeMismatchException(thePackage))
 	files = append(files, *g.checkContentType(thePackage))
 	return files
 }
 
-func (g *MicronautGenerator) checkContentType(thePackage modules.Module) *generator.CodeFile {
+func (g *MicronautGenerator) checkContentType(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -224,14 +224,14 @@ fun checkContentType(request: HttpRequest<*>, expectedContentType: String) {
 	}
 }
 
-func (g *MicronautGenerator) Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage modules.Module) []generator.CodeFile {
+func (g *MicronautGenerator) Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage))
 	files = append(files, *g.Models.ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage))
 	return files
 }
 
-func (g *MicronautGenerator) errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage modules.Module) *generator.CodeFile {
+func (g *MicronautGenerator) errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -342,7 +342,7 @@ object ErrorsHelpers {
 	}
 }
 
-func (g *MicronautGenerator) JsonHelpers(thePackage modules.Module) []generator.CodeFile {
+func (g *MicronautGenerator) JsonHelpers(thePackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	files = append(files, *g.Json(thePackage))
@@ -352,7 +352,7 @@ func (g *MicronautGenerator) JsonHelpers(thePackage modules.Module) []generator.
 	return files
 }
 
-func (g *MicronautGenerator) Json(thePackage modules.Module) *generator.CodeFile {
+func (g *MicronautGenerator) Json(thePackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -411,7 +411,7 @@ func getMicronautParameterAnnotation(paramAnnotation string, param *spec.NamedPa
 	return fmt.Sprintf(`@%s(%s)`, paramAnnotation, joinParams(annotationParams))
 }
 
-func dateConverters(thePackage modules.Module) []generator.CodeFile {
+func dateConverters(thePackage packages.Package) []generator.CodeFile {
 	convertersPackage := thePackage.Subpackage("converters")
 
 	files := []generator.CodeFile{}
@@ -420,7 +420,7 @@ func dateConverters(thePackage modules.Module) []generator.CodeFile {
 	return files
 }
 
-func localDateConverter(thePackage modules.Module) *generator.CodeFile {
+func localDateConverter(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -456,7 +456,7 @@ class LocalDateConverter : TypeConverter<String, LocalDate> {
 	}
 }
 
-func localDateTimeConverter(thePackage modules.Module) *generator.CodeFile {
+func localDateTimeConverter(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 

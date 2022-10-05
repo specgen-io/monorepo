@@ -4,10 +4,10 @@ import (
 	"strings"
 
 	"generator"
-	"kotlin/modules"
+	"kotlin/packages"
 )
 
-func clientException(thePackage modules.Module) *generator.CodeFile {
+func clientException(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 

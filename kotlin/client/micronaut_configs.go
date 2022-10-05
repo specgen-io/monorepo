@@ -4,10 +4,10 @@ import (
 	"strings"
 
 	"generator"
-	"kotlin/modules"
+	"kotlin/packages"
 )
 
-func staticConfigFiles(thePackage modules.Module) []generator.CodeFile {
+func staticConfigFiles(thePackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *objectMapperConfig(thePackage))
 	files = append(files, *clientConfig(thePackage))
@@ -15,7 +15,7 @@ func staticConfigFiles(thePackage modules.Module) []generator.CodeFile {
 	return files
 }
 
-func objectMapperConfig(thePackage modules.Module) *generator.CodeFile {
+func objectMapperConfig(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -46,7 +46,7 @@ class ObjectMapperConfig {
 	}
 }
 
-func clientConfig(thePackage modules.Module) *generator.CodeFile {
+func clientConfig(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 

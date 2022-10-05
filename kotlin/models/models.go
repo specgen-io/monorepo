@@ -2,7 +2,7 @@ package models
 
 import (
 	"generator"
-	"kotlin/modules"
+	"kotlin/packages"
 	"spec"
 )
 
@@ -13,7 +13,7 @@ func Generate(specification *spec.Spec, jsonlib string, packageName string, gene
 		packageName = specification.Name.SnakeCase()
 	}
 
-	mainPackage := modules.Package(generatePath, packageName)
+	mainPackage := packages.New(generatePath, packageName)
 
 	generator := NewGenerator(jsonlib)
 

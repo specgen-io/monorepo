@@ -7,7 +7,7 @@ import (
 	"github.com/pinzolo/casee"
 	"kotlin/imports"
 	"kotlin/models"
-	"kotlin/modules"
+	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -24,7 +24,7 @@ func NewMicronautDeclGenerator(types *types.Types, models models.Generator) *Mic
 	return &MicronautDeclGenerator{types, models}
 }
 
-func (g *MicronautDeclGenerator) Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+func (g *MicronautDeclGenerator) Clients(version *spec.Version, thePackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
@@ -41,7 +41,7 @@ func (g *MicronautDeclGenerator) Clients(version *spec.Version, thePackage modul
 	return files
 }
 
-func (g *MicronautDeclGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) *generator.CodeFile {
+func (g *MicronautDeclGenerator) client(api *spec.Api, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -120,7 +120,7 @@ func declOperationParameters(operation *spec.NamedOperation, types *types.Types)
 	return params
 }
 
-func response(types *types.Types, operation *spec.NamedOperation, apiPackage modules.Module, modelsVersionPackage modules.Module) []generator.CodeFile {
+func response(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Package, modelsVersionPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)

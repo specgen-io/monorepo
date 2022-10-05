@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"generator"
-	"kotlin/modules"
+	"kotlin/packages"
 	"kotlin/types"
 	"spec"
 )
@@ -22,7 +22,7 @@ func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
 	return &JacksonGenerator{types}
 }
 
-func (g *JacksonGenerator) Models(models []*spec.NamedModel, thePackage, jsonPackage modules.Module) []generator.CodeFile {
+func (g *JacksonGenerator) Models(models []*spec.NamedModel, thePackage, jsonPackage packages.Package) []generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -129,11 +129,11 @@ func (g *JacksonGenerator) ModelsUsageImports() []string {
 	}
 }
 
-func (g *JacksonGenerator) SetupImport(jsonPackage modules.Module) string {
+func (g *JacksonGenerator) SetupImport(jsonPackage packages.Package) string {
 	return fmt.Sprintf(`%s.setupObjectMapper`, jsonPackage.PackageName)
 }
 
-func (g *JacksonGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage modules.Module) *generator.CodeFile {
+func (g *JacksonGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -217,7 +217,7 @@ func (g *JacksonGenerator) JsonHelpersMethods() string {
 `
 }
 
-func (g *JacksonGenerator) SetupLibrary(thePackage modules.Module) []generator.CodeFile {
+func (g *JacksonGenerator) SetupLibrary(thePackage packages.Package) []generator.CodeFile {
 	code := `
 package [[.PackageName]]
 

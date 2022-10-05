@@ -7,7 +7,7 @@ import (
 	"generator"
 	"kotlin/imports"
 	"kotlin/models"
-	"kotlin/modules"
+	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -24,7 +24,7 @@ func NewMicronautLowGenerator(types *types.Types, models models.Generator) *Micr
 	return &MicronautLowGenerator{types, models}
 }
 
-func (g *MicronautLowGenerator) Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+func (g *MicronautLowGenerator) Clients(version *spec.Version, thePackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
 	utilsPackage := mainPackage.Subpackage("utils")
 
 	files := []generator.CodeFile{}
@@ -45,7 +45,7 @@ func (g *MicronautLowGenerator) Clients(version *spec.Version, thePackage module
 	return files
 }
 
-func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) *generator.CodeFile {
+func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, utilsPackage packages.Package, mainPackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -211,14 +211,14 @@ func createResponse(operation *spec.NamedOperation, response *spec.OperationResp
 	return resultVar
 }
 
-func (g *MicronautLowGenerator) utils(thePackage modules.Module) []generator.CodeFile {
+func (g *MicronautLowGenerator) utils(thePackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.requestBuilder(thePackage))
 	files = append(files, *g.urlBuilder(thePackage))
 	return files
 }
 
-func (g *MicronautLowGenerator) requestBuilder(thePackage modules.Module) *generator.CodeFile {
+func (g *MicronautLowGenerator) requestBuilder(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -262,7 +262,7 @@ class RequestBuilder {
 	}
 }
 
-func (g *MicronautLowGenerator) urlBuilder(thePackage modules.Module) *generator.CodeFile {
+func (g *MicronautLowGenerator) urlBuilder(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 

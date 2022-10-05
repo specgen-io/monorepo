@@ -7,7 +7,7 @@ import (
 	"generator"
 	"kotlin/imports"
 	"kotlin/models"
-	"kotlin/modules"
+	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -24,7 +24,7 @@ func NewOkHttpGenerator(types *types.Types, models models.Generator) *OkHttpGene
 	return &OkHttpGenerator{types, models}
 }
 
-func (g *OkHttpGenerator) Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+func (g *OkHttpGenerator) Clients(version *spec.Version, thePackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	utilsPackage := thePackage.Subpackage("utils")
@@ -43,7 +43,7 @@ func (g *OkHttpGenerator) Clients(version *spec.Version, thePackage modules.Modu
 	return files
 }
 
-func (g *OkHttpGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) *generator.CodeFile {
+func (g *OkHttpGenerator) client(api *spec.Api, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, utilsPackage packages.Package, mainPackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -169,14 +169,14 @@ func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.Name
 	w.Line(`}`)
 }
 
-func (g *OkHttpGenerator) utils(thePackage modules.Module) []generator.CodeFile {
+func (g *OkHttpGenerator) utils(thePackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.requestBuilder(thePackage))
 	files = append(files, *g.urlBuilder(thePackage))
 	return files
 }
 
-func (g *OkHttpGenerator) requestBuilder(thePackage modules.Module) *generator.CodeFile {
+func (g *OkHttpGenerator) requestBuilder(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -215,7 +215,7 @@ class RequestBuilder(method: String, url: HttpUrl, body: RequestBody?) {
 	}
 }
 
-func (g *OkHttpGenerator) urlBuilder(thePackage modules.Module) *generator.CodeFile {
+func (g *OkHttpGenerator) urlBuilder(thePackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
