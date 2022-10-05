@@ -24,11 +24,16 @@ func NewMicronautDeclGenerator(types *types.Types, models models.Generator) *Mic
 	return &MicronautDeclGenerator{types, models}
 }
 
-func (g *MicronautDeclGenerator) ClientImplementation(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+func (g *MicronautDeclGenerator) Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, mainPackage)...)
+		for _, operation := range api.Operations {
+			if responsesNumber(&operation) > 1 {
+				files = append(files, response(g.Types, &operation, apiPackage, modelsVersionPackage)...)
+			}
+		}
+		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, mainPackage))
 	}
 	files = append(files, converters(mainPackage)...)
 	files = append(files, staticConfigFiles(mainPackage)...)
@@ -36,9 +41,7 @@ func (g *MicronautDeclGenerator) ClientImplementation(version *spec.Version, the
 	return files
 }
 
-func (g *MicronautDeclGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
-	files := []generator.CodeFile{}
-
+func (g *MicronautDeclGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -61,18 +64,10 @@ func (g *MicronautDeclGenerator) client(api *spec.Api, apiPackage modules.Module
 	}
 	w.Line(`}`)
 
-	for _, operation := range api.Operations {
-		if responsesNumber(&operation) > 1 {
-			files = append(files, response(g.Types, &operation, apiPackage, modelsVersionPackage)...)
-		}
-	}
-
-	files = append(files, generator.CodeFile{
+	return &generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", interfaceName)),
 		Content: w.String(),
-	})
-
-	return files
+	}
 }
 
 func (g *MicronautDeclGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {
@@ -86,26 +81,26 @@ func (g *MicronautDeclGenerator) clientMethod(w *generator.Writer, operation *sp
 	} else {
 		w.Line(`@%s(value = "%s")`, methodName, url)
 	}
-	w.Line(`fun %s`, declSignature(g.Types, operation))
+	w.Line(`fun %s`, declOperationSignature(g.Types, operation))
 }
 
-func declSignature(types *types.Types, operation *spec.NamedOperation) string {
+func declOperationSignature(types *types.Types, operation *spec.NamedOperation) string {
 	if responsesNumber(operation) == 1 {
 		for _, response := range operation.Responses {
 			if !response.Type.Definition.IsEmpty() {
-				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(parameters(operation, types)), types.Kotlin(&response.Type.Definition))
+				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(declOperationParameters(operation, types)), types.Kotlin(&response.Type.Definition))
 			} else {
-				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinParams(parameters(operation, types)))
+				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinParams(declOperationParameters(operation, types)))
 			}
 		}
 	}
 	if responsesNumber(operation) > 1 {
-		return fmt.Sprintf(`%s(%s): HttpResponse<String>`, operation.Name.CamelCase(), joinParams(parameters(operation, types)))
+		return fmt.Sprintf(`%s(%s): HttpResponse<String>`, operation.Name.CamelCase(), joinParams(declOperationParameters(operation, types)))
 	}
 	return ""
 }
 
-func parameters(operation *spec.NamedOperation, types *types.Types) []string {
+func declOperationParameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
 
 	if operation.Body != nil {

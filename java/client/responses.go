@@ -20,7 +20,7 @@ func responseCreate(response *spec.OperationResponse, resultVar string) string {
 	}
 }
 
-func (g *Generator) reponseInterface(types *types.Types, operation *spec.NamedOperation) []generator.CodeFile {
+func (g *Generator) responseInterface(types *types.Types, operation *spec.NamedOperation) []generator.CodeFile {
 	clientPackage := g.Packages.Client(operation.InApi)
 	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()

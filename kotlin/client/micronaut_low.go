@@ -8,7 +8,6 @@ import (
 	"kotlin/imports"
 	"kotlin/models"
 	"kotlin/modules"
-	"kotlin/responses"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -25,13 +24,18 @@ func NewMicronautLowGenerator(types *types.Types, models models.Generator) *Micr
 	return &MicronautLowGenerator{types, models}
 }
 
-func (g *MicronautLowGenerator) ClientImplementation(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+func (g *MicronautLowGenerator) Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
 	utilsPackage := mainPackage.Subpackage("utils")
 
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage)...)
+		for _, operation := range api.Operations {
+			if responsesNumber(&operation) > 1 {
+				files = append(files, responseInterface(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
+			}
+		}
+		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage))
 	}
 	files = append(files, g.utils(utilsPackage)...)
 	files = append(files, converters(mainPackage)...)
@@ -41,9 +45,7 @@ func (g *MicronautLowGenerator) ClientImplementation(version *spec.Version, theP
 	return files
 }
 
-func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
-	files := []generator.CodeFile{}
-
+func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -77,18 +79,10 @@ func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage modules.Module,
 	}
 	w.Line(`}`)
 
-	for _, operation := range api.Operations {
-		if responsesNumber(&operation) > 1 {
-			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
-		}
-	}
-
-	files = append(files, generator.CodeFile{
+	return &generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", className)),
 		Content: w.String(),
-	})
-
-	return files
+	}
 }
 
 func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {
@@ -198,21 +192,21 @@ func lowSignature(types *types.Types, operation *spec.NamedOperation) string {
 	if responsesNumber(operation) == 1 {
 		for _, response := range operation.Responses {
 			if !response.Type.Definition.IsEmpty() {
-				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(responses.Parameters(operation, types)), types.Kotlin(&response.Type.Definition))
+				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(operationParameters(operation, types)), types.Kotlin(&response.Type.Definition))
 			} else {
-				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinParams(responses.Parameters(operation, types)))
+				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinParams(operationParameters(operation, types)))
 			}
 		}
 	}
 	if responsesNumber(operation) > 1 {
-		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(responses.Parameters(operation, types)), responses.InterfaceName(operation))
+		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(operationParameters(operation, types)), reponseInterfaceName(operation))
 	}
 	return ""
 }
 
 func createResponse(operation *spec.NamedOperation, response *spec.OperationResponse, resultVar string) string {
 	if responsesNumber(operation) > 1 {
-		return fmt.Sprintf(`%s.%s(%s)`, responses.InterfaceName(operation), response.Name.PascalCase(), resultVar)
+		return fmt.Sprintf(`%s.%s(%s)`, reponseInterfaceName(operation), response.Name.PascalCase(), resultVar)
 	}
 	return resultVar
 }

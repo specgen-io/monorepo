@@ -32,7 +32,7 @@ func Generate(specification *spec.Spec, jsonlib, client, packageName, generatePa
 
 		clientVersionPackage := versionPackage.Subpackage("clients")
 
-		sources.AddGeneratedAll(generator.Client.ClientImplementation(&version, clientVersionPackage, modelsVersionPackage, errorsModelsPackage, jsonPackage, mainPackage))
+		sources.AddGeneratedAll(generator.Client.Clients(&version, clientVersionPackage, modelsVersionPackage, errorsModelsPackage, jsonPackage, mainPackage))
 	}
 
 	sources.AddGeneratedAll(generator.Models.SetupLibrary(jsonPackage))

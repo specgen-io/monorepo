@@ -13,14 +13,18 @@ import (
 func (g *Generator) Clients(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, g.client(&api)...)
+		for _, operation := range api.Operations {
+			if len(operation.Responses) > 1 {
+				files = append(files, g.responseInterface(g.Types, &operation)...)
+			}
+		}
+		files = append(files, *g.client(&api))
 	}
 	return files
 }
 
-func (g *Generator) client(api *spec.Api) []generator.CodeFile {
+func (g *Generator) client(api *spec.Api) *generator.CodeFile {
 	clientPackage := g.Packages.Client(api)
-	files := []generator.CodeFile{}
 	w := writer.NewJavaWriter()
 	w.Line(`package %s;`, clientPackage.PackageName)
 	w.EmptyLine()
@@ -54,18 +58,10 @@ func (g *Generator) client(api *spec.Api) []generator.CodeFile {
 	}
 	w.Line(`}`)
 
-	for _, operation := range api.Operations {
-		if len(operation.Responses) > 1 {
-			files = append(files, g.reponseInterface(g.Types, &operation)...)
-		}
-	}
-
-	files = append(files, generator.CodeFile{
+	return &generator.CodeFile{
 		Path:    clientPackage.GetPath(fmt.Sprintf("%s.java", className)),
 		Content: w.String(),
-	})
-
-	return files
+	}
 }
 
 func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.NamedOperation) {

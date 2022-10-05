@@ -6,7 +6,6 @@ import (
 	"generator"
 	"kotlin/imports"
 	"kotlin/modules"
-	"kotlin/responses"
 	"kotlin/writer"
 	"spec"
 )
@@ -35,7 +34,7 @@ func (g *Generator) serviceImplementation(api *spec.Api, thePackage, modelsVersi
 	w.Line(`@%s`, annotation)
 	w.Line(`class %s : %s {`, serviceImplName(api), serviceInterfaceName(api))
 	for _, operation := range api.Operations {
-		w.Line(`  override fun %s {`, responses.Signature(g.Types, &operation))
+		w.Line(`  override fun %s {`, operationSignature(g.Types, &operation))
 		w.Line(`    throw UnsupportedOperationException("Implementation has not added yet")`)
 		w.Line(`  }`)
 	}

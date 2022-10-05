@@ -8,7 +8,6 @@ import (
 	"kotlin/imports"
 	"kotlin/models"
 	"kotlin/modules"
-	"kotlin/responses"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -25,13 +24,18 @@ func NewOkHttpGenerator(types *types.Types, models models.Generator) *OkHttpGene
 	return &OkHttpGenerator{types, models}
 }
 
-func (g *OkHttpGenerator) ClientImplementation(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+func (g *OkHttpGenerator) Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	utilsPackage := thePackage.Subpackage("utils")
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage)...)
+		for _, operation := range api.Operations {
+			if len(operation.Responses) > 1 {
+				files = append(files, responseInterface(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
+			}
+		}
+		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage))
 	}
 	files = append(files, g.utils(utilsPackage)...)
 	files = append(files, *clientException(mainPackage))
@@ -39,9 +43,7 @@ func (g *OkHttpGenerator) ClientImplementation(version *spec.Version, thePackage
 	return files
 }
 
-func (g *OkHttpGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
-	files := []generator.CodeFile{}
-
+func (g *OkHttpGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -76,25 +78,17 @@ func (g *OkHttpGenerator) client(api *spec.Api, apiPackage modules.Module, model
 	}
 	w.Line(`}`)
 
-	for _, operation := range api.Operations {
-		if len(operation.Responses) > 1 {
-			files = append(files, responses.Interfaces(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
-		}
-	}
-
-	files = append(files, generator.CodeFile{
+	return &generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", className)),
 		Content: w.String(),
-	})
-
-	return files
+	}
 }
 
 func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 
-	w.Line(`fun %s {`, responses.Signature(g.Types, operation))
+	w.Line(`fun %s {`, operationSignature(g.Types, operation))
 	requestBody := "null"
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`  val requestBody = body.toRequestBody("text/plain".toMediaTypeOrNull())`)
@@ -145,7 +139,7 @@ func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.Name
 		w.Line(`logger.info("Received response with status code {}", response.code)`)
 
 		if response.BodyIs(spec.BodyEmpty) {
-			responseCode := responses.CreateResponse(&response, ``)
+			responseCode := responseCreate(&response, ``)
 			if responseCode != "" {
 				w.Line(responseCode)
 			}
@@ -155,7 +149,7 @@ func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.Name
 				`response.body!!.string()`,
 				`IOException`, `e`,
 				`"Failed to convert response body to string " + e.message`)
-			w.Line(responses.CreateResponse(&response, `responseBody`))
+			w.Line(responseCreate(&response, `responseBody`))
 		}
 		if response.BodyIs(spec.BodyJson) {
 			responseBody, exception := g.Models.ReadJson(`response.body!!.string()`, &response.Type.Definition)
@@ -163,7 +157,7 @@ func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.Name
 				responseBody,
 				exception, `e`,
 				`"Failed to deserialize response body " + e.message`)
-			w.Line(responses.CreateResponse(&response, `responseBody!!`))
+			w.Line(responseCreate(&response, `responseBody!!`))
 		}
 		w.UnindentWith(3)
 		w.Line(`    }`)
