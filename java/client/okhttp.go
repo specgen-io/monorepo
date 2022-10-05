@@ -6,6 +6,7 @@ import (
 
 	"generator"
 	"java/imports"
+	"java/packages"
 	"java/writer"
 	"spec"
 )
@@ -13,13 +14,9 @@ import (
 func (g *Generator) Clients(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		for _, operation := range api.Operations {
-			if len(operation.Responses) > 1 {
-				files = append(files, g.responseInterface(g.Types, &operation)...)
-			}
-		}
 		files = append(files, *g.client(&api))
 	}
+	files = append(files, g.responses(version)...)
 	return files
 }
 
@@ -147,6 +144,18 @@ func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.Na
 	w.Line(`}`)
 }
 
+func (g *Generator) responses(version *spec.Version) []generator.CodeFile {
+	files := []generator.CodeFile{}
+	for _, api := range version.Http.Apis {
+		for _, operation := range api.Operations {
+			if len(operation.Responses) > 1 {
+				files = append(files, g.responseInterface(g.Types, &operation)...)
+			}
+		}
+	}
+	return files
+}
+
 func generateTryCatch(w *generator.Writer, exceptionObject string, codeBlock func(w *generator.Writer), exceptionHandler func(w *generator.Writer)) {
 	w.Line(`try {`)
 	codeBlock(w.Indented())
@@ -173,4 +182,130 @@ func generateThrowClientException(w *generator.Writer, errorMessage string, wrap
 		params += ", " + wrapException
 	}
 	w.Line(`throw new ClientException(%s);`, params)
+}
+
+func (g *Generator) Utils() []generator.CodeFile {
+	files := []generator.CodeFile{}
+
+	files = append(files, *generateRequestBuilder(g.Packages.Utils))
+	files = append(files, *generateUrlBuilder(g.Packages.Utils))
+	files = append(files, *generateStringify(g.Packages.Utils))
+
+	return files
+}
+
+func generateRequestBuilder(thePackage packages.Package) *generator.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import okhttp3.*;
+import java.util.List;
+
+public class RequestBuilder {
+	private final Request.Builder requestBuilder;
+
+	public RequestBuilder(String method, HttpUrl url, RequestBody body) {
+		this.requestBuilder = new Request.Builder().url(url).method(method, body);
+	}
+
+	public RequestBuilder addHeaderParameter(String name, Object value) {
+		var valueStr = Stringify.paramToString(value);
+		if (valueStr != null) {
+			this.requestBuilder.addHeader(name, valueStr);
+		}
+		return this;
+	}
+
+	public <T> RequestBuilder addHeaderParameter(String name, List<T> values) {
+		for (T val : values) {
+			this.addHeaderParameter(name, val);
+		}
+		return this;
+	}
+
+	public Request build() {
+		return this.requestBuilder.build();
+	}
+}
+`
+
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath("RequestBuilder.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func generateUrlBuilder(thePackage packages.Package) *generator.CodeFile {
+	code := `
+package [[.PackageName]];
+
+import okhttp3.HttpUrl;
+import java.util.List;
+
+public class UrlBuilder {
+    private final HttpUrl.Builder urlBuilder;
+
+    public UrlBuilder(String baseUrl) {
+        this.urlBuilder = HttpUrl.get(baseUrl).newBuilder();
+    }
+
+    public UrlBuilder addQueryParameter(String name, Object value) {
+        var valueStr = Stringify.paramToString(value);
+        if (valueStr != null) {
+            this.urlBuilder.addQueryParameter(name, valueStr);
+        }
+        return this;
+    }
+
+    public <T> UrlBuilder addQueryParameter(String name, List<T> values) {
+        for (T val : values) {
+            this.addQueryParameter(name, val);
+        }
+        return this;
+    }
+
+    public UrlBuilder addPathSegments(String value) {
+        this.urlBuilder.addPathSegments(value);
+        return this;
+    }
+
+    public UrlBuilder addPathParameter(Object value) {
+        var valueStr = Stringify.paramToString(value);
+        this.urlBuilder.addPathSegment(valueStr);
+        return this;
+    }
+
+    public HttpUrl build() {
+        return this.urlBuilder.build();
+    }
+}
+`
+
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath("UrlBuilder.java"),
+		Content: strings.TrimSpace(code),
+	}
+}
+
+func generateStringify(thePackage packages.Package) *generator.CodeFile {
+	code := `
+package [[.PackageName]];
+
+public class Stringify {
+    public static String paramToString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        return String.valueOf(value);
+    }
+}
+`
+
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	return &generator.CodeFile{
+		Path:    thePackage.GetPath("Stringify.java"),
+		Content: strings.TrimSpace(code),
+	}
 }
