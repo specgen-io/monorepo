@@ -24,7 +24,7 @@ func NewMicronautLowGenerator(types *types.Types, models models.Generator) *Micr
 	return &MicronautLowGenerator{types, models}
 }
 
-func (g *MicronautLowGenerator) ClientImplementation(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+func (g *MicronautLowGenerator) Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
 	utilsPackage := mainPackage.Subpackage("utils")
 
 	files := []generator.CodeFile{}
@@ -35,7 +35,7 @@ func (g *MicronautLowGenerator) ClientImplementation(version *spec.Version, theP
 				files = append(files, responseInterface(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
 			}
 		}
-		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage)...)
+		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage))
 	}
 	files = append(files, g.utils(utilsPackage)...)
 	files = append(files, converters(mainPackage)...)
@@ -45,9 +45,7 @@ func (g *MicronautLowGenerator) ClientImplementation(version *spec.Version, theP
 	return files
 }
 
-func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
-	files := []generator.CodeFile{}
-
+func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -81,12 +79,10 @@ func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage modules.Module,
 	}
 	w.Line(`}`)
 
-	files = append(files, generator.CodeFile{
+	return &generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", className)),
 		Content: w.String(),
-	})
-
-	return files
+	}
 }
 
 func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {

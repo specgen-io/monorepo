@@ -24,7 +24,7 @@ func NewOkHttpGenerator(types *types.Types, models models.Generator) *OkHttpGene
 	return &OkHttpGenerator{types, models}
 }
 
-func (g *OkHttpGenerator) ClientImplementation(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
+func (g *OkHttpGenerator) Clients(version *spec.Version, thePackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	utilsPackage := thePackage.Subpackage("utils")
@@ -35,7 +35,7 @@ func (g *OkHttpGenerator) ClientImplementation(version *spec.Version, thePackage
 				files = append(files, responseInterface(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
 			}
 		}
-		files = append(files, g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage)...)
+		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage))
 	}
 	files = append(files, g.utils(utilsPackage)...)
 	files = append(files, *clientException(mainPackage))
@@ -43,9 +43,7 @@ func (g *OkHttpGenerator) ClientImplementation(version *spec.Version, thePackage
 	return files
 }
 
-func (g *OkHttpGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) []generator.CodeFile {
-	files := []generator.CodeFile{}
-
+func (g *OkHttpGenerator) client(api *spec.Api, apiPackage modules.Module, modelsVersionPackage modules.Module, errorModelsPackage modules.Module, jsonPackage modules.Module, utilsPackage modules.Module, mainPackage modules.Module) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -80,12 +78,10 @@ func (g *OkHttpGenerator) client(api *spec.Api, apiPackage modules.Module, model
 	}
 	w.Line(`}`)
 
-	files = append(files, generator.CodeFile{
+	return &generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", className)),
 		Content: w.String(),
-	})
-
-	return files
+	}
 }
 
 func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {
