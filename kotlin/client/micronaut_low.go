@@ -7,7 +7,6 @@ import (
 	"generator"
 	"kotlin/imports"
 	"kotlin/models"
-	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -25,25 +24,23 @@ func NewMicronautLowGenerator(types *types.Types, models models.Generator, packa
 	return &MicronautLowGenerator{types, models, packages}
 }
 
-func (g *MicronautLowGenerator) Clients(version *spec.Version, clientVersionPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
-	utilsPackage := mainPackage.Subpackage("utils")
-
+func (g *MicronautLowGenerator) Clients(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		apiPackage := clientVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, responses(&api, g.Types, apiPackage, modelsVersionPackage, errorModelsPackage)...)
-		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage))
+		files = append(files, responses(&api, g.Types, g.Packages.Client(&api), g.Packages.Models(api.InHttp.InVersion), g.Packages.ErrorsModels)...)
+		files = append(files, *g.client(&api))
 	}
 
-	files = append(files, g.utils(utilsPackage)...)
-	files = append(files, converters(mainPackage)...)
-	files = append(files, staticConfigFiles(mainPackage, jsonPackage)...)
-	files = append(files, *clientException(mainPackage))
+	files = append(files, g.utils()...)
+	files = append(files, converters(g.Packages.Root)...)
+	files = append(files, staticConfigFiles(g.Packages.Root, g.Packages.Json)...)
+	files = append(files, *clientException(g.Packages.Root))
 
 	return files
 }
 
-func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, utilsPackage packages.Package, mainPackage packages.Package) *generator.CodeFile {
+func (g *MicronautLowGenerator) client(api *spec.Api) *generator.CodeFile {
+	apiPackage := g.Packages.Client(api)
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -54,9 +51,9 @@ func (g *MicronautLowGenerator) client(api *spec.Api, apiPackage packages.Packag
 	imports.Add(`io.micronaut.http.client.annotation.Client`)
 	imports.Add(`jakarta.inject.Singleton`)
 	imports.Add(`org.slf4j.*`)
-	imports.Add(mainPackage.PackageStar)
-	imports.Add(utilsPackage.PackageStar)
-	imports.Add(modelsVersionPackage.PackageStar)
+	imports.Add(g.Packages.Root.PackageStar)
+	imports.Add(g.Packages.Utils.PackageStar)
+	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
 	imports.Add(g.Models.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
@@ -186,14 +183,14 @@ func requestBuilderParams(methodName, requestBody string, operation *spec.NamedO
 	return params
 }
 
-func (g *MicronautLowGenerator) utils(thePackage packages.Package) []generator.CodeFile {
+func (g *MicronautLowGenerator) utils() []generator.CodeFile {
 	files := []generator.CodeFile{}
-	files = append(files, *g.requestBuilder(thePackage))
-	files = append(files, *g.urlBuilder(thePackage))
+	files = append(files, *g.requestBuilder())
+	files = append(files, *g.urlBuilder())
 	return files
 }
 
-func (g *MicronautLowGenerator) requestBuilder(thePackage packages.Package) *generator.CodeFile {
+func (g *MicronautLowGenerator) requestBuilder() *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -230,14 +227,14 @@ class RequestBuilder {
 }
 `
 
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Utils.PackageName})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("RequestBuilder.kt"),
+		Path:    g.Packages.Utils.GetPath("RequestBuilder.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *MicronautLowGenerator) urlBuilder(thePackage packages.Package) *generator.CodeFile {
+func (g *MicronautLowGenerator) urlBuilder() *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -283,9 +280,9 @@ class UrlBuilder(url: String) {
 }
 `
 
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Utils.PackageName})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("UrlBuilder.kt"),
+		Path:    g.Packages.Utils.GetPath("UrlBuilder.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }

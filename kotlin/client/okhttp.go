@@ -7,7 +7,6 @@ import (
 	"generator"
 	"kotlin/imports"
 	"kotlin/models"
-	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -25,22 +24,21 @@ func NewOkHttpGenerator(types *types.Types, models models.Generator, packages *P
 	return &OkHttpGenerator{types, models, packages}
 }
 
-func (g *OkHttpGenerator) Clients(version *spec.Version, clientVersionPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
+func (g *OkHttpGenerator) Clients(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
-	utilsPackage := mainPackage.Subpackage("utils")
 	for _, api := range version.Http.Apis {
-		apiPackage := clientVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, responses(&api, g.Types, apiPackage, modelsVersionPackage, errorModelsPackage)...)
-		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage))
+		files = append(files, responses(&api, g.Types, g.Packages.Client(&api), g.Packages.Models(api.InHttp.InVersion), g.Packages.ErrorsModels)...)
+		files = append(files, *g.client(&api))
 	}
-	files = append(files, g.utils(utilsPackage)...)
-	files = append(files, *clientException(mainPackage))
+	files = append(files, g.utils()...)
+	files = append(files, *clientException(g.Packages.Root))
 
 	return files
 }
 
-func (g *OkHttpGenerator) client(api *spec.Api, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, utilsPackage packages.Package, mainPackage packages.Package) *generator.CodeFile {
+func (g *OkHttpGenerator) client(api *spec.Api) *generator.CodeFile {
+	apiPackage := g.Packages.Client(api)
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -51,10 +49,10 @@ func (g *OkHttpGenerator) client(api *spec.Api, apiPackage packages.Package, mod
 	imports.Add(`okhttp3.MediaType.Companion.toMediaTypeOrNull`)
 	imports.Add(`okhttp3.RequestBody.Companion.toRequestBody`)
 	imports.Add(`org.slf4j.*`)
-	imports.Add(mainPackage.PackageStar)
+	imports.Add(g.Packages.Root.PackageStar)
 	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(utilsPackage.PackageStar)
-	imports.Add(modelsVersionPackage.PackageStar)
+	imports.Add(g.Packages.Utils.PackageStar)
+	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
 	className := clientName(api)
@@ -166,14 +164,14 @@ func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.Name
 	w.Line(`}`)
 }
 
-func (g *OkHttpGenerator) utils(thePackage packages.Package) []generator.CodeFile {
+func (g *OkHttpGenerator) utils() []generator.CodeFile {
 	files := []generator.CodeFile{}
-	files = append(files, *g.requestBuilder(thePackage))
-	files = append(files, *g.urlBuilder(thePackage))
+	files = append(files, *g.requestBuilder())
+	files = append(files, *g.urlBuilder())
 	return files
 }
 
-func (g *OkHttpGenerator) requestBuilder(thePackage packages.Package) *generator.CodeFile {
+func (g *OkHttpGenerator) requestBuilder() *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -205,14 +203,14 @@ class RequestBuilder(method: String, url: HttpUrl, body: RequestBody?) {
 }
 `
 
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Utils.PackageName})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("RequestBuilder.kt"),
+		Path:    g.Packages.Utils.GetPath("RequestBuilder.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *OkHttpGenerator) urlBuilder(thePackage packages.Package) *generator.CodeFile {
+func (g *OkHttpGenerator) urlBuilder() *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -256,9 +254,9 @@ class UrlBuilder(baseUrl: String) {
 }
 `
 
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Utils.PackageName})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("UrlBuilder.kt"),
+		Path:    g.Packages.Utils.GetPath("UrlBuilder.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
