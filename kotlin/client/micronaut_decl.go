@@ -17,18 +17,19 @@ import (
 var MicronautDecl = "micronaut-declarative"
 
 type MicronautDeclGenerator struct {
-	Types  *types.Types
-	Models models.Generator
+	Types    *types.Types
+	Models   models.Generator
+	Packages *Packages
 }
 
-func NewMicronautDeclGenerator(types *types.Types, models models.Generator) *MicronautDeclGenerator {
-	return &MicronautDeclGenerator{types, models}
+func NewMicronautDeclGenerator(types *types.Types, models models.Generator, packages *Packages) *MicronautDeclGenerator {
+	return &MicronautDeclGenerator{types, models, packages}
 }
 
-func (g *MicronautDeclGenerator) Clients(version *spec.Version, thePackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
+func (g *MicronautDeclGenerator) Clients(version *spec.Version, clientVersionPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
+		apiPackage := clientVersionPackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, g.responses(&api, apiPackage, modelsVersionPackage)...)
 		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, mainPackage))
 	}

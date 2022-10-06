@@ -16,20 +16,21 @@ import (
 var OkHttp = "okhttp"
 
 type OkHttpGenerator struct {
-	Types  *types.Types
-	Models models.Generator
+	Types    *types.Types
+	Models   models.Generator
+	Packages *Packages
 }
 
-func NewOkHttpGenerator(types *types.Types, models models.Generator) *OkHttpGenerator {
-	return &OkHttpGenerator{types, models}
+func NewOkHttpGenerator(types *types.Types, models models.Generator, packages *Packages) *OkHttpGenerator {
+	return &OkHttpGenerator{types, models, packages}
 }
 
-func (g *OkHttpGenerator) Clients(version *spec.Version, thePackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
+func (g *OkHttpGenerator) Clients(version *spec.Version, clientVersionPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
-	utilsPackage := thePackage.Subpackage("utils")
+	utilsPackage := clientVersionPackage.Subpackage("utils")
 	for _, api := range version.Http.Apis {
-		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
+		apiPackage := clientVersionPackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, responses(&api, g.Types, apiPackage, modelsVersionPackage, errorModelsPackage)...)
 		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage))
 	}

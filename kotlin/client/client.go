@@ -2,7 +2,6 @@ package client
 
 import (
 	"generator"
-	"kotlin/models"
 	"kotlin/packages"
 	"spec"
 )
@@ -16,7 +15,7 @@ func Generate(specification *spec.Spec, jsonlib, client, packageName, generatePa
 
 	mainPackage := packages.New(generatePath, packageName)
 
-	thepackages := models.NewPackages(packageName, generatePath, specification)
+	thepackages := NewPackages(packageName, generatePath, specification)
 	generator := NewGenerator(jsonlib, client, thepackages)
 
 	jsonPackage := mainPackage.Subpackage("json")

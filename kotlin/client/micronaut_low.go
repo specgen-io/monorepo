@@ -16,20 +16,21 @@ import (
 var MicronautLow = "micronaut-low-level"
 
 type MicronautLowGenerator struct {
-	Types  *types.Types
-	Models models.Generator
+	Types    *types.Types
+	Models   models.Generator
+	Packages *Packages
 }
 
-func NewMicronautLowGenerator(types *types.Types, models models.Generator) *MicronautLowGenerator {
-	return &MicronautLowGenerator{types, models}
+func NewMicronautLowGenerator(types *types.Types, models models.Generator, packages *Packages) *MicronautLowGenerator {
+	return &MicronautLowGenerator{types, models, packages}
 }
 
-func (g *MicronautLowGenerator) Clients(version *spec.Version, thePackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
+func (g *MicronautLowGenerator) Clients(version *spec.Version, clientVersionPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
 	utilsPackage := mainPackage.Subpackage("utils")
 
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
+		apiPackage := clientVersionPackage.Subpackage(api.Name.SnakeCase())
 		files = append(files, responses(&api, g.Types, apiPackage, modelsVersionPackage, errorModelsPackage)...)
 		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage))
 	}
