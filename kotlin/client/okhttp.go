@@ -55,7 +55,6 @@ func (g *OkHttpGenerator) client(api *spec.Api, apiPackage packages.Package, mod
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(utilsPackage.PackageStar)
 	imports.Add(modelsVersionPackage.PackageStar)
-	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Write(w)
 	w.EmptyLine()
 	className := clientName(api)
