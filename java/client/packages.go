@@ -42,26 +42,3 @@ func NewPackages(packageName, generatePath string, specification *spec.Spec) *Pa
 func (p *Packages) Client(api *spec.Api) packages.Package {
 	return p.clients[api.InHttp.InVersion.Name.Source][api.Name.Source]
 }
-
-type VersionPackages struct {
-	Services     packages.Package
-	Controllers  packages.Package
-	ServicesImpl packages.Package
-}
-
-func (p *VersionPackages) ServicesApi(api *spec.Api) packages.Package {
-	return p.Services.Subpackage(api.Name.SnakeCase())
-}
-
-func newVersionPackages(generated, implementations packages.Package, version *spec.Version) *VersionPackages {
-	main := generated.Subpackage(version.Name.FlatCase())
-	services := main.Subpackage("services")
-	controllers := main.Subpackage("controllers")
-	servicesImpl := implementations.Subpackage("services").Subpackage(version.Name.FlatCase())
-
-	return &VersionPackages{
-		services,
-		controllers,
-		servicesImpl,
-	}
-}
