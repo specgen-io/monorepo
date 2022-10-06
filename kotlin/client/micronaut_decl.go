@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"strings"
 
 	"generator"
 	"github.com/pinzolo/casee"
@@ -28,12 +29,8 @@ func (g *MicronautDeclGenerator) Clients(version *spec.Version, thePackage packa
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		for _, operation := range api.Operations {
-			if responsesNumber(&operation) > 1 {
-				files = append(files, response(g.Types, &operation, apiPackage, modelsVersionPackage)...)
-			}
-		}
-		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, mainPackage))
+		files = append(files, g.responses(&api, apiPackage, modelsVersionPackage)...)
+		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, mainPackage))
 	}
 	files = append(files, converters(mainPackage)...)
 	files = append(files, staticConfigFiles(mainPackage)...)
@@ -41,7 +38,7 @@ func (g *MicronautDeclGenerator) Clients(version *spec.Version, thePackage packa
 	return files
 }
 
-func (g *MicronautDeclGenerator) client(api *spec.Api, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) *generator.CodeFile {
+func (g *MicronautDeclGenerator) client(api *spec.Api, apiPackage packages.Package, modelsVersionPackage packages.Package, mainPackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -81,47 +78,52 @@ func (g *MicronautDeclGenerator) clientMethod(w *generator.Writer, operation *sp
 	} else {
 		w.Line(`@%s(value = "%s")`, methodName, url)
 	}
-	w.Line(`fun %s`, declOperationSignature(g.Types, operation))
+	w.Line(`fun %s`, g.operationSignature(operation))
 }
 
-func declOperationSignature(types *types.Types, operation *spec.NamedOperation) string {
-	if responsesNumber(operation) == 1 {
+func (g *MicronautDeclGenerator) operationSignature(operation *spec.NamedOperation) string {
+	params := []string{}
+
+	if operation.Body != nil {
+		params = append(params, fmt.Sprintf("@Body body: %s", g.Types.Kotlin(&operation.Body.Type.Definition)))
+	}
+
+	for _, param := range operation.QueryParams {
+		params = append(params, fmt.Sprintf(`@QueryValue(value = "%s") %s: %s`, param.Name.Source, param.Name.CamelCase(), g.Types.Kotlin(&param.Type.Definition)))
+	}
+	for _, param := range operation.HeaderParams {
+		params = append(params, fmt.Sprintf(`@Header(value = "%s") %s: %s`, param.Name.Source, param.Name.CamelCase(), g.Types.Kotlin(&param.Type.Definition)))
+	}
+	for _, param := range operation.Endpoint.UrlParams {
+		params = append(params, fmt.Sprintf(`@PathVariable(value = "%s") %s: %s`, param.Name.Source, param.Name.CamelCase(), g.Types.Kotlin(&param.Type.Definition)))
+	}
+
+	if len(successResponses(operation)) == 1 {
 		for _, response := range operation.Responses {
 			if !response.Type.Definition.IsEmpty() {
-				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), joinParams(declOperationParameters(operation, types)), types.Kotlin(&response.Type.Definition))
+				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(params, ", "), g.Types.Kotlin(&response.Type.Definition))
 			} else {
-				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), joinParams(declOperationParameters(operation, types)))
+				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), strings.Join(params, ", "))
 			}
 		}
 	}
-	if responsesNumber(operation) > 1 {
-		return fmt.Sprintf(`%s(%s): HttpResponse<String>`, operation.Name.CamelCase(), joinParams(declOperationParameters(operation, types)))
+	if len(successResponses(operation)) > 1 {
+		return fmt.Sprintf(`%s(%s): HttpResponse<String>`, operation.Name.CamelCase(), strings.Join(params, ", "))
 	}
 	return ""
 }
 
-func declOperationParameters(operation *spec.NamedOperation, types *types.Types) []string {
-	params := []string{}
-
-	if operation.Body != nil {
-		params = append(params, fmt.Sprintf("@Body body: %s", types.Kotlin(&operation.Body.Type.Definition)))
+func (g *MicronautDeclGenerator) responses(api *spec.Api, apiPackage packages.Package, modelsVersionPackage packages.Package) []generator.CodeFile {
+	files := []generator.CodeFile{}
+	for _, operation := range api.Operations {
+		if len(successResponses(&operation)) > 1 {
+			files = append(files, *g.response(g.Types, &operation, apiPackage, modelsVersionPackage))
+		}
 	}
-
-	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf(`@QueryValue(value = "%s") %s: %s`, param.Name.Source, param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
-	}
-	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf(`@Header(value = "%s") %s: %s`, param.Name.Source, param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
-	}
-	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, fmt.Sprintf(`@PathVariable(value = "%s") %s: %s`, param.Name.Source, param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
-	}
-
-	return params
+	return files
 }
 
-func response(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Package, modelsVersionPackage packages.Package) []generator.CodeFile {
-	files := []generator.CodeFile{}
+func (g *MicronautDeclGenerator) response(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Package, modelsVersionPackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -142,11 +144,10 @@ func response(types *types.Types, operation *spec.NamedOperation, apiPackage pac
 	createObjectMethod(w.Indented(), types, operation)
 	w.Line(`}`)
 
-	files = append(files, generator.CodeFile{
+	return &generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", responseName(operation))),
 		Content: w.String(),
-	})
-	return files
+	}
 }
 
 func implementations(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {

@@ -16,8 +16,17 @@ func responseCreate(response *spec.OperationResponse, resultVar string) string {
 	return resultVar
 }
 
-func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package) []generator.CodeFile {
+func responses(api *spec.Api, types *types.Types, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
+	for _, operation := range api.Operations {
+		if len(operation.Responses) > 1 {
+			files = append(files, *responseInterface(types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage))
+		}
+	}
+	return files
+}
+
+func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -33,11 +42,10 @@ func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPa
 	}
 	w.Line(`}`)
 
-	files = append(files, generator.CodeFile{
+	return &generator.CodeFile{
 		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", reponseInterfaceName(operation))),
 		Content: w.String(),
-	})
-	return files
+	}
 }
 
 func responseImpl(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {

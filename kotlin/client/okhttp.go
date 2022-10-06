@@ -30,11 +30,7 @@ func (g *OkHttpGenerator) Clients(version *spec.Version, thePackage packages.Pac
 	utilsPackage := thePackage.Subpackage("utils")
 	for _, api := range version.Http.Apis {
 		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		for _, operation := range api.Operations {
-			if len(operation.Responses) > 1 {
-				files = append(files, responseInterface(g.Types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage)...)
-			}
-		}
+		files = append(files, responses(&api, g.Types, apiPackage, modelsVersionPackage, errorModelsPackage)...)
 		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, errorModelsPackage, jsonPackage, utilsPackage, mainPackage))
 	}
 	files = append(files, g.utils(utilsPackage)...)
