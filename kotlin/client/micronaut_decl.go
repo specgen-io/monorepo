@@ -17,28 +17,29 @@ import (
 var MicronautDecl = "micronaut-declarative"
 
 type MicronautDeclGenerator struct {
-	Types  *types.Types
-	Models models.Generator
+	Types    *types.Types
+	Models   models.Generator
+	Packages *Packages
 }
 
-func NewMicronautDeclGenerator(types *types.Types, models models.Generator) *MicronautDeclGenerator {
-	return &MicronautDeclGenerator{types, models}
+func NewMicronautDeclGenerator(types *types.Types, models models.Generator, packages *Packages) *MicronautDeclGenerator {
+	return &MicronautDeclGenerator{types, models, packages}
 }
 
-func (g *MicronautDeclGenerator) Clients(version *spec.Version, thePackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package, jsonPackage packages.Package, mainPackage packages.Package) []generator.CodeFile {
+func (g *MicronautDeclGenerator) Clients(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.responses(&api, apiPackage, modelsVersionPackage)...)
-		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, mainPackage))
+		files = append(files, g.responses(&api, g.Packages.Client(&api), g.Packages.Models(api.InHttp.InVersion))...)
+		files = append(files, *g.client(&api))
 	}
-	files = append(files, converters(mainPackage)...)
-	files = append(files, staticConfigFiles(mainPackage)...)
+	files = append(files, converters(g.Packages.Root)...)
+	files = append(files, staticConfigFiles(g.Packages.Root, g.Packages.Json)...)
 
 	return files
 }
 
-func (g *MicronautDeclGenerator) client(api *spec.Api, apiPackage packages.Package, modelsVersionPackage packages.Package, mainPackage packages.Package) *generator.CodeFile {
+func (g *MicronautDeclGenerator) client(api *spec.Api) *generator.CodeFile {
+	apiPackage := g.Packages.Client(api)
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
@@ -46,8 +47,8 @@ func (g *MicronautDeclGenerator) client(api *spec.Api, apiPackage packages.Packa
 	imports.Add(`io.micronaut.http.*`)
 	imports.Add(`io.micronaut.http.annotation.*`)
 	imports.Add(`io.micronaut.http.client.annotation.Client`)
-	imports.Add(mainPackage.PackageStar)
-	imports.Add(modelsVersionPackage.PackageStar)
+	imports.Add(g.Packages.Root.PackageStar)
+	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()

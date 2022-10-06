@@ -15,14 +15,23 @@ import (
 var Jackson = "jackson"
 
 type JacksonGenerator struct {
-	Types *types.Types
+	Types    *types.Types
+	Packages *Packages
 }
 
-func NewJacksonGenerator(types *types.Types) *JacksonGenerator {
-	return &JacksonGenerator{types}
+func NewJacksonGenerator(types *types.Types, packages *Packages) *JacksonGenerator {
+	return &JacksonGenerator{types, packages}
 }
 
-func (g *JacksonGenerator) Models(models []*spec.NamedModel, thePackage, jsonPackage packages.Package) []generator.CodeFile {
+func (g *JacksonGenerator) Models(version *spec.Version) []generator.CodeFile {
+	return g.models(version.ResolvedModels, g.Packages.Models(version))
+}
+
+func (g *JacksonGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile {
+	return g.models(httperrors.ResolvedModels, g.Packages.ErrorsModels)
+}
+
+func (g *JacksonGenerator) models(models []*spec.NamedModel, thePackage packages.Package) []generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -108,7 +117,7 @@ func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, 
 }
 
 func (g *JacksonGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
-	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `JsonProcessingException`
+	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `Exception`
 }
 
 func (g *JacksonGenerator) ModelsDefinitionsImports() []string {
@@ -126,14 +135,11 @@ func (g *JacksonGenerator) ModelsUsageImports() []string {
 	return []string{
 		`com.fasterxml.jackson.databind.*`,
 		`com.fasterxml.jackson.core.type.*`,
+		`com.fasterxml.jackson.module.kotlin.jacksonObjectMapper`,
 	}
 }
 
-func (g *JacksonGenerator) SetupImport(jsonPackage packages.Package) string {
-	return fmt.Sprintf(`%s.setupObjectMapper`, jsonPackage.PackageName)
-}
-
-func (g *JacksonGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
+func (g *JacksonGenerator) ValidationErrorsHelpers() *generator.CodeFile {
 	code := `
 package [[.PackageName]];
 
@@ -175,12 +181,12 @@ object ValidationErrorsHelpers {
 		ErrorsModelsPackage string
 		JsonPackage         string
 	}{
-		thePackage.PackageName,
-		errorsModelsPackage.PackageName,
-		jsonPackage.PackageName,
+		g.Packages.Errors.PackageName,
+		g.Packages.ErrorsModels.PackageName,
+		g.Packages.Json.PackageName,
 	})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ValidationErrorsHelpers.kt"),
+		Path:    g.Packages.Errors.GetPath("ValidationErrorsHelpers.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
@@ -217,7 +223,7 @@ func (g *JacksonGenerator) JsonHelpersMethods() string {
 `
 }
 
-func (g *JacksonGenerator) SetupLibrary(thePackage packages.Package) []generator.CodeFile {
+func (g *JacksonGenerator) SetupLibrary() []generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -234,9 +240,9 @@ fun setupObjectMapper(objectMapper: ObjectMapper): ObjectMapper {
 }
 `
 
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Json.PackageName})
 	return []generator.CodeFile{{
-		Path:    thePackage.GetPath("CustomObjectMapper.kt"),
+		Path:    g.Packages.Json.GetPath("CustomObjectMapper.kt"),
 		Content: strings.TrimSpace(code),
 	}}
 }

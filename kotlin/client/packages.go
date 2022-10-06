@@ -1,8 +1,8 @@
 package client
 
 import (
-	"java/models"
-	"java/packages"
+	"kotlin/models"
+	"kotlin/packages"
 	"spec"
 )
 

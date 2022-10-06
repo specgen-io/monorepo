@@ -230,7 +230,7 @@ fun checkContentType(request: HttpServletRequest, expectedContentType: MediaType
 func (g *SpringGenerator) Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage))
-	files = append(files, *g.Models.ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage))
+	files = append(files, *g.Models.ValidationErrorsHelpers())
 	return files
 }
 
@@ -313,7 +313,7 @@ func (g *SpringGenerator) JsonHelpers(thePackage packages.Package) []generator.C
 
 	files = append(files, *g.Json(thePackage))
 	files = append(files, *jsonParseException(thePackage))
-	files = append(files, g.Models.SetupLibrary(thePackage)...)
+	files = append(files, g.Models.SetupLibrary()...)
 
 	return files
 }

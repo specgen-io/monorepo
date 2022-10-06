@@ -7,15 +7,15 @@ import (
 	"kotlin/packages"
 )
 
-func staticConfigFiles(thePackage packages.Package) []generator.CodeFile {
+func staticConfigFiles(thePackage, jsonPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
-	files = append(files, *objectMapperConfig(thePackage))
+	files = append(files, *objectMapperConfig(thePackage, jsonPackage))
 	files = append(files, *clientConfig(thePackage))
 
 	return files
 }
 
-func objectMapperConfig(thePackage packages.Package) *generator.CodeFile {
+func objectMapperConfig(thePackage packages.Package, jsonPackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -24,7 +24,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.micronaut.context.annotation.*
 import io.micronaut.jackson.ObjectMapperFactory
 import jakarta.inject.Singleton
-import test_client.json.setupObjectMapper
+import [[.JsonPackageStar]]
 
 @Factory
 @Replaces(ObjectMapperFactory::class)
@@ -39,7 +39,13 @@ class ObjectMapperConfig {
 }
 `
 
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
+	code, _ = generator.ExecuteTemplate(code, struct {
+		PackageName     string
+		JsonPackageStar string
+	}{
+		thePackage.PackageName,
+		jsonPackage.PackageStar,
+	})
 	return &generator.CodeFile{
 		Path:    thePackage.GetPath("ObjectMapperConfig.kt"),
 		Content: strings.TrimSpace(code),

@@ -17,13 +17,22 @@ var Moshi = "moshi"
 type MoshiGenerator struct {
 	generatedSetupMoshiMethods []string
 	Types                      *types.Types
+	Packages                   *Packages
 }
 
-func NewMoshiGenerator(types *types.Types) *MoshiGenerator {
-	return &MoshiGenerator{[]string{}, types}
+func NewMoshiGenerator(types *types.Types, packages *Packages) *MoshiGenerator {
+	return &MoshiGenerator{[]string{}, types, packages}
 }
 
-func (g *MoshiGenerator) Models(models []*spec.NamedModel, thePackage, jsonPackage packages.Package) []generator.CodeFile {
+func (g *MoshiGenerator) Models(version *spec.Version) []generator.CodeFile {
+	return g.models(version.ResolvedModels, g.Packages.Models(version), g.Packages.Json)
+}
+
+func (g *MoshiGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile {
+	return g.models(httperrors.ResolvedModels, g.Packages.ErrorsModels, g.Packages.Json)
+}
+
+func (g *MoshiGenerator) models(models []*spec.NamedModel, thePackage, jsonPackage packages.Package) []generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, thePackage.PackageName)
 	w.EmptyLine()
@@ -157,11 +166,7 @@ func (g *MoshiGenerator) ModelsUsageImports() []string {
 	}
 }
 
-func (g *MoshiGenerator) SetupImport(jsonPackage packages.Package) string {
-	return fmt.Sprintf(`%s.setupMoshiAdapters`, jsonPackage.PackageName)
-}
-
-func (g *MoshiGenerator) ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
+func (g *MoshiGenerator) ValidationErrorsHelpers() *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -188,12 +193,12 @@ object ValidationErrorsHelpers {
 		ErrorsModelsPackage string
 		JsonPackage         string
 	}{
-		thePackage.PackageName,
-		errorsModelsPackage.PackageName,
-		jsonPackage.PackageName,
+		g.Packages.Errors.PackageName,
+		g.Packages.ErrorsModels.PackageName,
+		g.Packages.Json.PackageName,
 	})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ValidationErrorsHelpers.kt"),
+		Path:    g.Packages.Errors.GetPath("ValidationErrorsHelpers.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
@@ -240,28 +245,26 @@ func (g *MoshiGenerator) JsonHelpersMethods() string {
 `
 }
 
-func (g *MoshiGenerator) SetupLibrary(thePackage packages.Package) []generator.CodeFile {
-	adaptersPackage := thePackage.Subpackage("adapters")
-
+func (g *MoshiGenerator) SetupLibrary() []generator.CodeFile {
 	files := []generator.CodeFile{}
-	files = append(files, *g.setupAdapters(thePackage, adaptersPackage))
-	files = append(files, *bigDecimalAdapter(adaptersPackage))
-	files = append(files, *localDateAdapter(adaptersPackage))
-	files = append(files, *localDateTimeAdapter(adaptersPackage))
-	files = append(files, *uuidAdapter(adaptersPackage))
-	files = append(files, *unionAdapterFactory(adaptersPackage))
-	files = append(files, *unwrapFieldAdapterFactory(adaptersPackage))
+	files = append(files, *g.setupAdapters())
+	files = append(files, *bigDecimalAdapter(g.Packages.JsonAdapters))
+	files = append(files, *localDateAdapter(g.Packages.JsonAdapters))
+	files = append(files, *localDateTimeAdapter(g.Packages.JsonAdapters))
+	files = append(files, *uuidAdapter(g.Packages.JsonAdapters))
+	files = append(files, *unionAdapterFactory(g.Packages.JsonAdapters))
+	files = append(files, *unwrapFieldAdapterFactory(g.Packages.JsonAdapters))
 	return files
 }
 
-func (g *MoshiGenerator) setupAdapters(thePackage packages.Package, adaptersPackage packages.Package) *generator.CodeFile {
+func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	w := writer.NewKotlinWriter()
-	w.Line("package %s", thePackage.PackageName)
+	w.Line("package %s", g.Packages.Json.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
 	imports.Add(`com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory`)
-	imports.Add(adaptersPackage.PackageStar)
+	imports.Add(g.Packages.JsonAdapters.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`fun setupMoshiAdapters(moshiBuilder: Moshi.Builder) {`)
@@ -280,7 +283,7 @@ func (g *MoshiGenerator) setupAdapters(thePackage packages.Package, adaptersPack
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("CustomMoshiAdapters.kt"),
+		Path:    g.Packages.Json.GetPath("CustomMoshiAdapters.kt"),
 		Content: w.String(),
 	}
 }
