@@ -34,7 +34,7 @@ func (g *MicronautDeclGenerator) Clients(version *spec.Version, clientVersionPac
 		files = append(files, *g.client(&api, apiPackage, modelsVersionPackage, mainPackage))
 	}
 	files = append(files, converters(mainPackage)...)
-	files = append(files, staticConfigFiles(mainPackage)...)
+	files = append(files, staticConfigFiles(mainPackage, jsonPackage)...)
 
 	return files
 }

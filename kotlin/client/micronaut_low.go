@@ -37,7 +37,7 @@ func (g *MicronautLowGenerator) Clients(version *spec.Version, clientVersionPack
 
 	files = append(files, g.utils(utilsPackage)...)
 	files = append(files, converters(mainPackage)...)
-	files = append(files, staticConfigFiles(mainPackage)...)
+	files = append(files, staticConfigFiles(mainPackage, jsonPackage)...)
 	files = append(files, *clientException(mainPackage))
 
 	return files
