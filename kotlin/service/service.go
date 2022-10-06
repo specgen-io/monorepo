@@ -2,6 +2,7 @@ package service
 
 import (
 	"generator"
+	"kotlin/models"
 	"kotlin/packages"
 	"openapi"
 	"spec"
@@ -16,7 +17,8 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 
 	mainPackage := packages.New(generatePath, packageName)
 
-	generator := NewGenerator(jsonlib, server)
+	thepackages := models.NewPackages(packageName, generatePath, specification)
+	generator := NewGenerator(jsonlib, server, thepackages)
 
 	contentTypePackage := mainPackage.Subpackage("contenttype")
 	sources.AddGeneratedAll(generator.Server.ContentType(contentTypePackage))
@@ -27,13 +29,13 @@ func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPat
 	errorsModelsPackage := errorsPackage.Subpackage("models")
 
 	sources.AddGeneratedAll(generator.Server.Errors(errorsPackage, errorsModelsPackage, contentTypePackage, jsonPackage))
-	sources.AddGeneratedAll(generator.Models.Models(specification.HttpErrors.ResolvedModels, errorsModelsPackage, jsonPackage))
+	sources.AddGeneratedAll(generator.Models.ErrorModels(specification.HttpErrors))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Name.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		sources.AddGeneratedAll(generator.Models.Models(version.ResolvedModels, modelsVersionPackage, jsonPackage))
+		sources.AddGeneratedAll(generator.Models.Models(&version))
 
 		serviceVersionPackage := versionPackage.Subpackage("services")
 		sources.AddGeneratedAll(generator.ServicesInterfaces(&version, serviceVersionPackage, modelsVersionPackage, errorsModelsPackage))

@@ -4,19 +4,18 @@ import (
 	"fmt"
 
 	"generator"
-	"kotlin/packages"
 	"kotlin/types"
 	"spec"
 )
 
 type Generator interface {
-	Models(models []*spec.NamedModel, thePackage, jsonPackage packages.Package) []generator.CodeFile
+	Models(version *spec.Version) []generator.CodeFile
+	ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile
 	ModelsDefinitionsImports() []string
 	ModelsUsageImports() []string
-	SetupImport(jsonPackage packages.Package) string
-	SetupLibrary(thePackage packages.Package) []generator.CodeFile
+	SetupLibrary() []generator.CodeFile
 	JsonHelpersMethods() string
-	ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile
+	ValidationErrorsHelpers() *generator.CodeFile
 	CreateJsonMapperField(annotation string) string
 	InitJsonMapper(w *generator.Writer)
 
@@ -27,13 +26,13 @@ type Generator interface {
 	WriteJson(varData string, typ *spec.TypeDef) (string, string)
 }
 
-func NewGenerator(jsonlib string) Generator {
+func NewGenerator(jsonlib string, packages *Packages) Generator {
 	types := NewTypes(jsonlib)
 	if jsonlib == Jackson {
-		return NewJacksonGenerator(types)
+		return NewJacksonGenerator(types, packages)
 	}
 	if jsonlib == Moshi {
-		return NewMoshiGenerator(types)
+		return NewMoshiGenerator(types, packages)
 	}
 	panic(fmt.Sprintf(`Unsupported jsonlib: %s`, jsonlib))
 }

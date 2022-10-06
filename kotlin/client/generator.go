@@ -20,9 +20,9 @@ type Generator struct {
 	Client ClientGenerator
 }
 
-func NewGenerator(jsonlib, client string) *Generator {
+func NewGenerator(jsonlib, client string, packages *models.Packages) *Generator {
 	types := models.NewTypes(jsonlib)
-	models := models.NewGenerator(jsonlib)
+	models := models.NewGenerator(jsonlib, packages)
 
 	if client == OkHttp {
 		return &Generator{

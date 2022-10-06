@@ -2,6 +2,7 @@ package client
 
 import (
 	"generator"
+	"kotlin/models"
 	"kotlin/packages"
 	"spec"
 )
@@ -15,27 +16,28 @@ func Generate(specification *spec.Spec, jsonlib, client, packageName, generatePa
 
 	mainPackage := packages.New(generatePath, packageName)
 
-	generator := NewGenerator(jsonlib, client)
+	thepackages := models.NewPackages(packageName, generatePath, specification)
+	generator := NewGenerator(jsonlib, client, thepackages)
 
 	jsonPackage := mainPackage.Subpackage("json")
 
 	errorsPackage := mainPackage.Subpackage("errors")
 	errorsModelsPackage := errorsPackage.Subpackage("models")
 
-	sources.AddGeneratedAll(generator.Models.Models(specification.HttpErrors.ResolvedModels, errorsModelsPackage, jsonPackage))
+	sources.AddGeneratedAll(generator.Models.ErrorModels(specification.HttpErrors))
 
 	for _, version := range specification.Versions {
 		versionPackage := mainPackage.Subpackage(version.Name.FlatCase())
 
 		modelsVersionPackage := versionPackage.Subpackage("models")
-		sources.AddGeneratedAll(generator.Models.Models(version.ResolvedModels, modelsVersionPackage, jsonPackage))
+		sources.AddGeneratedAll(generator.Models.Models(&version))
 
 		clientVersionPackage := versionPackage.Subpackage("clients")
 
 		sources.AddGeneratedAll(generator.Client.Clients(&version, clientVersionPackage, modelsVersionPackage, errorsModelsPackage, jsonPackage, mainPackage))
 	}
 
-	sources.AddGeneratedAll(generator.Models.SetupLibrary(jsonPackage))
+	sources.AddGeneratedAll(generator.Models.SetupLibrary())
 
 	return sources
 }

@@ -227,7 +227,7 @@ fun checkContentType(request: HttpRequest<*>, expectedContentType: String) {
 func (g *MicronautGenerator) Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage))
-	files = append(files, *g.Models.ValidationErrorsHelpers(thePackage, errorsModelsPackage, jsonPackage))
+	files = append(files, *g.Models.ValidationErrorsHelpers())
 	return files
 }
 
@@ -347,7 +347,7 @@ func (g *MicronautGenerator) JsonHelpers(thePackage packages.Package) []generato
 
 	files = append(files, *g.Json(thePackage))
 	files = append(files, *jsonParseException(thePackage))
-	files = append(files, g.Models.SetupLibrary(thePackage)...)
+	files = append(files, g.Models.SetupLibrary()...)
 
 	return files
 }
