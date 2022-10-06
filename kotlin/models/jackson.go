@@ -117,7 +117,7 @@ func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, 
 }
 
 func (g *JacksonGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
-	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `JsonProcessingException`
+	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `Exception`
 }
 
 func (g *JacksonGenerator) ModelsDefinitionsImports() []string {
