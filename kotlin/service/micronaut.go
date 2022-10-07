@@ -246,7 +246,7 @@ import [[.JsonPackage]].*
 import java.util.*
 import javax.validation.ConstraintViolationException
 
-const val String = "Failed to parse url parameters"
+const val NOT_FOUND_ERROR = "Failed to parse url parameters"
 
 fun getNotFoundError(exception: Throwable?): NotFoundError? {
 	if (exception is UnsatisfiedPathVariableRouteException) {
