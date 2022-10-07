@@ -17,25 +17,25 @@ import (
 var Micronaut = "micronaut"
 
 type MicronautGenerator struct {
-	Types  *types.Types
-	Models models.Generator
+	Types    *types.Types
+	Models   models.Generator
+	Packages *Packages
 }
 
-func NewMicronautGenerator(types *types.Types, models models.Generator) *MicronautGenerator {
-	return &MicronautGenerator{types, models}
+func NewMicronautGenerator(types *types.Types, models models.Generator, packages *Packages) *MicronautGenerator {
+	return &MicronautGenerator{types, models, packages}
 }
 
 func (g *MicronautGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string) {
 	return `io.micronaut.context.annotation.Bean`, `Bean`
 }
 
-func (g *MicronautGenerator) ServicesControllers(version *spec.Version, mainPackage, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionPackage packages.Package) []generator.CodeFile {
+func (g *MicronautGenerator) ServicesControllers(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		serviceVersionSubpackage := serviceVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.serviceController(&api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionSubpackage)...)
+		files = append(files, g.serviceController(&api)...)
 	}
-	files = append(files, dateConverters(mainPackage)...)
+	files = append(files, dateConverters(g.Packages.Root)...)
 	return files
 }
 
@@ -48,17 +48,17 @@ func (g *MicronautGenerator) ServiceImports() []string {
 	}
 }
 
-func (g *MicronautGenerator) ExceptionController(responses *spec.Responses, thePackage, errorsPackage, errorsModelsPackage, jsonPackage packages.Package) *generator.CodeFile {
+func (g *MicronautGenerator) ExceptionController(responses *spec.Responses) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, thePackage.PackageName)
+	w.Line(`package %s`, g.Packages.Controllers.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`io.micronaut.http.annotation.Error`)
-	imports.Add(jsonPackage.Get("Json"))
-	imports.Add(errorsModelsPackage.PackageStar)
-	imports.Add(errorsPackage.Subpackage("ErrorsHelpers").Get("getBadRequestError"))
-	imports.Add(errorsPackage.Subpackage("ErrorsHelpers").Get("getNotFoundError"))
+	imports.Add(g.Packages.Json.Get("Json"))
+	imports.Add(g.Packages.ErrorsModels.PackageStar)
+	imports.Add(g.Packages.Errors.Subpackage("ErrorsHelpers").Get("getBadRequestError"))
+	imports.Add(g.Packages.Errors.Subpackage("ErrorsHelpers").Get("getNotFoundError"))
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Controller`)
@@ -70,7 +70,7 @@ func (g *MicronautGenerator) ExceptionController(responses *spec.Responses, theP
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath(fmt.Sprintf("%s.kt", className)),
+		Path:    g.Packages.Controllers.GetPath(fmt.Sprintf("%s.kt", className)),
 		Content: w.String(),
 	}
 }
@@ -94,18 +94,18 @@ func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Respo
 	w.Line(`}`)
 }
 
-func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, contentTypePackage, jsonPackage, modelsVersionPackage, errorModelsPackage, serviceVersionPackage packages.Package) []generator.CodeFile {
+func (g *MicronautGenerator) serviceController(api *spec.Api) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, thePackage.PackageName)
+	w.Line(`package %s`, g.Packages.Version(api.InHttp.InVersion).Controllers.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
-	imports.Add(contentTypePackage.PackageStar)
-	imports.Add(jsonPackage.Get("Json"))
-	imports.Add(modelsVersionPackage.PackageStar)
-	imports.Add(errorModelsPackage.PackageStar)
-	imports.Add(serviceVersionPackage.PackageStar)
+	imports.Add(g.Packages.ContentType.PackageStar)
+	imports.Add(g.Packages.Json.Get("Json"))
+	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
+	imports.Add(g.Packages.ErrorsModels.PackageStar)
+	imports.Add(g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
@@ -125,7 +125,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api, thePackage, conten
 	w.Line(`}`)
 
 	files = append(files, generator.CodeFile{
-		Path:    thePackage.GetPath(fmt.Sprintf("%s.kt", className)),
+		Path:    g.Packages.Version(api.InHttp.InVersion).Controllers.GetPath(fmt.Sprintf("%s.kt", className)),
 		Content: w.String(),
 	})
 
@@ -193,14 +193,14 @@ func (g *MicronautGenerator) processResponse(w *generator.Writer, response *spec
 	}
 }
 
-func (g *MicronautGenerator) ContentType(thePackage packages.Package) []generator.CodeFile {
+func (g *MicronautGenerator) ContentType() []generator.CodeFile {
 	files := []generator.CodeFile{}
-	files = append(files, *contentTypeMismatchException(thePackage))
-	files = append(files, *g.checkContentType(thePackage))
+	files = append(files, *contentTypeMismatchException(g.Packages.ContentType))
+	files = append(files, *g.checkContentType())
 	return files
 }
 
-func (g *MicronautGenerator) checkContentType(thePackage packages.Package) *generator.CodeFile {
+func (g *MicronautGenerator) checkContentType() *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -216,22 +216,22 @@ fun checkContentType(request: HttpRequest<*>, expectedContentType: String) {
 	code, _ = generator.ExecuteTemplate(code, struct {
 		PackageName string
 	}{
-		thePackage.PackageName,
+		g.Packages.ContentType.PackageName,
 	})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("CheckContentType.kt"),
+		Path:    g.Packages.ContentType.GetPath("CheckContentType.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *MicronautGenerator) Errors(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Package) []generator.CodeFile {
+func (g *MicronautGenerator) Errors() []generator.CodeFile {
 	files := []generator.CodeFile{}
-	files = append(files, *g.errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage))
+	files = append(files, *g.errorsHelpers())
 	files = append(files, *g.Models.ValidationErrorsHelpers())
 	return files
 }
 
-func (g *MicronautGenerator) errorsHelpers(thePackage, errorsModelsPackage, contentTypePackage, jsonPackage packages.Package) *generator.CodeFile {
+func (g *MicronautGenerator) errorsHelpers() *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -331,30 +331,30 @@ object ErrorsHelpers {
 		ErrorsModelsPackage string
 		ContentTypePackage  string
 		JsonPackage         string
-	}{thePackage.PackageName,
-		errorsModelsPackage.PackageName,
-		contentTypePackage.PackageName,
-		jsonPackage.PackageName,
+	}{g.Packages.Errors.PackageName,
+		g.Packages.ErrorsModels.PackageName,
+		g.Packages.ContentType.PackageName,
+		g.Packages.Json.PackageName,
 	})
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ErrorsHelpers.kt"),
+		Path:    g.Packages.Errors.GetPath("ErrorsHelpers.kt"),
 		Content: strings.TrimSpace(code),
 	}
 }
 
-func (g *MicronautGenerator) JsonHelpers(thePackage packages.Package) []generator.CodeFile {
+func (g *MicronautGenerator) JsonHelpers() []generator.CodeFile {
 	files := []generator.CodeFile{}
 
-	files = append(files, *g.Json(thePackage))
-	files = append(files, *jsonParseException(thePackage))
+	files = append(files, *g.Json())
+	files = append(files, *jsonParseException(g.Packages.Json))
 	files = append(files, g.Models.SetupLibrary()...)
 
 	return files
 }
 
-func (g *MicronautGenerator) Json(thePackage packages.Package) *generator.CodeFile {
+func (g *MicronautGenerator) Json() *generator.CodeFile {
 	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, thePackage.PackageName)
+	w.Line(`package %s`, g.Packages.Json.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.Models.ModelsUsageImports()...)
@@ -369,7 +369,7 @@ func (g *MicronautGenerator) Json(thePackage packages.Package) *generator.CodeFi
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath(fmt.Sprintf("%s.kt", className)),
+		Path:    g.Packages.Json.GetPath(fmt.Sprintf("%s.kt", className)),
 		Content: w.String(),
 	}
 }
