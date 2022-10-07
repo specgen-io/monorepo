@@ -5,29 +5,27 @@ import (
 
 	"generator"
 	"kotlin/imports"
-	"kotlin/packages"
 	"kotlin/writer"
 	"spec"
 )
 
-func (g *Generator) ServicesImplementations(version *spec.Version, thePackage, modelsVersionPackage, servicesVersionPackage packages.Package) []generator.CodeFile {
+func (g *Generator) ServicesImplementations(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		serviceVersionSubpackage := servicesVersionPackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, *g.serviceImplementation(&api, thePackage, modelsVersionPackage, serviceVersionSubpackage))
+		files = append(files, *g.serviceImplementation(&api))
 	}
 	return files
 }
 
-func (g *Generator) serviceImplementation(api *spec.Api, thePackage, modelsVersionPackage, serviceVersionSubpackage packages.Package) *generator.CodeFile {
+func (g *Generator) serviceImplementation(api *spec.Api) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, thePackage.PackageName)
+	w.Line(`package %s`, g.Packages.Version(api.InHttp.InVersion).ServicesImpl.PackageName)
 	w.EmptyLine()
-	annotationImport, annotation := g.Server.ServiceImplAnnotation(api)
+	annotationImport, annotation := g.ServiceImplAnnotation(api)
 	imports := imports.New()
 	imports.Add(annotationImport)
-	imports.Add(modelsVersionPackage.PackageStar)
-	imports.Add(serviceVersionSubpackage.PackageStar)
+	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
+	imports.Add(g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageStar)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
@@ -41,7 +39,7 @@ func (g *Generator) serviceImplementation(api *spec.Api, thePackage, modelsVersi
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath(fmt.Sprintf("%s.kt", serviceImplName(api))),
+		Path:    g.Packages.Version(api.InHttp.InVersion).ServicesImpl.GetPath(fmt.Sprintf("%s.kt", serviceImplName(api))),
 		Content: w.String(),
 	}
 }

@@ -3,18 +3,18 @@ package service
 import (
 	"fmt"
 	"generator"
-	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
 )
 
-func (g *Generator) responseInterface(operation *spec.NamedOperation, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package) *generator.CodeFile {
+func (g *Generator) responseInterface(operation *spec.NamedOperation) *generator.CodeFile {
+	apiPackage := g.Packages.Version(operation.InApi.InHttp.InVersion).ServicesApi(operation.InApi)
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, apiPackage.PackageName)
 	w.EmptyLine()
-	w.Line(`import %s`, modelsVersionPackage.PackageStar)
-	w.Line(`import %s`, errorModelsPackage.PackageStar)
+	w.Line(`import %s`, g.Packages.Models(operation.InApi.InHttp.InVersion).PackageStar)
+	w.Line(`import %s`, g.Packages.ErrorsModels.PackageStar)
 	w.EmptyLine()
 	w.Line(`interface %s {`, responseInterfaceName(operation))
 	for index, response := range operation.Responses {

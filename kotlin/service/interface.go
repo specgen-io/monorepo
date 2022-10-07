@@ -6,30 +6,28 @@ import (
 
 	"generator"
 	"kotlin/imports"
-	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
 )
 
-func (g *Generator) ServicesInterfaces(version *spec.Version, thePackage, modelsVersionPackage packages.Package, errorModelsPackage packages.Package) []generator.CodeFile {
+func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		apiPackage := thePackage.Subpackage(api.Name.SnakeCase())
-		files = append(files, g.serviceInterface(&api, apiPackage, modelsVersionPackage, errorModelsPackage)...)
+		files = append(files, g.serviceInterface(&api)...)
 	}
 	return files
 }
 
-func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPackage packages.Package, errorModelsPackage packages.Package) []generator.CodeFile {
+func (g *Generator) serviceInterface(api *spec.Api) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, apiPackage.PackageName)
+	w.Line(`package %s`, g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.Types.Imports()...)
-	imports.Add(modelsVersionPackage.PackageStar)
+	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`interface %s {`, serviceInterfaceName(api))
@@ -40,12 +38,12 @@ func (g *Generator) serviceInterface(api *spec.Api, apiPackage, modelsVersionPac
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
-			files = append(files, *g.responseInterface(&operation, apiPackage, modelsVersionPackage, errorModelsPackage))
+			files = append(files, *g.responseInterface(&operation))
 		}
 	}
 
 	files = append(files, generator.CodeFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", serviceInterfaceName(api))),
+		Path:    g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).GetPath(fmt.Sprintf("%s.kt", serviceInterfaceName(api))),
 		Content: w.String(),
 	})
 
