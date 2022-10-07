@@ -244,12 +244,10 @@ import [[.ContentTypePackage]].*
 import [[.JsonPackage]].*
 import [[.PackageName]].ValidationErrorsHelpers.extractValidationErrors
 
-const val NOT_FOUND_ERROR = NotFoundError("Failed to parse url parameters")
-
 fun getNotFoundError(exception: Throwable?): NotFoundError? {
 	if (exception is MethodArgumentTypeMismatchException) {
 		if (exception.parameter.hasParameterAnnotation(PathVariable::class.java)) {
-			return NOT_FOUND_ERROR
+			return new NotFoundError("Failed to parse url parameters")
 		}
 	}
 	return null

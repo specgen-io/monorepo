@@ -246,20 +246,20 @@ import [[.JsonPackage]].*
 import java.util.*
 import javax.validation.ConstraintViolationException
 
-const val NOT_FOUND_ERROR = NotFoundError("Failed to parse url parameters")
+const val String = "Failed to parse url parameters"
 
 fun getNotFoundError(exception: Throwable?): NotFoundError? {
 	if (exception is UnsatisfiedPathVariableRouteException) {
-		return NOT_FOUND_ERROR
+		return new NotFoundError(NOT_FOUND_ERROR)
 	}
 	if (exception is UnsatisfiedPartRouteException) {
-		return NOT_FOUND_ERROR
+		return new NotFoundError(NOT_FOUND_ERROR)
 	}
 	if (exception is ConversionErrorException) {
 		val annotation =
 			exception.argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.PathVariable")
 		if (annotation.isPresent) {
-			return NOT_FOUND_ERROR
+			return new NotFoundError(NOT_FOUND_ERROR)
 		}
 	}
 	return null
