@@ -20,10 +20,10 @@ type ServerGenerator interface {
 }
 
 type Generator struct {
+	ServerGenerator
+	models.Generator
 	Jsonlib  string
 	Types    *types.Types
-	Models   models.Generator
-	Server   ServerGenerator
 	Packages *Packages
 }
 
@@ -33,19 +33,19 @@ func NewGenerator(jsonlib, server string, packages *Packages) *Generator {
 
 	if server == Spring {
 		return &Generator{
+			NewSpringGenerator(types, models, packages),
+			models,
 			jsonlib,
 			types,
-			models,
-			NewSpringGenerator(types, models, packages),
 			packages,
 		}
 	}
 	if server == Micronaut {
 		return &Generator{
+			NewMicronautGenerator(types, models, packages),
+			models,
 			jsonlib,
 			types,
-			models,
-			NewMicronautGenerator(types, models, packages),
 			packages,
 		}
 	}

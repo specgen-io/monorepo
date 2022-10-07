@@ -21,7 +21,7 @@ func (g *Generator) serviceImplementation(api *spec.Api) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
 	w.Line(`package %s`, g.Packages.Version(api.InHttp.InVersion).ServicesImpl.PackageName)
 	w.EmptyLine()
-	annotationImport, annotation := g.Server.ServiceImplAnnotation(api)
+	annotationImport, annotation := g.ServiceImplAnnotation(api)
 	imports := imports.New()
 	imports.Add(annotationImport)
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
