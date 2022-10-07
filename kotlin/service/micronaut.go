@@ -250,16 +250,16 @@ const val String = "Failed to parse url parameters"
 
 fun getNotFoundError(exception: Throwable?): NotFoundError? {
 	if (exception is UnsatisfiedPathVariableRouteException) {
-		return new NotFoundError(NOT_FOUND_ERROR)
+		return NotFoundError(NOT_FOUND_ERROR)
 	}
 	if (exception is UnsatisfiedPartRouteException) {
-		return new NotFoundError(NOT_FOUND_ERROR)
+		return NotFoundError(NOT_FOUND_ERROR)
 	}
 	if (exception is ConversionErrorException) {
 		val annotation =
 			exception.argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.PathVariable")
 		if (annotation.isPresent) {
-			return new NotFoundError(NOT_FOUND_ERROR)
+			return NotFoundError(NOT_FOUND_ERROR)
 		}
 	}
 	return null

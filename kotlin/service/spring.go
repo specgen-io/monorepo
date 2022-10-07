@@ -247,7 +247,7 @@ import [[.PackageName]].ValidationErrorsHelpers.extractValidationErrors
 fun getNotFoundError(exception: Throwable?): NotFoundError? {
 	if (exception is MethodArgumentTypeMismatchException) {
 		if (exception.parameter.hasParameterAnnotation(PathVariable::class.java)) {
-			return new NotFoundError("Failed to parse url parameters")
+			return NotFoundError("Failed to parse url parameters")
 		}
 	}
 	return null
