@@ -25,16 +25,16 @@ func NewMoshiGenerator(types *types.Types, packages *Packages) *MoshiGenerator {
 }
 
 func (g *MoshiGenerator) Models(version *spec.Version) []generator.CodeFile {
-	return g.models(version.ResolvedModels, g.Packages.Models(version), g.Packages.Json)
+	return g.models(version.ResolvedModels, g.Packages.Models(version))
 }
 
 func (g *MoshiGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile {
-	return g.models(httperrors.ResolvedModels, g.Packages.ErrorsModels, g.Packages.Json)
+	return g.models(httperrors.ResolvedModels, g.Packages.ErrorsModels)
 }
 
-func (g *MoshiGenerator) models(models []*spec.NamedModel, thePackage, jsonPackage packages.Package) []generator.CodeFile {
+func (g *MoshiGenerator) models(models []*spec.NamedModel, modelsPackage packages.Package) []generator.CodeFile {
 	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, thePackage.PackageName)
+	w.Line(`package %s`, modelsPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(g.ModelsDefinitionsImports()...)
@@ -53,12 +53,11 @@ func (g *MoshiGenerator) models(models []*spec.NamedModel, thePackage, jsonPacka
 	}
 
 	files := []generator.CodeFile{}
-	files = append(files, generator.CodeFile{Path: thePackage.GetPath("models.kt"), Content: w.String()})
+	files = append(files, generator.CodeFile{Path: modelsPackage.GetPath("models.kt"), Content: w.String()})
 
-	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.setupModelsMoshiAdapters`, thePackage.PackageName))
-	adaptersPackage := jsonPackage.Subpackage("adapters")
+	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.setupModelsMoshiAdapters`, modelsPackage.PackageName))
 	for range g.generatedSetupMoshiMethods {
-		files = append(files, *g.setupOneOfAdapters(models, thePackage, adaptersPackage))
+		files = append(files, *g.setupOneOfAdapters(models, modelsPackage))
 	}
 
 	return files
@@ -288,13 +287,13 @@ func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	}
 }
 
-func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, thePackage, adaptersPackage packages.Package) *generator.CodeFile {
+func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
 	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, thePackage.PackageName)
+	w.Line(`package %s`, modelsPackage.PackageName)
 	w.EmptyLine()
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
-	imports.Add(adaptersPackage.PackageStar)
+	imports.Add(g.Packages.JsonAdapters.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`fun setupModelsMoshiAdapters(moshiBuilder: Moshi.Builder) {`)
@@ -322,7 +321,7 @@ func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, thePackag
 	w.Line(`}`)
 
 	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ModelsMoshiAdapters.kt"),
+		Path:    modelsPackage.GetPath("ModelsMoshiAdapters.kt"),
 		Content: w.String(),
 	}
 }

@@ -35,7 +35,8 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version) []genera
 	for _, api := range version.Http.Apis {
 		files = append(files, g.serviceController(&api)...)
 	}
-	files = append(files, dateConverters(g.Packages.Root)...)
+	files = append(files, *localDateConverter(g.Packages.Converters))
+	files = append(files, *localDateTimeConverter(g.Packages.Converters))
 	return files
 }
 
@@ -55,10 +56,9 @@ func (g *MicronautGenerator) ExceptionController(responses *spec.Responses) *gen
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`io.micronaut.http.annotation.Error`)
-	imports.Add(g.Packages.Json.Get("Json"))
+	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.Errors.Subpackage("ErrorsHelpers").Get("getBadRequestError"))
-	imports.Add(g.Packages.Errors.Subpackage("ErrorsHelpers").Get("getNotFoundError"))
+	imports.Add(g.Packages.Errors.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Controller`)
@@ -102,7 +102,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) []generator.CodeFi
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(g.Packages.ContentType.PackageStar)
-	imports.Add(g.Packages.Json.Get("Json"))
+	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
 	imports.Add(g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageStar)
@@ -246,83 +246,81 @@ import [[.JsonPackage]].*
 import java.util.*
 import javax.validation.ConstraintViolationException
 
-object ErrorsHelpers {
-    private val NOT_FOUND_ERROR = NotFoundError("Failed to parse url parameters")
+const val NOT_FOUND_ERROR = NotFoundError("Failed to parse url parameters")
 
-    fun getNotFoundError(exception: Throwable?): NotFoundError? {
-        if (exception is UnsatisfiedPathVariableRouteException) {
-            return NOT_FOUND_ERROR
-        }
-        if (exception is UnsatisfiedPartRouteException) {
-            return NOT_FOUND_ERROR
-        }
-        if (exception is ConversionErrorException) {
-            val annotation =
-                exception.argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.PathVariable")
-            if (annotation.isPresent) {
-                return NOT_FOUND_ERROR
-            }
-        }
-        return null
-    }
+fun getNotFoundError(exception: Throwable?): NotFoundError? {
+	if (exception is UnsatisfiedPathVariableRouteException) {
+		return NOT_FOUND_ERROR
+	}
+	if (exception is UnsatisfiedPartRouteException) {
+		return NOT_FOUND_ERROR
+	}
+	if (exception is ConversionErrorException) {
+		val annotation =
+			exception.argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.PathVariable")
+		if (annotation.isPresent) {
+			return NOT_FOUND_ERROR
+		}
+	}
+	return null
+}
 
-    private fun getLocation(argument: Argument<*>): ErrorLocation {
-        val query =
-            argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.QueryValue")
-        if (query.isPresent) {
-            return ErrorLocation.QUERY
-        }
-        val header =
-            argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Headers")
-        return if (header.isPresent) {
-            ErrorLocation.HEADER
-        } else ErrorLocation.BODY
-    }
+private fun getLocation(argument: Argument<*>): ErrorLocation {
+	val query =
+		argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.QueryValue")
+	if (query.isPresent) {
+		return ErrorLocation.QUERY
+	}
+	val header =
+		argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Headers")
+	return if (header.isPresent) {
+		ErrorLocation.HEADER
+	} else ErrorLocation.BODY
+}
 
-    private fun getParameterName(argument: Argument<*>): String {
-        val query =
-            argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.QueryValue")
-        if (query.isPresent) {
-            return query.get().values["value"].toString()
-        }
-        val header =
-            argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Headers")
-        if (header.isPresent) {
-            val annotationValues = header.get().values["value"] as Array<AnnotationValue<*>>?
-            return annotationValues!![0].values["value"].toString()
-        }
-        return "unknown"
-    }
+private fun getParameterName(argument: Argument<*>): String {
+	val query =
+		argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.QueryValue")
+	if (query.isPresent) {
+		return query.get().values["value"].toString()
+	}
+	val header =
+		argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Headers")
+	if (header.isPresent) {
+		val annotationValues = header.get().values["value"] as Array<AnnotationValue<*>>?
+		return annotationValues!![0].values["value"].toString()
+	}
+	return "unknown"
+}
 
-    private fun argumentBadRequestError(arg: Argument<*>, errorMessage: String?, code: String): BadRequestError {
-        val location = getLocation(arg)
-        val parameterName = getParameterName(arg)
-        val validation = ValidationError(parameterName, code, errorMessage)
-        val message = String.format("Failed to parse %s", location.name.lowercase(Locale.getDefault()))
-        return BadRequestError(message, location, listOf(validation))
-    }
+private fun argumentBadRequestError(arg: Argument<*>, errorMessage: String?, code: String): BadRequestError {
+	val location = getLocation(arg)
+	val parameterName = getParameterName(arg)
+	val validation = ValidationError(parameterName, code, errorMessage)
+	val message = String.format("Failed to parse %s", location.name.lowercase(Locale.getDefault()))
+	return BadRequestError(message, location, listOf(validation))
+}
 
-    fun getBadRequestError(exception: Throwable): BadRequestError? {
-        if (exception is JsonParseException) {
-            val errors = extractValidationErrors(exception)
-            return BadRequestError("Failed to parse body", ErrorLocation.BODY, errors)
-        }
-        if (exception is ContentTypeMismatchException) {
-            val error = ValidationError("Content-Type", "missing", exception.message)
-            return BadRequestError("Failed to parse header", ErrorLocation.HEADER, listOf(error))
-        }
-        if (exception is UnsatisfiedRouteException) {
-            return argumentBadRequestError(exception.argument, exception.message, "missing")
-        }
-        if (exception is ConversionErrorException) {
-            return argumentBadRequestError(exception.argument, exception.message, "parsing_failed")
-        }
-        if (exception is ConstraintViolationException) {
-            val message = "Failed to parse body"
-            return BadRequestError(message, ErrorLocation.BODY, null)
-        }
-        return null
-    }
+fun getBadRequestError(exception: Throwable): BadRequestError? {
+	if (exception is JsonParseException) {
+		val errors = extractValidationErrors(exception)
+		return BadRequestError("Failed to parse body", ErrorLocation.BODY, errors)
+	}
+	if (exception is ContentTypeMismatchException) {
+		val error = ValidationError("Content-Type", "missing", exception.message)
+		return BadRequestError("Failed to parse header", ErrorLocation.HEADER, listOf(error))
+	}
+	if (exception is UnsatisfiedRouteException) {
+		return argumentBadRequestError(exception.argument, exception.message, "missing")
+	}
+	if (exception is ConversionErrorException) {
+		return argumentBadRequestError(exception.argument, exception.message, "parsing_failed")
+	}
+	if (exception is ConstraintViolationException) {
+		val message = "Failed to parse body"
+		return BadRequestError(message, ErrorLocation.BODY, null)
+	}
+	return null
 }
 `
 
@@ -411,9 +409,7 @@ func getMicronautParameterAnnotation(paramAnnotation string, param *spec.NamedPa
 	return fmt.Sprintf(`@%s(%s)`, paramAnnotation, joinParams(annotationParams))
 }
 
-func dateConverters(thePackage packages.Package) []generator.CodeFile {
-	convertersPackage := thePackage.Subpackage("converters")
-
+func dateConverters(convertersPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *localDateConverter(convertersPackage))
 	files = append(files, *localDateTimeConverter(convertersPackage))

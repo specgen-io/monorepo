@@ -58,8 +58,7 @@ func (g *SpringGenerator) ExceptionController(responses *spec.Responses) *genera
 	imports.Add(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.Errors.Subpackage("ErrorsHelpers").Get("getBadRequestError"))
-	imports.Add(g.Packages.Errors.Subpackage("ErrorsHelpers").Get("getNotFoundError"))
+	imports.Add(g.Packages.Errors.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@ControllerAdvice`)
@@ -105,7 +104,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile 
 	imports.Add(`javax.servlet.http.HttpServletRequest`)
 	imports.Add(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Add(g.Packages.ContentType.PackageStar)
-	imports.Add(g.Packages.Json.Get("Json"))
+	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
 	imports.Add(g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageStar)
@@ -245,48 +244,46 @@ import [[.ContentTypePackage]].*
 import [[.JsonPackage]].*
 import [[.PackageName]].ValidationErrorsHelpers.extractValidationErrors
 
-object ErrorsHelpers {
-    private val NOT_FOUND_ERROR = NotFoundError("Failed to parse url parameters")
+const val NOT_FOUND_ERROR = NotFoundError("Failed to parse url parameters")
 
-    fun getNotFoundError(exception: Throwable?): NotFoundError? {
-        if (exception is MethodArgumentTypeMismatchException) {
-            if (exception.parameter.hasParameterAnnotation(PathVariable::class.java)) {
-                return NOT_FOUND_ERROR
-            }
-        }
-        return null
-    }
+fun getNotFoundError(exception: Throwable?): NotFoundError? {
+	if (exception is MethodArgumentTypeMismatchException) {
+		if (exception.parameter.hasParameterAnnotation(PathVariable::class.java)) {
+			return NOT_FOUND_ERROR
+		}
+	}
+	return null
+}
 
-    fun getBadRequestError(exception: Throwable): BadRequestError? {
-        if (exception is JsonParseException) {
-			val errors = extractValidationErrors(exception)
-            return BadRequestError("Failed to parse body", ErrorLocation.BODY, errors)
-        }
-        if (exception is ContentTypeMismatchException) {
-            val error = ValidationError("Content-Type", "missing", exception.message)
-            return BadRequestError("Failed to parse header", ErrorLocation.HEADER, listOf(error))
-        }
-        if (exception is MissingServletRequestParameterException) {
-            val message = String.format("Failed to parse query")
-            val validation = ValidationError(exception.parameterName, "missing", exception.message)
-            return BadRequestError(message, ErrorLocation.QUERY, listOf(validation))
-        }
-        if (exception is MethodArgumentTypeMismatchException) {
-            val message = String.format("Failed to parse query")
-            val validation = ValidationError(exception.name, "parsing_failed", exception.message)
-            if (exception.parameter.hasParameterAnnotation(RequestParam::class.java)) {
-                return BadRequestError(message, ErrorLocation.QUERY, listOf(validation))
-            } else if (exception.parameter.hasParameterAnnotation(RequestHeader::class.java)) {
-                return BadRequestError(message, ErrorLocation.HEADER, listOf(validation))
-            }
-        }
-        if (exception is MissingRequestHeaderException) {
-            val message = String.format("Failed to parse header")
-            val validation = ValidationError(exception.headerName, "missing", exception.message)
-            return BadRequestError(message, ErrorLocation.HEADER, listOf(validation))
-        }
-        return null
-    }
+fun getBadRequestError(exception: Throwable): BadRequestError? {
+	if (exception is JsonParseException) {
+		val errors = extractValidationErrors(exception)
+		return BadRequestError("Failed to parse body", ErrorLocation.BODY, errors)
+	}
+	if (exception is ContentTypeMismatchException) {
+		val error = ValidationError("Content-Type", "missing", exception.message)
+		return BadRequestError("Failed to parse header", ErrorLocation.HEADER, listOf(error))
+	}
+	if (exception is MissingServletRequestParameterException) {
+		val message = String.format("Failed to parse query")
+		val validation = ValidationError(exception.parameterName, "missing", exception.message)
+		return BadRequestError(message, ErrorLocation.QUERY, listOf(validation))
+	}
+	if (exception is MethodArgumentTypeMismatchException) {
+		val message = String.format("Failed to parse query")
+		val validation = ValidationError(exception.name, "parsing_failed", exception.message)
+		if (exception.parameter.hasParameterAnnotation(RequestParam::class.java)) {
+			return BadRequestError(message, ErrorLocation.QUERY, listOf(validation))
+		} else if (exception.parameter.hasParameterAnnotation(RequestHeader::class.java)) {
+			return BadRequestError(message, ErrorLocation.HEADER, listOf(validation))
+		}
+	}
+	if (exception is MissingRequestHeaderException) {
+		val message = String.format("Failed to parse header")
+		val validation = ValidationError(exception.headerName, "missing", exception.message)
+		return BadRequestError(message, ErrorLocation.HEADER, listOf(validation))
+	}
+	return null
 }
 `
 

@@ -32,7 +32,7 @@ func (g *MicronautLowGenerator) Clients(version *spec.Version) []generator.CodeF
 	}
 
 	files = append(files, g.utils()...)
-	files = append(files, converters(g.Packages.Root)...)
+	files = append(files, converters(g.Packages.Converters)...)
 	files = append(files, staticConfigFiles(g.Packages.Root, g.Packages.Json)...)
 	files = append(files, *clientException(g.Packages.Root))
 

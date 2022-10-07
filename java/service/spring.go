@@ -55,7 +55,7 @@ func (g *SpringGenerator) ExceptionController(responses *spec.Responses) *genera
 	imports.Add(g.ServiceImports()...)
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.AddStatic(g.Packages.Errors.Subpackage("ErrorsHelpers").PackageStar)
+	imports.AddStatic(g.Packages.Errors.Subpackage(ErrorsHelpersClassName).PackageStar)
 	imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Write(w)
 	w.EmptyLine()
@@ -283,7 +283,7 @@ import [[.JsonPackage]].*;
 
 import static [[.PackageName]].ValidationErrorsHelpers.extractValidationErrors;
 
-public class ErrorsHelpers {
+public class [[.ClassName]] {
     private static final NotFoundError NOT_FOUND_ERROR = new NotFoundError("Failed to parse url parameters");
 
     public static NotFoundError getNotFoundError(Throwable exception) {
@@ -334,11 +334,13 @@ public class ErrorsHelpers {
 
 	code, _ = generator.ExecuteTemplate(code, struct {
 		PackageName         string
+		ClassName           string
 		ErrorsModelsPackage string
 		ContentTypePackage  string
 		JsonPackage         string
 	}{
 		g.Packages.Errors.PackageName,
+		ErrorsHelpersClassName,
 		g.Packages.ErrorsModels.PackageName,
 		g.Packages.ContentType.PackageName,
 		g.Packages.Json.PackageName,

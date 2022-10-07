@@ -32,7 +32,7 @@ func (g *MicronautDeclGenerator) Clients(version *spec.Version) []generator.Code
 		files = append(files, g.responses(&api, g.Packages.Client(&api), g.Packages.Models(api.InHttp.InVersion))...)
 		files = append(files, *g.client(&api))
 	}
-	files = append(files, converters(g.Packages.Root)...)
+	files = append(files, converters(g.Packages.Converters)...)
 	files = append(files, staticConfigFiles(g.Packages.Root, g.Packages.Json)...)
 
 	return files
