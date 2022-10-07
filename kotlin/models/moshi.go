@@ -160,7 +160,8 @@ func (g *MoshiGenerator) ModelsDefinitionsImports() []string {
 
 func (g *MoshiGenerator) ModelsUsageImports() []string {
 	return []string{
-		`com.squareup.moshi.*`,
+		`com.squareup.moshi.Types`,
+		`com.squareup.moshi.adapter`,
 		`java.lang.reflect.ParameterizedType`,
 	}
 }
