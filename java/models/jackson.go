@@ -54,16 +54,13 @@ func jacksonJsonPropertyAnnotation(field *spec.NamedDefinition) string {
 }
 
 func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, thePackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(thePackage, model.Name.PascalCase())
 	imports := imports.New()
 	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
-	className := model.Name.PascalCase()
-	w.Line(`public class %s {`, className)
+	w.Line(`public class [[.ClassName]] {`)
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
 		w.Line(`  %s`, jacksonJsonPropertyAnnotation(&field))
@@ -106,40 +103,26 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 	w.EmptyLine()
 	addObjectModelMethods(w.Indented(), model)
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath(className + ".java"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, thePackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(thePackage, model.Name.PascalCase())
 	imports := imports.New()
 	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
-	enumName := model.Name.PascalCase()
-	w.Line(`public enum %s {`, enumName)
+	w.Line(`public enum [[.ClassName]] {`)
 	for _, enumItem := range model.Enum.Items {
 		w.Line(`  @JsonProperty("%s") %s,`, enumItem.Value, enumItem.Name.UpperCase())
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath(enumName + ".java"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
-	interfaceName := model.Name.PascalCase()
-	w := writer.NewJavaWriter()
-	w.Line("package %s;", thePackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(thePackage, model.Name.PascalCase())
 	imports := imports.New()
 	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
@@ -159,10 +142,10 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 	}
 	w.Line(`@JsonSubTypes({`)
 	for _, item := range model.OneOf.Items {
-		w.Line(`  @Type(value = %s.%s.class, name = "%s"),`, interfaceName, oneOfItemClassName(&item), item.Name.Source)
+		w.Line(`  @Type(value = [[.ClassName]].%s.class, name = "%s"),`, oneOfItemClassName(&item), item.Name.Source)
 	}
 	w.Line(`})`)
-	w.Line(`public interface %s {`, interfaceName)
+	w.Line(`public interface [[.ClassName]] {`)
 	for index, item := range model.OneOf.Items {
 		if index > 0 {
 			w.EmptyLine()
@@ -170,11 +153,7 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 		g.modelOneOfImplementation(w.Indented(), &item, model)
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath(interfaceName + ".java"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *JacksonGenerator) modelOneOfImplementation(w *generator.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {

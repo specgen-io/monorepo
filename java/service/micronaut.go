@@ -34,7 +34,7 @@ func (g *MicronautGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImp
 func (g *MicronautGenerator) ServicesControllers(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, g.serviceController(&api)...)
+		files = append(files, *g.serviceController(&api))
 	}
 	files = append(files, dateConverters(g.Packages.Converters)...)
 	return files
@@ -50,9 +50,7 @@ func (g *MicronautGenerator) ServiceImports() []string {
 }
 
 func (g *MicronautGenerator) ExceptionController(responses *spec.Responses) *generator.CodeFile {
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, g.Packages.Controllers.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.Controllers, `ExceptionController`)
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`io.micronaut.http.annotation.Error`)
@@ -62,20 +60,15 @@ func (g *MicronautGenerator) ExceptionController(responses *spec.Responses) *gen
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Controller`)
-	className := `ExceptionController`
-	w.Line(`public class %s {`, className)
-	w.Line(`  private static final Logger logger = LoggerFactory.getLogger(%s.class);`, className)
+	w.Line(`public class [[.ClassName]] {`)
+	w.Line(`  private static final Logger logger = LoggerFactory.getLogger([[.ClassName]].class);`)
 	w.EmptyLine()
 	w.Line(`  @Inject`)
 	w.Line(`  private Json json;`)
 	w.EmptyLine()
 	g.errorHandler(w.Indented(), *responses)
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    g.Packages.Controllers.GetPath(fmt.Sprintf("%s.java", className)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Responses) {
@@ -97,12 +90,8 @@ func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Respo
 	w.Line(`}`)
 }
 
-func (g *MicronautGenerator) serviceController(api *spec.Api) []generator.CodeFile {
-	controllersPackage := g.Packages.Version(api.InHttp.InVersion).Controllers
-	files := []generator.CodeFile{}
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, controllersPackage.PackageName)
-	w.EmptyLine()
+func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFile {
+	w := writer.New(g.Packages.Version(api.InHttp.InVersion).Controllers, controllerName(api))
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`io.micronaut.core.annotation.Nullable`)
@@ -116,28 +105,20 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) []generator.CodeFi
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Controller`)
-	className := controllerName(api)
-	w.Line(`public class %s {`, className)
-	w.Line(`  private static final Logger logger = LoggerFactory.getLogger(%s.class);`, className)
+	w.Line(`public class [[.ClassName]] {`)
+	w.Line(`  private static final Logger logger = LoggerFactory.getLogger([[.ClassName]].class);`)
 	w.EmptyLine()
 	w.Line(`  @Inject`)
 	w.Line(`  private %s %s;`, serviceInterfaceName(api), serviceVarName(api))
 	w.EmptyLine()
 	w.Line(`  @Inject`)
 	w.Line(`  private Json json;`)
-
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		g.controllerMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
-
-	files = append(files, generator.CodeFile{
-		Path:    controllersPackage.GetPath(fmt.Sprintf("%s.java", className)),
-		Content: w.String(),
-	})
-
-	return files
+	return w.ToCodeFile()
 }
 
 func (g *MicronautGenerator) controllerMethod(w *generator.Writer, operation *spec.NamedOperation) {
@@ -395,9 +376,7 @@ func (g *MicronautGenerator) JsonHelpers() []generator.CodeFile {
 }
 
 func (g *MicronautGenerator) Json() *generator.CodeFile {
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, g.Packages.Json.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.Json, `Json`)
 	imports := imports.New()
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(`jakarta.inject.*`)
@@ -405,42 +384,12 @@ func (g *MicronautGenerator) Json() *generator.CodeFile {
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Singleton`)
-	className := `Json`
-	w.Line(`public class %s {`, className)
+	w.Line(`public class [[.ClassName]] {`)
 	g.Models.CreateJsonMapperField(w.Indented(), "@Inject")
 	w.EmptyLine()
 	w.Line(g.Models.JsonHelpersMethods())
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    g.Packages.Json.GetPath(fmt.Sprintf("%s.java", className)),
-		Content: w.String(),
-	}
-}
-
-func (g *SpringGenerator) Json2() *generator.CodeFile {
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, g.Packages.Json.PackageName)
-	w.EmptyLine()
-	imports := imports.New()
-	imports.Add(`org.springframework.beans.factory.annotation.Autowired`)
-	imports.Add(`org.springframework.stereotype.Component`)
-	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(`java.io.IOException`)
-	imports.Write(w)
-	w.EmptyLine()
-	w.Line(`@Component`)
-	className := `Json`
-	w.Line(`public class %s {`, className)
-	w.EmptyLine()
-	g.Models.CreateJsonMapperField(w.Indented(), "@Autowired")
-	w.Line(g.Models.JsonHelpersMethods())
-	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    g.Packages.Json.GetPath(fmt.Sprintf("%s.java", className)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) []string {

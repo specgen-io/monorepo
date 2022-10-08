@@ -20,16 +20,12 @@ func responseCreate(response *spec.OperationResponse, resultVar string) string {
 	}
 }
 
-func (g *Generator) responseInterface(types *types.Types, operation *spec.NamedOperation) []generator.CodeFile {
-	clientPackage := g.Packages.Client(operation.InApi)
-	files := []generator.CodeFile{}
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, clientPackage.PackageName)
-	w.EmptyLine()
+func (g *Generator) responseInterface(types *types.Types, operation *spec.NamedOperation) *generator.CodeFile {
+	w := writer.New(g.Packages.Client(operation.InApi), responseInterfaceName(operation))
 	w.Line(`import %s;`, g.Packages.Models(operation.InApi.InHttp.InVersion).PackageStar)
 	w.Line(`import %s;`, g.Packages.ErrorsModels.PackageStar)
 	w.EmptyLine()
-	w.Line(`public interface %s {`, responseInterfaceName(operation))
+	w.Line(`public interface [[.ClassName]] {`)
 	for index, response := range operation.Responses {
 		if index > 0 {
 			w.EmptyLine()
@@ -37,12 +33,7 @@ func (g *Generator) responseInterface(types *types.Types, operation *spec.NamedO
 		responseImpl(w.Indented(), types, &response)
 	}
 	w.Line(`}`)
-
-	files = append(files, generator.CodeFile{
-		Path:    clientPackage.GetPath(fmt.Sprintf("%s.java", responseInterfaceName(operation))),
-		Content: w.String(),
-	})
-	return files
+	return w.ToCodeFile()
 }
 
 func responseImpl(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {

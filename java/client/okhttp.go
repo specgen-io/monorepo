@@ -21,10 +21,7 @@ func (g *Generator) Clients(version *spec.Version) []generator.CodeFile {
 }
 
 func (g *Generator) client(api *spec.Api) *generator.CodeFile {
-	clientPackage := g.Packages.Client(api)
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, clientPackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.Client(api), clientName(api))
 	imports := imports.New()
 	imports.Add(g.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
@@ -36,15 +33,14 @@ func (g *Generator) client(api *spec.Api) *generator.CodeFile {
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
-	className := clientName(api)
-	w.Line(`public class %s {`, className)
-	w.Line(`  private static final Logger logger = LoggerFactory.getLogger(%s.class);`, className)
+	w.Line(`public class [[.ClassName]] {`)
+	w.Line(`  private static final Logger logger = LoggerFactory.getLogger([[.ClassName]].class);`)
 	w.EmptyLine()
 	w.Line(`  private String baseUrl;`)
 	w.Line(`  private OkHttpClient client;`)
 	g.CreateJsonMapperField(w.Indented(), "")
 	w.EmptyLine()
-	w.Line(`  public %s(String baseUrl) {`, className)
+	w.Line(`  public [[.ClassName]](String baseUrl) {`)
 	w.Line(`    this.baseUrl = baseUrl;`)
 	g.InitJsonMapper(w.IndentedWith(2))
 	w.Line(`    this.client = new OkHttpClient();`)
@@ -54,11 +50,7 @@ func (g *Generator) client(api *spec.Api) *generator.CodeFile {
 		g.generateClientMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    clientPackage.GetPath(fmt.Sprintf("%s.java", className)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.NamedOperation) {
@@ -149,7 +141,7 @@ func (g *Generator) responses(version *spec.Version) []generator.CodeFile {
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
 			if len(operation.Responses) > 1 {
-				files = append(files, g.responseInterface(g.Types, &operation)...)
+				files = append(files, *g.responseInterface(g.Types, &operation))
 			}
 		}
 	}

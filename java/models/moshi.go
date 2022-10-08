@@ -54,16 +54,13 @@ func (g *MoshiGenerator) models(models []*spec.NamedModel, modelsPackage package
 }
 
 func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, thePackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(thePackage, model.Name.PascalCase())
 	imports := imports.New()
 	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
-	className := model.Name.PascalCase()
-	w.Line(`public class %s {`, className)
+	w.Line(`public class [[.ClassName]] {`)
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
 		w.Line(`  @Json(name = "%s")`, field.Name.Source)
@@ -92,46 +89,32 @@ func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages
 	w.EmptyLine()
 	addObjectModelMethods(w.Indented(), model)
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath(className + ".java"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, thePackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(thePackage, model.Name.PascalCase())
 	imports := imports.New()
 	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
-	enumName := model.Name.PascalCase()
-	w.Line(`public enum %s {`, enumName)
+	w.Line(`public enum [[.ClassName]] {`)
 	for _, enumItem := range model.Enum.Items {
 		w.Line(`  @Json(name = "%s") %s,`, enumItem.Value, enumItem.Name.UpperCase())
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath(enumName + ".java"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
-	interfaceName := model.Name.PascalCase()
-	w := writer.NewJavaWriter()
-	w.Line("package %s;", thePackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(thePackage, model.Name.PascalCase())
 	imports := imports.New()
 	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`public interface %s {`, interfaceName)
+	w.Line(`public interface [[.ClassName]] {`)
 	for index, item := range model.OneOf.Items {
 		if index > 0 {
 			w.EmptyLine()
@@ -139,11 +122,7 @@ func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.
 		g.modelOneOfImplementation(w.Indented(), &item, model)
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath(interfaceName + ".java"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *MoshiGenerator) modelOneOfImplementation(w *generator.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
@@ -368,15 +347,13 @@ func (g *MoshiGenerator) SetupLibrary() []generator.CodeFile {
 }
 
 func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
-	w := writer.NewJavaWriter()
-	w.Line("package %s;", g.Packages.Json.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.Json, `CustomMoshiAdapters`)
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
 	imports.Add(g.Packages.JsonAdapters.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`public class CustomMoshiAdapters {`)
+	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  public static void setup(Moshi.Builder moshiBuilder) {`)
 	w.Line(`    moshiBuilder`)
 	w.Line(`      .add(new BigDecimalAdapter())`)
@@ -389,23 +366,17 @@ func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	}
 	w.Line(`  }`)
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    g.Packages.Json.GetPath("CustomMoshiAdapters.java"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, modelsPackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(modelsPackage, `ModelsMoshiAdapters`)
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
 	imports.Add(g.Packages.JsonAdapters.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`public class ModelsMoshiAdapters {`)
+	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  public static void setup(Moshi.Builder moshiBuilder) {`)
 	for _, model := range models {
 		if model.IsOneOf() {
@@ -430,11 +401,7 @@ func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPac
 	}
 	w.Line(`  }`)
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    modelsPackage.GetPath("ModelsMoshiAdapters.java"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func bigDecimalAdapter(thePackage packages.Package) *generator.CodeFile {
