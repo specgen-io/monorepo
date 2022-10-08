@@ -24,17 +24,15 @@ func NewJacksonGenerator(types *types.Types, packages *Packages) *JacksonGenerat
 }
 
 func (g *JacksonGenerator) Models(version *spec.Version) []generator.CodeFile {
-	return g.models(version.ResolvedModels, g.Packages.Models(version))
+	return []generator.CodeFile{*g.models(version.ResolvedModels, g.Packages.Models(version))}
 }
 
 func (g *JacksonGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile {
-	return g.models(httperrors.ResolvedModels, g.Packages.ErrorsModels)
+	return []generator.CodeFile{*g.models(httperrors.ResolvedModels, g.Packages.ErrorsModels)}
 }
 
-func (g *JacksonGenerator) models(models []*spec.NamedModel, thePackage packages.Package) []generator.CodeFile {
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, thePackage.PackageName)
-	w.EmptyLine()
+func (g *JacksonGenerator) models(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
+	w := writer.New(modelsPackage, `models`)
 	imports := imports.New()
 	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
@@ -50,11 +48,7 @@ func (g *JacksonGenerator) models(models []*spec.NamedModel, thePackage packages
 			g.modelEnum(w, model)
 		}
 	}
-
-	return []generator.CodeFile{{
-		Path:    thePackage.GetPath("models.kt"),
-		Content: w.String(),
-	}}
+	return w.ToCodeFile()
 }
 
 func jacksonPropertyAnnotation(field *spec.NamedDefinition) string {

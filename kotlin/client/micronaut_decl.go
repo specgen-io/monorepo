@@ -39,10 +39,7 @@ func (g *MicronautDeclGenerator) Clients(version *spec.Version) []generator.Code
 }
 
 func (g *MicronautDeclGenerator) client(api *spec.Api) *generator.CodeFile {
-	apiPackage := g.Packages.Client(api)
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, apiPackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.Client(api), clientName(api))
 	imports := imports.New()
 	imports.Add(`io.micronaut.http.*`)
 	imports.Add(`io.micronaut.http.annotation.*`)
@@ -52,20 +49,14 @@ func (g *MicronautDeclGenerator) client(api *spec.Api) *generator.CodeFile {
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
-	interfaceName := clientName(api)
-	//TODO
 	w.Line(`@Client(ClientConfiguration.BASE_URL)`)
-	w.Line(`interface %s {`, interfaceName)
+	w.Line(`interface [[.ClassName]] {`)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		g.clientMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", interfaceName)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *MicronautDeclGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {
@@ -125,16 +116,14 @@ func (g *MicronautDeclGenerator) responses(api *spec.Api, apiPackage packages.Pa
 }
 
 func (g *MicronautDeclGenerator) response(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Package, modelsVersionPackage packages.Package) *generator.CodeFile {
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, apiPackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(apiPackage, responseName(operation))
 	imports := imports.New()
 	imports.Add(`com.fasterxml.jackson.databind.ObjectMapper`)
 	imports.Add(`io.micronaut.http.HttpResponse`)
 	imports.Add(modelsVersionPackage.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`open class %s {`, responseName(operation))
+	w.Line(`open class [[.ClassName]] {`)
 	for index, response := range operation.Responses {
 		if index > 0 {
 			w.EmptyLine()
@@ -144,11 +133,7 @@ func (g *MicronautDeclGenerator) response(types *types.Types, operation *spec.Na
 	w.EmptyLine()
 	createObjectMethod(w.Indented(), types, operation)
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", responseName(operation))),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func implementations(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {

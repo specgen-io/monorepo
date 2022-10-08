@@ -9,14 +9,11 @@ import (
 )
 
 func (g *Generator) responseInterface(operation *spec.NamedOperation) *generator.CodeFile {
-	apiPackage := g.Packages.Version(operation.InApi.InHttp.InVersion).ServicesApi(operation.InApi)
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, apiPackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.ServicesApi(operation.InApi), responseInterfaceName(operation))
 	w.Line(`import %s`, g.Packages.Models(operation.InApi.InHttp.InVersion).PackageStar)
 	w.Line(`import %s`, g.Packages.ErrorsModels.PackageStar)
 	w.EmptyLine()
-	w.Line(`interface %s {`, responseInterfaceName(operation))
+	w.Line(`interface [[.ClassName]] {`)
 	for index, response := range operation.Responses {
 		if index > 0 {
 			w.EmptyLine()
@@ -24,11 +21,7 @@ func (g *Generator) responseInterface(operation *spec.NamedOperation) *generator
 		responseImpl(w.Indented(), g.Types, &response)
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", responseInterfaceName(operation))),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func responseImpl(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {

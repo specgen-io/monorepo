@@ -1,11 +1,21 @@
 package writer
 
 import (
+	"fmt"
 	"generator"
+	"kotlin/packages"
 )
 
-var KotlinConfig = generator.Config{"\t", 2, nil}
+func KotlinConfig() generator.Config {
+	return generator.Config{"\t", 2, map[string]string{}}
+}
 
-func NewKotlinWriter() *generator.Writer {
-	return generator.NewWriter(KotlinConfig)
+func New(thePackage packages.Package, className string) *generator.Writer {
+	config := KotlinConfig()
+	filename := thePackage.GetPath(fmt.Sprintf("%s.kt", className))
+	config.Substitutions["[[.ClassName]]"] = className
+	w := generator.NewWriter2(filename, config)
+	w.Line(`package %s`, thePackage.PackageName)
+	w.EmptyLine()
+	return w
 }

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"strings"
 
 	"generator"
@@ -38,10 +37,7 @@ func (g *OkHttpGenerator) Clients(version *spec.Version) []generator.CodeFile {
 }
 
 func (g *OkHttpGenerator) client(api *spec.Api) *generator.CodeFile {
-	apiPackage := g.Packages.Client(api)
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, apiPackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.Client(api), clientName(api))
 	imports := imports.New()
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
@@ -55,12 +51,11 @@ func (g *OkHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
-	className := clientName(api)
-	w.Line(`class %s(private val baseUrl: String) {`, className)
+	w.Line(`class [[.ClassName]](private val baseUrl: String) {`)
 	w.Line(`  %s`, g.Models.CreateJsonMapperField(""))
 	w.Line(`  private val client: OkHttpClient`)
 	w.EmptyLine()
-	w.Line(`  private val logger: Logger = LoggerFactory.getLogger(%s::class.java)`, className)
+	w.Line(`  private val logger: Logger = LoggerFactory.getLogger([[.ClassName]]::class.java)`)
 	w.EmptyLine()
 	w.Line(`  init {`)
 	g.Models.InitJsonMapper(w.IndentedWith(2))
@@ -72,11 +67,7 @@ func (g *OkHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 		g.clientMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", className)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {

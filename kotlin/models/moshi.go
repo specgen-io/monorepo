@@ -33,9 +33,7 @@ func (g *MoshiGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.Co
 }
 
 func (g *MoshiGenerator) models(models []*spec.NamedModel, modelsPackage packages.Package) []generator.CodeFile {
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, modelsPackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(modelsPackage, `models`)
 	imports := imports.New()
 	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
@@ -53,7 +51,7 @@ func (g *MoshiGenerator) models(models []*spec.NamedModel, modelsPackage package
 	}
 
 	files := []generator.CodeFile{}
-	files = append(files, generator.CodeFile{Path: modelsPackage.GetPath("models.kt"), Content: w.String()})
+	files = append(files, *w.ToCodeFile())
 
 	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.setupModelsMoshiAdapters`, modelsPackage.PackageName))
 	for range g.generatedSetupMoshiMethods {
@@ -260,9 +258,7 @@ func (g *MoshiGenerator) SetupLibrary() []generator.CodeFile {
 }
 
 func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
-	w := writer.NewKotlinWriter()
-	w.Line("package %s", g.Packages.Json.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.Json, `CustomMoshiAdapters`)
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
 	imports.Add(`com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory`)
@@ -283,17 +279,11 @@ func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	w.Line(`  moshiBuilder`)
 	w.Line(`    .add(KotlinJsonAdapterFactory())`)
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    g.Packages.Json.GetPath("CustomMoshiAdapters.kt"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, modelsPackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(modelsPackage, `ModelsMoshiAdapters`)
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
 	imports.Add(g.Packages.JsonAdapters.PackageStar)
@@ -322,11 +312,7 @@ func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPac
 		}
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    modelsPackage.GetPath("ModelsMoshiAdapters.kt"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func bigDecimalAdapter(thePackage packages.Package) *generator.CodeFile {

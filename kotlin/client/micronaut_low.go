@@ -40,10 +40,7 @@ func (g *MicronautLowGenerator) Clients(version *spec.Version) []generator.CodeF
 }
 
 func (g *MicronautLowGenerator) client(api *spec.Api) *generator.CodeFile {
-	apiPackage := g.Packages.Client(api)
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, apiPackage.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.Client(api), clientName(api))
 	imports := imports.New()
 	imports.Add(`io.micronaut.http.HttpHeaders.*`)
 	imports.Add(`io.micronaut.http.HttpRequest.*`)
@@ -58,26 +55,20 @@ func (g *MicronautLowGenerator) client(api *spec.Api) *generator.CodeFile {
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
-	className := clientName(api)
 	w.Line(`@Singleton`)
-	w.Line(`class %s(`, className)
-	//TODO
+	w.Line(`class [[.ClassName]](`)
 	w.Line(`  @param:Client(ClientConfiguration.BASE_URL)`)
 	w.Line(`  private val client: HttpClient,`)
 	w.Line(`  private val objectMapper: ObjectMapper`)
 	w.Line(`) {`)
-	w.Line(`  private val logger: Logger = LoggerFactory.getLogger(%s::class.java)`, className)
+	w.Line(`  private val logger: Logger = LoggerFactory.getLogger([[.ClassName]]::class.java)`)
 
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		g.clientMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.kt", className)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {
