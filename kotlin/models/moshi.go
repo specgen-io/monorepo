@@ -163,6 +163,7 @@ func (g *MoshiGenerator) ModelsUsageImports() []string {
 		`com.squareup.moshi.Moshi`,
 		`com.squareup.moshi.Types`,
 		`com.squareup.moshi.adapter`,
+		`com.squareup.moshi.JsonDataException`,
 		`java.lang.reflect.ParameterizedType`,
 	}
 }
