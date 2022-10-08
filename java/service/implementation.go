@@ -16,12 +16,12 @@ func (g *Generator) ServicesImplementations(version *spec.Version) []generator.C
 }
 
 func (g *Generator) serviceImplementation(api *spec.Api) *generator.CodeFile {
-	w := writer.New(g.Packages.Version(api.InHttp.InVersion).ServicesImpl, serviceImplName(api))
+	w := writer.New(g.Packages.ServicesImpl(api.InHttp.InVersion), serviceImplName(api))
 	annotationImport, annotation := g.ServiceImplAnnotation(api)
 	imports := imports.New()
 	imports.Add(annotationImport)
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Add(g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageStar)
+	imports.Add(g.Packages.ServicesApi(api).PackageStar)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()

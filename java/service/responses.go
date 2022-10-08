@@ -9,7 +9,7 @@ import (
 )
 
 func (g *Generator) responseInterface(operation *spec.NamedOperation) *generator.CodeFile {
-	w := writer.New(g.Packages.Version(operation.InApi.InHttp.InVersion).ServicesApi(operation.InApi), responseInterfaceName(operation))
+	w := writer.New(g.Packages.ServicesApi(operation.InApi), responseInterfaceName(operation))
 	w.Line(`import %s;`, g.Packages.Models(operation.InApi.InHttp.InVersion).PackageStar)
 	w.Line(`import %s;`, g.Packages.ErrorsModels.PackageStar)
 	w.EmptyLine()

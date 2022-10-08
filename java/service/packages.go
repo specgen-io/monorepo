@@ -8,10 +8,10 @@ import (
 
 type Packages struct {
 	models.Packages
-	versions    map[string]*VersionPackages
-	ContentType packages.Package
-	Converters  packages.Package
-	Controllers packages.Package
+	versions        map[string]*VersionPackages
+	ContentType     packages.Package
+	Converters      packages.Package
+	RootControllers packages.Package
 }
 
 func NewPackages(packageName, generatePath, servicesPath string, specification *spec.Spec) *Packages {
@@ -39,18 +39,22 @@ func NewPackages(packageName, generatePath, servicesPath string, specification *
 	}
 }
 
-func (p *Packages) Version(version *spec.Version) *VersionPackages {
-	return p.versions[version.Name.Source]
+func (p *Packages) ServicesApi(api *spec.Api) packages.Package {
+	return p.versions[api.InHttp.InVersion.Name.Source].Services.Subpackage(api.Name.SnakeCase())
+}
+
+func (p *Packages) ServicesImpl(version *spec.Version) packages.Package {
+	return p.versions[version.Name.Source].ServicesImpl
+}
+
+func (p *Packages) Controllers(version *spec.Version) packages.Package {
+	return p.versions[version.Name.Source].Controllers
 }
 
 type VersionPackages struct {
 	Services     packages.Package
 	Controllers  packages.Package
 	ServicesImpl packages.Package
-}
-
-func (p *VersionPackages) ServicesApi(api *spec.Api) packages.Package {
-	return p.Services.Subpackage(api.Name.SnakeCase())
 }
 
 func newVersionPackages(generated, implementations packages.Package, version *spec.Version) *VersionPackages {

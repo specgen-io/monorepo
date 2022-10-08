@@ -50,7 +50,7 @@ func (g *MicronautGenerator) ServiceImports() []string {
 }
 
 func (g *MicronautGenerator) ExceptionController(responses *spec.Responses) *generator.CodeFile {
-	w := writer.New(g.Packages.Controllers, `ExceptionController`)
+	w := writer.New(g.Packages.RootControllers, `ExceptionController`)
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`io.micronaut.http.annotation.Error`)
@@ -91,7 +91,7 @@ func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Respo
 }
 
 func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFile {
-	w := writer.New(g.Packages.Version(api.InHttp.InVersion).Controllers, controllerName(api))
+	w := writer.New(g.Packages.Controllers(api.InHttp.InVersion), controllerName(api))
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`io.micronaut.core.annotation.Nullable`)
@@ -99,7 +99,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Add(g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageStar)
+	imports.Add(g.Packages.ServicesApi(api).PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
