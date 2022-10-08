@@ -8,10 +8,16 @@ import (
 
 type Packages struct {
 	models.Packages
-	versions        map[string]*VersionPackages
+	versions        map[string]VersionPackages
 	ContentType     packages.Package
 	Converters      packages.Package
 	RootControllers packages.Package
+}
+
+type VersionPackages struct {
+	Services     packages.Package
+	Controllers  packages.Package
+	ServicesImpl packages.Package
 }
 
 func NewPackages(packageName, generatePath, servicesPath string, specification *spec.Spec) *Packages {
@@ -25,9 +31,20 @@ func NewPackages(packageName, generatePath, servicesPath string, specification *
 	controllers := generated.Subpackage("controllers")
 	implementations := packages.New(servicesPath, packageName)
 
-	versions := map[string]*VersionPackages{}
+	versions := map[string]VersionPackages{}
 	for _, version := range specification.Versions {
-		versions[version.Name.Source] = newVersionPackages(generated, implementations, &version)
+		main := generated.Subpackage(version.Name.FlatCase())
+		services := main.Subpackage("services")
+		controllers := main.Subpackage("controllers")
+		servicesImpl := implementations.Subpackage("services").Subpackage(version.Name.FlatCase())
+
+		versionsPackages := VersionPackages{
+			services,
+			controllers,
+			servicesImpl,
+		}
+
+		versions[version.Name.Source] = versionsPackages
 	}
 
 	return &Packages{
@@ -49,23 +66,4 @@ func (p *Packages) ServicesImpl(version *spec.Version) packages.Package {
 
 func (p *Packages) Controllers(version *spec.Version) packages.Package {
 	return p.versions[version.Name.Source].Controllers
-}
-
-type VersionPackages struct {
-	Services     packages.Package
-	Controllers  packages.Package
-	ServicesImpl packages.Package
-}
-
-func newVersionPackages(generated, implementations packages.Package, version *spec.Version) *VersionPackages {
-	main := generated.Subpackage(version.Name.FlatCase())
-	services := main.Subpackage("services")
-	controllers := main.Subpackage("controllers")
-	servicesImpl := implementations.Subpackage("services").Subpackage(version.Name.FlatCase())
-
-	return &VersionPackages{
-		services,
-		controllers,
-		servicesImpl,
-	}
 }
