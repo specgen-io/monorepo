@@ -19,7 +19,7 @@ jobs:
     working_directory: ~/specgen
     steps:
       - checkout
-      - load_cache:
+      - restore_cache:
           key: cache-{{ checksum "./specgen/go.sum"  }}
       - run:
           name: Build
