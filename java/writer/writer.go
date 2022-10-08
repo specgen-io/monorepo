@@ -7,7 +7,7 @@ import (
 )
 
 func JavaConfig() generator.Config {
-	return generator.Config{"\t", 2, nil}
+	return generator.Config{"\t", 2, map[string]string{}}
 }
 
 func New(thePackage packages.Package, className string) *generator.Writer {
