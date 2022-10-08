@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   circleci: specgen/circleci@0.1.0
   artifactory: specgen/artifactory@0.5.0
+  golang: circleci/go@1.7.1
 
 parameters:
   specgen-version:
@@ -19,11 +20,13 @@ jobs:
     working_directory: ~/specgen
     steps:
       - checkout
+      - golang/load-cache
       - run:
           name: Build
           command: |
             cd specgen
             ../build.sh <<pipeline.parameters.specgen-version>>
+      - golang/save-cache
       - run:
           name: Unit tests
           command: |
