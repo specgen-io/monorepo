@@ -60,7 +60,7 @@ func generateCirceModels(models []*spec.NamedModel, thepackage, taggedUnionPacka
 	}
 }
 
-func generateCirceObjectModel(w *generator.Writer, model *spec.NamedModel) {
+func generateCirceObjectModel(w generator.Writer, model *spec.NamedModel) {
 	w.Line(`case class %s(`, model.Name.PascalCase())
 	for index, field := range model.Object.Fields {
 		comma := ","
@@ -77,7 +77,7 @@ func generateCirceObjectModel(w *generator.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateCirceEnumModel(w *generator.Writer, model *spec.NamedModel) {
+func generateCirceEnumModel(w generator.Writer, model *spec.NamedModel) {
 	className := model.Name.PascalCase()
 	w.Line(`sealed abstract class %s(val value: String) extends StringEnumEntry`, className)
 	w.EmptyLine()
@@ -89,7 +89,7 @@ func generateCirceEnumModel(w *generator.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateCirceUnionModel(w *generator.Writer, model *spec.NamedModel) {
+func generateCirceUnionModel(w generator.Writer, model *spec.NamedModel) {
 	traitName := model.Name.PascalCase()
 	w.Line(`sealed trait %s`, traitName)
 	w.EmptyLine()

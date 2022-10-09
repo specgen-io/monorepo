@@ -15,7 +15,7 @@ type Validation interface {
 	RuntimeType(typ *spec.TypeDef) string
 	SetupLibrary(validationModule modules.Module) *generator.CodeFile
 	Models(models []*spec.NamedModel, validationModule modules.Module, module modules.Module) *generator.CodeFile
-	WriteParamsType(w *generator.Writer, typeName string, params []spec.NamedParam)
+	WriteParamsType(w generator.Writer, typeName string, params []spec.NamedParam)
 }
 
 func New(validation string) Validation {

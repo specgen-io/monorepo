@@ -16,7 +16,7 @@ func NewResponse(response *spec.OperationResponse, body string) string {
 	return fmt.Sprintf(`%s{%s: &%s}`, ResponseTypeName(response.Operation), response.Name.PascalCase(), body)
 }
 
-func GenerateOperationResponseStruct(w *generator.Writer, operation *spec.NamedOperation) {
+func GenerateOperationResponseStruct(w generator.Writer, operation *spec.NamedOperation) {
 	w.Line(`type %s struct {`, ResponseTypeName(operation))
 	responses := [][]string{}
 	for _, response := range operation.Responses {

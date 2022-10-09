@@ -59,7 +59,7 @@ func (g *MicronautDeclGenerator) client(api *spec.Api) *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *MicronautDeclGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {
+func (g *MicronautDeclGenerator) clientMethod(w generator.Writer, operation *spec.NamedOperation) {
 	methodName := casee.ToPascalCase(operation.Endpoint.Method)
 	url := operation.FullUrl()
 
@@ -136,7 +136,7 @@ func (g *MicronautDeclGenerator) response(types *types.Types, operation *spec.Na
 	return w.ToCodeFile()
 }
 
-func implementations(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {
+func implementations(w generator.Writer, types *types.Types, response *spec.OperationResponse) {
 	responseImplementationName := response.Name.PascalCase()
 	if !response.Type.Definition.IsEmpty() {
 		w.Line(`class %s(val body: %s) : %s()`, responseImplementationName, types.Kotlin(&response.Type.Definition), responseName(response.Operation))
@@ -145,7 +145,7 @@ func implementations(w *generator.Writer, types *types.Types, response *spec.Ope
 	}
 }
 
-func createObjectMethod(w *generator.Writer, types *types.Types, operation *spec.NamedOperation) {
+func createObjectMethod(w generator.Writer, types *types.Types, operation *spec.NamedOperation) {
 	w.Line(`companion object {`)
 	w.Line(`  fun create(json: ObjectMapper, response: HttpResponse<String>): %s {`, responseName(operation.Responses[0].Operation))
 	w.Line(`    return when(response.code()) {`)

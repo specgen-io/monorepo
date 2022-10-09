@@ -16,8 +16,8 @@ type Generator interface {
 	JsonHelpersMethods() string
 	JsonParseException() *generator.CodeFile
 	ModelsValidation() *generator.CodeFile
-	CreateJsonMapperField(w *generator.Writer, annotation string)
-	InitJsonMapper(w *generator.Writer)
+	CreateJsonMapperField(w generator.Writer, annotation string)
+	InitJsonMapper(w generator.Writer)
 
 	JsonRead(varJson string, typ *spec.TypeDef) string
 	JsonWrite(varData string, typ *spec.TypeDef) string

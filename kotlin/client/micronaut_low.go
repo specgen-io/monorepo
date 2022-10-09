@@ -71,7 +71,7 @@ func (g *MicronautLowGenerator) client(api *spec.Api) *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *MicronautLowGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {
+func (g *MicronautLowGenerator) clientMethod(w generator.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 

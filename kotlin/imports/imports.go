@@ -17,7 +17,7 @@ func (self *imports) Add(imports ...string) *imports {
 	return self
 }
 
-func (self *imports) Write(w *generator.Writer) {
+func (self *imports) Write(w generator.Writer) {
 	for _, imp := range self.imports {
 		w.Line(`import %s`, imp)
 	}

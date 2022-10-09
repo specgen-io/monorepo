@@ -26,7 +26,7 @@ func (self *imports) AddAlias(theImport string, alias string) *imports {
 	return self
 }
 
-func (self *imports) Write(w *generator.Writer) {
+func (self *imports) Write(w generator.Writer) {
 	if len(self.imports) > 0 {
 		imports := make([]string, 0, len(self.imports))
 		for theImport := range self.imports {

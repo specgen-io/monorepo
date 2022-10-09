@@ -103,7 +103,7 @@ func generateClientImplementation(api *spec.Api, versionModule, convertModule, e
 	}
 }
 
-func generateClientWithCtor(w *generator.Writer) {
+func generateClientWithCtor(w generator.Writer) {
 	w.Line(`type %s struct {`, clientTypeName())
 	w.Line(`  baseUrl string`)
 	w.Line(`}`)
@@ -113,7 +113,7 @@ func generateClientWithCtor(w *generator.Writer) {
 	w.Line(`}`)
 }
 
-func generateClientFunction(w *generator.Writer, operation *spec.NamedOperation) {
+func generateClientFunction(w generator.Writer, operation *spec.NamedOperation) {
 	w.Line(`func (client *%s) %s {`, clientTypeName(), OperationSignature(operation, nil))
 	w.Line(`  var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(operation), operation.InApi.Name.Source, operation.Name.Source, ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
 	body := "nil"
@@ -197,7 +197,7 @@ func paramIsEnumModel(typ *spec.TypeDef) bool {
 	return false
 }
 
-func parseParams(w *generator.Writer, operation *spec.NamedOperation) {
+func parseParams(w generator.Writer, operation *spec.NamedOperation) {
 	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		w.Line(`  query := req.URL.Query()`)
 		addParsedParams(w, operation.QueryParams, "q", "query")
@@ -211,14 +211,14 @@ func parseParams(w *generator.Writer, operation *spec.NamedOperation) {
 	}
 }
 
-func addParsedParams(w *generator.Writer, namedParams []spec.NamedParam, paramsConverterName string, paramsParserName string) {
+func addParsedParams(w generator.Writer, namedParams []spec.NamedParam, paramsConverterName string, paramsParserName string) {
 	w.Line(`  %s := convert.NewParamsConverter(%s)`, paramsConverterName, paramsParserName)
 	for _, param := range namedParams {
 		w.Line(`  %s.%s`, paramsConverterName, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
 	}
 }
 
-func addClientResponses(w *generator.Writer, operation *spec.NamedOperation) {
+func addClientResponses(w generator.Writer, operation *spec.NamedOperation) {
 	for _, response := range operation.Responses {
 		w.EmptyLine()
 		generateResponse(w, operation, response)
@@ -249,7 +249,7 @@ func addClientResponses(w *generator.Writer, operation *spec.NamedOperation) {
 	}
 }
 
-func generateResponse(w *generator.Writer, operation *spec.NamedOperation, response spec.OperationResponse) {
+func generateResponse(w generator.Writer, operation *spec.NamedOperation, response spec.OperationResponse) {
 	w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
 	if response.BodyIs(spec.BodyString) {
 		w.Line(`  responseBody, err := response.Text(%s, resp)`, logFieldsName(operation))
@@ -266,7 +266,7 @@ func generateResponse(w *generator.Writer, operation *spec.NamedOperation, respo
 	}
 }
 
-func generateErrorResponse(w *generator.Writer, operation *spec.NamedOperation, response spec.Response) {
+func generateErrorResponse(w generator.Writer, operation *spec.NamedOperation, response spec.Response) {
 	w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
 	w.Line(`  var result %s`, types.GoType(&response.Type.Definition))
 	w.Line(`  err := response.Json(%s, resp, &result)`, logFieldsName(operation))
@@ -275,7 +275,7 @@ func generateErrorResponse(w *generator.Writer, operation *spec.NamedOperation, 
 	w.Line(`}`)
 }
 
-func generateErrHandler(w *generator.Writer) {
+func generateErrHandler(w generator.Writer) {
 	w.Line(`  if err != nil {`)
 	w.Line(`    return nil, err`)
 	w.Line(`  }`)

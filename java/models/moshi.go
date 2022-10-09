@@ -125,7 +125,7 @@ func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.
 	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) modelOneOfImplementation(w *generator.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelOneOfImplementation(w generator.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
 	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
 	w.Line(`  public %s data;`, g.Types.Java(&item.Type.Definition))
 	w.EmptyLine()
@@ -293,14 +293,14 @@ public class ValidationErrorsHelpers {
 	}
 }
 
-func (g *MoshiGenerator) CreateJsonMapperField(w *generator.Writer, annotation string) {
+func (g *MoshiGenerator) CreateJsonMapperField(w generator.Writer, annotation string) {
 	if annotation != "" {
 		w.Line(annotation)
 	}
 	w.Line(`private Moshi moshi;`)
 }
 
-func (g *MoshiGenerator) InitJsonMapper(w *generator.Writer) {
+func (g *MoshiGenerator) InitJsonMapper(w generator.Writer) {
 	w.Line(`Moshi.Builder moshiBuilder = new Moshi.Builder();`)
 	w.Line(`CustomMoshiAdapters.setup(moshiBuilder);`)
 	w.Line(`this.moshi = moshiBuilder.build();`)

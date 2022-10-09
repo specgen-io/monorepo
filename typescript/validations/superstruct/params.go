@@ -10,7 +10,7 @@ import (
 	common2 "typescript/validations/common"
 )
 
-func (g *Generator) WriteParamsType(w *generator.Writer, typeName string, params []spec.NamedParam) {
+func (g *Generator) WriteParamsType(w generator.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		w.Line("const %s = t.type({", common2.ParamsRuntimeTypeName(typeName))

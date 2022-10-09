@@ -117,7 +117,7 @@ func getEndpointUrl(operation *spec.NamedOperation) string {
 	return url
 }
 
-func addSetCors(w *generator.Writer, operation *spec.NamedOperation) {
+func addSetCors(w generator.Writer, operation *spec.NamedOperation) {
 	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, getEndpointUrl(operation))
 	params := []string{}
 	for _, param := range operation.HeaderParams {
@@ -153,15 +153,15 @@ func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserNa
 	return call
 }
 
-func generateHeaderParsing(w *generator.Writer, operation *spec.NamedOperation) {
+func generateHeaderParsing(w generator.Writer, operation *spec.NamedOperation) {
 	generateParametersParsing(w, operation, operation.HeaderParams, "header", "req.Header")
 }
 
-func generateQueryParsing(w *generator.Writer, operation *spec.NamedOperation) {
+func generateQueryParsing(w generator.Writer, operation *spec.NamedOperation) {
 	generateParametersParsing(w, operation, operation.QueryParams, "query", "req.URL.Query()")
 }
 
-func generateUrlParamsParsing(w *generator.Writer, operation *spec.NamedOperation) {
+func generateUrlParamsParsing(w generator.Writer, operation *spec.NamedOperation) {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		w.Line(`urlParams := paramsparser.New(req.URL.Query(), false)`)
 		for _, param := range operation.Endpoint.UrlParams {
@@ -173,7 +173,7 @@ func generateUrlParamsParsing(w *generator.Writer, operation *spec.NamedOperatio
 	}
 }
 
-func generateParametersParsing(w *generator.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramsValuesVar string) {
+func generateParametersParsing(w generator.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramsValuesVar string) {
 	if namedParams != nil && len(namedParams) > 0 {
 		w.Line(`%s := paramsparser.New(%s, true)`, paramsParserName, paramsValuesVar)
 		for _, param := range namedParams {
@@ -186,7 +186,7 @@ func generateParametersParsing(w *generator.Writer, operation *spec.NamedOperati
 	}
 }
 
-func generateServiceCall(w *generator.Writer, operation *spec.NamedOperation, responseVar string) {
+func generateServiceCall(w generator.Writer, operation *spec.NamedOperation, responseVar string) {
 	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
 	serviceCall := serviceCall(serviceInterfaceTypeVar(operation.InApi), operation)
 	if singleEmptyResponse {
@@ -206,7 +206,7 @@ func generateServiceCall(w *generator.Writer, operation *spec.NamedOperation, re
 	}
 }
 
-func generateResponseWriting(w *generator.Writer, logFieldsName string, response *spec.Response, responseVar string) {
+func generateResponseWriting(w generator.Writer, logFieldsName string, response *spec.Response, responseVar string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(respondEmpty(logFieldsName, `res`, spec.HttpStatusCode(response.Name)))
 	}
@@ -218,7 +218,7 @@ func generateResponseWriting(w *generator.Writer, logFieldsName string, response
 	}
 }
 
-func generateOperationMethod(w *generator.Writer, operation *spec.NamedOperation) {
+func generateOperationMethod(w generator.Writer, operation *spec.NamedOperation) {
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	w.Line(`var err error`)
 	generateUrlParamsParsing(w, operation)
@@ -229,7 +229,7 @@ func generateOperationMethod(w *generator.Writer, operation *spec.NamedOperation
 	generateResponse(w, operation, `response`)
 }
 
-func generateResponse(w *generator.Writer, operation *spec.NamedOperation, responseVar string) {
+func generateResponse(w generator.Writer, operation *spec.NamedOperation, responseVar string) {
 	if len(operation.Responses) == 1 {
 		generateResponseWriting(w, logFieldsName(operation), &operation.Responses[0].Response, responseVar)
 	} else {
@@ -244,7 +244,7 @@ func generateResponse(w *generator.Writer, operation *spec.NamedOperation, respo
 	}
 }
 
-func generateBodyParsing(w *generator.Writer, operation *spec.NamedOperation) {
+func generateBodyParsing(w generator.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"text/plain"`, "req", "res"))
 		w.Line(`  return`)

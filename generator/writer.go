@@ -7,21 +7,35 @@ import (
 	"strings"
 )
 
+type Writer interface {
+	Line(format string, args ...interface{})
+	Lines(format string, args ...interface{})
+	EmptyLine()
+	Indent()
+	Unindent()
+	IndentWith(size int)
+	UnindentWith(size int)
+	Indented() Writer
+	IndentedWith(size int) Writer
+	ToCodeFile() *CodeFile
+	String() string
+}
+
 type Config struct {
 	IndentationStr            string
 	LeadSpacesIndentationSize int
 	Substitutions             map[string]string
 }
 
-type Writer struct {
+type writer struct {
 	filename    string
 	config      Config
 	buffer      *bytes.Buffer
 	indentation int
 }
 
-func NewWriter(config Config) *Writer {
-	return &Writer{
+func NewWriter(config Config) Writer {
+	return &writer{
 		"",
 		config,
 		new(bytes.Buffer),
@@ -29,8 +43,8 @@ func NewWriter(config Config) *Writer {
 	}
 }
 
-func NewWriter2(filename string, config Config) *Writer {
-	return &Writer{
+func NewWriter2(filename string, config Config) Writer {
+	return &writer{
 		filename,
 		config,
 		new(bytes.Buffer),
@@ -38,10 +52,10 @@ func NewWriter2(filename string, config Config) *Writer {
 	}
 }
 
-func (writer *Writer) ToCodeFile() *CodeFile {
+func (w *writer) ToCodeFile() *CodeFile {
 	return &CodeFile{
-		Path:    writer.filename,
-		Content: writer.String(),
+		Path:    w.filename,
+		Content: w.String(),
 	}
 }
 
@@ -55,8 +69,8 @@ func substitute(s string, substitutions map[string]string) string {
 	return result
 }
 
-func (writer Writer) Write(s string) {
-	io.WriteString(writer.buffer, substitute(s, writer.config.Substitutions))
+func (w *writer) write(s string) {
+	io.WriteString(w.buffer, substitute(s, w.config.Substitutions))
 }
 
 func trimPrefix(str string, prefix string) (string, int) {
@@ -69,65 +83,65 @@ func trimPrefix(str string, prefix string) (string, int) {
 	return trimmed, count
 }
 
-func (writer *Writer) Line(format string, args ...interface{}) {
+func (w *writer) Line(format string, args ...interface{}) {
 	line := fmt.Sprintf(format, args...)
 	indentation := 0
-	if writer.config.LeadSpacesIndentationSize > 0 {
-		prefix := strings.Repeat(" ", writer.config.LeadSpacesIndentationSize)
+	if w.config.LeadSpacesIndentationSize > 0 {
+		prefix := strings.Repeat(" ", w.config.LeadSpacesIndentationSize)
 		line, indentation = trimPrefix(line, prefix)
 	}
-	realIndentation := indentation + writer.indentation
-	indentationStr := strings.Repeat(writer.config.IndentationStr, realIndentation)
+	realIndentation := indentation + w.indentation
+	indentationStr := strings.Repeat(w.config.IndentationStr, realIndentation)
 	line = indentationStr + line + "\n"
-	writer.Write(line)
+	w.write(line)
 }
 
-func (writer *Writer) Lines(format string, args ...interface{}) {
+func (w *writer) Lines(format string, args ...interface{}) {
 	code := fmt.Sprintf(strings.Trim(format, "\n"), args...)
 	lines := strings.Split(code, "\n")
 	for _, line := range lines {
-		writer.Line(line)
+		w.Line(line)
 	}
 }
 
-func (writer *Writer) EmptyLine() {
-	writer.Write("\n")
+func (w *writer) EmptyLine() {
+	w.write("\n")
 }
 
-func (writer *Writer) Indent() {
-	writer.indentation = writer.indentation + 1
+func (w *writer) Indent() {
+	w.indentation = w.indentation + 1
 }
 
-func (writer *Writer) Unindent() {
-	writer.indentation = writer.indentation - 1
+func (w *writer) Unindent() {
+	w.indentation = w.indentation - 1
 }
 
-func (writer *Writer) IndentWith(size int) {
-	writer.indentation = writer.indentation + size
+func (w *writer) IndentWith(size int) {
+	w.indentation = w.indentation + size
 }
 
-func (writer *Writer) UnindentWith(size int) {
-	writer.indentation = writer.indentation - size
+func (w *writer) UnindentWith(size int) {
+	w.indentation = w.indentation - size
 }
 
-func (writer *Writer) Indented() *Writer {
-	return &Writer{
-		writer.filename,
-		writer.config,
-		writer.buffer,
-		writer.indentation + 1,
+func (w *writer) Indented() Writer {
+	return &writer{
+		w.filename,
+		w.config,
+		w.buffer,
+		w.indentation + 1,
 	}
 }
 
-func (writer *Writer) IndentedWith(size int) *Writer {
-	return &Writer{
-		writer.filename,
-		writer.config,
-		writer.buffer,
-		writer.indentation + size,
+func (w *writer) IndentedWith(size int) Writer {
+	return &writer{
+		w.filename,
+		w.config,
+		w.buffer,
+		w.indentation + size,
 	}
 }
 
-func (writer *Writer) String() string {
-	return writer.buffer.String()
+func (w *writer) String() string {
+	return w.buffer.String()
 }

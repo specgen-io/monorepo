@@ -42,7 +42,7 @@ func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPa
 	return w.ToCodeFile()
 }
 
-func responseImpl(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {
+func responseImpl(w generator.Writer, types *types.Types, response *spec.OperationResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
 	if !response.Type.Definition.IsEmpty() {
 		w.Line(`class %s(var body: %s) : %s`, serviceResponseImplementationName, types.Kotlin(&response.Type.Definition), reponseInterfaceName(response.Operation))

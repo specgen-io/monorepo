@@ -10,7 +10,7 @@ import (
 	validations "typescript/validations/common"
 )
 
-func (g *Generator) WriteParamsType2(w *generator.Writer, typeName string, params []spec.NamedParam) {
+func (g *Generator) WriteParamsType2(w generator.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		w.Line("const %s = t.type({", validations.ParamsRuntimeTypeName(typeName))
@@ -36,7 +36,7 @@ func kindOfParams(params []spec.NamedParam) (bool, bool) {
 	return hasRequiredParams, hasOptionalParams
 }
 
-func (g *Generator) WriteParamsType(w *generator.Writer, typeName string, params []spec.NamedParam) {
+func (g *Generator) WriteParamsType(w generator.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		hasRequiredFields, hasOptionalFields := kindOfParams(params)

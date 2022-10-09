@@ -15,7 +15,7 @@ func addBuilderParam(param *spec.NamedParam) string {
 	return param.Name.CamelCase()
 }
 
-func generateTryCatch(w *generator.Writer, valName string, exceptionObject string, codeBlock func(w *generator.Writer), exceptionHandler func(w *generator.Writer)) {
+func generateTryCatch(w generator.Writer, valName string, exceptionObject string, codeBlock func(w generator.Writer), exceptionHandler func(w generator.Writer)) {
 	w.Line(`val %s = try {`, valName)
 	codeBlock(w.Indented())
 	w.Line(`} catch (%s) {`, exceptionObject)
@@ -23,17 +23,17 @@ func generateTryCatch(w *generator.Writer, valName string, exceptionObject strin
 	w.Line(`}`)
 }
 
-func generateClientTryCatch(w *generator.Writer, valName string, statement string, exceptionType, exceptionVar, errorMessage string) {
+func generateClientTryCatch(w generator.Writer, valName string, statement string, exceptionType, exceptionVar, errorMessage string) {
 	generateTryCatch(w, valName, exceptionVar+`: `+exceptionType,
-		func(w *generator.Writer) {
+		func(w generator.Writer) {
 			w.Line(statement)
 		},
-		func(w *generator.Writer) {
+		func(w generator.Writer) {
 			generateThrowClientException(w, errorMessage, exceptionVar)
 		})
 }
 
-func generateThrowClientException(w *generator.Writer, errorMessage string, wrapException string) {
+func generateThrowClientException(w generator.Writer, errorMessage string, wrapException string) {
 	w.Line(`val errorMessage = %s`, errorMessage)
 	w.Line(`logger.error(errorMessage)`)
 	params := "errorMessage"

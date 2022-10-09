@@ -70,7 +70,7 @@ func (g *OkHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *OkHttpGenerator) clientMethod(w *generator.Writer, operation *spec.NamedOperation) {
+func (g *OkHttpGenerator) clientMethod(w generator.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 

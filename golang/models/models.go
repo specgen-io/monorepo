@@ -66,7 +66,7 @@ func requiredFields(model *spec.NamedModel) string {
 	return fmt.Sprintf(`%sRequiredFields`, model.Name.CamelCase())
 }
 
-func generateObjectModel(w *generator.Writer, model *spec.NamedModel) {
+func generateObjectModel(w generator.Writer, model *spec.NamedModel) {
 	w.Line("type %s struct {", model.Name.PascalCase())
 	fields := [][]string{}
 	for _, field := range model.Object.Fields {
@@ -131,7 +131,7 @@ func generateObjectModel(w *generator.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateEnumModel(w *generator.Writer, model *spec.NamedModel) {
+func generateEnumModel(w generator.Writer, model *spec.NamedModel) {
 	w.Line("type %s %s", model.Name.PascalCase(), "string")
 	w.EmptyLine()
 	w.Line("const (")
@@ -169,7 +169,7 @@ func enumValues(model *spec.NamedModel) string {
 	return fmt.Sprintf("%sValues", model.Name.PascalCase())
 }
 
-func generateOneOfModel(w *generator.Writer, model *spec.NamedModel) {
+func generateOneOfModel(w generator.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		generateOneOfModelDiscriminator(w, model)
 	} else {
@@ -185,7 +185,7 @@ func getCaseChecks(oneof *spec.OneOf) string {
 	return strings.Join(caseChecks, " && ")
 }
 
-func generateOneOfModelWrapper(w *generator.Writer, model *spec.NamedModel) {
+func generateOneOfModelWrapper(w generator.Writer, model *spec.NamedModel) {
 	caseChecks := getCaseChecks(model.OneOf)
 	items := [][]string{}
 	w.Line("type %s struct {", model.Name.PascalCase())
@@ -222,7 +222,7 @@ func generateOneOfModelWrapper(w *generator.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateOneOfModelDiscriminator(w *generator.Writer, model *spec.NamedModel) {
+func generateOneOfModelDiscriminator(w generator.Writer, model *spec.NamedModel) {
 	w.Line("type %s struct {", model.Name.PascalCase())
 	items := [][]string{}
 	for _, item := range model.OneOf.Items {

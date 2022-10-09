@@ -68,7 +68,7 @@ func (g *SpringGenerator) ExceptionController(responses *spec.Responses) *genera
 	return w.ToCodeFile()
 }
 
-func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Responses) {
+func (g *SpringGenerator) errorHandler(w generator.Writer, errors spec.Responses) {
 	notFoundError := errors.GetByStatusName(spec.HttpStatusNotFound)
 	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)
 	internalServerError := errors.GetByStatusName(spec.HttpStatusInternalServerError)
@@ -117,7 +117,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *SpringGenerator) controllerMethod(w *generator.Writer, operation *spec.NamedOperation) {
+func (g *SpringGenerator) controllerMethod(w generator.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, casee.ToPascalCase(methodName), url)
@@ -131,7 +131,7 @@ func (g *SpringGenerator) controllerMethod(w *generator.Writer, operation *spec.
 	w.Line(`}`)
 }
 
-func (g *SpringGenerator) parseBody(w *generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
+func (g *SpringGenerator) parseBody(w generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`checkContentType(request, MediaType.TEXT_PLAIN)`)
 	}
@@ -142,7 +142,7 @@ func (g *SpringGenerator) parseBody(w *generator.Writer, operation *spec.NamedOp
 	}
 }
 
-func (g *SpringGenerator) processResponses(w *generator.Writer, operation *spec.NamedOperation, resultVarName string) {
+func (g *SpringGenerator) processResponses(w generator.Writer, operation *spec.NamedOperation, resultVarName string) {
 	if len(operation.Responses) == 1 {
 		g.processResponse(w, &operation.Responses[0].Response, resultVarName)
 	}
@@ -156,7 +156,7 @@ func (g *SpringGenerator) processResponses(w *generator.Writer, operation *spec.
 	}
 }
 
-func (g *SpringGenerator) processResponse(w *generator.Writer, response *spec.Response, bodyVar string) {
+func (g *SpringGenerator) processResponse(w generator.Writer, response *spec.Response, bodyVar string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return ResponseEntity(HttpStatus.%s)`, response.Name.UpperCase())

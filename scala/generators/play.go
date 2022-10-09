@@ -168,7 +168,7 @@ func generateApiImpl(api spec.Api, thepackage, apiPackage, modelsPackage Package
 	}
 }
 
-func addParamsParsing(w *generator.Writer, params []spec.NamedParam, location string, paramsVar string, valuesVar string) {
+func addParamsParsing(w generator.Writer, params []spec.NamedParam, location string, paramsVar string, valuesVar string) {
 	if params != nil && len(params) > 0 {
 		w.Line(`val %s = new StringParamsReader(%s, %s)`, paramsVar, location, valuesVar)
 		for _, param := range params {
@@ -290,7 +290,7 @@ func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage,
 	}
 }
 
-func generateControllerMethod(w *generator.Writer, operation *spec.NamedOperation) {
+func generateControllerMethod(w generator.Writer, operation *spec.NamedOperation) {
 	params := getControllerParams(operation, true)
 
 	payload := ``
@@ -304,7 +304,7 @@ func generateControllerMethod(w *generator.Writer, operation *spec.NamedOperatio
 	w.Line(`}`)
 }
 
-func generateControllerMethodRequest(w *generator.Writer, operation *spec.NamedOperation) {
+func generateControllerMethodRequest(w generator.Writer, operation *spec.NamedOperation) {
 	parseParams := getParsedOperationParams(operation)
 	allParams := getOperationCallParams(operation)
 
@@ -328,7 +328,7 @@ func generateControllerMethodRequest(w *generator.Writer, operation *spec.NamedO
 	}
 }
 
-func genBodyParsing(w *generator.Writer, operation *spec.NamedOperation) {
+func genBodyParsing(w generator.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`checkContentType(request, "text/plain")`)
 		w.Line(`val body = request.body.utf8String`)
@@ -350,7 +350,7 @@ func getPlayStatus(response *spec.Response) string {
 	}
 }
 
-func genMatchResult(w *generator.Writer, operation *spec.NamedOperation, resultVarName string) {
+func genMatchResult(w generator.Writer, operation *spec.NamedOperation, resultVarName string) {
 	w.Line(`%s.map {`, resultVarName)
 	w.Indent()
 	if len(operation.Responses) == 1 {
@@ -453,7 +453,7 @@ func generateMainRouter(versions []spec.Version, thepackage Package) *generator.
 	}
 }
 
-func generateSpecRouterMainClass(w *generator.Writer, versions []spec.Version) {
+func generateSpecRouterMainClass(w generator.Writer, versions []spec.Version) {
 	params := []string{}
 	for _, version := range versions {
 		for _, api := range version.Http.Apis {
@@ -485,7 +485,7 @@ func routeName(operationName spec.Name) string {
 	return fmt.Sprintf("route%s", operationName.PascalCase())
 }
 
-func generateApiRouterClass(w *generator.Writer, api *spec.Api) {
+func generateApiRouterClass(w generator.Writer, api *spec.Api) {
 	w.Line(`class %s @Inject()(Action: DefaultActionBuilder, controller: %s) extends SimpleRouter {`, routerType(api.Name), controllerType(api.Name))
 
 	for _, operation := range api.Operations {

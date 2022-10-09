@@ -32,7 +32,7 @@ func httpErrors(module, errorsModelsModule module.Module, errors *spec.Responses
 	}
 }
 
-func getError(w *generator.Writer, response *spec.Response) {
+func getError(w generator.Writer, response *spec.Response) {
 	w.EmptyLine()
 	w.Line(`type %s struct {`, response.Name.PascalCase())
 	w.Line(`	Body %s`, types.GoType(&response.Type.Definition))

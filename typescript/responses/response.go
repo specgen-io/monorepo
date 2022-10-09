@@ -8,7 +8,7 @@ import (
 	"typescript/types"
 )
 
-func GenerateOperationResponse(w *generator.Writer, operation *spec.NamedOperation) {
+func GenerateOperationResponse(w generator.Writer, operation *spec.NamedOperation) {
 	w.Line("export type %s =", responseTypeName(operation))
 	for _, response := range operation.Responses {
 		if !response.Type.Definition.IsEmpty() {

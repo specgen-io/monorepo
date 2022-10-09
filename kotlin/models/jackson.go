@@ -59,7 +59,7 @@ func jacksonPropertyAnnotation(field *spec.NamedDefinition) string {
 	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.Source, required)
 }
 
-func (g *JacksonGenerator) modelObject(w *generator.Writer, model *spec.NamedModel) {
+func (g *JacksonGenerator) modelObject(w generator.Writer, model *spec.NamedModel) {
 	className := model.Name.PascalCase()
 	w.Line(`data class %s(`, className)
 	for _, field := range model.Object.Fields {
@@ -69,7 +69,7 @@ func (g *JacksonGenerator) modelObject(w *generator.Writer, model *spec.NamedMod
 	w.Line(`)`)
 }
 
-func (g *JacksonGenerator) modelEnum(w *generator.Writer, model *spec.NamedModel) {
+func (g *JacksonGenerator) modelEnum(w generator.Writer, model *spec.NamedModel) {
 	enumName := model.Name.PascalCase()
 	w.Line(`enum class %s {`, enumName)
 	for _, enumItem := range model.Enum.Items {
@@ -78,7 +78,7 @@ func (g *JacksonGenerator) modelEnum(w *generator.Writer, model *spec.NamedModel
 	w.Line(`}`)
 }
 
-func (g *JacksonGenerator) modelOneOf(w *generator.Writer, model *spec.NamedModel) {
+func (g *JacksonGenerator) modelOneOf(w generator.Writer, model *spec.NamedModel) {
 	interfaceName := model.Name.PascalCase()
 	if model.OneOf.Discriminator != nil {
 		w.Line(`@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "%s")`, *model.OneOf.Discriminator)
@@ -193,7 +193,7 @@ func (g *JacksonGenerator) CreateJsonMapperField(annotation string) string {
 	return objectMapperVar
 }
 
-func (g *JacksonGenerator) InitJsonMapper(w *generator.Writer) {
+func (g *JacksonGenerator) InitJsonMapper(w generator.Writer) {
 	w.Line(`objectMapper = setupObjectMapper(jacksonObjectMapper())`)
 }
 
