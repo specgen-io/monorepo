@@ -207,16 +207,21 @@ func (g *SpringGenerator) Errors() []generator.CodeFile {
 }
 
 func (g *SpringGenerator) errorsHelpers() *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.Errors, `ErrorsHelpers`)
+	w.Template(
+		map[string]string{
+			`ErrorsModelsPackage`: g.Packages.ErrorsModels.PackageName,
+			`ContentTypePackage`:  g.Packages.ContentType.PackageName,
+			`JsonPackage`:         g.Packages.Json.PackageName,
+			`ErrorsPackage`:       g.Packages.Errors.PackageName,
+		}, `
 import org.springframework.web.bind.*
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import [[.ErrorsModelsPackage]].*
 import [[.ContentTypePackage]].*
 import [[.JsonPackage]].*
-import [[.PackageName]].ValidationErrorsHelpers.extractValidationErrors
+import [[.ErrorsPackage]].ValidationErrorsHelpers.extractValidationErrors
 
 fun getNotFoundError(exception: Throwable?): NotFoundError? {
 	if (exception is MethodArgumentTypeMismatchException) {
@@ -257,22 +262,8 @@ fun getBadRequestError(exception: Throwable): BadRequestError? {
 	}
 	return null
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName         string
-		ErrorsModelsPackage string
-		ContentTypePackage  string
-		JsonPackage         string
-	}{g.Packages.Errors.PackageName,
-		g.Packages.ErrorsModels.PackageName,
-		g.Packages.ContentType.PackageName,
-		g.Packages.Json.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.Errors.GetPath("ErrorsHelpers.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *SpringGenerator) JsonHelpers() []generator.CodeFile {

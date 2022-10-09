@@ -2,8 +2,6 @@ package models
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"kotlin/imports"
 	"kotlin/packages"
@@ -167,9 +165,12 @@ func (g *MoshiGenerator) ModelsUsageImports() []string {
 }
 
 func (g *MoshiGenerator) ValidationErrorsHelpers() *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.Errors, `ValidationErrorsHelpers`)
+	w.Template(
+		map[string]string{
+			`JsonPackage`:         g.Packages.Json.PackageName,
+			`ErrorsModelsPackage`: g.Packages.ErrorsModels.PackageName,
+		}, `
 import [[.JsonPackage]].*
 import [[.ErrorsModelsPackage]].*
 import java.util.regex.Pattern
@@ -186,21 +187,8 @@ object ValidationErrorsHelpers {
         return null
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName         string
-		ErrorsModelsPackage string
-		JsonPackage         string
-	}{
-		g.Packages.Errors.PackageName,
-		g.Packages.ErrorsModels.PackageName,
-		g.Packages.Json.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.Errors.GetPath("ValidationErrorsHelpers.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *MoshiGenerator) CreateJsonMapperField(annotation string) string {
@@ -371,8 +359,6 @@ class LocalDateAdapter {
 func localDateTimeAdapter(thePackage packages.Package) *generator.CodeFile {
 	w := writer.New(thePackage, `LocalDateTimeAdapter`)
 	w.Lines(`
-package [[.PackageName]];
-
 import com.squareup.moshi.*
 
 import java.time.*

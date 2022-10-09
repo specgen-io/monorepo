@@ -2,8 +2,6 @@ package service
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"github.com/pinzolo/casee"
 	"kotlin/imports"
@@ -206,16 +204,21 @@ func (g *MicronautGenerator) Errors() []generator.CodeFile {
 }
 
 func (g *MicronautGenerator) errorsHelpers() *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.Errors, `ErrorsHelpers`)
+	w.Template(
+		map[string]string{
+			`ContentTypePackage`:  g.Packages.ContentType.PackageName,
+			`ErrorsModelsPackage`: g.Packages.ErrorsModels.PackageName,
+			`ErrorsPackage`:       g.Packages.Errors.PackageName,
+			`JsonPackage`:         g.Packages.Json.PackageName,
+		}, `
 import io.micronaut.core.annotation.AnnotationValue
 import io.micronaut.core.convert.exceptions.ConversionErrorException
 import io.micronaut.core.type.Argument
 import io.micronaut.web.router.exceptions.*
 import [[.ContentTypePackage]].*
 import [[.ErrorsModelsPackage]].*
-import [[.PackageName]].ValidationErrorsHelpers.extractValidationErrors
+import [[.ErrorsPackage]].ValidationErrorsHelpers.extractValidationErrors
 import [[.JsonPackage]].*
 import java.util.*
 import javax.validation.ConstraintViolationException
@@ -296,22 +299,8 @@ fun getBadRequestError(exception: Throwable): BadRequestError? {
 	}
 	return null
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName         string
-		ErrorsModelsPackage string
-		ContentTypePackage  string
-		JsonPackage         string
-	}{g.Packages.Errors.PackageName,
-		g.Packages.ErrorsModels.PackageName,
-		g.Packages.ContentType.PackageName,
-		g.Packages.Json.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.Errors.GetPath("ErrorsHelpers.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *MicronautGenerator) JsonHelpers() []generator.CodeFile {
