@@ -242,16 +242,19 @@ public class JsonParseException extends RuntimeException {
 }
 
 func (g *JacksonGenerator) ModelsValidation() *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(g.Packages.Errors, `ValidationErrorsHelpers`)
+	w.Template(
+		map[string]string{
+			`JsonPackage`:         g.Packages.Json.PackageName,
+			`ErrorsModelsPackage`: g.Packages.ErrorsModels.PackageName,
+		}, `
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import [[.JsonPackage]].*;
 import [[.ErrorsModelsPackage]].*;
 
 import java.util.List;
 
-public class ValidationErrorsHelpers {
+public class [[.ClassName]] {
 	public static List<ValidationError> extractValidationErrors(JsonParseException exception) {
 		var causeException = exception.getCause();
 		if (causeException instanceof InvalidFormatException) {
@@ -278,21 +281,8 @@ public class ValidationErrorsHelpers {
 		return path.toString();
 	}
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName         string
-		ErrorsModelsPackage string
-		JsonPackage         string
-	}{
-		g.Packages.Errors.PackageName,
-		g.Packages.ErrorsModels.PackageName,
-		g.Packages.Json.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.Errors.GetPath("ValidationErrorsHelpers.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *JacksonGenerator) CreateJsonMapperField(w generator.Writer, annotation string) {

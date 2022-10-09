@@ -10,6 +10,7 @@ import (
 type Writer interface {
 	Line(format string, args ...interface{})
 	Lines(format string, args ...interface{})
+	Template(data map[string]string, content string)
 	EmptyLine()
 	Indent()
 	Unindent()
@@ -69,6 +70,14 @@ func substitute(s string, substitutions map[string]string) string {
 	return result
 }
 
+func wrapKeys(vars map[string]string, prefix, postfix string) map[string]string {
+	result := map[string]string{}
+	for key, value := range vars {
+		result[fmt.Sprintf(`%s%s%s`, prefix, key, postfix)] = value
+	}
+	return result
+}
+
 func (w *writer) write(s string) {
 	io.WriteString(w.buffer, substitute(s, w.config.Substitutions))
 }
@@ -102,6 +111,11 @@ func (w *writer) Lines(format string, args ...interface{}) {
 	for _, line := range lines {
 		w.Line(line)
 	}
+}
+
+func (w *writer) Template(data map[string]string, content string) {
+	code := substitute(content, wrapKeys(data, "[[.", "]]"))
+	w.Lines(code)
 }
 
 func (w *writer) EmptyLine() {
