@@ -9,7 +9,7 @@ import (
 
 type Writer interface {
 	Line(format string, args ...interface{})
-	Lines(format string, args ...interface{})
+	Lines(format string)
 	Template(data map[string]string, content string)
 	EmptyLine()
 	Indent()
@@ -105,8 +105,8 @@ func (w *writer) Line(format string, args ...interface{}) {
 	w.write(line)
 }
 
-func (w *writer) Lines(format string, args ...interface{}) {
-	code := fmt.Sprintf(strings.Trim(format, "\n"), args...)
+func (w *writer) Lines(content string) {
+	code := strings.Trim(content, "\n")
 	lines := strings.Split(code, "\n")
 	for _, line := range lines {
 		w.Line(line)
