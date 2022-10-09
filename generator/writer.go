@@ -92,24 +92,28 @@ func trimPrefix(str string, prefix string) (string, int) {
 	return trimmed, count
 }
 
-func (w *writer) Line(format string, args ...interface{}) {
-	line := fmt.Sprintf(format, args...)
+func (w *writer) line(theline string) {
 	indentation := 0
 	if w.config.LeadSpacesIndentationSize > 0 {
 		prefix := strings.Repeat(" ", w.config.LeadSpacesIndentationSize)
-		line, indentation = trimPrefix(line, prefix)
+		theline, indentation = trimPrefix(theline, prefix)
 	}
 	realIndentation := indentation + w.indentation
 	indentationStr := strings.Repeat(w.config.IndentationStr, realIndentation)
-	line = indentationStr + line + "\n"
-	w.write(line)
+	theline = indentationStr + theline + "\n"
+	w.write(theline)
+}
+
+func (w *writer) Line(format string, args ...interface{}) {
+	theline := fmt.Sprintf(format, args...)
+	w.line(theline)
 }
 
 func (w *writer) Lines(content string) {
 	code := strings.Trim(content, "\n")
 	lines := strings.Split(code, "\n")
 	for _, line := range lines {
-		w.Line(line)
+		w.line(line)
 	}
 }
 
