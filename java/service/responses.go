@@ -9,16 +9,11 @@ import (
 )
 
 func (g *Generator) responseInterface(operation *spec.NamedOperation) *generator.CodeFile {
-	version := operation.InApi.InHttp.InVersion
-	apiPackage := g.Packages.Version(version).ServicesApi(operation.InApi)
-
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, apiPackage.PackageName)
-	w.EmptyLine()
-	w.Line(`import %s;`, g.Packages.Models(version).PackageStar)
+	w := writer.New(g.Packages.ServicesApi(operation.InApi), responseInterfaceName(operation))
+	w.Line(`import %s;`, g.Packages.Models(operation.InApi.InHttp.InVersion).PackageStar)
 	w.Line(`import %s;`, g.Packages.ErrorsModels.PackageStar)
 	w.EmptyLine()
-	w.Line(`public interface %s {`, responseInterfaceName(operation))
+	w.Line(`public interface [[.ClassName]] {`)
 	for index, response := range operation.Responses {
 		if index > 0 {
 			w.EmptyLine()
@@ -26,11 +21,7 @@ func (g *Generator) responseInterface(operation *spec.NamedOperation) *generator
 		responseImpl(w.Indented(), g.Types, &response)
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", responseInterfaceName(operation))),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func responseImpl(w *generator.Writer, types *types.Types, response *spec.OperationResponse) {

@@ -1,8 +1,6 @@
 package service
 
 import (
-	"fmt"
-
 	"generator"
 	"java/imports"
 	"java/writer"
@@ -18,20 +16,17 @@ func (g *Generator) ServicesImplementations(version *spec.Version) []generator.C
 }
 
 func (g *Generator) serviceImplementation(api *spec.Api) *generator.CodeFile {
-	packages := g.Packages.Version(api.InHttp.InVersion)
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, packages.ServicesImpl.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.ServicesImpl(api.InHttp.InVersion), serviceImplName(api))
 	annotationImport, annotation := g.ServiceImplAnnotation(api)
 	imports := imports.New()
 	imports.Add(annotationImport)
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Add(packages.ServicesApi(api).PackageStar)
+	imports.Add(g.Packages.ServicesApi(api).PackageStar)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@%s`, annotation)
-	w.Line(`public class %s implements %s {`, serviceImplName(api), serviceInterfaceName(api))
+	w.Line(`public class [[.ClassName]] implements %s {`, serviceInterfaceName(api))
 	for _, operation := range api.Operations {
 		w.Line(`  @Override`)
 		w.Line(`  public %s {`, operationSignature(g.Types, &operation))
@@ -39,9 +34,5 @@ func (g *Generator) serviceImplementation(api *spec.Api) *generator.CodeFile {
 		w.Line(`  }`)
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    packages.ServicesImpl.GetPath(fmt.Sprintf("%s.java", serviceImplName(api))),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }

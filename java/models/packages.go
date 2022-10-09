@@ -8,6 +8,7 @@ import (
 type Packages struct {
 	models       map[string]packages.Package
 	Json         packages.Package
+	JsonAdapters packages.Package
 	Errors       packages.Package
 	ErrorsModels packages.Package
 }
@@ -18,6 +19,7 @@ func NewPackages(packageName, generatePath string, specification *spec.Spec) *Pa
 	}
 	generated := packages.New(generatePath, packageName)
 	json := generated.Subpackage("json")
+	jsonAdapters := json.Subpackage("adapters")
 	errors := generated.Subpackage("errors")
 	errorsModels := errors.Subpackage("models")
 
@@ -29,6 +31,7 @@ func NewPackages(packageName, generatePath string, specification *spec.Spec) *Pa
 	return &Packages{
 		models,
 		json,
+		jsonAdapters,
 		errors,
 		errorsModels,
 	}

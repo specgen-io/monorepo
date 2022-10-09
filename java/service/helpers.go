@@ -36,3 +36,5 @@ func versionControllerName(controllerName string, version *spec.Version) string 
 func controllerMethodName(operation *spec.NamedOperation) string {
 	return operation.Name.CamelCase()
 }
+
+var ErrorsHelpersClassName = "ErrorsHelpers"

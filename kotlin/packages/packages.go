@@ -31,10 +31,6 @@ func (m Package) Subpackage(name string) Package {
 	return m
 }
 
-func (m Package) Get(name string) string {
-	return fmt.Sprintf(`%s.%s`, m.PackageName, name)
-}
-
 func packageToPath(packageName string) string {
 	parts := strings.Split(packageName, ".")
 	return strings.Join(parts, string(os.PathSeparator))

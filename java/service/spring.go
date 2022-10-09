@@ -32,7 +32,7 @@ func (g *SpringGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport
 func (g *SpringGenerator) ServicesControllers(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, g.serviceController(&api)...)
+		files = append(files, *g.serviceController(&api))
 	}
 	return files
 }
@@ -48,32 +48,25 @@ func (g *SpringGenerator) ServiceImports() []string {
 }
 
 func (g *SpringGenerator) ExceptionController(responses *spec.Responses) *generator.CodeFile {
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, g.Packages.Controllers.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.RootControllers, `ExceptionController`)
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.AddStatic(g.Packages.Errors.Subpackage("ErrorsHelpers").PackageStar)
+	imports.AddStatic(g.Packages.Errors.Subpackage(ErrorsHelpersClassName).PackageStar)
 	imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@ControllerAdvice`)
-	className := `ExceptionController`
-	w.Line(`public class %s {`, className)
-	w.Line(`  private static final Logger logger = LogManager.getLogger(%s.class);`, className)
+	w.Line(`public class [[.ClassName]] {`)
+	w.Line(`  private static final Logger logger = LogManager.getLogger([[.ClassName]].class);`)
 	w.EmptyLine()
 	w.Line(`  @Autowired`)
 	w.Line(`  private Json json;`)
 	w.EmptyLine()
 	g.errorHandler(w.Indented(), *responses)
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    g.Packages.Controllers.GetPath(fmt.Sprintf("%s.java", className)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Responses) {
@@ -95,12 +88,8 @@ func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Response
 	w.Line(`}`)
 }
 
-func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile {
-	controllersPackage := g.Packages.Version(api.InHttp.InVersion).Controllers
-	files := []generator.CodeFile{}
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, controllersPackage.PackageName)
-	w.EmptyLine()
+func (g *SpringGenerator) serviceController(api *spec.Api) *generator.CodeFile {
+	w := writer.New(g.Packages.Controllers(api.InHttp.InVersion), controllerName(api))
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`javax.servlet.http.HttpServletRequest`)
@@ -108,16 +97,15 @@ func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile 
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Add(g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageStar)
+	imports.Add(g.Packages.ServicesApi(api).PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.InHttp.InVersion))
-	className := controllerName(api)
-	w.Line(`public class %s {`, className)
-	w.Line(`  private static final Logger logger = LogManager.getLogger(%s.class);`, className)
+	w.Line(`public class [[.ClassName]] {`)
+	w.Line(`  private static final Logger logger = LogManager.getLogger([[.ClassName]].class);`)
 	w.EmptyLine()
 	w.Line(`  @Autowired`)
 	w.Line(`  private %s %s;`, serviceInterfaceName(api), serviceVarName(api))
@@ -130,13 +118,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile 
 		g.controllerMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
-
-	files = append(files, generator.CodeFile{
-		Path:    controllersPackage.GetPath(fmt.Sprintf("%s.java", className)),
-		Content: w.String(),
-	})
-
-	return files
+	return w.ToCodeFile()
 }
 
 func (g *SpringGenerator) controllerMethod(w *generator.Writer, operation *spec.NamedOperation) {
@@ -283,7 +265,7 @@ import [[.JsonPackage]].*;
 
 import static [[.PackageName]].ValidationErrorsHelpers.extractValidationErrors;
 
-public class ErrorsHelpers {
+public class [[.ClassName]] {
     private static final NotFoundError NOT_FOUND_ERROR = new NotFoundError("Failed to parse url parameters");
 
     public static NotFoundError getNotFoundError(Throwable exception) {
@@ -334,11 +316,13 @@ public class ErrorsHelpers {
 
 	code, _ = generator.ExecuteTemplate(code, struct {
 		PackageName         string
+		ClassName           string
 		ErrorsModelsPackage string
 		ContentTypePackage  string
 		JsonPackage         string
 	}{
 		g.Packages.Errors.PackageName,
+		ErrorsHelpersClassName,
 		g.Packages.ErrorsModels.PackageName,
 		g.Packages.ContentType.PackageName,
 		g.Packages.Json.PackageName,
@@ -360,9 +344,7 @@ func (g *SpringGenerator) JsonHelpers() []generator.CodeFile {
 }
 
 func (g *SpringGenerator) Json() *generator.CodeFile {
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, g.Packages.Json.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.Json, `Json`)
 	imports := imports.New()
 	imports.Add(`org.springframework.beans.factory.annotation.Autowired`)
 	imports.Add(`org.springframework.stereotype.Component`)
@@ -371,17 +353,12 @@ func (g *SpringGenerator) Json() *generator.CodeFile {
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Component`)
-	className := `Json`
-	w.Line(`public class %s {`, className)
+	w.Line(`public class [[.ClassName]] {`)
 	w.EmptyLine()
 	g.Models.CreateJsonMapperField(w.Indented(), "@Autowired")
 	w.Line(g.Models.JsonHelpersMethods())
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    g.Packages.Json.GetPath(fmt.Sprintf("%s.java", className)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func springMethodParams(operation *spec.NamedOperation, types *types.Types) []string {

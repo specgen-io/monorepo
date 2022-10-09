@@ -1,11 +1,21 @@
 package writer
 
 import (
+	"fmt"
 	"generator"
+	"java/packages"
 )
 
-var JavaConfig = generator.Config{"\t", 2, nil}
+func JavaConfig() generator.Config {
+	return generator.Config{"\t", 2, map[string]string{}}
+}
 
-func NewJavaWriter() *generator.Writer {
-	return generator.NewWriter(JavaConfig)
+func New(thePackage packages.Package, className string) *generator.Writer {
+	config := JavaConfig()
+	filename := thePackage.GetPath(fmt.Sprintf("%s.java", className))
+	config.Substitutions["[[.ClassName]]"] = className
+	w := generator.NewWriter2(filename, config)
+	w.Line(`package %s;`, thePackage.PackageName)
+	w.EmptyLine()
+	return w
 }

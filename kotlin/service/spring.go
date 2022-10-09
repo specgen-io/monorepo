@@ -33,7 +33,7 @@ func (g *SpringGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImport
 func (g *SpringGenerator) ServicesControllers(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, g.serviceController(&api)...)
+		files = append(files, *g.serviceController(&api))
 	}
 	return files
 }
@@ -49,31 +49,23 @@ func (g *SpringGenerator) ServiceImports() []string {
 }
 
 func (g *SpringGenerator) ExceptionController(responses *spec.Responses) *generator.CodeFile {
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, g.Packages.Controllers.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.RootControllers, `ExceptionController`)
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`javax.servlet.http.HttpServletRequest`)
 	imports.Add(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.Errors.Subpackage("ErrorsHelpers").Get("getBadRequestError"))
-	imports.Add(g.Packages.Errors.Subpackage("ErrorsHelpers").Get("getNotFoundError"))
+	imports.Add(g.Packages.Errors.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@ControllerAdvice`)
-	className := `ExceptionController`
-	w.Line(`class %s(@Autowired private val json: Json) {`, className)
-	w.Line(`  private val logger = LogManager.getLogger(%s::class.java)`, className)
+	w.Line(`class [[.ClassName]](@Autowired private val json: Json) {`)
+	w.Line(`  private val logger = LogManager.getLogger([[.ClassName]]::class.java)`)
 	w.EmptyLine()
 	g.errorHandler(w.Indented(), *responses)
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    g.Packages.Controllers.GetPath(fmt.Sprintf("%s.kt", className)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Responses) {
@@ -95,44 +87,34 @@ func (g *SpringGenerator) errorHandler(w *generator.Writer, errors spec.Response
 	w.Line(`}`)
 }
 
-func (g *SpringGenerator) serviceController(api *spec.Api) []generator.CodeFile {
-	files := []generator.CodeFile{}
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, g.Packages.Version(api.InHttp.InVersion).Controllers.PackageName)
-	w.EmptyLine()
+func (g *SpringGenerator) serviceController(api *spec.Api) *generator.CodeFile {
+	w := writer.New(g.Packages.Controllers(api.InHttp.InVersion), controllerName(api))
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`javax.servlet.http.HttpServletRequest`)
 	imports.Add(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
 	imports.Add(g.Packages.ContentType.PackageStar)
-	imports.Add(g.Packages.Json.Get("Json"))
+	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageStar)
+	imports.Add(g.Packages.ServicesApi(api).PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.InHttp.InVersion))
-	className := controllerName(api)
-	w.Line(`class %s(`, className)
+	w.Line(`class [[.ClassName]](`)
 	w.Line(`  @Autowired private val %s: %s,`, serviceVarName(api), serviceInterfaceName(api))
 	w.Line(`  @Autowired private val json: Json`)
 	w.Line(`) {`)
-	w.Line(`  private val logger = LogManager.getLogger(%s::class.java)`, className)
+	w.Line(`  private val logger = LogManager.getLogger([[.ClassName]]::class.java)`)
 
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		g.controllerMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
-
-	files = append(files, generator.CodeFile{
-		Path:    g.Packages.Version(api.InHttp.InVersion).Controllers.GetPath(fmt.Sprintf("%s.kt", className)),
-		Content: w.String(),
-	})
-
-	return files
+	return w.ToCodeFile()
 }
 
 func (g *SpringGenerator) controllerMethod(w *generator.Writer, operation *spec.NamedOperation) {
@@ -245,48 +227,44 @@ import [[.ContentTypePackage]].*
 import [[.JsonPackage]].*
 import [[.PackageName]].ValidationErrorsHelpers.extractValidationErrors
 
-object ErrorsHelpers {
-    private val NOT_FOUND_ERROR = NotFoundError("Failed to parse url parameters")
+fun getNotFoundError(exception: Throwable?): NotFoundError? {
+	if (exception is MethodArgumentTypeMismatchException) {
+		if (exception.parameter.hasParameterAnnotation(PathVariable::class.java)) {
+			return NotFoundError("Failed to parse url parameters")
+		}
+	}
+	return null
+}
 
-    fun getNotFoundError(exception: Throwable?): NotFoundError? {
-        if (exception is MethodArgumentTypeMismatchException) {
-            if (exception.parameter.hasParameterAnnotation(PathVariable::class.java)) {
-                return NOT_FOUND_ERROR
-            }
-        }
-        return null
-    }
-
-    fun getBadRequestError(exception: Throwable): BadRequestError? {
-        if (exception is JsonParseException) {
-			val errors = extractValidationErrors(exception)
-            return BadRequestError("Failed to parse body", ErrorLocation.BODY, errors)
-        }
-        if (exception is ContentTypeMismatchException) {
-            val error = ValidationError("Content-Type", "missing", exception.message)
-            return BadRequestError("Failed to parse header", ErrorLocation.HEADER, listOf(error))
-        }
-        if (exception is MissingServletRequestParameterException) {
-            val message = String.format("Failed to parse query")
-            val validation = ValidationError(exception.parameterName, "missing", exception.message)
-            return BadRequestError(message, ErrorLocation.QUERY, listOf(validation))
-        }
-        if (exception is MethodArgumentTypeMismatchException) {
-            val message = String.format("Failed to parse query")
-            val validation = ValidationError(exception.name, "parsing_failed", exception.message)
-            if (exception.parameter.hasParameterAnnotation(RequestParam::class.java)) {
-                return BadRequestError(message, ErrorLocation.QUERY, listOf(validation))
-            } else if (exception.parameter.hasParameterAnnotation(RequestHeader::class.java)) {
-                return BadRequestError(message, ErrorLocation.HEADER, listOf(validation))
-            }
-        }
-        if (exception is MissingRequestHeaderException) {
-            val message = String.format("Failed to parse header")
-            val validation = ValidationError(exception.headerName, "missing", exception.message)
-            return BadRequestError(message, ErrorLocation.HEADER, listOf(validation))
-        }
-        return null
-    }
+fun getBadRequestError(exception: Throwable): BadRequestError? {
+	if (exception is JsonParseException) {
+		val errors = extractValidationErrors(exception)
+		return BadRequestError("Failed to parse body", ErrorLocation.BODY, errors)
+	}
+	if (exception is ContentTypeMismatchException) {
+		val error = ValidationError("Content-Type", "missing", exception.message)
+		return BadRequestError("Failed to parse header", ErrorLocation.HEADER, listOf(error))
+	}
+	if (exception is MissingServletRequestParameterException) {
+		val message = String.format("Failed to parse query")
+		val validation = ValidationError(exception.parameterName, "missing", exception.message)
+		return BadRequestError(message, ErrorLocation.QUERY, listOf(validation))
+	}
+	if (exception is MethodArgumentTypeMismatchException) {
+		val message = String.format("Failed to parse query")
+		val validation = ValidationError(exception.name, "parsing_failed", exception.message)
+		if (exception.parameter.hasParameterAnnotation(RequestParam::class.java)) {
+			return BadRequestError(message, ErrorLocation.QUERY, listOf(validation))
+		} else if (exception.parameter.hasParameterAnnotation(RequestHeader::class.java)) {
+			return BadRequestError(message, ErrorLocation.HEADER, listOf(validation))
+		}
+	}
+	if (exception is MissingRequestHeaderException) {
+		val message = String.format("Failed to parse header")
+		val validation = ValidationError(exception.headerName, "missing", exception.message)
+		return BadRequestError(message, ErrorLocation.HEADER, listOf(validation))
+	}
+	return null
 }
 `
 
@@ -317,9 +295,7 @@ func (g *SpringGenerator) JsonHelpers() []generator.CodeFile {
 }
 
 func (g *SpringGenerator) Json() *generator.CodeFile {
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, g.Packages.Json.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.Json, `Json`)
 	imports := imports.New()
 	imports.Add(`org.springframework.beans.factory.annotation.Autowired`)
 	imports.Add(`org.springframework.stereotype.Component`)
@@ -328,15 +304,10 @@ func (g *SpringGenerator) Json() *generator.CodeFile {
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Component`)
-	className := `Json`
-	w.Line(`class %s(%s) {`, className, g.Models.CreateJsonMapperField("Autowired"))
+	w.Line(`class [[.ClassName]](%s) {`, g.Models.CreateJsonMapperField("Autowired"))
 	w.Line(g.Models.JsonHelpersMethods())
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    g.Packages.Json.GetPath(fmt.Sprintf("%s.kt", className)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func springMethodParams(operation *spec.NamedOperation, types *types.Types) []string {

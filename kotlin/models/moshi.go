@@ -25,17 +25,15 @@ func NewMoshiGenerator(types *types.Types, packages *Packages) *MoshiGenerator {
 }
 
 func (g *MoshiGenerator) Models(version *spec.Version) []generator.CodeFile {
-	return g.models(version.ResolvedModels, g.Packages.Models(version), g.Packages.Json)
+	return g.models(version.ResolvedModels, g.Packages.Models(version))
 }
 
 func (g *MoshiGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile {
-	return g.models(httperrors.ResolvedModels, g.Packages.ErrorsModels, g.Packages.Json)
+	return g.models(httperrors.ResolvedModels, g.Packages.ErrorsModels)
 }
 
-func (g *MoshiGenerator) models(models []*spec.NamedModel, thePackage, jsonPackage packages.Package) []generator.CodeFile {
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, thePackage.PackageName)
-	w.EmptyLine()
+func (g *MoshiGenerator) models(models []*spec.NamedModel, modelsPackage packages.Package) []generator.CodeFile {
+	w := writer.New(modelsPackage, `models`)
 	imports := imports.New()
 	imports.Add(g.ModelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
@@ -53,12 +51,11 @@ func (g *MoshiGenerator) models(models []*spec.NamedModel, thePackage, jsonPacka
 	}
 
 	files := []generator.CodeFile{}
-	files = append(files, generator.CodeFile{Path: thePackage.GetPath("models.kt"), Content: w.String()})
+	files = append(files, *w.ToCodeFile())
 
-	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.setupModelsMoshiAdapters`, thePackage.PackageName))
-	adaptersPackage := jsonPackage.Subpackage("adapters")
+	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.setupModelsMoshiAdapters`, modelsPackage.PackageName))
 	for range g.generatedSetupMoshiMethods {
-		files = append(files, *g.setupOneOfAdapters(models, thePackage, adaptersPackage))
+		files = append(files, *g.setupOneOfAdapters(models, modelsPackage))
 	}
 
 	return files
@@ -161,7 +158,10 @@ func (g *MoshiGenerator) ModelsDefinitionsImports() []string {
 
 func (g *MoshiGenerator) ModelsUsageImports() []string {
 	return []string{
-		`com.squareup.moshi.*`,
+		`com.squareup.moshi.Moshi`,
+		`com.squareup.moshi.Types`,
+		`com.squareup.moshi.adapter`,
+		`com.squareup.moshi.JsonDataException`,
 		`java.lang.reflect.ParameterizedType`,
 	}
 }
@@ -258,9 +258,7 @@ func (g *MoshiGenerator) SetupLibrary() []generator.CodeFile {
 }
 
 func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
-	w := writer.NewKotlinWriter()
-	w.Line("package %s", g.Packages.Json.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.Json, `CustomMoshiAdapters`)
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
 	imports.Add(`com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory`)
@@ -281,20 +279,14 @@ func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	w.Line(`  moshiBuilder`)
 	w.Line(`    .add(KotlinJsonAdapterFactory())`)
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    g.Packages.Json.GetPath("CustomMoshiAdapters.kt"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, thePackage, adaptersPackage packages.Package) *generator.CodeFile {
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, thePackage.PackageName)
-	w.EmptyLine()
+func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
+	w := writer.New(modelsPackage, `ModelsMoshiAdapters`)
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
-	imports.Add(adaptersPackage.PackageStar)
+	imports.Add(g.Packages.JsonAdapters.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`fun setupModelsMoshiAdapters(moshiBuilder: Moshi.Builder) {`)
@@ -320,11 +312,7 @@ func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, thePackag
 		}
 	}
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ModelsMoshiAdapters.kt"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func bigDecimalAdapter(thePackage packages.Package) *generator.CodeFile {

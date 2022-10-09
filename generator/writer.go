@@ -14,6 +14,7 @@ type Config struct {
 }
 
 type Writer struct {
+	filename    string
 	config      Config
 	buffer      *bytes.Buffer
 	indentation int
@@ -21,9 +22,26 @@ type Writer struct {
 
 func NewWriter(config Config) *Writer {
 	return &Writer{
+		"",
 		config,
 		new(bytes.Buffer),
 		0,
+	}
+}
+
+func NewWriter2(filename string, config Config) *Writer {
+	return &Writer{
+		filename,
+		config,
+		new(bytes.Buffer),
+		0,
+	}
+}
+
+func (writer *Writer) ToCodeFile() *CodeFile {
+	return &CodeFile{
+		Path:    writer.filename,
+		Content: writer.String(),
 	}
 }
 
@@ -94,6 +112,7 @@ func (writer *Writer) UnindentWith(size int) {
 
 func (writer *Writer) Indented() *Writer {
 	return &Writer{
+		writer.filename,
 		writer.config,
 		writer.buffer,
 		writer.indentation + 1,
@@ -102,6 +121,7 @@ func (writer *Writer) Indented() *Writer {
 
 func (writer *Writer) IndentedWith(size int) *Writer {
 	return &Writer{
+		writer.filename,
 		writer.config,
 		writer.buffer,
 		writer.indentation + size,

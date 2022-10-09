@@ -14,43 +14,29 @@ import (
 func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, g.serviceInterface(&api)...)
+		files = append(files, *g.serviceInterface(&api))
+		for _, operation := range api.Operations {
+			if len(operation.Responses) > 1 {
+				files = append(files, *g.responseInterface(&operation))
+			}
+		}
 	}
 	return files
 }
 
-func (g *Generator) serviceInterface(api *spec.Api) []generator.CodeFile {
-	version := api.InHttp.InVersion
-	apiPackage := g.Packages.Version(version).ServicesApi(api)
-
-	files := []generator.CodeFile{}
-
-	w := writer.NewJavaWriter()
-	w.Line(`package %s;`, apiPackage.PackageName)
-	w.EmptyLine()
+func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
+	w := writer.New(g.Packages.ServicesApi(api), serviceInterfaceName(api))
 	imports := imports.New()
 	imports.Add(g.Types.Imports()...)
-	imports.Add(g.Packages.Models(version).PackageStar)
+	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`public interface %s {`, serviceInterfaceName(api))
+	w.Line(`public interface [[.ClassName]] {`)
 	for _, operation := range api.Operations {
 		w.Line(`  %s;`, operationSignature(g.Types, &operation))
 	}
 	w.Line(`}`)
-
-	for _, operation := range api.Operations {
-		if len(operation.Responses) > 1 {
-			files = append(files, *g.responseInterface(&operation))
-		}
-	}
-
-	files = append(files, generator.CodeFile{
-		Path:    apiPackage.GetPath(fmt.Sprintf("%s.java", serviceInterfaceName(api))),
-		Content: w.String(),
-	})
-
-	return files
+	return w.ToCodeFile()
 }
 
 func operationSignature(types *types.Types, operation *spec.NamedOperation) string {

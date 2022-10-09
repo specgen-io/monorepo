@@ -19,11 +19,17 @@ jobs:
     working_directory: ~/specgen
     steps:
       - checkout
+      - restore_cache:
+          key: cache-{{ checksum "./specgen/go.sum"  }}
       - run:
           name: Build
           command: |
             cd specgen
             ../build.sh <<pipeline.parameters.specgen-version>>
+      - save_cache:
+          key: cache-{{ checksum "./specgen/go.sum"  }}
+          paths:
+            - ~/go/pkg/mod
       - run:
           name: Unit tests
           command: |

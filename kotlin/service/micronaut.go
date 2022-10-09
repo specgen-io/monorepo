@@ -33,9 +33,10 @@ func (g *MicronautGenerator) ServiceImplAnnotation(api *spec.Api) (annotationImp
 func (g *MicronautGenerator) ServicesControllers(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, g.serviceController(&api)...)
+		files = append(files, *g.serviceController(&api))
 	}
-	files = append(files, dateConverters(g.Packages.Root)...)
+	files = append(files, *localDateConverter(g.Packages.Converters))
+	files = append(files, *localDateTimeConverter(g.Packages.Converters))
 	return files
 }
 
@@ -49,30 +50,22 @@ func (g *MicronautGenerator) ServiceImports() []string {
 }
 
 func (g *MicronautGenerator) ExceptionController(responses *spec.Responses) *generator.CodeFile {
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, g.Packages.Controllers.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.RootControllers, `ExceptionController`)
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(`io.micronaut.http.annotation.Error`)
-	imports.Add(g.Packages.Json.Get("Json"))
+	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.Errors.Subpackage("ErrorsHelpers").Get("getBadRequestError"))
-	imports.Add(g.Packages.Errors.Subpackage("ErrorsHelpers").Get("getNotFoundError"))
+	imports.Add(g.Packages.Errors.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Controller`)
-	className := `ExceptionController`
-	w.Line(`class %s(@Inject private val json: Json) {`, className)
-	w.Line(`  private val logger = LoggerFactory.getLogger(%s::class.java)`, className)
+	w.Line(`class [[.ClassName]](@Inject private val json: Json) {`)
+	w.Line(`  private val logger = LoggerFactory.getLogger([[.ClassName]]::class.java)`)
 	w.EmptyLine()
 	g.errorHandler(w.Indented(), *responses)
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    g.Packages.Controllers.GetPath(fmt.Sprintf("%s.kt", className)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Responses) {
@@ -94,42 +87,32 @@ func (g *MicronautGenerator) errorHandler(w *generator.Writer, errors spec.Respo
 	w.Line(`}`)
 }
 
-func (g *MicronautGenerator) serviceController(api *spec.Api) []generator.CodeFile {
-	files := []generator.CodeFile{}
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, g.Packages.Version(api.InHttp.InVersion).Controllers.PackageName)
-	w.EmptyLine()
+func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFile {
+	w := writer.New(g.Packages.Controllers(api.InHttp.InVersion), controllerName(api))
 	imports := imports.New()
 	imports.Add(g.ServiceImports()...)
 	imports.Add(g.Packages.ContentType.PackageStar)
-	imports.Add(g.Packages.Json.Get("Json"))
+	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.Version(api.InHttp.InVersion).ServicesApi(api).PackageStar)
+	imports.Add(g.Packages.ServicesApi(api).PackageStar)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Controller`)
-	className := controllerName(api)
-	w.Line(`class %s(`, className)
+	w.Line(`class [[.ClassName]](`)
 	w.Line(`  @Inject private val %s: %s,`, serviceVarName(api), serviceInterfaceName(api))
 	w.Line(`  @Inject private val json: Json`)
 	w.Line(`) {`)
-	w.Line(`  private val logger = LoggerFactory.getLogger(%s::class.java)`, className)
+	w.Line(`  private val logger = LoggerFactory.getLogger([[.ClassName]]::class.java)`)
 
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		g.controllerMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
-
-	files = append(files, generator.CodeFile{
-		Path:    g.Packages.Version(api.InHttp.InVersion).Controllers.GetPath(fmt.Sprintf("%s.kt", className)),
-		Content: w.String(),
-	})
-
-	return files
+	return w.ToCodeFile()
 }
 
 func (g *MicronautGenerator) controllerMethod(w *generator.Writer, operation *spec.NamedOperation) {
@@ -246,83 +229,81 @@ import [[.JsonPackage]].*
 import java.util.*
 import javax.validation.ConstraintViolationException
 
-object ErrorsHelpers {
-    private val NOT_FOUND_ERROR = NotFoundError("Failed to parse url parameters")
+const val NOT_FOUND_ERROR = "Failed to parse url parameters"
 
-    fun getNotFoundError(exception: Throwable?): NotFoundError? {
-        if (exception is UnsatisfiedPathVariableRouteException) {
-            return NOT_FOUND_ERROR
-        }
-        if (exception is UnsatisfiedPartRouteException) {
-            return NOT_FOUND_ERROR
-        }
-        if (exception is ConversionErrorException) {
-            val annotation =
-                exception.argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.PathVariable")
-            if (annotation.isPresent) {
-                return NOT_FOUND_ERROR
-            }
-        }
-        return null
-    }
+fun getNotFoundError(exception: Throwable?): NotFoundError? {
+	if (exception is UnsatisfiedPathVariableRouteException) {
+		return NotFoundError(NOT_FOUND_ERROR)
+	}
+	if (exception is UnsatisfiedPartRouteException) {
+		return NotFoundError(NOT_FOUND_ERROR)
+	}
+	if (exception is ConversionErrorException) {
+		val annotation =
+			exception.argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.PathVariable")
+		if (annotation.isPresent) {
+			return NotFoundError(NOT_FOUND_ERROR)
+		}
+	}
+	return null
+}
 
-    private fun getLocation(argument: Argument<*>): ErrorLocation {
-        val query =
-            argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.QueryValue")
-        if (query.isPresent) {
-            return ErrorLocation.QUERY
-        }
-        val header =
-            argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Headers")
-        return if (header.isPresent) {
-            ErrorLocation.HEADER
-        } else ErrorLocation.BODY
-    }
+private fun getLocation(argument: Argument<*>): ErrorLocation {
+	val query =
+		argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.QueryValue")
+	if (query.isPresent) {
+		return ErrorLocation.QUERY
+	}
+	val header =
+		argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Headers")
+	return if (header.isPresent) {
+		ErrorLocation.HEADER
+	} else ErrorLocation.BODY
+}
 
-    private fun getParameterName(argument: Argument<*>): String {
-        val query =
-            argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.QueryValue")
-        if (query.isPresent) {
-            return query.get().values["value"].toString()
-        }
-        val header =
-            argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Headers")
-        if (header.isPresent) {
-            val annotationValues = header.get().values["value"] as Array<AnnotationValue<*>>?
-            return annotationValues!![0].values["value"].toString()
-        }
-        return "unknown"
-    }
+private fun getParameterName(argument: Argument<*>): String {
+	val query =
+		argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.QueryValue")
+	if (query.isPresent) {
+		return query.get().values["value"].toString()
+	}
+	val header =
+		argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Headers")
+	if (header.isPresent) {
+		val annotationValues = header.get().values["value"] as Array<AnnotationValue<*>>?
+		return annotationValues!![0].values["value"].toString()
+	}
+	return "unknown"
+}
 
-    private fun argumentBadRequestError(arg: Argument<*>, errorMessage: String?, code: String): BadRequestError {
-        val location = getLocation(arg)
-        val parameterName = getParameterName(arg)
-        val validation = ValidationError(parameterName, code, errorMessage)
-        val message = String.format("Failed to parse %s", location.name.lowercase(Locale.getDefault()))
-        return BadRequestError(message, location, listOf(validation))
-    }
+private fun argumentBadRequestError(arg: Argument<*>, errorMessage: String?, code: String): BadRequestError {
+	val location = getLocation(arg)
+	val parameterName = getParameterName(arg)
+	val validation = ValidationError(parameterName, code, errorMessage)
+	val message = String.format("Failed to parse %s", location.name.lowercase(Locale.getDefault()))
+	return BadRequestError(message, location, listOf(validation))
+}
 
-    fun getBadRequestError(exception: Throwable): BadRequestError? {
-        if (exception is JsonParseException) {
-            val errors = extractValidationErrors(exception)
-            return BadRequestError("Failed to parse body", ErrorLocation.BODY, errors)
-        }
-        if (exception is ContentTypeMismatchException) {
-            val error = ValidationError("Content-Type", "missing", exception.message)
-            return BadRequestError("Failed to parse header", ErrorLocation.HEADER, listOf(error))
-        }
-        if (exception is UnsatisfiedRouteException) {
-            return argumentBadRequestError(exception.argument, exception.message, "missing")
-        }
-        if (exception is ConversionErrorException) {
-            return argumentBadRequestError(exception.argument, exception.message, "parsing_failed")
-        }
-        if (exception is ConstraintViolationException) {
-            val message = "Failed to parse body"
-            return BadRequestError(message, ErrorLocation.BODY, null)
-        }
-        return null
-    }
+fun getBadRequestError(exception: Throwable): BadRequestError? {
+	if (exception is JsonParseException) {
+		val errors = extractValidationErrors(exception)
+		return BadRequestError("Failed to parse body", ErrorLocation.BODY, errors)
+	}
+	if (exception is ContentTypeMismatchException) {
+		val error = ValidationError("Content-Type", "missing", exception.message)
+		return BadRequestError("Failed to parse header", ErrorLocation.HEADER, listOf(error))
+	}
+	if (exception is UnsatisfiedRouteException) {
+		return argumentBadRequestError(exception.argument, exception.message, "missing")
+	}
+	if (exception is ConversionErrorException) {
+		return argumentBadRequestError(exception.argument, exception.message, "parsing_failed")
+	}
+	if (exception is ConstraintViolationException) {
+		val message = "Failed to parse body"
+		return BadRequestError(message, ErrorLocation.BODY, null)
+	}
+	return null
 }
 `
 
@@ -353,9 +334,7 @@ func (g *MicronautGenerator) JsonHelpers() []generator.CodeFile {
 }
 
 func (g *MicronautGenerator) Json() *generator.CodeFile {
-	w := writer.NewKotlinWriter()
-	w.Line(`package %s`, g.Packages.Json.PackageName)
-	w.EmptyLine()
+	w := writer.New(g.Packages.Json, `Json`)
 	imports := imports.New()
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(`jakarta.inject.*`)
@@ -363,15 +342,10 @@ func (g *MicronautGenerator) Json() *generator.CodeFile {
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`@Singleton`)
-	className := `Json`
-	w.Line(`class %s(%s) {`, className, g.Models.CreateJsonMapperField("Inject"))
+	w.Line(`class [[.ClassName]](%s) {`, g.Models.CreateJsonMapperField("Inject"))
 	w.Line(g.Models.JsonHelpersMethods())
 	w.Line(`}`)
-
-	return &generator.CodeFile{
-		Path:    g.Packages.Json.GetPath(fmt.Sprintf("%s.kt", className)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
@@ -411,9 +385,7 @@ func getMicronautParameterAnnotation(paramAnnotation string, param *spec.NamedPa
 	return fmt.Sprintf(`@%s(%s)`, paramAnnotation, joinParams(annotationParams))
 }
 
-func dateConverters(thePackage packages.Package) []generator.CodeFile {
-	convertersPackage := thePackage.Subpackage("converters")
-
+func dateConverters(convertersPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *localDateConverter(convertersPackage))
 	files = append(files, *localDateTimeConverter(convertersPackage))

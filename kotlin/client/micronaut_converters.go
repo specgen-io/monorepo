@@ -7,15 +7,12 @@ import (
 	"kotlin/packages"
 )
 
-func converters(thePackage packages.Package) []generator.CodeFile {
-	convertersPackage := thePackage.Subpackage("converters")
-
+func converters(convertersPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *convertersRegistrar(convertersPackage))
 	files = append(files, *localDateConverter(convertersPackage))
 	files = append(files, *localDateTimeConverter(convertersPackage))
 	files = append(files, *stringArrayConverter(convertersPackage))
-
 	return files
 }
 
