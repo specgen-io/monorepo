@@ -184,9 +184,8 @@ func (g *SpringGenerator) ContentType() []generator.CodeFile {
 }
 
 func (g *SpringGenerator) checkContentType() *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.ContentType, `CheckContentType`)
+	w.Lines(`
 import javax.servlet.http.HttpServletRequest
 import org.springframework.http.MediaType
 
@@ -196,16 +195,8 @@ fun checkContentType(request: HttpServletRequest, expectedContentType: MediaType
 		throw ContentTypeMismatchException(expectedContentType.toString(), contentType)
 	}
 }
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName string
-	}{
-		g.Packages.ContentType.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.ContentType.GetPath("CheckContentType.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *SpringGenerator) Errors() []generator.CodeFile {

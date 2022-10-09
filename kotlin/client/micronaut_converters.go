@@ -1,10 +1,9 @@
 package client
 
 import (
-	"strings"
-
 	"generator"
 	"kotlin/packages"
+	"kotlin/writer"
 )
 
 func converters(convertersPackage packages.Package) []generator.CodeFile {
@@ -17,9 +16,8 @@ func converters(convertersPackage packages.Package) []generator.CodeFile {
 }
 
 func convertersRegistrar(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `ConvertersRegistrar`)
+	w.Lines(`
 import io.micronaut.core.convert.*
 import jakarta.inject.Singleton
 import java.util.*
@@ -30,19 +28,13 @@ class ConvertersRegistrar: TypeConverterRegistrar {
         conversionService.addConverter(Array<String>::class.java, CharSequence::class.java, StringArrayConverter(conversionService))
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ConvertersRegistrar.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func localDateConverter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `LocalDateConverter`)
+	w.Lines(`
 import io.micronaut.core.convert.*
 import jakarta.inject.Singleton
 
@@ -65,19 +57,13 @@ class LocalDateConverter : TypeConverter<LocalDate, String> {
         return Optional.of(value.format(formatter))
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("LocalDateConverter.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func localDateTimeConverter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `LocalDateTimeConverter`)
+	w.Lines(`
 import io.micronaut.core.convert.*
 import jakarta.inject.Singleton
 
@@ -100,19 +86,13 @@ class LocalDateTimeConverter : TypeConverter<LocalDateTime, String> {
         return Optional.of(value.format(formatter))
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("LocalDateTimeConverter.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func stringArrayConverter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `StringArrayConverter`)
+	w.Lines(`
 import io.micronaut.core.convert.*
 import java.util.*
 
@@ -136,11 +116,6 @@ class StringArrayConverter(private val conversionService: ConversionService<*>) 
         return conversionService.convert(joiner.toString(), targetType, context)
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("StringArrayConverter.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }

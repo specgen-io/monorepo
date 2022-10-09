@@ -218,9 +218,8 @@ func (g *JacksonGenerator) JsonHelpersMethods() string {
 }
 
 func (g *JacksonGenerator) SetupLibrary() []generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.Json, `CustomObjectMapper`)
+	w.Lines(`
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.datatype.jsr310.*
@@ -232,11 +231,6 @@ fun setupObjectMapper(objectMapper: ObjectMapper): ObjectMapper {
         .setSerializationInclusion(JsonInclude.Include.NON_NULL)
     return objectMapper
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Json.PackageName})
-	return []generator.CodeFile{{
-		Path:    g.Packages.Json.GetPath("CustomObjectMapper.kt"),
-		Content: strings.TrimSpace(code),
-	}}
+`)
+	return []generator.CodeFile{*w.ToCodeFile()}
 }

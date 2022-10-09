@@ -1,16 +1,14 @@
 package client
 
 import (
-	"strings"
-
 	"generator"
 	"kotlin/packages"
+	"kotlin/writer"
 )
 
 func clientException(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `ClientException`)
+	w.Lines(`
 import java.lang.RuntimeException
 
 class ClientException : RuntimeException {
@@ -19,11 +17,6 @@ class ClientException : RuntimeException {
     constructor(message: String, cause: Throwable) : super(message, cause)
     constructor(cause: Throwable) : super(cause)
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ClientException.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }

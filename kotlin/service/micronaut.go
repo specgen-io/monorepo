@@ -184,9 +184,8 @@ func (g *MicronautGenerator) ContentType() []generator.CodeFile {
 }
 
 func (g *MicronautGenerator) checkContentType() *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.ContentType, `CheckContentType`)
+	w.Lines(`
 import io.micronaut.http.HttpRequest
 
 fun checkContentType(request: HttpRequest<*>, expectedContentType: String) {
@@ -195,16 +194,8 @@ fun checkContentType(request: HttpRequest<*>, expectedContentType: String) {
 		throw ContentTypeMismatchException(expectedContentType, if (contentType.isPresent) contentType.get() else null )
 	}
 }
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName string
-	}{
-		g.Packages.ContentType.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.ContentType.GetPath("CheckContentType.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *MicronautGenerator) Errors() []generator.CodeFile {
@@ -393,9 +384,8 @@ func dateConverters(convertersPackage packages.Package) []generator.CodeFile {
 }
 
 func localDateConverter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `LocalDateConverter`)
+	w.Lines(`
 import io.micronaut.core.convert.*
 import jakarta.inject.Singleton
 
@@ -419,19 +409,13 @@ class LocalDateConverter : TypeConverter<String, LocalDate> {
             Optional.empty()
         }
     }
-}`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("LocalDateConverter.kt"),
-		Content: strings.TrimSpace(code),
-	}
+}`)
+	return w.ToCodeFile()
 }
 
 func localDateTimeConverter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `LocalDateTimeConverter`)
+	w.Lines(`
 import io.micronaut.core.convert.*
 import jakarta.inject.Singleton
 
@@ -456,11 +440,6 @@ class LocalDateTimeConverter : TypeConverter<String, LocalDateTime> {
         }
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("LocalDateTimeConverter.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }

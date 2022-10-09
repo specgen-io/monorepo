@@ -316,9 +316,8 @@ func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPac
 }
 
 func bigDecimalAdapter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `BigDecimalAdapter`)
+	w.Line(`
 import com.squareup.moshi.*
 import okio.*
 
@@ -344,21 +343,14 @@ class BigDecimalAdapter {
         writer.value(buffer)
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("BigDecimalAdapter.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func localDateAdapter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `LocalDateAdapter`)
+	w.Lines(`
 import com.squareup.moshi.*
-
 import java.time.*
 
 class LocalDateAdapter {
@@ -372,17 +364,13 @@ class LocalDateAdapter {
         return value.toString()
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("LocalDateAdapter.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func localDateTimeAdapter(thePackage packages.Package) *generator.CodeFile {
-	code := `
+	w := writer.New(thePackage, `LocalDateTimeAdapter`)
+	w.Lines(`
 package [[.PackageName]];
 
 import com.squareup.moshi.*
@@ -400,21 +388,14 @@ class LocalDateTimeAdapter {
         return value.toString()
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("LocalDateTimeAdapter.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func uuidAdapter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `UuidAdapter`)
+	w.Lines(`
 import com.squareup.moshi.*
-
 import java.util.UUID
 
 class UuidAdapter {
@@ -428,19 +409,13 @@ class UuidAdapter {
         return value.toString()
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("UuidAdapter.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func unionAdapterFactory(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `UnionAdapterFactory`)
+	w.Lines(`
 import com.squareup.moshi.*
 import java.lang.reflect.Type
 
@@ -642,19 +617,13 @@ class UnionAdapterFactory<T> internal constructor(
         }
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("UnionAdapterFactory.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func unwrapFieldAdapterFactory(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `UnwrapFieldAdapterFactory`)
+	w.Lines(`
 import com.squareup.moshi.*
 import java.io.IOException
 import java.lang.reflect.*
@@ -722,11 +691,6 @@ class UnwrapFieldAdapterFactory<T>(private val type: Class<T>) : JsonAdapter.Fac
         }
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("UnwrapFieldAdapterFactory.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"kotlin/writer"
 	"strings"
 
 	"generator"
@@ -43,9 +44,8 @@ func serviceCall(w generator.Writer, operation *spec.NamedOperation, bodyStringV
 }
 
 func contentTypeMismatchException(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `ContentTypeMismatchException`)
+	w.Lines(`
 class ContentTypeMismatchException(expected: String, actual: String?) :
     RuntimeException(
         String.format(
@@ -54,32 +54,15 @@ class ContentTypeMismatchException(expected: String, actual: String?) :
             actual
         )
     )
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName string
-	}{
-		thePackage.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ContentTypeMismatchException.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func jsonParseException(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `JsonParseException`)
+	w.Lines(`
 class JsonParseException(exception: Throwable) :
     RuntimeException("Failed to parse body: " + exception.message, exception)
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName string
-	}{
-		thePackage.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("JsonParseException.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
