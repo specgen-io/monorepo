@@ -201,32 +201,21 @@ func (g *SpringGenerator) ContentType() []generator.CodeFile {
 }
 
 func (g *SpringGenerator) contentTypeMismatchException() *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(g.Packages.ContentType, `ContentTypeMismatchException`)
+	w.Lines(`
 public class ContentTypeMismatchException extends RuntimeException {
     public ContentTypeMismatchException(String expected, String actual) {
         super(String.format("Expected Content-Type header: '%s' was not provided, found: '%s'", expected, actual));
     }
 }
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName string
-	}{
-		g.Packages.ContentType.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.ContentType.GetPath("ContentTypeMismatchException.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *SpringGenerator) checkContentType() *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(g.Packages.ContentType, `ContentType`)
+	w.Lines(`
 import org.springframework.http.MediaType;
-
 import javax.servlet.http.HttpServletRequest;
 
 public class ContentType {
@@ -237,22 +226,19 @@ public class ContentType {
 		}
 	}
 }
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName string
-	}{
-		g.Packages.ContentType.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.ContentType.GetPath("ContentType.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *SpringGenerator) ErrorsHelpers() *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(g.Packages.Errors, ErrorsHelpersClassName)
+	w.Template(
+		map[string]string{
+			`ErrorsModelsPackage`: g.Packages.ErrorsModels.PackageName,
+			`ContentTypePackage`:  g.Packages.ContentType.PackageName,
+			`JsonPackage`:         g.Packages.Json.PackageName,
+			`ErrorsPackage`:       g.Packages.Errors.PackageName,
+		}, `
 import org.springframework.web.bind.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -263,7 +249,7 @@ import [[.ErrorsModelsPackage]].*;
 import [[.ContentTypePackage]].*;
 import [[.JsonPackage]].*;
 
-import static [[.PackageName]].ValidationErrorsHelpers.extractValidationErrors;
+import static [[.ErrorsPackage]].ValidationErrorsHelpers.extractValidationErrors;
 
 public class [[.ClassName]] {
     private static final NotFoundError NOT_FOUND_ERROR = new NotFoundError("Failed to parse url parameters");
@@ -312,25 +298,8 @@ public class [[.ClassName]] {
         return null;
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName         string
-		ClassName           string
-		ErrorsModelsPackage string
-		ContentTypePackage  string
-		JsonPackage         string
-	}{
-		g.Packages.Errors.PackageName,
-		ErrorsHelpersClassName,
-		g.Packages.ErrorsModels.PackageName,
-		g.Packages.ContentType.PackageName,
-		g.Packages.Json.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.Errors.GetPath("ErrorsHelpers.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *SpringGenerator) JsonHelpers() []generator.CodeFile {

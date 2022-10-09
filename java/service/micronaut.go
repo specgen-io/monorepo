@@ -202,30 +202,20 @@ func (g *MicronautGenerator) ContentType() []generator.CodeFile {
 }
 
 func (g *MicronautGenerator) contentTypeMismatchException() *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(g.Packages.ContentType, `ContentTypeMismatchException`)
+	w.Lines(`
 public class ContentTypeMismatchException extends RuntimeException {
     public ContentTypeMismatchException(String expected, String actual) {
         super(String.format("Expected Content-Type header: '%s' was not provided, found: '%s'", expected, actual));
     }
 }
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName string
-	}{
-		g.Packages.ContentType.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.ContentType.GetPath("ContentTypeMismatchException.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *MicronautGenerator) checkContentType() *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(g.Packages.ContentType, `ContentType`)
+	w.Lines(`
 import io.micronaut.http.HttpRequest;
 
 public class ContentType {
@@ -236,22 +226,19 @@ public class ContentType {
 		}
 	}
 }
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName string
-	}{
-		g.Packages.ContentType.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.ContentType.GetPath("ContentType.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *MicronautGenerator) ErrorsHelpers() *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(g.Packages.Errors, ErrorsHelpersClassName)
+	w.Template(
+		map[string]string{
+			`ErrorsPackage`:       g.Packages.Errors.PackageName,
+			`ErrorsModelsPackage`: g.Packages.ErrorsModels.PackageName,
+			`ContentTypePackage`:  g.Packages.ContentType.PackageName,
+			`JsonPackage`:         g.Packages.Json.PackageName,
+		}, `
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.convert.exceptions.ConversionErrorException;
 import io.micronaut.core.type.Argument;
@@ -264,7 +251,7 @@ import [[.ErrorsModelsPackage]].*;
 import [[.ContentTypePackage]].*;
 import [[.JsonPackage]].*;
 
-import static [[.PackageName]].ValidationErrorsHelpers.extractValidationErrors;
+import static [[.ErrorsPackage]].ValidationErrorsHelpers.extractValidationErrors;
 
 public class [[.ClassName]] {
     private static final NotFoundError NOT_FOUND_ERROR = new NotFoundError("Failed to parse url parameters");
@@ -344,25 +331,8 @@ public class [[.ClassName]] {
 		return null;
 	}
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName         string
-		ClassName           string
-		ErrorsModelsPackage string
-		ContentTypePackage  string
-		JsonPackage         string
-	}{
-		g.Packages.Errors.PackageName,
-		ErrorsHelpersClassName,
-		g.Packages.ErrorsModels.PackageName,
-		g.Packages.ContentType.PackageName,
-		g.Packages.Json.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.Errors.GetPath("ErrorsHelpers.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *MicronautGenerator) JsonHelpers() []generator.CodeFile {
@@ -440,9 +410,8 @@ func dateConverters(convertersPackage packages.Package) []generator.CodeFile {
 }
 
 func localDateConverter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `LocalDateConverter`)
+	w.Lines(`
 import io.micronaut.core.convert.*;
 import jakarta.inject.Singleton;
 
@@ -464,19 +433,13 @@ public class LocalDateConverter implements TypeConverter<String, LocalDate> {
         }
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("LocalDateConverter.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func localDateTimeConverter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `LocalDateTimeConverter`)
+	w.Lines(`
 import io.micronaut.core.convert.*;
 import jakarta.inject.Singleton;
 
@@ -498,11 +461,6 @@ public class LocalDateTimeConverter implements TypeConverter<String, LocalDateTi
         }
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("LocalDateTimeConverter.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }

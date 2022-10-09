@@ -2,14 +2,12 @@ package models
 
 import (
 	"fmt"
-	"java/imports"
-	"java/writer"
-	"spec"
-	"strings"
-
 	"generator"
+	"java/imports"
 	"java/packages"
 	"java/types"
+	"java/writer"
+	"spec"
 )
 
 var Jackson = "jackson"
@@ -225,20 +223,15 @@ func (g *JacksonGenerator) ModelsUsageImports() []string {
 }
 
 func (g *JacksonGenerator) JsonParseException() *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
-public class JsonParseException extends RuntimeException {
+	w := writer.New(g.Packages.Json, `JsonParseException`)
+	w.Lines(`
+public class [[.ClassName]] extends RuntimeException {
 	public JsonParseException(Throwable exception) {
 		super("Failed to parse body: " + exception.getMessage(), exception);
 	}
 }
-`
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Json.PackageName})
-	return &generator.CodeFile{
-		Path:    g.Packages.Json.GetPath("JsonParseException.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *JacksonGenerator) ModelsValidation() *generator.CodeFile {
@@ -318,14 +311,13 @@ func (g *JacksonGenerator) JsonHelpersMethods() string {
 }
 
 func (g *JacksonGenerator) SetupLibrary() []generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(g.Packages.Json, `CustomObjectMapper`)
+	w.Lines(`
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.datatype.jsr310.*;
 
-public class CustomObjectMapper {
+public class [[.ClassName]] {
 	public static void setup(ObjectMapper objectMapper) {
 		objectMapper
 			.registerModule(new JavaTimeModule())
@@ -333,11 +325,6 @@ public class CustomObjectMapper {
 			.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 	}
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Json.PackageName})
-	return []generator.CodeFile{{
-		Path:    g.Packages.Json.GetPath("CustomObjectMapper.java"),
-		Content: strings.TrimSpace(code),
-	}}
+`)
+	return []generator.CodeFile{*w.ToCodeFile()}
 }

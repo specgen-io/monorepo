@@ -238,33 +238,31 @@ func (g *MoshiGenerator) ModelsUsageImports() []string {
 }
 
 func (g *MoshiGenerator) JsonParseException() *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
-public class JsonParseException extends RuntimeException {
-	public JsonParseException(Throwable exception) {
+	w := writer.New(g.Packages.Json, `JsonParseException`)
+	w.Lines(`
+public class [[.ClassName]] extends RuntimeException {
+	public [[.ClassName]](Throwable exception) {
 		super("Failed to parse body: " + exception.getMessage(), exception);
 	}
 }
-`
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Json.PackageName})
-	return &generator.CodeFile{
-		Path:    g.Packages.Json.GetPath("JsonParseException.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *MoshiGenerator) ModelsValidation() *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(g.Packages.Errors, `ValidationErrorsHelpers`)
+	w.Template(
+		map[string]string{
+			`JsonPackage`:         g.Packages.Json.PackageName,
+			`ErrorsModelsPackage`: g.Packages.ErrorsModels.PackageName,
+		}, `
 import [[.JsonPackage]].*;
 import [[.ErrorsModelsPackage]].*;
 
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class ValidationErrorsHelpers {
+public class [[.ClassName]] {
 	private static final Pattern pathPattern = Pattern.compile("\\$\\.([^ ]+)");
 
 	public static List<ValidationError> extractValidationErrors(JsonParseException exception) {
@@ -276,21 +274,8 @@ public class ValidationErrorsHelpers {
 		return null;
 	}
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName         string
-		ErrorsModelsPackage string
-		JsonPackage         string
-	}{
-		g.Packages.Errors.PackageName,
-		g.Packages.ErrorsModels.PackageName,
-		g.Packages.Json.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.Errors.GetPath("ValidationErrorsHelpers.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *MoshiGenerator) CreateJsonMapperField(w generator.Writer, annotation string) {
@@ -405,9 +390,8 @@ func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPac
 }
 
 func bigDecimalAdapter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `BigDecimalAdapter`)
+	w.Lines(`
 import com.squareup.moshi.*;
 import okio.Okio;
 
@@ -415,7 +399,7 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 
-public class BigDecimalAdapter {
+public class [[.ClassName]] {
 	@FromJson
 	public BigDecimal fromJson(JsonReader reader) throws IOException {
 		var token = reader.peek();
@@ -433,21 +417,14 @@ public class BigDecimalAdapter {
 		writer.value(buffer);
 	}
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("BigDecimalAdapter.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func localDateAdapter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `LocalDateAdapter`)
+	w.Lines(`
 import com.squareup.moshi.*;
-
 import java.time.LocalDate;
 
 public class LocalDateAdapter {
@@ -461,24 +438,17 @@ public class LocalDateAdapter {
 		return value.toString();
 	}
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("LocalDateAdapter.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func localDateTimeAdapter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `LocalDateTimeAdapter`)
+	w.Lines(`
 import com.squareup.moshi.*;
-
 import java.time.LocalDateTime;
 
-public class LocalDateTimeAdapter {
+public class [[.ClassName]] {
 	@FromJson
 	private LocalDateTime fromJson(String string) {
 		return LocalDateTime.parse(string);
@@ -489,24 +459,17 @@ public class LocalDateTimeAdapter {
 		return value.toString();
 	}
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("LocalDateTimeAdapter.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func uuidAdapter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `UuidAdapter`)
+	w.Lines(`
 import com.squareup.moshi.*;
-
 import java.util.UUID;
 
-public class UuidAdapter {
+public class [[.ClassName]] {
 	@FromJson
 	private UUID fromJson(String string) {
 		return UUID.fromString(string);
@@ -517,19 +480,13 @@ public class UuidAdapter {
 		return value.toString();
 	}
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("UuidAdapter.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func unionAdapterFactory(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `UnionAdapterFactory`)
+	w.Lines(`
 import com.squareup.moshi.*;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -809,19 +766,13 @@ public final class UnionAdapterFactory<T> implements JsonAdapter.Factory {
         }
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("UnionAdapterFactory.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func unwrapFieldAdapterFactory(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `UnwrapFieldAdapterFactory`)
+	w.Line(`
 import com.squareup.moshi.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -914,11 +865,6 @@ public final class UnwrapFieldAdapterFactory<T> implements JsonAdapter.Factory {
         }
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("UnwrapFieldAdapterFactory.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
