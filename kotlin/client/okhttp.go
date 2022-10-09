@@ -1,8 +1,6 @@
 package client
 
 import (
-	"strings"
-
 	"generator"
 	"kotlin/imports"
 	"kotlin/models"
@@ -163,9 +161,8 @@ func (g *OkHttpGenerator) utils() []generator.CodeFile {
 }
 
 func (g *OkHttpGenerator) requestBuilder() *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.Utils, `RequestBuilder`)
+	w.Lines(`
 import okhttp3.*
 
 class RequestBuilder(method: String, url: HttpUrl, body: RequestBody?) {
@@ -192,19 +189,13 @@ class RequestBuilder(method: String, url: HttpUrl, body: RequestBody?) {
         return this.requestBuilder.build()
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Utils.PackageName})
-	return &generator.CodeFile{
-		Path:    g.Packages.Utils.GetPath("RequestBuilder.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *OkHttpGenerator) urlBuilder() *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.Utils, `UrlBuilder`)
+	w.Lines(`
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 
@@ -243,11 +234,6 @@ class UrlBuilder(baseUrl: String) {
         return this.urlBuilder.build()
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Utils.PackageName})
-	return &generator.CodeFile{
-		Path:    g.Packages.Utils.GetPath("UrlBuilder.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }

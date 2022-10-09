@@ -182,9 +182,8 @@ func (g *MicronautLowGenerator) utils() []generator.CodeFile {
 }
 
 func (g *MicronautLowGenerator) requestBuilder() *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.Utils, `RequestBuilder`)
+	w.Lines(`
 import io.micronaut.http.MutableHttpRequest
 import java.net.URI
 
@@ -216,19 +215,13 @@ class RequestBuilder {
         return this.requestBuilder
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Utils.PackageName})
-	return &generator.CodeFile{
-		Path:    g.Packages.Utils.GetPath("RequestBuilder.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *MicronautLowGenerator) urlBuilder() *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.Utils, `UrlBuilder`)
+	w.Lines(`
 import io.micronaut.http.uri.UriBuilder
 import java.net.URI
 import java.util.*
@@ -269,11 +262,6 @@ class UrlBuilder(url: String) {
         return this.uriBuilder.build()
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Utils.PackageName})
-	return &generator.CodeFile{
-		Path:    g.Packages.Utils.GetPath("UrlBuilder.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }

@@ -187,9 +187,8 @@ func (g *Generator) Utils() []generator.CodeFile {
 }
 
 func generateRequestBuilder(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `RequestBuilder`)
+	w.Lines(`
 import okhttp3.*;
 import java.util.List;
 
@@ -219,19 +218,13 @@ public class RequestBuilder {
 		return this.requestBuilder.build();
 	}
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("RequestBuilder.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func generateUrlBuilder(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `UrlBuilder`)
+	w.Lines(`
 import okhttp3.HttpUrl;
 import java.util.List;
 
@@ -272,19 +265,13 @@ public class UrlBuilder {
         return this.urlBuilder.build();
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("UrlBuilder.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func generateStringify(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(thePackage, `Stringify`)
+	w.Lines(`
 public class Stringify {
     public static String paramToString(Object value) {
         if (value == null) {
@@ -293,11 +280,6 @@ public class Stringify {
         return String.valueOf(value);
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("Stringify.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }

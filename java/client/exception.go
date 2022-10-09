@@ -1,15 +1,13 @@
 package client
 
 import (
-	"strings"
-
 	"generator"
+	"java/writer"
 )
 
 func (g *Generator) Exceptions() *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(g.Packages.Root, `ClientException`)
+	w.Lines(`
 public class ClientException extends RuntimeException {
 	public ClientException() {
 		super();
@@ -27,11 +25,6 @@ public class ClientException extends RuntimeException {
 		super(cause);
 	}
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Root.PackageName})
-	return &generator.CodeFile{
-		Path:    g.Packages.Root.GetPath("ClientException.java"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }

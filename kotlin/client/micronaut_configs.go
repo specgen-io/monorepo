@@ -1,10 +1,9 @@
 package client
 
 import (
-	"strings"
-
 	"generator"
 	"kotlin/packages"
+	"kotlin/writer"
 )
 
 func staticConfigFiles(thePackage, jsonPackage packages.Package) []generator.CodeFile {
@@ -16,15 +15,17 @@ func staticConfigFiles(thePackage, jsonPackage packages.Package) []generator.Cod
 }
 
 func objectMapperConfig(thePackage packages.Package, jsonPackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `ObjectMapperConfig`)
+	w.Template(
+		map[string]string{
+			`JsonPackageName`: jsonPackage.PackageName,
+		}, `
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.micronaut.context.annotation.*
 import io.micronaut.jackson.ObjectMapperFactory
 import jakarta.inject.Singleton
-import [[.JsonPackageStar]]
+import [[.JsonPackageName]].*
 
 @Factory
 @Replaces(ObjectMapperFactory::class)
@@ -37,35 +38,18 @@ class ObjectMapperConfig {
         return objectMapper
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName     string
-		JsonPackageStar string
-	}{
-		thePackage.PackageName,
-		jsonPackage.PackageStar,
-	})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ObjectMapperConfig.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func clientConfig(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `ClientConfiguration`)
+	w.Lines(`
 class ClientConfiguration {
     companion object {
         const val BASE_URL = "http://localhost:8081"
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("ClientConfiguration.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }

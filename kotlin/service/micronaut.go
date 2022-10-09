@@ -2,8 +2,6 @@ package service
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"github.com/pinzolo/casee"
 	"kotlin/imports"
@@ -184,9 +182,8 @@ func (g *MicronautGenerator) ContentType() []generator.CodeFile {
 }
 
 func (g *MicronautGenerator) checkContentType() *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.ContentType, `CheckContentType`)
+	w.Lines(`
 import io.micronaut.http.HttpRequest
 
 fun checkContentType(request: HttpRequest<*>, expectedContentType: String) {
@@ -195,16 +192,8 @@ fun checkContentType(request: HttpRequest<*>, expectedContentType: String) {
 		throw ContentTypeMismatchException(expectedContentType, if (contentType.isPresent) contentType.get() else null )
 	}
 }
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName string
-	}{
-		g.Packages.ContentType.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.ContentType.GetPath("CheckContentType.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *MicronautGenerator) Errors() []generator.CodeFile {
@@ -215,16 +204,21 @@ func (g *MicronautGenerator) Errors() []generator.CodeFile {
 }
 
 func (g *MicronautGenerator) errorsHelpers() *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.Errors, `ErrorsHelpers`)
+	w.Template(
+		map[string]string{
+			`ContentTypePackage`:  g.Packages.ContentType.PackageName,
+			`ErrorsModelsPackage`: g.Packages.ErrorsModels.PackageName,
+			`ErrorsPackage`:       g.Packages.Errors.PackageName,
+			`JsonPackage`:         g.Packages.Json.PackageName,
+		}, `
 import io.micronaut.core.annotation.AnnotationValue
 import io.micronaut.core.convert.exceptions.ConversionErrorException
 import io.micronaut.core.type.Argument
 import io.micronaut.web.router.exceptions.*
 import [[.ContentTypePackage]].*
 import [[.ErrorsModelsPackage]].*
-import [[.PackageName]].ValidationErrorsHelpers.extractValidationErrors
+import [[.ErrorsPackage]].ValidationErrorsHelpers.extractValidationErrors
 import [[.JsonPackage]].*
 import java.util.*
 import javax.validation.ConstraintViolationException
@@ -305,22 +299,8 @@ fun getBadRequestError(exception: Throwable): BadRequestError? {
 	}
 	return null
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName         string
-		ErrorsModelsPackage string
-		ContentTypePackage  string
-		JsonPackage         string
-	}{g.Packages.Errors.PackageName,
-		g.Packages.ErrorsModels.PackageName,
-		g.Packages.ContentType.PackageName,
-		g.Packages.Json.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.Errors.GetPath("ErrorsHelpers.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *MicronautGenerator) JsonHelpers() []generator.CodeFile {
@@ -393,9 +373,8 @@ func dateConverters(convertersPackage packages.Package) []generator.CodeFile {
 }
 
 func localDateConverter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `LocalDateConverter`)
+	w.Lines(`
 import io.micronaut.core.convert.*
 import jakarta.inject.Singleton
 
@@ -419,19 +398,13 @@ class LocalDateConverter : TypeConverter<String, LocalDate> {
             Optional.empty()
         }
     }
-}`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("LocalDateConverter.kt"),
-		Content: strings.TrimSpace(code),
-	}
+}`)
+	return w.ToCodeFile()
 }
 
 func localDateTimeConverter(thePackage packages.Package) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(thePackage, `LocalDateTimeConverter`)
+	w.Lines(`
 import io.micronaut.core.convert.*
 import jakarta.inject.Singleton
 
@@ -456,11 +429,6 @@ class LocalDateTimeConverter : TypeConverter<String, LocalDateTime> {
         }
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{thePackage.PackageName})
-	return &generator.CodeFile{
-		Path:    thePackage.GetPath("LocalDateTimeConverter.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }

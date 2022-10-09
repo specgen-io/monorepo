@@ -2,13 +2,11 @@ package models
 
 import (
 	"fmt"
-	"kotlin/imports"
-	"kotlin/writer"
-	"strings"
-
 	"generator"
+	"kotlin/imports"
 	"kotlin/packages"
 	"kotlin/types"
+	"kotlin/writer"
 	"spec"
 )
 
@@ -134,9 +132,12 @@ func (g *JacksonGenerator) ModelsUsageImports() []string {
 }
 
 func (g *JacksonGenerator) ValidationErrorsHelpers() *generator.CodeFile {
-	code := `
-package [[.PackageName]];
-
+	w := writer.New(g.Packages.Errors, `ValidationErrorsHelpers`)
+	w.Template(
+		map[string]string{
+			`ErrorsModelsPackage`: g.Packages.ErrorsModels.PackageName,
+			`JsonPackage`:         g.Packages.Json.PackageName,
+		}, `
 import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import [[.ErrorsModelsPackage]].*
 import [[.JsonPackage]].*
@@ -168,21 +169,8 @@ object ValidationErrorsHelpers {
         return path.toString()
     }
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct {
-		PackageName         string
-		ErrorsModelsPackage string
-		JsonPackage         string
-	}{
-		g.Packages.Errors.PackageName,
-		g.Packages.ErrorsModels.PackageName,
-		g.Packages.Json.PackageName,
-	})
-	return &generator.CodeFile{
-		Path:    g.Packages.Errors.GetPath("ValidationErrorsHelpers.kt"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func (g *JacksonGenerator) CreateJsonMapperField(annotation string) string {
@@ -218,9 +206,8 @@ func (g *JacksonGenerator) JsonHelpersMethods() string {
 }
 
 func (g *JacksonGenerator) SetupLibrary() []generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+	w := writer.New(g.Packages.Json, `CustomObjectMapper`)
+	w.Lines(`
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.datatype.jsr310.*
@@ -232,11 +219,6 @@ fun setupObjectMapper(objectMapper: ObjectMapper): ObjectMapper {
         .setSerializationInclusion(JsonInclude.Include.NON_NULL)
     return objectMapper
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{g.Packages.Json.PackageName})
-	return []generator.CodeFile{{
-		Path:    g.Packages.Json.GetPath("CustomObjectMapper.kt"),
-		Content: strings.TrimSpace(code),
-	}}
+`)
+	return []generator.CodeFile{*w.ToCodeFile()}
 }

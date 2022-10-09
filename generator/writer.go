@@ -9,7 +9,8 @@ import (
 
 type Writer interface {
 	Line(format string, args ...interface{})
-	Lines(format string, args ...interface{})
+	Lines(format string)
+	Template(data map[string]string, content string)
 	EmptyLine()
 	Indent()
 	Unindent()
@@ -69,6 +70,14 @@ func substitute(s string, substitutions map[string]string) string {
 	return result
 }
 
+func wrapKeys(vars map[string]string, prefix, postfix string) map[string]string {
+	result := map[string]string{}
+	for key, value := range vars {
+		result[fmt.Sprintf(`%s%s%s`, prefix, key, postfix)] = value
+	}
+	return result
+}
+
 func (w *writer) write(s string) {
 	io.WriteString(w.buffer, substitute(s, w.config.Substitutions))
 }
@@ -83,25 +92,34 @@ func trimPrefix(str string, prefix string) (string, int) {
 	return trimmed, count
 }
 
-func (w *writer) Line(format string, args ...interface{}) {
-	line := fmt.Sprintf(format, args...)
+func (w *writer) line(theline string) {
 	indentation := 0
 	if w.config.LeadSpacesIndentationSize > 0 {
 		prefix := strings.Repeat(" ", w.config.LeadSpacesIndentationSize)
-		line, indentation = trimPrefix(line, prefix)
+		theline, indentation = trimPrefix(theline, prefix)
 	}
 	realIndentation := indentation + w.indentation
 	indentationStr := strings.Repeat(w.config.IndentationStr, realIndentation)
-	line = indentationStr + line + "\n"
-	w.write(line)
+	theline = indentationStr + theline + "\n"
+	w.write(theline)
 }
 
-func (w *writer) Lines(format string, args ...interface{}) {
-	code := fmt.Sprintf(strings.Trim(format, "\n"), args...)
+func (w *writer) Line(format string, args ...interface{}) {
+	theline := fmt.Sprintf(format, args...)
+	w.line(theline)
+}
+
+func (w *writer) Lines(content string) {
+	code := strings.Trim(content, "\n")
 	lines := strings.Split(code, "\n")
 	for _, line := range lines {
-		w.Line(line)
+		w.line(line)
 	}
+}
+
+func (w *writer) Template(data map[string]string, content string) {
+	code := substitute(content, wrapKeys(data, "[[.", "]]"))
+	w.Lines(code)
 }
 
 func (w *writer) EmptyLine() {
