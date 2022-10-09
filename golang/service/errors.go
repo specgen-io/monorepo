@@ -53,7 +53,7 @@ func callCheckContentType(logFieldsVar, expectedContentType, requestVar, respons
 	return fmt.Sprintf(`contenttype.Check(%s, %s, %s, %s)`, logFieldsVar, expectedContentType, requestVar, responseVar)
 }
 
-func respondNotFound(w *generator.Writer, operation *spec.NamedOperation, message string) {
+func respondNotFound(w generator.Writer, operation *spec.NamedOperation, message string) {
 	specification := operation.InApi.InHttp.InVersion.InSpec
 	badRequest := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusNotFound)
 	errorMessage := fmt.Sprintf(`%s{Message: %s}`, types.GoType(&badRequest.Type.Definition), message)
@@ -61,7 +61,7 @@ func respondNotFound(w *generator.Writer, operation *spec.NamedOperation, messag
 	w.Line(`return`)
 }
 
-func respondBadRequest(w *generator.Writer, operation *spec.NamedOperation, location string, message string, params string) {
+func respondBadRequest(w generator.Writer, operation *spec.NamedOperation, location string, message string, params string) {
 	specification := operation.InApi.InHttp.InVersion.InSpec
 	badRequest := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusBadRequest)
 	errorMessage := fmt.Sprintf(`%s{Location: "%s", Message: %s, Errors: %s}`, types.GoType(&badRequest.Type.Definition), location, message, params)
@@ -69,7 +69,7 @@ func respondBadRequest(w *generator.Writer, operation *spec.NamedOperation, loca
 	w.Line(`return`)
 }
 
-func respondInternalServerError(w *generator.Writer, operation *spec.NamedOperation, message string) {
+func respondInternalServerError(w generator.Writer, operation *spec.NamedOperation, message string) {
 	specification := operation.InApi.InHttp.InVersion.InSpec
 	internalServerError := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusInternalServerError)
 	errorMessage := fmt.Sprintf(`%s{Message: %s}`, types.GoType(&internalServerError.Type.Definition), message)

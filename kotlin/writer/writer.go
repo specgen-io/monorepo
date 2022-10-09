@@ -10,7 +10,7 @@ func KotlinConfig() generator.Config {
 	return generator.Config{"\t", 2, map[string]string{}}
 }
 
-func New(thePackage packages.Package, className string) *generator.Writer {
+func New(thePackage packages.Package, className string) generator.Writer {
 	config := KotlinConfig()
 	filename := thePackage.GetPath(fmt.Sprintf("%s.kt", className))
 	config.Substitutions["[[.ClassName]]"] = className

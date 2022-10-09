@@ -61,7 +61,7 @@ func (g *MoshiGenerator) models(models []*spec.NamedModel, modelsPackage package
 	return files
 }
 
-func (g *MoshiGenerator) modelObject(w *generator.Writer, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelObject(w generator.Writer, model *spec.NamedModel) {
 	className := model.Name.PascalCase()
 	w.Line(`data class %s(`, className)
 	for _, field := range model.Object.Fields {
@@ -71,7 +71,7 @@ func (g *MoshiGenerator) modelObject(w *generator.Writer, model *spec.NamedModel
 	w.Line(`)`)
 }
 
-func (g *MoshiGenerator) modelEnum(w *generator.Writer, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelEnum(w generator.Writer, model *spec.NamedModel) {
 	enumName := model.Name.PascalCase()
 	w.Line(`enum class %s {`, enumName)
 	for _, enumItem := range model.Enum.Items {
@@ -81,7 +81,7 @@ func (g *MoshiGenerator) modelEnum(w *generator.Writer, model *spec.NamedModel) 
 	w.Line(`}`)
 }
 
-func (g *MoshiGenerator) modelOneOf(w *generator.Writer, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelOneOf(w generator.Writer, model *spec.NamedModel) {
 	sealedClassName := model.Name.PascalCase()
 	w.Line(`sealed class %s {`, sealedClassName)
 	for _, item := range model.OneOf.Items {
@@ -211,7 +211,7 @@ func (g *MoshiGenerator) CreateJsonMapperField(annotation string) string {
 	return moshiVar
 }
 
-func (g *MoshiGenerator) InitJsonMapper(w *generator.Writer) {
+func (g *MoshiGenerator) InitJsonMapper(w generator.Writer) {
 	w.Line(`val moshiBuilder = Moshi.Builder()`)
 	w.Line(`setupMoshiAdapters(moshiBuilder)`)
 	w.Line(`moshi = moshiBuilder.build()`)

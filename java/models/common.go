@@ -8,7 +8,7 @@ import (
 	"spec"
 )
 
-func addObjectModelMethods(w *generator.Writer, model *spec.NamedModel) {
+func addObjectModelMethods(w generator.Writer, model *spec.NamedModel) {
 	w.Line(`@Override`)
 	w.Line(`public boolean equals(Object o) {`)
 	w.Line(`  if (this == o) return true;`)
@@ -47,7 +47,7 @@ func oneOfItemClassName(item *spec.NamedDefinition) string {
 	return item.Name.PascalCase()
 }
 
-func addOneOfModelMethods(w *generator.Writer, item *spec.NamedDefinition) {
+func addOneOfModelMethods(w generator.Writer, item *spec.NamedDefinition) {
 	w.Line(`@Override`)
 	w.Line(`public boolean equals(Object o) {`)
 	w.Line(`  if (this == o) return true;`)

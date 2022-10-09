@@ -40,7 +40,7 @@ func (g *axiosGenerator) ApiClient(api spec.Api, validationModule, modelsModule,
 	return &generator.CodeFile{module.GetPath(), w.String()}
 }
 
-func (g *axiosGenerator) operation(w *generator.Writer, operation *spec.NamedOperation) {
+func (g *axiosGenerator) operation(w generator.Writer, operation *spec.NamedOperation) {
 	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0

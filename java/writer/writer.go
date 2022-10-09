@@ -10,7 +10,7 @@ func JavaConfig() generator.Config {
 	return generator.Config{"\t", 2, map[string]string{}}
 }
 
-func New(thePackage packages.Package, className string) *generator.Writer {
+func New(thePackage packages.Package, className string) generator.Writer {
 	config := JavaConfig()
 	filename := thePackage.GetPath(fmt.Sprintf("%s.java", className))
 	config.Substitutions["[[.ClassName]]"] = className

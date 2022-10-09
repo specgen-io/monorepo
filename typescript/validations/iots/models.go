@@ -39,7 +39,7 @@ func kindOfFields(fields spec.NamedDefinitions) (bool, bool) {
 	return hasRequiredFields, hasOptionalFields
 }
 
-func (g *Generator) objectModel(w *generator.Writer, model *spec.NamedModel) {
+func (g *Generator) objectModel(w generator.Writer, model *spec.NamedModel) {
 	hasRequiredFields, hasOptionalFields := kindOfFields(model.Object.Fields)
 	if hasRequiredFields && hasOptionalFields {
 		w.Line("export const T%s = t.intersection([", model.Name.PascalCase())
@@ -73,7 +73,7 @@ func (g *Generator) objectModel(w *generator.Writer, model *spec.NamedModel) {
 	w.Line("export type %s = t.TypeOf<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func (g *Generator) enumModel(w *generator.Writer, model *spec.NamedModel) {
+func (g *Generator) enumModel(w generator.Writer, model *spec.NamedModel) {
 	w.Line("export enum %s {", model.Name.PascalCase())
 	for _, item := range model.Enum.Items {
 		w.Line(`  %s = "%s",`, item.Name.UpperCase(), item.Value)
@@ -83,7 +83,7 @@ func (g *Generator) enumModel(w *generator.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.enum(%s)", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func (g *Generator) unionModel(w *generator.Writer, model *spec.NamedModel) {
+func (g *Generator) unionModel(w generator.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {

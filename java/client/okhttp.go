@@ -53,7 +53,7 @@ func (g *Generator) client(api *spec.Api) *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *Generator) generateClientMethod(w *generator.Writer, operation *spec.NamedOperation) {
+func (g *Generator) generateClientMethod(w generator.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	requestBody := "null"
@@ -148,7 +148,7 @@ func (g *Generator) responses(version *spec.Version) []generator.CodeFile {
 	return files
 }
 
-func generateTryCatch(w *generator.Writer, exceptionObject string, codeBlock func(w *generator.Writer), exceptionHandler func(w *generator.Writer)) {
+func generateTryCatch(w generator.Writer, exceptionObject string, codeBlock func(w generator.Writer), exceptionHandler func(w generator.Writer)) {
 	w.Line(`try {`)
 	codeBlock(w.Indented())
 	w.Line(`} catch (%s) {`, exceptionObject)
@@ -156,17 +156,17 @@ func generateTryCatch(w *generator.Writer, exceptionObject string, codeBlock fun
 	w.Line(`}`)
 }
 
-func generateClientTryCatch(w *generator.Writer, statement string, exceptionType, exceptionVar, errorMessage string) {
+func generateClientTryCatch(w generator.Writer, statement string, exceptionType, exceptionVar, errorMessage string) {
 	generateTryCatch(w, exceptionType+` `+exceptionVar,
-		func(w *generator.Writer) {
+		func(w generator.Writer) {
 			w.Line(statement)
 		},
-		func(w *generator.Writer) {
+		func(w generator.Writer) {
 			generateThrowClientException(w, errorMessage, exceptionVar)
 		})
 }
 
-func generateThrowClientException(w *generator.Writer, errorMessage string, wrapException string) {
+func generateThrowClientException(w generator.Writer, errorMessage string, wrapException string) {
 	w.Line(`var errorMessage = %s;`, errorMessage)
 	w.Line(`logger.error(errorMessage);`)
 	params := "errorMessage"
