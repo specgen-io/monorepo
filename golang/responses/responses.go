@@ -16,6 +16,8 @@ func NewResponse(response *spec.OperationResponse, body string) string {
 	return fmt.Sprintf(`%s{%s: &%s}`, ResponseTypeName(response.Operation), response.Name.PascalCase(), body)
 }
 
+//TODO: This is used from both client and service. This can't be right.
+//      Client is only intersted in success responses and service is interested in all declared responses.
 func GenerateOperationResponseStruct(w generator.Writer, operation *spec.NamedOperation) {
 	w.Line(`type %s struct {`, ResponseTypeName(operation))
 	responses := [][]string{}
