@@ -59,8 +59,7 @@ func generateClientsImplementations(version *spec.Version, versionModule, conver
 }
 
 func generateClientImplementation(api *spec.Api, versionModule, convertModule, emptyModule, errorsModule, errorsModelsModule, modelsModule, responseModule module.Module) *generator.CodeFile {
-	w := writer.NewGoWriter()
-	w.Line("package %s", versionModule.Name)
+	w := writer.New(versionModule, "client.go")
 
 	imports := imports.New().
 		Add("fmt").
@@ -97,10 +96,7 @@ func generateClientImplementation(api *spec.Api, versionModule, convertModule, e
 		generateClientFunction(w, &operation)
 	}
 
-	return &generator.CodeFile{
-		Path:    versionModule.GetPath("client.go"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func generateClientWithCtor(w generator.Writer) {

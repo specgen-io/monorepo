@@ -29,8 +29,7 @@ func GenerateModels(specification *spec.Spec, moduleName string, generatePath st
 }
 
 func GenerateVersionModels(models []*spec.NamedModel, module, enumsModule module.Module) *generator.CodeFile {
-	w := writer.NewGoWriter()
-	w.Line("package %s", module.Name)
+	w := writer.New(module, "models.go")
 
 	imports := imports.New()
 	imports.AddModelsTypes(models)
@@ -49,7 +48,8 @@ func GenerateVersionModels(models []*spec.NamedModel, module, enumsModule module
 			generateEnumModel(w, model)
 		}
 	}
-	return &generator.CodeFile{Path: module.GetPath("models.go"), Content: w.String()}
+
+	return w.ToCodeFile()
 }
 
 func requiredFieldsList(object *spec.Object) string {

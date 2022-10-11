@@ -20,8 +20,7 @@ func generateServiceInterfaces(version *spec.Version, versionModule, modelsModul
 }
 
 func generateServiceInterface(api *spec.Api, apiModule, modelsModule, errorsModelsModule, emptyModule module.Module) *generator.CodeFile {
-	w := writer.NewGoWriter()
-	w.Line("package %s", apiModule.Name)
+	w := writer.New(apiModule, "service.go")
 
 	imports := imports.New()
 	imports.AddApiTypes(api)
@@ -49,10 +48,8 @@ func generateServiceInterface(api *spec.Api, apiModule, modelsModule, errorsMode
 		w.Line(`  %s`, OperationSignature(&operation, nil))
 	}
 	w.Line(`}`)
-	return &generator.CodeFile{
-		Path:    apiModule.GetPath("service.go"),
-		Content: w.String(),
-	}
+
+	return w.ToCodeFile()
 }
 
 const serviceInterfaceName = "Service"

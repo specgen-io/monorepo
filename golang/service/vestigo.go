@@ -34,8 +34,7 @@ func callAddRouting(api *spec.Api, serviceVar string) string {
 func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module) *generator.CodeFile {
 	apiModule := versionModule.Submodule(api.Name.SnakeCase())
 
-	w := writer.NewGoWriter()
-	w.Line("package %s", module.Name)
+	w := writer.New(module, fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
 	imports := imports.New()
 	if types.ApiHasBody(api) {
@@ -80,10 +79,7 @@ func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, er
 	w.Unindent()
 	w.Line(`}`)
 
-	return &generator.CodeFile{
-		Path:    module.GetPath(fmt.Sprintf("%s.go", api.Name.SnakeCase())),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func operationHasParams(api *spec.Api) bool {
@@ -310,8 +306,7 @@ func serviceInterfaceTypeVar(api *spec.Api) string {
 }
 
 func generateSpecRouting(specification *spec.Spec, module module.Module) *generator.CodeFile {
-	w := writer.NewGoWriter()
-	w.Line("package %s", module.Name)
+	w := writer.New(module, "spec.go")
 
 	imports := imports.New()
 	imports.Add("github.com/husobee/vestigo")
@@ -345,10 +340,7 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *genera
 	}
 	w.Line(`}`)
 
-	return &generator.CodeFile{
-		Path:    module.GetPath("spec.go"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func versionedApiImportAlias(api *spec.Api) string {
