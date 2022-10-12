@@ -21,7 +21,8 @@ var ToUpperCase = casee.ToUpperCase
 func GenerateClient(specification *spec.Spec, moduleName string, generatePath string) *generator.Sources {
 	sources := generator.NewSources()
 
-	modelsGenerator := models.NewGenerator()
+	modules := models.NewModules(moduleName, generatePath, specification)
+	modelsGenerator := models.NewGenerator(modules)
 
 	rootModule := module.New(moduleName, generatePath)
 

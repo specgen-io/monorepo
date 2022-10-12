@@ -12,7 +12,8 @@ import (
 func GenerateService(specification *spec.Spec, moduleName string, swaggerPath string, generatePath string, servicesPath string) *generator.Sources {
 	sources := generator.NewSources()
 
-	modelsGenerator := models.NewGenerator()
+	modules := models.NewModules(moduleName, generatePath, specification)
+	modelsGenerator := models.NewGenerator(modules)
 
 	rootModule := module.New(moduleName, generatePath)
 	sources.AddGenerated(generateSpecRouting(specification, rootModule))

@@ -12,6 +12,6 @@ type Generator interface {
 	GenerateEnumsHelperFunctions(module module.Module) *generator.CodeFile
 }
 
-func NewGenerator() Generator {
-	return NewEncodingJsonGenerator()
+func NewGenerator(modules *Modules) Generator {
+	return NewEncodingJsonGenerator(modules)
 }

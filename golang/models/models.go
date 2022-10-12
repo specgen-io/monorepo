@@ -10,7 +10,8 @@ import (
 func GenerateModels(specification *spec.Spec, moduleName string, generatePath string) *generator.Sources {
 	sources := generator.NewSources()
 
-	generator := NewGenerator()
+	modules := NewModules(moduleName, generatePath, specification)
+	generator := NewGenerator(modules)
 
 	rootModule := module.New(moduleName, generatePath)
 

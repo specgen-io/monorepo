@@ -12,11 +12,13 @@ import (
 	"spec"
 )
 
-func NewEncodingJsonGenerator() *EncodingJsonGenerator {
-	return &EncodingJsonGenerator{}
+func NewEncodingJsonGenerator(modules *Modules) *EncodingJsonGenerator {
+	return &EncodingJsonGenerator{modules}
 }
 
-type EncodingJsonGenerator struct{}
+type EncodingJsonGenerator struct {
+	Modules *Modules
+}
 
 func (g *EncodingJsonGenerator) GenerateVersionModels(models []*spec.NamedModel, module, enumsModule module.Module) *generator.CodeFile {
 	w := writer.New(module, "models.go")
