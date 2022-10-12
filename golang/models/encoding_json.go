@@ -151,7 +151,7 @@ func (g *EncodingJsonGenerator) generateEnumModel(w generator.Writer, model *spe
 	w.Line("var %s = []string{%s}", g.EnumValuesStrings(model), strings.Join(choiceValuesStringsParams, ", "))
 	w.Line("var %s = []%s{%s}", g.enumValues(model), modelName, strings.Join(choiceValuesParams, ", "))
 	w.EmptyLine()
-	w.Line("func (g *EncodingJsonGenerator) (self *%s) UnmarshalJSON(b []byte) error {", modelName)
+	w.Line("func (self *%s) UnmarshalJSON(b []byte) error {", modelName)
 	w.Line("  str, err := enums.ReadStringValue(b, %sValuesStrings)", modelName)
 	w.Line("  if err != nil {")
 	w.Line("    return err")
@@ -234,7 +234,7 @@ func (g *EncodingJsonGenerator) generateOneOfModelDiscriminator(w generator.Writ
 	writer.WriteAlignedLines(w.Indented(), items)
 	w.Line("}")
 	w.EmptyLine()
-	w.Line(`func (g *EncodingJsonGenerator) (u %s) MarshalJSON() ([]byte, error) {`, model.Name.PascalCase())
+	w.Line(`func (u %s) MarshalJSON() ([]byte, error) {`, model.Name.PascalCase())
 	for _, item := range model.OneOf.Items {
 		w.Line(`  if u.%s != nil {`, item.Name.PascalCase())
 		w.Line(`    data, err := json.Marshal(u.%s)`, item.Name.PascalCase())
