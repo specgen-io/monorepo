@@ -14,10 +14,10 @@ import (
 	"spec"
 )
 
-func generateRoutings(version *spec.Version, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module) []generator.CodeFile {
+func generateRoutings(version *spec.Version, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module, modelsGenerator models.Generator) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *generateRouting(&api, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule))
+		files = append(files, *generateRouting(&api, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule, modelsGenerator))
 	}
 	return files
 }
@@ -31,7 +31,7 @@ func callAddRouting(api *spec.Api, serviceVar string) string {
 	return fmt.Sprintf(`%s(router, %s)`, addRoutesMethodName(api), serviceVar)
 }
 
-func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module) *generator.CodeFile {
+func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module, modelsGenerator models.Generator) *generator.CodeFile {
 	apiModule := versionModule.Submodule(api.Name.SnakeCase())
 
 	w := writer.New(module, fmt.Sprintf("%s.go", api.Name.SnakeCase()))
@@ -69,7 +69,7 @@ func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, er
 		url := getEndpointUrl(&operation)
 		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.InApi.Name.Source, operation.Name.Source, client.ToUpperCase(operation.Endpoint.Method), url)
 		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, client.ToPascalCase(operation.Endpoint.Method), url)
-		generateOperationMethod(w.Indented(), &operation)
+		generateOperationMethod(w.Indented(), &operation, modelsGenerator)
 		w.Line(`})`)
 		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
 			addSetCors(w, &operation)
@@ -127,7 +127,7 @@ func logFieldsName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf("log%s", operation.Name.PascalCase())
 }
 
-func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserName string) string {
+func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserName string, modelsGenerator models.Generator) string {
 	paramNameSource := param.Name.Source
 	if isUrlParam {
 		paramNameSource = ":" + paramNameSource
@@ -137,7 +137,7 @@ func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserNa
 	isEnum := param.Type.Definition.Info.Model != nil && param.Type.Definition.Info.Model.IsEnum()
 	enumModel := param.Type.Definition.Info.Model
 	if isEnum {
-		parserParams = append(parserParams, fmt.Sprintf("%s.%s", types.VersionModelsPackage, models.EnumValuesStrings(enumModel)))
+		parserParams = append(parserParams, fmt.Sprintf("%s.%s", types.VersionModelsPackage, modelsGenerator.EnumValuesStrings(enumModel)))
 	}
 	if defaultParam != nil {
 		parserParams = append(parserParams, *defaultParam)
@@ -149,19 +149,19 @@ func parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserNa
 	return call
 }
 
-func generateHeaderParsing(w generator.Writer, operation *spec.NamedOperation) {
-	generateParametersParsing(w, operation, operation.HeaderParams, "header", "req.Header")
+func generateHeaderParsing(w generator.Writer, operation *spec.NamedOperation, modelsGenerator models.Generator) {
+	generateParametersParsing(w, operation, operation.HeaderParams, "header", "req.Header", modelsGenerator)
 }
 
-func generateQueryParsing(w generator.Writer, operation *spec.NamedOperation) {
-	generateParametersParsing(w, operation, operation.QueryParams, "query", "req.URL.Query()")
+func generateQueryParsing(w generator.Writer, operation *spec.NamedOperation, modelsGenerator models.Generator) {
+	generateParametersParsing(w, operation, operation.QueryParams, "query", "req.URL.Query()", modelsGenerator)
 }
 
-func generateUrlParamsParsing(w generator.Writer, operation *spec.NamedOperation) {
+func generateUrlParamsParsing(w generator.Writer, operation *spec.NamedOperation, modelsGenerator models.Generator) {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		w.Line(`urlParams := paramsparser.New(req.URL.Query(), false)`)
 		for _, param := range operation.Endpoint.UrlParams {
-			w.Line(`%s := %s`, param.Name.CamelCase(), parserParameterCall(true, &param, "urlParams"))
+			w.Line(`%s := %s`, param.Name.CamelCase(), parserParameterCall(true, &param, "urlParams", modelsGenerator))
 		}
 		w.Line(`if len(urlParams.Errors) > 0 {`)
 		respondNotFound(w.Indented(), operation, fmt.Sprintf(`"Failed to parse url parameters"`))
@@ -169,11 +169,11 @@ func generateUrlParamsParsing(w generator.Writer, operation *spec.NamedOperation
 	}
 }
 
-func generateParametersParsing(w generator.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramsValuesVar string) {
+func generateParametersParsing(w generator.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramsValuesVar string, modelsGenerator models.Generator) {
 	if namedParams != nil && len(namedParams) > 0 {
 		w.Line(`%s := paramsparser.New(%s, true)`, paramsParserName, paramsValuesVar)
 		for _, param := range namedParams {
-			w.Line(`%s := %s`, param.Name.CamelCase(), parserParameterCall(false, &param, paramsParserName))
+			w.Line(`%s := %s`, param.Name.CamelCase(), parserParameterCall(false, &param, paramsParserName, modelsGenerator))
 		}
 
 		w.Line(`if len(%s.Errors) > 0 {`, paramsParserName)
@@ -214,12 +214,12 @@ func generateResponseWriting(w generator.Writer, logFieldsName string, response 
 	}
 }
 
-func generateOperationMethod(w generator.Writer, operation *spec.NamedOperation) {
+func generateOperationMethod(w generator.Writer, operation *spec.NamedOperation, modelsGenerator models.Generator) {
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	w.Line(`var err error`)
-	generateUrlParamsParsing(w, operation)
-	generateHeaderParsing(w, operation)
-	generateQueryParsing(w, operation)
+	generateUrlParamsParsing(w, operation, modelsGenerator)
+	generateHeaderParsing(w, operation, modelsGenerator)
+	generateQueryParsing(w, operation, modelsGenerator)
 	generateBodyParsing(w, operation)
 	generateServiceCall(w, operation, `response`)
 	generateResponse(w, operation, `response`)

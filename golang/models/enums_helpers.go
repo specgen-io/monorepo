@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func GenerateEnumsHelperFunctions(module module.Module) *generator.CodeFile {
+func (g *EncodingJsonGenerator) GenerateEnumsHelperFunctions(module module.Module) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
