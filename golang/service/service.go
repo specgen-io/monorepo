@@ -18,8 +18,7 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 	rootModule := module.New(moduleName, generatePath)
 	sources.AddGenerated(generateSpecRouting(specification, rootModule))
 
-	enumsModule := rootModule.Submodule("enums")
-	sources.AddGenerated(modelsGenerator.GenerateEnumsHelperFunctions(enumsModule))
+	sources.AddGenerated(modelsGenerator.GenerateEnumsHelperFunctions())
 
 	emptyModule := rootModule.Submodule("empty")
 	sources.AddGenerated(types.GenerateEmpty(emptyModule))
@@ -32,7 +31,7 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 
 	errorsModule := rootModule.Submodule("httperrors")
 	errorsModelsModule := errorsModule.Submodule("models")
-	sources.AddGenerated(modelsGenerator.GenerateVersionModels(specification.HttpErrors.ResolvedModels, errorsModelsModule, enumsModule))
+	sources.AddGenerated(modelsGenerator.GenerateErrorModels(specification.HttpErrors))
 	sources.AddGeneratedAll(httpErrors(errorsModule, errorsModelsModule, paramsParserModule, respondModule, &specification.HttpErrors.Responses))
 
 	contentTypeModule := rootModule.Submodule("contenttype")
@@ -45,7 +44,7 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 
 		sources.AddGeneratedAll(generateRoutings(&version, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule, modelsGenerator))
 		sources.AddGeneratedAll(generateServiceInterfaces(&version, versionModule, modelsModule, errorsModelsModule, emptyModule))
-		sources.AddGenerated(modelsGenerator.GenerateVersionModels(version.ResolvedModels, modelsModule, enumsModule))
+		sources.AddGenerated(modelsGenerator.GenerateVersionModels(&version))
 	}
 
 	if swaggerPath != "" {

@@ -2,14 +2,14 @@ package models
 
 import (
 	"generator"
-	"golang/module"
 	"spec"
 )
 
 type Generator interface {
-	GenerateVersionModels(models []*spec.NamedModel, module, enumsModule module.Module) *generator.CodeFile
+	GenerateVersionModels(version *spec.Version) *generator.CodeFile
+	GenerateErrorModels(httperrors *spec.HttpErrors) *generator.CodeFile
 	EnumValuesStrings(model *spec.NamedModel) string
-	GenerateEnumsHelperFunctions(module module.Module) *generator.CodeFile
+	GenerateEnumsHelperFunctions() *generator.CodeFile
 }
 
 func NewGenerator(modules *Modules) Generator {

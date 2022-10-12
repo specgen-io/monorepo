@@ -2,8 +2,6 @@ package models
 
 import (
 	"generator"
-	"golang/module"
-	"golang/types"
 	"spec"
 )
 
@@ -13,15 +11,10 @@ func GenerateModels(specification *spec.Spec, moduleName string, generatePath st
 	modules := NewModules(moduleName, generatePath, specification)
 	generator := NewGenerator(modules)
 
-	rootModule := module.New(moduleName, generatePath)
-
-	enumsModule := rootModule.Submodule("enums")
-	sources.AddGenerated(generator.GenerateEnumsHelperFunctions(enumsModule))
+	sources.AddGenerated(generator.GenerateEnumsHelperFunctions())
 
 	for _, version := range specification.Versions {
-		versionModule := rootModule.Submodule(version.Name.FlatCase())
-		modelsModule := versionModule.Submodule(types.VersionModelsPackage)
-		sources.AddGenerated(generator.GenerateVersionModels(version.ResolvedModels, modelsModule, enumsModule))
+		sources.AddGenerated(generator.GenerateVersionModels(&version))
 	}
 	return sources
 }
