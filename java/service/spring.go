@@ -302,34 +302,6 @@ public class [[.ClassName]] {
 	return w.ToCodeFile()
 }
 
-func (g *SpringGenerator) JsonHelpers() []generator.CodeFile {
-	files := []generator.CodeFile{}
-
-	files = append(files, *g.Json())
-	files = append(files, *g.Models.JsonParseException())
-	files = append(files, g.Models.SetupLibrary()...)
-
-	return files
-}
-
-func (g *SpringGenerator) Json() *generator.CodeFile {
-	w := writer.New(g.Packages.Json, `Json`)
-	imports := imports.New()
-	imports.Add(`org.springframework.beans.factory.annotation.Autowired`)
-	imports.Add(`org.springframework.stereotype.Component`)
-	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(`java.io.IOException`)
-	imports.Write(w)
-	w.EmptyLine()
-	w.Line(`@Component`)
-	w.Line(`public class [[.ClassName]] {`)
-	w.EmptyLine()
-	g.Models.CreateJsonMapperField(w.Indented(), "@Autowired")
-	w.Line(g.Models.JsonHelpersMethods())
-	w.Line(`}`)
-	return w.ToCodeFile()
-}
-
 func springMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"HttpServletRequest request"}
 

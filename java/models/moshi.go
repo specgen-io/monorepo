@@ -186,41 +186,6 @@ func (g *MoshiGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
 	return fmt.Sprintf(`write(%s, %s)`, adapterParam, varData)
 }
 
-func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
-	adapter := fmt.Sprintf(`adapter(%s.class)`, g.Types.Java(typ))
-
-	if typ.Node == spec.MapType {
-		typeJava := g.Types.Java(typ.Child)
-		adapter = fmt.Sprintf(`<Map<String, %s>>adapter(Types.newParameterizedType(Map.class, String.class, %s.class))`, typeJava, typeJava)
-	}
-	if typ.Node == spec.ArrayType {
-		typeJava := g.Types.Java(typ.Child)
-		adapter = fmt.Sprintf(`<List<%s>>adapter(Types.newParameterizedType(List.class, %s.class))`, typeJava, typeJava)
-	}
-
-	return fmt.Sprintf(`moshi.%s.fromJson(%s)`, adapter, varJson), `Exception`
-}
-
-func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
-	adapterParam := fmt.Sprintf(`%s.class`, g.Types.Java(typ))
-
-	if typ.Node == spec.MapType {
-		typeJava := g.Types.Java(typ.Child)
-		adapterParam = fmt.Sprintf(`Types.newParameterizedType(Map.class, String.class, %s.class)`, typeJava)
-	}
-	if typ.Node == spec.ArrayType {
-		typeJava := g.Types.Java(typ.Child)
-		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List.class, %s.class)`, typeJava)
-	}
-
-	return fmt.Sprintf(`moshi.adapter(%s).toJson(%s)`, adapterParam, varData), `AssertionError`
-}
-
-func (g *MoshiGenerator) WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string {
-	statement, _ := g.WriteJson(varData, typ)
-	return statement
-}
-
 func (g *MoshiGenerator) modelsDefinitionsImports() []string {
 	return []string{
 		`com.squareup.moshi.Json`,
@@ -235,18 +200,6 @@ func (g *MoshiGenerator) ModelsUsageImports() []string {
 		`com.squareup.moshi.Types`,
 		`java.lang.reflect.ParameterizedType`,
 	}
-}
-
-func (g *MoshiGenerator) JsonParseException() *generator.CodeFile {
-	w := writer.New(g.Packages.Json, `JsonParseException`)
-	w.Lines(`
-public class [[.ClassName]] extends RuntimeException {
-	public [[.ClassName]](Throwable exception) {
-		super("Failed to parse body: " + exception.getMessage(), exception);
-	}
-}
-`)
-	return w.ToCodeFile()
 }
 
 func (g *MoshiGenerator) ModelsValidation() *generator.CodeFile {
@@ -278,21 +231,30 @@ public class [[.ClassName]] {
 	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) CreateJsonMapperField(w generator.Writer, annotation string) {
-	if annotation != "" {
-		w.Line(annotation)
+func (g *MoshiGenerator) JsonHelpers() []generator.CodeFile {
+	files := []generator.CodeFile{}
+
+	files = append(files, *g.json())
+	files = append(files, *g.jsonParseException())
+	files = append(files, g.setupLibrary()...)
+
+	return files
+}
+
+func (g *MoshiGenerator) json() *generator.CodeFile {
+	w := writer.New(g.Packages.Json, `Json`)
+	w.Lines(`
+import com.squareup.moshi.Moshi;
+
+import java.lang.reflect.ParameterizedType;
+
+public class Json {
+	private final Moshi moshi;
+
+	public Json(Moshi moshi) {
+		this.moshi = moshi;
 	}
-	w.Line(`private Moshi moshi;`)
-}
 
-func (g *MoshiGenerator) InitJsonMapper(w generator.Writer) {
-	w.Line(`Moshi.Builder moshiBuilder = new Moshi.Builder();`)
-	w.Line(`CustomMoshiAdapters.setup(moshiBuilder);`)
-	w.Line(`this.moshi = moshiBuilder.build();`)
-}
-
-func (g *MoshiGenerator) JsonHelpersMethods() string {
-	return `
 	public <T> String write(Class<T> type, T data) {
 		return moshi.adapter(type).toJson(data);
 	}
@@ -316,10 +278,24 @@ func (g *MoshiGenerator) JsonHelpersMethods() string {
 			throw new JsonParseException(exception);
 		}
 	}
-`
+}
+`)
+	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) SetupLibrary() []generator.CodeFile {
+func (g *MoshiGenerator) jsonParseException() *generator.CodeFile {
+	w := writer.New(g.Packages.Json, `JsonParseException`)
+	w.Lines(`
+public class [[.ClassName]] extends RuntimeException {
+	public [[.ClassName]](Throwable exception) {
+		super("Failed to parse body: " + exception.getMessage(), exception);
+	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *MoshiGenerator) setupLibrary() []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.setupAdapters())
 	files = append(files, *bigDecimalAdapter(g.Packages.JsonAdapters))

@@ -335,33 +335,6 @@ public class [[.ClassName]] {
 	return w.ToCodeFile()
 }
 
-func (g *MicronautGenerator) JsonHelpers() []generator.CodeFile {
-	files := []generator.CodeFile{}
-
-	files = append(files, *g.Json())
-	files = append(files, *g.Models.JsonParseException())
-	files = append(files, g.Models.SetupLibrary()...)
-
-	return files
-}
-
-func (g *MicronautGenerator) Json() *generator.CodeFile {
-	w := writer.New(g.Packages.Json, `Json`)
-	imports := imports.New()
-	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(`jakarta.inject.*`)
-	imports.Add(`java.io.IOException`)
-	imports.Write(w)
-	w.EmptyLine()
-	w.Line(`@Singleton`)
-	w.Line(`public class [[.ClassName]] {`)
-	g.Models.CreateJsonMapperField(w.Indented(), "@Inject")
-	w.EmptyLine()
-	w.Line(g.Models.JsonHelpersMethods())
-	w.Line(`}`)
-	return w.ToCodeFile()
-}
-
 func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"HttpRequest<?> request"}
 

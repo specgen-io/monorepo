@@ -2,7 +2,6 @@ package models
 
 import (
 	"fmt"
-
 	"generator"
 	"java/types"
 	"spec"
@@ -12,19 +11,10 @@ type Generator interface {
 	Models(version *spec.Version) []generator.CodeFile
 	ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile
 	ModelsUsageImports() []string
-	SetupLibrary() []generator.CodeFile
-	JsonHelpersMethods() string
-	JsonParseException() *generator.CodeFile
 	ModelsValidation() *generator.CodeFile
-	CreateJsonMapperField(w generator.Writer, annotation string)
-	InitJsonMapper(w generator.Writer)
-
 	JsonRead(varJson string, typ *spec.TypeDef) string
 	JsonWrite(varData string, typ *spec.TypeDef) string
-
-	ReadJson(jsonStr string, typ *spec.TypeDef) (string, string)
-	WriteJson(varData string, typ *spec.TypeDef) (string, string)
-	WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string
+	JsonHelpers() []generator.CodeFile
 }
 
 func NewGenerator(jsonlib string, packages *Packages) Generator {

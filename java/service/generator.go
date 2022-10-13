@@ -16,7 +16,6 @@ type ServerGenerator interface {
 	ExceptionController(responses *spec.Responses) *generator.CodeFile
 	ErrorsHelpers() *generator.CodeFile
 	ContentType() []generator.CodeFile
-	JsonHelpers() []generator.CodeFile
 }
 
 type Generator struct {

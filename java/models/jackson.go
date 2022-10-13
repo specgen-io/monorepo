@@ -194,18 +194,6 @@ func (g *JacksonGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
 	return fmt.Sprintf(`write(%s)`, varData)
 }
 
-func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
-	return fmt.Sprintf(`objectMapper.readValue(%s, new TypeReference<%s>() {})`, varJson, g.Types.Java(typ)), `IOException`
-}
-
-func (g *JacksonGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
-	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `Exception`
-}
-
-func (g *JacksonGenerator) WriteJsonNoCheckedException(varData string, typ *spec.TypeDef) string {
-	return fmt.Sprintf(`writeJson(%s)`, varData)
-}
-
 func (g *JacksonGenerator) modelsDefinitionsImports() []string {
 	return []string{
 		`com.fasterxml.jackson.databind.*`,
@@ -220,18 +208,6 @@ func (g *JacksonGenerator) ModelsUsageImports() []string {
 		`com.fasterxml.jackson.core.type.TypeReference`,
 		`com.fasterxml.jackson.databind.ObjectMapper`,
 	}
-}
-
-func (g *JacksonGenerator) JsonParseException() *generator.CodeFile {
-	w := writer.New(g.Packages.Json, `JsonParseException`)
-	w.Lines(`
-public class [[.ClassName]] extends RuntimeException {
-	public JsonParseException(Throwable exception) {
-		super("Failed to parse body: " + exception.getMessage(), exception);
-	}
-}
-`)
-	return w.ToCodeFile()
 }
 
 func (g *JacksonGenerator) ModelsValidation() *generator.CodeFile {
@@ -278,20 +254,31 @@ public class [[.ClassName]] {
 	return w.ToCodeFile()
 }
 
-func (g *JacksonGenerator) CreateJsonMapperField(w generator.Writer, annotation string) {
-	if annotation != "" {
-		w.Line(annotation)
+func (g *JacksonGenerator) JsonHelpers() []generator.CodeFile {
+	files := []generator.CodeFile{}
+
+	files = append(files, *g.json())
+	files = append(files, *g.jsonParseException())
+	files = append(files, g.setupLibrary()...)
+
+	return files
+}
+
+func (g *JacksonGenerator) json() *generator.CodeFile {
+	w := writer.New(g.Packages.Json, `Json`)
+	w.Lines(`
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+
+public class Json {
+	private final ObjectMapper objectMapper;
+
+	public Json(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
 	}
-	w.Line(`private ObjectMapper objectMapper;`)
-}
 
-func (g *JacksonGenerator) InitJsonMapper(w generator.Writer) {
-	w.Line(`this.objectMapper = new ObjectMapper();`)
-	w.Line(`CustomObjectMapper.setup(objectMapper);`)
-}
-
-func (g *JacksonGenerator) JsonHelpersMethods() string {
-	return `
 	public String write(Object data) {
 		try {
 			return objectMapper.writeValueAsString(data);
@@ -299,7 +286,7 @@ func (g *JacksonGenerator) JsonHelpersMethods() string {
 			throw new RuntimeException(exception);
 		}
 	}
-	
+
 	public <T> T read(String jsonStr, TypeReference<T> typeReference) {
 		try {
 			return objectMapper.readValue(jsonStr, typeReference);
@@ -307,10 +294,24 @@ func (g *JacksonGenerator) JsonHelpersMethods() string {
 			throw new JsonParseException(exception);
 		}
 	}
-`
+}
+`)
+	return w.ToCodeFile()
 }
 
-func (g *JacksonGenerator) SetupLibrary() []generator.CodeFile {
+func (g *JacksonGenerator) jsonParseException() *generator.CodeFile {
+	w := writer.New(g.Packages.Json, `JsonParseException`)
+	w.Lines(`
+public class [[.ClassName]] extends RuntimeException {
+	public JsonParseException(Throwable exception) {
+		super("Failed to parse body: " + exception.getMessage(), exception);
+	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *JacksonGenerator) setupLibrary() []generator.CodeFile {
 	w := writer.New(g.Packages.Json, `CustomObjectMapper`)
 	w.Lines(`
 import com.fasterxml.jackson.annotation.JsonInclude;
