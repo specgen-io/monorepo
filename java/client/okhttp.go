@@ -45,9 +45,9 @@ public class [[.ClassName]] {
 
 	public [[.ClassName]](String baseUrl) {
 		this.baseUrl = baseUrl;
-		ObjectMapper objectMapper = new ObjectMapper();
-		CustomObjectMapper.setup(objectMapper);
-		this.json = new Json(objectMapper);
+`)
+	g.InitJsonField(w.IndentedWith(2))
+	w.Lines(`
 		this.client = new OkHttpClient();
 	}
 `)
@@ -312,11 +312,10 @@ func (g *Generator) generateErrorsHandler(thePackage packages.Package, errorsRes
 	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  public static void handleErrors(Response response, Logger logger, Json json) {`)
 	for _, errorResponse := range *errorsResponses {
-		errorName := g.Types.Java(&errorResponse.Type.Definition)
 		w.Line(`    if (response.code() == %s) {`, spec.HttpStatusCode(errorResponse.Name))
 		w.Line(`      var responseBodyString = getResponseBodyString(response, logger);`)
-		w.Line(`      var responseBody = json.read(responseBodyString, new TypeReference<%s>() {});`, errorName)
-		w.Line(`      throw new %sException(responseBody);`, errorName)
+		w.Line(`      var responseBody = json.%s;`, g.JsonRead("responseBodyString", &errorResponse.Type.Definition))
+		w.Line(`      throw new %sException(responseBody);`, g.Types.Java(&errorResponse.Type.Definition))
 		w.Line(`    }`)
 	}
 	w.Line(`  }`)

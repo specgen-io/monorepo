@@ -844,3 +844,11 @@ public final class UnwrapFieldAdapterFactory<T> implements JsonAdapter.Factory {
 `)
 	return w.ToCodeFile()
 }
+
+func (g *MoshiGenerator) InitJsonField(w generator.Writer) {
+	w.Lines(`
+Moshi.Builder moshiBuilder = new Moshi.Builder();
+CustomMoshiAdapters.setup(moshiBuilder);
+this.json = new Json(moshiBuilder.build());
+`)
+}

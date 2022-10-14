@@ -329,3 +329,11 @@ public class [[.ClassName]] {
 `)
 	return []generator.CodeFile{*w.ToCodeFile()}
 }
+
+func (g *JacksonGenerator) InitJsonField(w generator.Writer) {
+	w.Lines(`
+ObjectMapper objectMapper = new ObjectMapper();
+CustomObjectMapper.setup(objectMapper);
+this.json = new Json(objectMapper);
+`)
+}
