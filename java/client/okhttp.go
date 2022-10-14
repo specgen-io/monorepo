@@ -46,7 +46,7 @@ public class [[.ClassName]] {
 	public [[.ClassName]](String baseUrl) {
 		this.baseUrl = baseUrl;
 		ObjectMapper objectMapper = new ObjectMapper();
-		CustomObjectMapper.setup(new ObjectMapper());
+		CustomObjectMapper.setup(objectMapper);
 		this.json = new Json(objectMapper);
 		this.client = new OkHttpClient();
 	}
