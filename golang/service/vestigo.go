@@ -52,7 +52,7 @@ func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, er
 	}
 	imports.Module(apiModule)
 	imports.Module(errorsModule)
-	imports.ModuleAliased(errorsModelsModule)
+	imports.Module(errorsModelsModule)
 	if isRouterUsingModels(api) {
 		imports.Module(modelsModule)
 	}
@@ -372,7 +372,7 @@ import (
 	"net/http"
 	"strings"
 	"[[.ErrorsPackage]]"
-	errmodels "[[.ErrorsModelsPackage]]"
+	"[[.ErrorsModelsPackage]]"
 )
 
 func Check(logFields log.Fields, expectedContentType string, req *http.Request, res http.ResponseWriter) bool {
@@ -414,7 +414,7 @@ func errorsModelsConverter(module, errorsModelsModule, paramsParserModule module
 package [[.ModuleName]]
 
 import (
-	errmodels "[[.ErrorsModelsPackage]]"
+	"[[.ErrorsModelsPackage]]"
 	"[[.ParamsParserModule]]"
 )
 

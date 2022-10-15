@@ -38,7 +38,7 @@ func GenerateClient(specification *spec.Spec, moduleName string, generatePath st
 	sources.AddGenerated(generateResponseFunctions(responseModule))
 
 	errorsModule := rootModule.Submodule("httperrors")
-	errorsModelsModule := errorsModule.SubmoduleAliased("models", types.ErrorsModelsPackage)
+	errorsModelsModule := errorsModule.Submodule(types.ErrorsModelsPackage)
 	sources.AddGenerated(modelsGenerator.GenerateErrorModels(specification.HttpErrors))
 	sources.AddGenerated(httpErrors(errorsModule, errorsModelsModule, &specification.HttpErrors.Responses))
 
@@ -79,7 +79,7 @@ func generateClientImplementation(api *spec.Api, versionModule, convertModule, e
 		imports.Module(emptyModule)
 	}
 	imports.Module(errorsModule)
-	imports.ModuleAliased(errorsModelsModule)
+	imports.Module(errorsModelsModule)
 	imports.AddApiTypes(api)
 	imports.Module(modelsModule)
 	imports.Module(responseModule)

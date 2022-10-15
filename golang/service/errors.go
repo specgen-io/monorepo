@@ -17,7 +17,7 @@ func generateErrors(module, errorsModelsModule, respondModule module.Module, res
 	imports := imports.New()
 	imports.AddAliased("github.com/sirupsen/logrus", "log")
 	imports.Add("net/http")
-	imports.ModuleAliased(errorsModelsModule)
+	imports.Module(errorsModelsModule)
 	imports.Module(respondModule)
 	imports.Write(w)
 

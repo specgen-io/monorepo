@@ -32,7 +32,7 @@ func generateServiceInterface(api *spec.Api, apiModule, modelsModule, errorsMode
 	//TODO - potential bug, could be unused import
 	imports.Module(modelsModule)
 	if usingErrorModels(api) {
-		imports.ModuleAliased(errorsModelsModule)
+		imports.Module(errorsModelsModule)
 	}
 	imports.Write(w)
 

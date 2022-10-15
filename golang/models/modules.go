@@ -18,7 +18,7 @@ func NewModules(moduleName string, generatePath string, specification *spec.Spec
 	generated := module.New(moduleName, generatePath)
 	enums := generated.Submodule("enums")
 	httperrors := generated.Submodule("httperrors")
-	httperrorsModels := httperrors.SubmoduleAliased("models", types.ErrorsModelsPackage)
+	httperrorsModels := httperrors.Submodule(types.ErrorsModelsPackage)
 
 	models := map[string]module.Module{}
 	for _, version := range specification.Versions {
