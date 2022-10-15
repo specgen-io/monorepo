@@ -34,7 +34,7 @@ func (g *EncodingJsonGenerator) models(models []*spec.NamedModel, modelsModule m
 	imports := imports.New()
 	imports.AddModelsTypes(models)
 	if types.ModelsHasEnum(models) {
-		imports.Add(g.Modules.Enums.Package)
+		imports.Module(g.Modules.Enums)
 	}
 	imports.Write(w)
 

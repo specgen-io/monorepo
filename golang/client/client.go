@@ -38,7 +38,7 @@ func GenerateClient(specification *spec.Spec, moduleName string, generatePath st
 	sources.AddGenerated(generateResponseFunctions(responseModule))
 
 	errorsModule := rootModule.Submodule("httperrors")
-	errorsModelsModule := errorsModule.Submodule("models")
+	errorsModelsModule := errorsModule.SubmoduleAliased("models", types.ErrorsModelsPackage)
 	sources.AddGenerated(modelsGenerator.GenerateErrorModels(specification.HttpErrors))
 	sources.AddGenerated(httpErrors(errorsModule, errorsModelsModule, &specification.HttpErrors.Responses))
 
@@ -68,21 +68,21 @@ func generateClientImplementation(api *spec.Api, versionModule, convertModule, e
 		Add("errors").
 		Add("net/http").
 		Add("encoding/json").
-		AddAlias("github.com/sirupsen/logrus", "log")
+		AddAliased("github.com/sirupsen/logrus", "log")
 	if types.ApiHasBody(api) {
 		imports.Add("bytes")
 	}
 	if types.ApiHasUrlParams(api) {
-		imports.Add(convertModule.Package)
+		imports.Module(convertModule)
 	}
 	if types.ApiHasType(api, spec.TypeEmpty) {
-		imports.Add(emptyModule.Package)
+		imports.Module(emptyModule)
 	}
-	imports.Add(errorsModule.Package)
-	imports.AddAlias(errorsModelsModule.Package, types.ErrorsModelsPackage)
+	imports.Module(errorsModule)
+	imports.ModuleAliased(errorsModelsModule)
 	imports.AddApiTypes(api)
-	imports.Add(modelsModule.Package)
-	imports.Add(responseModule.Package)
+	imports.Module(modelsModule)
+	imports.Module(responseModule)
 	imports.Write(w)
 
 	for _, operation := range api.Operations {

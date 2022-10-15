@@ -41,25 +41,25 @@ func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, er
 		imports.Add("encoding/json")
 	}
 	imports.Add("github.com/husobee/vestigo")
-	imports.AddAlias("github.com/sirupsen/logrus", "log")
+	imports.AddAliased("github.com/sirupsen/logrus", "log")
 	imports.Add("net/http")
 	imports.Add("fmt")
 	if types.BodyHasType(api, spec.TypeString) {
 		imports.Add("io/ioutil")
 	}
 	if hasNonEmptyBody(api) {
-		imports.Add(contentTypeModule.Package)
+		imports.Module(contentTypeModule)
 	}
-	imports.Add(apiModule.Package)
-	imports.Add(errorsModule.Package)
-	imports.AddAlias(errorsModelsModule.Package, types.ErrorsModelsPackage)
+	imports.Module(apiModule)
+	imports.Module(errorsModule)
+	imports.ModuleAliased(errorsModelsModule)
 	if isRouterUsingModels(api) {
-		imports.Add(modelsModule.Package)
+		imports.Module(modelsModule)
 	}
 	if operationHasParams(api) {
-		imports.Add(paramsParserModule.Package)
+		imports.Module(paramsParserModule)
 	}
-	imports.Add(respondModule.Package)
+	imports.Module(respondModule)
 	imports.Write(w)
 
 	w.EmptyLine()
@@ -313,14 +313,14 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *genera
 	for _, version := range specification.Versions {
 		versionModule := module.Submodule(version.Name.FlatCase())
 		routingModule := versionModule.Submodule("routing")
-		imports.AddAlias(routingModule.Package, "root")
+		imports.AddAliased(routingModule.Package, "root")
 		if version.Name.Source != "" {
-			imports.AddAlias(routingModule.Package, version.Name.Source)
+			imports.AddAliased(routingModule.Package, version.Name.Source)
 		}
 
 		for _, api := range version.Http.Apis {
 			apiModule := versionModule.Submodule(api.Name.SnakeCase())
-			imports.AddAlias(apiModule.Package, versionedApiImportAlias(&api))
+			imports.AddAliased(apiModule.Package, versionedApiImportAlias(&api))
 		}
 	}
 	imports.Write(w)

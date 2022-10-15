@@ -14,7 +14,7 @@ func httpErrors(module, errorsModelsModule module.Module, errors *spec.Responses
 
 	imports := imports.New()
 	imports.Add("fmt")
-	imports.AddAlias(errorsModelsModule.Package, types.ErrorsModelsPackage)
+	imports.ModuleAliased(errorsModelsModule)
 	imports.Write(w)
 
 	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)

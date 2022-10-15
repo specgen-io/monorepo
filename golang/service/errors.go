@@ -15,10 +15,10 @@ func generateErrors(module, errorsModelsModule, respondModule module.Module, res
 	w := writer.New(module, "responses.go")
 
 	imports := imports.New()
-	imports.AddAlias("github.com/sirupsen/logrus", "log")
+	imports.AddAliased("github.com/sirupsen/logrus", "log")
 	imports.Add("net/http")
-	imports.AddAlias(errorsModelsModule.Package, types.ErrorsModelsPackage)
-	imports.Add(respondModule.Package)
+	imports.ModuleAliased(errorsModelsModule)
+	imports.Module(respondModule)
 	imports.Write(w)
 
 	w.EmptyLine()

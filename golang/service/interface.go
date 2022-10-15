@@ -26,13 +26,13 @@ func generateServiceInterface(api *spec.Api, apiModule, modelsModule, errorsMode
 	imports.AddApiTypes(api)
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 && types.OperationHasType(&operation, spec.TypeEmpty) {
-			imports.Add(emptyModule.Package)
+			imports.Module(emptyModule)
 		}
 	}
 	//TODO - potential bug, could be unused import
-	imports.Add(modelsModule.Package)
+	imports.Module(modelsModule)
 	if usingErrorModels(api) {
-		imports.AddAlias(errorsModelsModule.Package, types.ErrorsModelsPackage)
+		imports.ModuleAliased(errorsModelsModule)
 	}
 	imports.Write(w)
 

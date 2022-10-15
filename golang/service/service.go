@@ -30,7 +30,7 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 	sources.AddGenerated(generateRespondFunctions(respondModule))
 
 	errorsModule := rootModule.Submodule("httperrors")
-	errorsModelsModule := errorsModule.Submodule("models")
+	errorsModelsModule := errorsModule.SubmoduleAliased("models", types.ErrorsModelsPackage)
 	sources.AddGenerated(modelsGenerator.GenerateErrorModels(specification.HttpErrors))
 	sources.AddGeneratedAll(httpErrors(errorsModule, errorsModelsModule, paramsParserModule, respondModule, &specification.HttpErrors.Responses))
 

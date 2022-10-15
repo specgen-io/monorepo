@@ -1,6 +1,8 @@
 package imports
 
 import (
+	"fmt"
+	"golang/module"
 	"sort"
 
 	"generator"
@@ -16,12 +18,25 @@ func New() *imports {
 	return &imports{imports: make(map[string]string)}
 }
 
+func (self *imports) Module(module module.Module) *imports {
+	self.Add(module.Package)
+	return self
+}
+
+func (self *imports) ModuleAliased(module module.Module) *imports {
+	if module.Alias == "" {
+		panic(fmt.Sprintf(`module %s does not have alias and can't imported as aliased'`, module.Package))
+	}
+	self.AddAliased(module.Package, module.Alias)
+	return self
+}
+
 func (self *imports) Add(theImport string) *imports {
 	self.imports[theImport] = ""
 	return self
 }
 
-func (self *imports) AddAlias(theImport string, alias string) *imports {
+func (self *imports) AddAliased(theImport string, alias string) *imports {
 	self.imports[theImport] = alias
 	return self
 }

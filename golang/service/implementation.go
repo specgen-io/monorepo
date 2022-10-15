@@ -27,10 +27,10 @@ func generateServiceImplementation(api *spec.Api, apiModule, modelsModule, targe
 	imports.Add("errors")
 	imports.AddApiTypes(api)
 	if types.ApiHasBody(api) {
-		imports.Add(apiModule.Package)
+		imports.Module(apiModule)
 	}
 	if isContainsModel(api) {
-		imports.Add(modelsModule.Package)
+		imports.Module(modelsModule)
 	}
 	imports.Write(w)
 
