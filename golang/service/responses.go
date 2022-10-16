@@ -2,10 +2,9 @@ package service
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"golang/module"
+	"golang/writer"
 )
 
 func respondJson(logFields, resVar, statusCode, dataVar string) string {
@@ -20,15 +19,9 @@ func respondEmpty(logFields, resVar, statusCode string) string {
 	return fmt.Sprintf(`respond.Empty(%s, %s, %s)`, logFields, resVar, statusCode)
 }
 
-func generateRespondFunctions(module module.Module) *generator.CodeFile {
-	data := struct {
-		PackageName string
-	}{
-		module.Name,
-	}
-	code := `
-package [[.PackageName]]
-
+func generateRespondFunctions(respondModule module.Module) *generator.CodeFile {
+	w := writer.New(respondModule, `respond.go`)
+	w.Lines(`
 import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
@@ -53,8 +46,6 @@ func Empty(logFields log.Fields, res http.ResponseWriter, statusCode int) {
 	res.WriteHeader(statusCode)
 	log.WithFields(logFields).WithField("status", statusCode).Info("Completed request")
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, data)
-	return &generator.CodeFile{module.GetPath("respond.go"), strings.TrimSpace(code)}
+`)
+	return w.ToCodeFile()
 }

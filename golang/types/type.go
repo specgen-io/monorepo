@@ -2,10 +2,9 @@ package types
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"golang/module"
+	"golang/writer"
 	"spec"
 )
 
@@ -88,14 +87,12 @@ func plainType(typ *spec.TypeDef, samePackage bool) string {
 
 const EmptyType = `empty.Type`
 
-func GenerateEmpty(module module.Module) *generator.CodeFile {
-	code := `
-package empty
-
+func GenerateEmpty(emptyModule module.Module) *generator.CodeFile {
+	w := writer.New(emptyModule, `empty.go`)
+	w.Lines(`
 type Type struct{}
 
 var Value = Type{}
-`
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
-	return &generator.CodeFile{module.GetPath("empty.go"), strings.TrimSpace(code)}
+`)
+	return w.ToCodeFile()
 }

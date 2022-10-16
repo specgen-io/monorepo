@@ -11,8 +11,8 @@ import (
 	"spec"
 )
 
-func generateErrors(module, errorsModelsModule, respondModule module.Module, responses *spec.Responses) *generator.CodeFile {
-	w := writer.New(module, "responses.go")
+func generateErrors(converterModule, errorsModelsModule, respondModule module.Module, responses *spec.Responses) *generator.CodeFile {
+	w := writer.New(converterModule, "responses.go")
 
 	imports := imports.New()
 	imports.AddAliased("github.com/sirupsen/logrus", "log")

@@ -11,17 +11,17 @@ import (
 	"spec"
 )
 
-func generateServiceImplementations(version *spec.Version, versionModule, modelsModule, targetModule module.Module) []generator.CodeFile {
+func generateServiceImplementations(version *spec.Version, versionModule, modelsModule, versionImplementationsModule module.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
-		files = append(files, *generateServiceImplementation(&api, apiModule, modelsModule, targetModule))
+		files = append(files, *generateServiceImplementation(&api, apiModule, modelsModule, versionImplementationsModule))
 	}
 	return files
 }
 
-func generateServiceImplementation(api *spec.Api, apiModule, modelsModule, targetModule module.Module) *generator.CodeFile {
-	w := writer.New(targetModule, fmt.Sprintf("%s.go", api.Name.SnakeCase()))
+func generateServiceImplementation(api *spec.Api, apiModule, modelsModule, versionImplementationsModule module.Module) *generator.CodeFile {
+	w := writer.New(versionImplementationsModule, fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
 	imports := imports.New()
 	imports.Add("errors")

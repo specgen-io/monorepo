@@ -54,10 +54,10 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 	if servicesPath != "" {
 		rootServicesModule := module.New(moduleName, servicesPath)
 		for _, version := range specification.Versions {
-			versionServicesModule := rootServicesModule.Submodule(version.Name.FlatCase())
+			versionImplementationsModule := rootServicesModule.Submodule(version.Name.FlatCase())
 			versionModule := rootModule.Submodule(version.Name.FlatCase())
 			modelsModule := versionModule.Submodule(types.VersionModelsPackage)
-			sources.AddScaffoldedAll(generateServiceImplementations(&version, versionModule, modelsModule, versionServicesModule))
+			sources.AddScaffoldedAll(generateServiceImplementations(&version, versionModule, modelsModule, versionImplementationsModule))
 		}
 	}
 

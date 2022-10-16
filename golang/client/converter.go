@@ -2,10 +2,9 @@ package client
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"golang/module"
+	"golang/writer"
 	"spec"
 )
 
@@ -60,10 +59,9 @@ func converterMethodNamePlain(typ *spec.TypeDef) string {
 	}
 }
 
-func generateConverter(module module.Module) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+func generateConverter(convertModule module.Module) *generator.CodeFile {
+	w := writer.New(convertModule, `convert.go`)
+	w.Lines(`
 import (
 	"cloud.google.com/go/civil"
 	"fmt"
@@ -274,8 +272,6 @@ func (self *ParamsConverter) StringEnumArray(key string, values []interface{}) {
 		self.parser.Add(key, fmt.Sprintf("%v", value))
 	}
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
-	return &generator.CodeFile{module.GetPath("convert.go"), strings.TrimSpace(code)}
+`)
+	return w.ToCodeFile()
 }

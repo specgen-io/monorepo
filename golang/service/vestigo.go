@@ -31,10 +31,10 @@ func callAddRouting(api *spec.Api, serviceVar string) string {
 	return fmt.Sprintf(`%s(router, %s)`, addRoutesMethodName(api), serviceVar)
 }
 
-func generateRouting(api *spec.Api, versionModule, module, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module, modelsGenerator models.Generator) *generator.CodeFile {
+func generateRouting(api *spec.Api, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module, modelsGenerator models.Generator) *generator.CodeFile {
 	apiModule := versionModule.Submodule(api.Name.SnakeCase())
 
-	w := writer.New(module, fmt.Sprintf("%s.go", api.Name.SnakeCase()))
+	w := writer.New(routingModule, fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
 	imports := imports.New()
 	if types.ApiHasBody(api) {
@@ -305,22 +305,18 @@ func serviceInterfaceTypeVar(api *spec.Api) string {
 	return fmt.Sprintf(`%sService`, api.Name.Source)
 }
 
-func generateSpecRouting(specification *spec.Spec, module module.Module) *generator.CodeFile {
-	w := writer.New(module, "spec.go")
+func generateSpecRouting(specification *spec.Spec, rootModule module.Module) *generator.CodeFile {
+	w := writer.New(rootModule, "spec.go")
 
 	imports := imports.New()
 	imports.Add("github.com/husobee/vestigo")
 	for _, version := range specification.Versions {
-		versionModule := module.Submodule(version.Name.FlatCase())
-		routingModule := versionModule.Submodule("routing")
-		imports.AddAliased(routingModule.Package, "root")
-		if version.Name.Source != "" {
-			imports.AddAliased(routingModule.Package, version.Name.Source)
-		}
-
+		versionModule := rootModule.Submodule(version.Name.FlatCase())
+		routingModule := versionModule.SubmoduleAliased("routing", routingPackageAlias(&version))
+		imports.ModuleAliased(routingModule)
 		for _, api := range version.Http.Apis {
-			apiModule := versionModule.Submodule(api.Name.SnakeCase())
-			imports.AddAliased(apiModule.Package, versionedApiImportAlias(&api))
+			apiModule := versionModule.SubmoduleAliased(api.Name.SnakeCase(), apiPackageAlias(&api))
+			imports.ModuleAliased(apiModule)
 		}
 	}
 	imports.Write(w)
@@ -328,14 +324,18 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *genera
 	w.EmptyLine()
 	routesParams := []string{}
 	for _, version := range specification.Versions {
+		versionModule := rootModule.Submodule(version.Name.FlatCase())
 		for _, api := range version.Http.Apis {
-			routesParams = append(routesParams, fmt.Sprintf(`%s %s.%s`, serviceApiNameVersioned(&api), versionedApiImportAlias(&api), serviceInterfaceName))
+			apiModule := versionModule.SubmoduleAliased(api.Name.SnakeCase(), apiPackageAlias(&api))
+			routesParams = append(routesParams, fmt.Sprintf(`%s %s`, serviceApiNameVersioned(&api), apiModule.Get(serviceInterfaceName)))
 		}
 	}
 	w.Line(`func AddRoutes(router *vestigo.Router, %s) {`, strings.Join(routesParams, ", "))
 	for _, version := range specification.Versions {
+		versionModule := rootModule.Submodule(version.Name.FlatCase())
+		routingModule := versionModule.SubmoduleAliased("routing", routingPackageAlias(&version))
 		for _, api := range version.Http.Apis {
-			w.Line(`  %s%s`, packageFrom(&version), callAddRouting(&api, serviceApiNameVersioned(&api)))
+			w.Line(`  %s(router, %s)`, routingModule.Get(addRoutesMethodName(&api)), serviceApiNameVersioned(&api))
 		}
 	}
 	w.Line(`}`)
@@ -343,7 +343,15 @@ func generateSpecRouting(specification *spec.Spec, module module.Module) *genera
 	return w.ToCodeFile()
 }
 
-func versionedApiImportAlias(api *spec.Api) string {
+func routingPackageAlias(version *spec.Version) string {
+	if version.Name.Source != "" {
+		return fmt.Sprintf(`%s`, version.Name.FlatCase())
+	} else {
+		return fmt.Sprintf(`root`)
+	}
+}
+
+func apiPackageAlias(api *spec.Api) string {
 	version := api.InHttp.InVersion.Name
 	if version.Source != "" {
 		return api.Name.CamelCase() + version.PascalCase()
@@ -355,17 +363,13 @@ func serviceApiNameVersioned(api *spec.Api) string {
 	return fmt.Sprintf(`%sService%s`, api.Name.Source, api.InHttp.InVersion.Name.PascalCase())
 }
 
-func packageFrom(version *spec.Version) string {
-	if version.Name.Source != "" {
-		return fmt.Sprintf(`%s.`, version.Name.FlatCase())
-	}
-	return fmt.Sprintf(`root.`)
-}
-
-func checkContentType(module, errorsModule, errorsModelsModule module.Module) *generator.CodeFile {
-	code := `
-package [[.ModuleName]]
-
+func checkContentType(contentTypeModule, errorsModule, errorsModelsModule module.Module) *generator.CodeFile {
+	w := writer.New(contentTypeModule, `check.go`)
+	w.Template(
+		map[string]string{
+			`ErrorsPackage`:       errorsModule.Package,
+			`ErrorsModelsPackage`: errorsModelsModule.Package,
+		}, `
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -384,20 +388,8 @@ func Check(logFields log.Fields, expectedContentType string, req *http.Request, 
 	}
 	return true
 }
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		ModuleName          string
-		ErrorsPackage       string
-		ErrorsModelsPackage string
-	}{
-		module.Name,
-		errorsModule.Package,
-		errorsModelsModule.Package,
-	})
-	return &generator.CodeFile{
-		Path:    module.GetPath("check.go"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func httpErrors(converterModule, errorsModelsModule, paramsParserModule, respondModule module.Module, responses *spec.Responses) []generator.CodeFile {
@@ -409,10 +401,13 @@ func httpErrors(converterModule, errorsModelsModule, paramsParserModule, respond
 	return files
 }
 
-func errorsModelsConverter(module, errorsModelsModule, paramsParserModule module.Module) *generator.CodeFile {
-	code := `
-package [[.ModuleName]]
-
+func errorsModelsConverter(converterModule, errorsModelsModule, paramsParserModule module.Module) *generator.CodeFile {
+	w := writer.New(converterModule, `converter.go`)
+	w.Template(
+		map[string]string{
+			`ErrorsModelsPackage`: errorsModelsModule.Package,
+			`ParamsParserModule`:  paramsParserModule.Package,
+		}, `
 import (
 	"[[.ErrorsModelsPackage]]"
 	"[[.ParamsParserModule]]"
@@ -428,20 +423,8 @@ func Convert(parsingErrors []paramsparser.ParsingError) []errmodels.ValidationEr
 
 	return validationErrors
 }
-`
-	code, _ = generator.ExecuteTemplate(code, struct {
-		ModuleName          string
-		ErrorsModelsPackage string
-		ParamsParserModule  string
-	}{
-		module.Name,
-		errorsModelsModule.Package,
-		paramsParserModule.Package,
-	})
-	return &generator.CodeFile{
-		Path:    module.GetPath("converter.go"),
-		Content: strings.TrimSpace(code),
-	}
+`)
+	return w.ToCodeFile()
 }
 
 func hasNonEmptyBody(api *spec.Api) bool {

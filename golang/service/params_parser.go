@@ -2,11 +2,10 @@ package service
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"golang/module"
 	"golang/types"
+	"golang/writer"
 	"spec"
 )
 
@@ -63,15 +62,9 @@ func parserMethodNamePlain(typ *spec.TypeDef) string {
 	}
 }
 
-func generateParamsParser(module module.Module) *generator.CodeFile {
-	data := struct {
-		PackageName string
-	}{
-		module.Name,
-	}
-	code := `
-package [[.PackageName]]
-
+func generateParamsParser(paramsParserModule module.Module) *generator.CodeFile {
+	w := writer.New(paramsParserModule, `parser.go`)
+	w.Lines(`
 import (
 	"fmt"
 	"strconv"
@@ -622,8 +615,6 @@ func (parser *ParamsParser) StringEnumArray(name string, values []string) []stri
 	}
 	return convertedValues
 }
-`
-
-	code, _ = generator.ExecuteTemplate(code, data)
-	return &generator.CodeFile{module.GetPath("parser.go"), strings.TrimSpace(code)}
+`)
+	return w.ToCodeFile()
 }
