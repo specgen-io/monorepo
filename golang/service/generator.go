@@ -4,6 +4,7 @@ import (
 	"generator"
 	"golang/models"
 	"golang/module"
+	"golang/types"
 	"spec"
 )
 
@@ -15,14 +16,17 @@ type ServiceGenerator interface {
 }
 
 type Generator struct {
+	Types   *types.Types
 	Models  models.Generator
 	Service ServiceGenerator
 }
 
 func NewGenerator(modules *models.Modules) *Generator {
 	modelsGenerator := models.NewGenerator(modules)
+	types := types.NewTypes()
 	return &Generator{
+		types,
 		modelsGenerator,
-		NewVestigoGenerator(modelsGenerator),
+		NewVestigoGenerator(types, modelsGenerator),
 	}
 }

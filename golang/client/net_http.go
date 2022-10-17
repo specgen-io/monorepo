@@ -14,11 +14,12 @@ import (
 	"strings"
 )
 
-func NewNetHttpGenerator() *NetHttpGenerator {
-	return &NetHttpGenerator{}
+func NewNetHttpGenerator(types *types.Types) *NetHttpGenerator {
+	return &NetHttpGenerator{types}
 }
 
 type NetHttpGenerator struct {
+	Types *types.Types
 }
 
 func (g *NetHttpGenerator) GenerateClientsImplementations(version *spec.Version, versionModule, convertModule, emptyModule, errorsModule, errorsModelsModule, modelsModule, respondModule module.Module) []generator.CodeFile {
@@ -58,7 +59,7 @@ func (g *NetHttpGenerator) generateClientImplementation(api *spec.Api, versionMo
 	for _, operation := range api.Operations {
 		if common.ResponsesNumber(&operation) > 1 {
 			w.EmptyLine()
-			responses.GenerateOperationResponseStruct(w, &operation)
+			responses.GenerateOperationResponseStruct(w, g.Types, &operation)
 		}
 	}
 	w.EmptyLine()
@@ -82,7 +83,7 @@ func (g *NetHttpGenerator) generateClientWithCtor(w generator.Writer) {
 }
 
 func (g *NetHttpGenerator) generateClientFunction(w generator.Writer, operation *spec.NamedOperation) {
-	w.Line(`func (client *%s) %s {`, clientTypeName(), OperationSignature(operation, nil))
+	w.Line(`func (client *%s) %s {`, clientTypeName(), OperationSignature(operation, g.Types, nil))
 	w.Line(`  var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(operation), operation.InApi.Name.Source, operation.Name.Source, casee.ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
 	body := "nil"
 	if operation.BodyIs(spec.BodyString) {
@@ -147,7 +148,7 @@ func (g *NetHttpGenerator) addRequestUrlParams(operation *spec.NamedOperation) s
 func (g *NetHttpGenerator) addUrlParam(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
-		if types.IsEnumModel(&param.Type.Definition) || types.GoType(&param.Type.Definition) == "string" {
+		if types.IsEnumModel(&param.Type.Definition) || g.Types.GoType(&param.Type.Definition) == "string" {
 			urlParams = append(urlParams, param.Name.CamelCase())
 		} else {
 			urlParams = append(urlParams, callRawConvert(&param.Type.Definition, param.Name.CamelCase()))
@@ -216,7 +217,7 @@ func (g *NetHttpGenerator) generateResponse(w generator.Writer, operation *spec.
 		w.Line(`  result := string(responseBody)`)
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`  var result %s`, types.GoType(&response.Type.Definition))
+		w.Line(`  var result %s`, g.Types.GoType(&response.Type.Definition))
 		w.Line(`  err := response.Json(%s, resp, &result)`, logFieldsName(operation))
 		generateErrHandler(w)
 	}
@@ -227,7 +228,7 @@ func (g *NetHttpGenerator) generateResponse(w generator.Writer, operation *spec.
 
 func (g *NetHttpGenerator) generateErrorResponse(w generator.Writer, operation *spec.NamedOperation, response spec.Response) {
 	w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
-	w.Line(`  var result %s`, types.GoType(&response.Type.Definition))
+	w.Line(`  var result %s`, g.Types.GoType(&response.Type.Definition))
 	w.Line(`  err := response.Json(%s, resp, &result)`, logFieldsName(operation))
 	generateErrHandler(w)
 	w.Line(`  return nil, %s`, responses.NewErrorResponse(response, `result`))

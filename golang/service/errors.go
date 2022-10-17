@@ -7,7 +7,6 @@ import (
 	"golang/writer"
 
 	"generator"
-	"golang/types"
 	"spec"
 )
 
@@ -23,21 +22,21 @@ func (g *VestigoGenerator) generateErrors(converterModule, errorsModelsModule, r
 
 	w.EmptyLine()
 	badRequest := responses.GetByStatusName(spec.HttpStatusBadRequest)
-	w.Line(`func RespondBadRequest(logFields log.Fields, res http.ResponseWriter, error *%s) {`, types.GoType(&badRequest.Type.Definition))
+	w.Line(`func RespondBadRequest(logFields log.Fields, res http.ResponseWriter, error *%s) {`, g.Types.GoType(&badRequest.Type.Definition))
 	w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
 	g.generateResponseWriting(w.Indented(), `logFields`, badRequest, `error`)
 	w.Line(`}`)
 
 	w.EmptyLine()
 	notFound := responses.GetByStatusName(spec.HttpStatusNotFound)
-	w.Line(`func RespondNotFound(logFields log.Fields, res http.ResponseWriter, error *%s) {`, types.GoType(&notFound.Type.Definition))
+	w.Line(`func RespondNotFound(logFields log.Fields, res http.ResponseWriter, error *%s) {`, g.Types.GoType(&notFound.Type.Definition))
 	w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
 	g.generateResponseWriting(w.Indented(), `logFields`, notFound, `error`)
 	w.Line(`}`)
 
 	w.EmptyLine()
 	internalServerError := responses.GetByStatusName(spec.HttpStatusInternalServerError)
-	w.Line(`func RespondInternalServerError(logFields log.Fields, res http.ResponseWriter, error *%s) {`, types.GoType(&internalServerError.Type.Definition))
+	w.Line(`func RespondInternalServerError(logFields log.Fields, res http.ResponseWriter, error *%s) {`, g.Types.GoType(&internalServerError.Type.Definition))
 	w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
 	g.generateResponseWriting(w.Indented(), `logFields`, internalServerError, `error`)
 	w.Line(`}`)
@@ -49,26 +48,26 @@ func callCheckContentType(logFieldsVar, expectedContentType, requestVar, respons
 	return fmt.Sprintf(`contenttype.Check(%s, %s, %s, %s)`, logFieldsVar, expectedContentType, requestVar, responseVar)
 }
 
-func respondNotFound(w generator.Writer, operation *spec.NamedOperation, message string) {
+func (g *VestigoGenerator) respondNotFound(w generator.Writer, operation *spec.NamedOperation, message string) {
 	specification := operation.InApi.InHttp.InVersion.InSpec
 	badRequest := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusNotFound)
-	errorMessage := fmt.Sprintf(`%s{Message: %s}`, types.GoType(&badRequest.Type.Definition), message)
+	errorMessage := fmt.Sprintf(`%s{Message: %s}`, g.Types.GoType(&badRequest.Type.Definition), message)
 	w.Line(`httperrors.RespondNotFound(%s, res, &%s)`, logFieldsName(operation), errorMessage)
 	w.Line(`return`)
 }
 
-func respondBadRequest(w generator.Writer, operation *spec.NamedOperation, location string, message string, params string) {
+func (g *VestigoGenerator) respondBadRequest(w generator.Writer, operation *spec.NamedOperation, location string, message string, params string) {
 	specification := operation.InApi.InHttp.InVersion.InSpec
 	badRequest := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusBadRequest)
-	errorMessage := fmt.Sprintf(`%s{Location: "%s", Message: %s, Errors: %s}`, types.GoType(&badRequest.Type.Definition), location, message, params)
+	errorMessage := fmt.Sprintf(`%s{Location: "%s", Message: %s, Errors: %s}`, g.Types.GoType(&badRequest.Type.Definition), location, message, params)
 	w.Line(`httperrors.RespondBadRequest(%s, res, &%s)`, logFieldsName(operation), errorMessage)
 	w.Line(`return`)
 }
 
-func respondInternalServerError(w generator.Writer, operation *spec.NamedOperation, message string) {
+func (g *VestigoGenerator) respondInternalServerError(w generator.Writer, operation *spec.NamedOperation, message string) {
 	specification := operation.InApi.InHttp.InVersion.InSpec
 	internalServerError := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusInternalServerError)
-	errorMessage := fmt.Sprintf(`%s{Message: %s}`, types.GoType(&internalServerError.Type.Definition), message)
+	errorMessage := fmt.Sprintf(`%s{Message: %s}`, g.Types.GoType(&internalServerError.Type.Definition), message)
 	w.Line(`httperrors.RespondInternalServerError(%s, res, &%s)`, logFieldsName(operation), errorMessage)
 	w.Line(`return`)
 }

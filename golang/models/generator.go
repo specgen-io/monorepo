@@ -2,6 +2,7 @@ package models
 
 import (
 	"generator"
+	"golang/types"
 	"spec"
 )
 
@@ -13,5 +14,6 @@ type Generator interface {
 }
 
 func NewGenerator(modules *Modules) Generator {
-	return NewEncodingJsonGenerator(modules)
+	types := types.NewTypes()
+	return NewEncodingJsonGenerator(types, modules)
 }

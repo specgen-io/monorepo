@@ -11,30 +11,36 @@ import (
 var VersionModelsPackage = "models"
 var ErrorsModelsPackage = "errmodels"
 
-func GoType(typ *spec.TypeDef) string {
-	return goType(typ, false)
+type Types struct{}
+
+func NewTypes() *Types {
+	return &Types{}
 }
 
-func GoTypeSamePackage(typ *spec.TypeDef) string {
-	return goType(typ, true)
+func (types *Types) GoType(typ *spec.TypeDef) string {
+	return types.goType(typ, false)
 }
 
-func goType(typ *spec.TypeDef, samePackage bool) string {
+func (types *Types) GoTypeSamePackage(typ *spec.TypeDef) string {
+	return types.goType(typ, true)
+}
+
+func (types *Types) goType(typ *spec.TypeDef, samePackage bool) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return plainType(typ, samePackage)
+		return types.plainType(typ, samePackage)
 	case spec.NullableType:
-		child := goType(typ.Child, samePackage)
+		child := types.goType(typ.Child, samePackage)
 		if typ.Child.Node == spec.PlainType {
 			return "*" + child
 		}
 		return child
 	case spec.ArrayType:
-		child := goType(typ.Child, samePackage)
+		child := types.goType(typ.Child, samePackage)
 		result := "[]" + child
 		return result
 	case spec.MapType:
-		child := goType(typ.Child, samePackage)
+		child := types.goType(typ.Child, samePackage)
 		result := "map[string]" + child
 		return result
 	default:
@@ -42,7 +48,7 @@ func goType(typ *spec.TypeDef, samePackage bool) string {
 	}
 }
 
-func plainType(typ *spec.TypeDef, samePackage bool) string {
+func (types *Types) plainType(typ *spec.TypeDef, samePackage bool) string {
 	switch typ.Plain {
 	case spec.TypeInt32:
 		return "int"

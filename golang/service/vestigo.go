@@ -15,11 +15,12 @@ import (
 )
 
 type VestigoGenerator struct {
+	Types  *types.Types
 	Models models.Generator
 }
 
-func NewVestigoGenerator(models models.Generator) *VestigoGenerator {
-	return &VestigoGenerator{models}
+func NewVestigoGenerator(types *types.Types, models models.Generator) *VestigoGenerator {
+	return &VestigoGenerator{types, models}
 }
 
 func (g *VestigoGenerator) GenerateRoutings(version *spec.Version, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module) []generator.CodeFile {
@@ -169,7 +170,7 @@ func (g *VestigoGenerator) generateUrlParamsParsing(w generator.Writer, operatio
 			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(true, &param, "urlParams"))
 		}
 		w.Line(`if len(urlParams.Errors) > 0 {`)
-		respondNotFound(w.Indented(), operation, fmt.Sprintf(`"Failed to parse url parameters"`))
+		g.respondNotFound(w.Indented(), operation, fmt.Sprintf(`"Failed to parse url parameters"`))
 		w.Line(`}`)
 	}
 }
@@ -182,7 +183,7 @@ func (g *VestigoGenerator) generateParametersParsing(w generator.Writer, operati
 		}
 
 		w.Line(`if len(%s.Errors) > 0 {`, paramsParserName)
-		respondBadRequest(w.Indented(), operation, paramsParserName, fmt.Sprintf(`"Failed to parse %s"`, paramsParserName), fmt.Sprintf(`httperrors.Convert(%s.Errors)`, paramsParserName))
+		g.respondBadRequest(w.Indented(), operation, paramsParserName, fmt.Sprintf(`"Failed to parse %s"`, paramsParserName), fmt.Sprintf(`httperrors.Convert(%s.Errors)`, paramsParserName))
 		w.Line(`}`)
 	}
 }
@@ -197,12 +198,12 @@ func (g *VestigoGenerator) generateServiceCall(w generator.Writer, operation *sp
 	}
 
 	w.Line(`if err != nil {`)
-	respondInternalServerError(w.Indented(), operation, genFmtSprintf("Error returned from service implementation: %s", `err.Error()`))
+	g.respondInternalServerError(w.Indented(), operation, genFmtSprintf("Error returned from service implementation: %s", `err.Error()`))
 	w.Line(`}`)
 
 	if !singleEmptyResponse {
 		w.Line(`if response == nil {`)
-		respondInternalServerError(w.Indented(), operation, `"Service implementation returned nil"`)
+		g.respondInternalServerError(w.Indented(), operation, `"Service implementation returned nil"`)
 		w.Line(`}`)
 	}
 }
@@ -241,7 +242,7 @@ func (g *VestigoGenerator) generateResponse(w generator.Writer, operation *spec.
 			w.Line(`  return`)
 			w.Line(`}`)
 		}
-		respondInternalServerError(w, operation, `"Result from service implementation does not have anything in it"`)
+		g.respondInternalServerError(w, operation, `"Result from service implementation does not have anything in it"`)
 	}
 }
 
@@ -252,7 +253,7 @@ func (g *VestigoGenerator) generateBodyParsing(w generator.Writer, operation *sp
 		w.Line(`}`)
 		w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
 		w.Line(`if err != nil {`)
-		respondBadRequest(w.Indented(), operation, "body", genFmtSprintf(`Reading request body failed: %s`, `err.Error()`), "nil")
+		g.respondBadRequest(w.Indented(), operation, "body", genFmtSprintf(`Reading request body failed: %s`, `err.Error()`), "nil")
 		w.Line(`}`)
 		w.Line(`body := string(bodyData)`)
 	}
@@ -260,7 +261,7 @@ func (g *VestigoGenerator) generateBodyParsing(w generator.Writer, operation *sp
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"application/json"`, "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)
-		w.Line(`var body %s`, types.GoType(&operation.Body.Type.Definition))
+		w.Line(`var body %s`, g.Types.GoType(&operation.Body.Type.Definition))
 		w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
 		w.Line(`if err != nil {`)
 		w.Line(`  var errors []errmodels.ValidationError = nil`)
@@ -268,7 +269,7 @@ func (g *VestigoGenerator) generateBodyParsing(w generator.Writer, operation *sp
 		w.Line(`    message := fmt.Sprintf("Failed to parse JSON, field: PERCENT_s", unmarshalError.Field)`)
 		w.Line(`    errors = []errmodels.ValidationError{{Path: unmarshalError.Field, Code: "parsing_failed", Message: &message}}`)
 		w.Line(`  }`)
-		respondBadRequest(w.Indented(), operation, "body", `"Failed to parse body"`, "errors")
+		g.respondBadRequest(w.Indented(), operation, "body", `"Failed to parse body"`, "errors")
 		w.Line(`}`)
 	}
 }

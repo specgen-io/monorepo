@@ -2,12 +2,11 @@ package types
 
 import (
 	"fmt"
-	types "golang/types2"
 	"spec"
 )
 
 func IsEnumModel(typ *spec.TypeDef) bool {
-	if types.IsModel(typ) {
+	if IsModel(typ) {
 		if typ.Info.Model.IsEnum() {
 			return true
 		}

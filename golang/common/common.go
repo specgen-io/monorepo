@@ -25,7 +25,7 @@ func ResponsesNumber(operation *spec.NamedOperation) int {
 	return count
 }
 
-func OperationParams(operation *spec.NamedOperation) []string {
+func OperationParams(types *types.Types, operation *spec.NamedOperation) []string {
 	params := []string{}
 	if operation.BodyIs(spec.BodyString) {
 		params = append(params, fmt.Sprintf("body %s", types.GoType(&operation.Body.Type.Definition)))
