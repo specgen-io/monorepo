@@ -8,13 +8,13 @@ import (
 func Generate(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *generator.Sources {
 	sources := generator.NewSources()
 
-	thepackages := NewPackages(packageName, generatePath, specification)
-	generator := NewGenerator(jsonlib, thepackages)
+	packages := NewPackages(packageName, generatePath, specification)
+	generator := NewGenerator(jsonlib, packages)
 
 	for _, version := range specification.Versions {
 		sources.AddGeneratedAll(generator.Models(&version))
 	}
-	sources.AddGeneratedAll(generator.SetupLibrary())
+	sources.AddGeneratedAll(generator.JsonHelpers())
 
 	return sources
 }
