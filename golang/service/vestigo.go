@@ -2,10 +2,10 @@ package service
 
 import (
 	"fmt"
+	"github.com/pinzolo/casee"
 	"strings"
 
 	"generator"
-	"golang/client"
 	"golang/imports"
 	"golang/models"
 	"golang/module"
@@ -67,8 +67,8 @@ func generateRouting(api *spec.Api, versionModule, routingModule, contentTypeMod
 	w.Indent()
 	for _, operation := range api.Operations {
 		url := getEndpointUrl(&operation)
-		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.InApi.Name.Source, operation.Name.Source, client.ToUpperCase(operation.Endpoint.Method), url)
-		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, client.ToPascalCase(operation.Endpoint.Method), url)
+		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.InApi.Name.Source, operation.Name.Source, casee.ToUpperCase(operation.Endpoint.Method), url)
+		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, casee.ToPascalCase(operation.Endpoint.Method), url)
 		generateOperationMethod(w.Indented(), &operation, modelsGenerator)
 		w.Line(`})`)
 		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
