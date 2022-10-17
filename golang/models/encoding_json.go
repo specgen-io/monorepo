@@ -12,11 +12,12 @@ import (
 	"spec"
 )
 
-func NewEncodingJsonGenerator(modules *Modules) *EncodingJsonGenerator {
-	return &EncodingJsonGenerator{modules}
+func NewEncodingJsonGenerator(types *types.Types, modules *Modules) *EncodingJsonGenerator {
+	return &EncodingJsonGenerator{types, modules}
 }
 
 type EncodingJsonGenerator struct {
+	Types   *types.Types
 	Modules *Modules
 }
 
@@ -76,7 +77,7 @@ func (g *EncodingJsonGenerator) generateObjectModel(w generator.Writer, model *s
 		}
 		fields = append(fields, []string{
 			field.Name.PascalCase(),
-			types.GoTypeSamePackage(&field.Type.Definition),
+			g.Types.GoTypeSamePackage(&field.Type.Definition),
 			fmt.Sprintf("`json:\"%s\"`", strings.Join(jsonAttributes, ",")),
 		})
 	}
@@ -192,7 +193,7 @@ func (g *EncodingJsonGenerator) generateOneOfModelWrapper(w generator.Writer, mo
 	for _, item := range model.OneOf.Items {
 		items = append(items, []string{
 			item.Name.PascalCase(),
-			types.GoTypeSamePackage(spec.Nullable(&item.Type.Definition)),
+			g.Types.GoTypeSamePackage(spec.Nullable(&item.Type.Definition)),
 			fmt.Sprintf("`json:\"%s,omitempty\"`", item.Name.Source),
 		})
 	}
@@ -228,7 +229,7 @@ func (g *EncodingJsonGenerator) generateOneOfModelDiscriminator(w generator.Writ
 	for _, item := range model.OneOf.Items {
 		items = append(items, []string{
 			item.Name.PascalCase(),
-			types.GoTypeSamePackage(spec.Nullable(&item.Type.Definition)),
+			g.Types.GoTypeSamePackage(spec.Nullable(&item.Type.Definition)),
 		})
 	}
 	writer.WriteAlignedLines(w.Indented(), items)
@@ -265,7 +266,7 @@ func (g *EncodingJsonGenerator) generateOneOfModelDiscriminator(w generator.Writ
 	w.Line(`  switch *discriminator.Value {`)
 	for _, item := range model.OneOf.Items {
 		w.Line(`  case "%s":`, item.Name.Source)
-		w.Line(`    unionCase := %s{}`, types.GoTypeSamePackage(&item.Type.Definition))
+		w.Line(`    unionCase := %s{}`, g.Types.GoTypeSamePackage(&item.Type.Definition))
 		w.Line(`    err := json.Unmarshal(data, &unionCase)`)
 		w.Line(`    if err != nil {`)
 		w.Line(`      return err`)

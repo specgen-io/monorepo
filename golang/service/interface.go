@@ -10,16 +10,16 @@ import (
 	"spec"
 )
 
-func generateServiceInterfaces(version *spec.Version, versionModule, modelsModule, errorsModelsModule, emptyModule module.Module) []generator.CodeFile {
+func (g *Generator) generateServiceInterfaces(version *spec.Version, versionModule, modelsModule, errorsModelsModule, emptyModule module.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
-		files = append(files, *generateServiceInterface(&api, apiModule, modelsModule, errorsModelsModule, emptyModule))
+		files = append(files, *g.generateServiceInterface(&api, apiModule, modelsModule, errorsModelsModule, emptyModule))
 	}
 	return files
 }
 
-func generateServiceInterface(api *spec.Api, apiModule, modelsModule, errorsModelsModule, emptyModule module.Module) *generator.CodeFile {
+func (g *Generator) generateServiceInterface(api *spec.Api, apiModule, modelsModule, errorsModelsModule, emptyModule module.Module) *generator.CodeFile {
 	w := writer.New(apiModule, "service.go")
 
 	imports := imports.New()
@@ -39,13 +39,13 @@ func generateServiceInterface(api *spec.Api, apiModule, modelsModule, errorsMode
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
 			w.EmptyLine()
-			responses.GenerateOperationResponseStruct(w, &operation)
+			responses.GenerateOperationResponseStruct(w, g.Types, &operation)
 		}
 	}
 	w.EmptyLine()
 	w.Line(`type %s interface {`, serviceInterfaceName)
 	for _, operation := range api.Operations {
-		w.Line(`  %s`, OperationSignature(&operation, nil))
+		w.Line(`  %s`, g.OperationSignature(&operation, nil))
 	}
 	w.Line(`}`)
 

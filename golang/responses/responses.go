@@ -18,7 +18,7 @@ func NewResponse(response *spec.OperationResponse, body string) string {
 
 //TODO: This is used from both client and service. This can't be right.
 //      Client is only intersted in success responses and service is interested in all declared responses.
-func GenerateOperationResponseStruct(w generator.Writer, operation *spec.NamedOperation) {
+func GenerateOperationResponseStruct(w generator.Writer, types *types.Types, operation *spec.NamedOperation) {
 	w.Line(`type %s struct {`, ResponseTypeName(operation))
 	responses := [][]string{}
 	for _, response := range operation.Responses {
