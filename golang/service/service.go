@@ -13,12 +13,12 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 	sources := generator.NewSources()
 
 	modules := models.NewModules(moduleName, generatePath, specification)
-	modelsGenerator := models.NewGenerator(modules)
+	serviceGenerator := NewGenerator(modules)
 
 	rootModule := module.New(moduleName, generatePath)
-	sources.AddGenerated(generateSpecRouting(specification, rootModule))
+	sources.AddGenerated(serviceGenerator.Service.GenerateSpecRouting(specification, rootModule))
 
-	sources.AddGenerated(modelsGenerator.GenerateEnumsHelperFunctions())
+	sources.AddGenerated(serviceGenerator.Models.GenerateEnumsHelperFunctions())
 
 	emptyModule := rootModule.Submodule("empty")
 	sources.AddGenerated(types.GenerateEmpty(emptyModule))
@@ -31,20 +31,20 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 
 	errorsModule := rootModule.Submodule("httperrors")
 	errorsModelsModule := errorsModule.Submodule(types.ErrorsModelsPackage)
-	sources.AddGenerated(modelsGenerator.GenerateErrorModels(specification.HttpErrors))
-	sources.AddGeneratedAll(httpErrors(errorsModule, errorsModelsModule, paramsParserModule, respondModule, &specification.HttpErrors.Responses))
+	sources.AddGenerated(serviceGenerator.Models.GenerateErrorModels(specification.HttpErrors))
+	sources.AddGeneratedAll(serviceGenerator.Service.HttpErrors(errorsModule, errorsModelsModule, paramsParserModule, respondModule, &specification.HttpErrors.Responses))
 
 	contentTypeModule := rootModule.Submodule("contenttype")
-	sources.AddGenerated(checkContentType(contentTypeModule, errorsModule, errorsModelsModule))
+	sources.AddGenerated(serviceGenerator.Service.CheckContentType(contentTypeModule, errorsModule, errorsModelsModule))
 
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Name.FlatCase())
 		modelsModule := versionModule.Submodule(types.VersionModelsPackage)
 		routingModule := versionModule.Submodule("routing")
 
-		sources.AddGeneratedAll(generateRoutings(&version, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule, modelsGenerator))
+		sources.AddGeneratedAll(serviceGenerator.Service.GenerateRoutings(&version, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule))
 		sources.AddGeneratedAll(generateServiceInterfaces(&version, versionModule, modelsModule, errorsModelsModule, emptyModule))
-		sources.AddGenerated(modelsGenerator.GenerateVersionModels(&version))
+		sources.AddGenerated(serviceGenerator.Models.GenerateVersionModels(&version))
 	}
 
 	if swaggerPath != "" {

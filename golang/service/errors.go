@@ -11,7 +11,7 @@ import (
 	"spec"
 )
 
-func generateErrors(converterModule, errorsModelsModule, respondModule module.Module, responses *spec.Responses) *generator.CodeFile {
+func (g *VestigoGenerator) generateErrors(converterModule, errorsModelsModule, respondModule module.Module, responses *spec.Responses) *generator.CodeFile {
 	w := writer.New(converterModule, "responses.go")
 
 	imports := imports.New()
@@ -25,21 +25,21 @@ func generateErrors(converterModule, errorsModelsModule, respondModule module.Mo
 	badRequest := responses.GetByStatusName(spec.HttpStatusBadRequest)
 	w.Line(`func RespondBadRequest(logFields log.Fields, res http.ResponseWriter, error *%s) {`, types.GoType(&badRequest.Type.Definition))
 	w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
-	generateResponseWriting(w.Indented(), `logFields`, badRequest, `error`)
+	g.generateResponseWriting(w.Indented(), `logFields`, badRequest, `error`)
 	w.Line(`}`)
 
 	w.EmptyLine()
 	notFound := responses.GetByStatusName(spec.HttpStatusNotFound)
 	w.Line(`func RespondNotFound(logFields log.Fields, res http.ResponseWriter, error *%s) {`, types.GoType(&notFound.Type.Definition))
 	w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
-	generateResponseWriting(w.Indented(), `logFields`, notFound, `error`)
+	g.generateResponseWriting(w.Indented(), `logFields`, notFound, `error`)
 	w.Line(`}`)
 
 	w.EmptyLine()
 	internalServerError := responses.GetByStatusName(spec.HttpStatusInternalServerError)
 	w.Line(`func RespondInternalServerError(logFields log.Fields, res http.ResponseWriter, error *%s) {`, types.GoType(&internalServerError.Type.Definition))
 	w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
-	generateResponseWriting(w.Indented(), `logFields`, internalServerError, `error`)
+	g.generateResponseWriting(w.Indented(), `logFields`, internalServerError, `error`)
 	w.Line(`}`)
 
 	return w.ToCodeFile()

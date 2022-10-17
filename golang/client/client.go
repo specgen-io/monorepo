@@ -12,11 +12,11 @@ func GenerateClient(specification *spec.Spec, moduleName string, generatePath st
 	sources := generator.NewSources()
 
 	modules := models.NewModules(moduleName, generatePath, specification)
-	clientGenerator := NewGenerator(modules)
+	generator := NewGenerator(modules)
 
 	rootModule := module.New(moduleName, generatePath)
 
-	sources.AddGenerated(clientGenerator.Models.GenerateEnumsHelperFunctions())
+	sources.AddGenerated(generator.Models.GenerateEnumsHelperFunctions())
 
 	emptyModule := rootModule.Submodule("empty")
 	sources.AddGenerated(types.GenerateEmpty(emptyModule))
@@ -29,14 +29,14 @@ func GenerateClient(specification *spec.Spec, moduleName string, generatePath st
 
 	errorsModule := rootModule.Submodule("httperrors")
 	errorsModelsModule := errorsModule.Submodule(types.ErrorsModelsPackage)
-	sources.AddGenerated(clientGenerator.Models.GenerateErrorModels(specification.HttpErrors))
+	sources.AddGenerated(generator.Models.GenerateErrorModels(specification.HttpErrors))
 	sources.AddGenerated(httpErrors(errorsModule, errorsModelsModule, &specification.HttpErrors.Responses))
 
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Name.FlatCase())
 		modelsModule := versionModule.Submodule(types.VersionModelsPackage)
-		sources.AddGenerated(clientGenerator.Models.GenerateVersionModels(&version))
-		sources.AddGeneratedAll(clientGenerator.Client.GenerateClientsImplementations(&version, versionModule, convertModule, emptyModule, errorsModule, errorsModelsModule, modelsModule, responseModule))
+		sources.AddGenerated(generator.Models.GenerateVersionModels(&version))
+		sources.AddGeneratedAll(generator.Client.GenerateClientsImplementations(&version, versionModule, convertModule, emptyModule, errorsModule, errorsModelsModule, modelsModule, responseModule))
 	}
 	return sources
 }
