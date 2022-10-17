@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"generator"
 	"golang/imports"
 	"golang/module"
@@ -10,13 +9,12 @@ import (
 	"spec"
 )
 
-func httpErrors(module, errorsModelsModule module.Module, errors *spec.Responses) *generator.CodeFile {
-	w := writer.NewGoWriter()
-	w.Line("package %s", module.Name)
+func httpErrors(errorsModule, errorsModelsModule module.Module, errors *spec.Responses) *generator.CodeFile {
+	w := writer.New(errorsModule, "errors.go")
 
 	imports := imports.New()
 	imports.Add("fmt")
-	imports.AddAlias(errorsModelsModule.Package, types.ErrorsModelsPackage)
+	imports.Module(errorsModelsModule)
 	imports.Write(w)
 
 	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)
@@ -26,10 +24,7 @@ func httpErrors(module, errorsModelsModule module.Module, errors *spec.Responses
 	internalServerError := errors.GetByStatusName(spec.HttpStatusInternalServerError)
 	getError(w, internalServerError)
 
-	return &generator.CodeFile{
-		Path:    module.GetPath(fmt.Sprintf("errors.go")),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func getError(w generator.Writer, response *spec.Response) {

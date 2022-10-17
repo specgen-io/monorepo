@@ -2,14 +2,12 @@ package models
 
 import (
 	"generator"
-	"golang/module"
-	"strings"
+	"golang/writer"
 )
 
-func GenerateEnumsHelperFunctions(module module.Module) *generator.CodeFile {
-	code := `
-package [[.PackageName]]
-
+func (g *EncodingJsonGenerator) GenerateEnumsHelperFunctions() *generator.CodeFile {
+	w := writer.New(g.Modules.Enums, `helpers.go`)
+	w.Lines(`
 import (
 	"encoding/json"
 	"errors"
@@ -35,7 +33,6 @@ func ReadStringValue(b []byte, values []string) (string, error) {
 	}
 	return str, nil
 }
-`
-	code, _ = generator.ExecuteTemplate(code, struct{ PackageName string }{module.Name})
-	return &generator.CodeFile{module.GetPath("helpers.go"), strings.TrimSpace(code)}
+`)
+	return w.ToCodeFile()
 }

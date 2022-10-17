@@ -1,15 +1,21 @@
 package writer
 
 import (
-	"strings"
-
 	"generator"
+	"golang/module"
+	"strings"
 )
 
-var GoConfig = generator.Config{"\t", 2, map[string]string{"PERCENT_": "%"}}
+func GoConfig() generator.Config {
+	return generator.Config{"\t", 2, map[string]string{"PERCENT_": "%"}}
+}
 
-func NewGoWriter() generator.Writer {
-	return generator.NewWriter(GoConfig)
+func New(module module.Module, filename string) generator.Writer {
+	config := GoConfig()
+	w := generator.NewWriter2(module.GetPath(filename), config)
+	w.Line("package %s", module.Name)
+	w.EmptyLine()
+	return w
 }
 
 func colWidth(lines [][]string, colIndex int) int {

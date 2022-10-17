@@ -11,15 +11,14 @@ import (
 	"spec"
 )
 
-func generateErrors(module, errorsModelsModule, respondModule module.Module, responses *spec.Responses) *generator.CodeFile {
-	w := writer.NewGoWriter()
-	w.Line("package %s", module.Name)
+func generateErrors(converterModule, errorsModelsModule, respondModule module.Module, responses *spec.Responses) *generator.CodeFile {
+	w := writer.New(converterModule, "responses.go")
 
 	imports := imports.New()
-	imports.AddAlias("github.com/sirupsen/logrus", "log")
+	imports.AddAliased("github.com/sirupsen/logrus", "log")
 	imports.Add("net/http")
-	imports.AddAlias(errorsModelsModule.Package, types.ErrorsModelsPackage)
-	imports.Add(respondModule.Package)
+	imports.Module(errorsModelsModule)
+	imports.Module(respondModule)
 	imports.Write(w)
 
 	w.EmptyLine()
@@ -43,10 +42,7 @@ func generateErrors(module, errorsModelsModule, respondModule module.Module, res
 	generateResponseWriting(w.Indented(), `logFields`, internalServerError, `error`)
 	w.Line(`}`)
 
-	return &generator.CodeFile{
-		Path:    module.GetPath(fmt.Sprintf("responses.go")),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func callCheckContentType(logFieldsVar, expectedContentType, requestVar, responseVar string) string {

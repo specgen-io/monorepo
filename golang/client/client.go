@@ -21,10 +21,12 @@ var ToUpperCase = casee.ToUpperCase
 func GenerateClient(specification *spec.Spec, moduleName string, generatePath string) *generator.Sources {
 	sources := generator.NewSources()
 
+	modules := models.NewModules(moduleName, generatePath, specification)
+	modelsGenerator := models.NewGenerator(modules)
+
 	rootModule := module.New(moduleName, generatePath)
 
-	enumsModule := rootModule.Submodule("enums")
-	sources.AddGenerated(models.GenerateEnumsHelperFunctions(enumsModule))
+	sources.AddGenerated(modelsGenerator.GenerateEnumsHelperFunctions())
 
 	emptyModule := rootModule.Submodule("empty")
 	sources.AddGenerated(types.GenerateEmpty(emptyModule))
@@ -36,14 +38,14 @@ func GenerateClient(specification *spec.Spec, moduleName string, generatePath st
 	sources.AddGenerated(generateResponseFunctions(responseModule))
 
 	errorsModule := rootModule.Submodule("httperrors")
-	errorsModelsModule := errorsModule.Submodule("models")
-	sources.AddGenerated(models.GenerateVersionModels(specification.HttpErrors.ResolvedModels, errorsModelsModule, enumsModule))
+	errorsModelsModule := errorsModule.Submodule(types.ErrorsModelsPackage)
+	sources.AddGenerated(modelsGenerator.GenerateErrorModels(specification.HttpErrors))
 	sources.AddGenerated(httpErrors(errorsModule, errorsModelsModule, &specification.HttpErrors.Responses))
 
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Name.FlatCase())
 		modelsModule := versionModule.Submodule(types.VersionModelsPackage)
-		sources.AddGenerated(models.GenerateVersionModels(version.ResolvedModels, modelsModule, enumsModule))
+		sources.AddGenerated(modelsGenerator.GenerateVersionModels(&version))
 		sources.AddGeneratedAll(generateClientsImplementations(&version, versionModule, convertModule, emptyModule, errorsModule, errorsModelsModule, modelsModule, responseModule))
 	}
 	return sources
@@ -59,29 +61,28 @@ func generateClientsImplementations(version *spec.Version, versionModule, conver
 }
 
 func generateClientImplementation(api *spec.Api, versionModule, convertModule, emptyModule, errorsModule, errorsModelsModule, modelsModule, responseModule module.Module) *generator.CodeFile {
-	w := writer.NewGoWriter()
-	w.Line("package %s", versionModule.Name)
+	w := writer.New(versionModule, "client.go")
 
 	imports := imports.New().
 		Add("fmt").
 		Add("errors").
 		Add("net/http").
 		Add("encoding/json").
-		AddAlias("github.com/sirupsen/logrus", "log")
+		AddAliased("github.com/sirupsen/logrus", "log")
 	if types.ApiHasBody(api) {
 		imports.Add("bytes")
 	}
 	if types.ApiHasUrlParams(api) {
-		imports.Add(convertModule.Package)
+		imports.Module(convertModule)
 	}
 	if types.ApiHasType(api, spec.TypeEmpty) {
-		imports.Add(emptyModule.Package)
+		imports.Module(emptyModule)
 	}
-	imports.Add(errorsModule.Package)
-	imports.AddAlias(errorsModelsModule.Package, types.ErrorsModelsPackage)
+	imports.Module(errorsModule)
+	imports.Module(errorsModelsModule)
 	imports.AddApiTypes(api)
-	imports.Add(modelsModule.Package)
-	imports.Add(responseModule.Package)
+	imports.Module(modelsModule)
+	imports.Module(responseModule)
 	imports.Write(w)
 
 	for _, operation := range api.Operations {
@@ -97,10 +98,7 @@ func generateClientImplementation(api *spec.Api, versionModule, convertModule, e
 		generateClientFunction(w, &operation)
 	}
 
-	return &generator.CodeFile{
-		Path:    versionModule.GetPath("client.go"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func generateClientWithCtor(w generator.Writer) {
