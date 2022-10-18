@@ -7,7 +7,6 @@ import (
 	"golang/common"
 	"golang/imports"
 	"golang/module"
-	"golang/responses"
 	"golang/types"
 	"golang/writer"
 	"spec"
@@ -59,7 +58,7 @@ func (g *NetHttpGenerator) generateClientImplementation(api *spec.Api, versionMo
 	for _, operation := range api.Operations {
 		if common.ResponsesNumber(&operation) > 1 {
 			w.EmptyLine()
-			responses.GenerateOperationResponseStruct(w, g.Types, &operation)
+			generateResponseStruct(w, g.Types, &operation)
 		}
 	}
 	w.EmptyLine()
@@ -83,7 +82,7 @@ func (g *NetHttpGenerator) generateClientWithCtor(w generator.Writer) {
 }
 
 func (g *NetHttpGenerator) generateClientFunction(w generator.Writer, operation *spec.NamedOperation) {
-	w.Line(`func (client *%s) %s {`, clientTypeName(), OperationSignature(operation, g.Types, nil))
+	w.Line(`func (client *%s) %s {`, clientTypeName(), operationSignature(operation, g.Types, nil))
 	w.Line(`  var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(operation), operation.InApi.Name.Source, operation.Name.Source, casee.ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
 	body := "nil"
 	if operation.BodyIs(spec.BodyString) {
@@ -115,6 +114,9 @@ func (g *NetHttpGenerator) generateClientFunction(w generator.Writer, operation 
 	w.Line(`    return nil, err`)
 	w.Line(`  }`)
 	g.addClientResponses(w.Indented(), operation)
+	w.EmptyLine()
+	w.Line(`  err = httperrors.HandleErrors(resp, %s)`, logFieldsName(operation))
+	generateErrHandler(w)
 	w.EmptyLine()
 	w.Line(`  msg := fmt.Sprintf("Unexpected status code received: %s", resp.StatusCode)`, "%d")
 	w.Line(`  log.WithFields(%s).Error(msg)`, logFieldsName(operation))
@@ -195,17 +197,12 @@ func (g *NetHttpGenerator) addClientResponses(w generator.Writer, operation *spe
 			}
 		} else {
 			if response.Type.Definition.IsEmpty() {
-				w.Line(`  return &%s, nil`, responses.NewResponse(&response, fmt.Sprintf(`%s{}`, types.EmptyType)))
+				w.Line(`  return &%s, nil`, newResponse(&response, fmt.Sprintf(`%s{}`, types.EmptyType)))
 			} else {
-				w.Line(`  return &%s, nil`, responses.NewResponse(&response, `result`))
+				w.Line(`  return &%s, nil`, newResponse(&response, `result`))
 			}
 		}
 		w.Line(`}`)
-	}
-
-	for _, response := range operation.InApi.InHttp.InVersion.InSpec.HttpErrors.Responses {
-		w.EmptyLine()
-		g.generateErrorResponse(w, operation, response)
 	}
 }
 
@@ -226,13 +223,8 @@ func (g *NetHttpGenerator) generateResponse(w generator.Writer, operation *spec.
 	}
 }
 
-func (g *NetHttpGenerator) generateErrorResponse(w generator.Writer, operation *spec.NamedOperation, response spec.Response) {
-	w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
-	w.Line(`  var result %s`, g.Types.GoType(&response.Type.Definition))
-	w.Line(`  err := response.Json(%s, resp, &result)`, logFieldsName(operation))
-	generateErrHandler(w)
-	w.Line(`  return nil, %s`, responses.NewErrorResponse(response, `result`))
-	w.Line(`}`)
+func newResponse(response *spec.OperationResponse, body string) string {
+	return fmt.Sprintf(`%s{%s: &%s}`, responseTypeName(response.Operation), response.Name.PascalCase(), body)
 }
 
 func generateErrHandler(w generator.Writer) {

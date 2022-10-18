@@ -1,10 +1,30 @@
 package client
 
 import (
+	"fmt"
 	"generator"
 	"golang/module"
+	"golang/types"
 	"golang/writer"
+	"spec"
 )
+
+func generateResponseStruct(w generator.Writer, types *types.Types, operation *spec.NamedOperation) {
+	w.Line(`type %s struct {`, responseTypeName(operation))
+	responses := [][]string{}
+	for _, response := range operation.Responses {
+		responses = append(responses, []string{
+			response.Name.PascalCase(),
+			types.GoType(spec.Nullable(&response.Type.Definition)),
+		})
+	}
+	writer.WriteAlignedLines(w.Indented(), responses)
+	w.Line(`}`)
+}
+
+func responseTypeName(operation *spec.NamedOperation) string {
+	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
+}
 
 func generateResponseFunctions(responseModule module.Module) *generator.CodeFile {
 	w := writer.New(responseModule, `response.go`)

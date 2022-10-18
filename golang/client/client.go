@@ -30,7 +30,7 @@ func GenerateClient(specification *spec.Spec, moduleName string, generatePath st
 	errorsModule := rootModule.Submodule("httperrors")
 	errorsModelsModule := errorsModule.Submodule(types.ErrorsModelsPackage)
 	sources.AddGenerated(generator.Models.GenerateErrorModels(specification.HttpErrors))
-	sources.AddGenerated(generator.HttpErrors(errorsModule, errorsModelsModule, &specification.HttpErrors.Responses))
+	sources.AddGeneratedAll(generator.Errors(errorsModule, errorsModelsModule, responseModule, &specification.HttpErrors.Responses))
 
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Name.FlatCase())

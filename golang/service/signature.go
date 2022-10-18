@@ -3,13 +3,11 @@ package service
 import (
 	"fmt"
 	"golang/common"
-	"strings"
-
-	"golang/responses"
 	"spec"
+	"strings"
 )
 
-func (g *Generator) OperationSignature(operation *spec.NamedOperation, apiPackage *string) string {
+func (g *Generator) operationSignature(operation *spec.NamedOperation, apiPackage *string) string {
 	return fmt.Sprintf(`%s(%s) %s`,
 		operation.Name.PascalCase(),
 		strings.Join(common.OperationParams(g.Types, operation), ", "),
@@ -25,7 +23,7 @@ func (g *Generator) operationReturn(operation *spec.NamedOperation, responsePack
 		}
 		return fmt.Sprintf(`(*%s, error)`, g.Types.GoType(&response.Type.Definition))
 	}
-	responseType := responses.ResponseTypeName(operation)
+	responseType := responseTypeName(operation)
 	if responsePackageName != nil {
 		responseType = *responsePackageName + "." + responseType
 	}
