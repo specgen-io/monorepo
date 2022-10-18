@@ -21,16 +21,16 @@ type NetHttpGenerator struct {
 	Types *types.Types
 }
 
-func (g *NetHttpGenerator) GenerateClientsImplementations(version *spec.Version, versionModule, convertModule, emptyModule, errorsModule, errorsModelsModule, modelsModule, respondModule module.Module) []generator.CodeFile {
+func (g *NetHttpGenerator) GenerateClientsImplementations(version *spec.Version, versionModule, convertModule, emptyModule, errorsModule, modelsModule, respondModule module.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiModule := versionModule.Submodule(api.Name.SnakeCase())
-		files = append(files, *g.generateClientImplementation(&api, apiModule, convertModule, emptyModule, errorsModule, errorsModelsModule, modelsModule, respondModule))
+		files = append(files, *g.generateClientImplementation(&api, apiModule, convertModule, emptyModule, errorsModule, modelsModule, respondModule))
 	}
 	return files
 }
 
-func (g *NetHttpGenerator) generateClientImplementation(api *spec.Api, versionModule, convertModule, emptyModule, errorsModule, errorsModelsModule, modelsModule, responseModule module.Module) *generator.CodeFile {
+func (g *NetHttpGenerator) generateClientImplementation(api *spec.Api, versionModule, convertModule, emptyModule, errorsModule, modelsModule, responseModule module.Module) *generator.CodeFile {
 	w := writer.New(versionModule, "client.go")
 
 	imports := imports.New().
@@ -49,7 +49,6 @@ func (g *NetHttpGenerator) generateClientImplementation(api *spec.Api, versionMo
 		imports.Module(emptyModule)
 	}
 	imports.Module(errorsModule)
-	imports.Module(errorsModelsModule)
 	imports.AddApiTypes(api)
 	imports.Module(modelsModule)
 	imports.Module(responseModule)
