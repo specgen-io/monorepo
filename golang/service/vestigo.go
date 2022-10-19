@@ -2,16 +2,15 @@ package service
 
 import (
 	"fmt"
-	"github.com/pinzolo/casee"
-	"strings"
-
 	"generator"
+	"github.com/pinzolo/casee"
 	"golang/imports"
 	"golang/models"
 	"golang/module"
 	"golang/types"
 	"golang/writer"
 	"spec"
+	"strings"
 )
 
 type VestigoGenerator struct {

@@ -2,15 +2,14 @@ package service
 
 import (
 	"fmt"
+	"generator"
 	"golang/imports"
 	"golang/module"
 	"golang/writer"
-
-	"generator"
 	"spec"
 )
 
-func (g *VestigoGenerator) generateErrors(converterModule, errorsModelsModule, respondModule module.Module, responses *spec.Responses) *generator.CodeFile {
+func (g *VestigoGenerator) generateErrors(converterModule, errorsModelsModule, respondModule module.Module, errors *spec.Responses) *generator.CodeFile {
 	w := writer.New(converterModule, "responses.go")
 
 	imports := imports.New()
@@ -20,26 +19,13 @@ func (g *VestigoGenerator) generateErrors(converterModule, errorsModelsModule, r
 	imports.Module(respondModule)
 	imports.Write(w)
 
-	w.EmptyLine()
-	badRequest := responses.GetByStatusName(spec.HttpStatusBadRequest)
-	w.Line(`func RespondBadRequest(logFields log.Fields, res http.ResponseWriter, error *%s) {`, g.Types.GoType(&badRequest.Type.Definition))
-	w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
-	g.generateResponseWriting(w.Indented(), `logFields`, badRequest, `error`)
-	w.Line(`}`)
-
-	w.EmptyLine()
-	notFound := responses.GetByStatusName(spec.HttpStatusNotFound)
-	w.Line(`func RespondNotFound(logFields log.Fields, res http.ResponseWriter, error *%s) {`, g.Types.GoType(&notFound.Type.Definition))
-	w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
-	g.generateResponseWriting(w.Indented(), `logFields`, notFound, `error`)
-	w.Line(`}`)
-
-	w.EmptyLine()
-	internalServerError := responses.GetByStatusName(spec.HttpStatusInternalServerError)
-	w.Line(`func RespondInternalServerError(logFields log.Fields, res http.ResponseWriter, error *%s) {`, g.Types.GoType(&internalServerError.Type.Definition))
-	w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
-	g.generateResponseWriting(w.Indented(), `logFields`, internalServerError, `error`)
-	w.Line(`}`)
+	for _, errorResponse := range *errors {
+		w.EmptyLine()
+		w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter, error *%s) {`, errorResponse.Name.PascalCase(), g.Types.GoType(&errorResponse.Type.Definition))
+		w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
+		g.generateResponseWriting(w.Indented(), `logFields`, &errorResponse, `error`)
+		w.Line(`}`)
+	}
 
 	return w.ToCodeFile()
 }

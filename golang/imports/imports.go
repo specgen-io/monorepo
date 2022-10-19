@@ -2,11 +2,10 @@ package imports
 
 import (
 	"fmt"
-	"golang/module"
-	"sort"
-
 	"generator"
+	"golang/module"
 	"golang/types"
+	"sort"
 	"spec"
 )
 
@@ -49,7 +48,6 @@ func (self *imports) Write(w generator.Writer) {
 		}
 		sort.Strings(imports)
 
-		w.EmptyLine()
 		w.Line(`import (`)
 		for _, theImport := range imports {
 			alias := self.imports[theImport]

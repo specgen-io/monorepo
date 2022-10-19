@@ -9,7 +9,7 @@ import (
 )
 
 type ClientGenerator interface {
-	GenerateClientsImplementations(version *spec.Version, versionModule, convertModule, emptyModule, errorsModule, errorsModelsModule, modelsModule, respondModule module.Module) []generator.CodeFile
+	GenerateClientsImplementations(version *spec.Version, versionModule, convertModule, emptyModule, errorsModule, modelsModule, respondModule module.Module) []generator.CodeFile
 }
 
 type Generator struct {

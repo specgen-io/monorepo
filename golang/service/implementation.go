@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-
 	"generator"
 	"golang/imports"
 	"golang/module"
@@ -39,7 +38,7 @@ func (g *Generator) generateServiceImplementation(api *spec.Api, apiModule, mode
 	w.EmptyLine()
 	apiPackage := api.Name.SnakeCase()
 	for _, operation := range api.Operations {
-		w.Line(`func (service *%s) %s {`, serviceTypeName(api), g.OperationSignature(&operation, &apiPackage))
+		w.Line(`func (service *%s) %s {`, serviceTypeName(api), g.operationSignature(&operation, &apiPackage))
 		singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
 		if singleEmptyResponse {
 			w.Line(`  return errors.New("implementation has not added yet")`)
