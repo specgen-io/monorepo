@@ -311,8 +311,10 @@ public class [[.ClassName]] extends RuntimeException {
 	return w.ToCodeFile()
 }
 
+var jacksonCustomObjectMapper = `CustomObjectMapper`
+
 func (g *JacksonGenerator) setupLibrary() []generator.CodeFile {
-	w := writer.New(g.Packages.Json, `CustomObjectMapper`)
+	w := writer.New(g.Packages.Json, jacksonCustomObjectMapper)
 	w.Lines(`
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.*;
@@ -330,10 +332,10 @@ public class [[.ClassName]] {
 	return []generator.CodeFile{*w.ToCodeFile()}
 }
 
-func (g *JacksonGenerator) InitJsonField(w generator.Writer) {
-	w.Lines(`
+func (g *JacksonGenerator) CreateJsonHelper(name string) string {
+	return fmt.Sprintf(`
 ObjectMapper objectMapper = new ObjectMapper();
-CustomObjectMapper.setup(objectMapper);
-this.json = new Json(objectMapper);
-`)
+%s.setup(objectMapper);
+%s = new Json(objectMapper);
+`, jacksonCustomObjectMapper, name)
 }

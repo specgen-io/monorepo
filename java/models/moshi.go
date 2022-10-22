@@ -307,8 +307,10 @@ func (g *MoshiGenerator) setupLibrary() []generator.CodeFile {
 	return files
 }
 
+var moshiCustomAdapters = `CustomMoshiAdapters`
+
 func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
-	w := writer.New(g.Packages.Json, `CustomMoshiAdapters`)
+	w := writer.New(g.Packages.Json, moshiCustomAdapters)
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
 	imports.Add(g.Packages.JsonAdapters.PackageStar)
@@ -845,10 +847,10 @@ public final class UnwrapFieldAdapterFactory<T> implements JsonAdapter.Factory {
 	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) InitJsonField(w generator.Writer) {
-	w.Lines(`
+func (g *MoshiGenerator) CreateJsonHelper(name string) string {
+	return fmt.Sprintf(`
 Moshi.Builder moshiBuilder = new Moshi.Builder();
-CustomMoshiAdapters.setup(moshiBuilder);
-this.json = new Json(moshiBuilder.build());
-`)
+%s.setup(moshiBuilder);
+%s = new Json(moshiBuilder.build());
+`, moshiCustomAdapters, name)
 }

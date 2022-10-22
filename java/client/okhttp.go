@@ -46,7 +46,7 @@ public class [[.ClassName]] {
 	public [[.ClassName]](String baseUrl) {
 		this.baseUrl = baseUrl;
 `)
-	g.InitJsonField(w.IndentedWith(2))
+	w.IndentedWith(2).Lines(g.CreateJsonHelper(`this.json`))
 	w.Lines(`
 		this.client = new OkHttpClient();
 	}

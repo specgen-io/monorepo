@@ -15,7 +15,7 @@ type Generator interface {
 	JsonRead(varJson string, typ *spec.TypeDef) string
 	JsonWrite(varData string, typ *spec.TypeDef) string
 	JsonHelpers() []generator.CodeFile
-	InitJsonField(w generator.Writer)
+	CreateJsonHelper(name string) string
 }
 
 func NewGenerator(jsonlib string, packages *Packages) Generator {
