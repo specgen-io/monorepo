@@ -3,26 +3,25 @@ package client
 import (
 	"generator"
 	"golang/imports"
-	"golang/module"
 	"golang/writer"
 	"spec"
 )
 
-func (g *Generator) Errors(errorsModule, errorsModelsModule, responseModule module.Module, errors *spec.Responses) []generator.CodeFile {
+func (g *Generator) Errors(errors *spec.Responses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
-	files = append(files, *g.httpErrors(errorsModule, errorsModelsModule, errors))
-	files = append(files, *g.httpErrorsHandler(errorsModule, errorsModelsModule, responseModule, errors))
+	files = append(files, *g.httpErrors(errors))
+	files = append(files, *g.httpErrorsHandler(errors))
 
 	return files
 }
 
-func (g *Generator) httpErrors(errorsModule, errorsModelsModule module.Module, errors *spec.Responses) *generator.CodeFile {
-	w := writer.New(errorsModule, "errors.go")
+func (g *Generator) httpErrors(errors *spec.Responses) *generator.CodeFile {
+	w := writer.New(g.Modules.HttpErrors, "errors.go")
 
 	imports := imports.New()
 	imports.Add("fmt")
-	imports.Module(errorsModelsModule)
+	imports.Module(g.Modules.HttpErrorsModels)
 	imports.Write(w)
 
 	for _, errorResponse := range *errors {
@@ -39,12 +38,12 @@ func (g *Generator) httpErrors(errorsModule, errorsModelsModule module.Module, e
 	return w.ToCodeFile()
 }
 
-func (g *Generator) httpErrorsHandler(module, errorsModelsModule, responseModule module.Module, errors *spec.Responses) *generator.CodeFile {
-	w := writer.New(module, `errors_handler.go`)
+func (g *Generator) httpErrorsHandler(errors *spec.Responses) *generator.CodeFile {
+	w := writer.New(g.Modules.HttpErrors, `errors_handler.go`)
 
 	imports := imports.New().
-		Module(errorsModelsModule).
-		Module(responseModule).
+		Module(g.Modules.HttpErrorsModels).
+		Module(g.Modules.Response).
 		Add("net/http").
 		AddAliased("github.com/sirupsen/logrus", "log")
 	imports.Write(w)

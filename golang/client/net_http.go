@@ -6,32 +6,31 @@ import (
 	"github.com/pinzolo/casee"
 	"golang/common"
 	"golang/imports"
-	"golang/module"
 	"golang/types"
 	"golang/writer"
 	"spec"
 	"strings"
 )
 
-func NewNetHttpGenerator(types *types.Types) *NetHttpGenerator {
-	return &NetHttpGenerator{types}
+func NewNetHttpGenerator(modules *Modules, types *types.Types) *NetHttpGenerator {
+	return &NetHttpGenerator{modules, types}
 }
 
 type NetHttpGenerator struct {
-	Types *types.Types
+	Modules *Modules
+	Types   *types.Types
 }
 
-func (g *NetHttpGenerator) GenerateClientsImplementations(version *spec.Version, versionModule, convertModule, emptyModule, errorsModule, modelsModule, respondModule module.Module) []generator.CodeFile {
+func (g *NetHttpGenerator) GenerateClientsImplementations(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		apiModule := versionModule.Submodule(api.Name.SnakeCase())
-		files = append(files, *g.generateClientImplementation(&api, apiModule, convertModule, emptyModule, errorsModule, modelsModule, respondModule))
+		files = append(files, *g.generateClientImplementation(&api))
 	}
 	return files
 }
 
-func (g *NetHttpGenerator) generateClientImplementation(api *spec.Api, versionModule, convertModule, emptyModule, errorsModule, modelsModule, responseModule module.Module) *generator.CodeFile {
-	w := writer.New(versionModule, "client.go")
+func (g *NetHttpGenerator) generateClientImplementation(api *spec.Api) *generator.CodeFile {
+	w := writer.New(g.Modules.Client(api), "client.go")
 
 	imports := imports.New().
 		Add("fmt").
@@ -43,15 +42,15 @@ func (g *NetHttpGenerator) generateClientImplementation(api *spec.Api, versionMo
 		imports.Add("bytes")
 	}
 	if types.ApiHasUrlParams(api) {
-		imports.Module(convertModule)
+		imports.Module(g.Modules.Convert)
 	}
 	if types.ApiHasType(api, spec.TypeEmpty) {
-		imports.Module(emptyModule)
+		imports.Module(g.Modules.Empty)
 	}
-	imports.Module(errorsModule)
+	imports.Module(g.Modules.HttpErrors)
 	imports.AddApiTypes(api)
-	imports.Module(modelsModule)
-	imports.Module(responseModule)
+	imports.Module(g.Modules.Models(api.InHttp.InVersion))
+	imports.Module(g.Modules.Response)
 	imports.Write(w)
 
 	for _, operation := range api.Operations {

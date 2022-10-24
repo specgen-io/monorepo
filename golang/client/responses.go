@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 	"generator"
-	"golang/module"
 	"golang/types"
 	"golang/writer"
 	"spec"
@@ -26,8 +25,8 @@ func responseTypeName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
 }
 
-func generateResponseFunctions(responseModule module.Module) *generator.CodeFile {
-	w := writer.New(responseModule, `response.go`)
+func (g *NetHttpGenerator) GenerateResponseFunctions() *generator.CodeFile {
+	w := writer.New(g.Modules.Response, `response.go`)
 	w.Lines(`
 import (
 	"encoding/json"
