@@ -6,32 +6,31 @@ import (
 	"github.com/pinzolo/casee"
 	"golang/common"
 	"golang/imports"
-	"golang/module"
 	"golang/types"
 	"golang/writer"
 	"spec"
 	"strings"
 )
 
-func NewNetHttpGenerator(types *types.Types) *NetHttpGenerator {
-	return &NetHttpGenerator{types}
+func NewNetHttpGenerator(modules *Modules, types *types.Types) *NetHttpGenerator {
+	return &NetHttpGenerator{modules, types}
 }
 
 type NetHttpGenerator struct {
-	Types *types.Types
+	Modules *Modules
+	Types   *types.Types
 }
 
-func (g *NetHttpGenerator) GenerateClientsImplementations(version *spec.Version, versionModule, convertModule, emptyModule, errorsModule, modelsModule, respondModule module.Module) []generator.CodeFile {
+func (g *NetHttpGenerator) Clients(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		apiModule := versionModule.Submodule(api.Name.SnakeCase())
-		files = append(files, *g.generateClientImplementation(&api, apiModule, convertModule, emptyModule, errorsModule, modelsModule, respondModule))
+		files = append(files, *g.client(&api))
 	}
 	return files
 }
 
-func (g *NetHttpGenerator) generateClientImplementation(api *spec.Api, versionModule, convertModule, emptyModule, errorsModule, modelsModule, responseModule module.Module) *generator.CodeFile {
-	w := writer.New(versionModule, "client.go")
+func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
+	w := writer.New(g.Modules.Client(api), "client.go")
 
 	imports := imports.New().
 		Add("fmt").
@@ -43,34 +42,34 @@ func (g *NetHttpGenerator) generateClientImplementation(api *spec.Api, versionMo
 		imports.Add("bytes")
 	}
 	if types.ApiHasUrlParams(api) {
-		imports.Module(convertModule)
+		imports.Module(g.Modules.Convert)
 	}
 	if types.ApiHasType(api, spec.TypeEmpty) {
-		imports.Module(emptyModule)
+		imports.Module(g.Modules.Empty)
 	}
-	imports.Module(errorsModule)
+	imports.Module(g.Modules.HttpErrors)
 	imports.AddApiTypes(api)
-	imports.Module(modelsModule)
-	imports.Module(responseModule)
+	imports.Module(g.Modules.Models(api.InHttp.InVersion))
+	imports.Module(g.Modules.Response)
 	imports.Write(w)
 
 	for _, operation := range api.Operations {
 		if common.ResponsesNumber(&operation) > 1 {
 			w.EmptyLine()
-			generateResponseStruct(w, g.Types, &operation)
+			responseStruct(w, g.Types, &operation)
 		}
 	}
 	w.EmptyLine()
-	g.generateClientWithCtor(w)
+	g.clientWithCtor(w)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		g.generateClientFunction(w, &operation)
+		g.operation(w, &operation)
 	}
 
 	return w.ToCodeFile()
 }
 
-func (g *NetHttpGenerator) generateClientWithCtor(w generator.Writer) {
+func (g *NetHttpGenerator) clientWithCtor(w generator.Writer) {
 	w.Line(`type %s struct {`, clientTypeName())
 	w.Line(`  baseUrl string`)
 	w.Line(`}`)
@@ -80,7 +79,7 @@ func (g *NetHttpGenerator) generateClientWithCtor(w generator.Writer) {
 	w.Line(`}`)
 }
 
-func (g *NetHttpGenerator) generateClientFunction(w generator.Writer, operation *spec.NamedOperation) {
+func (g *NetHttpGenerator) operation(w generator.Writer, operation *spec.NamedOperation) {
 	w.Line(`func (client *%s) %s {`, clientTypeName(), operationSignature(operation, g.Types, nil))
 	w.Line(`  var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(operation), operation.InApi.Name.Source, operation.Name.Source, casee.ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
 	body := "nil"
@@ -90,7 +89,9 @@ func (g *NetHttpGenerator) generateClientFunction(w generator.Writer, operation 
 	}
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`  bodyData, err := json.Marshal(body)`)
-		generateErrHandler(w)
+		w.Line(`  if err != nil {`)
+		w.Line(`    return nil, err`)
+		w.Line(`  }`)
 		body = "bytes.NewBuffer(bodyData)"
 	}
 	w.Line(`  req, err := http.NewRequest("%s", client.baseUrl+%s, %s)`, operation.Endpoint.Method, g.addRequestUrlParams(operation), body)
@@ -115,7 +116,9 @@ func (g *NetHttpGenerator) generateClientFunction(w generator.Writer, operation 
 	g.addClientResponses(w.Indented(), operation)
 	w.EmptyLine()
 	w.Line(`  err = httperrors.HandleErrors(resp, %s)`, logFieldsName(operation))
-	generateErrHandler(w)
+	w.Line(`  if err != nil {`)
+	w.Line(`    return nil, err`)
+	w.Line(`  }`)
 	w.EmptyLine()
 	w.Line(`  msg := fmt.Sprintf("Unexpected status code received: %s", resp.StatusCode)`, "%d")
 	w.Line(`  log.WithFields(%s).Error(msg)`, logFieldsName(operation))
@@ -182,7 +185,7 @@ func (g *NetHttpGenerator) addParsedParams(w generator.Writer, namedParams []spe
 func (g *NetHttpGenerator) addClientResponses(w generator.Writer, operation *spec.NamedOperation) {
 	for _, response := range operation.Responses {
 		w.EmptyLine()
-		g.generateResponse(w, operation, response)
+		g.response(w, operation, response)
 
 		if common.ResponsesNumber(operation) == 1 {
 			if response.Type.Definition.IsEmpty() {
@@ -205,17 +208,21 @@ func (g *NetHttpGenerator) addClientResponses(w generator.Writer, operation *spe
 	}
 }
 
-func (g *NetHttpGenerator) generateResponse(w generator.Writer, operation *spec.NamedOperation, response spec.OperationResponse) {
+func (g *NetHttpGenerator) response(w generator.Writer, operation *spec.NamedOperation, response spec.OperationResponse) {
 	w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
 	if response.BodyIs(spec.BodyString) {
 		w.Line(`  responseBody, err := response.Text(%s, resp)`, logFieldsName(operation))
-		generateErrHandler(w)
+		w.Line(`  if err != nil {`)
+		w.Line(`    return nil, err`)
+		w.Line(`  }`)
 		w.Line(`  result := string(responseBody)`)
 	}
 	if response.BodyIs(spec.BodyJson) {
 		w.Line(`  var result %s`, g.Types.GoType(&response.Type.Definition))
 		w.Line(`  err := response.Json(%s, resp, &result)`, logFieldsName(operation))
-		generateErrHandler(w)
+		w.Line(`  if err != nil {`)
+		w.Line(`    return nil, err`)
+		w.Line(`  }`)
 	}
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(`  response.Empty(%s, resp)`, logFieldsName(operation))
@@ -224,12 +231,6 @@ func (g *NetHttpGenerator) generateResponse(w generator.Writer, operation *spec.
 
 func newResponse(response *spec.OperationResponse, body string) string {
 	return fmt.Sprintf(`%s{%s: &%s}`, responseTypeName(response.Operation), response.Name.PascalCase(), body)
-}
-
-func generateErrHandler(w generator.Writer) {
-	w.Line(`  if err != nil {`)
-	w.Line(`    return nil, err`)
-	w.Line(`  }`)
 }
 
 func clientTypeName() string {
