@@ -23,6 +23,7 @@ func NewModules(moduleName string, generatePath string, specification *spec.Spec
 
 	clients := map[string]map[string]module.Module{}
 	for _, version := range specification.Versions {
+		clients[version.Name.Source] = map[string]module.Module{}
 		versionModule := root.Submodule(version.Name.FlatCase())
 		for _, api := range version.Http.Apis {
 			clients[version.Name.Source][api.Name.Source] = versionModule.Submodule(api.Name.SnakeCase())
