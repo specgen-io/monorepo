@@ -58,7 +58,7 @@ func converterMethodNamePlain(typ *spec.TypeDef) string {
 	}
 }
 
-func (g *Generator) GenerateConverter() *generator.CodeFile {
+func (g *Generator) Converter() *generator.CodeFile {
 	w := writer.New(g.Modules.Convert, `convert.go`)
 	w.Lines(`
 import (

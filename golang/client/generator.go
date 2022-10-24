@@ -8,8 +8,8 @@ import (
 )
 
 type ClientGenerator interface {
-	GenerateClientsImplementations(version *spec.Version) []generator.CodeFile
-	GenerateResponseFunctions() *generator.CodeFile
+	Clients(version *spec.Version) []generator.CodeFile
+	ResponseHelperFunctions() *generator.CodeFile
 }
 
 type Generator struct {
@@ -29,15 +29,15 @@ func NewGenerator(modules *Modules) *Generator {
 	}
 }
 
-func (g *Generator) GenerateEmptyType() *generator.CodeFile {
+func (g *Generator) EmptyType() *generator.CodeFile {
 	return types.GenerateEmpty(g.Modules.Empty)
 }
 
 func (g *Generator) AllStaticFiles() []generator.CodeFile {
 	return []generator.CodeFile{
-		*g.GenerateEnumsHelperFunctions(),
-		*g.GenerateEmptyType(),
-		*g.GenerateConverter(),
-		*g.GenerateResponseFunctions(),
+		*g.EnumsHelperFunctions(),
+		*g.EmptyType(),
+		*g.Converter(),
+		*g.ResponseHelperFunctions(),
 	}
 }

@@ -13,12 +13,12 @@ func GenerateClient(specification *spec.Spec, moduleName string, generatePath st
 
 	sources.AddGeneratedAll(generator.AllStaticFiles())
 
-	sources.AddGenerated(generator.GenerateErrorModels(specification.HttpErrors))
+	sources.AddGenerated(generator.ErrorModels(specification.HttpErrors))
 	sources.AddGeneratedAll(generator.Errors(&specification.HttpErrors.Responses))
 
 	for _, version := range specification.Versions {
-		sources.AddGenerated(generator.GenerateVersionModels(&version))
-		sources.AddGeneratedAll(generator.GenerateClientsImplementations(&version))
+		sources.AddGenerated(generator.Models(&version))
+		sources.AddGeneratedAll(generator.Clients(&version))
 	}
 	return sources
 }
