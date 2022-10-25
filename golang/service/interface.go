@@ -8,15 +8,15 @@ import (
 	"spec"
 )
 
-func (g *Generator) generateServiceInterfaces(version *spec.Version) []generator.CodeFile {
+func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *g.generateServiceInterface(&api))
+		files = append(files, *g.serviceInterface(&api))
 	}
 	return files
 }
 
-func (g *Generator) generateServiceInterface(api *spec.Api) *generator.CodeFile {
+func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.ServicesApi(api), "service.go")
 
 	imports := imports.New()
@@ -36,7 +36,7 @@ func (g *Generator) generateServiceInterface(api *spec.Api) *generator.CodeFile 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {
 			w.EmptyLine()
-			generateResponseStruct(w, g.Types, &operation)
+			Response(w, g.Types, &operation)
 		}
 	}
 	w.EmptyLine()

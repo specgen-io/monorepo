@@ -10,16 +10,16 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 	sources := generator.NewSources()
 
 	modules := NewModules(moduleName, generatePath, servicesPath, specification)
-	serviceGenerator := NewGenerator(modules)
+	generator := NewGenerator(modules)
 
-	sources.AddGenerated(serviceGenerator.GenerateSpecRouting(specification))
-	sources.AddGeneratedAll(serviceGenerator.AllStaticFiles())
-	sources.AddGenerated(serviceGenerator.ErrorModels(specification.HttpErrors))
-	sources.AddGeneratedAll(serviceGenerator.HttpErrors(&specification.HttpErrors.Responses))
+	sources.AddGenerated(generator.RootRouting(specification))
+	sources.AddGeneratedAll(generator.AllStaticFiles())
+	sources.AddGenerated(generator.ErrorModels(specification.HttpErrors))
+	sources.AddGeneratedAll(generator.HttpErrors(&specification.HttpErrors.Responses))
 	for _, version := range specification.Versions {
-		sources.AddGeneratedAll(serviceGenerator.GenerateRoutings(&version))
-		sources.AddGeneratedAll(serviceGenerator.generateServiceInterfaces(&version))
-		sources.AddGenerated(serviceGenerator.Models(&version))
+		sources.AddGeneratedAll(generator.Routings(&version))
+		sources.AddGeneratedAll(generator.ServicesInterfaces(&version))
+		sources.AddGenerated(generator.Models(&version))
 	}
 
 	if swaggerPath != "" {
@@ -28,7 +28,7 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 
 	if servicesPath != "" {
 		for _, version := range specification.Versions {
-			sources.AddScaffoldedAll(serviceGenerator.generateServiceImplementations(&version))
+			sources.AddScaffoldedAll(generator.ServicesImpls(&version))
 		}
 	}
 

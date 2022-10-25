@@ -8,7 +8,7 @@ import (
 	"spec"
 )
 
-func generateResponseStruct(w generator.Writer, types *types.Types, operation *spec.NamedOperation) {
+func Response(w generator.Writer, types *types.Types, operation *spec.NamedOperation) {
 	w.Line(`type %s struct {`, responseTypeName(operation))
 	responses := [][]string{}
 	for _, response := range operation.Responses {
@@ -37,7 +37,7 @@ func respondEmpty(logFields, resVar, statusCode string) string {
 	return fmt.Sprintf(`respond.Empty(%s, %s, %s)`, logFields, resVar, statusCode)
 }
 
-func (g *VestigoGenerator) GenerateRespondFunctions() *generator.CodeFile {
+func (g *VestigoGenerator) ResponseHelperFunctions() *generator.CodeFile {
 	w := writer.New(g.Modules.Respond, `respond.go`)
 	w.Lines(`
 import (

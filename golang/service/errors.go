@@ -8,7 +8,7 @@ import (
 	"spec"
 )
 
-func (g *VestigoGenerator) generateErrors(errors *spec.Responses) *generator.CodeFile {
+func (g *VestigoGenerator) ErrorResponses(errors *spec.Responses) *generator.CodeFile {
 	w := writer.New(g.Modules.HttpErrors, "responses.go")
 
 	imports := imports.New()
@@ -22,7 +22,7 @@ func (g *VestigoGenerator) generateErrors(errors *spec.Responses) *generator.Cod
 		w.EmptyLine()
 		w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter, error *%s) {`, errorResponse.Name.PascalCase(), g.Types.GoType(&errorResponse.Type.Definition))
 		w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
-		g.generateResponseWriting(w.Indented(), `logFields`, &errorResponse, `error`)
+		g.WriteResponse(w.Indented(), `logFields`, &errorResponse, `error`)
 		w.Line(`}`)
 	}
 

@@ -8,11 +8,11 @@ import (
 )
 
 type ServiceGenerator interface {
-	GenerateSpecRouting(specification *spec.Spec) *generator.CodeFile
+	RootRouting(specification *spec.Spec) *generator.CodeFile
 	HttpErrors(responses *spec.Responses) []generator.CodeFile
 	CheckContentType() *generator.CodeFile
-	GenerateRoutings(version *spec.Version) []generator.CodeFile
-	GenerateRespondFunctions() *generator.CodeFile
+	Routings(version *spec.Version) []generator.CodeFile
+	ResponseHelperFunctions() *generator.CodeFile
 }
 
 type Generator struct {
@@ -38,7 +38,7 @@ func (g *Generator) AllStaticFiles() []generator.CodeFile {
 		*g.EnumsHelperFunctions(),
 		*types.GenerateEmpty(g.Modules.Empty),
 		*generateParamsParser(g.Modules.ParamsParser),
-		*g.GenerateRespondFunctions(),
+		*g.ResponseHelperFunctions(),
 		*g.CheckContentType(),
 	}
 }

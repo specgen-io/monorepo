@@ -9,15 +9,15 @@ import (
 	"spec"
 )
 
-func (g *Generator) generateServiceImplementations(version *spec.Version) []generator.CodeFile {
+func (g *Generator) ServicesImpls(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *g.generateServiceImplementation(&api))
+		files = append(files, *g.serviceImpl(&api))
 	}
 	return files
 }
 
-func (g *Generator) generateServiceImplementation(api *spec.Api) *generator.CodeFile {
+func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.ServicesImpl(api.InHttp.InVersion), fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
 	imports := imports.New()
