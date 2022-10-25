@@ -18,7 +18,7 @@ func (g *Generator) generateServiceImplementations(version *spec.Version) []gene
 }
 
 func (g *Generator) generateServiceImplementation(api *spec.Api) *generator.CodeFile {
-	w := writer.New(g.Modules.ServicesImpl(api), fmt.Sprintf("%s.go", api.Name.SnakeCase()))
+	w := writer.New(g.Modules.ServicesImpl(api.InHttp.InVersion), fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
 	imports := imports.New()
 	imports.Add("errors")
