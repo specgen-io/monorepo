@@ -15,7 +15,7 @@ import (
 var Moshi = "moshi"
 
 type MoshiGenerator struct {
-	generatedSetupMoshiMethods []string
+	modelsAdaptersSetupMethods []string
 	Types                      *types.Types
 	Packages                   *Packages
 }
@@ -45,11 +45,7 @@ func (g *MoshiGenerator) models(models []*spec.NamedModel, modelsPackage package
 		}
 	}
 
-	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.ModelsMoshiAdapters.setup`, modelsPackage.PackageName))
-	for range g.generatedSetupMoshiMethods {
-		files = append(files, *g.setupOneOfAdapters(models, modelsPackage))
-	}
-
+	files = append(files, *g.modelsAdapters(models, modelsPackage))
 	return files
 }
 
@@ -324,15 +320,16 @@ func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	w.Line(`      .add(new LocalDateAdapter())`)
 	w.Line(`      .add(new LocalDateTimeAdapter());`)
 	w.EmptyLine()
-	for _, setupMoshiMethod := range g.generatedSetupMoshiMethods {
-		w.Line(`    %s(moshiBuilder);`, setupMoshiMethod)
+	for _, modelsAdaptersSetupMethod := range g.modelsAdaptersSetupMethods {
+		w.Line(`    %s(moshiBuilder);`, modelsAdaptersSetupMethod)
 	}
 	w.Line(`  }`)
 	w.Line(`}`)
 	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
+func (g *MoshiGenerator) modelsAdapters(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
+	g.modelsAdaptersSetupMethods = append(g.modelsAdaptersSetupMethods, fmt.Sprintf(`%s.ModelsMoshiAdapters.setup`, modelsPackage.PackageName))
 	w := writer.New(modelsPackage, `ModelsMoshiAdapters`)
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
