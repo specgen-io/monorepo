@@ -25,6 +25,12 @@ func NewAliased(rootModule string, path string, alias string) Module {
 	return Module{RootModule: rootModule, Path: path, Package: packageName, Name: name, Alias: alias}
 }
 
+func (m Module) Aliased(alias string) Module {
+	newModule := m
+	newModule.Alias = alias
+	return newModule
+}
+
 func (m Module) GetPath(filename string) string {
 	path := filepath.Join(m.Path, filename)
 	return path

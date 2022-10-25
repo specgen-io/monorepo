@@ -3,30 +3,42 @@ package service
 import (
 	"generator"
 	"golang/models"
-	"golang/module"
 	"golang/types"
 	"spec"
 )
 
 type ServiceGenerator interface {
-	GenerateSpecRouting(specification *spec.Spec, rootModule module.Module) *generator.CodeFile
-	HttpErrors(converterModule, errorsModelsModule, paramsParserModule, respondModule module.Module, responses *spec.Responses) []generator.CodeFile
-	CheckContentType(contentTypeModule, errorsModule, errorsModelsModule module.Module) *generator.CodeFile
-	GenerateRoutings(version *spec.Version, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module) []generator.CodeFile
+	RootRouting(specification *spec.Spec) *generator.CodeFile
+	HttpErrors(responses *spec.Responses) []generator.CodeFile
+	CheckContentType() *generator.CodeFile
+	Routings(version *spec.Version) []generator.CodeFile
+	ResponseHelperFunctions() *generator.CodeFile
 }
 
 type Generator struct {
+	models.Generator
+	ServiceGenerator
 	Types   *types.Types
-	Models  models.Generator
-	Service ServiceGenerator
+	Modules *Modules
 }
 
-func NewGenerator(modules *models.Modules) *Generator {
-	modelsGenerator := models.NewGenerator(modules)
+func NewGenerator(modules *Modules) *Generator {
+	modelsGenerator := models.NewGenerator(&(modules.Modules))
 	types := types.NewTypes()
 	return &Generator{
-		types,
 		modelsGenerator,
-		NewVestigoGenerator(types, modelsGenerator),
+		NewVestigoGenerator(types, modelsGenerator, modules),
+		types,
+		modules,
+	}
+}
+
+func (g *Generator) AllStaticFiles() []generator.CodeFile {
+	return []generator.CodeFile{
+		*g.EnumsHelperFunctions(),
+		*types.GenerateEmpty(g.Modules.Empty),
+		*generateParamsParser(g.Modules.ParamsParser),
+		*g.ResponseHelperFunctions(),
+		*g.CheckContentType(),
 	}
 }
