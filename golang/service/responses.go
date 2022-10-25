@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"generator"
-	"golang/module"
 	"golang/types"
 	"golang/writer"
 	"spec"
@@ -38,8 +37,8 @@ func respondEmpty(logFields, resVar, statusCode string) string {
 	return fmt.Sprintf(`respond.Empty(%s, %s, %s)`, logFields, resVar, statusCode)
 }
 
-func generateRespondFunctions(respondModule module.Module) *generator.CodeFile {
-	w := writer.New(respondModule, `respond.go`)
+func (g *VestigoGenerator) GenerateRespondFunctions() *generator.CodeFile {
+	w := writer.New(g.Modules.Respond, `respond.go`)
 	w.Lines(`
 import (
 	"encoding/json"

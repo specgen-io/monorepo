@@ -3,35 +3,33 @@ package service
 import (
 	"generator"
 	"golang/imports"
-	"golang/module"
 	"golang/types"
 	"golang/writer"
 	"spec"
 )
 
-func (g *Generator) generateServiceInterfaces(version *spec.Version, versionModule, modelsModule, errorsModelsModule, emptyModule module.Module) []generator.CodeFile {
+func (g *Generator) generateServiceInterfaces(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		apiModule := versionModule.Submodule(api.Name.SnakeCase())
-		files = append(files, *g.generateServiceInterface(&api, apiModule, modelsModule, errorsModelsModule, emptyModule))
+		files = append(files, *g.generateServiceInterface(&api))
 	}
 	return files
 }
 
-func (g *Generator) generateServiceInterface(api *spec.Api, apiModule, modelsModule, errorsModelsModule, emptyModule module.Module) *generator.CodeFile {
-	w := writer.New(apiModule, "service.go")
+func (g *Generator) generateServiceInterface(api *spec.Api) *generator.CodeFile {
+	w := writer.New(g.Modules.ServicesApi(api), "service.go")
 
 	imports := imports.New()
 	imports.AddApiTypes(api)
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 && types.OperationHasType(&operation, spec.TypeEmpty) {
-			imports.Module(emptyModule)
+			imports.Module(g.Modules.Empty)
 		}
 	}
 	//TODO - potential bug, could be unused import
-	imports.Module(modelsModule)
+	imports.Module(g.Modules.Models(api.InHttp.InVersion))
 	if usingErrorModels(api) {
-		imports.Module(errorsModelsModule)
+		imports.Module(g.Modules.HttpErrorsModels)
 	}
 	imports.Write(w)
 

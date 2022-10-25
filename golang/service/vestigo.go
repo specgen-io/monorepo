@@ -6,7 +6,6 @@ import (
 	"github.com/pinzolo/casee"
 	"golang/imports"
 	"golang/models"
-	"golang/module"
 	"golang/types"
 	"golang/writer"
 	"spec"
@@ -14,18 +13,19 @@ import (
 )
 
 type VestigoGenerator struct {
-	Types  *types.Types
-	Models models.Generator
+	Types   *types.Types
+	Models  models.Generator
+	Modules *Modules
 }
 
-func NewVestigoGenerator(types *types.Types, models models.Generator) *VestigoGenerator {
-	return &VestigoGenerator{types, models}
+func NewVestigoGenerator(types *types.Types, models models.Generator, modules *Modules) *VestigoGenerator {
+	return &VestigoGenerator{types, models, modules}
 }
 
-func (g *VestigoGenerator) GenerateRoutings(version *spec.Version, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module) []generator.CodeFile {
+func (g *VestigoGenerator) GenerateRoutings(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *g.generateRouting(&api, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule))
+		files = append(files, *g.generateRouting(&api))
 	}
 	return files
 }
@@ -35,10 +35,8 @@ func (g *VestigoGenerator) signatureAddRouting(api *spec.Api) string {
 	return fmt.Sprintf(`%s(router *vestigo.Router, %s %s)`, g.addRoutesMethodName(api), serviceInterfaceTypeVar(api), fullServiceInterfaceName)
 }
 
-func (g *VestigoGenerator) generateRouting(api *spec.Api, versionModule, routingModule, contentTypeModule, errorsModule, errorsModelsModule, modelsModule, paramsParserModule, respondModule module.Module) *generator.CodeFile {
-	apiModule := versionModule.Submodule(api.Name.SnakeCase())
-
-	w := writer.New(routingModule, fmt.Sprintf("%s.go", api.Name.SnakeCase()))
+func (g *VestigoGenerator) generateRouting(api *spec.Api) *generator.CodeFile {
+	w := writer.New(g.Modules.Routing(api.InHttp.InVersion), fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
 	imports := imports.New()
 	if types.ApiHasBody(api) {
@@ -52,23 +50,23 @@ func (g *VestigoGenerator) generateRouting(api *spec.Api, versionModule, routing
 		imports.Add("io/ioutil")
 	}
 	if hasNonEmptyBody(api) {
-		imports.Module(contentTypeModule)
+		imports.Module(g.Modules.ContentType)
 	}
-	imports.Module(apiModule)
-	imports.Module(errorsModule)
-	imports.Module(errorsModelsModule)
+	imports.Module(g.Modules.ServicesApi(api))
+	imports.Module(g.Modules.HttpErrors)
+	imports.Module(g.Modules.HttpErrorsModels)
 	if isRouterUsingModels(api) {
-		imports.Module(modelsModule)
+		imports.Module(g.Modules.Models(api.InHttp.InVersion))
 	}
 	if operationHasParams(api) {
-		imports.Module(paramsParserModule)
+		imports.Module(g.Modules.ParamsParser)
 	}
-	imports.Module(respondModule)
+	imports.Module(g.Modules.Respond)
 	imports.Write(w)
 
 	w.EmptyLine()
 
-	w.Line(`func %s(router *vestigo.Router, %s %s) {`, g.addRoutesMethodName(api), serviceInterfaceTypeVar(api), apiModule.Get(serviceInterfaceName))
+	w.Line(`func %s(router *vestigo.Router, %s %s) {`, g.addRoutesMethodName(api), serviceInterfaceTypeVar(api), g.Modules.ServicesApi(api).Get(serviceInterfaceName))
 	w.Indent()
 	for _, operation := range api.Operations {
 		url := g.getEndpointUrl(&operation)
@@ -310,18 +308,20 @@ func serviceInterfaceTypeVar(api *spec.Api) string {
 	return fmt.Sprintf(`%sService`, api.Name.Source)
 }
 
-func (g *VestigoGenerator) GenerateSpecRouting(specification *spec.Spec, rootModule module.Module) *generator.CodeFile {
-	w := writer.New(rootModule, "spec.go")
+func (g *VestigoGenerator) GenerateSpecRouting(specification *spec.Spec) *generator.CodeFile {
+	w := writer.New(g.Modules.Root, "spec.go")
 
 	imports := imports.New()
 	imports.Add("github.com/husobee/vestigo")
 	for _, version := range specification.Versions {
-		versionModule := rootModule.Submodule(version.Name.FlatCase())
-		routingModule := versionModule.SubmoduleAliased("routing", routingPackageAlias(&version))
-		imports.ModuleAliased(routingModule)
+		//versionModule := rootModule.Submodule(version.Name.FlatCase())
+		//routingModule := versionModule.SubmoduleAliased("routing", routingPackageAlias(&version))
+		//imports.ModuleAliased(routingModule)
+		imports.ModuleAliased(g.Modules.Routing(&version).Aliased(routingPackageAlias(&version)))
 		for _, api := range version.Http.Apis {
-			apiModule := versionModule.SubmoduleAliased(api.Name.SnakeCase(), apiPackageAlias(&api))
-			imports.ModuleAliased(apiModule)
+			//apiModule := versionModule.SubmoduleAliased(api.Name.SnakeCase(), apiPackageAlias(&api))
+			//imports.ModuleAliased(apiModule)
+			imports.ModuleAliased(g.Modules.ServicesApi(&api).Aliased(apiPackageAlias(&api)))
 		}
 	}
 	imports.Write(w)
@@ -329,16 +329,18 @@ func (g *VestigoGenerator) GenerateSpecRouting(specification *spec.Spec, rootMod
 	w.EmptyLine()
 	routesParams := []string{}
 	for _, version := range specification.Versions {
-		versionModule := rootModule.Submodule(version.Name.FlatCase())
+		//versionModule := rootModule.Submodule(version.Name.FlatCase())
 		for _, api := range version.Http.Apis {
-			apiModule := versionModule.SubmoduleAliased(api.Name.SnakeCase(), apiPackageAlias(&api))
+			//apiModule := versionModule.SubmoduleAliased(api.Name.SnakeCase(), apiPackageAlias(&api))
+			apiModule := g.Modules.ServicesApi(&api).Aliased(apiPackageAlias(&api))
 			routesParams = append(routesParams, fmt.Sprintf(`%s %s`, serviceApiNameVersioned(&api), apiModule.Get(serviceInterfaceName)))
 		}
 	}
 	w.Line(`func AddRoutes(router *vestigo.Router, %s) {`, strings.Join(routesParams, ", "))
 	for _, version := range specification.Versions {
-		versionModule := rootModule.Submodule(version.Name.FlatCase())
-		routingModule := versionModule.SubmoduleAliased("routing", routingPackageAlias(&version))
+		//versionModule := rootModule.Submodule(version.Name.FlatCase())
+		//routingModule := versionModule.SubmoduleAliased("routing", routingPackageAlias(&version))
+		routingModule := g.Modules.Routing(&version).Aliased(routingPackageAlias(&version))
 		for _, api := range version.Http.Apis {
 			w.Line(`  %s(router, %s)`, routingModule.Get(g.addRoutesMethodName(&api)), serviceApiNameVersioned(&api))
 		}
@@ -368,12 +370,12 @@ func serviceApiNameVersioned(api *spec.Api) string {
 	return fmt.Sprintf(`%sService%s`, api.Name.Source, api.InHttp.InVersion.Name.PascalCase())
 }
 
-func (g *VestigoGenerator) CheckContentType(contentTypeModule, errorsModule, errorsModelsModule module.Module) *generator.CodeFile {
-	w := writer.New(contentTypeModule, `check.go`)
+func (g *VestigoGenerator) CheckContentType() *generator.CodeFile {
+	w := writer.New(g.Modules.ContentType, `check.go`)
 	w.Template(
 		map[string]string{
-			`ErrorsPackage`:       errorsModule.Package,
-			`ErrorsModelsPackage`: errorsModelsModule.Package,
+			`ErrorsPackage`:       g.Modules.HttpErrors.Package,
+			`ErrorsModelsPackage`: g.Modules.HttpErrorsModels.Package,
 		}, `
 import (
 	"fmt"
@@ -397,21 +399,21 @@ func Check(logFields log.Fields, expectedContentType string, req *http.Request, 
 	return w.ToCodeFile()
 }
 
-func (g *VestigoGenerator) HttpErrors(converterModule, errorsModelsModule, paramsParserModule, respondModule module.Module, responses *spec.Responses) []generator.CodeFile {
+func (g *VestigoGenerator) HttpErrors(responses *spec.Responses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
-	files = append(files, *g.errorsModelsConverter(converterModule, errorsModelsModule, paramsParserModule))
-	files = append(files, *g.generateErrors(converterModule, errorsModelsModule, respondModule, responses))
+	files = append(files, *g.errorsModelsConverter())
+	files = append(files, *g.generateErrors(responses))
 
 	return files
 }
 
-func (g *VestigoGenerator) errorsModelsConverter(converterModule, errorsModelsModule, paramsParserModule module.Module) *generator.CodeFile {
-	w := writer.New(converterModule, `converter.go`)
+func (g *VestigoGenerator) errorsModelsConverter() *generator.CodeFile {
+	w := writer.New(g.Modules.HttpErrors, `converter.go`)
 	w.Template(
 		map[string]string{
-			`ErrorsModelsPackage`: errorsModelsModule.Package,
-			`ParamsParserModule`:  paramsParserModule.Package,
+			`ErrorsModelsPackage`: g.Modules.HttpErrorsModels.Package,
+			`ParamsParserModule`:  g.Modules.ParamsParser.Package,
 		}, `
 import (
 	"[[.ErrorsModelsPackage]]"
