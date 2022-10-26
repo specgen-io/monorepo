@@ -11,6 +11,7 @@ import (
 )
 
 var Jackson = "jackson"
+var jacksonCustomObjectMapper = `CustomObjectMapper`
 
 type JacksonGenerator struct {
 	Types    *types.Types
@@ -210,7 +211,7 @@ func (g *JacksonGenerator) ModelsUsageImports() []string {
 	}
 }
 
-func (g *JacksonGenerator) ModelsValidation() *generator.CodeFile {
+func (g *JacksonGenerator) ValidationErrorsHelpers() *generator.CodeFile {
 	w := writer.New(g.Packages.Errors, `ValidationErrorsHelpers`)
 	w.Template(
 		map[string]string{
@@ -310,8 +311,6 @@ public class [[.ClassName]] extends RuntimeException {
 `)
 	return w.ToCodeFile()
 }
-
-var jacksonCustomObjectMapper = `CustomObjectMapper`
 
 func (g *JacksonGenerator) setupLibrary() []generator.CodeFile {
 	w := writer.New(g.Packages.Json, jacksonCustomObjectMapper)

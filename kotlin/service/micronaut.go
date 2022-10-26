@@ -33,8 +33,7 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version) []genera
 	for _, api := range version.Http.Apis {
 		files = append(files, *g.serviceController(&api))
 	}
-	files = append(files, *localDateConverter(g.Packages.Converters))
-	files = append(files, *localDateTimeConverter(g.Packages.Converters))
+	files = append(files, dateConverters(g.Packages.Converters)...)
 	return files
 }
 
@@ -140,7 +139,7 @@ func (g *MicronautGenerator) parseBody(w generator.Writer, operation *spec.Named
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`checkContentType(request, MediaType.APPLICATION_JSON)`)
 		typ := g.Types.Kotlin(&operation.Body.Type.Definition)
-		w.Line(`val %s: %s = json.read(%s);`, bodyJsonVar, typ, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
 	}
 }
 
@@ -176,9 +175,24 @@ func (g *MicronautGenerator) processResponse(w generator.Writer, response *spec.
 
 func (g *MicronautGenerator) ContentType() []generator.CodeFile {
 	files := []generator.CodeFile{}
-	files = append(files, *contentTypeMismatchException(g.Packages.ContentType))
+	files = append(files, *g.contentTypeMismatchException())
 	files = append(files, *g.checkContentType())
 	return files
+}
+
+func (g *MicronautGenerator) contentTypeMismatchException() *generator.CodeFile {
+	w := writer.New(g.Packages.ContentType, `ContentTypeMismatchException`)
+	w.Lines(`
+class ContentTypeMismatchException(expected: String, actual: String?) :
+    RuntimeException(
+        String.format(
+            "Expected Content-Type header: '%s' was not provided, found: '%s'",
+            expected,
+            actual
+        )
+    )
+`)
+	return w.ToCodeFile()
 }
 
 func (g *MicronautGenerator) checkContentType() *generator.CodeFile {
@@ -196,14 +210,7 @@ fun checkContentType(request: HttpRequest<*>, expectedContentType: String) {
 	return w.ToCodeFile()
 }
 
-func (g *MicronautGenerator) Errors() []generator.CodeFile {
-	files := []generator.CodeFile{}
-	files = append(files, *g.errorsHelpers())
-	files = append(files, *g.Models.ValidationErrorsHelpers())
-	return files
-}
-
-func (g *MicronautGenerator) errorsHelpers() *generator.CodeFile {
+func (g *MicronautGenerator) ErrorsHelpers() *generator.CodeFile {
 	w := writer.New(g.Packages.Errors, `ErrorsHelpers`)
 	w.Template(
 		map[string]string{
@@ -300,31 +307,6 @@ fun getBadRequestError(exception: Throwable): BadRequestError? {
 	return null
 }
 `)
-	return w.ToCodeFile()
-}
-
-func (g *MicronautGenerator) JsonHelpers() []generator.CodeFile {
-	files := []generator.CodeFile{}
-
-	files = append(files, *g.Json())
-	files = append(files, *jsonParseException(g.Packages.Json))
-	files = append(files, g.Models.SetupLibrary()...)
-
-	return files
-}
-
-func (g *MicronautGenerator) Json() *generator.CodeFile {
-	w := writer.New(g.Packages.Json, `Json`)
-	imports := imports.New()
-	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(`jakarta.inject.*`)
-	imports.Add(`java.io.IOException`)
-	imports.Write(w)
-	w.EmptyLine()
-	w.Line(`@Singleton`)
-	w.Line(`class [[.ClassName]](%s) {`, g.Models.CreateJsonMapperField("Inject"))
-	w.Line(g.Models.JsonHelpersMethods())
-	w.Line(`}`)
 	return w.ToCodeFile()
 }
 

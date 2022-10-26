@@ -18,7 +18,7 @@ func operationSignature(types *types.Types, operation *spec.NamedOperation) stri
 		}
 	}
 	if len(operation.Responses) > 1 {
-		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "), reponseInterfaceName(operation))
+		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "), responseInterfaceName(operation))
 	}
 	return ""
 }

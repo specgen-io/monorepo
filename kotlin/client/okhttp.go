@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"generator"
 	"kotlin/imports"
 	"kotlin/models"
@@ -23,14 +24,10 @@ func NewOkHttpGenerator(types *types.Types, models models.Generator, packages *P
 
 func (g *OkHttpGenerator) Clients(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
-
 	for _, api := range version.Http.Apis {
 		files = append(files, responses(&api, g.Types, g.Packages.Client(&api), g.Packages.Models(api.InHttp.InVersion), g.Packages.ErrorsModels)...)
 		files = append(files, *g.client(&api))
 	}
-	files = append(files, g.utils()...)
-	files = append(files, *clientException(g.Packages.Root))
-
 	return files
 }
 
@@ -42,36 +39,39 @@ func (g *OkHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	imports.Add(`okhttp3.*`)
 	imports.Add(`okhttp3.MediaType.Companion.toMediaTypeOrNull`)
 	imports.Add(`okhttp3.RequestBody.Companion.toRequestBody`)
-	imports.Add(`org.slf4j.*`)
-	imports.Add(g.Packages.Root.PackageStar)
+	imports.Add(g.Packages.Errors.PackageStar)
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.Utils.PackageStar)
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
+	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).PackageStar)
+	imports.Add(g.Packages.Utils.Subpackage(`ErrorsHandler`).PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
-	w.Line(`class [[.ClassName]](private val baseUrl: String) {`)
-	w.Line(`  %s`, g.Models.CreateJsonMapperField(""))
-	w.Line(`  private val client: OkHttpClient`)
-	w.EmptyLine()
-	w.Line(`  private val logger: Logger = LoggerFactory.getLogger([[.ClassName]]::class.java)`)
-	w.EmptyLine()
-	w.Line(`  init {`)
-	g.Models.InitJsonMapper(w.IndentedWith(2))
-	w.Line(`    client = OkHttpClient()`)
-	w.Line(`  }`)
+	w.Lines(`
+class [[.ClassName]](private val baseUrl: String) {
+	private val logger: Logger = LoggerFactory.getLogger([[.ClassName]]::class.java)
 
+    private val client: OkHttpClient
+    private val json: Json
+
+    init {
+`)
+	w.IndentedWith(2).Lines(g.Models.CreateJsonHelper(`json`))
+	w.Lines(`
+		client = OkHttpClient()
+	}
+`)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
-		g.clientMethod(w.Indented(), &operation)
+		g.generateClientMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 	return w.ToCodeFile()
 }
 
-func (g *OkHttpGenerator) clientMethod(w generator.Writer, operation *spec.NamedOperation) {
+func (g *OkHttpGenerator) generateClientMethod(w generator.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
-
 	w.Line(`fun %s {`, operationSignature(g.Types, operation))
 	requestBody := "null"
 	if operation.BodyIs(spec.BodyString) {
@@ -79,16 +79,10 @@ func (g *OkHttpGenerator) clientMethod(w generator.Writer, operation *spec.Named
 		requestBody = "requestBody"
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		bodyJson, exception := g.Models.WriteJson("body", &operation.Body.Type.Definition)
-		generateClientTryCatch(w.Indented(), "bodyJson",
-			bodyJson,
-			exception, `e`,
-			`"Failed to serialize JSON " + e.message`)
-		w.EmptyLine()
+		w.Line(`  val bodyJson = json.%s`, g.Models.JsonWrite("body", &operation.Body.Type.Definition))
 		w.Line(`  val requestBody = bodyJson.toRequestBody("application/json".toMediaTypeOrNull())`)
 		requestBody = "requestBody"
 	}
-
 	w.Line(`  val url = UrlBuilder(baseUrl)`)
 	if operation.InApi.InHttp.GetUrl() != "" {
 		w.Line(`  url.addPathSegments("%s")`, trimSlash(operation.InApi.InHttp.GetUrl()))
@@ -111,56 +105,46 @@ func (g *OkHttpGenerator) clientMethod(w generator.Writer, operation *spec.Named
 	}
 	w.EmptyLine()
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
-	generateClientTryCatch(w.Indented(), "response",
-		`client.newCall(request.build()).execute()`,
-		`IOException`, `e`,
-		`"Failed to execute the request " + e.message`)
+	w.Line(`  val response = doRequest(client, request, logger)`)
 	w.EmptyLine()
-	w.Line(`  return when (response.code) {`)
 	for _, response := range operation.Responses {
-		w.Line(`    %s -> {`, spec.HttpStatusCode(response.Name))
-		w.IndentWith(3)
-		w.Line(`logger.info("Received response with status code {}", response.code)`)
-
-		if response.BodyIs(spec.BodyEmpty) {
-			responseCode := responseCreate(&response, ``)
-			if responseCode != "" {
-				w.Line(responseCode)
+		statusCode := spec.HttpStatusCode(response.Name)
+		if isSuccessfulStatusCode(statusCode) {
+			w.Line(`  if (response.code == %s) {`, statusCode)
+			w.IndentWith(2)
+			w.Line(`logger.info("Received response with status code {}", response.code)`)
+			if response.BodyIs(spec.BodyEmpty) {
+				w.Line(responseCreate(&response, ""))
 			}
+			if response.BodyIs(spec.BodyString) {
+				responseBodyString := "getResponseBodyString(response, logger)"
+				w.Line(responseCreate(&response, responseBodyString))
+			}
+			if response.BodyIs(spec.BodyJson) {
+				w.Line(`val responseBodyString = getResponseBodyString(response, logger)`)
+				responseBody := fmt.Sprintf(`json.%s`, g.Models.JsonRead("responseBodyString", &response.Type.Definition))
+				w.Line(responseCreate(&response, responseBody))
+			}
+			w.UnindentWith(2)
+			w.Line(`  }`)
 		}
-		if response.BodyIs(spec.BodyString) {
-			generateClientTryCatch(w, `responseBody`,
-				`response.body!!.string()`,
-				`IOException`, `e`,
-				`"Failed to convert response body to string " + e.message`)
-			w.Line(responseCreate(&response, `responseBody`))
-		}
-		if response.BodyIs(spec.BodyJson) {
-			responseBody, exception := g.Models.ReadJson(`response.body!!.string()`, &response.Type.Definition)
-			generateClientTryCatch(w, `responseBody`,
-				responseBody,
-				exception, `e`,
-				`"Failed to deserialize response body " + e.message`)
-			w.Line(responseCreate(&response, `responseBody!!`))
-		}
-		w.UnindentWith(3)
-		w.Line(`    }`)
 	}
-	w.Line(`    else -> {`)
-	generateThrowClientException(w.IndentedWith(3), `"Unexpected status code received: " + response.code`, ``)
-	w.Line(`    }`)
-	w.Line(`  }`)
+	w.Line(`  handleErrors(response, logger, json)`)
+	w.EmptyLine()
+	generateThrowClientException(w.Indented(), `"Unexpected status code received: " + response.code`, ``)
 	w.Line(`}`)
 }
 
-func (g *OkHttpGenerator) utils() []generator.CodeFile {
+func (g *OkHttpGenerator) Utils(responses *spec.Responses) []generator.CodeFile {
 	files := []generator.CodeFile{}
-	files = append(files, *g.requestBuilder())
-	files = append(files, *g.urlBuilder())
+	files = append(files, *g.generateRequestBuilder())
+	files = append(files, *g.generateUrlBuilder())
+	files = append(files, *g.generateClientResponse())
+	files = append(files, *g.generateErrorsHandler(responses))
 	return files
 }
 
-func (g *OkHttpGenerator) requestBuilder() *generator.CodeFile {
+func (g *OkHttpGenerator) generateRequestBuilder() *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `RequestBuilder`)
 	w.Lines(`
 import okhttp3.*
@@ -193,7 +177,7 @@ class RequestBuilder(method: String, url: HttpUrl, body: RequestBody?) {
 	return w.ToCodeFile()
 }
 
-func (g *OkHttpGenerator) urlBuilder() *generator.CodeFile {
+func (g *OkHttpGenerator) generateUrlBuilder() *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `UrlBuilder`)
 	w.Lines(`
 import okhttp3.HttpUrl
@@ -236,4 +220,73 @@ class UrlBuilder(baseUrl: String) {
 }
 `)
 	return w.ToCodeFile()
+}
+
+func (g *OkHttpGenerator) generateClientResponse() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `ClientResponse`)
+	w.Template(
+		map[string]string{
+			`ErrorsPackage`: g.Packages.Errors.PackageName,
+		}, `
+import okhttp3.*
+import org.slf4j.Logger
+import [[.ErrorsPackage]].*
+import java.io.IOException
+
+object ClientResponse {
+    fun doRequest(client: OkHttpClient, request: RequestBuilder, logger: Logger): Response {
+        return try {
+            client.newCall(request.build()).execute()
+        } catch (e: IOException) {
+            val errorMessage = "Failed to execute the request " + e.message
+            logger.error(errorMessage)
+            throw ClientException(errorMessage, e)
+        }
+    }
+
+    fun getResponseBodyString(response: Response, logger: Logger): String {
+        return try {
+            response.body!!.string()
+        } catch (e: IOException) {
+            val errorMessage = "Failed to convert response body to string " + e.message
+            logger.error(errorMessage)
+            throw ClientException(errorMessage, e)
+        }
+    }
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *OkHttpGenerator) generateErrorsHandler(errorsResponses *spec.Responses) *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `ErrorsHandler`)
+	imports := imports.New()
+	imports.Add(g.Models.ModelsUsageImports()...)
+	imports.Add(`okhttp3.*`)
+	imports.Add(`org.slf4j.*`)
+	imports.Add(g.Packages.ErrorsModels.PackageStar)
+	imports.Add(g.Packages.Json.PackageStar)
+	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).PackageStar)
+	imports.Write(w)
+	w.EmptyLine()
+	w.Line(`fun handleErrors(response: Response, logger: Logger, json: Json) {`)
+	for _, errorResponse := range *errorsResponses {
+		w.Line(`  if (response.code == %s) {`, spec.HttpStatusCode(errorResponse.Name))
+		w.Line(`    val responseBodyString = getResponseBodyString(response, logger)`)
+		w.Line(`    val responseBody = json.%s`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
+		w.Line(`    throw %sException(responseBody)`, g.Types.Kotlin(&errorResponse.Type.Definition))
+		w.Line(`  }`)
+	}
+	w.Line(`}`)
+
+	return w.ToCodeFile()
+}
+
+func (g *OkHttpGenerator) Exceptions(errors *spec.Responses) []generator.CodeFile {
+	files := []generator.CodeFile{}
+	files = append(files, *clientException(g.Packages.Errors))
+	for _, errorResponse := range *errors {
+		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse))
+	}
+	return files
 }

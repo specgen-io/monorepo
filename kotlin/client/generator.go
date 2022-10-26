@@ -2,7 +2,6 @@ package client
 
 import (
 	"fmt"
-
 	"generator"
 	"kotlin/models"
 	"kotlin/types"
@@ -11,39 +10,42 @@ import (
 
 type ClientGenerator interface {
 	Clients(version *spec.Version) []generator.CodeFile
+	Utils(responses *spec.Responses) []generator.CodeFile
+	Exceptions(errors *spec.Responses) []generator.CodeFile
 }
 
 type Generator struct {
-	Types  *types.Types
-	Models models.Generator
-	Client ClientGenerator
+	ClientGenerator
+	models.Generator
+	Jsonlib  string
+	Types    *types.Types
+	Packages *Packages
 }
 
 func NewGenerator(jsonlib, client string, packages *Packages) *Generator {
 	types := models.NewTypes(jsonlib)
 	models := models.NewGenerator(jsonlib, &(packages.Packages))
 
-	if client == OkHttp {
-		return &Generator{
-			types,
-			models,
-			NewOkHttpGenerator(types, models, packages),
-		}
-	}
-	if client == MicronautDecl {
-		return &Generator{
-			types,
-			models,
-			NewMicronautDeclGenerator(types, models, packages),
-		}
-	}
-	if client == MicronautLow {
-		return &Generator{
-			types,
-			models,
-			NewMicronautLowGenerator(types, models, packages),
-		}
+	var clientGenerator ClientGenerator = nil
+	switch client {
+	case OkHttp:
+		clientGenerator = NewOkHttpGenerator(types, models, packages)
+		break
+	case MicronautDecl:
+		clientGenerator = NewMicronautDeclGenerator(types, models, packages)
+		break
+	case MicronautLow:
+		clientGenerator = NewMicronautLowGenerator(types, models, packages)
+		break
+	default:
+		panic(fmt.Sprintf(`Unsupported client: %s`, client))
 	}
 
-	panic(fmt.Sprintf(`Unsupported client: %s`, client))
+	return &Generator{
+		clientGenerator,
+		models,
+		jsonlib,
+		types,
+		packages,
+	}
 }

@@ -2,17 +2,17 @@ package models
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"java/imports"
 	"java/packages"
 	"java/types"
 	"java/writer"
 	"spec"
+	"strings"
 )
 
 var Moshi = "moshi"
+var moshiCustomAdapters = `CustomMoshiAdapters`
 
 type MoshiGenerator struct {
 	modelsAdaptersSetupMethods []string
@@ -198,7 +198,7 @@ func (g *MoshiGenerator) ModelsUsageImports() []string {
 	}
 }
 
-func (g *MoshiGenerator) ModelsValidation() *generator.CodeFile {
+func (g *MoshiGenerator) ValidationErrorsHelpers() *generator.CodeFile {
 	w := writer.New(g.Packages.Errors, `ValidationErrorsHelpers`)
 	w.Template(
 		map[string]string{
@@ -302,8 +302,6 @@ func (g *MoshiGenerator) setupLibrary() []generator.CodeFile {
 	files = append(files, *unwrapFieldAdapterFactory(g.Packages.JsonAdapters))
 	return files
 }
-
-var moshiCustomAdapters = `CustomMoshiAdapters`
 
 func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	w := writer.New(g.Packages.Json, moshiCustomAdapters)

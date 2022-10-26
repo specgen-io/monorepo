@@ -2,13 +2,12 @@ package client
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"java/imports"
 	"java/packages"
 	"java/writer"
 	"spec"
+	"strings"
 )
 
 func (g *Generator) Clients(version *spec.Version) []generator.CodeFile {

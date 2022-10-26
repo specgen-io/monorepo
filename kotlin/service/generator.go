@@ -14,9 +14,8 @@ type ServerGenerator interface {
 	ServicesControllers(version *spec.Version) []generator.CodeFile
 	ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string)
 	ExceptionController(responses *spec.Responses) *generator.CodeFile
-	Errors() []generator.CodeFile
+	ErrorsHelpers() *generator.CodeFile
 	ContentType() []generator.CodeFile
-	JsonHelpers() []generator.CodeFile
 }
 
 type Generator struct {
@@ -31,24 +30,23 @@ func NewGenerator(jsonlib, server string, packages *Packages) *Generator {
 	types := models.NewTypes(jsonlib)
 	models := models.NewGenerator(jsonlib, &(packages.Packages))
 
-	if server == Spring {
-		return &Generator{
-			NewSpringGenerator(types, models, packages),
-			models,
-			jsonlib,
-			types,
-			packages,
-		}
-	}
-	if server == Micronaut {
-		return &Generator{
-			NewMicronautGenerator(types, models, packages),
-			models,
-			jsonlib,
-			types,
-			packages,
-		}
+	var serverGenerator ServerGenerator = nil
+	switch server {
+	case Spring:
+		serverGenerator = NewSpringGenerator(types, models, packages)
+		break
+	case Micronaut:
+		serverGenerator = NewMicronautGenerator(types, models, packages)
+		break
+	default:
+		panic(fmt.Sprintf(`Unsupported server: %s`, server))
 	}
 
-	panic(fmt.Sprintf(`Unsupported server: %s`, server))
+	return &Generator{
+		serverGenerator,
+		models,
+		jsonlib,
+		types,
+		packages,
+	}
 }

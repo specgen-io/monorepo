@@ -33,7 +33,7 @@ func (g *MoshiGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.Co
 func (g *MoshiGenerator) models(models []*spec.NamedModel, modelsPackage packages.Package) []generator.CodeFile {
 	w := writer.New(modelsPackage, `models`)
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 
@@ -113,37 +113,7 @@ func (g *MoshiGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
 	return fmt.Sprintf(`%s, %s`, adapterParam, varData)
 }
 
-func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
-	adapter := fmt.Sprintf(`adapter(%s::class.java)`, g.Types.Kotlin(typ))
-	if typ.Node == spec.MapType {
-		typeKotlin := g.Types.Kotlin(typ.Child)
-		adapter = fmt.Sprintf(`adapter<Map<String, %s>>(Types.newParameterizedType(MutableMap::class.java, String::class.java, %s::class.java))`, typeKotlin, typeKotlin)
-	}
-	if typ.Node == spec.ArrayType {
-		typeKotlin := g.Types.Kotlin(typ.Child)
-		adapter = fmt.Sprintf(`adapter<List<%s>>(Types.newParameterizedType(List::class.java, %s::class.java))`, typeKotlin, typeKotlin)
-	}
-
-	return fmt.Sprintf(`moshi.%s.fromJson(%s)!!`, adapter, varJson), `JsonDataException`
-
-}
-
-func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
-	adapterParam := fmt.Sprintf(`adapter(%s::class.java)`, g.Types.Kotlin(typ))
-	if typ.Node == spec.MapType {
-		typeKotlin := g.Types.Kotlin(typ.Child)
-		adapterParam = fmt.Sprintf(`adapter<Map<String, %s>>(Types.newParameterizedType(MutableMap::class.java, String::class.java, %s::class.java))`, typeKotlin, typeKotlin)
-	}
-	if typ.Node == spec.ArrayType {
-		typeKotlin := g.Types.Kotlin(typ.Child)
-		adapterParam = fmt.Sprintf(`adapter<List<%s>>(Types.newParameterizedType(List::class.java, %s::class.java))`, typeKotlin, typeKotlin)
-	}
-
-	return fmt.Sprintf(`moshi.%s.toJson(%s)`, adapterParam, varData), `IOException`
-
-}
-
-func (g *MoshiGenerator) ModelsDefinitionsImports() []string {
+func (g *MoshiGenerator) modelsDefinitionsImports() []string {
 	return []string{
 		`com.squareup.moshi.*`,
 	}
@@ -186,23 +156,24 @@ object ValidationErrorsHelpers {
 	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) CreateJsonMapperField(annotation string) string {
-	moshiVar := `private val moshi: Moshi`
-	if annotation != "" {
-		return fmt.Sprintf(`@%s %s`, annotation, moshiVar)
-	}
-	return moshiVar
+func (g *MoshiGenerator) JsonHelpers() []generator.CodeFile {
+	files := []generator.CodeFile{}
+
+	files = append(files, *g.json())
+	files = append(files, *g.jsonParseException())
+	files = append(files, g.setupLibrary()...)
+
+	return files
 }
 
-func (g *MoshiGenerator) InitJsonMapper(w generator.Writer) {
-	w.Line(`val moshiBuilder = Moshi.Builder()`)
-	w.Line(`setupMoshiAdapters(moshiBuilder)`)
-	w.Line(`moshi = moshiBuilder.build()`)
-}
+func (g *MoshiGenerator) json() *generator.CodeFile {
+	w := writer.New(g.Packages.Json, `Json`)
+	w.Lines(`
+import com.squareup.moshi.Moshi
+import java.lang.reflect.ParameterizedType
 
-func (g *MoshiGenerator) JsonHelpersMethods() string {
-	return `
-    fun <T> write(type: Class<T>, data: T): String {
+class Json(private val moshi: Moshi) {
+	fun <T> write(type: Class<T>, data: T): String {
         return moshi.adapter(type).toJson(data)
     }
 
@@ -225,10 +196,21 @@ func (g *MoshiGenerator) JsonHelpersMethods() string {
             throw JsonParseException(exception)
         }
     }
-`
+}
+`)
+	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) SetupLibrary() []generator.CodeFile {
+func (g *MoshiGenerator) jsonParseException() *generator.CodeFile {
+	w := writer.New(g.Packages.Json, `JsonParseException`)
+	w.Lines(`
+class JsonParseException(exception: Throwable) :
+    RuntimeException("Failed to parse body: " + exception.message, exception)
+`)
+	return w.ToCodeFile()
+}
+
+func (g *MoshiGenerator) setupLibrary() []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.setupAdapters())
 	files = append(files, *bigDecimalAdapter(g.Packages.JsonAdapters))
@@ -675,4 +657,13 @@ class UnwrapFieldAdapterFactory<T>(private val type: Class<T>) : JsonAdapter.Fac
 }
 `)
 	return w.ToCodeFile()
+}
+
+//TODO - refs
+func (g *MoshiGenerator) CreateJsonHelper(name string) string {
+	return fmt.Sprintf(`
+val moshiBuilder = Moshi.Builder()
+setupMoshiAdapters(moshiBuilder)
+%s = moshiBuilder.build()
+`, name)
 }
