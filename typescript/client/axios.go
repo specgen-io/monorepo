@@ -1,9 +1,11 @@
 package client
 
 import (
+	"strings"
+
 	"generator"
 	"spec"
-	"strings"
+	"typescript/modules"
 	"typescript/responses"
 	"typescript/types"
 	"typescript/validations"
@@ -11,16 +13,15 @@ import (
 )
 
 type axiosGenerator struct {
-	Modules    *Modules
 	validation validations.Validation
 }
 
-func (g *axiosGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
-	w := writer.New(g.Modules.Client(api))
-	w.Imports.LibNames(`axios`, `AxiosInstance`, `AxiosRequestConfig`)
-	w.Imports.Names(g.Modules.Params, `strParamsItems`, `strParamsObject`, `stringify`)
-	w.Imports.Star(g.Modules.Validation, `t`)
-	w.Imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
+func (g *axiosGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *generator.CodeFile {
+	w := writer.NewTsWriter()
+	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
+	w.Line(`import { strParamsItems, strParamsObject, stringify } from '%s'`, paramsModule.GetImport(module))
+	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
+	w.Line(`import * as %s from '%s'`, types.ModelsPackage, modelsModule.GetImport(module))
 	w.EmptyLine()
 	w.Line(`export const client = (axiosInstance: AxiosInstance) => {`)
 	w.Line(`  return {`)
@@ -36,10 +37,10 @@ func (g *axiosGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 			responses.GenerateOperationResponse(w, &operation)
 		}
 	}
-	return w.ToCodeFile()
+	return &generator.CodeFile{module.GetPath(), w.String()}
 }
 
-func (g *axiosGenerator) operation(w *writer.Writer, operation *spec.NamedOperation) {
+func (g *axiosGenerator) operation(w generator.Writer, operation *spec.NamedOperation) {
 	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0

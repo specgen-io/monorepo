@@ -13,7 +13,7 @@ import (
 var Moshi = "moshi"
 
 type MoshiGenerator struct {
-	modelsAdaptersSetupMethods []string
+	generatedSetupMoshiMethods []string
 	Types                      *types.Types
 	Packages                   *Packages
 }
@@ -50,7 +50,12 @@ func (g *MoshiGenerator) models(models []*spec.NamedModel, modelsPackage package
 
 	files := []generator.CodeFile{}
 	files = append(files, *w.ToCodeFile())
-	files = append(files, *g.modelsAdapters(models, modelsPackage))
+
+	g.generatedSetupMoshiMethods = append(g.generatedSetupMoshiMethods, fmt.Sprintf(`%s.setupModelsMoshiAdapters`, modelsPackage.PackageName))
+	for range g.generatedSetupMoshiMethods {
+		files = append(files, *g.setupOneOfAdapters(models, modelsPackage))
+	}
+
 	return files
 }
 
@@ -95,7 +100,7 @@ func (g *MoshiGenerator) JsonRead(varJson string, typ *spec.TypeDef) string {
 		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List::class.java, %s::class.java)`, typeKotlin)
 	}
 
-	return fmt.Sprintf(`%s, %s`, varJson, adapterParam)
+	return fmt.Sprintf(`read(%s, %s)`, varJson, adapterParam)
 }
 
 func (g *MoshiGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
@@ -110,7 +115,7 @@ func (g *MoshiGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
 		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List::class.java, %s::class.java)`, typeKotlin)
 	}
 
-	return fmt.Sprintf(`%s, %s`, adapterParam, varData)
+	return fmt.Sprintf(`write(%s, %s)`, adapterParam, varData)
 }
 
 func (g *MoshiGenerator) modelsDefinitionsImports() []string {
@@ -237,8 +242,8 @@ func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	w.Line(`    .add(LocalDateAdapter())`)
 	w.Line(`    .add(LocalDateTimeAdapter())`)
 	w.EmptyLine()
-	for _, modelsAdaptersSetupMethod := range g.modelsAdaptersSetupMethods {
-		w.Line(`    %s(moshiBuilder);`, modelsAdaptersSetupMethod)
+	for _, setupMoshiMethod := range g.generatedSetupMoshiMethods {
+		w.Line(`	%s(moshiBuilder);`, setupMoshiMethod)
 	}
 	w.EmptyLine()
 	w.Line(`  moshiBuilder`)
@@ -247,8 +252,7 @@ func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) modelsAdapters(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
-	g.modelsAdaptersSetupMethods = append(g.modelsAdaptersSetupMethods, fmt.Sprintf(`%s.setupModelsMoshiAdapters`, modelsPackage.PackageName))
+func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
 	w := writer.New(modelsPackage, `ModelsMoshiAdapters`)
 	imports := imports.New()
 	imports.Add(`com.squareup.moshi.Moshi`)
@@ -663,6 +667,6 @@ func (g *MoshiGenerator) CreateJsonHelper(name string) string {
 	return fmt.Sprintf(`
 val moshiBuilder = Moshi.Builder()
 setupMoshiAdapters(moshiBuilder)
-%s = moshiBuilder.build()
+%s = Json(moshiBuilder.build())
 `, name)
 }

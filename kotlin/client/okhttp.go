@@ -39,22 +39,23 @@ func (g *OkHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	imports.Add(`okhttp3.*`)
 	imports.Add(`okhttp3.MediaType.Companion.toMediaTypeOrNull`)
 	imports.Add(`okhttp3.RequestBody.Companion.toRequestBody`)
+	imports.Add(`org.slf4j.*`)
 	imports.Add(g.Packages.Errors.PackageStar)
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.Utils.PackageStar)
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).PackageStar)
-	imports.Add(g.Packages.Utils.Subpackage(`ErrorsHandler`).PackageStar)
+	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`doRequest`).PackageName)
+	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`).PackageName)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Lines(`
 class [[.ClassName]](private val baseUrl: String) {
 	private val logger: Logger = LoggerFactory.getLogger([[.ClassName]]::class.java)
 
-    private val client: OkHttpClient
-    private val json: Json
+	private val client: OkHttpClient
+	private val json: Json
 
-    init {
+	init {
 `)
 	w.IndentedWith(2).Lines(g.Models.CreateJsonHelper(`json`))
 	w.Lines(`
@@ -150,28 +151,28 @@ func (g *OkHttpGenerator) generateRequestBuilder() *generator.CodeFile {
 import okhttp3.*
 
 class RequestBuilder(method: String, url: HttpUrl, body: RequestBody?) {
-    private val requestBuilder: Request.Builder
+	private val requestBuilder: Request.Builder
 
-    init {
-        requestBuilder = Request.Builder().url(url).method(method, body)
-    }
+	init {
+		requestBuilder = Request.Builder().url(url).method(method, body)
+	}
 
-    fun addHeaderParameter(name: String, value: Any): RequestBuilder {
-        val valueStr = value.toString()
-        this.requestBuilder.addHeader(name, valueStr)
-        return this
-    }
+	fun addHeaderParameter(name: String, value: Any): RequestBuilder {
+		val valueStr = value.toString()
+		this.requestBuilder.addHeader(name, valueStr)
+		return this
+	}
 
-    fun <T> addHeaderParameter(name: String, values: List<T>): RequestBuilder {
-        for (value in values) {
-            this.addHeaderParameter(name, value!!)
-        }
-        return this
-    }
+	fun <T> addHeaderParameter(name: String, values: List<T>): RequestBuilder {
+		for (value in values) {
+			this.addHeaderParameter(name, value!!)
+		}
+		return this
+	}
 
-    fun build(): Request {
-        return this.requestBuilder.build()
-    }
+	fun build(): Request {
+		return this.requestBuilder.build()
+	}
 }
 `)
 	return w.ToCodeFile()
@@ -184,39 +185,39 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 
 class UrlBuilder(baseUrl: String) {
-    private val urlBuilder: HttpUrl.Builder
+	private val urlBuilder: HttpUrl.Builder
 
-    init {
-        this.urlBuilder = baseUrl.toHttpUrl().newBuilder()
-    }
+	init {
+		this.urlBuilder = baseUrl.toHttpUrl().newBuilder()
+	}
 
-    fun addQueryParameter(name: String, value: Any): UrlBuilder {
-        val valueStr = value.toString()
-        urlBuilder.addQueryParameter(name, valueStr)
-        return this
-    }
+	fun addQueryParameter(name: String, value: Any): UrlBuilder {
+		val valueStr = value.toString()
+		urlBuilder.addQueryParameter(name, valueStr)
+		return this
+	}
 
-    fun <T> addQueryParameter(name: String, values: List<T>): UrlBuilder {
-        for (value in values) {
-            this.addQueryParameter(name, value!!)
-        }
-        return this
-    }
+	fun <T> addQueryParameter(name: String, values: List<T>): UrlBuilder {
+		for (value in values) {
+			this.addQueryParameter(name, value!!)
+		}
+		return this
+	}
 
-    fun addPathSegments(value: String): UrlBuilder {
-        this.urlBuilder.addPathSegments(value)
-        return this
-    }
+	fun addPathSegments(value: String): UrlBuilder {
+		this.urlBuilder.addPathSegments(value)
+		return this
+	}
 
-    fun addPathParameter(value: Any): UrlBuilder {
-        val valueStr = value.toString()
-        this.urlBuilder.addPathSegment(valueStr)
-        return this
-    }
+	fun addPathParameter(value: Any): UrlBuilder {
+		val valueStr = value.toString()
+		this.urlBuilder.addPathSegment(valueStr)
+		return this
+	}
 
-    fun build(): HttpUrl {
-        return this.urlBuilder.build()
-    }
+	fun build(): HttpUrl {
+		return this.urlBuilder.build()
+	}
 }
 `)
 	return w.ToCodeFile()
@@ -234,25 +235,25 @@ import [[.ErrorsPackage]].*
 import java.io.IOException
 
 object ClientResponse {
-    fun doRequest(client: OkHttpClient, request: RequestBuilder, logger: Logger): Response {
-        return try {
-            client.newCall(request.build()).execute()
-        } catch (e: IOException) {
-            val errorMessage = "Failed to execute the request " + e.message
-            logger.error(errorMessage)
-            throw ClientException(errorMessage, e)
-        }
-    }
+	fun doRequest(client: OkHttpClient, request: RequestBuilder, logger: Logger): Response {
+		return try {
+			client.newCall(request.build()).execute()
+		} catch (e: IOException) {
+			val errorMessage = "Failed to execute the request " + e.message
+			logger.error(errorMessage)
+			throw ClientException(errorMessage, e)
+		}
+	}
 
-    fun getResponseBodyString(response: Response, logger: Logger): String {
-        return try {
-            response.body!!.string()
-        } catch (e: IOException) {
-            val errorMessage = "Failed to convert response body to string " + e.message
-            logger.error(errorMessage)
-            throw ClientException(errorMessage, e)
-        }
-    }
+	fun getResponseBodyString(response: Response, logger: Logger): String {
+		return try {
+			response.body!!.string()
+		} catch (e: IOException) {
+			val errorMessage = "Failed to convert response body to string " + e.message
+			logger.error(errorMessage)
+			throw ClientException(errorMessage, e)
+		}
+	}
 }
 `)
 	return w.ToCodeFile()
@@ -264,9 +265,10 @@ func (g *OkHttpGenerator) generateErrorsHandler(errorsResponses *spec.Responses)
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(`okhttp3.*`)
 	imports.Add(`org.slf4j.*`)
+	imports.Add(g.Packages.Errors.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
 	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).PackageStar)
+	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`).PackageName)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`fun handleErrors(response: Response, logger: Logger, json: Json) {`)

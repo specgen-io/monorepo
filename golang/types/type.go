@@ -2,6 +2,9 @@ package types
 
 import (
 	"fmt"
+	"generator"
+	"golang/module"
+	"golang/writer"
 	"spec"
 )
 
@@ -89,3 +92,13 @@ func (types *Types) plainType(typ *spec.TypeDef, samePackage bool) string {
 }
 
 const EmptyType = `empty.Type`
+
+func GenerateEmpty(emptyModule module.Module) *generator.CodeFile {
+	w := writer.New(emptyModule, `empty.go`)
+	w.Lines(`
+type Type struct{}
+
+var Value = Type{}
+`)
+	return w.ToCodeFile()
+}

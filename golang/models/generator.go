@@ -7,10 +7,10 @@ import (
 )
 
 type Generator interface {
-	Models(version *spec.Version) *generator.CodeFile
-	ErrorModels(httperrors *spec.HttpErrors) *generator.CodeFile
+	GenerateVersionModels(version *spec.Version) *generator.CodeFile
+	GenerateErrorModels(httperrors *spec.HttpErrors) *generator.CodeFile
 	EnumValuesStrings(model *spec.NamedModel) string
-	EnumsHelperFunctions() *generator.CodeFile
+	GenerateEnumsHelperFunctions() *generator.CodeFile
 }
 
 func NewGenerator(modules *Modules) Generator {

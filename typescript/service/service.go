@@ -4,31 +4,44 @@ import (
 	"generator"
 	"openapi"
 	"spec"
+	"typescript/modules"
+	"typescript/validations"
 )
 
 func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validationName string) *generator.Sources {
-	sources := generator.NewSources()
-	modules := NewModules(validationName, generatePath, servicesPath, specification)
-	generator := NewServiceGenerator(server, validationName, modules)
+	validation := validations.New(validationName)
+	g := NewServiceGenerator(server, validation)
 
-	sources.AddGenerated(generator.SetupLibrary())
-	sources.AddGenerated(generator.ParamsStaticCode())
-	sources.AddGenerated(generator.ErrorModels(specification.HttpErrors))
-	sources.AddGenerated(generator.Responses())
+	sources := generator.NewSources()
+
+	rootModule := modules.New(generatePath)
+
+	validationModule := rootModule.Submodule(validationName)
+	sources.AddGenerated(validation.SetupLibrary(validationModule))
+	paramsModule := rootModule.Submodule("params")
+	sources.AddGenerated(generateParamsStaticCode(paramsModule))
+	errorsModule := rootModule.Submodule("errors")
+	sources.AddGenerated(validation.Models(specification.HttpErrors.ResolvedModels, validationModule, errorsModule))
+	responsesModule := rootModule.Submodule("responses")
+	sources.AddGenerated(g.Responses(responsesModule, validationModule, errorsModule))
 
 	for _, version := range specification.Versions {
-		sources.AddGenerated(generator.Models(&version))
-		sources.AddGeneratedAll(generator.ServiceApis(&version))
-		sources.AddGenerated(generator.VersionRouting(&version))
+		versionModule := rootModule.Submodule(version.Name.FlatCase())
+		modelsModule := versionModule.Submodule("models")
+		sources.AddGenerated(validation.Models(version.ResolvedModels, validationModule, modelsModule))
+		sources.AddGeneratedAll(generateServiceApis(&version, modelsModule, errorsModule, versionModule))
+		routingModule := versionModule.Submodule("routing")
+		sources.AddGenerated(g.VersionRouting(&version, routingModule, modelsModule, validationModule, paramsModule, errorsModule, responsesModule))
 	}
-	sources.AddGenerated(generator.SpecRouter(specification))
+	specRouterModule := rootModule.Submodule("spec_router")
+	sources.AddGenerated(g.SpecRouter(specification, rootModule, specRouterModule))
 
 	if swaggerPath != "" {
 		sources.AddGenerated(openapi.GenerateOpenapi(specification, swaggerPath))
 	}
 
 	if servicesPath != "" {
-		sources.AddScaffoldedAll(generator.ServicesImpls(specification))
+		sources.AddScaffoldedAll(generateServicesImplementations(specification, rootModule, errorsModule, modules.New(servicesPath)))
 	}
 
 	return sources

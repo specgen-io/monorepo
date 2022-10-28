@@ -3,10 +3,10 @@ package client
 import (
 	"fmt"
 	"strings"
-	"typescript/writer"
 
 	"generator"
 	"spec"
+	"typescript/modules"
 	"typescript/types"
 	"typescript/validations"
 )
@@ -66,9 +66,8 @@ func clientResponseBody(validation validations.Validation, response *spec.Respon
 	}
 }
 
-func (g *Generator) ParamsBuilder() *generator.CodeFile {
-	w := writer.New(g.Modules.Params)
-	w.Lines(`
+func generateParamsBuilder(module modules.Module) *generator.CodeFile {
+	code := `
 export function stringify(value: ScalarParam): string {
   if (value instanceof Date) {
       return value.toISOString()
@@ -106,6 +105,7 @@ export function strParamsObject(params: Record<string, ParamType>): Record<strin
   return Object.keys(params)
       .filter(paramName => params[paramName] != undefined)
       .reduce((obj, paramName) => ({...obj, [paramName]: stringifyX(params[paramName]!)}), {} as Record<string, string | string[]>)
-}`)
-	return w.ToCodeFile()
+}`
+
+	return &generator.CodeFile{module.GetPath(), strings.TrimSpace(code)}
 }

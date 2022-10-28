@@ -2,8 +2,6 @@ package generators
 
 import (
 	"fmt"
-	"scala/packages"
-	"scala/writer"
 	"strings"
 
 	"generator"
@@ -14,7 +12,7 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 	if packageName == "" {
 		packageName = specification.Name.FlatCase()
 	}
-	mainPackage := packages.New(generatePath, packageName, "")
+	mainPackage := NewPackage(generatePath, packageName, "")
 	jsonPackage := mainPackage
 	paramsPackage := mainPackage
 
@@ -38,7 +36,7 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 	return sources
 }
 
-func generateClientImplementations(version *spec.Version, thepackage, modelsPackage, jsonPackage, paramsPackage packages.Package) []generator.CodeFile {
+func generateClientImplementations(version *spec.Version, thepackage, modelsPackage, jsonPackage, paramsPackage Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thepackage.Subpackage(api.Name.FlatCase())
@@ -48,8 +46,11 @@ func generateClientImplementations(version *spec.Version, thepackage, modelsPack
 	return files
 }
 
-func generateApiClientApi(api *spec.Api, thepackage, modelsPackage, jsonPackage, stringParamsPackage packages.Package) *generator.CodeFile {
-	w := writer.New(thepackage, `Client`)
+func generateApiClientApi(api *spec.Api, thepackage, modelsPackage, jsonPackage, stringParamsPackage Package) *generator.CodeFile {
+	w := NewScalaWriter()
+
+	w.Line(`package %s`, thepackage.PackageName)
+	w.EmptyLine()
 	w.Line(`import scala.concurrent._`)
 	w.Line(`import org.slf4j._`)
 	w.Line(`import com.softwaremill.sttp._`)
@@ -71,7 +72,11 @@ func generateApiClientApi(api *spec.Api, thepackage, modelsPackage, jsonPackage,
 
 	w.EmptyLine()
 	generateClientApiClass(w, api)
-	return w.ToCodeFile()
+
+	return &generator.CodeFile{
+		Path:    thepackage.GetPath("Client.scala"),
+		Content: w.String(),
+	}
 }
 
 func createParams(params []spec.NamedParam, defaulted bool) []string {

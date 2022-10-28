@@ -4,24 +4,15 @@ import (
 	"generator"
 	"spec"
 	"typescript/common"
-	"typescript/module"
+	"typescript/modules"
 	"typescript/writer"
 )
 
-func (g *Generator) Models(version *spec.Version) *generator.CodeFile {
-	modelsModule := g.Modules.Models(version)
-	return g.models(version.ResolvedModels, modelsModule)
-}
-
-func (g *Generator) ErrorModels(httpErrors *spec.HttpErrors) *generator.CodeFile {
-	return g.models(httpErrors.ResolvedModels, g.Modules.ErrorModules)
-}
-
-func (g *Generator) models(models []*spec.NamedModel, modelsModule module.Module) *generator.CodeFile {
-	w := writer.New(modelsModule)
+func (g *Generator) Models(models []*spec.NamedModel, codecModule modules.Module, module modules.Module) *generator.CodeFile {
+	w := writer.NewTsWriter()
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
-	w.Imports.Star(g.Modules.Validation, `t`)
+	w.Line(`import * as t from '%s'`, codecModule.GetImport(module))
 	for _, model := range models {
 		w.EmptyLine()
 		if model.IsObject() {
@@ -32,7 +23,7 @@ func (g *Generator) models(models []*spec.NamedModel, modelsModule module.Module
 			g.unionModel(w, model)
 		}
 	}
-	return w.ToCodeFile()
+	return &generator.CodeFile{Path: module.GetPath(), Content: w.String()}
 }
 
 func kindOfFields(fields spec.NamedDefinitions) (bool, bool) {
@@ -48,7 +39,7 @@ func kindOfFields(fields spec.NamedDefinitions) (bool, bool) {
 	return hasRequiredFields, hasOptionalFields
 }
 
-func (g *Generator) objectModel(w *writer.Writer, model *spec.NamedModel) {
+func (g *Generator) objectModel(w generator.Writer, model *spec.NamedModel) {
 	hasRequiredFields, hasOptionalFields := kindOfFields(model.Object.Fields)
 	if hasRequiredFields && hasOptionalFields {
 		w.Line("export const T%s = t.intersection([", model.Name.PascalCase())
@@ -82,7 +73,7 @@ func (g *Generator) objectModel(w *writer.Writer, model *spec.NamedModel) {
 	w.Line("export type %s = t.TypeOf<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func (g *Generator) enumModel(w *writer.Writer, model *spec.NamedModel) {
+func (g *Generator) enumModel(w generator.Writer, model *spec.NamedModel) {
 	w.Line("export enum %s {", model.Name.PascalCase())
 	for _, item := range model.Enum.Items {
 		w.Line(`  %s = "%s",`, item.Name.UpperCase(), item.Value)
@@ -92,7 +83,7 @@ func (g *Generator) enumModel(w *writer.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.enum(%s)", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func (g *Generator) unionModel(w *writer.Writer, model *spec.NamedModel) {
+func (g *Generator) unionModel(w generator.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {

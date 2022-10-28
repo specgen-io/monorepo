@@ -8,12 +8,12 @@ import (
 )
 
 func operationSignature(types *types.Types, operation *spec.NamedOperation) string {
-	if responsesNumber(operation) == 1 {
+	if successfulResponsesNumber(operation) == 1 {
 		for _, response := range operation.Responses {
 			return fmt.Sprintf(`%s %s(%s)`, types.Java(&response.Type.Definition), operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "))
 		}
 	}
-	if responsesNumber(operation) > 1 {
+	if successfulResponsesNumber(operation) > 1 {
 		return fmt.Sprintf(`%s %s(%s)`, responseInterfaceName(operation), operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "))
 	}
 	return ""

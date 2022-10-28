@@ -5,33 +5,24 @@ import (
 
 	"generator"
 	"spec"
+	"typescript/modules"
 	"typescript/validations"
 )
 
 type ServiceGenerator interface {
-	VersionRouting(version *spec.Version) *generator.CodeFile
-	SpecRouter(specification *spec.Spec) *generator.CodeFile
-	Responses() *generator.CodeFile
+	VersionRouting(version *spec.Version, targetModule modules.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule modules.Module) *generator.CodeFile
+	SpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *generator.CodeFile
+	Responses(targetModule, validationModule, errorsModule modules.Module) *generator.CodeFile
 }
 
-type Generator struct {
-	validations.Validation
-	ServiceGenerator
-	Modules *Modules
-}
-
-func NewServiceGenerator(server, validationName string, modules *Modules) *Generator {
-	validation := validations.New(validationName, &(modules.Modules))
-	var serviceGenerator ServiceGenerator = nil
-	switch server {
-	case Express:
-		serviceGenerator = &expressGenerator{modules, validation}
-	case Koa:
-		serviceGenerator = &koaGenerator{modules, validation}
-	default:
-		panic(fmt.Sprintf("Unknown server: %s", server))
+func NewServiceGenerator(server string, validation validations.Validation) ServiceGenerator {
+	if server == Express {
+		return &expressGenerator{validation}
 	}
-	return &Generator{validation, serviceGenerator, modules}
+	if server == Koa {
+		return &koaGenerator{validation}
+	}
+	panic(fmt.Sprintf("Unknown server: %s", server))
 }
 
 var Express = "express"

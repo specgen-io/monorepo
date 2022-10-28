@@ -3,18 +3,22 @@ package service
 import (
 	"fmt"
 	"generator"
+	"golang/module"
 	"golang/types"
 	"golang/writer"
 	"spec"
 )
 
-func Response(w *writer.Writer, types *types.Types, operation *spec.NamedOperation) {
+func generateResponseStruct(w generator.Writer, types *types.Types, operation *spec.NamedOperation) {
 	w.Line(`type %s struct {`, responseTypeName(operation))
-	w.Indent()
+	responses := [][]string{}
 	for _, response := range operation.Responses {
-		w.LineAligned(`%s %s`, response.Name.PascalCase(), types.GoType(spec.Nullable(&response.Type.Definition)))
+		responses = append(responses, []string{
+			response.Name.PascalCase(),
+			types.GoType(spec.Nullable(&response.Type.Definition)),
+		})
 	}
-	w.Unindent()
+	writer.WriteAlignedLines(w.Indented(), responses)
 	w.Line(`}`)
 }
 
@@ -34,8 +38,8 @@ func respondEmpty(logFields, resVar, statusCode string) string {
 	return fmt.Sprintf(`respond.Empty(%s, %s, %s)`, logFields, resVar, statusCode)
 }
 
-func (g *VestigoGenerator) ResponseHelperFunctions() *generator.CodeFile {
-	w := writer.New(g.Modules.Respond, `respond.go`)
+func generateRespondFunctions(respondModule module.Module) *generator.CodeFile {
+	w := writer.New(respondModule, `respond.go`)
 	w.Lines(`
 import (
 	"encoding/json"

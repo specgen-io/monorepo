@@ -5,7 +5,7 @@ import (
 	"golang/writer"
 )
 
-func (g *EncodingJsonGenerator) EnumsHelperFunctions() *generator.CodeFile {
+func (g *EncodingJsonGenerator) GenerateEnumsHelperFunctions() *generator.CodeFile {
 	w := writer.New(g.Modules.Enums, `helpers.go`)
 	w.Lines(`
 import (

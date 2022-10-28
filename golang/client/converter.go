@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"generator"
+	"golang/module"
 	"golang/writer"
 	"spec"
 )
@@ -58,8 +59,8 @@ func converterMethodNamePlain(typ *spec.TypeDef) string {
 	}
 }
 
-func (g *Generator) Converter() *generator.CodeFile {
-	w := writer.New(g.Modules.Convert, `convert.go`)
+func generateConverter(convertModule module.Module) *generator.CodeFile {
+	w := writer.New(convertModule, `convert.go`)
 	w.Lines(`
 import (
 	"cloud.google.com/go/civil"

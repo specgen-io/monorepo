@@ -17,7 +17,7 @@ func isSuccessfulStatusCode(statusCodeStr string) bool {
 	return false
 }
 
-func responsesNumber(operation *spec.NamedOperation) int {
+func successfulResponsesNumber(operation *spec.NamedOperation) int {
 	count := 0
 	for _, response := range operation.Responses {
 		if isSuccessfulStatusCode(spec.HttpStatusCode(response.Name)) {
@@ -28,7 +28,7 @@ func responsesNumber(operation *spec.NamedOperation) int {
 }
 
 func responseCreate(response *spec.OperationResponse, resultVar string) string {
-	if responsesNumber(response.Operation) > 1 {
+	if successfulResponsesNumber(response.Operation) > 1 {
 		return fmt.Sprintf(`return new %s.%s(%s);`, responseInterfaceName(response.Operation), response.Name.PascalCase(), resultVar)
 	} else {
 		if resultVar != "" {

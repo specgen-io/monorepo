@@ -2,7 +2,6 @@ package generators
 
 import (
 	"path/filepath"
-	"ruby/writer"
 
 	"generator"
 	"spec"
@@ -20,7 +19,7 @@ func GenerateModels(specification *spec.Spec, generatePath string) *generator.So
 }
 
 func generateModels(specification *spec.Spec, moduleName string, generatePath string) *generator.CodeFile {
-	w := writer.New(generatePath)
+	w := NewRubyWriter()
 	w.Line(`require "date"`)
 	w.Line(`require "emery"`)
 
@@ -36,7 +35,7 @@ func generateModels(specification *spec.Spec, moduleName string, generatePath st
 		}
 	}
 
-	return w.ToCodeFile()
+	return &generator.CodeFile{Path: generatePath, Content: w.String()}
 }
 
 func generateVersionModelsModule(w generator.Writer, version *spec.Version, moduleName string) {

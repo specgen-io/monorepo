@@ -43,7 +43,7 @@ func responseCreate(response *spec.OperationResponse, resultVar string) string {
 func responses(api *spec.Api, types *types.Types, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, operation := range api.Operations {
-		if len(operation.Responses) > 1 {
+		if successfulResponsesNumber(&operation) > 1 {
 			files = append(files, *responseInterface(types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage))
 		}
 	}

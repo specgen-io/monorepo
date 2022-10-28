@@ -1,13 +1,12 @@
 package generators
 
 import (
-	"scala/packages"
 	"strings"
 
 	"generator"
 )
 
-func generateStringParams(thepackage packages.Package) *generator.CodeFile {
+func generateStringParams(thepackage Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -194,7 +193,7 @@ class ParamReadException(val paramName: String, val location: ParamLocation, val
 		Content: strings.TrimSpace(code)}
 }
 
-func generateExceptions(thepackage packages.Package) *generator.CodeFile {
+func generateExceptions(thepackage Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 

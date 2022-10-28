@@ -1,16 +1,16 @@
 package superstruct
 
 import (
-	"typescript/writer"
+	"strings"
 
 	"generator"
+	"typescript/modules"
 )
 
 var Superstruct = "superstruct"
 
-func (g *Generator) SetupLibrary() *generator.CodeFile {
-	w := writer.New(g.Modules.Validation)
-	w.Lines(`
+func (g *Generator) SetupLibrary(module modules.Module) *generator.CodeFile {
+	code := `
 export * from "superstruct"
 
 import * as t from "superstruct"
@@ -91,6 +91,7 @@ export const StrBoolean = t.coerce<boolean, unknown, string>(t.boolean(), t.stri
         case 'false': return false
         default: throw new Error('Unknown boolean value: "'+value+'"')
     }
-})`)
-	return w.ToCodeFile()
+})`
+
+	return &generator.CodeFile{module.GetPath(), strings.TrimSpace(code)}
 }

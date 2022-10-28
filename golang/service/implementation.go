@@ -3,30 +3,35 @@ package service
 import (
 	"fmt"
 	"generator"
+	"golang/imports"
+	"golang/module"
 	"golang/types"
 	"golang/writer"
 	"spec"
 )
 
-func (g *Generator) ServicesImpls(version *spec.Version) []generator.CodeFile {
+func (g *Generator) generateServiceImplementations(version *spec.Version, versionModule, modelsModule, versionImplementationsModule module.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, *g.serviceImpl(&api))
+		apiModule := versionModule.Submodule(api.Name.SnakeCase())
+		files = append(files, *g.generateServiceImplementation(&api, apiModule, modelsModule, versionImplementationsModule))
 	}
 	return files
 }
 
-func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
-	w := writer.New(g.Modules.ServicesImpl(api.InHttp.InVersion), fmt.Sprintf("%s.go", api.Name.SnakeCase()))
+func (g *Generator) generateServiceImplementation(api *spec.Api, apiModule, modelsModule, versionImplementationsModule module.Module) *generator.CodeFile {
+	w := writer.New(versionImplementationsModule, fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
-	w.Imports.Add("errors")
-	w.Imports.AddApiTypes(api)
+	imports := imports.New()
+	imports.Add("errors")
+	imports.AddApiTypes(api)
 	if types.ApiHasBody(api) {
-		w.Imports.Module(g.Modules.ServicesApi(api))
+		imports.Module(apiModule)
 	}
 	if isContainsModel(api) {
-		w.Imports.Module(g.Modules.Models(api.InHttp.InVersion))
+		imports.Module(modelsModule)
 	}
+	imports.Write(w)
 
 	w.EmptyLine()
 	w.Line(`type %s struct{}`, serviceTypeName(api))

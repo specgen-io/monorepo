@@ -11,10 +11,10 @@ func GenerateModels(specification *spec.Spec, moduleName string, generatePath st
 	modules := NewModules(moduleName, generatePath, specification)
 	generator := NewGenerator(modules)
 
-	sources.AddGenerated(generator.EnumsHelperFunctions())
+	sources.AddGenerated(generator.GenerateEnumsHelperFunctions())
 
 	for _, version := range specification.Versions {
-		sources.AddGenerated(generator.Models(&version))
+		sources.AddGenerated(generator.GenerateVersionModels(&version))
 	}
 	return sources
 }

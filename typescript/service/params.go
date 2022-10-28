@@ -2,9 +2,11 @@ package service
 
 import (
 	"fmt"
-	"typescript/writer"
+	"strings"
 
 	"generator"
+	"typescript/modules"
+	"typescript/validations/common"
 	"spec"
 )
 
@@ -12,21 +14,20 @@ func paramsTypeName(operation *spec.NamedOperation, namePostfix string) string {
 	return fmt.Sprintf("%s%s", operation.Name.PascalCase(), namePostfix)
 }
 
-func urlParamsType(operation *spec.NamedOperation) string {
-	return paramsTypeName(operation, "UrlParams")
+func urlParamsRuntimeType(operation *spec.NamedOperation) string {
+	return common.ParamsRuntimeTypeName(paramsTypeName(operation, "UrlParams"))
 }
 
-func headersType(operation *spec.NamedOperation) string {
-	return paramsTypeName(operation, "HeaderParams")
+func headersRuntimeType(operation *spec.NamedOperation) string {
+	return common.ParamsRuntimeTypeName(paramsTypeName(operation, "HeaderParams"))
 }
 
-func queryType(operation *spec.NamedOperation) string {
-	return paramsTypeName(operation, "QueryParams")
+func queryRuntimeType(operation *spec.NamedOperation) string {
+	return common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams"))
 }
 
-func (g *Generator) ParamsStaticCode() *generator.CodeFile {
-	w := writer.New(g.Modules.Params)
-	w.Lines(`
+func generateParamsStaticCode(module modules.Module) *generator.CodeFile {
+	code := `
 export function zipHeaders(headers: string[]): Record<string, string | string[]> {
   const result: Record<string, string | string[]> = {}
 
@@ -46,6 +47,7 @@ export function zipHeaders(headers: string[]): Record<string, string | string[]>
       }
   }
   return result
-}`)
-	return w.ToCodeFile()
+}`
+
+	return &generator.CodeFile{module.GetPath(), strings.TrimSpace(code)}
 }

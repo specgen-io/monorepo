@@ -207,7 +207,7 @@ func (g *JacksonGenerator) jsonParseException() *generator.CodeFile {
 	w := writer.New(g.Packages.Json, `JsonParseException`)
 	w.Lines(`
 class JsonParseException(exception: Throwable) :
-    RuntimeException("Failed to parse body: " + exception.message, exception)
+	RuntimeException("Failed to parse body: " + exception.message, exception)
 `)
 	return w.ToCodeFile()
 }

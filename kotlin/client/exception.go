@@ -15,10 +15,10 @@ func clientException(thePackage packages.Package) *generator.CodeFile {
 import java.lang.RuntimeException
 
 open class ClientException : RuntimeException {
-    constructor() : super()
-    constructor(message: String) : super(message)
-    constructor(cause: Throwable) : super(cause)
-    constructor(message: String, cause: Throwable) : super(message, cause)
+	constructor() : super()
+	constructor(message: String) : super(message)
+	constructor(cause: Throwable) : super(cause)
+	constructor(message: String, cause: Throwable) : super(message, cause)
 }
 `)
 	return w.ToCodeFile()

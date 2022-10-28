@@ -3,16 +3,22 @@ package validations
 import (
 	"generator"
 	"spec"
-	"typescript/validations/modules"
+	"typescript/modules"
 )
 
 func GenerateModels(specification *spec.Spec, validation string, generatePath string) *generator.Sources {
 	sources := generator.NewSources()
-	modules := modules.NewModules(validation, generatePath, specification)
-	generator := New(validation, modules)
-	sources.AddGenerated(generator.SetupLibrary())
+
+	generator := New(validation)
+
+	module := modules.New(generatePath)
+	validationModule := module.Submodule(validation)
+	validationFile := generator.SetupLibrary(validationModule)
+	sources.AddGenerated(validationFile)
 	for _, version := range specification.Versions {
-		sources.AddGenerated(generator.Models(&version))
+		versionModule := module.Submodule(version.Name.FlatCase())
+		modelsModule := versionModule.Submodule("models")
+		sources.AddGenerated(generator.Models(version.ResolvedModels, validationModule, modelsModule))
 	}
 	return sources
 }

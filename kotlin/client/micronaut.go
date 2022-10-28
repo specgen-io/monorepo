@@ -11,30 +11,29 @@ import (
 	"strings"
 )
 
-var MicronautLow = "micronaut-low-level"
+var Micronaut = "micronaut-low-level"
 
-type MicronautLowGenerator struct {
+type MicronautGenerator struct {
 	Types    *types.Types
 	Models   models.Generator
 	Packages *Packages
 }
 
-func NewMicronautLowGenerator(types *types.Types, models models.Generator, packages *Packages) *MicronautLowGenerator {
-	return &MicronautLowGenerator{types, models, packages}
+func NewMicronautGenerator(types *types.Types, models models.Generator, packages *Packages) *MicronautGenerator {
+	return &MicronautGenerator{types, models, packages}
 }
 
-func (g *MicronautLowGenerator) Clients(version *spec.Version) []generator.CodeFile {
+func (g *MicronautGenerator) Clients(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		files = append(files, responses(&api, g.Types, g.Packages.Client(&api), g.Packages.Models(api.InHttp.InVersion), g.Packages.ErrorsModels)...)
 		files = append(files, *g.client(&api))
 	}
 	files = append(files, converters(g.Packages.Converters)...)
-	files = append(files, staticConfigFiles(g.Packages.Root, g.Packages.Json)...)
 	return files
 }
 
-func (g *MicronautLowGenerator) client(api *spec.Api) *generator.CodeFile {
+func (g *MicronautGenerator) client(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Client(api), clientName(api))
 	imports := imports.New()
 	imports.Add(g.Models.ModelsUsageImports()...)
@@ -46,24 +45,27 @@ func (g *MicronautLowGenerator) client(api *spec.Api) *generator.CodeFile {
 	imports.Add(`jakarta.inject.Singleton`)
 	imports.Add(`org.slf4j.*`)
 	imports.Add(g.Packages.Root.PackageStar)
+	imports.Add(g.Packages.Errors.PackageStar)
+	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.Utils.PackageStar)
 	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
+	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`doRequest`).PackageName)
+	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`).PackageName)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Lines(`
 @Singleton
 class [[.ClassName]](
-@param:Client(ClientConfiguration.BASE_URL)
-private val client: HttpClient,
-private val json: Json
+	@param:Client(ClientConfiguration.BASE_URL)
+	private val client: HttpClient,
+	private var json: Json
 ) {
 	private val logger: Logger = LoggerFactory.getLogger([[.ClassName]]::class.java)
 
-    init {
+	init {
 `)
 	w.IndentedWith(2).Lines(g.Models.CreateJsonHelper(`json`))
 	w.Lines(`
-		client = OkHttpClient()
 	}
 `)
 	for _, operation := range api.Operations {
@@ -74,7 +76,7 @@ private val json: Json
 	return w.ToCodeFile()
 }
 
-func (g *MicronautLowGenerator) generateClientMethod(w generator.Writer, operation *spec.NamedOperation) {
+func (g *MicronautGenerator) generateClientMethod(w generator.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`fun %s {`, operationSignature(g.Types, operation))
@@ -110,9 +112,9 @@ func (g *MicronautLowGenerator) generateClientMethod(w generator.Writer, operati
 	for _, response := range operation.Responses {
 		statusCode := spec.HttpStatusCode(response.Name)
 		if isSuccessfulStatusCode(statusCode) {
-			w.Line(`  if (response.code == %s) {`, statusCode)
+			w.Line(`  if (response.code() == %s) {`, statusCode)
 			w.IndentWith(2)
-			w.Line(`logger.info("Received response with status code {}", response.code)`)
+			w.Line(`logger.info("Received response with status code {}", response.code())`)
 			if response.BodyIs(spec.BodyEmpty) {
 				w.Line(responseCreate(&response, ""))
 			}
@@ -156,7 +158,7 @@ func requestBuilderParams(methodName, requestBody string, operation *spec.NamedO
 	return params
 }
 
-func (g *MicronautLowGenerator) Utils(responses *spec.Responses) []generator.CodeFile {
+func (g *MicronautGenerator) Utils(responses *spec.Responses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.generateRequestBuilder())
 	files = append(files, *g.generateUrlBuilder())
@@ -165,45 +167,45 @@ func (g *MicronautLowGenerator) Utils(responses *spec.Responses) []generator.Cod
 	return files
 }
 
-func (g *MicronautLowGenerator) generateRequestBuilder() *generator.CodeFile {
+func (g *MicronautGenerator) generateRequestBuilder() *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `RequestBuilder`)
 	w.Lines(`
 import io.micronaut.http.MutableHttpRequest
 import java.net.URI
 
 class RequestBuilder {
-    private var generateRequestBuilder: MutableHttpRequest<Any>
+	private var generateRequestBuilder: MutableHttpRequest<Any>
 
-    constructor(url: URI, body: Any?, method: (URI, Any?) -> MutableHttpRequest<Any>) {
-        this.generateRequestBuilder = method(url, body)
-    }
+	constructor(url: URI, body: Any?, method: (URI, Any?) -> MutableHttpRequest<Any>) {
+		this.generateRequestBuilder = method(url, body)
+	}
 
-    constructor(url: URI, method: (URI) -> MutableHttpRequest<Any>) {
-        this.generateRequestBuilder = method(url)
-    }
+	constructor(url: URI, method: (URI) -> MutableHttpRequest<Any>) {
+		this.generateRequestBuilder = method(url)
+	}
 
-    fun headerParam(name: String, value: Any): RequestBuilder {
-        val valueStr = value.toString()
-        this.generateRequestBuilder.header(name, valueStr)
-        return this
-    }
+	fun headerParam(name: String, value: Any): RequestBuilder {
+		val valueStr = value.toString()
+		this.generateRequestBuilder.header(name, valueStr)
+		return this
+	}
 
-    fun <T> headerParam(name: String, values: List<T>): RequestBuilder {
-        for (value in values) {
-            this.headerParam(name, value!!)
-        }
-        return this
-    }
+	fun <T> headerParam(name: String, values: List<T>): RequestBuilder {
+		for (value in values) {
+			this.headerParam(name, value!!)
+		}
+		return this
+	}
 
-    fun build(): MutableHttpRequest<Any> {
-        return this.generateRequestBuilder
-    }
+	fun build(): MutableHttpRequest<Any> {
+		return this.generateRequestBuilder
+	}
 }
 `)
 	return w.ToCodeFile()
 }
 
-func (g *MicronautLowGenerator) generateUrlBuilder() *generator.CodeFile {
+func (g *MicronautGenerator) generateUrlBuilder() *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `UrlBuilder`)
 	w.Lines(`
 import io.micronaut.http.uri.UriBuilder
@@ -211,46 +213,45 @@ import java.net.URI
 import java.util.*
 
 class UrlBuilder(url: String) {
-    private val uriBuilder: UriBuilder = UriBuilder.of(url)
-    private val urlMap: MutableMap<String, Any> = mutableMapOf()
+	private val uriBuilder: UriBuilder = UriBuilder.of(url)
+	private val urlMap: MutableMap<String, Any> = mutableMapOf()
 
-    fun queryParam(name: String, value: Any): UrlBuilder {
-        val valueStr = value.toString()
-        uriBuilder.queryParam(name, valueStr)
-        return this
-    }
+	fun queryParam(name: String, value: Any): UrlBuilder {
+		val valueStr = value.toString()
+		uriBuilder.queryParam(name, valueStr)
+		return this
+	}
 
-    fun <T> queryParam(name: String, values: List<T>): UrlBuilder {
-        for (value in values) {
-            this.queryParam(name, value!!)
-        }
-        return this
-    }
+	fun <T> queryParam(name: String, values: List<T>): UrlBuilder {
+		for (value in values) {
+			this.queryParam(name, value!!)
+		}
+		return this
+	}
 
-    fun pathParam(name: String, value: Any): UrlBuilder {
-        this.uriBuilder.path("{$name}")
-        this.urlMap += mapOf(name to value)
+	fun pathParam(name: String, value: Any): UrlBuilder {
+		this.uriBuilder.path("{$name}")
+		this.urlMap += mapOf(name to value)
+		return this
+	}
 
-        return this
-    }
+	fun expand(): URI {
+		return this.uriBuilder.expand(
+			Collections.checkedMap(
+				this.urlMap, String::class.java, Any::class.java
+			)
+		)
+	}
 
-    fun expand(): URI {
-        return this.uriBuilder.expand(
-            Collections.checkedMap(
-                this.urlMap, String::class.java, Any::class.java
-            )
-        )
-    }
-
-    fun build(): URI {
-        return this.uriBuilder.build()
-    }
+	fun build(): URI {
+		return this.uriBuilder.build()
+	}
 }
 `)
 	return w.ToCodeFile()
 }
 
-func (g *MicronautLowGenerator) generateClientResponse() *generator.CodeFile {
+func (g *MicronautGenerator) generateClientResponse() *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `ClientResponse`)
 	w.Template(
 		map[string]string{
@@ -263,33 +264,33 @@ import [[.ErrorsPackage]].*
 import java.io.IOException
 
 object ClientResponse {
-    fun doRequest(client: HttpClient, request: RequestBuilder): HttpResponse<String> =
-        client.toBlocking().exchange(request.build(), String::class.java)
+	fun doRequest(client: HttpClient, request: RequestBuilder): HttpResponse<String> =
+		client.toBlocking().exchange(request.build(), String::class.java)
 
-    fun <T> getResponseBodyString(response: HttpResponse<T>, logger: Logger): String {
+	fun <T> getResponseBodyString(response: HttpResponse<T>, logger: Logger): String {
 		return try {
-            response.body()!!.toString()
+			response.body()!!.toString()
 		} catch (e: IOException) {
-            val errorMessage = "Failed to convert response body to string " + e.message
-            logger.error(errorMessage)
-            throw ClientException(errorMessage, e)
-        }
-        return responseBodyString
-    }
+			val errorMessage = "Failed to convert response body to string " + e.message
+			logger.error(errorMessage)
+			throw ClientException(errorMessage, e)
+		}
+	}
 }
 `)
 	return w.ToCodeFile()
 }
 
-func (g *MicronautLowGenerator) generateErrorsHandler(errorsResponses *spec.Responses) *generator.CodeFile {
+func (g *MicronautGenerator) generateErrorsHandler(errorsResponses *spec.Responses) *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `ErrorsHandler`)
 	imports := imports.New()
 	imports.Add(g.Models.ModelsUsageImports()...)
 	imports.Add(`io.micronaut.http.*`)
 	imports.Add(`org.slf4j.*`)
+	imports.Add(g.Packages.Errors.PackageStar)
 	imports.Add(g.Packages.ErrorsModels.PackageStar)
 	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).PackageStar)
+	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`).PackageName)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`fun <T> handleErrors(response: HttpResponse<T>, logger: Logger, json: Json) {`)
@@ -305,7 +306,7 @@ func (g *MicronautLowGenerator) generateErrorsHandler(errorsResponses *spec.Resp
 	return w.ToCodeFile()
 }
 
-func (g *MicronautLowGenerator) Exceptions(errors *spec.Responses) []generator.CodeFile {
+func (g *MicronautGenerator) Exceptions(errors *spec.Responses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *clientException(g.Packages.Errors))
 	for _, errorResponse := range *errors {

@@ -8,7 +8,7 @@ import (
 )
 
 func operationSignature(types *types.Types, operation *spec.NamedOperation) string {
-	if len(operation.Responses) == 1 {
+	if successfulResponsesNumber(operation) == 1 {
 		for _, response := range operation.Responses {
 			if !response.Type.Definition.IsEmpty() {
 				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "), types.Kotlin(&response.Type.Definition))
@@ -17,7 +17,7 @@ func operationSignature(types *types.Types, operation *spec.NamedOperation) stri
 			}
 		}
 	}
-	if len(operation.Responses) > 1 {
+	if successfulResponsesNumber(operation) > 1 {
 		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "), responseInterfaceName(operation))
 	}
 	return ""

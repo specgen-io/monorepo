@@ -6,10 +6,6 @@ import (
 	"typescript/types"
 )
 
-func (g *Generator) RuntimeTypeName(typeName string) string {
-	return fmt.Sprintf("T%s", typeName)
-}
-
 func (g *Generator) RuntimeTypeSamePackage(typ *spec.TypeDef) string {
 	return g.runtimeType(typ, true)
 }
@@ -67,13 +63,13 @@ func (g *Generator) plainSuperstructType(typ *spec.TypeDef, samePackage bool) st
 		if typ.Info.Model != nil {
 			if !samePackage {
 				if typ.Info.Model.InVersion != nil {
-					return fmt.Sprintf(`%s.%s`, types.ModelsPackage, g.RuntimeTypeName(typ.Plain))
+					return types.ModelsPackage + ".T" + typ.Plain
 				}
 				if typ.Info.Model.InHttpErrors != nil {
-					return fmt.Sprintf(`%s.%s`, types.ErrorsPackage, g.RuntimeTypeName(typ.Plain))
+					return types.ErrorsPackage + ".T" + typ.Plain
 				}
 			}
-			return g.RuntimeTypeName(typ.Plain)
+			return "T" + typ.Plain
 		} else {
 			panic(fmt.Sprintf(`unknown type %s`, typ.Plain))
 		}

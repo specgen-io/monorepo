@@ -1,7 +1,6 @@
 package writer
 
 import (
-	"fmt"
 	"generator"
 	"golang/module"
 	"strings"
@@ -11,30 +10,38 @@ func GoConfig() generator.Config {
 	return generator.Config{"\t", 2, map[string]string{"PERCENT_": "%"}}
 }
 
-type Writer struct {
-	generator.Writer
-	filename string
-	module   module.Module
-	Imports  *imports
-}
-
-func New(module module.Module, filename string) *Writer {
+func New(module module.Module, filename string) generator.Writer {
 	config := GoConfig()
-	w := generator.NewWriter(module.GetPath(filename), config)
-	return &Writer{w, module.GetPath(filename), module, NewImports()}
+	w := generator.NewWriter2(module.GetPath(filename), config)
+	w.Line("package %s", module.Name)
+	w.EmptyLine()
+	return w
 }
 
-func (w *Writer) Indented() *Writer {
-	return &Writer{w.Writer.Indented(), w.filename, w.module, w.Imports}
+func colWidth(lines [][]string, colIndex int) int {
+	width := 0
+	for _, line := range lines {
+		rowWidth := len(line[colIndex])
+		if rowWidth > width {
+			width = rowWidth
+		}
+	}
+	return width
 }
 
-func (w *Writer) IndentedWith(size int) *Writer {
-	return &Writer{w.Writer.IndentedWith(size), w.filename, w.module, w.Imports}
-}
-
-func (w *Writer) ToCodeFile() *generator.CodeFile {
-	lines := []string{fmt.Sprintf("package %s", w.module.Name), ``}
-	lines = append(lines, w.Imports.Lines()...)
-	code := strings.Join(lines, "\n") + w.String()
-	return &generator.CodeFile{w.filename, code}
+func WriteAlignedLines(w generator.Writer, lines [][]string) {
+	widths := make([]int, len(lines[0]))
+	for colIndex, _ := range lines[0] {
+		widths[colIndex] = colWidth(lines, colIndex)
+	}
+	for _, line := range lines {
+		lineStr := ""
+		for colIndex, cell := range line {
+			lineStr += cell
+			if colIndex != len(line)-1 {
+				lineStr += strings.Repeat(" ", widths[colIndex]-len(cell)) + " "
+			}
+		}
+		w.Line(lineStr)
+	}
 }
