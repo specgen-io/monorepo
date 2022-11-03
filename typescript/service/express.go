@@ -17,7 +17,7 @@ type expressGenerator struct {
 }
 
 func (g *expressGenerator) SpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
+	w := writer.New(module)
 	w.Line("import {Router} from 'express'")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
@@ -53,8 +53,7 @@ func (g *expressGenerator) SpecRouter(specification *spec.Spec, rootModule modul
 	}
 	w.Line("  return router")
 	w.Line("}")
-
-	return &generator.CodeFile{module.GetPath(), w.String()}
+	return w.ToCodeFile()
 }
 
 func expressVersionUrl(version *spec.Version) string {
@@ -66,7 +65,7 @@ func expressVersionUrl(version *spec.Version) string {
 }
 
 func (g *expressGenerator) VersionRouting(version *spec.Version, targetModule modules.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
+	w := writer.New(targetModule)
 
 	w.Line(`import {Router, Request, Response} from 'express'`)
 	w.Line(`import {zipHeaders} from '%s'`, paramsModule.GetImport(targetModule))
@@ -88,8 +87,7 @@ func (g *expressGenerator) VersionRouting(version *spec.Version, targetModule mo
 
 		g.apiRouting(w, &api)
 	}
-
-	return &generator.CodeFile{targetModule.GetPath(), w.String()}
+	return w.ToCodeFile()
 }
 
 func (g *expressGenerator) apiRouting(w generator.Writer, api *spec.Api) {
@@ -233,7 +231,7 @@ func (g *expressGenerator) respondInternalServerError(w generator.Writer) {
 }
 
 func (g *expressGenerator) Responses(targetModule, validationModule, errorsModule modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
+	w := writer.New(targetModule)
 
 	w.Line(`import {Request, Response} from 'express'`)
 	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
@@ -272,5 +270,5 @@ export const assertContentType = (request: Request, response: Response, contentT
 	code = strings.Replace(code, "'", "`", -1)
 	w.Lines(code)
 
-	return &generator.CodeFile{targetModule.GetPath(), w.String()}
+	return w.ToCodeFile()
 }

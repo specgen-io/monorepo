@@ -9,7 +9,7 @@ import (
 )
 
 func (g *Generator) Models(models []*spec.NamedModel, superstructModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
+	w := writer.New(module)
 	w.Line(`import * as t from '%s'`, superstructModule.GetImport(module))
 	for _, model := range models {
 		w.EmptyLine()
@@ -21,7 +21,7 @@ func (g *Generator) Models(models []*spec.NamedModel, superstructModule modules.
 			g.unionModel(w, model)
 		}
 	}
-	return &generator.CodeFile{Path: module.GetPath(), Content: w.String()}
+	return w.ToCodeFile()
 }
 
 func (g *Generator) objectModel(w generator.Writer, model *spec.NamedModel) {

@@ -19,7 +19,7 @@ type fetchGenerator struct {
 }
 
 func (g *fetchGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
+	w := writer.New(module)
 	if g.node {
 		w.Line(`import { URL, URLSearchParams } from 'url'`)
 		w.Line(`import fetch from 'node-fetch'`)
@@ -44,7 +44,7 @@ func (g *fetchGenerator) ApiClient(api spec.Api, validationModule, modelsModule,
 			responses.GenerateOperationResponse(w, &operation)
 		}
 	}
-	return &generator.CodeFile{module.GetPath(), w.String()}
+	return w.ToCodeFile()
 }
 
 func (g *fetchGenerator) operation(w generator.Writer, operation *spec.NamedOperation) {

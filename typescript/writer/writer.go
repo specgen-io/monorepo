@@ -2,10 +2,13 @@ package writer
 
 import (
 	"generator"
+	"typescript/modules"
 )
 
-var TsConfig = generator.Config{"    ", 2, nil}
+func TsConfig() generator.Config {
+	return generator.Config{"    ", 2, nil}
+}
 
-func NewTsWriter() generator.Writer {
-	return generator.NewWriter(TsConfig)
+func New(module modules.Module) generator.Writer {
+	return generator.NewWriter2(module.GetPath(), TsConfig())
 }

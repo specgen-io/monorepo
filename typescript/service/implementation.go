@@ -27,8 +27,7 @@ func generateServicesImplementations(specification *spec.Spec, generatedModule m
 }
 
 func generateServiceImplementation(api *spec.Api, apiModule modules.Module, modelsModule modules.Module, errorsModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
-
+	w := writer.New(module)
 	w.Line("import * as service from '%s'", apiModule.GetImport(module))
 	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(module))
 	w.Line("import * as %s from '%s'", types.ErrorsPackage, errorsModule.GetImport(module))
@@ -49,5 +48,5 @@ func generateServiceImplementation(api *spec.Api, apiModule modules.Module, mode
 	}
 	w.Line("  return {%s}", strings.Join(operations, ", "))
 	w.Line("}")
-	return &generator.CodeFile{module.GetPath(), w.String()}
+	return w.ToCodeFile()
 }

@@ -9,7 +9,7 @@ import (
 )
 
 func (g *Generator) Models(models []*spec.NamedModel, codecModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
+	w := writer.New(module)
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
 	w.Line(`import * as t from '%s'`, codecModule.GetImport(module))
@@ -23,7 +23,7 @@ func (g *Generator) Models(models []*spec.NamedModel, codecModule modules.Module
 			g.unionModel(w, model)
 		}
 	}
-	return &generator.CodeFile{Path: module.GetPath(), Content: w.String()}
+	return w.ToCodeFile()
 }
 
 func kindOfFields(fields spec.NamedDefinitions) (bool, bool) {

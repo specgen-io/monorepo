@@ -17,7 +17,7 @@ type koaGenerator struct {
 }
 
 func (g *koaGenerator) SpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
+	w := writer.New(module)
 	w.Line("import Router from '@koa/router'")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
@@ -59,13 +59,11 @@ func (g *koaGenerator) SpecRouter(specification *spec.Spec, rootModule modules.M
 	}
 	w.Line("  return router")
 	w.Line("}")
-
-	return &generator.CodeFile{module.GetPath(), w.String()}
+	return w.ToCodeFile()
 }
 
 func (g *koaGenerator) VersionRouting(version *spec.Version, targetModule modules.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
-
+	w := writer.New(targetModule)
 	w.Line(`import Router from '@koa/router'`)
 	w.Line(`import { ExtendableContext } from 'koa'`)
 	w.Line(`import {zipHeaders} from '%s'`, paramsModule.GetImport(targetModule))
@@ -87,8 +85,7 @@ func (g *koaGenerator) VersionRouting(version *spec.Version, targetModule module
 
 		g.apiRouting(w, &api)
 	}
-
-	return &generator.CodeFile{targetModule.GetPath(), w.String()}
+	return w.ToCodeFile()
 }
 
 func (g *koaGenerator) apiRouting(w generator.Writer, api *spec.Api) {
@@ -232,8 +229,7 @@ func (g *koaGenerator) respondInternalServerError(w generator.Writer) {
 }
 
 func (g *koaGenerator) Responses(targetModule, validationModule, errorsModule modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
-
+	w := writer.New(targetModule)
 	w.Line(`import { ExtendableContext } from 'koa'`)
 	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
 	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(targetModule))
@@ -273,7 +269,5 @@ export const assertContentType = (ctx: ExtendableContext, contentType: string): 
 `
 	code = strings.Replace(code, "'", "`", -1)
 	w.Lines(code)
-
-	return &generator.CodeFile{targetModule.GetPath(), w.String()}
-
+	return w.ToCodeFile()
 }

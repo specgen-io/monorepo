@@ -23,7 +23,7 @@ func generateServiceApis(version *spec.Version, modelsModule modules.Module, err
 }
 
 func generateApiService(api *spec.Api, modelsModule modules.Module, errorsModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
+	w := writer.New(module)
 	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(module))
 	w.Line("import * as %s from '%s'", types.ErrorsPackage, errorsModule.GetImport(module))
 	for _, operation := range api.Operations {
@@ -46,7 +46,7 @@ func generateApiService(api *spec.Api, modelsModule modules.Module, errorsModule
 		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, responses.ResponseType(&operation, ""))
 	}
 	w.Line("}")
-	return &generator.CodeFile{module.GetPath(), w.String()}
+	return w.ToCodeFile()
 }
 
 func serviceInterfaceName(api *spec.Api) string {

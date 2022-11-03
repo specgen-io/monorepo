@@ -17,7 +17,7 @@ type axiosGenerator struct {
 }
 
 func (g *axiosGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
+	w := writer.New(module)
 	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
 	w.Line(`import { strParamsItems, strParamsObject, stringify } from '%s'`, paramsModule.GetImport(module))
 	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
@@ -37,7 +37,7 @@ func (g *axiosGenerator) ApiClient(api spec.Api, validationModule, modelsModule,
 			responses.GenerateOperationResponse(w, &operation)
 		}
 	}
-	return &generator.CodeFile{module.GetPath(), w.String()}
+	return w.ToCodeFile()
 }
 
 func (g *axiosGenerator) operation(w generator.Writer, operation *spec.NamedOperation) {
