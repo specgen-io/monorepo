@@ -6,26 +6,23 @@ import (
 
 	"generator"
 	"spec"
-	"typescript/module"
 	"typescript/validations"
 	"typescript/validations/common"
 	"typescript/writer"
 )
 
 type expressGenerator struct {
-	validation validations.Validation
+	Modules    *Modules
+	Validation validations.Validation
 }
 
-func (g *expressGenerator) SpecRouter(specification *spec.Spec, rootModule module.Module, specRouterModule module.Module) *generator.CodeFile {
-	w := writer.New(specRouterModule)
+func (g *expressGenerator) SpecRouter(specification *spec.Spec) *generator.CodeFile {
+	w := writer.New(g.Modules.SpecRouter)
 	w.Line("import {Router} from 'express'")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			versionModule := rootModule.Submodule(version.Name.FlatCase())
-			apiModule := versionModule.Submodule(serviceName(&api)) //TODO: This logic is repeated here, it also exists where api module is created
-			routerModule := versionModule.Submodule("routing")      //TODO: This logic is repeated here, it also exists where router module is created
-			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), apiModule.GetImport(specRouterModule))
-			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), routerModule.GetImport(specRouterModule))
+			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), g.Modules.ServiceApi(&api).GetImport(g.Modules.SpecRouter))
+			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), g.Modules.Routing(&version).GetImport(g.Modules.SpecRouter))
 		}
 	}
 
@@ -64,15 +61,16 @@ func expressVersionUrl(version *spec.Version) string {
 	return url
 }
 
-func (g *expressGenerator) VersionRouting(version *spec.Version, targetModule module.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule module.Module) *generator.CodeFile {
-	w := writer.New(targetModule)
+func (g *expressGenerator) VersionRouting(version *spec.Version) *generator.CodeFile {
+	routingModule := g.Modules.Routing(version)
 
+	w := writer.New(routingModule)
 	w.Line(`import {Router, Request, Response} from 'express'`)
-	w.Line(`import {zipHeaders} from '%s'`, paramsModule.GetImport(targetModule))
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
-	w.Line(`import * as models from '%s'`, modelsModule.GetImport(targetModule))
-	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(targetModule))
-	w.Line(`import * as responses from '%s'`, responsesModule.GetImport(targetModule))
+	w.Line(`import {zipHeaders} from '%s'`, g.Modules.Params.GetImport(routingModule))
+	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(routingModule))
+	w.Line(`import * as models from '%s'`, g.Modules.Models(version).GetImport(routingModule))
+	w.Line(`import * as errors from '%s'`, g.Modules.Errors.GetImport(routingModule))
+	w.Line(`import * as responses from '%s'`, g.Modules.Responses.GetImport(routingModule))
 
 	for _, api := range version.Http.Apis {
 		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), serviceName(&api))
@@ -80,9 +78,9 @@ func (g *expressGenerator) VersionRouting(version *spec.Version, targetModule mo
 
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
-			g.validation.WriteParamsType(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams)
-			g.validation.WriteParamsType(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams)
-			g.validation.WriteParamsType(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams)
+			g.Validation.WriteParamsType(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams)
+			g.Validation.WriteParamsType(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams)
+			g.Validation.WriteParamsType(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams)
 		}
 
 		g.apiRouting(w, &api)
@@ -121,7 +119,7 @@ func (g *expressGenerator) response(w generator.Writer, response *spec.Response,
 		w.Line("return")
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.validation.RuntimeType(&response.Type.Definition), dataParam)
+		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.Validation.RuntimeType(&response.Type.Definition), dataParam)
 		w.Line("return")
 	}
 }
@@ -207,7 +205,7 @@ func (g *expressGenerator) bodyParsing(w generator.Writer, operation *spec.Named
 		w.Line(`const body: string = request.body`)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line("const bodyDecode = t.decodeR(%s, request.body)", g.validation.RuntimeType(&operation.Body.Type.Definition))
+		w.Line("const bodyDecode = t.decodeR(%s, request.body)", g.Validation.RuntimeType(&operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
 		g.respondBadRequest(w.Indented(), "BODY", "bodyDecode.error", "Failed to parse body")
 		w.Line("}")
@@ -230,12 +228,12 @@ func (g *expressGenerator) respondInternalServerError(w generator.Writer) {
 	w.Line(`return`)
 }
 
-func (g *expressGenerator) Responses(responsesModule, validationModule, errorsModule module.Module) *generator.CodeFile {
-	w := writer.New(responsesModule)
+func (g *expressGenerator) Responses() *generator.CodeFile {
+	w := writer.New(g.Modules.Responses)
 
 	w.Line(`import {Request, Response} from 'express'`)
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(responsesModule))
-	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(responsesModule))
+	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(g.Modules.Responses))
+	w.Line(`import * as errors from '%s'`, g.Modules.Errors.GetImport(g.Modules.Responses))
 
 	w.EmptyLine()
 	code := `

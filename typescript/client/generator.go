@@ -19,20 +19,18 @@ type Generator struct {
 
 func NewClientGenerator(client, validationName string, modules *Modules) *Generator {
 	validation := validations.New(validationName, &(modules.Modules))
-	if client == Axios {
-		return &Generator{validation, &axiosGenerator{modules, validation}, modules}
+	var clientGenerator ClientGenerator = nil
+	switch client {
+	case Axios:
+		clientGenerator = &axiosGenerator{modules, validation}
+	case NodeFetch:
+		clientGenerator = &fetchGenerator{modules, true, validation}
+	case BrowserFetch:
+		clientGenerator = &fetchGenerator{modules, false, validation}
+	default:
+		panic(fmt.Sprintf("Unknown client: %s", client))
 	}
-	if client == NodeFetch {
-		return &Generator{validation, &fetchGenerator{modules, true, validation}, modules}
-	}
-	if client == BrowserFetch {
-		return &Generator{validation, &fetchGenerator{modules, false, validation}, modules}
-	}
-	panic(fmt.Sprintf("Unknown client: %s", client))
-}
-
-func (g *Generator) ParamsBuilder() *generator.CodeFile {
-	return generateParamsBuilder(g.Modules.Params)
+	return &Generator{validation, clientGenerator, modules}
 }
 
 var Axios = "axios"

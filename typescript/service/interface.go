@@ -6,26 +6,24 @@ import (
 	"generator"
 	"spec"
 	"typescript/common"
-	"typescript/module"
 	"typescript/responses"
 	"typescript/types"
 	"typescript/writer"
 )
 
-func generateServiceApis(version *spec.Version, modelsModule module.Module, errorsModule module.Module, module module.Module) []generator.CodeFile {
+func (g *Generator) ServiceApis(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		apiModule := module.Submodule(serviceName(&api))
-		serviceFile := generateApiService(&api, modelsModule, errorsModule, apiModule)
-		files = append(files, *serviceFile)
+		files = append(files, *g.serviceApi(&api))
 	}
 	return files
 }
 
-func generateApiService(api *spec.Api, modelsModule module.Module, errorsModule module.Module, apiModule module.Module) *generator.CodeFile {
+func (g *Generator) serviceApi(api *spec.Api) *generator.CodeFile {
+	apiModule := g.Modules.ServiceApi(api)
 	w := writer.New(apiModule)
-	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(apiModule))
-	w.Line("import * as %s from '%s'", types.ErrorsPackage, errorsModule.GetImport(apiModule))
+	w.Line("import * as %s from '%s'", types.ModelsPackage, g.Modules.Models(api.InHttp.InVersion).GetImport(apiModule))
+	w.Line("import * as %s from '%s'", types.ErrorsPackage, g.Modules.Errors.GetImport(apiModule))
 	for _, operation := range api.Operations {
 		if operation.Body != nil || operation.HasParams() {
 			w.EmptyLine()

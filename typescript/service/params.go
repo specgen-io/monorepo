@@ -6,7 +6,6 @@ import (
 
 	"generator"
 	"spec"
-	"typescript/module"
 	"typescript/validations/common"
 )
 
@@ -26,7 +25,7 @@ func queryRuntimeType(operation *spec.NamedOperation) string {
 	return common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams"))
 }
 
-func generateParamsStaticCode(module module.Module) *generator.CodeFile {
+func (g *Generator) ParamsStaticCode() *generator.CodeFile {
 	code := `
 export function zipHeaders(headers: string[]): Record<string, string | string[]> {
   const result: Record<string, string | string[]> = {}
@@ -49,5 +48,5 @@ export function zipHeaders(headers: string[]): Record<string, string | string[]>
   return result
 }`
 
-	return &generator.CodeFile{module.GetPath(), strings.TrimSpace(code)}
+	return &generator.CodeFile{g.Modules.Params.GetPath(), strings.TrimSpace(code)}
 }

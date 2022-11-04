@@ -6,7 +6,6 @@ import (
 
 	"generator"
 	"spec"
-	"typescript/module"
 	"typescript/types"
 	"typescript/validations"
 )
@@ -66,7 +65,7 @@ func clientResponseBody(validation validations.Validation, response *spec.Respon
 	}
 }
 
-func generateParamsBuilder(module module.Module) *generator.CodeFile {
+func (g *Generator) ParamsBuilder() *generator.CodeFile {
 	code := `
 export function stringify(value: ScalarParam): string {
   if (value instanceof Date) {
@@ -107,5 +106,5 @@ export function strParamsObject(params: Record<string, ParamType>): Record<strin
       .reduce((obj, paramName) => ({...obj, [paramName]: stringifyX(params[paramName]!)}), {} as Record<string, string | string[]>)
 }`
 
-	return &generator.CodeFile{module.GetPath(), strings.TrimSpace(code)}
+	return &generator.CodeFile{g.Modules.Params.GetPath(), strings.TrimSpace(code)}
 }
