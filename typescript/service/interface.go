@@ -60,10 +60,6 @@ func serviceInterfaceNameVersioned(api *spec.Api) string {
 	return result
 }
 
-func serviceName(api *spec.Api) string {
-	return api.Name.SnakeCase()
-}
-
 func operationParamsTypeName(operation *spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Params"
 }

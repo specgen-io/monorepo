@@ -73,7 +73,7 @@ func (g *expressGenerator) VersionRouting(version *spec.Version) *generator.Code
 	w.Line(`import * as responses from '%s'`, g.Modules.Responses.GetImport(routingModule))
 
 	for _, api := range version.Http.Apis {
-		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), serviceName(&api))
+		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), g.Modules.ServiceApi(&api).GetImport(routingModule))
 	}
 
 	for _, api := range version.Http.Apis {
