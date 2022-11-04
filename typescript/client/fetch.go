@@ -6,7 +6,6 @@ import (
 
 	"generator"
 	"spec"
-	"typescript/module"
 	"typescript/responses"
 	"typescript/types"
 	"typescript/validations"
@@ -14,19 +13,21 @@ import (
 )
 
 type fetchGenerator struct {
+	Modules    *Modules
 	node       bool
 	validation validations.Validation
 }
 
-func (g *fetchGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, apiModule module.Module) *generator.CodeFile {
+func (g *fetchGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
+	apiModule := g.Modules.Client(api)
 	w := writer.New(apiModule)
 	if g.node {
 		w.Line(`import { URL, URLSearchParams } from 'url'`)
 		w.Line(`import fetch from 'node-fetch'`)
 	}
-	w.Line(`import { strParamsItems, stringify } from '%s'`, paramsModule.GetImport(apiModule))
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(apiModule))
-	w.Line(`import * as %s from '%s'`, types.ModelsPackage, modelsModule.GetImport(apiModule))
+	w.Line(`import { strParamsItems, stringify } from '%s'`, g.Modules.Params.GetImport(apiModule))
+	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(apiModule))
+	w.Line(`import * as %s from '%s'`, types.ModelsPackage, g.Modules.Models(api.InHttp.InVersion).GetImport(apiModule))
 	w.EmptyLine()
 	w.Line(`export const client = (config: {baseURL: string}) => {`)
 	w.Line(`  return {`)

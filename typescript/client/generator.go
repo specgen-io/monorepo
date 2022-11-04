@@ -2,28 +2,37 @@ package client
 
 import (
 	"fmt"
-
 	"generator"
 	"spec"
-	"typescript/module"
 	"typescript/validations"
 )
 
 type ClientGenerator interface {
-	ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, apiModule module.Module) *generator.CodeFile
+	ApiClient(api *spec.Api) *generator.CodeFile
 }
 
-func NewClientGenerator(client string, validation validations.Validation) ClientGenerator {
+type Generator struct {
+	validations.Validation
+	ClientGenerator
+	Modules *Modules
+}
+
+func NewClientGenerator(client, validationName string, modules *Modules) *Generator {
+	validation := validations.New(validationName, &(modules.Modules))
 	if client == Axios {
-		return &axiosGenerator{validation}
+		return &Generator{validation, &axiosGenerator{modules, validation}, modules}
 	}
 	if client == NodeFetch {
-		return &fetchGenerator{true, validation}
+		return &Generator{validation, &fetchGenerator{modules, true, validation}, modules}
 	}
 	if client == BrowserFetch {
-		return &fetchGenerator{false, validation}
+		return &Generator{validation, &fetchGenerator{modules, false, validation}, modules}
 	}
 	panic(fmt.Sprintf("Unknown client: %s", client))
+}
+
+func (g *Generator) ParamsBuilder() *generator.CodeFile {
+	return generateParamsBuilder(g.Modules.Params)
 }
 
 var Axios = "axios"
