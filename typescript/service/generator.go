@@ -11,7 +11,7 @@ import (
 
 type ServiceGenerator interface {
 	VersionRouting(version *spec.Version, targetModule modules.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule modules.Module) *generator.CodeFile
-	SpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *generator.CodeFile
+	SpecRouter(specification *spec.Spec, rootModule modules.Module, specRouterModule modules.Module) *generator.CodeFile
 	Responses(targetModule, validationModule, errorsModule modules.Module) *generator.CodeFile
 }
 

@@ -16,12 +16,12 @@ type axiosGenerator struct {
 	validation validations.Validation
 }
 
-func (g *axiosGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *generator.CodeFile {
-	w := writer.New(module)
+func (g *axiosGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, apiModule modules.Module) *generator.CodeFile {
+	w := writer.New(apiModule)
 	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
-	w.Line(`import { strParamsItems, strParamsObject, stringify } from '%s'`, paramsModule.GetImport(module))
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
-	w.Line(`import * as %s from '%s'`, types.ModelsPackage, modelsModule.GetImport(module))
+	w.Line(`import { strParamsItems, strParamsObject, stringify } from '%s'`, paramsModule.GetImport(apiModule))
+	w.Line(`import * as t from '%s'`, validationModule.GetImport(apiModule))
+	w.Line(`import * as %s from '%s'`, types.ModelsPackage, modelsModule.GetImport(apiModule))
 	w.EmptyLine()
 	w.Line(`export const client = (axiosInstance: AxiosInstance) => {`)
 	w.Line(`  return {`)

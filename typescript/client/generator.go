@@ -10,7 +10,7 @@ import (
 )
 
 type ClientGenerator interface {
-	ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *generator.CodeFile
+	ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, apiModule modules.Module) *generator.CodeFile
 }
 
 func NewClientGenerator(client string, validation validations.Validation) ClientGenerator {

@@ -18,15 +18,15 @@ type fetchGenerator struct {
 	validation validations.Validation
 }
 
-func (g *fetchGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *generator.CodeFile {
-	w := writer.New(module)
+func (g *fetchGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, apiModule modules.Module) *generator.CodeFile {
+	w := writer.New(apiModule)
 	if g.node {
 		w.Line(`import { URL, URLSearchParams } from 'url'`)
 		w.Line(`import fetch from 'node-fetch'`)
 	}
-	w.Line(`import { strParamsItems, stringify } from '%s'`, paramsModule.GetImport(module))
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
-	w.Line(`import * as %s from '%s'`, types.ModelsPackage, modelsModule.GetImport(module))
+	w.Line(`import { strParamsItems, stringify } from '%s'`, paramsModule.GetImport(apiModule))
+	w.Line(`import * as t from '%s'`, validationModule.GetImport(apiModule))
+	w.Line(`import * as %s from '%s'`, types.ModelsPackage, modelsModule.GetImport(apiModule))
 	w.EmptyLine()
 	w.Line(`export const client = (config: {baseURL: string}) => {`)
 	w.Line(`  return {`)

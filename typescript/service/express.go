@@ -16,16 +16,16 @@ type expressGenerator struct {
 	validation validations.Validation
 }
 
-func (g *expressGenerator) SpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.New(module)
+func (g *expressGenerator) SpecRouter(specification *spec.Spec, rootModule modules.Module, specRouterModule modules.Module) *generator.CodeFile {
+	w := writer.New(specRouterModule)
 	w.Line("import {Router} from 'express'")
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
 			versionModule := rootModule.Submodule(version.Name.FlatCase())
 			apiModule := versionModule.Submodule(serviceName(&api)) //TODO: This logic is repeated here, it also exists where api module is created
 			routerModule := versionModule.Submodule("routing")      //TODO: This logic is repeated here, it also exists where router module is created
-			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), apiModule.GetImport(module))
-			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), routerModule.GetImport(module))
+			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), apiModule.GetImport(specRouterModule))
+			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), routerModule.GetImport(specRouterModule))
 		}
 	}
 
@@ -230,12 +230,12 @@ func (g *expressGenerator) respondInternalServerError(w generator.Writer) {
 	w.Line(`return`)
 }
 
-func (g *expressGenerator) Responses(targetModule, validationModule, errorsModule modules.Module) *generator.CodeFile {
-	w := writer.New(targetModule)
+func (g *expressGenerator) Responses(responsesModule, validationModule, errorsModule modules.Module) *generator.CodeFile {
+	w := writer.New(responsesModule)
 
 	w.Line(`import {Request, Response} from 'express'`)
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
-	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(targetModule))
+	w.Line(`import * as t from '%s'`, validationModule.GetImport(responsesModule))
+	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(responsesModule))
 
 	w.EmptyLine()
 	code := `

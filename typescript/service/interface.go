@@ -22,10 +22,10 @@ func generateServiceApis(version *spec.Version, modelsModule modules.Module, err
 	return files
 }
 
-func generateApiService(api *spec.Api, modelsModule modules.Module, errorsModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.New(module)
-	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(module))
-	w.Line("import * as %s from '%s'", types.ErrorsPackage, errorsModule.GetImport(module))
+func generateApiService(api *spec.Api, modelsModule modules.Module, errorsModule modules.Module, apiModule modules.Module) *generator.CodeFile {
+	w := writer.New(apiModule)
+	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(apiModule))
+	w.Line("import * as %s from '%s'", types.ErrorsPackage, errorsModule.GetImport(apiModule))
 	for _, operation := range api.Operations {
 		if operation.Body != nil || operation.HasParams() {
 			w.EmptyLine()

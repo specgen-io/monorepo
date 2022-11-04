@@ -26,11 +26,11 @@ func generateServicesImplementations(specification *spec.Spec, generatedModule m
 	return files
 }
 
-func generateServiceImplementation(api *spec.Api, apiModule modules.Module, modelsModule modules.Module, errorsModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.New(module)
-	w.Line("import * as service from '%s'", apiModule.GetImport(module))
-	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(module))
-	w.Line("import * as %s from '%s'", types.ErrorsPackage, errorsModule.GetImport(module))
+func generateServiceImplementation(api *spec.Api, apiModule modules.Module, modelsModule modules.Module, errorsModule modules.Module, implModule modules.Module) *generator.CodeFile {
+	w := writer.New(implModule)
+	w.Line("import * as service from '%s'", apiModule.GetImport(implModule))
+	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(implModule))
+	w.Line("import * as %s from '%s'", types.ErrorsPackage, errorsModule.GetImport(implModule))
 	w.EmptyLine()
 	w.Line("export const %sService = (): service.%s => {", api.Name.CamelCase(), serviceInterfaceName(api)) //TODO: remove services
 
