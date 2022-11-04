@@ -6,10 +6,12 @@ import (
 	"spec"
 	"typescript/module"
 	"typescript/validations"
+	"typescript/validations/modules"
 )
 
 func GenerateService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string, server string, validationName string) *generator.Sources {
-	validation := validations.New(validationName)
+	modules := modules.NewModules(validationName, generatePath, specification)
+	validation := validations.New(validationName, modules)
 	g := NewServiceGenerator(server, validation)
 
 	sources := generator.NewSources()
@@ -17,18 +19,18 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 	rootModule := module.New(generatePath)
 
 	validationModule := rootModule.Submodule(validationName)
-	sources.AddGenerated(validation.SetupLibrary(validationModule))
+	sources.AddGenerated(validation.SetupLibrary())
 	paramsModule := rootModule.Submodule("params")
 	sources.AddGenerated(generateParamsStaticCode(paramsModule))
 	errorsModule := rootModule.Submodule("errors")
-	sources.AddGenerated(validation.Models(specification.HttpErrors.ResolvedModels, validationModule, errorsModule))
+	sources.AddGenerated(validation.ErrorModels(specification.HttpErrors))
 	responsesModule := rootModule.Submodule("responses")
 	sources.AddGenerated(g.Responses(responsesModule, validationModule, errorsModule))
 
 	for _, version := range specification.Versions {
 		versionModule := rootModule.Submodule(version.Name.FlatCase())
 		modelsModule := versionModule.Submodule("models")
-		sources.AddGenerated(validation.Models(version.ResolvedModels, validationModule, modelsModule))
+		sources.AddGenerated(validation.Models(&version))
 		sources.AddGeneratedAll(generateServiceApis(&version, modelsModule, errorsModule, versionModule))
 		routingModule := versionModule.Submodule("routing")
 		sources.AddGenerated(g.VersionRouting(&version, routingModule, modelsModule, validationModule, paramsModule, errorsModule, responsesModule))

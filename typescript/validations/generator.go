@@ -2,28 +2,29 @@ package validations
 
 import (
 	"fmt"
+	"typescript/validations/modules"
 
 	"generator"
 	"spec"
-	"typescript/module"
-	iots2 "typescript/validations/iots"
-	superstruct2 "typescript/validations/superstruct"
+	"typescript/validations/iots"
+	"typescript/validations/superstruct"
 )
 
 type Validation interface {
 	RuntimeTypeSamePackage(typ *spec.TypeDef) string
 	RuntimeType(typ *spec.TypeDef) string
-	SetupLibrary(validationModule module.Module) *generator.CodeFile
-	Models(models []*spec.NamedModel, validationModule module.Module, module module.Module) *generator.CodeFile
+	SetupLibrary() *generator.CodeFile
+	Models(version *spec.Version) *generator.CodeFile
+	ErrorModels(httpErrors *spec.HttpErrors) *generator.CodeFile
 	WriteParamsType(w generator.Writer, typeName string, params []spec.NamedParam)
 }
 
-func New(validation string) Validation {
-	if validation == superstruct2.Superstruct {
-		return &superstruct2.Generator{}
+func New(validation string, modules *modules.Modules) Validation {
+	if validation == superstruct.Superstruct {
+		return &superstruct.Generator{modules}
 	}
-	if validation == iots2.IoTs {
-		return &iots2.Generator{}
+	if validation == iots.IoTs {
+		return &iots.Generator{modules}
 	}
 	panic(fmt.Sprintf("Unknown validation: %s", validation))
 }

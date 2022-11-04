@@ -1,16 +1,16 @@
 package iots
 
 import (
-	"strings"
+	"typescript/writer"
 
 	"generator"
-	"typescript/module"
 )
 
 var IoTs = "io-ts"
 
-func (g *Generator) SetupLibrary(module module.Module) *generator.CodeFile {
-	code := `
+func (g *Generator) SetupLibrary() *generator.CodeFile {
+	w := writer.New(g.Modules.Validation)
+	w.Lines(`
 export * from 'io-ts'
 export * from 'io-ts-types'
 
@@ -163,6 +163,6 @@ export const decode = <A, O, I>(codec: t.Type<A, O, I>, value: I): A => {
 export const encode = <A, O, I>(codec: t.Type<A, O, I>, value: A): O => {
     return codec.encode(value)
 }
-`
-	return &generator.CodeFile{module.GetPath(), strings.TrimSpace(code)}
+`)
+	return w.ToCodeFile()
 }
