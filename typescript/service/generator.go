@@ -5,14 +5,14 @@ import (
 
 	"generator"
 	"spec"
-	"typescript/modules"
+	"typescript/module"
 	"typescript/validations"
 )
 
 type ServiceGenerator interface {
-	VersionRouting(version *spec.Version, targetModule modules.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule modules.Module) *generator.CodeFile
-	SpecRouter(specification *spec.Spec, rootModule modules.Module, specRouterModule modules.Module) *generator.CodeFile
-	Responses(targetModule, validationModule, errorsModule modules.Module) *generator.CodeFile
+	VersionRouting(version *spec.Version, targetModule module.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule module.Module) *generator.CodeFile
+	SpecRouter(specification *spec.Spec, rootModule module.Module, specRouterModule module.Module) *generator.CodeFile
+	Responses(targetModule, validationModule, errorsModule module.Module) *generator.CodeFile
 }
 
 func NewServiceGenerator(server string, validation validations.Validation) ServiceGenerator {

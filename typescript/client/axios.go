@@ -5,7 +5,7 @@ import (
 
 	"generator"
 	"spec"
-	"typescript/modules"
+	"typescript/module"
 	"typescript/responses"
 	"typescript/types"
 	"typescript/validations"
@@ -16,7 +16,7 @@ type axiosGenerator struct {
 	validation validations.Validation
 }
 
-func (g *axiosGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, apiModule modules.Module) *generator.CodeFile {
+func (g *axiosGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, apiModule module.Module) *generator.CodeFile {
 	w := writer.New(apiModule)
 	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
 	w.Line(`import { strParamsItems, strParamsObject, stringify } from '%s'`, paramsModule.GetImport(apiModule))

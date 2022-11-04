@@ -6,7 +6,7 @@ import (
 
 	"generator"
 	"spec"
-	"typescript/modules"
+	"typescript/module"
 	"typescript/validations"
 	"typescript/validations/common"
 	"typescript/writer"
@@ -16,7 +16,7 @@ type expressGenerator struct {
 	validation validations.Validation
 }
 
-func (g *expressGenerator) SpecRouter(specification *spec.Spec, rootModule modules.Module, specRouterModule modules.Module) *generator.CodeFile {
+func (g *expressGenerator) SpecRouter(specification *spec.Spec, rootModule module.Module, specRouterModule module.Module) *generator.CodeFile {
 	w := writer.New(specRouterModule)
 	w.Line("import {Router} from 'express'")
 	for _, version := range specification.Versions {
@@ -64,7 +64,7 @@ func expressVersionUrl(version *spec.Version) string {
 	return url
 }
 
-func (g *expressGenerator) VersionRouting(version *spec.Version, targetModule modules.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule modules.Module) *generator.CodeFile {
+func (g *expressGenerator) VersionRouting(version *spec.Version, targetModule module.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule module.Module) *generator.CodeFile {
 	w := writer.New(targetModule)
 
 	w.Line(`import {Router, Request, Response} from 'express'`)
@@ -230,7 +230,7 @@ func (g *expressGenerator) respondInternalServerError(w generator.Writer) {
 	w.Line(`return`)
 }
 
-func (g *expressGenerator) Responses(responsesModule, validationModule, errorsModule modules.Module) *generator.CodeFile {
+func (g *expressGenerator) Responses(responsesModule, validationModule, errorsModule module.Module) *generator.CodeFile {
 	w := writer.New(responsesModule)
 
 	w.Line(`import {Request, Response} from 'express'`)

@@ -4,11 +4,11 @@ import (
 	"generator"
 	"spec"
 	"typescript/common"
-	"typescript/modules"
+	"typescript/module"
 	"typescript/writer"
 )
 
-func (g *Generator) Models(models []*spec.NamedModel, codecModule modules.Module, module modules.Module) *generator.CodeFile {
+func (g *Generator) Models(models []*spec.NamedModel, codecModule module.Module, module module.Module) *generator.CodeFile {
 	w := writer.New(module)
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")

@@ -5,7 +5,7 @@ import (
 
 	"generator"
 	"spec"
-	"typescript/modules"
+	"typescript/module"
 	iots2 "typescript/validations/iots"
 	superstruct2 "typescript/validations/superstruct"
 )
@@ -13,8 +13,8 @@ import (
 type Validation interface {
 	RuntimeTypeSamePackage(typ *spec.TypeDef) string
 	RuntimeType(typ *spec.TypeDef) string
-	SetupLibrary(validationModule modules.Module) *generator.CodeFile
-	Models(models []*spec.NamedModel, validationModule modules.Module, module modules.Module) *generator.CodeFile
+	SetupLibrary(validationModule module.Module) *generator.CodeFile
+	Models(models []*spec.NamedModel, validationModule module.Module, module module.Module) *generator.CodeFile
 	WriteParamsType(w generator.Writer, typeName string, params []spec.NamedParam)
 }
 

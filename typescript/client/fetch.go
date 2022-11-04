@@ -6,7 +6,7 @@ import (
 
 	"generator"
 	"spec"
-	"typescript/modules"
+	"typescript/module"
 	"typescript/responses"
 	"typescript/types"
 	"typescript/validations"
@@ -18,7 +18,7 @@ type fetchGenerator struct {
 	validation validations.Validation
 }
 
-func (g *fetchGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, apiModule modules.Module) *generator.CodeFile {
+func (g *fetchGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, apiModule module.Module) *generator.CodeFile {
 	w := writer.New(apiModule)
 	if g.node {
 		w.Line(`import { URL, URLSearchParams } from 'url'`)

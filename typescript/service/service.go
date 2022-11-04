@@ -4,7 +4,7 @@ import (
 	"generator"
 	"openapi"
 	"spec"
-	"typescript/modules"
+	"typescript/module"
 	"typescript/validations"
 )
 
@@ -14,7 +14,7 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 
 	sources := generator.NewSources()
 
-	rootModule := modules.New(generatePath)
+	rootModule := module.New(generatePath)
 
 	validationModule := rootModule.Submodule(validationName)
 	sources.AddGenerated(validation.SetupLibrary(validationModule))
@@ -41,7 +41,7 @@ func GenerateService(specification *spec.Spec, swaggerPath string, generatePath 
 	}
 
 	if servicesPath != "" {
-		sources.AddScaffoldedAll(generateServicesImplementations(specification, rootModule, errorsModule, modules.New(servicesPath)))
+		sources.AddScaffoldedAll(generateServicesImplementations(specification, rootModule, errorsModule, module.New(servicesPath)))
 	}
 
 	return sources

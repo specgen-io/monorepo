@@ -4,11 +4,11 @@ import (
 	"generator"
 	"spec"
 	"typescript/common"
-	"typescript/modules"
+	"typescript/module"
 	"typescript/writer"
 )
 
-func (g *Generator) Models(models []*spec.NamedModel, superstructModule modules.Module, module modules.Module) *generator.CodeFile {
+func (g *Generator) Models(models []*spec.NamedModel, superstructModule module.Module, module module.Module) *generator.CodeFile {
 	w := writer.New(module)
 	w.Line(`import * as t from '%s'`, superstructModule.GetImport(module))
 	for _, model := range models {

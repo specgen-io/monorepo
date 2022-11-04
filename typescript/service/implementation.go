@@ -7,12 +7,12 @@ import (
 
 	"generator"
 	"spec"
-	"typescript/modules"
+	"typescript/module"
 	"typescript/responses"
 	"typescript/writer"
 )
 
-func generateServicesImplementations(specification *spec.Spec, generatedModule modules.Module, errorsModule modules.Module, module modules.Module) []generator.CodeFile {
+func generateServicesImplementations(specification *spec.Spec, generatedModule module.Module, errorsModule module.Module, module module.Module) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, version := range specification.Versions {
 		versionGeneratedModule := generatedModule.Submodule(version.Name.FlatCase())
@@ -26,7 +26,7 @@ func generateServicesImplementations(specification *spec.Spec, generatedModule m
 	return files
 }
 
-func generateServiceImplementation(api *spec.Api, apiModule modules.Module, modelsModule modules.Module, errorsModule modules.Module, implModule modules.Module) *generator.CodeFile {
+func generateServiceImplementation(api *spec.Api, apiModule module.Module, modelsModule module.Module, errorsModule module.Module, implModule module.Module) *generator.CodeFile {
 	w := writer.New(implModule)
 	w.Line("import * as service from '%s'", apiModule.GetImport(implModule))
 	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(implModule))

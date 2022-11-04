@@ -4,12 +4,12 @@ import (
 	"strings"
 
 	"generator"
-	"typescript/modules"
+	"typescript/module"
 )
 
 var IoTs = "io-ts"
 
-func (g *Generator) SetupLibrary(module modules.Module) *generator.CodeFile {
+func (g *Generator) SetupLibrary(module module.Module) *generator.CodeFile {
 	code := `
 export * from 'io-ts'
 export * from 'io-ts-types'

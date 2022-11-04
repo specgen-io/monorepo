@@ -3,7 +3,7 @@ package client
 import (
 	"generator"
 	"spec"
-	"typescript/modules"
+	"typescript/module"
 	"typescript/validations"
 )
 
@@ -12,7 +12,7 @@ func GenerateClient(specification *spec.Spec, generatePath string, client string
 	g := NewClientGenerator(client, validation)
 
 	sources := generator.NewSources()
-	rootModule := modules.New(generatePath)
+	rootModule := module.New(generatePath)
 
 	validationModule := rootModule.Submodule(validationName)
 	sources.AddGenerated(validation.SetupLibrary(validationModule))

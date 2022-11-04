@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"generator"
-	"typescript/modules"
-	"typescript/validations/common"
 	"spec"
+	"typescript/module"
+	"typescript/validations/common"
 )
 
 func paramsTypeName(operation *spec.NamedOperation, namePostfix string) string {
@@ -26,7 +26,7 @@ func queryRuntimeType(operation *spec.NamedOperation) string {
 	return common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams"))
 }
 
-func generateParamsStaticCode(module modules.Module) *generator.CodeFile {
+func generateParamsStaticCode(module module.Module) *generator.CodeFile {
 	code := `
 export function zipHeaders(headers: string[]): Record<string, string | string[]> {
   const result: Record<string, string | string[]> = {}

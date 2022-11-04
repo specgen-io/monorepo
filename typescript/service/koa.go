@@ -7,7 +7,7 @@ import (
 	"generator"
 	"github.com/pinzolo/casee"
 	"spec"
-	"typescript/modules"
+	"typescript/module"
 	"typescript/validations"
 	"typescript/writer"
 )
@@ -16,7 +16,7 @@ type koaGenerator struct {
 	validation validations.Validation
 }
 
-func (g *koaGenerator) SpecRouter(specification *spec.Spec, rootModule modules.Module, specRouterModule modules.Module) *generator.CodeFile {
+func (g *koaGenerator) SpecRouter(specification *spec.Spec, rootModule module.Module, specRouterModule module.Module) *generator.CodeFile {
 	w := writer.New(specRouterModule)
 	w.Line("import Router from '@koa/router'")
 	for _, version := range specification.Versions {
@@ -62,7 +62,7 @@ func (g *koaGenerator) SpecRouter(specification *spec.Spec, rootModule modules.M
 	return w.ToCodeFile()
 }
 
-func (g *koaGenerator) VersionRouting(version *spec.Version, targetModule modules.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule modules.Module) *generator.CodeFile {
+func (g *koaGenerator) VersionRouting(version *spec.Version, targetModule module.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule module.Module) *generator.CodeFile {
 	w := writer.New(targetModule)
 	w.Line(`import Router from '@koa/router'`)
 	w.Line(`import { ExtendableContext } from 'koa'`)
@@ -228,7 +228,7 @@ func (g *koaGenerator) respondInternalServerError(w generator.Writer) {
 	w.Line(`return`)
 }
 
-func (g *koaGenerator) Responses(targetModule, validationModule, errorsModule modules.Module) *generator.CodeFile {
+func (g *koaGenerator) Responses(targetModule, validationModule, errorsModule module.Module) *generator.CodeFile {
 	w := writer.New(targetModule)
 	w.Line(`import { ExtendableContext } from 'koa'`)
 	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
