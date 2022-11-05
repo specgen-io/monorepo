@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"strings"
+	"typescript/imports"
 	"typescript/types"
 
 	"generator"
@@ -22,13 +23,14 @@ func (g *Generator) ServicesImpls(specification *spec.Spec) []generator.CodeFile
 }
 
 func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
-	implModule := g.Modules.ServiceImpl(api)
-	w := writer.New(implModule)
-	w.Line("import * as service from '%s'", g.Modules.ServiceApi(api).GetImport(implModule))
-	w.Line("import * as %s from '%s'", types.ModelsPackage, g.Modules.Models(api.InHttp.InVersion).GetImport(implModule))
-	w.Line("import * as %s from '%s'", types.ErrorsPackage, g.Modules.Errors.GetImport(implModule))
+	w := writer.New(g.Modules.ServiceImpl(api))
+	imports := imports.New(g.Modules.ServiceImpl(api))
+	imports.Star(g.Modules.ServiceApi(api), `service`)
+	imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
+	imports.Star(g.Modules.Errors, types.ErrorsPackage)
+	imports.Write(w)
 	w.EmptyLine()
-	w.Line("export const %sService = (): service.%s => {", api.Name.CamelCase(), serviceInterfaceName(api)) //TODO: remove services
+	w.Line("export const %sService = (): service.%s => {", api.Name.CamelCase(), serviceInterfaceName(api))
 
 	operations := []string{}
 	for _, operation := range api.Operations {

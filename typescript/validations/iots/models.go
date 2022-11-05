@@ -4,6 +4,7 @@ import (
 	"generator"
 	"spec"
 	"typescript/common"
+	"typescript/imports"
 	"typescript/module"
 	"typescript/writer"
 )
@@ -21,7 +22,9 @@ func (g *Generator) models(models []*spec.NamedModel, modelsModule module.Module
 	w := writer.New(modelsModule)
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
-	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(modelsModule))
+	imports := imports.New(modelsModule)
+	imports.Star(g.Modules.Validation, `t`)
+	imports.Write(w)
 	for _, model := range models {
 		w.EmptyLine()
 		if model.IsObject() {

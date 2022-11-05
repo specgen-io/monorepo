@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"typescript/imports"
 
 	"generator"
 	"spec"
@@ -20,10 +21,11 @@ func (g *Generator) ServiceApis(version *spec.Version) []generator.CodeFile {
 }
 
 func (g *Generator) serviceApi(api *spec.Api) *generator.CodeFile {
-	apiModule := g.Modules.ServiceApi(api)
-	w := writer.New(apiModule)
-	w.Line("import * as %s from '%s'", types.ModelsPackage, g.Modules.Models(api.InHttp.InVersion).GetImport(apiModule))
-	w.Line("import * as %s from '%s'", types.ErrorsPackage, g.Modules.Errors.GetImport(apiModule))
+	w := writer.New(g.Modules.ServiceApi(api))
+	imports := imports.New(g.Modules.ServiceApi(api))
+	imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
+	imports.Star(g.Modules.Errors, types.ErrorsPackage)
+	imports.Write(w)
 	for _, operation := range api.Operations {
 		if operation.Body != nil || operation.HasParams() {
 			w.EmptyLine()

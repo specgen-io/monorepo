@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"strings"
+	"typescript/imports"
 
 	"generator"
 	"spec"
@@ -19,15 +20,16 @@ type fetchGenerator struct {
 }
 
 func (g *fetchGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
-	apiModule := g.Modules.Client(api)
-	w := writer.New(apiModule)
+	w := writer.New(g.Modules.Client(api))
+	imports := imports.New(g.Modules.Client(api))
 	if g.node {
-		w.Line(`import { URL, URLSearchParams } from 'url'`)
-		w.Line(`import fetch from 'node-fetch'`)
+		imports.LibNames(`url`, `URL`, `URLSearchParams`)
+		imports.Default(`node-fetch`, `fetch`)
 	}
-	w.Line(`import { strParamsItems, stringify } from '%s'`, g.Modules.Params.GetImport(apiModule))
-	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(apiModule))
-	w.Line(`import * as %s from '%s'`, types.ModelsPackage, g.Modules.Models(api.InHttp.InVersion).GetImport(apiModule))
+	imports.Names(g.Modules.Params, `strParamsItems`, `stringify`)
+	imports.Star(g.Modules.Validation, `t`)
+	imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
+	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`export const client = (config: {baseURL: string}) => {`)
 	w.Line(`  return {`)

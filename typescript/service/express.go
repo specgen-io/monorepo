@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"strings"
+	"typescript/imports"
 
 	"generator"
 	"spec"
@@ -18,13 +19,15 @@ type expressGenerator struct {
 
 func (g *expressGenerator) SpecRouter(specification *spec.Spec) *generator.CodeFile {
 	w := writer.New(g.Modules.SpecRouter)
-	w.Line("import {Router} from 'express'")
+	imports := imports.New(g.Modules.SpecRouter)
+	imports.LibNames(`express`, `Router`)
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), g.Modules.ServiceApi(&api).GetImport(g.Modules.SpecRouter))
-			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), g.Modules.Routing(&version).GetImport(g.Modules.SpecRouter))
+			imports.Aliased(g.Modules.ServiceApi(&api), serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api))
+			imports.Aliased(g.Modules.Routing(&version), apiRouterName(&api), apiRouterNameVersioned(&api))
 		}
 	}
+	imports.Write(w)
 
 	servicesDefinitions := []string{}
 	for _, version := range specification.Versions {

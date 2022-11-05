@@ -2,11 +2,11 @@ package service
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"github.com/pinzolo/casee"
 	"spec"
+	"strings"
+	"typescript/imports"
 	"typescript/validations"
 	"typescript/writer"
 )
@@ -18,7 +18,9 @@ type koaGenerator struct {
 
 func (g *koaGenerator) SpecRouter(specification *spec.Spec) *generator.CodeFile {
 	w := writer.New(g.Modules.SpecRouter)
-	w.Line("import Router from '@koa/router'")
+	imports := imports.New(g.Modules.SpecRouter)
+	imports.Default(`@koa/router`, `Router`)
+	imports.Write(w)
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
 			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), g.Modules.ServiceApi(&api).GetImport(g.Modules.SpecRouter))
