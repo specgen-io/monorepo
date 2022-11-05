@@ -1,4 +1,4 @@
-package imports
+package writer
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ type imports struct {
 	Target   module.Module
 }
 
-func New(target module.Module) *imports {
+func NewImports(target module.Module) *imports {
 	return &imports{map[string]module.Module{}, map[string][]string{}, map[string]string{}, target}
 }
 

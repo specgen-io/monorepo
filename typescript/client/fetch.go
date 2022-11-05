@@ -2,11 +2,9 @@ package client
 
 import (
 	"fmt"
-	"strings"
-	"typescript/imports"
-
 	"generator"
 	"spec"
+	"strings"
 	"typescript/responses"
 	"typescript/types"
 	"typescript/validations"
@@ -21,7 +19,7 @@ type fetchGenerator struct {
 
 func (g *fetchGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.Client(api))
-	imports := imports.New(g.Modules.Client(api))
+	imports := w.Imports()
 	if g.node {
 		imports.LibNames(`url`, `URL`, `URLSearchParams`)
 		imports.Default(`node-fetch`, `fetch`)

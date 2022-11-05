@@ -1,11 +1,9 @@
 package client
 
 import (
-	"strings"
-	"typescript/imports"
-
 	"generator"
 	"spec"
+	"strings"
 	"typescript/responses"
 	"typescript/types"
 	"typescript/validations"
@@ -19,7 +17,7 @@ type axiosGenerator struct {
 
 func (g *axiosGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.Client(api))
-	imports := imports.New(g.Modules.Client(api))
+	imports := w.Imports()
 	imports.LibNames(`axios`, `AxiosInstance`, `AxiosRequestConfig`)
 	imports.Names(g.Modules.Params, `strParamsItems`, `strParamsObject`, `stringify`)
 	imports.Star(g.Modules.Validation, `t`)

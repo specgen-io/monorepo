@@ -2,13 +2,10 @@ package service
 
 import (
 	"fmt"
-	"strings"
-	"typescript/imports"
-
 	"generator"
 	"spec"
+	"strings"
 	"typescript/validations"
-	"typescript/validations/common"
 	"typescript/writer"
 )
 
@@ -19,7 +16,7 @@ type expressGenerator struct {
 
 func (g *expressGenerator) SpecRouter(specification *spec.Spec) *generator.CodeFile {
 	w := writer.New(g.Modules.SpecRouter)
-	imports := imports.New(g.Modules.SpecRouter)
+	imports := w.Imports()
 	imports.LibNames(`express`, `Router`)
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
@@ -175,7 +172,7 @@ func (g *expressGenerator) operationRouting(w generator.Writer, operation *spec.
 
 func (g *expressGenerator) urlParamsParsing(w generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.Endpoint.UrlParams) > 0 {
-		w.Line("const urlParamsDecode = t.decodeR(%s, request.params)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "UrlParams")))
+		w.Line("const urlParamsDecode = t.decodeR(%s, request.params)", g.Validation.RuntimeTypeName(urlParamsType(operation)))
 		w.Line("if (urlParamsDecode.error) {")
 		g.respondNotFound(w.Indented(), "Failed to parse url parameters")
 		w.Line("}")
@@ -185,7 +182,7 @@ func (g *expressGenerator) urlParamsParsing(w generator.Writer, operation *spec.
 
 func (g *expressGenerator) headerParsing(w generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.HeaderParams) > 0 {
-		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(request.rawHeaders))", common.ParamsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")))
+		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(request.rawHeaders))", g.Validation.RuntimeTypeName(headersType(operation)))
 		w.Line("if (headerParamsDecode.error) {")
 		g.respondBadRequest(w.Indented(), "HEADER", "headerParamsDecode.error", "Failed to parse header")
 		w.Line("}")
@@ -195,7 +192,7 @@ func (g *expressGenerator) headerParsing(w generator.Writer, operation *spec.Nam
 
 func (g *expressGenerator) queryParsing(w generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.QueryParams) > 0 {
-		w.Line("const queryParamsDecode = t.decodeR(%s, request.query)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams")))
+		w.Line("const queryParamsDecode = t.decodeR(%s, request.query)", g.Validation.RuntimeTypeName(queryType(operation)))
 		w.Line("if (queryParamsDecode.error) {")
 		g.respondBadRequest(w.Indented(), "QUERY", "queryParamsDecode.error", "Failed to parse query")
 		w.Line("}")

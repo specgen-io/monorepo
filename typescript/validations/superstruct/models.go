@@ -4,7 +4,6 @@ import (
 	"generator"
 	"spec"
 	"typescript/common"
-	"typescript/imports"
 	"typescript/module"
 	"typescript/writer"
 )
@@ -20,7 +19,7 @@ func (g *Generator) ErrorModels(httpErrors *spec.HttpErrors) *generator.CodeFile
 
 func (g *Generator) models(models []*spec.NamedModel, modelsModule module.Module) *generator.CodeFile {
 	w := writer.New(modelsModule)
-	imports := imports.New(modelsModule)
+	imports := w.Imports()
 	imports.Star(g.Modules.Validation, `t`)
 	imports.Write(w)
 	for _, model := range models {

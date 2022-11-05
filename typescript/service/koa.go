@@ -6,7 +6,6 @@ import (
 	"github.com/pinzolo/casee"
 	"spec"
 	"strings"
-	"typescript/imports"
 	"typescript/validations"
 	"typescript/writer"
 )
@@ -18,7 +17,7 @@ type koaGenerator struct {
 
 func (g *koaGenerator) SpecRouter(specification *spec.Spec) *generator.CodeFile {
 	w := writer.New(g.Modules.SpecRouter)
-	imports := imports.New(g.Modules.SpecRouter)
+	imports := w.Imports()
 	imports.Default(`@koa/router`, `Router`)
 	imports.Write(w)
 	for _, version := range specification.Versions {
@@ -173,7 +172,7 @@ func (g *koaGenerator) operationRouting(w generator.Writer, operation *spec.Name
 
 func (g *koaGenerator) urlParamsParsing(w generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.Endpoint.UrlParams) > 0 {
-		w.Line("const urlParamsDecode = t.decodeR(%s, ctx.params)", urlParamsRuntimeType(operation))
+		w.Line("const urlParamsDecode = t.decodeR(%s, ctx.params)", g.Validation.RuntimeTypeName(urlParamsType(operation)))
 		w.Line("if (urlParamsDecode.error) {")
 		g.respondNotFound(w.Indented(), "Failed to parse url parameters")
 		w.Line("}")
@@ -183,7 +182,7 @@ func (g *koaGenerator) urlParamsParsing(w generator.Writer, operation *spec.Name
 
 func (g *koaGenerator) headerParsing(w generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.HeaderParams) > 0 {
-		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(ctx.req.rawHeaders))", headersRuntimeType(operation))
+		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(ctx.req.rawHeaders))", g.Validation.RuntimeTypeName(headersType(operation)))
 		w.Line("if (headerParamsDecode.error) {")
 		g.respondBadRequest(w.Indented(), "HEADER", "headerParamsDecode.error", "Failed to parse header")
 		w.Line("}")
@@ -193,7 +192,7 @@ func (g *koaGenerator) headerParsing(w generator.Writer, operation *spec.NamedOp
 
 func (g *koaGenerator) queryParsing(w generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.QueryParams) > 0 {
-		w.Line("const queryParamsDecode = t.decodeR(%s, ctx.request.query)", queryRuntimeType(operation))
+		w.Line("const queryParamsDecode = t.decodeR(%s, ctx.request.query)", g.Validation.RuntimeTypeName(queryType(operation)))
 		w.Line("if (queryParamsDecode.error) {")
 		g.respondBadRequest(w.Indented(), "QUERY", "queryParamsDecode.error", "Failed to parse query")
 		w.Line("}")

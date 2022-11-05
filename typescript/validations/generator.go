@@ -11,6 +11,7 @@ import (
 )
 
 type Validation interface {
+	RuntimeTypeName(typeName string) string
 	RuntimeTypeSamePackage(typ *spec.TypeDef) string
 	RuntimeType(typ *spec.TypeDef) string
 	SetupLibrary() *generator.CodeFile

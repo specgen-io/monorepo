@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"strings"
-	"typescript/imports"
 	"typescript/types"
 
 	"generator"
@@ -24,7 +23,7 @@ func (g *Generator) ServicesImpls(specification *spec.Spec) []generator.CodeFile
 
 func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.ServiceImpl(api))
-	imports := imports.New(g.Modules.ServiceImpl(api))
+	imports := w.Imports()
 	imports.Star(g.Modules.ServiceApi(api), `service`)
 	imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
 	imports.Star(g.Modules.Errors, types.ErrorsPackage)

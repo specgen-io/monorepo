@@ -2,31 +2,31 @@ package service
 
 import (
 	"fmt"
-	"strings"
+	"typescript/writer"
 
 	"generator"
 	"spec"
-	"typescript/validations/common"
 )
 
 func paramsTypeName(operation *spec.NamedOperation, namePostfix string) string {
 	return fmt.Sprintf("%s%s", operation.Name.PascalCase(), namePostfix)
 }
 
-func urlParamsRuntimeType(operation *spec.NamedOperation) string {
-	return common.ParamsRuntimeTypeName(paramsTypeName(operation, "UrlParams"))
+func urlParamsType(operation *spec.NamedOperation) string {
+	return paramsTypeName(operation, "UrlParams")
 }
 
-func headersRuntimeType(operation *spec.NamedOperation) string {
-	return common.ParamsRuntimeTypeName(paramsTypeName(operation, "HeaderParams"))
+func headersType(operation *spec.NamedOperation) string {
+	return paramsTypeName(operation, "HeaderParams")
 }
 
-func queryRuntimeType(operation *spec.NamedOperation) string {
-	return common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams"))
+func queryType(operation *spec.NamedOperation) string {
+	return paramsTypeName(operation, "QueryParams")
 }
 
 func (g *Generator) ParamsStaticCode() *generator.CodeFile {
-	code := `
+	w := writer.New(g.Modules.Params)
+	w.Lines(`
 export function zipHeaders(headers: string[]): Record<string, string | string[]> {
   const result: Record<string, string | string[]> = {}
 
@@ -46,7 +46,6 @@ export function zipHeaders(headers: string[]): Record<string, string | string[]>
       }
   }
   return result
-}`
-
-	return &generator.CodeFile{g.Modules.Params.GetPath(), strings.TrimSpace(code)}
+}`)
+	return w.ToCodeFile()
 }
