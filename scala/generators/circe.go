@@ -2,6 +2,8 @@ package generators
 
 import (
 	"fmt"
+	"scala/packages"
+	"scala/writer"
 	"strings"
 
 	"generator"
@@ -12,7 +14,7 @@ func GenerateCirceModels(specification *spec.Spec, packageName string, generateP
 	if packageName == "" {
 		packageName = specification.Name.FlatCase()
 	}
-	mainPackage := NewPackage(generatePath, packageName, "")
+	mainPackage := packages.New(generatePath, packageName, "")
 	jsonPackage := mainPackage
 
 	sources := generator.NewSources()
@@ -30,10 +32,8 @@ func GenerateCirceModels(specification *spec.Spec, packageName string, generateP
 	return sources
 }
 
-func generateCirceModels(models []*spec.NamedModel, thepackage, taggedUnionPackage Package) *generator.CodeFile {
-	w := NewScalaWriter()
-	w.Line(`package %s`, thepackage.PackageName)
-	w.EmptyLine()
+func generateCirceModels(models []*spec.NamedModel, thepackage, taggedUnionPackage packages.Package) *generator.CodeFile {
+	w := writer.New(thepackage, "Models")
 	w.Line(`import enumeratum.values._`)
 	w.Line(`import java.time._`)
 	w.Line(`import java.time.format._`)
@@ -54,10 +54,7 @@ func generateCirceModels(models []*spec.NamedModel, thepackage, taggedUnionPacka
 		}
 	}
 
-	return &generator.CodeFile{
-		Path:    thepackage.GetPath("Models.scala"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func generateCirceObjectModel(w generator.Writer, model *spec.NamedModel) {
@@ -113,7 +110,7 @@ func generateCirceUnionModel(w generator.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func generateJson(thepackage Package) *generator.CodeFile {
+func generateJson(thepackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
@@ -153,7 +150,7 @@ object Jsoner {
 	}
 }
 
-func generateTaggedUnion(thepackage Package) *generator.CodeFile {
+func generateTaggedUnion(thepackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 
