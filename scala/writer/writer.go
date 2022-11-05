@@ -7,7 +7,7 @@ import (
 )
 
 func ScalaConfig() generator.Config {
-	return generator.Config{"  ", 2, nil}
+	return generator.Config{"  ", 2, map[string]string{}}
 }
 
 func New(thepackage packages.Package, className string) generator.Writer {
