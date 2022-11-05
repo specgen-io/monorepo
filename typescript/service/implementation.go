@@ -7,32 +7,29 @@ import (
 
 	"generator"
 	"spec"
-	"typescript/modules"
 	"typescript/responses"
 	"typescript/writer"
 )
 
-func generateServicesImplementations(specification *spec.Spec, generatedModule modules.Module, errorsModule modules.Module, module modules.Module) []generator.CodeFile {
+func (g *Generator) ServicesImpls(specification *spec.Spec) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, version := range specification.Versions {
-		versionGeneratedModule := generatedModule.Submodule(version.Name.FlatCase())
-		modelsModule := versionGeneratedModule.Submodule("models")
 		for _, api := range version.Http.Apis {
-			apiModule := versionGeneratedModule.Submodule(serviceName(&api)) //TODO: This logic is duplicated, other place is where API module is generated
-			implModule := module.Submodule(version.Name.FlatCase()).Submodule(api.Name.SnakeCase() + "_service")
-			files = append(files, *generateServiceImplementation(&api, apiModule, modelsModule, errorsModule, implModule))
+			files = append(files, *g.serviceImpl(&api))
 		}
 	}
 	return files
 }
 
-func generateServiceImplementation(api *spec.Api, apiModule modules.Module, modelsModule modules.Module, errorsModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.New(module)
-	w.Line("import * as service from '%s'", apiModule.GetImport(module))
-	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(module))
-	w.Line("import * as %s from '%s'", types.ErrorsPackage, errorsModule.GetImport(module))
+func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
+	w := writer.New(g.Modules.ServiceImpl(api))
+	imports := w.Imports()
+	imports.Star(g.Modules.ServiceApi(api), `service`)
+	imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
+	imports.Star(g.Modules.Errors, types.ErrorsPackage)
+	imports.Write(w)
 	w.EmptyLine()
-	w.Line("export const %sService = (): service.%s => {", api.Name.CamelCase(), serviceInterfaceName(api)) //TODO: remove services
+	w.Line("export const %sService = (): service.%s => {", api.Name.CamelCase(), serviceInterfaceName(api))
 
 	operations := []string{}
 	for _, operation := range api.Operations {

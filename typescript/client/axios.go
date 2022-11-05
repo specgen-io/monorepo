@@ -1,11 +1,9 @@
 package client
 
 import (
-	"strings"
-
 	"generator"
 	"spec"
-	"typescript/modules"
+	"strings"
 	"typescript/responses"
 	"typescript/types"
 	"typescript/validations"
@@ -13,15 +11,18 @@ import (
 )
 
 type axiosGenerator struct {
+	Modules    *Modules
 	validation validations.Validation
 }
 
-func (g *axiosGenerator) ApiClient(api spec.Api, validationModule, modelsModule, paramsModule, module modules.Module) *generator.CodeFile {
-	w := writer.New(module)
-	w.Line(`import { AxiosInstance, AxiosRequestConfig } from 'axios'`)
-	w.Line(`import { strParamsItems, strParamsObject, stringify } from '%s'`, paramsModule.GetImport(module))
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(module))
-	w.Line(`import * as %s from '%s'`, types.ModelsPackage, modelsModule.GetImport(module))
+func (g *axiosGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
+	w := writer.New(g.Modules.Client(api))
+	imports := w.Imports()
+	imports.LibNames(`axios`, `AxiosInstance`, `AxiosRequestConfig`)
+	imports.Names(g.Modules.Params, `strParamsItems`, `strParamsObject`, `stringify`)
+	imports.Star(g.Modules.Validation, `t`)
+	imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
+	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`export const client = (axiosInstance: AxiosInstance) => {`)
 	w.Line(`  return {`)

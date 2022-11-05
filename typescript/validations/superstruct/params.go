@@ -6,27 +6,26 @@ import (
 	"generator"
 	"spec"
 	"typescript/common"
-	types2 "typescript/types"
-	common2 "typescript/validations/common"
+	"typescript/types"
 )
 
 func (g *Generator) WriteParamsType(w generator.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
-		w.Line("const %s = t.type({", common2.ParamsRuntimeTypeName(typeName))
+		w.Line("const %s = t.type({", g.RuntimeTypeName(typeName))
 		for _, param := range params {
 			w.Line("  %s: %s,", common.TSIdentifier(param.Name.Source), paramSuperstructTypeDefaulted(&param))
 		}
 		w.Line("})")
 		w.EmptyLine()
-		w.Line("type %s = t.Infer<typeof %s>", typeName, common2.ParamsRuntimeTypeName(typeName))
+		w.Line("type %s = t.Infer<typeof %s>", typeName, g.RuntimeTypeName(typeName))
 	}
 }
 
 func paramSuperstructTypeDefaulted(param *spec.NamedParam) string {
 	theType := paramSuperstructType(&param.Type.Definition)
 	if param.Default != nil {
-		theType = fmt.Sprintf("t.defaulted(%s, %s)", theType, types2.DefaultValue(&param.Type.Definition, *param.Default))
+		theType = fmt.Sprintf("t.defaulted(%s, %s)", theType, types.DefaultValue(&param.Type.Definition, *param.Default))
 	}
 	return theType
 }
@@ -77,6 +76,6 @@ func paramPlainSuperstructType(typ string) string {
 	case spec.TypeDateTime:
 		return "t.StrDateTime"
 	default:
-		return fmt.Sprintf("%s.T"+typ, types2.ModelsPackage)
+		return fmt.Sprintf("%s.T"+typ, types.ModelsPackage)
 	}
 }

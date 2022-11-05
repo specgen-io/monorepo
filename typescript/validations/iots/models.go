@@ -4,15 +4,26 @@ import (
 	"generator"
 	"spec"
 	"typescript/common"
-	"typescript/modules"
+	"typescript/module"
 	"typescript/writer"
 )
 
-func (g *Generator) Models(models []*spec.NamedModel, codecModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.New(module)
+func (g *Generator) Models(version *spec.Version) *generator.CodeFile {
+	modelsModule := g.Modules.Models(version)
+	return g.models(version.ResolvedModels, modelsModule)
+}
+
+func (g *Generator) ErrorModels(httpErrors *spec.HttpErrors) *generator.CodeFile {
+	return g.models(httpErrors.ResolvedModels, g.Modules.ErrorModules)
+}
+
+func (g *Generator) models(models []*spec.NamedModel, modelsModule module.Module) *generator.CodeFile {
+	w := writer.New(modelsModule)
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
-	w.Line(`import * as t from '%s'`, codecModule.GetImport(module))
+	imports := w.Imports()
+	imports.Star(g.Modules.Validation, `t`)
+	imports.Write(w)
 	for _, model := range models {
 		w.EmptyLine()
 		if model.IsObject() {

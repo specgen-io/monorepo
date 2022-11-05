@@ -2,30 +2,28 @@ package service
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"github.com/pinzolo/casee"
 	"spec"
-	"typescript/modules"
+	"strings"
 	"typescript/validations"
 	"typescript/writer"
 )
 
 type koaGenerator struct {
-	validation validations.Validation
+	Modules    *Modules
+	Validation validations.Validation
 }
 
-func (g *koaGenerator) SpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.New(module)
-	w.Line("import Router from '@koa/router'")
+func (g *koaGenerator) SpecRouter(specification *spec.Spec) *generator.CodeFile {
+	w := writer.New(g.Modules.SpecRouter)
+	imports := w.Imports()
+	imports.Default(`@koa/router`, `Router`)
+	imports.Write(w)
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			versionModule := rootModule.Submodule(version.Name.FlatCase())
-			apiModule := versionModule.Submodule(serviceName(&api)) //TODO: This logic is repeated here, it also exists where api module is created
-			routerModule := versionModule.Submodule("routing")      //TODO: This logic is repeated here, it also exists where router module is created
-			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), apiModule.GetImport(module))
-			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), routerModule.GetImport(module))
+			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), g.Modules.ServiceApi(&api).GetImport(g.Modules.SpecRouter))
+			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), g.Modules.Routing(&version).GetImport(g.Modules.SpecRouter))
 		}
 	}
 
@@ -62,25 +60,27 @@ func (g *koaGenerator) SpecRouter(specification *spec.Spec, rootModule modules.M
 	return w.ToCodeFile()
 }
 
-func (g *koaGenerator) VersionRouting(version *spec.Version, targetModule modules.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule modules.Module) *generator.CodeFile {
-	w := writer.New(targetModule)
+func (g *koaGenerator) VersionRouting(version *spec.Version) *generator.CodeFile {
+	routingModule := g.Modules.Routing(version)
+
+	w := writer.New(routingModule)
 	w.Line(`import Router from '@koa/router'`)
 	w.Line(`import { ExtendableContext } from 'koa'`)
-	w.Line(`import {zipHeaders} from '%s'`, paramsModule.GetImport(targetModule))
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
-	w.Line(`import * as models from '%s'`, modelsModule.GetImport(targetModule))
-	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(targetModule))
-	w.Line(`import * as responses from '%s'`, responsesModule.GetImport(targetModule))
+	w.Line(`import {zipHeaders} from '%s'`, g.Modules.Params.GetImport(routingModule))
+	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(routingModule))
+	w.Line(`import * as models from '%s'`, g.Modules.Models(version).GetImport(routingModule))
+	w.Line(`import * as errors from '%s'`, g.Modules.Errors.GetImport(routingModule))
+	w.Line(`import * as responses from '%s'`, g.Modules.Responses.GetImport(routingModule))
 
 	for _, api := range version.Http.Apis {
-		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), serviceName(&api))
+		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), g.Modules.ServiceApi(&api).GetImport(routingModule))
 	}
 
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
-			g.validation.WriteParamsType(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams)
-			g.validation.WriteParamsType(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams)
-			g.validation.WriteParamsType(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams)
+			g.Validation.WriteParamsType(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams)
+			g.Validation.WriteParamsType(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams)
+			g.Validation.WriteParamsType(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams)
 		}
 
 		g.apiRouting(w, &api)
@@ -119,7 +119,7 @@ func (g *koaGenerator) response(w generator.Writer, response *spec.Response, dat
 		w.Line("return")
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line("ctx.body = t.encode(%s, %s)", g.validation.RuntimeType(&response.Type.Definition), dataParam)
+		w.Line("ctx.body = t.encode(%s, %s)", g.Validation.RuntimeType(&response.Type.Definition), dataParam)
 		w.Line("return")
 	}
 }
@@ -172,7 +172,7 @@ func (g *koaGenerator) operationRouting(w generator.Writer, operation *spec.Name
 
 func (g *koaGenerator) urlParamsParsing(w generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.Endpoint.UrlParams) > 0 {
-		w.Line("const urlParamsDecode = t.decodeR(%s, ctx.params)", urlParamsRuntimeType(operation))
+		w.Line("const urlParamsDecode = t.decodeR(%s, ctx.params)", g.Validation.RuntimeTypeName(urlParamsType(operation)))
 		w.Line("if (urlParamsDecode.error) {")
 		g.respondNotFound(w.Indented(), "Failed to parse url parameters")
 		w.Line("}")
@@ -182,7 +182,7 @@ func (g *koaGenerator) urlParamsParsing(w generator.Writer, operation *spec.Name
 
 func (g *koaGenerator) headerParsing(w generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.HeaderParams) > 0 {
-		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(ctx.req.rawHeaders))", headersRuntimeType(operation))
+		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(ctx.req.rawHeaders))", g.Validation.RuntimeTypeName(headersType(operation)))
 		w.Line("if (headerParamsDecode.error) {")
 		g.respondBadRequest(w.Indented(), "HEADER", "headerParamsDecode.error", "Failed to parse header")
 		w.Line("}")
@@ -192,7 +192,7 @@ func (g *koaGenerator) headerParsing(w generator.Writer, operation *spec.NamedOp
 
 func (g *koaGenerator) queryParsing(w generator.Writer, operation *spec.NamedOperation) {
 	if len(operation.QueryParams) > 0 {
-		w.Line("const queryParamsDecode = t.decodeR(%s, ctx.request.query)", queryRuntimeType(operation))
+		w.Line("const queryParamsDecode = t.decodeR(%s, ctx.request.query)", g.Validation.RuntimeTypeName(queryType(operation)))
 		w.Line("if (queryParamsDecode.error) {")
 		g.respondBadRequest(w.Indented(), "QUERY", "queryParamsDecode.error", "Failed to parse query")
 		w.Line("}")
@@ -205,7 +205,7 @@ func (g *koaGenerator) bodyParsing(w generator.Writer, operation *spec.NamedOper
 		w.Line(`const body: string = ctx.request.rawBody`)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line("const bodyDecode = t.decodeR(%s, ctx.request.body)", g.validation.RuntimeType(&operation.Body.Type.Definition))
+		w.Line("const bodyDecode = t.decodeR(%s, ctx.request.body)", g.Validation.RuntimeType(&operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
 		g.respondBadRequest(w.Indented(), "BODY", "bodyDecode.error", "Failed to parse body")
 		w.Line("}")
@@ -228,11 +228,11 @@ func (g *koaGenerator) respondInternalServerError(w generator.Writer) {
 	w.Line(`return`)
 }
 
-func (g *koaGenerator) Responses(targetModule, validationModule, errorsModule modules.Module) *generator.CodeFile {
-	w := writer.New(targetModule)
+func (g *koaGenerator) Responses() *generator.CodeFile {
+	w := writer.New(g.Modules.Responses)
 	w.Line(`import { ExtendableContext } from 'koa'`)
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
-	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(targetModule))
+	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(g.Modules.Responses))
+	w.Line(`import * as errors from '%s'`, g.Modules.Errors.GetImport(g.Modules.Responses))
 
 	w.EmptyLine()
 	code := `
