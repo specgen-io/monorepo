@@ -3,6 +3,7 @@ package generators
 import (
 	"fmt"
 	"path/filepath"
+	"ruby/writer"
 	"strings"
 
 	"generator"
@@ -35,7 +36,7 @@ func clientModuleName(serviceName spec.Name) string {
 func generateClientApisClasses(specification *spec.Spec, generatePath string) *generator.CodeFile {
 	moduleName := clientModuleName(specification.Name)
 
-	w := NewRubyWriter()
+	w := writer.New(filepath.Join(generatePath, "client.rb"))
 	w.Line(`require "net/http"`)
 	w.Line(`require "net/https"`)
 	w.Line(`require "uri"`)
@@ -55,7 +56,7 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 		}
 	}
 
-	return &generator.CodeFile{Path: filepath.Join(generatePath, "client.rb"), Content: w.String()}
+	return w.ToCodeFile()
 }
 
 func generateVersionClientModule(w generator.Writer, version *spec.Version, moduleName string) {

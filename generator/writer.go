@@ -35,16 +35,7 @@ type writer struct {
 	indentation int
 }
 
-func NewWriter(config Config) Writer {
-	return &writer{
-		"",
-		config,
-		new(bytes.Buffer),
-		0,
-	}
-}
-
-func NewWriter2(filename string, config Config) Writer {
+func NewWriter(filename string, config Config) Writer {
 	return &writer{
 		filename,
 		config,

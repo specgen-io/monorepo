@@ -12,7 +12,7 @@ func GoConfig() generator.Config {
 
 func New(module module.Module, filename string) generator.Writer {
 	config := GoConfig()
-	w := generator.NewWriter2(module.GetPath(filename), config)
+	w := generator.NewWriter(module.GetPath(filename), config)
 	w.Line("package %s", module.Name)
 	w.EmptyLine()
 	return w
