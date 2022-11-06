@@ -1,9 +1,7 @@
 package generator
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"strings"
 )
 
@@ -28,10 +26,18 @@ type Config struct {
 	Substitutions             map[string]string
 }
 
+type content struct {
+	lines []string
+}
+
+func (c *content) Add(s string) {
+	c.lines = append(c.lines, s)
+}
+
 type writer struct {
 	filename    string
 	config      Config
-	buffer      *bytes.Buffer
+	content     *content
 	indentation int
 }
 
@@ -39,7 +45,7 @@ func NewWriter(filename string, config Config) Writer {
 	return &writer{
 		filename,
 		config,
-		new(bytes.Buffer),
+		&content{[]string{}},
 		0,
 	}
 }
@@ -70,7 +76,7 @@ func wrapKeys(vars map[string]string, prefix, postfix string) map[string]string 
 }
 
 func (w *writer) write(s string) {
-	io.WriteString(w.buffer, substitute(s, w.config.Substitutions))
+	w.content.Add(s)
 }
 
 func trimPrefix(str string, prefix string) (string, int) {
@@ -92,6 +98,7 @@ func (w *writer) line(theline string) {
 	realIndentation := indentation + w.indentation
 	indentationStr := strings.Repeat(w.config.IndentationStr, realIndentation)
 	theline = indentationStr + theline + "\n"
+	theline = substitute(theline, w.config.Substitutions)
 	w.write(theline)
 }
 
@@ -137,7 +144,7 @@ func (w *writer) Indented() Writer {
 	return &writer{
 		w.filename,
 		w.config,
-		w.buffer,
+		w.content,
 		w.indentation + 1,
 	}
 }
@@ -146,11 +153,11 @@ func (w *writer) IndentedWith(size int) Writer {
 	return &writer{
 		w.filename,
 		w.config,
-		w.buffer,
+		w.content,
 		w.indentation + size,
 	}
 }
 
 func (w *writer) String() string {
-	return w.buffer.String()
+	return strings.Join(w.content.lines, ``)
 }
