@@ -8,7 +8,7 @@ import (
 	"spec"
 )
 
-func Response(w generator.Writer, types *types.Types, operation *spec.NamedOperation) {
+func Response(w *writer.Writer, types *types.Types, operation *spec.NamedOperation) {
 	w.Line(`type %s struct {`, responseTypeName(operation))
 	responses := [][]string{}
 	for _, response := range operation.Responses {
@@ -17,7 +17,7 @@ func Response(w generator.Writer, types *types.Types, operation *spec.NamedOpera
 			types.GoType(spec.Nullable(&response.Type.Definition)),
 		})
 	}
-	writer.WriteAlignedLines(w.Indented(), responses)
+	w.Indented().LinesAligned(responses)
 	w.Line(`}`)
 }
 

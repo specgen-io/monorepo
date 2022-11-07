@@ -2,8 +2,8 @@ package iots
 
 import (
 	"fmt"
+	"typescript/writer"
 
-	"generator"
 	"spec"
 	"typescript/common"
 	"typescript/types"
@@ -22,7 +22,7 @@ func kindOfParams(params []spec.NamedParam) (bool, bool) {
 	return hasRequiredParams, hasOptionalParams
 }
 
-func (g *Generator) WriteParamsType(w generator.Writer, typeName string, params []spec.NamedParam) {
+func (g *Generator) WriteParamsType(w *writer.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		hasRequiredFields, hasOptionalFields := kindOfParams(params)

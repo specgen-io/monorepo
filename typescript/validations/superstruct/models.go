@@ -35,7 +35,7 @@ func (g *Generator) models(models []*spec.NamedModel, modelsModule module.Module
 	return w.ToCodeFile()
 }
 
-func (g *Generator) objectModel(w generator.Writer, model *spec.NamedModel) {
+func (g *Generator) objectModel(w *writer.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.type({", model.Name.PascalCase())
 	for _, field := range model.Object.Fields {
 		w.Line("  %s: %s,", field.Name.Source, g.RuntimeTypeSamePackage(&field.Type.Definition))
@@ -45,7 +45,7 @@ func (g *Generator) objectModel(w generator.Writer, model *spec.NamedModel) {
 	w.Line("export type %s = t.Infer<typeof T%s>", model.Name.PascalCase(), model.Name.PascalCase())
 }
 
-func (g *Generator) enumModel(w generator.Writer, model *spec.NamedModel) {
+func (g *Generator) enumModel(w *writer.Writer, model *spec.NamedModel) {
 	w.Line("export const T%s = t.enums ([", model.Name.PascalCase())
 	for _, item := range model.Enum.Items {
 		w.Line(`  "%s",`, item.Value)
@@ -61,7 +61,7 @@ func (g *Generator) enumModel(w generator.Writer, model *spec.NamedModel) {
 	w.Line("}")
 }
 
-func (g *Generator) unionModel(w generator.Writer, model *spec.NamedModel) {
+func (g *Generator) unionModel(w *writer.Writer, model *spec.NamedModel) {
 	if model.OneOf.Discriminator != nil {
 		w.Line("export const T%s = t.union([", model.Name.PascalCase())
 		for _, item := range model.OneOf.Items {

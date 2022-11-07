@@ -2,7 +2,6 @@ package writer
 
 import (
 	"fmt"
-	"generator"
 	"strings"
 	"typescript/module"
 )
@@ -42,7 +41,7 @@ func (self *imports) Default(m string, name string) {
 	self.defaults[m] = name
 }
 
-func (self *imports) Write(w generator.Writer) {
+func (self *imports) Write(w *Writer) {
 	for alias, m := range self.stars {
 		w.Line("import * as %s from '%s'", alias, m.GetImport(self.Target))
 	}

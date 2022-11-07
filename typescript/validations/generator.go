@@ -3,6 +3,7 @@ package validations
 import (
 	"fmt"
 	"typescript/validations/modules"
+	"typescript/writer"
 
 	"generator"
 	"spec"
@@ -17,7 +18,7 @@ type Validation interface {
 	SetupLibrary() *generator.CodeFile
 	Models(version *spec.Version) *generator.CodeFile
 	ErrorModels(httpErrors *spec.HttpErrors) *generator.CodeFile
-	WriteParamsType(w generator.Writer, typeName string, params []spec.NamedParam)
+	WriteParamsType(w *writer.Writer, typeName string, params []spec.NamedParam)
 }
 
 func New(validation string, modules *modules.Modules) Validation {

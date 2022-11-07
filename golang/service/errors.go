@@ -33,7 +33,7 @@ func callCheckContentType(logFieldsVar, expectedContentType, requestVar, respons
 	return fmt.Sprintf(`contenttype.Check(%s, %s, %s, %s)`, logFieldsVar, expectedContentType, requestVar, responseVar)
 }
 
-func (g *VestigoGenerator) respondNotFound(w generator.Writer, operation *spec.NamedOperation, message string) {
+func (g *VestigoGenerator) respondNotFound(w *writer.Writer, operation *spec.NamedOperation, message string) {
 	specification := operation.InApi.InHttp.InVersion.InSpec
 	badRequest := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusNotFound)
 	errorMessage := fmt.Sprintf(`%s{Message: %s}`, g.Types.GoType(&badRequest.Type.Definition), message)
@@ -41,7 +41,7 @@ func (g *VestigoGenerator) respondNotFound(w generator.Writer, operation *spec.N
 	w.Line(`return`)
 }
 
-func (g *VestigoGenerator) respondBadRequest(w generator.Writer, operation *spec.NamedOperation, location string, message string, params string) {
+func (g *VestigoGenerator) respondBadRequest(w *writer.Writer, operation *spec.NamedOperation, location string, message string, params string) {
 	specification := operation.InApi.InHttp.InVersion.InSpec
 	badRequest := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusBadRequest)
 	errorMessage := fmt.Sprintf(`%s{Location: "%s", Message: %s, Errors: %s}`, g.Types.GoType(&badRequest.Type.Definition), location, message, params)
@@ -49,7 +49,7 @@ func (g *VestigoGenerator) respondBadRequest(w generator.Writer, operation *spec
 	w.Line(`return`)
 }
 
-func (g *VestigoGenerator) respondInternalServerError(w generator.Writer, operation *spec.NamedOperation, message string) {
+func (g *VestigoGenerator) respondInternalServerError(w *writer.Writer, operation *spec.NamedOperation, message string) {
 	specification := operation.InApi.InHttp.InVersion.InSpec
 	internalServerError := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusInternalServerError)
 	errorMessage := fmt.Sprintf(`%s{Message: %s}`, g.Types.GoType(&internalServerError.Type.Definition), message)

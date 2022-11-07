@@ -69,7 +69,7 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *NetHttpGenerator) clientWithCtor(w generator.Writer) {
+func (g *NetHttpGenerator) clientWithCtor(w *writer.Writer) {
 	w.Line(`type %s struct {`, clientTypeName())
 	w.Line(`  baseUrl string`)
 	w.Line(`}`)
@@ -79,7 +79,7 @@ func (g *NetHttpGenerator) clientWithCtor(w generator.Writer) {
 	w.Line(`}`)
 }
 
-func (g *NetHttpGenerator) operation(w generator.Writer, operation *spec.NamedOperation) {
+func (g *NetHttpGenerator) operation(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line(`func (client *%s) %s {`, clientTypeName(), operationSignature(operation, g.Types, nil))
 	w.Line(`  var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(operation), operation.InApi.Name.Source, operation.Name.Source, casee.ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
 	body := "nil"
@@ -161,7 +161,7 @@ func (g *NetHttpGenerator) addUrlParam(operation *spec.NamedOperation) []string 
 	return urlParams
 }
 
-func (g *NetHttpGenerator) parseParams(w generator.Writer, operation *spec.NamedOperation) {
+func (g *NetHttpGenerator) parseParams(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		w.Line(`  query := req.URL.Query()`)
 		g.addParsedParams(w, operation.QueryParams, "q", "query")
@@ -175,14 +175,14 @@ func (g *NetHttpGenerator) parseParams(w generator.Writer, operation *spec.Named
 	}
 }
 
-func (g *NetHttpGenerator) addParsedParams(w generator.Writer, namedParams []spec.NamedParam, paramsConverterName string, paramsParserName string) {
+func (g *NetHttpGenerator) addParsedParams(w *writer.Writer, namedParams []spec.NamedParam, paramsConverterName string, paramsParserName string) {
 	w.Line(`  %s := convert.NewParamsConverter(%s)`, paramsConverterName, paramsParserName)
 	for _, param := range namedParams {
 		w.Line(`  %s.%s`, paramsConverterName, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
 	}
 }
 
-func (g *NetHttpGenerator) addClientResponses(w generator.Writer, operation *spec.NamedOperation) {
+func (g *NetHttpGenerator) addClientResponses(w *writer.Writer, operation *spec.NamedOperation) {
 	for _, response := range operation.Responses {
 		w.EmptyLine()
 		g.response(w, operation, response)
@@ -208,7 +208,7 @@ func (g *NetHttpGenerator) addClientResponses(w generator.Writer, operation *spe
 	}
 }
 
-func (g *NetHttpGenerator) response(w generator.Writer, operation *spec.NamedOperation, response spec.OperationResponse) {
+func (g *NetHttpGenerator) response(w *writer.Writer, operation *spec.NamedOperation, response spec.OperationResponse) {
 	w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
 	if response.BodyIs(spec.BodyString) {
 		w.Line(`  responseBody, err := response.Text(%s, resp)`, logFieldsName(operation))

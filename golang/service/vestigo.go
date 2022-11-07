@@ -116,7 +116,7 @@ func (g *VestigoGenerator) getEndpointUrl(operation *spec.NamedOperation) string
 	return url
 }
 
-func (g *VestigoGenerator) addSetCors(w generator.Writer, operation *spec.NamedOperation) {
+func (g *VestigoGenerator) addSetCors(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, g.getEndpointUrl(operation))
 	params := []string{}
 	for _, param := range operation.HeaderParams {
@@ -152,15 +152,15 @@ func (g *VestigoGenerator) parserParameterCall(isUrlParam bool, param *spec.Name
 	return call
 }
 
-func (g *VestigoGenerator) headerParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *VestigoGenerator) headerParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	g.parametersParsing(w, operation, operation.HeaderParams, "header", "req.Header")
 }
 
-func (g *VestigoGenerator) queryParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *VestigoGenerator) queryParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	g.parametersParsing(w, operation, operation.QueryParams, "query", "req.URL.Query()")
 }
 
-func (g *VestigoGenerator) urlParamsParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *VestigoGenerator) urlParamsParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		w.Line(`urlParams := paramsparser.New(req.URL.Query(), false)`)
 		for _, param := range operation.Endpoint.UrlParams {
@@ -172,7 +172,7 @@ func (g *VestigoGenerator) urlParamsParsing(w generator.Writer, operation *spec.
 	}
 }
 
-func (g *VestigoGenerator) parametersParsing(w generator.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramsValuesVar string) {
+func (g *VestigoGenerator) parametersParsing(w *writer.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramsValuesVar string) {
 	if namedParams != nil && len(namedParams) > 0 {
 		w.Line(`%s := paramsparser.New(%s, true)`, paramsParserName, paramsValuesVar)
 		for _, param := range namedParams {
@@ -185,7 +185,7 @@ func (g *VestigoGenerator) parametersParsing(w generator.Writer, operation *spec
 	}
 }
 
-func (g *VestigoGenerator) serviceCallAndResponseCheck(w generator.Writer, operation *spec.NamedOperation, responseVar string) {
+func (g *VestigoGenerator) serviceCallAndResponseCheck(w *writer.Writer, operation *spec.NamedOperation, responseVar string) {
 	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
 	serviceCall := g.serviceCall(serviceInterfaceTypeVar(operation.InApi), operation)
 	if singleEmptyResponse {
@@ -205,7 +205,7 @@ func (g *VestigoGenerator) serviceCallAndResponseCheck(w generator.Writer, opera
 	}
 }
 
-func (g *VestigoGenerator) WriteResponse(w generator.Writer, logFieldsName string, response *spec.Response, responseVar string) {
+func (g *VestigoGenerator) WriteResponse(w *writer.Writer, logFieldsName string, response *spec.Response, responseVar string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(respondEmpty(logFieldsName, `res`, spec.HttpStatusCode(response.Name)))
 	}
@@ -217,7 +217,7 @@ func (g *VestigoGenerator) WriteResponse(w generator.Writer, logFieldsName strin
 	}
 }
 
-func (g *VestigoGenerator) operation(w generator.Writer, operation *spec.NamedOperation) {
+func (g *VestigoGenerator) operation(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	w.Line(`var err error`)
 	g.urlParamsParsing(w, operation)
@@ -228,7 +228,7 @@ func (g *VestigoGenerator) operation(w generator.Writer, operation *spec.NamedOp
 	g.response(w, operation, `response`)
 }
 
-func (g *VestigoGenerator) response(w generator.Writer, operation *spec.NamedOperation, responseVar string) {
+func (g *VestigoGenerator) response(w *writer.Writer, operation *spec.NamedOperation, responseVar string) {
 	if len(operation.Responses) == 1 {
 		g.WriteResponse(w, logFieldsName(operation), &operation.Responses[0].Response, responseVar)
 	} else {
@@ -243,7 +243,7 @@ func (g *VestigoGenerator) response(w generator.Writer, operation *spec.NamedOpe
 	}
 }
 
-func (g *VestigoGenerator) bodyParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *VestigoGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"text/plain"`, "req", "res"))
 		w.Line(`  return`)

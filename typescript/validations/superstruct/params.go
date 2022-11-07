@@ -2,14 +2,14 @@ package superstruct
 
 import (
 	"fmt"
+	"typescript/writer"
 
-	"generator"
 	"spec"
 	"typescript/common"
 	"typescript/types"
 )
 
-func (g *Generator) WriteParamsType(w generator.Writer, typeName string, params []spec.NamedParam) {
+func (g *Generator) WriteParamsType(w *writer.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		w.Line("const %s = t.type({", g.RuntimeTypeName(typeName))

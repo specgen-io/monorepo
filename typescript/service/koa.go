@@ -88,7 +88,7 @@ func (g *koaGenerator) VersionRouting(version *spec.Version) *generator.CodeFile
 	return w.ToCodeFile()
 }
 
-func (g *koaGenerator) apiRouting(w generator.Writer, api *spec.Api) {
+func (g *koaGenerator) apiRouting(w *writer.Writer, api *spec.Api) {
 	w.EmptyLine()
 	w.Line("export const %s = (service: %s) => {", apiRouterName(api), serviceInterfaceName(api))
 	w.Line("  const router = new Router()")
@@ -109,7 +109,7 @@ func getKoaUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
-func (g *koaGenerator) response(w generator.Writer, response *spec.Response, dataParam string) {
+func (g *koaGenerator) response(w *writer.Writer, response *spec.Response, dataParam string) {
 	w.Line("ctx.status = %s", spec.HttpStatusCode(response.Name))
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line("return")
@@ -124,7 +124,7 @@ func (g *koaGenerator) response(w generator.Writer, response *spec.Response, dat
 	}
 }
 
-func (g *koaGenerator) responses(w generator.Writer, responses spec.OperationResponses) {
+func (g *koaGenerator) responses(w *writer.Writer, responses spec.OperationResponses) {
 	if len(responses) == 1 {
 		g.response(w, &responses[0].Response, "result")
 	} else {
@@ -137,7 +137,7 @@ func (g *koaGenerator) responses(w generator.Writer, responses spec.OperationRes
 	}
 }
 
-func (g *koaGenerator) checkContentType(w generator.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) checkContentType(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`if (!responses.assertContentType(ctx, "text/plain")) {`)
 		w.Line(`  return`)
@@ -150,7 +150,7 @@ func (g *koaGenerator) checkContentType(w generator.Writer, operation *spec.Name
 	}
 }
 
-func (g *koaGenerator) operationRouting(w generator.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) operationRouting(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line("router.%s('%s', async (ctx) => {", strings.ToLower(operation.Endpoint.Method), getKoaUrl(operation.Endpoint))
 	w.Indent()
 	w.Line("try {")
@@ -170,7 +170,7 @@ func (g *koaGenerator) operationRouting(w generator.Writer, operation *spec.Name
 	w.Line("})")
 }
 
-func (g *koaGenerator) urlParamsParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) urlParamsParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.Endpoint.UrlParams) > 0 {
 		w.Line("const urlParamsDecode = t.decodeR(%s, ctx.params)", g.Validation.RuntimeTypeName(urlParamsType(operation)))
 		w.Line("if (urlParamsDecode.error) {")
@@ -180,7 +180,7 @@ func (g *koaGenerator) urlParamsParsing(w generator.Writer, operation *spec.Name
 	}
 }
 
-func (g *koaGenerator) headerParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) headerParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.HeaderParams) > 0 {
 		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(ctx.req.rawHeaders))", g.Validation.RuntimeTypeName(headersType(operation)))
 		w.Line("if (headerParamsDecode.error) {")
@@ -190,7 +190,7 @@ func (g *koaGenerator) headerParsing(w generator.Writer, operation *spec.NamedOp
 	}
 }
 
-func (g *koaGenerator) queryParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) queryParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.QueryParams) > 0 {
 		w.Line("const queryParamsDecode = t.decodeR(%s, ctx.request.query)", g.Validation.RuntimeTypeName(queryType(operation)))
 		w.Line("if (queryParamsDecode.error) {")
@@ -200,7 +200,7 @@ func (g *koaGenerator) queryParsing(w generator.Writer, operation *spec.NamedOpe
 	}
 }
 
-func (g *koaGenerator) bodyParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *koaGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`const body: string = ctx.request.rawBody`)
 	}
@@ -213,17 +213,17 @@ func (g *koaGenerator) bodyParsing(w generator.Writer, operation *spec.NamedOper
 	}
 }
 
-func (g *koaGenerator) respondBadRequest(w generator.Writer, location, errorsVar, message string) {
+func (g *koaGenerator) respondBadRequest(w *writer.Writer, location, errorsVar, message string) {
 	w.Line(`responses.badRequest(ctx, { message: "%s", location: errors.ErrorLocation.%s, errors: %s })`, message, location, errorsVar)
 	w.Line(`return`)
 }
 
-func (g *koaGenerator) respondNotFound(w generator.Writer, message string) {
+func (g *koaGenerator) respondNotFound(w *writer.Writer, message string) {
 	w.Line(`responses.notFound(ctx, { message: "%s" })`, message)
 	w.Line(`return`)
 }
 
-func (g *koaGenerator) respondInternalServerError(w generator.Writer) {
+func (g *koaGenerator) respondInternalServerError(w *writer.Writer) {
 	w.Line(`responses.internalServerError(ctx, { message: error instanceof Error ? error.message : "Unknown error" })`)
 	w.Line(`return`)
 }

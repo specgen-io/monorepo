@@ -88,7 +88,7 @@ func (g *expressGenerator) VersionRouting(version *spec.Version) *generator.Code
 	return w.ToCodeFile()
 }
 
-func (g *expressGenerator) apiRouting(w generator.Writer, api *spec.Api) {
+func (g *expressGenerator) apiRouting(w *writer.Writer, api *spec.Api) {
 	w.EmptyLine()
 	w.Line("export const %s = (service: %s) => {", apiRouterName(api), serviceInterfaceName(api))
 	w.Line("  const router = Router()")
@@ -109,7 +109,7 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
-func (g *expressGenerator) response(w generator.Writer, response *spec.Response, dataParam string) {
+func (g *expressGenerator) response(w *writer.Writer, response *spec.Response, dataParam string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line("response.status(%s).send()", spec.HttpStatusCode(response.Name))
 		w.Line("return")
@@ -124,7 +124,7 @@ func (g *expressGenerator) response(w generator.Writer, response *spec.Response,
 	}
 }
 
-func (g *expressGenerator) responses(w generator.Writer, responses spec.OperationResponses) {
+func (g *expressGenerator) responses(w *writer.Writer, responses spec.OperationResponses) {
 	if len(responses) == 1 {
 		g.response(w, &responses[0].Response, "result")
 	} else {
@@ -137,7 +137,7 @@ func (g *expressGenerator) responses(w generator.Writer, responses spec.Operatio
 	}
 }
 
-func (g *expressGenerator) checkContentType(w generator.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) checkContentType(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`if (!responses.assertContentType(request, response, "text/plain")) {`)
 		w.Line(`  return`)
@@ -150,7 +150,7 @@ func (g *expressGenerator) checkContentType(w generator.Writer, operation *spec.
 	}
 }
 
-func (g *expressGenerator) operationRouting(w generator.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) operationRouting(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
 	w.Indent()
 	w.Line("try {")
@@ -170,7 +170,7 @@ func (g *expressGenerator) operationRouting(w generator.Writer, operation *spec.
 	w.Line("})")
 }
 
-func (g *expressGenerator) urlParamsParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) urlParamsParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.Endpoint.UrlParams) > 0 {
 		w.Line("const urlParamsDecode = t.decodeR(%s, request.params)", g.Validation.RuntimeTypeName(urlParamsType(operation)))
 		w.Line("if (urlParamsDecode.error) {")
@@ -180,7 +180,7 @@ func (g *expressGenerator) urlParamsParsing(w generator.Writer, operation *spec.
 	}
 }
 
-func (g *expressGenerator) headerParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) headerParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.HeaderParams) > 0 {
 		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(request.rawHeaders))", g.Validation.RuntimeTypeName(headersType(operation)))
 		w.Line("if (headerParamsDecode.error) {")
@@ -190,7 +190,7 @@ func (g *expressGenerator) headerParsing(w generator.Writer, operation *spec.Nam
 	}
 }
 
-func (g *expressGenerator) queryParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) queryParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.QueryParams) > 0 {
 		w.Line("const queryParamsDecode = t.decodeR(%s, request.query)", g.Validation.RuntimeTypeName(queryType(operation)))
 		w.Line("if (queryParamsDecode.error) {")
@@ -200,7 +200,7 @@ func (g *expressGenerator) queryParsing(w generator.Writer, operation *spec.Name
 	}
 }
 
-func (g *expressGenerator) bodyParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`const body: string = request.body`)
 	}
@@ -213,17 +213,17 @@ func (g *expressGenerator) bodyParsing(w generator.Writer, operation *spec.Named
 	}
 }
 
-func (g *expressGenerator) respondBadRequest(w generator.Writer, location, errorsVar, message string) {
+func (g *expressGenerator) respondBadRequest(w *writer.Writer, location, errorsVar, message string) {
 	w.Line(`responses.badRequest(response, { message: "%s", location: errors.ErrorLocation.%s, errors: %s })`, message, location, errorsVar)
 	w.Line(`return`)
 }
 
-func (g *expressGenerator) respondNotFound(w generator.Writer, message string) {
+func (g *expressGenerator) respondNotFound(w *writer.Writer, message string) {
 	w.Line(`responses.notFound(response, { message: "%s" })`, message)
 	w.Line(`return`)
 }
 
-func (g *expressGenerator) respondInternalServerError(w generator.Writer) {
+func (g *expressGenerator) respondInternalServerError(w *writer.Writer) {
 	w.Line(`responses.internalServerError(response, { message: error instanceof Error ? error.message : "Unknown error" })`)
 	w.Line(`return`)
 }

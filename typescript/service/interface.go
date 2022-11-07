@@ -64,20 +64,20 @@ func operationParamsTypeName(operation *spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Params"
 }
 
-func addServiceParam(w generator.Writer, paramName string, typ *spec.TypeDef) {
+func addServiceParam(w *writer.Writer, paramName string, typ *spec.TypeDef) {
 	if typ.IsNullable() {
 		paramName = paramName + "?"
 	}
 	w.Line("  %s: %s,", paramName, types.TsType(typ))
 }
 
-func generateServiceParams(w generator.Writer, params []spec.NamedParam) {
+func generateServiceParams(w *writer.Writer, params []spec.NamedParam) {
 	for _, param := range params {
 		addServiceParam(w, common.TSIdentifier(param.Name.Source), &param.Type.Definition)
 	}
 }
 
-func generateOperationParams(w generator.Writer, operation *spec.NamedOperation) {
+func generateOperationParams(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line("export interface %s {", operationParamsTypeName(operation))
 	generateServiceParams(w, operation.HeaderParams)
 	generateServiceParams(w, operation.Endpoint.UrlParams)

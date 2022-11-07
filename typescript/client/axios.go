@@ -41,7 +41,7 @@ func (g *axiosGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *axiosGenerator) operation(w generator.Writer, operation *spec.NamedOperation) {
+func (g *axiosGenerator) operation(w *writer.Writer, operation *spec.NamedOperation) {
 	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0

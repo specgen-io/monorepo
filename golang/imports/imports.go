@@ -2,9 +2,9 @@ package imports
 
 import (
 	"fmt"
-	"generator"
 	"golang/module"
 	"golang/types"
+	"golang/writer"
 	"sort"
 	"spec"
 )
@@ -40,7 +40,7 @@ func (self *imports) AddAliased(theImport string, alias string) *imports {
 	return self
 }
 
-func (self *imports) Write(w generator.Writer) {
+func (self *imports) Write(w *writer.Writer) {
 	if len(self.imports) > 0 {
 		imports := make([]string, 0, len(self.imports))
 		for theImport := range self.imports {
