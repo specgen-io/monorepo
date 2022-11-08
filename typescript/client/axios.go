@@ -17,12 +17,10 @@ type axiosGenerator struct {
 
 func (g *axiosGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.Client(api))
-	imports := w.Imports()
-	imports.LibNames(`axios`, `AxiosInstance`, `AxiosRequestConfig`)
-	imports.Names(g.Modules.Params, `strParamsItems`, `strParamsObject`, `stringify`)
-	imports.Star(g.Modules.Validation, `t`)
-	imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
-	imports.Write(w)
+	w.Imports.LibNames(`axios`, `AxiosInstance`, `AxiosRequestConfig`)
+	w.Imports.Names(g.Modules.Params, `strParamsItems`, `strParamsObject`, `stringify`)
+	w.Imports.Star(g.Modules.Validation, `t`)
+	w.Imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
 	w.EmptyLine()
 	w.Line(`export const client = (axiosInstance: AxiosInstance) => {`)
 	w.Line(`  return {`)

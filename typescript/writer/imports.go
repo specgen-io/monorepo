@@ -41,16 +41,18 @@ func (self *imports) Default(m string, name string) {
 	self.defaults[m] = name
 }
 
-func (self *imports) Write(w *Writer) {
+func (self *imports) Lines() []string {
+	lines := []string{}
 	for alias, m := range self.stars {
-		w.Line("import * as %s from '%s'", alias, m.GetImport(self.Target))
+		lines = append(lines, fmt.Sprintf("import * as %s from '%s'", alias, m.GetImport(self.Target)))
 	}
 	for m, names := range self.names {
 		if len(names) > 0 {
-			w.Line(`import { %s } from '%s'`, strings.Join(names, ", "), m)
+			lines = append(lines, fmt.Sprintf(`import { %s } from '%s'`, strings.Join(names, ", "), m))
 		}
 	}
 	for m, name := range self.defaults {
-		w.Line(`import %s from '%s'`, name, m)
+		lines = append(lines, fmt.Sprintf(`import %s from '%s'`, name, m))
 	}
+	return lines
 }

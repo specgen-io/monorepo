@@ -21,9 +21,7 @@ func (g *Generator) models(models []*spec.NamedModel, modelsModule module.Module
 	w := writer.New(modelsModule)
 	w.Line("/* eslint-disable @typescript-eslint/camelcase */")
 	w.Line("/* eslint-disable @typescript-eslint/no-magic-numbers */")
-	imports := w.Imports()
-	imports.Star(g.Modules.Validation, `t`)
-	imports.Write(w)
+	w.Imports.Star(g.Modules.Validation, `t`)
 	for _, model := range models {
 		w.EmptyLine()
 		if model.IsObject() {

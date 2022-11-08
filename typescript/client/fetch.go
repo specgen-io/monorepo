@@ -19,15 +19,13 @@ type fetchGenerator struct {
 
 func (g *fetchGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.Client(api))
-	imports := w.Imports()
 	if g.node {
-		imports.LibNames(`url`, `URL`, `URLSearchParams`)
-		imports.Default(`node-fetch`, `fetch`)
+		w.Imports.LibNames(`url`, `URL`, `URLSearchParams`)
+		w.Imports.Default(`node-fetch`, `fetch`)
 	}
-	imports.Names(g.Modules.Params, `strParamsItems`, `stringify`)
-	imports.Star(g.Modules.Validation, `t`)
-	imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
-	imports.Write(w)
+	w.Imports.Names(g.Modules.Params, `strParamsItems`, `stringify`)
+	w.Imports.Star(g.Modules.Validation, `t`)
+	w.Imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
 	w.EmptyLine()
 	w.Line(`export const client = (config: {baseURL: string}) => {`)
 	w.Line(`  return {`)
