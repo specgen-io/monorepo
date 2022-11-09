@@ -62,16 +62,22 @@ jobs:
             cd specgen
             go install github.com/specgen-io/goven@v0.0.10
       - run:
-          name: Just vendor - no release
+          name: Vendor code with goven
           command: |
             cd specgen
             goven vendor -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -out vendored
             rm -rf vendored
       - run:
-          name: Vendor and release specgen with goven
+          name: Copy vendored code
           command: |
-            cd specgen
-            goven release -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
+            git clone https://github.com/specgen-io/specgen.git specgen-release
+            rm -rf ./specgen-release/<<pipeline.parameters.specgen-version-major>>
+            cp -a ./specgen/vendored/. ./specgen-release/<<pipeline.parameters.specgen-version-major>>
+      - github-push-tag:
+          path: specgen-release
+          slug: specgen-io/specgen
+          tag: v<<pipeline.parameters.specgen-version>>-alpha
+          commit: true
       - run:
           name: Check released module
           command: |
@@ -529,6 +535,9 @@ commands:
         type: string
       tag:
         type: string
+      commit:
+        type: boolean
+        default: false
     steps:
       - run:
           name: Checkout repo
@@ -540,6 +549,17 @@ commands:
             git config --global user.email $GITHUB_EMAIL
             git config --global user.name $GITHUB_USER
             git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@<< parameters.repo >>
+            if [[ "<< parameters.commit >>" == "true" ]]; then
+              git add --all
+              if [[ `git status --porcelain` ]]; then
+                git commit -m "Build << parameters.tag >>"
+                git push
+              else
+                echo "No changes detected - nothing to commit"
+              fi
+            else
+              echo "Changes commit was not requested"
+            fi
             git tag -f -a << parameters.tag >> -m "Version: << parameters.tag >>"
             git push -f --tags
 
