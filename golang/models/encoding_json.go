@@ -69,19 +69,18 @@ func (g *EncodingJsonGenerator) requiredFields(model *spec.NamedModel) string {
 
 func (g *EncodingJsonGenerator) objectModel(w *writer.Writer, model *spec.NamedModel) {
 	w.Line("type %s struct {", model.Name.PascalCase())
-	fields := [][]string{}
+	w.Indent()
 	for _, field := range model.Object.Fields {
 		jsonAttributes := []string{field.Name.Source}
 		if field.Type.Definition.IsNullable() {
 			jsonAttributes = append(jsonAttributes, "omitempty")
 		}
-		fields = append(fields, []string{
+		w.LineAligned("%s %s `json:\"%s\"`",
 			field.Name.PascalCase(),
 			g.Types.GoTypeSamePackage(&field.Type.Definition),
-			fmt.Sprintf("`json:\"%s\"`", strings.Join(jsonAttributes, ",")),
-		})
+			strings.Join(jsonAttributes, ","))
 	}
-	w.Indented().LinesAligned(fields)
+	w.Unindent()
 	w.Line("}")
 	w.EmptyLine()
 	w.Line(`type %s %s`, model.Name.CamelCase(), model.Name.PascalCase())
@@ -135,18 +134,18 @@ func (g *EncodingJsonGenerator) objectModel(w *writer.Writer, model *spec.NamedM
 func (g *EncodingJsonGenerator) enumModel(w *writer.Writer, model *spec.NamedModel) {
 	w.Line("type %s %s", model.Name.PascalCase(), "string")
 	w.EmptyLine()
-	w.Line("const (")
 	modelName := model.Name.PascalCase()
 	choiceValuesStringsParams := []string{}
 	choiceValuesParams := []string{}
-	items := [][]string{}
+	w.Line("const (")
+	w.Indent()
 	for _, enumItem := range model.Enum.Items {
 		enumConstName := modelName + enumItem.Name.PascalCase()
-		items = append(items, []string{enumConstName, fmt.Sprintf(`%s = "%s"`, modelName, enumItem.Value)})
 		choiceValuesStringsParams = append(choiceValuesStringsParams, fmt.Sprintf("string(%s)", enumConstName))
 		choiceValuesParams = append(choiceValuesParams, fmt.Sprintf("%s", enumConstName))
+		w.LineAligned(`%s = "%s"`, modelName, enumItem.Value)
 	}
-	w.Indented().LinesAligned(items)
+	w.Unindent()
 	w.Line(")")
 	w.EmptyLine()
 	w.Line("var %s = []string{%s}", g.EnumValuesStrings(model), strings.Join(choiceValuesStringsParams, ", "))
@@ -188,16 +187,15 @@ func (g *EncodingJsonGenerator) getCaseChecks(oneof *spec.OneOf) string {
 
 func (g *EncodingJsonGenerator) oneOfModelWrapper(w *writer.Writer, model *spec.NamedModel) {
 	caseChecks := g.getCaseChecks(model.OneOf)
-	items := [][]string{}
 	w.Line("type %s struct {", model.Name.PascalCase())
+	w.Indent()
 	for _, item := range model.OneOf.Items {
-		items = append(items, []string{
+		w.LineAligned("%s %s `json:\"%s,omitempty\"`",
 			item.Name.PascalCase(),
 			g.Types.GoTypeSamePackage(spec.Nullable(&item.Type.Definition)),
-			fmt.Sprintf("`json:\"%s,omitempty\"`", item.Name.Source),
-		})
+			item.Name.Source)
 	}
-	w.Indented().LinesAligned(items)
+	w.Unindent()
 	w.Line("}")
 	w.EmptyLine()
 	w.Line(`type %s %s`, model.Name.CamelCase(), model.Name.PascalCase())
@@ -225,14 +223,11 @@ func (g *EncodingJsonGenerator) oneOfModelWrapper(w *writer.Writer, model *spec.
 
 func (g *EncodingJsonGenerator) oneOfModelDiscriminator(w *writer.Writer, model *spec.NamedModel) {
 	w.Line("type %s struct {", model.Name.PascalCase())
-	items := [][]string{}
+	w.Indent()
 	for _, item := range model.OneOf.Items {
-		items = append(items, []string{
-			item.Name.PascalCase(),
-			g.Types.GoTypeSamePackage(spec.Nullable(&item.Type.Definition)),
-		})
+		w.LineAligned(`%s %s`, item.Name.PascalCase(), g.Types.GoTypeSamePackage(spec.Nullable(&item.Type.Definition)))
 	}
-	w.Indented().LinesAligned(items)
+	w.Unindent()
 	w.Line("}")
 	w.EmptyLine()
 	w.Line(`func (u %s) MarshalJSON() ([]byte, error) {`, model.Name.PascalCase())

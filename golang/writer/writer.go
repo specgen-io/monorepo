@@ -3,7 +3,6 @@ package writer
 import (
 	"generator"
 	"golang/module"
-	"strings"
 )
 
 func GoConfig() generator.Config {
@@ -22,34 +21,6 @@ func New(module module.Module, filename string) *Writer {
 	w.Line("package %s", module.Name)
 	w.EmptyLine()
 	return &Writer{w, module.GetPath(filename), module}
-}
-
-func (w *Writer) LinesAligned(lines [][]string) {
-	widths := make([]int, len(lines[0]))
-	for colIndex, _ := range lines[0] {
-		widths[colIndex] = colWidth(lines, colIndex)
-	}
-	for _, line := range lines {
-		lineStr := ""
-		for colIndex, cell := range line {
-			lineStr += cell
-			if colIndex != len(line)-1 {
-				lineStr += strings.Repeat(" ", widths[colIndex]-len(cell)) + " "
-			}
-		}
-		w.Line(lineStr)
-	}
-}
-
-func colWidth(lines [][]string, colIndex int) int {
-	width := 0
-	for _, line := range lines {
-		rowWidth := len(line[colIndex])
-		if rowWidth > width {
-			width = rowWidth
-		}
-	}
-	return width
 }
 
 func (w *Writer) Indented() *Writer {
