@@ -57,11 +57,18 @@ jobs:
             rm -rf ./test-results
             rm ./release.sh
       - run:
-          name: Release vendored module
+          name: Install goven
           command: |
             cd specgen
             go install github.com/specgen-io/goven@v0.0.10
+      - run:
+          name: Vendor and release specgen with goven
+          command: |
+            cd specgen
             goven release -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
+      - run:
+          name: Check released module
+          command: |
             go install github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>-alpha
 
   golang:
