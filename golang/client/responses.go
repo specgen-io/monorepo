@@ -10,14 +10,11 @@ import (
 
 func responseStruct(w *writer.Writer, types *types.Types, operation *spec.NamedOperation) {
 	w.Line(`type %s struct {`, responseTypeName(operation))
-	responses := [][]string{}
+	w.Indent()
 	for _, response := range operation.Responses {
-		responses = append(responses, []string{
-			response.Name.PascalCase(),
-			types.GoType(spec.Nullable(&response.Type.Definition)),
-		})
+		w.LineAligned(`%s %s`, response.Name.PascalCase(), types.GoType(spec.Nullable(&response.Type.Definition)))
 	}
-	w.Indented().LinesAligned(responses)
+	w.Unindent()
 	w.Line(`}`)
 }
 
