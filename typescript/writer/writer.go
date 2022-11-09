@@ -35,6 +35,6 @@ func (w *Writer) IndentedWith(size int) *Writer {
 }
 
 func (w *Writer) ToCodeFile() *generator.CodeFile {
-	code := strings.Join(w.Imports.Lines(), "\n")
+	code := strings.Join(w.Imports.Lines(), "\n") + w.String()
 	return &generator.CodeFile{w.filename, code}
 }
