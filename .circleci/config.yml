@@ -62,6 +62,12 @@ jobs:
             cd specgen
             go install github.com/specgen-io/goven@v0.0.10
       - run:
+          name: Just vendor - no release
+          command: |
+            cd specgen
+            goven vendor -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -out vendored
+            rm -rf vendored
+      - run:
           name: Vendor and release specgen with goven
           command: |
             cd specgen
