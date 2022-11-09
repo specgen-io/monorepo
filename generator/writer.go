@@ -99,8 +99,8 @@ func (w *TheWriter) checkAligned() {
 		linesParts = append(linesParts, strings.Split(line, " "))
 	}
 
-	widths := make([]int, len(lines[0]))
-	for colIndex, _ := range lines[0] {
+	widths := make([]int, len(linesParts[0]))
+	for colIndex, _ := range linesParts[0] {
 		widths[colIndex] = colWidth(linesParts, colIndex)
 	}
 	for _, line := range linesParts {
