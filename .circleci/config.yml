@@ -52,17 +52,36 @@ jobs:
           name: Cleanup
           command: |
             cd specgen
-            rm -rf ./zips
+            rm *.zip
             rm -rf ./dist
             rm -rf ./test-results
             rm ./release.sh
       - run:
-          name: Release vendored module
+          name: Install goven
           command: |
             cd specgen
             go install github.com/specgen-io/goven@v0.0.10
-            goven release -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
+      - run:
+          name: Vendor code with goven
+          command: |
+            cd specgen
+            goven vendor -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -out vendored
+      - run:
+          name: Copy vendored code
+          command: |
+            git clone https://github.com/specgen-io/specgen.git specgen-release
+            rm -rf ./specgen-release/<<pipeline.parameters.specgen-version-major>>
+            cp -a ./specgen/vendored/. ./specgen-release/<<pipeline.parameters.specgen-version-major>>
+      - github-push-tag:
+          path: specgen-release
+          repo: github.com/specgen-io/specgen.git
+          tag: v<<pipeline.parameters.specgen-version>>-alpha
+          commit: true
+      - run:
+          name: Check released module
+          command: |
             go install github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>-alpha
+            specgen --help
 
   golang:
     docker:
@@ -83,6 +102,9 @@ jobs:
       - image: cimg/go:1.18.3
     working_directory: ~/golang
     steps:
+      - run:
+          name: Checkout repo
+          command: git clone https://github.com/specgen-io/specgen-golang.git specgen-golang
       - github-push-tag:
           path: specgen-golang
           repo: github.com/specgen-io/specgen-golang.git
@@ -516,10 +538,10 @@ commands:
         type: string
       tag:
         type: string
+      commit:
+        type: boolean
+        default: false
     steps:
-      - run:
-          name: Checkout repo
-          command: git clone https://<< parameters.repo >> << parameters.path >>
       - run:
           name: Create tag and push to github
           command: |
@@ -527,6 +549,17 @@ commands:
             git config --global user.email $GITHUB_EMAIL
             git config --global user.name $GITHUB_USER
             git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@<< parameters.repo >>
+            if [[ "<< parameters.commit >>" == "true" ]]; then
+              git add --all
+              if [[ `git status --porcelain` ]]; then
+                git commit -m "Build << parameters.tag >>"
+                git push
+              else
+                echo "No changes detected - nothing to commit"
+              fi
+            else
+              echo "Changes commit was not requested"
+            fi
             git tag -f -a << parameters.tag >> -m "Version: << parameters.tag >>"
             git push -f --tags
 

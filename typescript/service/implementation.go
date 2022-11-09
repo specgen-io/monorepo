@@ -23,11 +23,9 @@ func (g *Generator) ServicesImpls(specification *spec.Spec) []generator.CodeFile
 
 func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.ServiceImpl(api))
-	imports := w.Imports()
-	imports.Star(g.Modules.ServiceApi(api), `service`)
-	imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
-	imports.Star(g.Modules.Errors, types.ErrorsPackage)
-	imports.Write(w)
+	w.Imports.Star(g.Modules.ServiceApi(api), `service`)
+	w.Imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
+	w.Imports.Star(g.Modules.Errors, types.ErrorsPackage)
 	w.EmptyLine()
 	w.Line("export const %sService = (): service.%s => {", api.Name.CamelCase(), serviceInterfaceName(api))
 

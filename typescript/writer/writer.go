@@ -2,6 +2,7 @@ package writer
 
 import (
 	"generator"
+	"strings"
 	"typescript/module"
 )
 
@@ -13,6 +14,7 @@ type Writer struct {
 	generator.Writer
 	filename string
 	module   module.Module
+	Imports  *imports
 }
 
 func New(module module.Module) *Writer {
@@ -20,21 +22,19 @@ func New(module module.Module) *Writer {
 		generator.NewWriter(module.GetPath(), TsConfig()),
 		module.GetPath(),
 		module,
+		NewImports(module),
 	}
 }
 
 func (w *Writer) Indented() *Writer {
-	return &Writer{w.Writer.Indented(), w.filename, w.module}
+	return &Writer{w.Writer.Indented(), w.filename, w.module, w.Imports}
 }
 
 func (w *Writer) IndentedWith(size int) *Writer {
-	return &Writer{w.Writer.IndentedWith(size), w.filename, w.module}
+	return &Writer{w.Writer.IndentedWith(size), w.filename, w.module, w.Imports}
 }
 
 func (w *Writer) ToCodeFile() *generator.CodeFile {
-	return &generator.CodeFile{w.filename, w.String()}
-}
-
-func (w *Writer) Imports() *imports {
-	return NewImports(w.module)
+	code := strings.Join(w.Imports.Lines(), "\n") + w.String()
+	return &generator.CodeFile{w.filename, code}
 }

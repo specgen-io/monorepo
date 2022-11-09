@@ -20,10 +20,8 @@ func (g *Generator) ServiceApis(version *spec.Version) []generator.CodeFile {
 
 func (g *Generator) serviceApi(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.ServiceApi(api))
-	imports := w.Imports()
-	imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
-	imports.Star(g.Modules.Errors, types.ErrorsPackage)
-	imports.Write(w)
+	w.Imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
+	w.Imports.Star(g.Modules.Errors, types.ErrorsPackage)
 	for _, operation := range api.Operations {
 		if operation.Body != nil || operation.HasParams() {
 			w.EmptyLine()

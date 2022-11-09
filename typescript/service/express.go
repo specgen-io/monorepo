@@ -16,16 +16,13 @@ type expressGenerator struct {
 
 func (g *expressGenerator) SpecRouter(specification *spec.Spec) *generator.CodeFile {
 	w := writer.New(g.Modules.SpecRouter)
-	imports := w.Imports()
-	imports.LibNames(`express`, `Router`)
+	w.Imports.LibNames(`express`, `Router`)
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			imports.Aliased(g.Modules.ServiceApi(&api), serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api))
-			imports.Aliased(g.Modules.Routing(&version), apiRouterName(&api), apiRouterNameVersioned(&api))
+			w.Imports.Aliased(g.Modules.ServiceApi(&api), serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api))
+			w.Imports.Aliased(g.Modules.Routing(&version), apiRouterName(&api), apiRouterNameVersioned(&api))
 		}
 	}
-	imports.Write(w)
-
 	servicesDefinitions := []string{}
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {

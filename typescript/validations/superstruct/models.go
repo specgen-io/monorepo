@@ -19,9 +19,7 @@ func (g *Generator) ErrorModels(httpErrors *spec.HttpErrors) *generator.CodeFile
 
 func (g *Generator) models(models []*spec.NamedModel, modelsModule module.Module) *generator.CodeFile {
 	w := writer.New(modelsModule)
-	imports := w.Imports()
-	imports.Star(g.Modules.Validation, `t`)
-	imports.Write(w)
+	w.Imports.Star(g.Modules.Validation, `t`)
 	for _, model := range models {
 		w.EmptyLine()
 		if model.IsObject() {

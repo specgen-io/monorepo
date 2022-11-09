@@ -17,9 +17,7 @@ type koaGenerator struct {
 
 func (g *koaGenerator) SpecRouter(specification *spec.Spec) *generator.CodeFile {
 	w := writer.New(g.Modules.SpecRouter)
-	imports := w.Imports()
-	imports.Default(`@koa/router`, `Router`)
-	imports.Write(w)
+	w.Imports.Default(`@koa/router`, `Router`)
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
 			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), g.Modules.ServiceApi(&api).GetImport(g.Modules.SpecRouter))
