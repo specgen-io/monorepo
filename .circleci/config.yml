@@ -75,7 +75,7 @@ jobs:
             cp -a ./specgen/vendored/. ./specgen-release/<<pipeline.parameters.specgen-version-major>>
       - github-push-tag:
           path: specgen-release
-          slug: specgen-io/specgen
+          repo: github.com/specgen-io/specgen.git
           tag: v<<pipeline.parameters.specgen-version>>-alpha
           commit: true
       - run:
