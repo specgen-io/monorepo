@@ -2,30 +2,26 @@ package service
 
 import (
 	"fmt"
-
 	"generator"
 	"spec"
 	"typescript/common"
-	"typescript/modules"
 	"typescript/responses"
 	"typescript/types"
 	"typescript/writer"
 )
 
-func generateServiceApis(version *spec.Version, modelsModule modules.Module, errorsModule modules.Module, module modules.Module) []generator.CodeFile {
+func (g *Generator) ServiceApis(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		apiModule := module.Submodule(serviceName(&api))
-		serviceFile := generateApiService(&api, modelsModule, errorsModule, apiModule)
-		files = append(files, *serviceFile)
+		files = append(files, *g.serviceApi(&api))
 	}
 	return files
 }
 
-func generateApiService(api *spec.Api, modelsModule modules.Module, errorsModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
-	w.Line("import * as %s from '%s'", types.ModelsPackage, modelsModule.GetImport(module))
-	w.Line("import * as %s from '%s'", types.ErrorsPackage, errorsModule.GetImport(module))
+func (g *Generator) serviceApi(api *spec.Api) *generator.CodeFile {
+	w := writer.New(g.Modules.ServiceApi(api))
+	w.Imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
+	w.Imports.Star(g.Modules.Errors, types.ErrorsPackage)
 	for _, operation := range api.Operations {
 		if operation.Body != nil || operation.HasParams() {
 			w.EmptyLine()
@@ -46,7 +42,7 @@ func generateApiService(api *spec.Api, modelsModule modules.Module, errorsModule
 		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, responses.ResponseType(&operation, ""))
 	}
 	w.Line("}")
-	return &generator.CodeFile{module.GetPath(), w.String()}
+	return w.ToCodeFile()
 }
 
 func serviceInterfaceName(api *spec.Api) string {
@@ -62,28 +58,24 @@ func serviceInterfaceNameVersioned(api *spec.Api) string {
 	return result
 }
 
-func serviceName(api *spec.Api) string {
-	return api.Name.SnakeCase()
-}
-
 func operationParamsTypeName(operation *spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Params"
 }
 
-func addServiceParam(w generator.Writer, paramName string, typ *spec.TypeDef) {
+func addServiceParam(w *writer.Writer, paramName string, typ *spec.TypeDef) {
 	if typ.IsNullable() {
 		paramName = paramName + "?"
 	}
 	w.Line("  %s: %s,", paramName, types.TsType(typ))
 }
 
-func generateServiceParams(w generator.Writer, params []spec.NamedParam) {
+func generateServiceParams(w *writer.Writer, params []spec.NamedParam) {
 	for _, param := range params {
 		addServiceParam(w, common.TSIdentifier(param.Name.Source), &param.Type.Definition)
 	}
 }
 
-func generateOperationParams(w generator.Writer, operation *spec.NamedOperation) {
+func generateOperationParams(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line("export interface %s {", operationParamsTypeName(operation))
 	generateServiceParams(w, operation.HeaderParams)
 	generateServiceParams(w, operation.Endpoint.UrlParams)

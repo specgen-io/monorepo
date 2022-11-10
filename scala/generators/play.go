@@ -2,6 +2,8 @@ package generators
 
 import (
 	"fmt"
+	"scala/packages"
+	"scala/writer"
 	"strings"
 
 	"generator"
@@ -10,8 +12,8 @@ import (
 )
 
 func GeneratePlayService(specification *spec.Spec, swaggerPath string, generatePath string, servicesPath string) *generator.Sources {
-	rootPackage := NewPackage(generatePath, "", "")
-	implRootPackage := NewPackage(servicesPath, "", "")
+	rootPackage := packages.New(generatePath, "", "")
+	implRootPackage := packages.New(servicesPath, "", "")
 
 	appPackage := rootPackage.Subpackage("app")
 	jsonPackage := rootPackage.Subpackage("json")
@@ -109,10 +111,8 @@ func operationSignature(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`def %s(%s): Future[%s]`, controllerMethodName(operation), JoinParams(params), responseType(operation))
 }
 
-func generateApiTrait(api *spec.Api, thepackage, modelsPackage, errorModelsPackage, servicesImplPackage Package) *generator.CodeFile {
-	w := NewScalaWriter()
-	w.Line(`package %s`, thepackage.PackageName)
-	w.EmptyLine()
+func generateApiTrait(api *spec.Api, thepackage, modelsPackage, errorModelsPackage, servicesImplPackage packages.Package) *generator.CodeFile {
+	w := writer.New(thepackage, apiClassType(api.Name))
 	w.Line(`import com.google.inject.ImplementedBy`)
 	w.Line(`import scala.concurrent.Future`)
 	w.Line(`import %s`, modelsPackage.PackageStar)
@@ -135,37 +135,25 @@ func generateApiTrait(api *spec.Api, thepackage, modelsPackage, errorModelsPacka
 		}
 	}
 
-	return &generator.CodeFile{
-		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", apiClassType(api.Name))),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
-func generateApiImpl(api spec.Api, thepackage, apiPackage, modelsPackage Package) *generator.CodeFile {
-	w := NewScalaWriter()
-	w.Line(`package %s`, thepackage.PackageName)
-
-	w.EmptyLine()
+func generateApiImpl(api spec.Api, thepackage, apiPackage, modelsPackage packages.Package) *generator.CodeFile {
+	w := writer.New(thepackage, apiClassType(api.Name))
 	w.Line(`import javax.inject._`)
 	w.Line(`import scala.concurrent._`)
 	w.Line(`import %s`, apiPackage.PackageStar)
 	w.Line(`import %s`, modelsPackage.PackageStar)
 
-	apiClassName := apiClassType(api.Name)
-	apiTraitName := apiTraitType(api.Name)
-
 	w.EmptyLine()
 	w.Line(`@Singleton`)
-	w.Line(`class %s @Inject()()(implicit ec: ExecutionContext) extends %s {`, apiClassName, apiTraitName)
+	w.Line(`class [[.ClassName]] @Inject()()(implicit ec: ExecutionContext) extends %s {`, apiTraitType(api.Name))
 	for _, operation := range api.Operations {
 		w.Line(`  override %s = Future { ??? }`, operationSignature(&operation))
 	}
 	w.Line(`}`)
 
-	return &generator.CodeFile{
-		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", apiClassName)),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func addParamsParsing(w generator.Writer, params []spec.NamedParam, location string, paramsVar string, valuesVar string) {
@@ -203,10 +191,8 @@ func addParamParsingCall(param *spec.NamedParam) string {
 	}
 }
 
-func generateResponseHelpers(thepackage, jsonPackage, paramsPackage, exceptionsPackage Package) *generator.CodeFile {
-	w := NewScalaWriter()
-	w.Line(`package %s`, thepackage.PackageName)
-	w.EmptyLine()
+func generateResponseHelpers(thepackage, jsonPackage, paramsPackage, exceptionsPackage packages.Package) *generator.CodeFile {
+	w := writer.New(thepackage, `Responses`)
 	w.Line(`import akka.util.ByteString`)
 	w.Line(`import play.api.mvc._`)
 	w.Line(`import play.api.http.HttpEntity`)
@@ -216,7 +202,7 @@ func generateResponseHelpers(thepackage, jsonPackage, paramsPackage, exceptionsP
 	w.Line(`import %s.Jsoner`, jsonPackage.PackageName)
 	w.EmptyLine()
 	w.Lines(`
-object Responses {
+object [[.ClassName]] {
   def error(e: Throwable): Result = {
     e match {
       case ex: ContentTypeMismatchException =>
@@ -250,16 +236,11 @@ object Responses {
     }
   }
 }`)
-	return &generator.CodeFile{
-		Path:    thepackage.GetPath(`Responses.scala`),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
-func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage, jsonPackage, paramsPackage, exceptionsPackage, errorsPackage Package) *generator.CodeFile {
-	w := NewScalaWriter()
-	w.Line(`package %s`, thepackage.PackageName)
-	w.EmptyLine()
+func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage, jsonPackage, paramsPackage, exceptionsPackage, errorsPackage packages.Package) *generator.CodeFile {
+	w := writer.New(thepackage, controllerType(api.Name))
 	w.Line(`import akka.util.ByteString`)
 	w.Line(`import javax.inject._`)
 	w.Line(`import scala.util._`)
@@ -278,16 +259,13 @@ func generateApiController(api *spec.Api, thepackage, apiPackage, modelsPackage,
 
 	w.EmptyLine()
 	w.Line(`@Singleton`)
-	w.Line(`class %s @Inject()(api: %s, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {`, controllerType(api.Name), apiTraitType(api.Name))
+	w.Line(`class [[.ClassName]] @Inject()(api: %s, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {`, apiTraitType(api.Name))
 	for _, operation := range api.Operations {
 		generateControllerMethod(w.Indented(), &operation)
 	}
 	w.Line(`}`)
 
-	return &generator.CodeFile{
-		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", controllerType(api.Name))),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func generateControllerMethod(w generator.Writer, operation *spec.NamedOperation) {
@@ -412,11 +390,8 @@ func getParsedOperationParams(operation *spec.NamedOperation) []string {
 	return params
 }
 
-func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPackage, jsonPackage, paramsPackage, errorsPackage Package) *generator.CodeFile {
-	w := NewScalaWriter()
-	w.Line(`package %s`, thepackage.PackageName)
-
-	w.EmptyLine()
+func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPackage, jsonPackage, paramsPackage, errorsPackage packages.Package) *generator.CodeFile {
+	w := writer.New(thepackage, routerType(api.Name))
 	w.Line(`import javax.inject._`)
 	w.Line(`import play.api.mvc._`)
 	w.Line(`import play.api.routing._`)
@@ -431,26 +406,17 @@ func generateApiRouter(api *spec.Api, thepackage, controllersPackage, modelsPack
 	w.EmptyLine()
 	generateApiRouterClass(w, api)
 
-	return &generator.CodeFile{
-		Path:    thepackage.GetPath(fmt.Sprintf("%s.scala", routerType(api.Name))),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
-func generateMainRouter(versions []spec.Version, thepackage Package) *generator.CodeFile {
-	w := NewScalaWriter()
-	w.Line(`package %s`, thepackage.PackageName)
-
-	w.EmptyLine()
+func generateMainRouter(versions []spec.Version, thepackage packages.Package) *generator.CodeFile {
+	w := writer.New(thepackage, `SpecRouter`)
 	w.Line(`import javax.inject._`)
 	w.Line(`import play.api.routing._`)
 
 	generateSpecRouterMainClass(w, versions)
 
-	return &generator.CodeFile{
-		Path:    thepackage.GetPath("SpecRouter.scala"),
-		Content: w.String(),
-	}
+	return w.ToCodeFile()
 }
 
 func generateSpecRouterMainClass(w generator.Writer, versions []spec.Version) {
@@ -564,7 +530,7 @@ func routerTypeName(api *spec.Api) string {
 	return typeName
 }
 
-func generatePlayParams(thepackage Package) *generator.CodeFile {
+func generatePlayParams(thepackage packages.Package) *generator.CodeFile {
 	code := `
 package [[.PackageName]]
 

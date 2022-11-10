@@ -2,26 +2,12 @@ package iots
 
 import (
 	"fmt"
+	"typescript/writer"
 
-	"generator"
 	"spec"
 	"typescript/common"
 	"typescript/types"
-	validations "typescript/validations/common"
 )
-
-func (g *Generator) WriteParamsType2(w generator.Writer, typeName string, params []spec.NamedParam) {
-	if len(params) > 0 {
-		w.EmptyLine()
-		w.Line("const %s = t.type({", validations.ParamsRuntimeTypeName(typeName))
-		for _, param := range params {
-			w.Line("  %s: %s,", common.TSIdentifier(param.Name.Source), paramIoTsTypeDefaulted(&param))
-		}
-		w.Line("})")
-		w.EmptyLine()
-		w.Line("type %s = t.TypeOf<typeof %s>", typeName, validations.ParamsRuntimeTypeName(typeName))
-	}
-}
 
 func kindOfParams(params []spec.NamedParam) (bool, bool) {
 	var hasRequiredParams = false
@@ -36,7 +22,7 @@ func kindOfParams(params []spec.NamedParam) (bool, bool) {
 	return hasRequiredParams, hasOptionalParams
 }
 
-func (g *Generator) WriteParamsType(w generator.Writer, typeName string, params []spec.NamedParam) {
+func (g *Generator) WriteParamsType(w *writer.Writer, typeName string, params []spec.NamedParam) {
 	if len(params) > 0 {
 		w.EmptyLine()
 		hasRequiredFields, hasOptionalFields := kindOfParams(params)
@@ -69,7 +55,7 @@ func (g *Generator) WriteParamsType(w generator.Writer, typeName string, params 
 			w.Line("})")
 		}
 		w.EmptyLine()
-		w.Line("export type %s = t.TypeOf<typeof T%s>", typeName, typeName)
+		w.Line("export type %s = t.TypeOf<typeof %s>", typeName, g.RuntimeTypeName(typeName))
 	}
 }
 

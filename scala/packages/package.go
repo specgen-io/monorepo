@@ -1,4 +1,4 @@
-package generators
+package packages
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ type Package struct {
 	PackageStar string
 }
 
-func NewPackage(rootPath, rootPackageName, packageName string) Package {
+func New(rootPath, rootPackageName, packageName string) Package {
 	path := getFullPath(rootPath, packageNameToPath(packageName))
 	packageName = getFullPackageName(rootPackageName, packageName)
 	return Package{Path: path, PackageName: packageName, PackageStar: packageName + "._"}

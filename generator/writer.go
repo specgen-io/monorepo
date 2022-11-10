@@ -1,9 +1,7 @@
 package generator
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"strings"
 )
 
@@ -12,6 +10,7 @@ type Writer interface {
 	Lines(format string)
 	Template(data map[string]string, content string)
 	EmptyLine()
+	LineAligned(format string, args ...interface{})
 	Indent()
 	Unindent()
 	IndentWith(size int)
@@ -28,32 +27,32 @@ type Config struct {
 	Substitutions             map[string]string
 }
 
-type writer struct {
+type content struct {
+	lines        []string
+	linesAligned []string
+}
+
+func (c *content) Add(s string) {
+	c.lines = append(c.lines, s)
+}
+
+type TheWriter struct {
 	filename    string
 	config      Config
-	buffer      *bytes.Buffer
+	content     *content
 	indentation int
 }
 
-func NewWriter(config Config) Writer {
-	return &writer{
-		"",
-		config,
-		new(bytes.Buffer),
-		0,
-	}
-}
-
-func NewWriter2(filename string, config Config) Writer {
-	return &writer{
+func NewWriter(filename string, config Config) Writer {
+	return &TheWriter{
 		filename,
 		config,
-		new(bytes.Buffer),
+		&content{[]string{}, []string{}},
 		0,
 	}
 }
 
-func (w *writer) ToCodeFile() *CodeFile {
+func (w *TheWriter) ToCodeFile() *CodeFile {
 	return &CodeFile{
 		Path:    w.filename,
 		Content: w.String(),
@@ -78,8 +77,53 @@ func wrapKeys(vars map[string]string, prefix, postfix string) map[string]string 
 	return result
 }
 
-func (w *writer) write(s string) {
-	io.WriteString(w.buffer, substitute(s, w.config.Substitutions))
+func (w *TheWriter) write(s string) {
+	w.checkAligned()
+	w.content.Add(s)
+}
+
+func (w *TheWriter) LineAligned(format string, args ...interface{}) {
+	theline := fmt.Sprintf(format, args...)
+	w.content.linesAligned = append(w.content.linesAligned, theline)
+}
+
+func (w *TheWriter) checkAligned() {
+	if len(w.content.linesAligned) == 0 {
+		return
+	}
+	lines := w.content.linesAligned
+	w.content.linesAligned = []string{}
+
+	linesParts := [][]string{}
+	for _, line := range lines {
+		linesParts = append(linesParts, strings.Split(line, " "))
+	}
+
+	widths := make([]int, len(linesParts[0]))
+	for colIndex, _ := range linesParts[0] {
+		widths[colIndex] = colWidth(linesParts, colIndex)
+	}
+	for _, line := range linesParts {
+		lineStr := ""
+		for colIndex, cell := range line {
+			lineStr += cell
+			if colIndex != len(line)-1 {
+				lineStr += strings.Repeat(" ", widths[colIndex]-len(cell)) + " "
+			}
+		}
+		w.line(lineStr)
+	}
+}
+
+func colWidth(lines [][]string, colIndex int) int {
+	width := 0
+	for _, line := range lines {
+		rowWidth := len(line[colIndex])
+		if rowWidth > width {
+			width = rowWidth
+		}
+	}
+	return width
 }
 
 func trimPrefix(str string, prefix string) (string, int) {
@@ -92,7 +136,7 @@ func trimPrefix(str string, prefix string) (string, int) {
 	return trimmed, count
 }
 
-func (w *writer) line(theline string) {
+func (w *TheWriter) line(theline string) {
 	indentation := 0
 	if w.config.LeadSpacesIndentationSize > 0 {
 		prefix := strings.Repeat(" ", w.config.LeadSpacesIndentationSize)
@@ -101,15 +145,16 @@ func (w *writer) line(theline string) {
 	realIndentation := indentation + w.indentation
 	indentationStr := strings.Repeat(w.config.IndentationStr, realIndentation)
 	theline = indentationStr + theline + "\n"
+	theline = substitute(theline, w.config.Substitutions)
 	w.write(theline)
 }
 
-func (w *writer) Line(format string, args ...interface{}) {
+func (w *TheWriter) Line(format string, args ...interface{}) {
 	theline := fmt.Sprintf(format, args...)
 	w.line(theline)
 }
 
-func (w *writer) Lines(content string) {
+func (w *TheWriter) Lines(content string) {
 	code := strings.Trim(content, "\n")
 	lines := strings.Split(code, "\n")
 	for _, line := range lines {
@@ -117,49 +162,51 @@ func (w *writer) Lines(content string) {
 	}
 }
 
-func (w *writer) Template(data map[string]string, content string) {
+func (w *TheWriter) Template(data map[string]string, content string) {
 	code := substitute(content, wrapKeys(data, "[[.", "]]"))
 	w.Lines(code)
 }
 
-func (w *writer) EmptyLine() {
+func (w *TheWriter) EmptyLine() {
 	w.write("\n")
 }
 
-func (w *writer) Indent() {
-	w.indentation = w.indentation + 1
+func (w *TheWriter) setIndentation(value int) {
+	w.checkAligned()
+	w.indentation = value
 }
 
-func (w *writer) Unindent() {
-	w.indentation = w.indentation - 1
+func (w *TheWriter) Indent() {
+	w.setIndentation(w.indentation + 1)
 }
 
-func (w *writer) IndentWith(size int) {
-	w.indentation = w.indentation + size
+func (w *TheWriter) Unindent() {
+	w.setIndentation(w.indentation - 1)
 }
 
-func (w *writer) UnindentWith(size int) {
-	w.indentation = w.indentation - size
+func (w *TheWriter) IndentWith(size int) {
+	w.setIndentation(w.indentation + size)
 }
 
-func (w *writer) Indented() Writer {
-	return &writer{
+func (w *TheWriter) UnindentWith(size int) {
+	w.setIndentation(w.indentation - size)
+}
+
+func (w *TheWriter) Indented() Writer {
+	return w.IndentedWith(1)
+}
+
+func (w *TheWriter) IndentedWith(size int) Writer {
+	w.checkAligned()
+	return &TheWriter{
 		w.filename,
 		w.config,
-		w.buffer,
-		w.indentation + 1,
-	}
-}
-
-func (w *writer) IndentedWith(size int) Writer {
-	return &writer{
-		w.filename,
-		w.config,
-		w.buffer,
+		w.content,
 		w.indentation + size,
 	}
 }
 
-func (w *writer) String() string {
-	return w.buffer.String()
+func (w *TheWriter) String() string {
+	w.checkAligned()
+	return strings.Join(w.content.lines, ``)
 }

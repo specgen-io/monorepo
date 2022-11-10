@@ -2,33 +2,27 @@ package service
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"spec"
-	"typescript/modules"
+	"strings"
 	"typescript/validations"
-	"typescript/validations/common"
 	"typescript/writer"
 )
 
 type expressGenerator struct {
-	validation validations.Validation
+	Modules    *Modules
+	Validation validations.Validation
 }
 
-func (g *expressGenerator) SpecRouter(specification *spec.Spec, rootModule modules.Module, module modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
-	w.Line("import {Router} from 'express'")
+func (g *expressGenerator) SpecRouter(specification *spec.Spec) *generator.CodeFile {
+	w := writer.New(g.Modules.SpecRouter)
+	w.Imports.LibNames(`express`, `Router`)
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
-			versionModule := rootModule.Submodule(version.Name.FlatCase())
-			apiModule := versionModule.Submodule(serviceName(&api)) //TODO: This logic is repeated here, it also exists where api module is created
-			routerModule := versionModule.Submodule("routing")      //TODO: This logic is repeated here, it also exists where router module is created
-			w.Line("import {%s as %s} from '%s'", serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api), apiModule.GetImport(module))
-			w.Line("import {%s as %s} from '%s'", apiRouterName(&api), apiRouterNameVersioned(&api), routerModule.GetImport(module))
+			w.Imports.Aliased(g.Modules.ServiceApi(&api), serviceInterfaceName(&api), serviceInterfaceNameVersioned(&api))
+			w.Imports.Aliased(g.Modules.Routing(&version), apiRouterName(&api), apiRouterNameVersioned(&api))
 		}
 	}
-
 	servicesDefinitions := []string{}
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
@@ -53,8 +47,7 @@ func (g *expressGenerator) SpecRouter(specification *spec.Spec, rootModule modul
 	}
 	w.Line("  return router")
 	w.Line("}")
-
-	return &generator.CodeFile{module.GetPath(), w.String()}
+	return w.ToCodeFile()
 }
 
 func expressVersionUrl(version *spec.Version) string {
@@ -65,34 +58,34 @@ func expressVersionUrl(version *spec.Version) string {
 	return url
 }
 
-func (g *expressGenerator) VersionRouting(version *spec.Version, targetModule modules.Module, modelsModule, validationModule, paramsModule, errorsModule, responsesModule modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
+func (g *expressGenerator) VersionRouting(version *spec.Version) *generator.CodeFile {
+	routingModule := g.Modules.Routing(version)
 
+	w := writer.New(routingModule)
 	w.Line(`import {Router, Request, Response} from 'express'`)
-	w.Line(`import {zipHeaders} from '%s'`, paramsModule.GetImport(targetModule))
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
-	w.Line(`import * as models from '%s'`, modelsModule.GetImport(targetModule))
-	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(targetModule))
-	w.Line(`import * as responses from '%s'`, responsesModule.GetImport(targetModule))
+	w.Line(`import {zipHeaders} from '%s'`, g.Modules.Params.GetImport(routingModule))
+	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(routingModule))
+	w.Line(`import * as models from '%s'`, g.Modules.Models(version).GetImport(routingModule))
+	w.Line(`import * as errors from '%s'`, g.Modules.Errors.GetImport(routingModule))
+	w.Line(`import * as responses from '%s'`, g.Modules.Responses.GetImport(routingModule))
 
 	for _, api := range version.Http.Apis {
-		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), serviceName(&api))
+		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), g.Modules.ServiceApi(&api).GetImport(routingModule))
 	}
 
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
-			g.validation.WriteParamsType(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams)
-			g.validation.WriteParamsType(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams)
-			g.validation.WriteParamsType(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams)
+			g.Validation.WriteParamsType(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams)
+			g.Validation.WriteParamsType(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams)
+			g.Validation.WriteParamsType(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams)
 		}
 
 		g.apiRouting(w, &api)
 	}
-
-	return &generator.CodeFile{targetModule.GetPath(), w.String()}
+	return w.ToCodeFile()
 }
 
-func (g *expressGenerator) apiRouting(w generator.Writer, api *spec.Api) {
+func (g *expressGenerator) apiRouting(w *writer.Writer, api *spec.Api) {
 	w.EmptyLine()
 	w.Line("export const %s = (service: %s) => {", apiRouterName(api), serviceInterfaceName(api))
 	w.Line("  const router = Router()")
@@ -113,7 +106,7 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
-func (g *expressGenerator) response(w generator.Writer, response *spec.Response, dataParam string) {
+func (g *expressGenerator) response(w *writer.Writer, response *spec.Response, dataParam string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line("response.status(%s).send()", spec.HttpStatusCode(response.Name))
 		w.Line("return")
@@ -123,12 +116,12 @@ func (g *expressGenerator) response(w generator.Writer, response *spec.Response,
 		w.Line("return")
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.validation.RuntimeType(&response.Type.Definition), dataParam)
+		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.Validation.RuntimeType(&response.Type.Definition), dataParam)
 		w.Line("return")
 	}
 }
 
-func (g *expressGenerator) responses(w generator.Writer, responses spec.OperationResponses) {
+func (g *expressGenerator) responses(w *writer.Writer, responses spec.OperationResponses) {
 	if len(responses) == 1 {
 		g.response(w, &responses[0].Response, "result")
 	} else {
@@ -141,7 +134,7 @@ func (g *expressGenerator) responses(w generator.Writer, responses spec.Operatio
 	}
 }
 
-func (g *expressGenerator) checkContentType(w generator.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) checkContentType(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`if (!responses.assertContentType(request, response, "text/plain")) {`)
 		w.Line(`  return`)
@@ -154,7 +147,7 @@ func (g *expressGenerator) checkContentType(w generator.Writer, operation *spec.
 	}
 }
 
-func (g *expressGenerator) operationRouting(w generator.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) operationRouting(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line("router.%s('%s', async (request: Request, response: Response) => {", strings.ToLower(operation.Endpoint.Method), getExpressUrl(operation.Endpoint))
 	w.Indent()
 	w.Line("try {")
@@ -174,9 +167,9 @@ func (g *expressGenerator) operationRouting(w generator.Writer, operation *spec.
 	w.Line("})")
 }
 
-func (g *expressGenerator) urlParamsParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) urlParamsParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.Endpoint.UrlParams) > 0 {
-		w.Line("const urlParamsDecode = t.decodeR(%s, request.params)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "UrlParams")))
+		w.Line("const urlParamsDecode = t.decodeR(%s, request.params)", g.Validation.RuntimeTypeName(urlParamsType(operation)))
 		w.Line("if (urlParamsDecode.error) {")
 		g.respondNotFound(w.Indented(), "Failed to parse url parameters")
 		w.Line("}")
@@ -184,9 +177,9 @@ func (g *expressGenerator) urlParamsParsing(w generator.Writer, operation *spec.
 	}
 }
 
-func (g *expressGenerator) headerParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) headerParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.HeaderParams) > 0 {
-		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(request.rawHeaders))", common.ParamsRuntimeTypeName(paramsTypeName(operation, "HeaderParams")))
+		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(request.rawHeaders))", g.Validation.RuntimeTypeName(headersType(operation)))
 		w.Line("if (headerParamsDecode.error) {")
 		g.respondBadRequest(w.Indented(), "HEADER", "headerParamsDecode.error", "Failed to parse header")
 		w.Line("}")
@@ -194,9 +187,9 @@ func (g *expressGenerator) headerParsing(w generator.Writer, operation *spec.Nam
 	}
 }
 
-func (g *expressGenerator) queryParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) queryParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.QueryParams) > 0 {
-		w.Line("const queryParamsDecode = t.decodeR(%s, request.query)", common.ParamsRuntimeTypeName(paramsTypeName(operation, "QueryParams")))
+		w.Line("const queryParamsDecode = t.decodeR(%s, request.query)", g.Validation.RuntimeTypeName(queryType(operation)))
 		w.Line("if (queryParamsDecode.error) {")
 		g.respondBadRequest(w.Indented(), "QUERY", "queryParamsDecode.error", "Failed to parse query")
 		w.Line("}")
@@ -204,12 +197,12 @@ func (g *expressGenerator) queryParsing(w generator.Writer, operation *spec.Name
 	}
 }
 
-func (g *expressGenerator) bodyParsing(w generator.Writer, operation *spec.NamedOperation) {
+func (g *expressGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`const body: string = request.body`)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line("const bodyDecode = t.decodeR(%s, request.body)", g.validation.RuntimeType(&operation.Body.Type.Definition))
+		w.Line("const bodyDecode = t.decodeR(%s, request.body)", g.Validation.RuntimeType(&operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
 		g.respondBadRequest(w.Indented(), "BODY", "bodyDecode.error", "Failed to parse body")
 		w.Line("}")
@@ -217,27 +210,27 @@ func (g *expressGenerator) bodyParsing(w generator.Writer, operation *spec.Named
 	}
 }
 
-func (g *expressGenerator) respondBadRequest(w generator.Writer, location, errorsVar, message string) {
+func (g *expressGenerator) respondBadRequest(w *writer.Writer, location, errorsVar, message string) {
 	w.Line(`responses.badRequest(response, { message: "%s", location: errors.ErrorLocation.%s, errors: %s })`, message, location, errorsVar)
 	w.Line(`return`)
 }
 
-func (g *expressGenerator) respondNotFound(w generator.Writer, message string) {
+func (g *expressGenerator) respondNotFound(w *writer.Writer, message string) {
 	w.Line(`responses.notFound(response, { message: "%s" })`, message)
 	w.Line(`return`)
 }
 
-func (g *expressGenerator) respondInternalServerError(w generator.Writer) {
+func (g *expressGenerator) respondInternalServerError(w *writer.Writer) {
 	w.Line(`responses.internalServerError(response, { message: error instanceof Error ? error.message : "Unknown error" })`)
 	w.Line(`return`)
 }
 
-func (g *expressGenerator) Responses(targetModule, validationModule, errorsModule modules.Module) *generator.CodeFile {
-	w := writer.NewTsWriter()
+func (g *expressGenerator) Responses() *generator.CodeFile {
+	w := writer.New(g.Modules.Responses)
 
 	w.Line(`import {Request, Response} from 'express'`)
-	w.Line(`import * as t from '%s'`, validationModule.GetImport(targetModule))
-	w.Line(`import * as errors from '%s'`, errorsModule.GetImport(targetModule))
+	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(g.Modules.Responses))
+	w.Line(`import * as errors from '%s'`, g.Modules.Errors.GetImport(g.Modules.Responses))
 
 	w.EmptyLine()
 	code := `
@@ -272,5 +265,5 @@ export const assertContentType = (request: Request, response: Response, contentT
 	code = strings.Replace(code, "'", "`", -1)
 	w.Lines(code)
 
-	return &generator.CodeFile{targetModule.GetPath(), w.String()}
+	return w.ToCodeFile()
 }
