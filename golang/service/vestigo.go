@@ -159,7 +159,7 @@ func (g *VestigoGenerator) queryParsing(w *writer.Writer, operation *spec.NamedO
 
 func (g *VestigoGenerator) urlParamsParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		w.Line(`urlParams := paramsparser.NewImports(req.URL.Query(), false)`)
+		w.Line(`urlParams := paramsparser.New(req.URL.Query(), false)`)
 		for _, param := range operation.Endpoint.UrlParams {
 			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(true, &param, "urlParams"))
 		}
@@ -171,7 +171,7 @@ func (g *VestigoGenerator) urlParamsParsing(w *writer.Writer, operation *spec.Na
 
 func (g *VestigoGenerator) parametersParsing(w *writer.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramsValuesVar string) {
 	if namedParams != nil && len(namedParams) > 0 {
-		w.Line(`%s := paramsparser.NewImports(%s, true)`, paramsParserName, paramsValuesVar)
+		w.Line(`%s := paramsparser.New(%s, true)`, paramsParserName, paramsValuesVar)
 		for _, param := range namedParams {
 			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(false, &param, paramsParserName))
 		}

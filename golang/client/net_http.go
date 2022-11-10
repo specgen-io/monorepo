@@ -71,7 +71,7 @@ func (g *NetHttpGenerator) clientWithCtor(w *writer.Writer) {
 	w.Line(`  baseUrl string`)
 	w.Line(`}`)
 	w.EmptyLine()
-	w.Line(`func NewImports%s(baseUrl string) *%s {`, casee.ToPascalCase(clientTypeName()), clientTypeName())
+	w.Line(`func New%s(baseUrl string) *%s {`, casee.ToPascalCase(clientTypeName()), clientTypeName())
 	w.Line(`  return &%s{baseUrl}`, clientTypeName())
 	w.Line(`}`)
 }
