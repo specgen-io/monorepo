@@ -41,10 +41,8 @@ func (g *MicronautGenerator) client(api *spec.Api) *generator.CodeFile {
 	imports.Add(`io.micronaut.http.HttpHeaders.*`)
 	imports.Add(`io.micronaut.http.HttpRequest.*`)
 	imports.Add(`io.micronaut.http.client.HttpClient`)
-	imports.Add(`io.micronaut.http.client.annotation.Client`)
-	imports.Add(`jakarta.inject.Singleton`)
+	imports.Add(`java.net.URL`)
 	imports.Add(`org.slf4j.*`)
-	imports.Add(g.Packages.Root.PackageStar)
 	imports.Add(g.Packages.Errors.PackageStar)
 	imports.Add(g.Packages.Json.PackageStar)
 	imports.Add(g.Packages.Utils.PackageStar)
@@ -54,18 +52,17 @@ func (g *MicronautGenerator) client(api *spec.Api) *generator.CodeFile {
 	imports.Write(w)
 	w.EmptyLine()
 	w.Lines(`
-@Singleton
-class [[.ClassName]](
-	@param:Client(ClientConfiguration.BASE_URL)
-	private val client: HttpClient,
-	private var json: Json
-) {
+class [[.ClassName]](private val baseUrl: String) {
 	private val logger: Logger = LoggerFactory.getLogger([[.ClassName]]::class.java)
+
+    private var client: HttpClient
+    private val json: Json
 
 	init {
 `)
 	w.IndentedWith(2).Lines(g.Models.CreateJsonHelper(`json`))
 	w.Lines(`
+        client = HttpClient.create(URL(baseUrl))
 	}
 `)
 	for _, operation := range api.Operations {
@@ -107,7 +104,7 @@ func (g *MicronautGenerator) generateClientMethod(w generator.Writer, operation 
 	}
 	w.EmptyLine()
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
-	w.Line(`  val response = doRequest(client, request)`)
+	w.Line(`  val response = doRequest(client, request, logger)`)
 	w.EmptyLine()
 	for _, response := range operation.Responses {
 		statusCode := spec.HttpStatusCode(response.Name)
@@ -259,13 +256,21 @@ func (g *MicronautGenerator) generateClientResponse() *generator.CodeFile {
 		}, `
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import org.slf4j.Logger
 import [[.ErrorsPackage]].*
 import java.io.IOException
 
 object ClientResponse {
-	fun doRequest(client: HttpClient, request: RequestBuilder): HttpResponse<String> =
-		client.toBlocking().exchange(request.build(), String::class.java)
+	fun doRequest(client: HttpClient, request: RequestBuilder, logger: Logger): HttpResponse<String> {
+		return try {
+			client.toBlocking().exchange(request.build(), String::class.java)
+		} catch (e: HttpClientResponseException) {
+			val errorMessage = "Failed to execute the request " + e.message
+			logger.error(errorMessage)
+			throw ClientException(errorMessage, e)
+		}
+	}
 
 	fun <T> getResponseBodyString(response: HttpResponse<T>, logger: Logger): String {
 		return try {
