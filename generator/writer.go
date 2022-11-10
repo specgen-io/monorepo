@@ -10,6 +10,7 @@ type Writer interface {
 	Lines(format string)
 	Template(data map[string]string, content string)
 	EmptyLine()
+	LineAligned(format string, args ...interface{})
 	Indent()
 	Unindent()
 	IndentWith(size int)
@@ -27,7 +28,8 @@ type Config struct {
 }
 
 type content struct {
-	lines []string
+	lines        []string
+	linesAligned []string
 }
 
 func (c *content) Add(s string) {
@@ -45,7 +47,7 @@ func NewWriter(filename string, config Config) Writer {
 	return &TheWriter{
 		filename,
 		config,
-		&content{[]string{}},
+		&content{[]string{}, []string{}},
 		0,
 	}
 }
@@ -76,7 +78,52 @@ func wrapKeys(vars map[string]string, prefix, postfix string) map[string]string 
 }
 
 func (w *TheWriter) write(s string) {
+	w.checkAligned()
 	w.content.Add(s)
+}
+
+func (w *TheWriter) LineAligned(format string, args ...interface{}) {
+	theline := fmt.Sprintf(format, args...)
+	w.content.linesAligned = append(w.content.linesAligned, theline)
+}
+
+func (w *TheWriter) checkAligned() {
+	if len(w.content.linesAligned) == 0 {
+		return
+	}
+	lines := w.content.linesAligned
+	w.content.linesAligned = []string{}
+
+	linesParts := [][]string{}
+	for _, line := range lines {
+		linesParts = append(linesParts, strings.Split(line, " "))
+	}
+
+	widths := make([]int, len(linesParts[0]))
+	for colIndex, _ := range linesParts[0] {
+		widths[colIndex] = colWidth(linesParts, colIndex)
+	}
+	for _, line := range linesParts {
+		lineStr := ""
+		for colIndex, cell := range line {
+			lineStr += cell
+			if colIndex != len(line)-1 {
+				lineStr += strings.Repeat(" ", widths[colIndex]-len(cell)) + " "
+			}
+		}
+		w.line(lineStr)
+	}
+}
+
+func colWidth(lines [][]string, colIndex int) int {
+	width := 0
+	for _, line := range lines {
+		rowWidth := len(line[colIndex])
+		if rowWidth > width {
+			width = rowWidth
+		}
+	}
+	return width
 }
 
 func trimPrefix(str string, prefix string) (string, int) {
@@ -159,5 +206,6 @@ func (w *TheWriter) IndentedWith(size int) Writer {
 }
 
 func (w *TheWriter) String() string {
+	w.checkAligned()
 	return strings.Join(w.content.lines, ``)
 }
