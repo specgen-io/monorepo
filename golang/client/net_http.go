@@ -119,7 +119,7 @@ func (g *NetHttpGenerator) operation(w *writer.Writer, operation *spec.NamedOper
 	w.EmptyLine()
 	w.Line(`  msg := fmt.Sprintf("Unexpected status code received: %s", resp.StatusCode)`, "%d")
 	w.Line(`  log.WithFields(%s).Error(msg)`, logFieldsName(operation))
-	w.Line(`  err = errors.NewImports(msg)`)
+	w.Line(`  err = errors.New(msg)`)
 	w.Line(`  return nil, err`)
 	w.Line(`}`)
 }

@@ -36,9 +36,9 @@ func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 		w.Line(`func (service *%s) %s {`, serviceTypeName(api), g.operationSignature(&operation, &apiPackage))
 		singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
 		if singleEmptyResponse {
-			w.Line(`  return errors.NewImports("implementation has not added yet")`)
+			w.Line(`  return errors.New("implementation has not added yet")`)
 		} else {
-			w.Line(`  return nil, errors.NewImports("implementation has not added yet")`)
+			w.Line(`  return nil, errors.New("implementation has not added yet")`)
 		}
 		w.Line(`}`)
 	}
