@@ -134,29 +134,30 @@ func (g *EncodingJsonGenerator) objectModel(w *writer.Writer, model *spec.NamedM
 func (g *EncodingJsonGenerator) enumModel(w *writer.Writer, model *spec.NamedModel) {
 	w.Line("type %s %s", model.Name.PascalCase(), "string")
 	w.EmptyLine()
-	modelName := model.Name.PascalCase()
-	choiceValuesStringsParams := []string{}
-	choiceValuesParams := []string{}
 	w.Line("const (")
 	w.Indent()
 	for _, enumItem := range model.Enum.Items {
-		enumConstName := modelName + enumItem.Name.PascalCase()
-		choiceValuesStringsParams = append(choiceValuesStringsParams, fmt.Sprintf("string(%s)", enumConstName))
-		choiceValuesParams = append(choiceValuesParams, fmt.Sprintf("%s", enumConstName))
-		w.LineAligned(`%s = "%s"`, enumConstName, enumItem.Value)
+		w.LineAligned(`%s%s = "%s"`, model.Name.PascalCase(), enumItem.Name.PascalCase(), enumItem.Value)
 	}
 	w.Unindent()
 	w.Line(")")
 	w.EmptyLine()
+	choiceValuesStringsParams := []string{}
+	choiceValuesParams := []string{}
+	for _, enumItem := range model.Enum.Items {
+		enumConstName := model.Name.PascalCase() + enumItem.Name.PascalCase()
+		choiceValuesStringsParams = append(choiceValuesStringsParams, fmt.Sprintf("string(%s)", enumConstName))
+		choiceValuesParams = append(choiceValuesParams, fmt.Sprintf("%s", enumConstName))
+	}
 	w.Line("var %s = []string{%s}", g.EnumValuesStrings(model), strings.Join(choiceValuesStringsParams, ", "))
-	w.Line("var %s = []%s{%s}", g.enumValues(model), modelName, strings.Join(choiceValuesParams, ", "))
+	w.Line("var %s = []%s{%s}", g.enumValues(model), model.Name.PascalCase(), strings.Join(choiceValuesParams, ", "))
 	w.EmptyLine()
-	w.Line("func (self *%s) UnmarshalJSON(b []byte) error {", modelName)
-	w.Line("  str, err := enums.ReadStringValue(b, %sValuesStrings)", modelName)
+	w.Line("func (self *%s) UnmarshalJSON(b []byte) error {", model.Name.PascalCase())
+	w.Line("  str, err := enums.ReadStringValue(b, %sValuesStrings)", model.Name.PascalCase())
 	w.Line("  if err != nil {")
 	w.Line("    return err")
 	w.Line("  }")
-	w.Line("  *self = %s(str)", modelName)
+	w.Line("  *self = %s(str)", model.Name.PascalCase())
 	w.Line("  return nil")
 	w.Line("}")
 }
