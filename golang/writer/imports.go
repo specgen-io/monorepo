@@ -1,10 +1,9 @@
-package imports
+package writer
 
 import (
 	"fmt"
 	"golang/module"
 	"golang/types"
-	"golang/writer"
 	"sort"
 	"spec"
 )
@@ -13,7 +12,7 @@ type imports struct {
 	imports map[string]string
 }
 
-func New() *imports {
+func NewImports() *imports {
 	return &imports{imports: make(map[string]string)}
 }
 
@@ -40,7 +39,7 @@ func (self *imports) AddAliased(theImport string, alias string) *imports {
 	return self
 }
 
-func (self *imports) Write(w *writer.Writer) {
+func (self *imports) Lines() []string {
 	if len(self.imports) > 0 {
 		imports := make([]string, 0, len(self.imports))
 		for theImport := range self.imports {
@@ -48,17 +47,20 @@ func (self *imports) Write(w *writer.Writer) {
 		}
 		sort.Strings(imports)
 
-		w.Line(`import (`)
+		lines := []string{}
+		lines = append(lines, `import (`)
 		for _, theImport := range imports {
 			alias := self.imports[theImport]
 			if alias != "" {
-				w.Line(`  %s "%s"`, alias, theImport)
+				lines = append(lines, fmt.Sprintf(`  %s "%s"`, alias, theImport))
 			} else {
-				w.Line(`  "%s"`, theImport)
+				lines = append(lines, fmt.Sprintf(`  "%s"`, theImport))
 			}
 		}
-		w.Line(`)`)
+		lines = append(lines, `)`)
+		return lines
 	}
+	return []string{}
 }
 
 func (self *imports) AddApiTypes(api *spec.Api) *imports {

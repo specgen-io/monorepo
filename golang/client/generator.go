@@ -2,6 +2,7 @@ package client
 
 import (
 	"generator"
+	"golang/empty"
 	"golang/models"
 	"golang/types"
 	"spec"
@@ -30,7 +31,7 @@ func NewGenerator(modules *Modules) *Generator {
 }
 
 func (g *Generator) EmptyType() *generator.CodeFile {
-	return types.GenerateEmpty(g.Modules.Empty)
+	return empty.GenerateEmpty(g.Modules.Empty)
 }
 
 func (g *Generator) AllStaticFiles() []generator.CodeFile {

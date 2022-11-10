@@ -2,7 +2,6 @@ package service
 
 import (
 	"generator"
-	"golang/imports"
 	"golang/types"
 	"golang/writer"
 	"spec"
@@ -19,19 +18,17 @@ func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFi
 func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.ServicesApi(api), "service.go")
 
-	imports := imports.New()
-	imports.AddApiTypes(api)
+	w.Imports.AddApiTypes(api)
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 && types.OperationHasType(&operation, spec.TypeEmpty) {
-			imports.Module(g.Modules.Empty)
+			w.Imports.Module(g.Modules.Empty)
 		}
 	}
 	//TODO - potential bug, could be unused import
-	imports.Module(g.Modules.Models(api.InHttp.InVersion))
+	w.Imports.Module(g.Modules.Models(api.InHttp.InVersion))
 	if usingErrorModels(api) {
-		imports.Module(g.Modules.HttpErrorsModels)
+		w.Imports.Module(g.Modules.HttpErrorsModels)
 	}
-	imports.Write(w)
 
 	for _, operation := range api.Operations {
 		if len(operation.Responses) > 1 {

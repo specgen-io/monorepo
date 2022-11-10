@@ -1,8 +1,10 @@
 package writer
 
 import (
+	"fmt"
 	"generator"
 	"golang/module"
+	"strings"
 )
 
 func GoConfig() generator.Config {
@@ -13,6 +15,7 @@ type Writer struct {
 	generator.Writer
 	filename string
 	module   module.Module
+	Imports  *imports
 }
 
 func New(module module.Module, filename string) *Writer {
@@ -20,17 +23,20 @@ func New(module module.Module, filename string) *Writer {
 	w := generator.NewWriter(module.GetPath(filename), config)
 	w.Line("package %s", module.Name)
 	w.EmptyLine()
-	return &Writer{w, module.GetPath(filename), module}
+	return &Writer{w, module.GetPath(filename), module, NewImports()}
 }
 
 func (w *Writer) Indented() *Writer {
-	return &Writer{w.Writer.Indented(), w.filename, w.module}
+	return &Writer{w.Writer.Indented(), w.filename, w.module, w.Imports}
 }
 
 func (w *Writer) IndentedWith(size int) *Writer {
-	return &Writer{w.Writer.IndentedWith(size), w.filename, w.module}
+	return &Writer{w.Writer.IndentedWith(size), w.filename, w.module, w.Imports}
 }
 
 func (w *Writer) ToCodeFile() *generator.CodeFile {
-	return &generator.CodeFile{w.filename, w.String()}
+	lines := []string{fmt.Sprintf("package %s", w.module.Name), ``}
+	lines = append(lines, w.Imports.Lines()...)
+	code := strings.Join(lines, "\n") + w.String()
+	return &generator.CodeFile{w.filename, code}
 }

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"generator"
-	"golang/imports"
 	"golang/module"
 	"golang/types"
 	"golang/writer"
@@ -32,12 +31,10 @@ func (g *EncodingJsonGenerator) ErrorModels(httperrors *spec.HttpErrors) *genera
 func (g *EncodingJsonGenerator) models(models []*spec.NamedModel, modelsModule module.Module) *generator.CodeFile {
 	w := writer.New(modelsModule, "models.go")
 
-	imports := imports.New()
-	imports.AddModelsTypes(models)
+	w.Imports.AddModelsTypes(models)
 	if types.ModelsHasEnum(models) {
-		imports.Module(g.Modules.Enums)
+		w.Imports.Module(g.Modules.Enums)
 	}
-	imports.Write(w)
 
 	for _, model := range models {
 		w.EmptyLine()
@@ -97,10 +94,10 @@ func (g *EncodingJsonGenerator) objectModel(w *writer.Writer, model *spec.NamedM
 	w.Line(`	for _, name := range %s {`, g.requiredFields(model))
 	w.Line(`		value, found := rawMap[name]`)
 	w.Line(`		if !found {`)
-	w.Line(`			return nil, errors.New("required field missing: " + name)`)
+	w.Line(`			return nil, errors.NewImports("required field missing: " + name)`)
 	w.Line(`		}`)
 	w.Line(`		if string(value) == "null" {`)
-	w.Line(`			return nil, errors.New("required field doesn't have value: " + name)`)
+	w.Line(`			return nil, errors.NewImports("required field doesn't have value: " + name)`)
 	w.Line(`		}`)
 	w.Line(`	}`)
 	w.Line(`	return data, nil`)
@@ -115,15 +112,15 @@ func (g *EncodingJsonGenerator) objectModel(w *writer.Writer, model *spec.NamedM
 	w.Line(`	var rawMap map[string]json.RawMessage`)
 	w.Line(`	err = json.Unmarshal(data, &rawMap)`)
 	w.Line(`	if err != nil {`)
-	w.Line(`		return errors.New("failed to check fields in json: " + err.Error())`)
+	w.Line(`		return errors.NewImports("failed to check fields in json: " + err.Error())`)
 	w.Line(`	}`)
 	w.Line(`	for _, name := range %s {`, g.requiredFields(model))
 	w.Line(`		value, found := rawMap[name]`)
 	w.Line(`		if !found {`)
-	w.Line(`			return errors.New("required field missing: " + name)`)
+	w.Line(`			return errors.NewImports("required field missing: " + name)`)
 	w.Line(`		}`)
 	w.Line(`		if string(value) == "null" {`)
-	w.Line(`			return errors.New("required field doesn't have value: " + name)`)
+	w.Line(`			return errors.NewImports("required field doesn't have value: " + name)`)
 	w.Line(`		}`)
 	w.Line(`	}`)
 	w.Line(`	*obj = %s(jsonObj)`, model.Name.PascalCase())
@@ -203,7 +200,7 @@ func (g *EncodingJsonGenerator) oneOfModelWrapper(w *writer.Writer, model *spec.
 	w.EmptyLine()
 	w.Line(`func (u %s) MarshalJSON() ([]byte, error) {`, model.Name.PascalCase())
 	w.Line(`	if %s {`, caseChecks)
-	w.Line(`		return nil, errors.New("union case is not set")`)
+	w.Line(`		return nil, errors.NewImports("union case is not set")`)
 	w.Line(`	}`)
 	w.Line(`	return json.Marshal(%s(u))`, model.Name.CamelCase())
 	w.Line(`}`)
@@ -216,7 +213,7 @@ func (g *EncodingJsonGenerator) oneOfModelWrapper(w *writer.Writer, model *spec.
 	w.Line(`	}`)
 	w.Line(`	*u = %s(jsonObj)`, model.Name.PascalCase())
 	w.Line(`	if %s {`, caseChecks)
-	w.Line(`		return errors.New("union case is not set")`)
+	w.Line(`		return errors.NewImports("union case is not set")`)
 	w.Line(`	}`)
 	w.Line(`	return nil`)
 	w.Line(`}`)
@@ -244,7 +241,7 @@ func (g *EncodingJsonGenerator) oneOfModelDiscriminator(w *writer.Writer, model 
 		w.Line(`    return json.Marshal(rawMap)`)
 		w.Line(`  }`)
 	}
-	w.Line(`  return nil, errors.New("union case is not set")`)
+	w.Line(`  return nil, errors.NewImports("union case is not set")`)
 	w.Line(`}`)
 	w.EmptyLine()
 	w.Line(`func (u *%s) UnmarshalJSON(data []byte) error {`, model.Name.PascalCase())
@@ -253,10 +250,10 @@ func (g *EncodingJsonGenerator) oneOfModelDiscriminator(w *writer.Writer, model 
 	w.Line(`  }`)
 	w.Line(`  err := json.Unmarshal(data, &discriminator)`)
 	w.Line(`  if err != nil {`)
-	w.Line(`    return errors.New("failed to parse discriminator field %s: " + err.Error())`, *model.OneOf.Discriminator)
+	w.Line(`    return errors.NewImports("failed to parse discriminator field %s: " + err.Error())`, *model.OneOf.Discriminator)
 	w.Line(`  }`)
 	w.Line(`  if discriminator.Value == nil {`)
-	w.Line(`    return errors.New("discriminator field %s not found")`, *model.OneOf.Discriminator)
+	w.Line(`    return errors.NewImports("discriminator field %s not found")`, *model.OneOf.Discriminator)
 	w.Line(`  }`)
 	w.EmptyLine()
 	w.Line(`  switch *discriminator.Value {`)
@@ -270,7 +267,7 @@ func (g *EncodingJsonGenerator) oneOfModelDiscriminator(w *writer.Writer, model 
 		w.Line(`    u.%s = &unionCase`, item.Name.PascalCase())
 	}
 	w.Line(`  default:`)
-	w.Line(`    return errors.New("unexpected union discriminator field %s value: " + *discriminator.Value)`, *model.OneOf.Discriminator)
+	w.Line(`    return errors.NewImports("unexpected union discriminator field %s value: " + *discriminator.Value)`, *model.OneOf.Discriminator)
 	w.Line(`  }`)
 	w.Line(`  return nil`)
 	w.Line(`}`)
