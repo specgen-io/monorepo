@@ -143,7 +143,7 @@ func (g *EncodingJsonGenerator) enumModel(w *writer.Writer, model *spec.NamedMod
 		enumConstName := modelName + enumItem.Name.PascalCase()
 		choiceValuesStringsParams = append(choiceValuesStringsParams, fmt.Sprintf("string(%s)", enumConstName))
 		choiceValuesParams = append(choiceValuesParams, fmt.Sprintf("%s", enumConstName))
-		w.LineAligned(`%s = "%s"`, modelName, enumItem.Value)
+		w.LineAligned(`%s = "%s"`, enumConstName, enumItem.Value)
 	}
 	w.Unindent()
 	w.Line(")")
