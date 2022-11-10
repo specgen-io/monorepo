@@ -171,32 +171,33 @@ func (w *TheWriter) EmptyLine() {
 	w.write("\n")
 }
 
+func (w *TheWriter) setIndentation(value int) {
+	w.checkAligned()
+	w.indentation = value
+}
+
 func (w *TheWriter) Indent() {
-	w.indentation = w.indentation + 1
+	w.setIndentation(w.indentation + 1)
 }
 
 func (w *TheWriter) Unindent() {
-	w.indentation = w.indentation - 1
+	w.setIndentation(w.indentation - 1)
 }
 
 func (w *TheWriter) IndentWith(size int) {
-	w.indentation = w.indentation + size
+	w.setIndentation(w.indentation + size)
 }
 
 func (w *TheWriter) UnindentWith(size int) {
-	w.indentation = w.indentation - size
+	w.setIndentation(w.indentation - size)
 }
 
 func (w *TheWriter) Indented() Writer {
-	return &TheWriter{
-		w.filename,
-		w.config,
-		w.content,
-		w.indentation + 1,
-	}
+	return w.IndentedWith(1)
 }
 
 func (w *TheWriter) IndentedWith(size int) Writer {
+	w.checkAligned()
 	return &TheWriter{
 		w.filename,
 		w.config,

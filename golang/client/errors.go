@@ -2,7 +2,6 @@ package client
 
 import (
 	"generator"
-	"golang/imports"
 	"golang/writer"
 	"spec"
 )
@@ -19,10 +18,8 @@ func (g *Generator) Errors(errors *spec.Responses) []generator.CodeFile {
 func (g *Generator) httpErrors(errors *spec.Responses) *generator.CodeFile {
 	w := writer.New(g.Modules.HttpErrors, "errors.go")
 
-	imports := imports.New()
-	imports.Add("fmt")
-	imports.Module(g.Modules.HttpErrorsModels)
-	imports.Write(w)
+	w.Imports.Add("fmt")
+	w.Imports.Module(g.Modules.HttpErrorsModels)
 
 	for _, errorResponse := range *errors {
 		w.EmptyLine()
@@ -41,12 +38,10 @@ func (g *Generator) httpErrors(errors *spec.Responses) *generator.CodeFile {
 func (g *Generator) httpErrorsHandler(errors *spec.Responses) *generator.CodeFile {
 	w := writer.New(g.Modules.HttpErrors, `errors_handler.go`)
 
-	imports := imports.New().
-		Module(g.Modules.HttpErrorsModels).
-		Module(g.Modules.Response).
-		Add("net/http").
-		AddAliased("github.com/sirupsen/logrus", "log")
-	imports.Write(w)
+	w.Imports.Module(g.Modules.HttpErrorsModels)
+	w.Imports.Module(g.Modules.Response)
+	w.Imports.Add("net/http")
+	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
 
 	w.EmptyLine()
 	w.Line(`func HandleErrors(resp *http.Response, log log.Fields) error {`)

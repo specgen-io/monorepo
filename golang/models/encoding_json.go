@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"generator"
-	"golang/imports"
 	"golang/module"
 	"golang/types"
 	"golang/writer"
@@ -32,12 +31,10 @@ func (g *EncodingJsonGenerator) ErrorModels(httperrors *spec.HttpErrors) *genera
 func (g *EncodingJsonGenerator) models(models []*spec.NamedModel, modelsModule module.Module) *generator.CodeFile {
 	w := writer.New(modelsModule, "models.go")
 
-	imports := imports.New()
-	imports.AddModelsTypes(models)
+	w.Imports.AddModelsTypes(models)
 	if types.ModelsHasEnum(models) {
-		imports.Module(g.Modules.Enums)
+		w.Imports.Module(g.Modules.Enums)
 	}
-	imports.Write(w)
 
 	for _, model := range models {
 		w.EmptyLine()

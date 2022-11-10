@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"generator"
-	"golang/imports"
 	"golang/writer"
 	"spec"
 )
@@ -11,12 +10,10 @@ import (
 func (g *VestigoGenerator) ErrorResponses(errors *spec.Responses) *generator.CodeFile {
 	w := writer.New(g.Modules.HttpErrors, "responses.go")
 
-	imports := imports.New()
-	imports.AddAliased("github.com/sirupsen/logrus", "log")
-	imports.Add("net/http")
-	imports.Module(g.Modules.HttpErrorsModels)
-	imports.Module(g.Modules.Respond)
-	imports.Write(w)
+	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
+	w.Imports.Add("net/http")
+	w.Imports.Module(g.Modules.HttpErrorsModels)
+	w.Imports.Module(g.Modules.Respond)
 
 	for _, errorResponse := range *errors {
 		w.EmptyLine()

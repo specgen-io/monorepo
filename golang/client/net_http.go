@@ -5,7 +5,6 @@ import (
 	"generator"
 	"github.com/pinzolo/casee"
 	"golang/common"
-	"golang/imports"
 	"golang/types"
 	"golang/writer"
 	"spec"
@@ -32,26 +31,24 @@ func (g *NetHttpGenerator) Clients(version *spec.Version) []generator.CodeFile {
 func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.Client(api), "client.go")
 
-	imports := imports.New().
-		Add("fmt").
-		Add("errors").
-		Add("net/http").
-		Add("encoding/json").
-		AddAliased("github.com/sirupsen/logrus", "log")
+	w.Imports.Add("fmt")
+	w.Imports.Add("errors")
+	w.Imports.Add("net/http")
+	w.Imports.Add("encoding/json")
+	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
 	if types.ApiHasBody(api) {
-		imports.Add("bytes")
+		w.Imports.Add("bytes")
 	}
 	if types.ApiHasUrlParams(api) {
-		imports.Module(g.Modules.Convert)
+		w.Imports.Module(g.Modules.Convert)
 	}
 	if types.ApiHasType(api, spec.TypeEmpty) {
-		imports.Module(g.Modules.Empty)
+		w.Imports.Module(g.Modules.Empty)
 	}
-	imports.Module(g.Modules.HttpErrors)
-	imports.AddApiTypes(api)
-	imports.Module(g.Modules.Models(api.InHttp.InVersion))
-	imports.Module(g.Modules.Response)
-	imports.Write(w)
+	w.Imports.Module(g.Modules.HttpErrors)
+	w.Imports.AddApiTypes(api)
+	w.Imports.Module(g.Modules.Models(api.InHttp.InVersion))
+	w.Imports.Module(g.Modules.Response)
 
 	for _, operation := range api.Operations {
 		if common.ResponsesNumber(&operation) > 1 {

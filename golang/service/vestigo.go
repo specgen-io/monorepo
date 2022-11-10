@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"generator"
 	"github.com/pinzolo/casee"
-	"golang/imports"
 	"golang/models"
 	"golang/types"
 	"golang/writer"
@@ -38,31 +37,29 @@ func (g *VestigoGenerator) signatureAddRouting(api *spec.Api) string {
 func (g *VestigoGenerator) routing(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.Routing(api.InHttp.InVersion), fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
-	imports := imports.New()
 	if types.ApiHasBody(api) {
-		imports.Add("encoding/json")
+		w.Imports.Add("encoding/json")
 	}
-	imports.Add("github.com/husobee/vestigo")
-	imports.AddAliased("github.com/sirupsen/logrus", "log")
-	imports.Add("net/http")
-	imports.Add("fmt")
+	w.Imports.Add("github.com/husobee/vestigo")
+	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
+	w.Imports.Add("net/http")
+	w.Imports.Add("fmt")
 	if types.BodyHasType(api, spec.TypeString) {
-		imports.Add("io/ioutil")
+		w.Imports.Add("io/ioutil")
 	}
 	if hasNonEmptyBody(api) {
-		imports.Module(g.Modules.ContentType)
+		w.Imports.Module(g.Modules.ContentType)
 	}
-	imports.Module(g.Modules.ServicesApi(api))
-	imports.Module(g.Modules.HttpErrors)
-	imports.Module(g.Modules.HttpErrorsModels)
+	w.Imports.Module(g.Modules.ServicesApi(api))
+	w.Imports.Module(g.Modules.HttpErrors)
+	w.Imports.Module(g.Modules.HttpErrorsModels)
 	if isRouterUsingModels(api) {
-		imports.Module(g.Modules.Models(api.InHttp.InVersion))
+		w.Imports.Module(g.Modules.Models(api.InHttp.InVersion))
 	}
 	if operationHasParams(api) {
-		imports.Module(g.Modules.ParamsParser)
+		w.Imports.Module(g.Modules.ParamsParser)
 	}
-	imports.Module(g.Modules.Respond)
-	imports.Write(w)
+	w.Imports.Module(g.Modules.Respond)
 
 	w.EmptyLine()
 
@@ -311,35 +308,24 @@ func serviceInterfaceTypeVar(api *spec.Api) string {
 func (g *VestigoGenerator) RootRouting(specification *spec.Spec) *generator.CodeFile {
 	w := writer.New(g.Modules.Root, "spec.go")
 
-	imports := imports.New()
-	imports.Add("github.com/husobee/vestigo")
+	w.Imports.Add("github.com/husobee/vestigo")
 	for _, version := range specification.Versions {
-		//versionModule := rootModule.Submodule(version.Name.FlatCase())
-		//routingModule := versionModule.SubmoduleAliased("routing", routingPackageAlias(&version))
-		//imports.ModuleAliased(routingModule)
-		imports.ModuleAliased(g.Modules.Routing(&version).Aliased(routingPackageAlias(&version)))
+		w.Imports.ModuleAliased(g.Modules.Routing(&version).Aliased(routingPackageAlias(&version)))
 		for _, api := range version.Http.Apis {
-			//apiModule := versionModule.SubmoduleAliased(api.Name.SnakeCase(), apiPackageAlias(&api))
-			//imports.ModuleAliased(apiModule)
-			imports.ModuleAliased(g.Modules.ServicesApi(&api).Aliased(apiPackageAlias(&api)))
+			w.Imports.ModuleAliased(g.Modules.ServicesApi(&api).Aliased(apiPackageAlias(&api)))
 		}
 	}
-	imports.Write(w)
 
 	w.EmptyLine()
 	routesParams := []string{}
 	for _, version := range specification.Versions {
-		//versionModule := rootModule.Submodule(version.Name.FlatCase())
 		for _, api := range version.Http.Apis {
-			//apiModule := versionModule.SubmoduleAliased(api.Name.SnakeCase(), apiPackageAlias(&api))
 			apiModule := g.Modules.ServicesApi(&api).Aliased(apiPackageAlias(&api))
 			routesParams = append(routesParams, fmt.Sprintf(`%s %s`, serviceApiNameVersioned(&api), apiModule.Get(serviceInterfaceName)))
 		}
 	}
 	w.Line(`func AddRoutes(router *vestigo.Router, %s) {`, strings.Join(routesParams, ", "))
 	for _, version := range specification.Versions {
-		//versionModule := rootModule.Submodule(version.Name.FlatCase())
-		//routingModule := versionModule.SubmoduleAliased("routing", routingPackageAlias(&version))
 		routingModule := g.Modules.Routing(&version).Aliased(routingPackageAlias(&version))
 		for _, api := range version.Http.Apis {
 			w.Line(`  %s(router, %s)`, routingModule.Get(g.addRoutesMethodName(&api)), serviceApiNameVersioned(&api))

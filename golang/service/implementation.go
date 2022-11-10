@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"generator"
-	"golang/imports"
 	"golang/types"
 	"golang/writer"
 	"spec"
@@ -20,16 +19,14 @@ func (g *Generator) ServicesImpls(version *spec.Version) []generator.CodeFile {
 func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.ServicesImpl(api.InHttp.InVersion), fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
-	imports := imports.New()
-	imports.Add("errors")
-	imports.AddApiTypes(api)
+	w.Imports.Add("errors")
+	w.Imports.AddApiTypes(api)
 	if types.ApiHasBody(api) {
-		imports.Module(g.Modules.ServicesApi(api))
+		w.Imports.Module(g.Modules.ServicesApi(api))
 	}
 	if isContainsModel(api) {
-		imports.Module(g.Modules.Models(api.InHttp.InVersion))
+		w.Imports.Module(g.Modules.Models(api.InHttp.InVersion))
 	}
-	imports.Write(w)
 
 	w.EmptyLine()
 	w.Line(`type %s struct{}`, serviceTypeName(api))
