@@ -58,6 +58,7 @@ func (self *imports) Lines() []string {
 			}
 		}
 		lines = append(lines, `)`)
+		lines = append(lines, ``)
 		return lines
 	}
 	return []string{}

@@ -21,8 +21,6 @@ type Writer struct {
 func New(module module.Module, filename string) *Writer {
 	config := GoConfig()
 	w := generator.NewWriter(module.GetPath(filename), config)
-	w.Line("package %s", module.Name)
-	w.EmptyLine()
 	return &Writer{w, module.GetPath(filename), module, NewImports()}
 }
 
