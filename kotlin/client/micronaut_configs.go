@@ -24,19 +24,23 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.micronaut.context.annotation.*
 import io.micronaut.jackson.ObjectMapperFactory
-import jakarta.inject.Singleton
 import [[.JsonPackageName]].*
 
 @Factory
 @Replaces(ObjectMapperFactory::class)
 class ObjectMapperConfig {
-    @Singleton
-    @Replaces(ObjectMapper::class)
-    fun objectMapper(): ObjectMapper {
-        val objectMapper = jacksonObjectMapper()
-        setupObjectMapper(objectMapper)
-        return objectMapper
-    }
+	@Bean
+	@Replaces(ObjectMapper::class)
+	fun objectMapper(): ObjectMapper {
+		val objectMapper = jacksonObjectMapper()
+		setupObjectMapper(objectMapper)
+		return objectMapper
+	}
+
+	@Bean
+	fun json(): Json {
+		return Json(objectMapper())
+	}
 }
 `)
 	return w.ToCodeFile()
@@ -46,9 +50,9 @@ func clientConfig(thePackage packages.Package) *generator.CodeFile {
 	w := writer.New(thePackage, `ClientConfiguration`)
 	w.Lines(`
 class ClientConfiguration {
-    companion object {
-        const val BASE_URL = "http://localhost:8081"
-    }
+	companion object {
+		const val BASE_URL = "http://localhost:8081"
+	}
 }
 `)
 	return w.ToCodeFile()

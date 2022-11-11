@@ -2,16 +2,14 @@ package client
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"github.com/pinzolo/casee"
 	"kotlin/imports"
 	"kotlin/models"
-	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
+	"strings"
 )
 
 var MicronautDecl = "micronaut-declarative"
@@ -29,12 +27,11 @@ func NewMicronautDeclGenerator(types *types.Types, models models.Generator, pack
 func (g *MicronautDeclGenerator) Clients(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
-		files = append(files, g.responses(&api, g.Packages.Client(&api), g.Packages.Models(api.InHttp.InVersion))...)
+		files = append(files, g.responses(&api)...)
 		files = append(files, *g.client(&api))
 	}
 	files = append(files, converters(g.Packages.Converters)...)
 	files = append(files, staticConfigFiles(g.Packages.Root, g.Packages.Json)...)
-
 	return files
 }
 
@@ -90,7 +87,7 @@ func (g *MicronautDeclGenerator) operationSignature(operation *spec.NamedOperati
 		params = append(params, fmt.Sprintf(`@PathVariable(value = "%s") %s: %s`, param.Name.Source, param.Name.CamelCase(), g.Types.Kotlin(&param.Type.Definition)))
 	}
 
-	if len(successResponses(operation)) == 1 {
+	if successfulResponsesNumber(operation) == 1 {
 		for _, response := range operation.Responses {
 			if !response.Type.Definition.IsEmpty() {
 				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(params, ", "), g.Types.Kotlin(&response.Type.Definition))
@@ -99,28 +96,31 @@ func (g *MicronautDeclGenerator) operationSignature(operation *spec.NamedOperati
 			}
 		}
 	}
-	if len(successResponses(operation)) > 1 {
+	if successfulResponsesNumber(operation) > 1 {
 		return fmt.Sprintf(`%s(%s): HttpResponse<String>`, operation.Name.CamelCase(), strings.Join(params, ", "))
 	}
 	return ""
 }
 
-func (g *MicronautDeclGenerator) responses(api *spec.Api, apiPackage packages.Package, modelsVersionPackage packages.Package) []generator.CodeFile {
+func (g *MicronautDeclGenerator) responses(api *spec.Api) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, operation := range api.Operations {
-		if len(successResponses(&operation)) > 1 {
-			files = append(files, *g.response(g.Types, &operation, apiPackage, modelsVersionPackage))
+		if successfulResponsesNumber(&operation) > 1 {
+			files = append(files, *g.response(&operation))
 		}
 	}
 	return files
 }
 
-func (g *MicronautDeclGenerator) response(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Package, modelsVersionPackage packages.Package) *generator.CodeFile {
-	w := writer.New(apiPackage, responseName(operation))
+func (g *MicronautDeclGenerator) response(operation *spec.NamedOperation) *generator.CodeFile {
+	w := writer.New(g.Packages.Client(operation.InApi), responseName(operation))
 	imports := imports.New()
-	imports.Add(`com.fasterxml.jackson.databind.ObjectMapper`)
+	imports.Add(`com.fasterxml.jackson.core.type.TypeReference`)
 	imports.Add(`io.micronaut.http.HttpResponse`)
-	imports.Add(modelsVersionPackage.PackageStar)
+	imports.Add(g.Packages.Json.PackageStar)
+	imports.Add(g.Packages.Models(operation.InApi.InHttp.InVersion).PackageStar)
+	imports.Add(g.Packages.Utils.PackageStar)
+	imports.Add(g.Packages.Errors.PackageStar)
 	imports.Write(w)
 	w.EmptyLine()
 	w.Line(`open class [[.ClassName]] {`)
@@ -128,38 +128,72 @@ func (g *MicronautDeclGenerator) response(types *types.Types, operation *spec.Na
 		if index > 0 {
 			w.EmptyLine()
 		}
-		implementations(w.Indented(), types, &response)
+		g.implementations(w.Indented(), &response)
 	}
 	w.EmptyLine()
-	createObjectMethod(w.Indented(), types, operation)
+	g.createObjectMethod(w.Indented(), operation)
 	w.Line(`}`)
 	return w.ToCodeFile()
 }
 
-func implementations(w generator.Writer, types *types.Types, response *spec.OperationResponse) {
+func (g *MicronautDeclGenerator) implementations(w generator.Writer, response *spec.OperationResponse) {
 	responseImplementationName := response.Name.PascalCase()
 	if !response.Type.Definition.IsEmpty() {
-		w.Line(`class %s(val body: %s) : %s()`, responseImplementationName, types.Kotlin(&response.Type.Definition), responseName(response.Operation))
+		w.Line(`class %s(val body: %s) : %s()`, responseImplementationName, g.Types.Kotlin(&response.Type.Definition), responseName(response.Operation))
 	} else {
 		w.Line(`class %s : %s()`, responseImplementationName, responseName(response.Operation))
 	}
 }
 
-func createObjectMethod(w generator.Writer, types *types.Types, operation *spec.NamedOperation) {
-	w.Line(`companion object {`)
-	w.Line(`  fun create(json: ObjectMapper, response: HttpResponse<String>): %s {`, responseName(operation.Responses[0].Operation))
-	w.Line(`    return when(response.code()) {`)
+func (g *MicronautDeclGenerator) createObjectMethod(w generator.Writer, operation *spec.NamedOperation) {
+	w.Lines(`
+companion object {
+	fun create(json: Json, response: HttpResponse<String>): EchoSuccessResponse {
+		val responseBodyString = getResponseBodyString(response)
+		return when(response.code()) {
+`)
 	for _, response := range operation.Responses {
 		if !response.BodyIs(spec.BodyEmpty) {
-			w.Line(`      %s -> %s(json.readValue(response.body(), %s::class.java))`, spec.HttpStatusCode(response.Name), response.Name.PascalCase(), types.Kotlin(&response.Type.Definition))
+			w.Line(`      %s -> %s(json.%s)`, spec.HttpStatusCode(response.Name), response.Name.PascalCase(), g.Models.JsonRead("responseBodyString", &response.Type.Definition))
 		}
 	}
-	w.Line(`      else -> throw Exception("Unknown status code ${response.code()}")`)
-	w.Line(`    }`)
-	w.Line(`  }`)
-	w.Line(`}`)
+	w.Lines(`
+			else -> throw ClientException("Unknown status code ${response.code()}")
+		}
+	}
+}
+`)
 }
 
 func responseName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
+}
+
+func (g *MicronautDeclGenerator) Utils(responses *spec.Responses) []generator.CodeFile {
+	return []generator.CodeFile{*g.generateClientResponse()}
+}
+
+func (g *MicronautDeclGenerator) generateClientResponse() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `ClientResponse`)
+	w.Template(
+		map[string]string{
+			`ErrorsPackage`: g.Packages.Errors.PackageName,
+		}, `
+import io.micronaut.http.HttpResponse
+import [[.ErrorsPackage]].*
+import java.io.IOException
+
+fun <T> getResponseBodyString(response: HttpResponse<T>): String {
+	return try {
+		response.body()!!.toString()
+	} catch (e: IOException) {
+		throw ClientException("Failed to convert response body to string " + e.message, e)
+	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *MicronautDeclGenerator) Exceptions(errors *spec.Responses) []generator.CodeFile {
+	return []generator.CodeFile{*clientException(g.Packages.Errors)}
 }

@@ -32,7 +32,7 @@ func (g *JacksonGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.
 func (g *JacksonGenerator) models(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
 	w := writer.New(modelsPackage, `models`)
 	imports := imports.New()
-	imports.Add(g.ModelsDefinitionsImports()...)
+	imports.Add(g.modelsDefinitionsImports()...)
 	imports.Add(g.Types.Imports()...)
 	imports.Write(w)
 
@@ -97,22 +97,14 @@ func (g *JacksonGenerator) modelOneOf(w generator.Writer, model *spec.NamedModel
 }
 
 func (g *JacksonGenerator) JsonRead(varJson string, typ *spec.TypeDef) string {
-	return fmt.Sprintf(`%s, object : TypeReference<%s>() {}`, varJson, g.Types.Kotlin(typ))
+	return fmt.Sprintf(`read(%s, object : TypeReference<%s>() {})`, varJson, g.Types.Kotlin(typ))
 }
 
 func (g *JacksonGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
-	return varData
+	return fmt.Sprintf(`write(%s)`, varData)
 }
 
-func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) (string, string) {
-	return fmt.Sprintf(`objectMapper.readValue(%s, object: TypeReference<%s>(){})`, varJson, g.Types.Kotlin(typ)), `IOException`
-}
-
-func (g *JacksonGenerator) WriteJson(varData string, typ *spec.TypeDef) (string, string) {
-	return fmt.Sprintf(`objectMapper.writeValueAsString(%s)`, varData), `Exception`
-}
-
-func (g *JacksonGenerator) ModelsDefinitionsImports() []string {
+func (g *JacksonGenerator) modelsDefinitionsImports() []string {
 	return []string{
 		`com.fasterxml.jackson.annotation.*`,
 		`com.fasterxml.jackson.annotation.JsonSubTypes.*`,
@@ -173,39 +165,54 @@ object ValidationErrorsHelpers {
 	return w.ToCodeFile()
 }
 
-func (g *JacksonGenerator) CreateJsonMapperField(annotation string) string {
-	objectMapperVar := `private val objectMapper: ObjectMapper`
-	if annotation != "" {
-		return fmt.Sprintf(`@%s %s`, annotation, objectMapperVar)
+func (g *JacksonGenerator) JsonHelpers() []generator.CodeFile {
+	files := []generator.CodeFile{}
+
+	files = append(files, *g.json())
+	files = append(files, *g.jsonParseException())
+	files = append(files, g.setupLibrary()...)
+
+	return files
+}
+
+func (g *JacksonGenerator) json() *generator.CodeFile {
+	w := writer.New(g.Packages.Json, `Json`)
+	w.Lines(`
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
+import java.io.IOException
+
+class Json(private val objectMapper: ObjectMapper) {
+	fun write(body: Any): String {
+		return try {
+			objectMapper.writeValueAsString(body)
+		} catch (exception: Exception) {
+			throw RuntimeException(exception)
+		}
 	}
-	return objectMapperVar
+
+	fun <T> read(jsonStr: String, typeReference: TypeReference<T>): T {
+		return try {
+			objectMapper.readValue(jsonStr, typeReference)
+		} catch (exception: IOException) {
+			throw JsonParseException(exception)
+		}
+	}
+}
+`)
+	return w.ToCodeFile()
 }
 
-func (g *JacksonGenerator) InitJsonMapper(w generator.Writer) {
-	w.Line(`objectMapper = setupObjectMapper(jacksonObjectMapper())`)
+func (g *JacksonGenerator) jsonParseException() *generator.CodeFile {
+	w := writer.New(g.Packages.Json, `JsonParseException`)
+	w.Lines(`
+class JsonParseException(exception: Throwable) :
+	RuntimeException("Failed to parse body: " + exception.message, exception)
+`)
+	return w.ToCodeFile()
 }
 
-func (g *JacksonGenerator) JsonHelpersMethods() string {
-	return `
-	fun write(data: Any): String {
-        return try {
-            objectMapper.writeValueAsString(data)
-        } catch (exception: IOException) {
-            throw RuntimeException(exception)
-        }
-    }
-
-    fun <T> read(jsonStr: String, typeReference: TypeReference<T>): T {
-        return try {
-            objectMapper.readValue(jsonStr, typeReference)
-        } catch (exception: IOException) {
-            throw JsonParseException(exception)
-        }
-    }
-`
-}
-
-func (g *JacksonGenerator) SetupLibrary() []generator.CodeFile {
+func (g *JacksonGenerator) setupLibrary() []generator.CodeFile {
 	w := writer.New(g.Packages.Json, `CustomObjectMapper`)
 	w.Lines(`
 import com.fasterxml.jackson.annotation.JsonInclude
@@ -213,12 +220,40 @@ import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.datatype.jsr310.*
 
 fun setupObjectMapper(objectMapper: ObjectMapper): ObjectMapper {
-    objectMapper
-        .registerModule(JavaTimeModule())
-        .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-        .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-    return objectMapper
+	objectMapper
+		.registerModule(JavaTimeModule())
+		.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+		.setSerializationInclusion(JsonInclude.Include.NON_NULL)
+	return objectMapper
 }
 `)
 	return []generator.CodeFile{*w.ToCodeFile()}
+}
+
+func (g *JacksonGenerator) CreateJsonHelper(name string) string {
+	return fmt.Sprintf(`
+val objectMapper = jacksonObjectMapper()
+setupObjectMapper(objectMapper)
+%s = Json(objectMapper)
+`, name)
+}
+
+//TODO - customize mapper for different json libs
+func (g *JacksonGenerator) JsonMapperConfig(w generator.Writer) {
+	w.Lines(`
+class ObjectMapperConfig {
+	@Bean
+	@Replaces(ObjectMapper::class)
+	fun objectMapper(): ObjectMapper {
+		val objectMapper = jacksonObjectMapper()
+		setupObjectMapper(objectMapper)
+		return objectMapper
+	}
+
+	@Bean
+	fun json(): Json {
+		return Json(objectMapper())
+	}
+}
+`)
 }

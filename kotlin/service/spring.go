@@ -2,16 +2,14 @@ package service
 
 import (
 	"fmt"
-	"strings"
-
+	"generator"
+	"github.com/pinzolo/casee"
 	"kotlin/imports"
 	"kotlin/models"
 	"kotlin/types"
 	"kotlin/writer"
-
-	"generator"
-	"github.com/pinzolo/casee"
 	"spec"
+	"strings"
 )
 
 var Spring = "spring"
@@ -138,7 +136,7 @@ func (g *SpringGenerator) parseBody(w generator.Writer, operation *spec.NamedOpe
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`checkContentType(request, MediaType.APPLICATION_JSON)`)
 		typ := g.Types.Kotlin(&operation.Body.Type.Definition)
-		w.Line(`val %s: %s = json.read(%s)`, bodyJsonVar, typ, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
 	}
 }
 
@@ -178,9 +176,24 @@ func (g *SpringGenerator) processResponse(w generator.Writer, response *spec.Res
 
 func (g *SpringGenerator) ContentType() []generator.CodeFile {
 	files := []generator.CodeFile{}
-	files = append(files, *contentTypeMismatchException(g.Packages.ContentType))
+	files = append(files, *g.contentTypeMismatchException())
 	files = append(files, *g.checkContentType())
 	return files
+}
+
+func (g *SpringGenerator) contentTypeMismatchException() *generator.CodeFile {
+	w := writer.New(g.Packages.ContentType, `ContentTypeMismatchException`)
+	w.Lines(`
+class ContentTypeMismatchException(expected: String, actual: String?) :
+    RuntimeException(
+        String.format(
+            "Expected Content-Type header: '%s' was not provided, found: '%s'",
+            expected,
+            actual
+        )
+    )
+`)
+	return w.ToCodeFile()
 }
 
 func (g *SpringGenerator) checkContentType() *generator.CodeFile {
@@ -199,14 +212,7 @@ fun checkContentType(request: HttpServletRequest, expectedContentType: MediaType
 	return w.ToCodeFile()
 }
 
-func (g *SpringGenerator) Errors() []generator.CodeFile {
-	files := []generator.CodeFile{}
-	files = append(files, *g.errorsHelpers())
-	files = append(files, *g.Models.ValidationErrorsHelpers())
-	return files
-}
-
-func (g *SpringGenerator) errorsHelpers() *generator.CodeFile {
+func (g *SpringGenerator) ErrorsHelpers() *generator.CodeFile {
 	w := writer.New(g.Packages.Errors, `ErrorsHelpers`)
 	w.Template(
 		map[string]string{
@@ -263,32 +269,6 @@ fun getBadRequestError(exception: Throwable): BadRequestError? {
 	return null
 }
 `)
-	return w.ToCodeFile()
-}
-
-func (g *SpringGenerator) JsonHelpers() []generator.CodeFile {
-	files := []generator.CodeFile{}
-
-	files = append(files, *g.Json())
-	files = append(files, *jsonParseException(g.Packages.Json))
-	files = append(files, g.Models.SetupLibrary()...)
-
-	return files
-}
-
-func (g *SpringGenerator) Json() *generator.CodeFile {
-	w := writer.New(g.Packages.Json, `Json`)
-	imports := imports.New()
-	imports.Add(`org.springframework.beans.factory.annotation.Autowired`)
-	imports.Add(`org.springframework.stereotype.Component`)
-	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(`java.io.IOException`)
-	imports.Write(w)
-	w.EmptyLine()
-	w.Line(`@Component`)
-	w.Line(`class [[.ClassName]](%s) {`, g.Models.CreateJsonMapperField("Autowired"))
-	w.Line(g.Models.JsonHelpersMethods())
-	w.Line(`}`)
 	return w.ToCodeFile()
 }
 

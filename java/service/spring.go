@@ -2,8 +2,6 @@ package service
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"github.com/pinzolo/casee"
 	"java/imports"
@@ -11,6 +9,7 @@ import (
 	"java/types"
 	"java/writer"
 	"spec"
+	"strings"
 )
 
 var Spring = "spring"

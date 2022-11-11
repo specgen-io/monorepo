@@ -2,13 +2,12 @@ package client
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"java/imports"
 	"java/packages"
 	"java/writer"
 	"spec"
+	"strings"
 )
 
 func (g *Generator) Clients(version *spec.Version) []generator.CodeFile {
@@ -128,7 +127,7 @@ func (g *Generator) responses(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
-			if responsesNumber(&operation) > 1 {
+			if successfulResponsesNumber(&operation) > 1 {
 				files = append(files, *g.responseInterface(g.Types, &operation))
 			}
 		}

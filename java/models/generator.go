@@ -11,7 +11,7 @@ type Generator interface {
 	Models(version *spec.Version) []generator.CodeFile
 	ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile
 	ModelsUsageImports() []string
-	ModelsValidation() *generator.CodeFile
+	ValidationErrorsHelpers() *generator.CodeFile
 	JsonRead(varJson string, typ *spec.TypeDef) string
 	JsonWrite(varData string, typ *spec.TypeDef) string
 	JsonHelpers() []generator.CodeFile

@@ -9,11 +9,11 @@ import (
 func Generate(specification *spec.Spec, jsonlib, server, packageName, swaggerPath, generatePath, servicesPath string) *generator.Sources {
 	sources := generator.NewSources()
 
-	servicePackages := NewPackages(packageName, generatePath, servicesPath, specification)
-	generator := NewGenerator(jsonlib, server, servicePackages)
+	packages := NewPackages(packageName, generatePath, servicesPath, specification)
+	generator := NewGenerator(jsonlib, server, packages)
 
 	sources.AddGeneratedAll(generator.ContentType())
-	sources.AddGenerated(generator.ModelsValidation())
+	sources.AddGenerated(generator.ValidationErrorsHelpers())
 	sources.AddGeneratedAll(generator.ErrorModels(specification.HttpErrors))
 
 	sources.AddGenerated(generator.ErrorsHelpers())
