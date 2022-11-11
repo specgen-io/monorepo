@@ -167,7 +167,7 @@ func (g *MicronautGenerator) processResponse(w generator.Writer, response *spec.
 		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s).body(%s).contentType("text/plain")`, response.Name.UpperCase(), bodyVar)
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`val bodyJson = json.write(%s)`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
+		w.Line(`val bodyJson = json.%s`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s).body(bodyJson).contentType("application/json")`, response.Name.UpperCase())
 	}
