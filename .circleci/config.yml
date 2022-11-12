@@ -69,11 +69,12 @@ jobs:
       - run:
           name: Copy vendored code
           command: |
+            cd codegen
             git clone https://github.com/specgen-io/specgen.git specgen-release
             rm -rf ./specgen-release/<<pipeline.parameters.specgen-version-major>>
             cp -a ./specgen/vendored/. ./specgen-release/<<pipeline.parameters.specgen-version-major>>
       - github-push-tag:
-          path: specgen-release
+          path: codegen/specgen-release
           repo: github.com/specgen-io/specgen.git
           tag: v<<pipeline.parameters.specgen-version>>-alpha
           commit: true
