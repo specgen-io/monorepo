@@ -572,12 +572,12 @@ commands:
       - run:
           name: Build
           command: |
-            cd <<parameters.plugin>>
+            cd <<parameters.plugin-path>>
             ../build.sh <<pipeline.parameters.specgen-version>>
       - persist_to_workspace:
           root: .
           paths:
-            - <<parameters.plugin>>/dist
+            - <<parameters.plugin-path>>/dist
 
   setup-sonatype-maven:
     steps:
