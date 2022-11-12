@@ -42,7 +42,7 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - specgen/dist
+            - codegen/specgen/dist
       - run:
           name: Release
           command: |
