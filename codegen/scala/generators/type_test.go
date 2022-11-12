@@ -1,8 +1,8 @@
 package generators
 
 import (
-	"spec"
 	"gotest.tools/assert"
+	"spec"
 	"testing"
 )
 

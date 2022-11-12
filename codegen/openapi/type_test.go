@@ -1,8 +1,8 @@
 package openapi
 
 import (
-	"spec"
 	"gotest.tools/assert"
+	"spec"
 	"strings"
 	"testing"
 	"yamlx"

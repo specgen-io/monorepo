@@ -20,20 +20,20 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: cache-{{ checksum "./specgen/go.sum"  }}
+          key: cache-{{ checksum "./codegen/specgen/go.sum"  }}
       - run:
           name: Build
           command: |
-            cd specgen
+            cd codegen/specgen
             ../build.sh <<pipeline.parameters.specgen-version>>
       - save_cache:
-          key: cache-{{ checksum "./specgen/go.sum"  }}
+          key: cache-{{ checksum "./codegen/specgen/go.sum"  }}
           paths:
             - ~/go/pkg/mod
       - run:
           name: Unit tests
           command: |
-            cd specgen
+            cd codegen/specgen
             mkdir -p ./test-results
             go install github.com/jstemmer/go-junit-report@latest
             go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
@@ -42,16 +42,16 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - specgen/dist
+            - codegen/specgen/dist
       - run:
           name: Release
           command: |
-            cd specgen
+            cd codegen/specgen
             ./release.sh <<pipeline.parameters.specgen-version>> artifactory
       - run:
           name: Cleanup
           command: |
-            cd specgen
+            cd codegen/specgen
             rm *.zip
             rm -rf ./dist
             rm -rf ./test-results
@@ -59,21 +59,22 @@ jobs:
       - run:
           name: Install goven
           command: |
-            cd specgen
+            cd codegen/specgen
             go install github.com/specgen-io/goven@v0.0.10
       - run:
           name: Vendor code with goven
           command: |
-            cd specgen
+            cd codegen/specgen
             goven vendor -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -out vendored
       - run:
           name: Copy vendored code
           command: |
+            cd codegen
             git clone https://github.com/specgen-io/specgen.git specgen-release
             rm -rf ./specgen-release/<<pipeline.parameters.specgen-version-major>>
             cp -a ./specgen/vendored/. ./specgen-release/<<pipeline.parameters.specgen-version-major>>
       - github-push-tag:
-          path: specgen-release
+          path: codegen/specgen-release
           repo: github.com/specgen-io/specgen.git
           tag: v<<pipeline.parameters.specgen-version>>-alpha
           commit: true
@@ -93,7 +94,7 @@ jobs:
           name: Release vendored module
           command: |
             go install github.com/specgen-io/goven@v0.0.10
-            cd ./golang
+            cd codegen/golang
             goven release -name github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
             go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>-alpha
 
@@ -116,7 +117,7 @@ jobs:
     working_directory: ~/specgen
     steps:
       - build_specgen_plugin:
-          plugin: ruby
+          plugin-path: codegen/ruby
 
   gem:
     docker:
@@ -124,7 +125,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: ruby
+          folder: codegen/ruby
           at: ./plugins/gem-specgen/lib
       - run:
           name: Build gem
@@ -148,7 +149,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: ruby
+          folder: codegen/ruby
           at: ./plugins/gem-specgen/lib
       - run:
           name: Build gem
@@ -171,7 +172,7 @@ jobs:
     working_directory: ~/specgen
     steps:
       - build_specgen_plugin:
-          plugin: scala
+          plugin-path: codegen/scala
 
   sbt:
     docker:
@@ -179,7 +180,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: scala
+          folder: codegen/scala
           at: ./plugins/sbt-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
@@ -209,7 +210,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: scala
+          folder: codegen/scala
           at: ./plugins/sbt-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
@@ -227,7 +228,7 @@ jobs:
     working_directory: ~/specgen
     steps:
       - build_specgen_plugin:
-          plugin: typescript
+          plugin-path: codegen/typescript
 
   npm:
     docker:
@@ -235,7 +236,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: typescript
+          folder: codegen/typescript
           at: ./plugins/npm-specgen
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
@@ -255,7 +256,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: typescript
+          folder: codegen/typescript
           at: ./plugins/npm-specgen
       - run:
           name: npm publish package
@@ -275,7 +276,7 @@ jobs:
     working_directory: ~/specgen
     steps:
       - build_specgen_plugin:
-          plugin: java
+          plugin-path: codegen/java
 
   maven-java:
     docker:
@@ -283,7 +284,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: java
+          folder: codegen/java
           at: ./plugins/maven-java-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
@@ -313,7 +314,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: java
+          folder: codegen/java
           at: ./plugins/maven-java-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
@@ -337,7 +338,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: java
+          folder: codegen/java
           at: ./plugins/gradle-java-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
@@ -364,7 +365,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: java
+          folder: codegen/java
           at: ./plugins/gradle-java-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
@@ -384,7 +385,7 @@ jobs:
     working_directory: ~/specgen
     steps:
       - build_specgen_plugin:
-          plugin: kotlin
+          plugin-path: codegen/kotlin
 
   maven-kotlin:
     docker:
@@ -392,7 +393,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: kotlin
+          folder: codegen/kotlin
           at: ./plugins/maven-kotlin-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
@@ -423,7 +424,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: kotlin
+          folder: codegen/kotlin
           at: ./plugins/maven-kotlin-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
@@ -447,7 +448,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: kotlin
+          folder: codegen/kotlin
           at: ./plugins/gradle-kotlin-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
@@ -474,7 +475,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: kotlin
+          folder: codegen/kotlin
           at: ./plugins/gradle-kotlin-specgen/src/main/resources
       - restore_cache:
           key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
@@ -501,12 +502,12 @@ jobs:
     steps:
       - checkout
       - attach_workspace_folder:
-          folder: specgen
+          folder: codegen/specgen
           at: ./specgen
       - run:
           name: Release
           command: |
-            cd specgen
+            cd codegen/specgen
             ./release.sh <<pipeline.parameters.specgen-version>> github+artifactory
 
 commands:
@@ -565,19 +566,19 @@ commands:
 
   build_specgen_plugin:
     parameters:
-      plugin:
+      plugin-path:
         type: string
     steps:
       - checkout
       - run:
           name: Build
           command: |
-            cd <<parameters.plugin>>
+            cd <<parameters.plugin-path>>
             ../build.sh <<pipeline.parameters.specgen-version>>
       - persist_to_workspace:
           root: .
           paths:
-            - <<parameters.plugin>>/dist
+            - <<parameters.plugin-path>>/dist
 
   setup-sonatype-maven:
     steps:

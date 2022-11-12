@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"generator/console"
-	"spec"
 	"io/ioutil"
 	"sort"
+	"spec"
 )
 
 func readSpecFile(specFile string) *spec.Spec {
