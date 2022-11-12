@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"generator"
 	"generator/console"
-	"java/generators"
-	"java/version"
 	"github.com/spf13/cobra"
+	"kotlin/generators"
+	"kotlin/version"
 	"os"
 )
 
@@ -18,7 +18,7 @@ func main() {
 	}
 	generator.AddCobraCommands(rootCmd, generators.All)
 	cobra.OnInitialize()
-	console.PrintLnF("Running specgen java, version: %s", version.Current)
+	console.PrintLnF("Running specgen kotlin, version: %s", version.Current)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

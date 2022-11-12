@@ -2,8 +2,8 @@ package openapi
 
 import (
 	"github.com/getkin/kin-openapi/openapi3"
-	"spec"
 	"io/ioutil"
+	"spec"
 )
 
 func ConvertFromOpenapi(inFile, outFile string) error {

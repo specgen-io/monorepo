@@ -1,8 +1,8 @@
 package types
 
 import (
-	"spec"
 	"gotest.tools/assert"
+	"spec"
 	"testing"
 )
 
