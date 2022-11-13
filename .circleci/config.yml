@@ -510,6 +510,246 @@ jobs:
             cd codegen/specgen
             ./release.sh <<pipeline.parameters.specgen-version>> github+artifactory
 
+
+  test-models-go:
+    working_directory: ~/test-models-go
+    docker:
+      - image: cimg/go:1.18.3
+    steps:
+      - checkout
+      - run:
+          name: Test Go models
+          command: |
+            cd ./test-models/go
+            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
+            go generate
+            mkdir -p ./test-results
+            go install github.com/jstemmer/go-junit-report@v0.9.1
+            go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
+      - store_test_results:
+          path: ./test-models/go/test-results
+  test-models-ruby:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/test-models-ruby
+    docker:
+      - image: cimg/ruby:3.0.0
+    steps:
+      - checkout
+      - artifactory/setup-bundler:
+          jfrog-server-url: specgen.jfrog.io
+      - run:
+          name: Setup Gemfile
+          command: |
+            cd ./test-models/ruby
+            tee --append ./Gemfile \<<END
+            source 'https://specgen.jfrog.io/artifactory/api/gems/gems/' do
+              gem 'specgen', '<< pipeline.parameters.specgen-version >>'
+            end
+            END
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./tests-models/ruby/Gemfile" }}
+      - run:
+          name: Test Ruby models
+          command: |
+            cd ./test-models/ruby
+            bundle install
+            rake
+      - save_cache:
+          key: cache-{{ checksum "./test-models/ruby/Gemfile" }}
+          paths:
+            - ~/test-models-ruby/ruby/vendor/bundle
+      - store_test_results:
+          path: ./test-models/ruby/test-results
+  test-models-ts-superstruct:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/test-models-superstruct
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+          scope: specgen.io
+      - run:
+          name: Setup npm
+          command: |
+            cd ./test-models/ts-superstruct
+            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-models/ts-superstruct/package.json" }}
+      - run:
+          name: Test Superstruct models
+          command: |
+            cd ./test-models/ts-superstruct
+            npm install
+            npm run specgen
+            mkdir -p ./test-results
+            export JEST_JUNIT_OUTPUT_DIR=./test-results
+            npm run test
+      - save_cache:
+          key: cache-{{ checksum "./test-models/ts-superstruct/package.json" }}
+          paths:
+            - ~/test-models-superstruct/ts-superstruct/node_modules
+      - store_test_results:
+          path: ./test-models/ts-superstruct/test-results
+  test-models-ts-iots:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/test-models-iots
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+          scope: specgen.io
+      - run:
+          name: Setup npm
+          command: |
+            cd ./test-models/ts-iots
+            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-models/ts-iots/package.json" }}
+      - run:
+          name: Test Iots models
+          command: |
+            cd ./test-models/ts-iots
+            npm install
+            npm run specgen
+            mkdir -p ./test-results
+            export JEST_JUNIT_OUTPUT_DIR=./test-results
+            npm run test
+      - save_cache:
+          key: cache-{{ checksum "./test-models/ts-iots/package.json" }}
+          paths:
+            - ~/test-models-iots/ts-iots/node_modules
+      - store_test_results:
+          path: ./test-models/ts-iots/test-results
+  test-models-scala-circe:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/test-models-circe
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-models/scala-circe/build.sbt" }}
+      - artifactory/setup-sbt:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: sbt
+      - run:
+          name: Test Circe models
+          command: |
+            cd ./test-models/scala-circe
+            mkdir -p ./test-results
+            sbt -Djunitxml=./test-results test < /dev/null
+      - store_test_results:
+          path: ./test-models/test-models/scala-circe/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-models/scala-circe/build.sbt" }}
+          paths:
+            - ~/.sbt
+            - ~/.ivy2
+  test-models-java-jackson:
+    working_directory: ~/test-models-java-jackson
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-models/java-jackson/pom.xml" }}
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - run:
+          name: Maven build
+          command: |
+            cd ./test-models/java-jackson
+            mkdir -p ./test-results
+            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-models/java-jackson/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-models/java-jackson/pom.xml" }}
+          paths:
+            - ~/.m2
+  test-models-java-moshi:
+    working_directory: ~/test-models-java-moshi
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-models/java-moshi/pom.xml" }}
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - run:
+          name: Maven build
+          command: |
+            cd ./test-models/java-moshi
+            mkdir -p ./test-results
+            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-models/java-moshi/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-models/java-moshi/pom.xml" }}
+          paths:
+            - ~/.m2
+  test-models-kotlin-jackson:
+    working_directory: ~/test-models-kotlin-jackson
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - restore_cache:
+          key: cache-{{ checksum "./test-models/kotlin-jackson/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-jackson/settings.gradle.kts" }}
+      - run:
+          name: Gradle build
+          command: |
+            cd ./test-models/kotlin-jackson
+            ./gradlew --build-cache --no-daemon --stacktrace test \
+            -Djfrog.user=$JFROG_USER \
+            -Djfrog.pass=$JFROG_PASS \
+            -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-models/kotlin-jackson/build/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-models/kotlin-jackson/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-jackson/settings.gradle.kts" }}
+          paths: [ ~/.gradle ]
+  test-models-kotlin-moshi:
+    working_directory: ~/test-models-kotlin-moshi
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - restore_cache:
+          key: cache-{{ checksum "./test-models/kotlin-moshi/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-moshi/settings.gradle.kts" }}
+      - run:
+          name: Gradle build
+          command: |
+            cd ./test-models/kotlin-moshi
+            ./gradlew --build-cache --no-daemon --stacktrace test \
+            -Djfrog.user=$JFROG_USER \
+            -Djfrog.pass=$JFROG_PASS \
+            -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-models/kotlin-moshi/build/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-models/kotlin-moshi/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-moshi/settings.gradle.kts" }}
+          paths: [ ~/.gradle ]
+
 commands:
   attach_workspace_folder:
     parameters:
@@ -716,14 +956,56 @@ workflows:
             - gradle-kotlin
             - gem
             - npm
-      - circleci/start-pipeline:
-          name: test-models
-          repository: specgen-io/test-models
-          branch: main
-          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>", "specgen-version-major": "<<pipeline.parameters.specgen-version-major>>"}'
+
+      - test-models-go:
           context: specgen
           requires:
             - build-complete
+      - test-models-ruby:
+          context: specgen
+          requires:
+            - build-complete
+      - test-models-ts-superstruct:
+          context: specgen
+          requires:
+            - build-complete
+      - test-models-ts-iots:
+          context: specgen
+          requires:
+            - build-complete
+      - test-models-scala-circe:
+          context: specgen
+          requires:
+            - build-complete
+      - test-models-java-jackson:
+          context: specgen
+          requires:
+            - build-complete
+      - test-models-java-moshi:
+          context: specgen
+          requires:
+            - build-complete
+      - test-models-kotlin-jackson:
+          context: specgen
+          requires:
+            - build-complete
+      - test-models-kotlin-moshi:
+          context: specgen
+          requires:
+            - build-complete
+
+      - testing-complete:
+          requires:
+            - test-models-go
+            - test-models-ruby
+            - test-models-ts-superstruct
+            - test-models-ts-iots
+            - test-models-scala-circe
+            - test-models-java-jackson
+            - test-models-java-moshi
+            - test-models-kotlin-jackson
+            - test-models-kotlin-moshi
+
       - circleci/start-pipeline:
           name: test-clients
           repository: specgen-io/test-clients
@@ -743,7 +1025,7 @@ workflows:
       - approve-release:
           type: approval
           requires:
-            - build-complete
+            - testing-complete
           filters:
             branches:
               only:
