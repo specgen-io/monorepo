@@ -1554,14 +1554,6 @@ workflows:
 
 
       - circleci/start-pipeline:
-          name: test-clients
-          repository: specgen-io/test-clients
-          branch: main
-          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>", "specgen-version-major": "<<pipeline.parameters.specgen-version-major>>"}'
-          context: specgen
-          requires:
-            - build-complete
-      - circleci/start-pipeline:
           name: test-services
           repository: specgen-io/test-services
           branch: main
