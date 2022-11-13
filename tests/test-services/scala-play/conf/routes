@@ -1,0 +1,7 @@
+#  spec routes
+-> / app.SpecRouter
+
+#  documentation
+GET  /docs              controllers.Default.redirect(to="/docs/index.html?url=swagger.yaml")
+GET  /docs/swagger.yaml controllers.Assets.at(path="/public", file="swagger.yaml")
+GET  /docs/*file        controllers.Assets.at(path="/public/lib/swagger-ui", file)

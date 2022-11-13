@@ -1,0 +1,5 @@
+{
+  "build": "maven",
+  "server": "spring",
+  "jsonlib": "jackson"
+}
