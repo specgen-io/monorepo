@@ -12,7 +12,7 @@ parameters:
     default: v2
 
 jobs:
-  go:
+  test-models-go:
     working_directory: ~/test-models-go
     docker:
       - image: cimg/go:1.18.3
@@ -29,7 +29,7 @@ jobs:
             go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
       - store_test_results:
           path: ./go/test-results
-  ruby:
+  test-models-ruby:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/test-models-ruby
@@ -63,7 +63,7 @@ jobs:
             - ~/test-models-ruby/ruby/vendor/bundle
       - store_test_results:
           path: ./ruby/test-results
-  ts-superstruct:
+  test-models-ts-superstruct:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/test-models-superstruct
@@ -98,7 +98,7 @@ jobs:
             - ~/test-models-superstruct/ts-superstruct/node_modules
       - store_test_results:
           path: ./ts-superstruct/test-results
-  ts-iots:
+  test-models-ts-iots:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/test-models-iots
@@ -133,7 +133,7 @@ jobs:
             - ~/test-models-iots/ts-iots/node_modules
       - store_test_results:
           path: ./ts-iots/test-results
-  scala-circe:
+  test-models-scala-circe:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/test-models-circe
@@ -160,7 +160,7 @@ jobs:
           paths:
             - ~/.sbt
             - ~/.ivy2
-  java-jackson:
+  test-models-java-jackson:
     working_directory: ~/test-models-java-jackson
     docker:
       - image: circleci/openjdk:11-jdk
@@ -184,7 +184,7 @@ jobs:
           key: cache-{{ checksum "./java-jackson/pom.xml" }}
           paths:
             - ~/.m2
-  java-moshi:
+  test-models-java-moshi:
     working_directory: ~/test-models-java-moshi
     docker:
       - image: circleci/openjdk:11-jdk
@@ -208,7 +208,7 @@ jobs:
           key: cache-{{ checksum "./java-moshi/pom.xml" }}
           paths:
             - ~/.m2          
-  kotlin-jackson:
+  test-models-kotlin-jackson:
     working_directory: ~/test-models-kotlin-jackson
     docker:
       - image: circleci/openjdk:11-jdk
@@ -229,7 +229,7 @@ jobs:
       - save_cache:
           key: cache-{{ checksum "./kotlin-jackson/build.gradle.kts" }}-{{ checksum "./kotlin-jackson/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
-  kotlin-moshi:
+  test-models-kotlin-moshi:
       working_directory: ~/test-models-kotlin-moshi
       docker:
         - image: circleci/openjdk:11-jdk
@@ -254,21 +254,12 @@ jobs:
 workflows:
   build-test:
     jobs:
-      - go:
-          context: specgen
-      - ruby:
-          context: specgen
-      - ts-superstruct:
-          context: specgen
-      - ts-iots:
-          context: specgen
-      - scala-circe:
-          context: specgen
-      - java-jackson:
-          context: specgen
-      - java-moshi:
-          context: specgen    
-      - kotlin-jackson:
-          context: specgen
-      - kotlin-moshi:
-          context: specgen    
+      - test-models-go
+      - test-models-ruby
+      - test-models-ts-superstruct
+      - test-models-ts-iots
+      - test-models-scala-circe
+      - test-models-java-jackson
+      - test-models-java-moshi
+      - test-models-kotlin-jackson
+      - test-models-kotlin-moshi
