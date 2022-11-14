@@ -1,7 +1,6 @@
 version: 2.1
 
 orbs:
-  circleci: specgen/circleci@0.1.0
   artifactory: specgen/artifactory@0.5.0
 
 parameters:
@@ -1882,14 +1881,6 @@ workflows:
             - service-go
             - service-typescript
 
-      - circleci/start-pipeline:
-          name: test-services
-          repository: specgen-io/test-services
-          branch: main
-          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>", "specgen-version-major": "<<pipeline.parameters.specgen-version-major>>"}'
-          context: specgen
-          requires:
-            - build-complete
       - approve-release:
           type: approval
           requires:
