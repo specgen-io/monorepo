@@ -516,7 +516,7 @@ jobs:
             ./release.sh <<pipeline.parameters.specgen-version>> github+artifactory
 
 
-  test-models-go:
+  models-go:
     working_directory: ~/test-models-go
     docker:
       - image: cimg/go:1.18.3
@@ -533,7 +533,7 @@ jobs:
             go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
       - store_test_results:
           path: ./test-models/go/test-results
-  test-models-ruby:
+  models-ruby:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/test-models-ruby
@@ -567,7 +567,7 @@ jobs:
             - ~/test-models-ruby/ruby/vendor/bundle
       - store_test_results:
           path: ./test-models/ruby/test-results
-  test-models-ts-superstruct:
+  models-ts-superstruct:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/test-models-superstruct
@@ -602,7 +602,7 @@ jobs:
             - ~/test-models-superstruct/ts-superstruct/node_modules
       - store_test_results:
           path: ./test-models/ts-superstruct/test-results
-  test-models-ts-iots:
+  models-ts-iots:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/test-models-iots
@@ -637,7 +637,7 @@ jobs:
             - ~/test-models-iots/ts-iots/node_modules
       - store_test_results:
           path: ./test-models/ts-iots/test-results
-  test-models-scala-circe:
+  models-scala-circe:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/test-models-circe
@@ -664,7 +664,7 @@ jobs:
           paths:
             - ~/.sbt
             - ~/.ivy2
-  test-models-java-jackson:
+  models-java-jackson:
     working_directory: ~/test-models-java-jackson
     docker:
       - image: circleci/openjdk:11-jdk
@@ -688,7 +688,7 @@ jobs:
           key: cache-{{ checksum "./test-models/java-jackson/pom.xml" }}
           paths:
             - ~/.m2
-  test-models-java-moshi:
+  models-java-moshi:
     working_directory: ~/test-models-java-moshi
     docker:
       - image: circleci/openjdk:11-jdk
@@ -712,7 +712,7 @@ jobs:
           key: cache-{{ checksum "./test-models/java-moshi/pom.xml" }}
           paths:
             - ~/.m2
-  test-models-kotlin-jackson:
+  models-kotlin-jackson:
     working_directory: ~/test-models-kotlin-jackson
     docker:
       - image: circleci/openjdk:11-jdk
@@ -733,7 +733,7 @@ jobs:
       - save_cache:
           key: cache-{{ checksum "./test-models/kotlin-jackson/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-jackson/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
-  test-models-kotlin-moshi:
+  models-kotlin-moshi:
     working_directory: ~/test-models-kotlin-moshi
     docker:
       - image: circleci/openjdk:11-jdk
@@ -755,7 +755,7 @@ jobs:
           key: cache-{{ checksum "./test-models/kotlin-moshi/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-moshi/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
 
-  test-clients-service:
+  client-test-service:
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/go:1.18.3
@@ -773,7 +773,7 @@ jobs:
           paths:
             - test-clients/test-service
 
-  test-clients-go:
+  client-go:
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/go:1.18.3
@@ -796,7 +796,7 @@ jobs:
       - store_test_results:
           path: ./test-clients/go/test-results
 
-  test-clients-java-okhttp-jackson:
+  client-java-okhttp-jackson:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/specgen-tests
@@ -827,7 +827,7 @@ jobs:
           paths:
             - ~/.m2
 
-  test-clients-java-okhttp-moshi:
+  client-java-okhttp-moshi:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/specgen-tests
@@ -858,7 +858,7 @@ jobs:
           paths:
             - ~/.m2
 
-  test-clients-kotlin-okhttp-jackson:
+  client-kotlin-okhttp-jackson:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/specgen-tests
@@ -886,7 +886,7 @@ jobs:
           key: cache-{{ checksum "./test-clients/kotlin-okhttp-jackson/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-okhttp-jackson/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
 
-  test-clients-kotlin-okhttp-moshi:
+  client-kotlin-okhttp-moshi:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/specgen-tests
@@ -914,7 +914,7 @@ jobs:
           key: cache-{{ checksum "./test-clients/kotlin-okhttp-moshi/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-okhttp-moshi/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
 
-  test-clients-kotlin-micronaut-jackson:
+  client-kotlin-micronaut-jackson:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/specgen-tests
@@ -942,7 +942,7 @@ jobs:
           key: cache-{{ checksum "./test-clients/kotlin-micronaut-jackson/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-micronaut-jackson/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
 
-  test-clients-ruby:
+  client-ruby:
     working_directory: ~/specgen-tests
     docker:
       - image: circleci/ruby:2.4.9
@@ -981,7 +981,7 @@ jobs:
       - store_test_results:
           path: ./test-clients/ruby/test-results
 
-  test-clients-scala-sttp:
+  client-scala-sttp:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/specgen-tests
@@ -1014,7 +1014,7 @@ jobs:
             - ~/.sbt
             - ~/.ivy2
 
-  test-clients-ts-axios-superstruct:
+  client-ts-axios-superstruct:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/specgen-tests
@@ -1055,7 +1055,7 @@ jobs:
       - store_test_results:
           path: ./test-clients/ts-axios-superstruct/test-results
 
-  test-clients-ts-node-fetch-superstruct:
+  client-ts-node-fetch-superstruct:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/specgen-tests
@@ -1096,7 +1096,7 @@ jobs:
       - store_test_results:
           path: ./test-clients/ts-node-fetch-superstruct/test-results
 
-  test-clients-ts-browser-fetch-superstruct:
+  client-ts-browser-fetch-superstruct:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/specgen-tests
@@ -1146,7 +1146,7 @@ jobs:
           paths:
             - ~/specgen-tests/ts-browser-fetch-superstruct/node_modules
 
-  test-clients-ts-axios-iots:
+  client-ts-axios-iots:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/specgen-tests
@@ -1727,96 +1727,96 @@ workflows:
             - gem
             - npm
 
-      - test-models-go:
+      - models-go:
           context: specgen
           requires:
             - build-complete
-      - test-models-ruby:
+      - models-ruby:
           context: specgen
           requires:
             - build-complete
-      - test-models-ts-superstruct:
+      - models-ts-superstruct:
           context: specgen
           requires:
             - build-complete
-      - test-models-ts-iots:
+      - models-ts-iots:
           context: specgen
           requires:
             - build-complete
-      - test-models-scala-circe:
+      - models-scala-circe:
           context: specgen
           requires:
             - build-complete
-      - test-models-java-jackson:
+      - models-java-jackson:
           context: specgen
           requires:
             - build-complete
-      - test-models-java-moshi:
+      - models-java-moshi:
           context: specgen
           requires:
             - build-complete
-      - test-models-kotlin-jackson:
+      - models-kotlin-jackson:
           context: specgen
           requires:
             - build-complete
-      - test-models-kotlin-moshi:
+      - models-kotlin-moshi:
           context: specgen
           requires:
             - build-complete
 
 
-      - test-clients-service:
+      - clients-test-service:
           context: specgen
           requires:
             - build-complete
-      - test-clients-go:
+      - clients-go:
           context: specgen
           requires:
-            - test-clients-service
-      - test-clients-java-okhttp-jackson:
+            - clients-test-service
+      - clients-java-okhttp-jackson:
           context: specgen
           requires:
-            - test-clients-service
-      - test-clients-java-okhttp-moshi:
+            - clients-test-service
+      - clients-java-okhttp-moshi:
           context: specgen
           requires:
-            - test-clients-service
-      - test-clients-kotlin-okhttp-jackson:
+            - clients-test-service
+      - clients-kotlin-okhttp-jackson:
           context: specgen
           requires:
-            - test-clients-service
-      - test-clients-kotlin-okhttp-moshi:
+            - clients-test-service
+      - clients-kotlin-okhttp-moshi:
           context: specgen
           requires:
-            - test-clients-service
-      - test-clients-kotlin-micronaut-jackson:
+            - clients-test-service
+      - clients-kotlin-micronaut-jackson:
           context: specgen
           requires:
-            - test-clients-service
-      - test-clients-ruby:
+            - clients-test-service
+      - clients-ruby:
           context: specgen
           requires:
-            - test-clients-service
-      - test-clients-scala-sttp:
+            - clients-test-service
+      - clients-scala-sttp:
           context: specgen
           requires:
-            - test-clients-service
-      - test-clients-ts-axios-superstruct:
+            - clients-test-service
+      - clients-ts-axios-superstruct:
           context: specgen
           requires:
-            - test-clients-service
-      - test-clients-ts-node-fetch-superstruct:
+            - clients-test-service
+      - clients-ts-node-fetch-superstruct:
           context: specgen
           requires:
-            - test-clients-service
-      - test-clients-ts-browser-fetch-superstruct:
+            - clients-test-service
+      - clients-ts-browser-fetch-superstruct:
           context: specgen
           requires:
-            - test-clients-service
-      - test-clients-ts-axios-iots:
+            - clients-test-service
+      - clients-ts-axios-iots:
           context: specgen
           requires:
-            - test-clients-service
+            - clients-test-service
 
 
       - service-tests:
@@ -1855,28 +1855,27 @@ workflows:
 
       - testing-complete:
           requires:
-            - test-models-go
-            - test-models-ruby
-            - test-models-ts-superstruct
-            - test-models-ts-iots
-            - test-models-scala-circe
-            - test-models-java-jackson
-            - test-models-java-moshi
-            - test-models-kotlin-jackson
-            - test-models-kotlin-moshi
-            - test-clients-go
-            - test-clients-java-okhttp-jackson
-            - test-clients-java-okhttp-moshi
-            - test-clients-kotlin-okhttp-jackson
-            - test-clients-kotlin-okhttp-moshi
-            - test-clients-kotlin-micronaut-jackson
-            - test-clients-ruby
-            - test-clients-scala-sttp
-            - test-clients-ts-axios-superstruct
-            - test-clients-ts-node-fetch-superstruct
-            - test-clients-ts-browser-fetch-superstruct
-            - test-clients-ts-axios-iots
-            - service-tests
+            - models-go
+            - models-ruby
+            - models-ts-superstruct
+            - models-ts-iots
+            - models-scala-circe
+            - models-java-jackson
+            - models-java-moshi
+            - models-kotlin-jackson
+            - models-kotlin-moshi
+            - client-go
+            - client-java-okhttp-jackson
+            - client-java-okhttp-moshi
+            - client-kotlin-okhttp-jackson
+            - client-kotlin-okhttp-moshi
+            - client-kotlin-micronaut-jackson
+            - client-ruby
+            - client-scala-sttp
+            - client-ts-axios-superstruct
+            - client-ts-node-fetch-superstruct
+            - client-ts-browser-fetch-superstruct
+            - client-ts-axios-iots
             - service-scala
             - service-java
             - service-kotlin
