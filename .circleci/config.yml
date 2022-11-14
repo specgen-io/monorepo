@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  artifactory: specgen/artifactory@0.5.0
+  artifactory: specgen/artifactory@0.7.0
 
 parameters:
   specgen-version:
