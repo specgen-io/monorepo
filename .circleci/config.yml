@@ -1196,12 +1196,12 @@ jobs:
       - run:
           name: Build tests
           command: |
-            cd service-tests/tests
+            cd test-services/tests
             go test -c -o service-tests
       - persist_to_workspace:
           root: .
           paths:
-            - service-tests/tests
+            - test-services/tests
 
   service-scala:
     environment:
