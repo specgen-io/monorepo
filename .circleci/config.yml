@@ -1819,7 +1819,9 @@ workflows:
             - test-clients-service
 
 
-      - service-tests
+      - service-tests:
+          requires:
+            - build-complete
       - service-scala:
           context: specgen
           requires:
