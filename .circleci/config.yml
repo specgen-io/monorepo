@@ -1215,7 +1215,7 @@ jobs:
           at: .
       - restore_cache:
           keys:
-            - cache-{{ checksum "./scala-play/build.sbt" }}
+            - cache-{{ checksum "./test-services/scala-play/build.sbt" }}
       - run:
           name: Create temp folder for tests results
           command: mkdir -p /tmp/test-results
@@ -1225,16 +1225,16 @@ jobs:
       - run:
           name: Build service
           command: |
-            cd ./service-test/scala-play
+            cd ./test-services/scala-play
             sbt compile < /dev/null
       - run:
           name: Run service
           command: |
-            cd ./service-test/scala-play
+            cd ./test-services/scala-play
             sbt -Dhttp.port=8081 run < /dev/null
           background: true
       - save_cache:
-          key: cache-{{ checksum "./service-test/scala-play/build.sbt" }}
+          key: cache-{{ checksum "./test-services/scala-play/build.sbt" }}
           paths:
             - ~/.sbt
             - ~/.ivy2
