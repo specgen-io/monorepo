@@ -1765,58 +1765,58 @@ workflows:
             - build-complete
 
 
-      - clients-test-service:
+      - client-test-service:
           context: specgen
           requires:
             - build-complete
       - clients-go:
           context: specgen
           requires:
-            - clients-test-service
+            - client-test-service
       - clients-java-okhttp-jackson:
           context: specgen
           requires:
-            - clients-test-service
+            - client-test-service
       - clients-java-okhttp-moshi:
           context: specgen
           requires:
-            - clients-test-service
+            - client-test-service
       - clients-kotlin-okhttp-jackson:
           context: specgen
           requires:
-            - clients-test-service
+            - client-test-service
       - clients-kotlin-okhttp-moshi:
           context: specgen
           requires:
-            - clients-test-service
+            - client-test-service
       - clients-kotlin-micronaut-jackson:
           context: specgen
           requires:
-            - clients-test-service
+            - client-test-service
       - clients-ruby:
           context: specgen
           requires:
-            - clients-test-service
+            - client-test-service
       - clients-scala-sttp:
           context: specgen
           requires:
-            - clients-test-service
+            - client-test-service
       - clients-ts-axios-superstruct:
           context: specgen
           requires:
-            - clients-test-service
+            - client-test-service
       - clients-ts-node-fetch-superstruct:
           context: specgen
           requires:
-            - clients-test-service
+            - client-test-service
       - clients-ts-browser-fetch-superstruct:
           context: specgen
           requires:
-            - clients-test-service
+            - client-test-service
       - clients-ts-axios-iots:
           context: specgen
           requires:
-            - clients-test-service
+            - client-test-service
 
 
       - service-tests:
