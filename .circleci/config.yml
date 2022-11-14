@@ -1241,7 +1241,7 @@ jobs:
       - wait-url:
           url: http://localhost:8081/docs/index.html?url=swagger.yaml
       - go-tests:
-          command: ./service-test/tests/service-tests -test.v
+          command: ./test-services/tests/service-tests -test.v
 
   service-java:
     parameters:
@@ -1263,12 +1263,12 @@ jobs:
       - run:
           name: Copy spec.yaml
           command: |
-            cd ./service-test
+            cd ./test-services
             cp ./spec.yaml ./java/template/spec.yaml
       - run:
           name: Generate service
           command: |
-            cd ./service-test/java
+            cd ./test-services/java
             ../../specgen new service-java --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --root file:///./template --out out
       - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
@@ -1276,11 +1276,11 @@ jobs:
       - restore_cache:
           key: java-<<parameters.values-file>>
       - yaml-execute:
-          path: ./service-tests/java/out
+          path: ./test-services/java/out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - yaml-execute:
-          path: ./service-tests/java/out
+          path: ./test-services/java/out
           yaml-file: .rendr.yaml
           yaml-path: .run
           background: true
@@ -1290,7 +1290,7 @@ jobs:
       - wait-url:
           url: http://localhost:8081/swagger-ui/
       - go-tests:
-          command: ./service-tests/tests/service-tests -test.v
+          command: ./test-services/tests/service-tests -test.v
 
   service-kotlin:
     parameters:
@@ -1312,25 +1312,25 @@ jobs:
       - run:
           name: Copy spec.yaml
           command: |
-            cd service-tests
+            cd test-services
             cp ./spec.yaml ./kotlin/template/spec.yaml
       - run:
           name: Generate service
           command: |
-            cd ./service-tests/kotlin
+            cd ./test-services/kotlin
             ../specgen new service-kotlin --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --root file:///./template --out out
       - artifactory/setup-gradle-kotlin:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
-          project-path: ./service-tests/kotlin/out
+          project-path: ./test-services/kotlin/out
       - restore_cache:
           key: kotlin-<<parameters.values-file>>
       - yaml-execute:
-          path: ./service-tests/kotlin/out
+          path: ./test-services/kotlin/out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - yaml-execute:
-          path: ./service-tests/kotlin/out
+          path: ./test-services/kotlin/out
           yaml-file: .rendr.yaml
           yaml-path: .run
           background: true
@@ -1340,7 +1340,7 @@ jobs:
       - wait-url:
           url: http://localhost:8081/swagger-ui/
       - go-tests:
-          command: ./service-tests/tests/service-tests -test.v
+          command: ./test-services/tests/service-tests -test.v
 
   service-go:
     working_directory: ~/specgen-tests
@@ -1353,20 +1353,20 @@ jobs:
       - run:
           name: Build service
           command: |
-            cd ./service-tests/go
+            cd ./test-services/go
             go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
             go generate
             go build
       - run:
           name: Run service
           command: |
-            cd ./service-tests/go
+            cd ./test-services/go
             go run service.go --port 8081
           background: true
       - wait-url:
           url: http://localhost:8081/docs/
       - go-tests:
-          command: ./service-tests/tests/service-tests -test.v
+          command: ./test-services/tests/service-tests -test.v
 
   service-typescript:
     parameters:
@@ -1386,12 +1386,12 @@ jobs:
       - run:
           name: Copy spec.yaml
           command: |
-            cd service-tests
+            cd test-services
             cp ./spec.yaml ./typescript/template/spec.yaml
       - run:
           name: Generate service
           command: |
-            cd ./service-tests/typescript
+            cd ./test-services/typescript
             ../specgen new service-ts --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --root file:///./template --out out
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
@@ -1400,21 +1400,21 @@ jobs:
       - restore_cache:
           key: typescript-<<parameters.values-file>>
       - yaml-execute:
-          path: ./service-tests/typescript/out
+          path: ./test-services/typescript/out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - yaml-execute:
-          path: ./service-tests/typescript/out
+          path: ./test-services/typescript/out
           yaml-file: .rendr.yaml
           yaml-path: .run
           background: true
       - save_cache:
           key: typescript-<<parameters.values-file>>
-          paths: [ ~/specgen-tests/service-tests/typescript/out/node_modules ]
+          paths: [ ~/specgen-tests/test-services/typescript/out/node_modules ]
       - wait-url:
           url: http://localhost:8081/docs/
       - go-tests:
-          command: ./service-tests/tests/service-tests -test.v
+          command: ./test-services/tests/service-tests -test.v
 
 commands:
   attach_workspace_folder:
