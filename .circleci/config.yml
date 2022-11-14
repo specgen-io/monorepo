@@ -1769,51 +1769,51 @@ workflows:
           context: specgen
           requires:
             - build-complete
-      - clients-go:
+      - client-go:
           context: specgen
           requires:
             - client-test-service
-      - clients-java-okhttp-jackson:
+      - client-java-okhttp-jackson:
           context: specgen
           requires:
             - client-test-service
-      - clients-java-okhttp-moshi:
+      - client-java-okhttp-moshi:
           context: specgen
           requires:
             - client-test-service
-      - clients-kotlin-okhttp-jackson:
+      - client-kotlin-okhttp-jackson:
           context: specgen
           requires:
             - client-test-service
-      - clients-kotlin-okhttp-moshi:
+      - client-kotlin-okhttp-moshi:
           context: specgen
           requires:
             - client-test-service
-      - clients-kotlin-micronaut-jackson:
+      - client-kotlin-micronaut-jackson:
           context: specgen
           requires:
             - client-test-service
-      - clients-ruby:
+      - client-ruby:
           context: specgen
           requires:
             - client-test-service
-      - clients-scala-sttp:
+      - client-scala-sttp:
           context: specgen
           requires:
             - client-test-service
-      - clients-ts-axios-superstruct:
+      - client-ts-axios-superstruct:
           context: specgen
           requires:
             - client-test-service
-      - clients-ts-node-fetch-superstruct:
+      - client-ts-node-fetch-superstruct:
           context: specgen
           requires:
             - client-test-service
-      - clients-ts-browser-fetch-superstruct:
+      - client-ts-browser-fetch-superstruct:
           context: specgen
           requires:
             - client-test-service
-      - clients-ts-axios-iots:
+      - client-ts-axios-iots:
           context: specgen
           requires:
             - client-test-service
