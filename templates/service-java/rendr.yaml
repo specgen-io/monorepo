@@ -1,0 +1,78 @@
+rendr: 0
+name: service-java
+title: Specgen Java Service
+executables: 
+  - "{{#build.maven}}/mvnw"
+  - "{{#build.gradle-kotlin}}/gradlew"
+  - "{{#build.gradle-groovy}}/gradlew"
+rename: {"gitignore": ".gitignore"}
+args:
+  project:
+    type: string
+    description: project name
+    default: the-service
+  build:
+    type: string
+    description: build system
+    values: [maven, gradle-kotlin, gradle-groovy]
+    default: maven
+  groupid:
+    type: string
+    description: project group id
+    default: com.company
+  server:
+    type: string
+    description: server framework
+    values: [spring, micronaut]
+    default: spring
+  jsonlib:
+    type: string
+    description: JSON library
+    values: [jackson, moshi]
+    default: jackson
+  package:
+    type: string
+    description: package name
+    default: theservice
+  mainclass:
+    type: string
+    description: java main class
+    default: MyApplication
+  swagger:
+    type: boolean
+    description: do you want to enable swagger generation and hosting
+    default: yes
+  versions:
+    type: group
+    noinput: true
+    args:
+      specgen:
+        type: string
+        default: 2.1.1853
+      java:
+        type: string
+        default: 11  
+      springfox:
+        type: string
+        default: 3.0.0
+      spring_boot:
+        type: string
+        default: 2.5.5
+      spring_dependency:
+        type: string
+        default: 1.0.11.RELEASE 
+      micronaut:
+        type: string
+        default: 3.4.2
+      micronaut_application:
+        type: string
+        default: 3.3.2  
+      jsr305:
+        type: string
+        default: 3.0.2
+      jakarta:
+        type: string
+        default: 2.1.0  
+      moshi:
+        type: string
+        default: 1.13.0

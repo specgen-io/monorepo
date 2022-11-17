@@ -1,0 +1,5 @@
+build: |
+  npm install
+  npm run specgen
+  npm run build
+run: npm run start
