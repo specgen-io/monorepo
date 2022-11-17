@@ -1,0 +1,37 @@
+name: client-ts
+on:
+  push:
+    paths:
+      - .github/variables/**
+      - .github/actions/**
+      - .github/workflows/client-ts.yml
+      - templates/client-ts/**
+  workflow_dispatch: {}
+jobs:
+  client-ts:
+    strategy:
+      matrix:
+        client: [axios, browser-fetch, node-fetch]
+        validation: [superstruct, io-ts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/setvars
+
+      - uses: ./.github/actions/getspecgen
+        with:
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          version: ${SPECGEN_TOOL_VERSION}
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Rendr template
+        run: |
+          ./specgen new client-ts --set client=${{ matrix.client }} --set validation=${{ matrix.validation }} --set versions.specgen=${SPECGEN_VERSION} --noinput --out output --source file:///./templates
+
+      - uses: ./.github/actions/runbuild
+        with:
+          path: output

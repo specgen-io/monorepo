@@ -1,0 +1,37 @@
+name: service-ts
+on:
+  push:
+    paths:
+      - .github/variables/**
+      - .github/actions/**
+      - .github/workflows/service-ts.yml
+      - templates/service-ts/**
+  workflow_dispatch: {}
+jobs:
+  service-ts:
+    strategy:
+      matrix:
+        server: [express, koa]
+        validation: [superstruct, io-ts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/setvars
+
+      - uses: ./.github/actions/getspecgen
+        with:
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          version: ${SPECGEN_TOOL_VERSION}
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Rendr template
+        run: |
+          ./specgen new service-ts --set server=${{ matrix.server }} --set validation=${{ matrix.validation }} --set versions.specgen=${SPECGEN_VERSION} --noinput --out output --source file:///./templates
+
+      - uses: ./.github/actions/runbuild
+        with:
+          path: output

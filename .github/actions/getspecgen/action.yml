@@ -1,0 +1,19 @@
+name: Get specgen
+description: Downloads specgen tool
+inputs:
+  jfrog_pass:
+    description: JFrog Artfactory pass code.
+    required: true
+  version:
+    description: Version of the specgen tool.
+    required: false
+    default: latest
+runs:
+  using: "composite"
+  steps:
+    - name: Get specgen
+      shell: bash
+      run: |
+        curl -L -H "X-JFrog-Art-Api:${{ inputs.jfrog_pass }}" -O "https://specgen.jfrog.io/artifactory/binaries/specgen/${{ inputs.version }}/specgen_linux_amd64.zip"
+        unzip -o specgen_linux_amd64.zip
+        ./specgen help
