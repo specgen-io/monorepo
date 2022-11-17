@@ -1,4 +1,4 @@
-name: service-go
+name: templates-service-go
 on:
   push:
     paths:

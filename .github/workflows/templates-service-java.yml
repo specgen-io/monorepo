@@ -1,4 +1,4 @@
-name: service-java
+name: templates-service-java
 on:
   push:
     paths:

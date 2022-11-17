@@ -1,4 +1,4 @@
-name: service-kotlin
+name: templates-service-kotlin
 on:
   push:
     paths:

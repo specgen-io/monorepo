@@ -1,4 +1,4 @@
-name: service-ts
+name: templates-service-ts
 on:
   push:
     paths:

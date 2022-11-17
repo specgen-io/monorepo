@@ -1,4 +1,4 @@
-name: client-ts
+name: templates-client-ts
 on:
   push:
     paths:

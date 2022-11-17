@@ -1,4 +1,4 @@
-name: client-go
+name: templates-client-go
 on:
   push:
     paths:

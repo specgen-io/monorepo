@@ -1,4 +1,4 @@
-name: client-kotlin
+name: templates-client-kotlin
 on:
   push:
     paths:
