@@ -4,7 +4,7 @@ on:
     paths:
       - .github/variables/**
       - .github/actions/**
-      - .github/workflows/service-ts.yml
+      - .github/workflows/templates-service-ts.yml
       - templates/service-ts/**
   workflow_dispatch: {}
 jobs:

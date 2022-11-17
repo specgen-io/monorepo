@@ -4,7 +4,7 @@ on:
     paths:
       - .github/variables/**
       - .github/actions/**
-      - .github/workflows/client-java.yml
+      - .github/workflows/templates-client-java.yml
       - templates/client-java/**
   workflow_dispatch: {}
 jobs:

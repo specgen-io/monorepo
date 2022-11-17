@@ -4,7 +4,7 @@ on:
     paths:
       - .github/variables/**
       - .github/actions/**
-      - .github/workflows/client-go.yml
+      - .github/workflows/templates-client-go.yml
       - templates/client-go/**
   workflow_dispatch: {}
 jobs:

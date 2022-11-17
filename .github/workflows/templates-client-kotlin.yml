@@ -4,7 +4,7 @@ on:
     paths:
       - .github/variables/**
       - .github/actions/**
-      - .github/workflows/client-kotlin.yml
+      - .github/workflows/templates-client-kotlin.yml
       - templates/client-kotlin/**
   workflow_dispatch: {}
 jobs:
