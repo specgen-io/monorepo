@@ -465,6 +465,24 @@ jobs:
     steps:
       - run: echo "Testing of <<pipeline.parameters.specgen-version>> is complete!!!"
 
+  test-models-complete:
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - run: echo "Testing of models with <<pipeline.parameters.specgen-version>> is complete!!!"
+
+  test-services-complete:
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - run: echo "Testing of services with <<pipeline.parameters.specgen-version>> is complete!!!"
+
+  test-clients-complete:
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - run: echo "Testing of clients with <<pipeline.parameters.specgen-version>> is complete!!!"
+
   specgen-release:
     docker:
       - image: cimg/go:1.16.4
@@ -1768,7 +1786,7 @@ workflows:
       - client-test-service:
           context: specgen
           requires:
-            - build-complete
+            - test-services-complete
       - client-go:
           context: specgen
           requires:
@@ -1821,7 +1839,7 @@ workflows:
 
       - service-tests:
           requires:
-            - build-complete
+            - test-models-complete
       - service-scala:
           context: specgen
           requires:
@@ -1852,8 +1870,7 @@ workflows:
           requires:
             - service-tests
 
-
-      - testing-complete:
+      - test-models-complete:
           requires:
             - models-go
             - models-ruby
@@ -1864,6 +1881,17 @@ workflows:
             - models-java-moshi
             - models-kotlin-jackson
             - models-kotlin-moshi
+
+      - test-services-complete:
+          requires:
+            - service-scala
+            - service-java
+            - service-kotlin
+            - service-go
+            - service-typescript
+
+      - test-clients-complete:
+          requires:
             - client-go
             - client-java-okhttp-jackson
             - client-java-okhttp-moshi
@@ -1876,11 +1904,10 @@ workflows:
             - client-ts-node-fetch-superstruct
             - client-ts-browser-fetch-superstruct
             - client-ts-axios-iots
-            - service-scala
-            - service-java
-            - service-kotlin
-            - service-go
-            - service-typescript
+
+      - testing-complete:
+          requires:
+            - test-clients-complete
 
       - approve-release:
           type: approval
