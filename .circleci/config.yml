@@ -1268,8 +1268,7 @@ jobs:
       - run:
           name: Generate service
           command: |
-            cd ./test-services/java
-            ../../specgen new service-java --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///./template --out out
+            ./specgen new service-java --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///./test-services/java/template --out ./test-services/java/out
       - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
@@ -1317,8 +1316,7 @@ jobs:
       - run:
           name: Generate service
           command: |
-            cd ./test-services/kotlin
-            ../../specgen new service-kotlin --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///./template --out out
+            ./specgen new service-kotlin --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///./test-services/kotlin/template --out ./test-services/kotlin/out
       - artifactory/setup-gradle-kotlin:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
@@ -1391,8 +1389,7 @@ jobs:
       - run:
           name: Generate service
           command: |
-            cd ./test-services/typescript
-            ../../specgen new service-ts --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///./template --out out
+            ./specgen new service-ts --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///./test-services/typescript/template --out ./test-services/typescript/out
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
