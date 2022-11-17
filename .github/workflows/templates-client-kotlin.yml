@@ -1,0 +1,39 @@
+name: templates-client-kotlin
+on:
+  push:
+    paths:
+      - .github/variables/**
+      - .github/actions/**
+      - .github/workflows/templates-client-kotlin.yml
+      - templates/client-kotlin/**
+  workflow_dispatch: {}
+jobs:
+  client-kotlin:
+    strategy:
+      matrix:
+        build: [maven, gradle-kotlin, gradle-groovy]
+        client: [okhttp]
+        jsonlib: [jackson, moshi]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/setvars
+
+      - uses: ./.github/actions/getspecgen
+        with:
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          version: ${SPECGEN_TOOL_VERSION}
+
+      - uses: actions/setup-java@v3.1.0
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      - name: Rendr template
+        run: |
+          ./specgen new client-kotlin --set build=${{ matrix.build }} --set client=${{ matrix.client }} --set jsonlib=${{ matrix.jsonlib }} --set versions.specgen=${SPECGEN_VERSION} --noinput --out output --source file:///./templates
+
+      - uses: ./.github/actions/runbuild
+        with:
+          path: output

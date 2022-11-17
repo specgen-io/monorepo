@@ -1,0 +1,18 @@
+micronaut:
+  application:
+    name: {{project.value}}
+  server:
+    port: 8081
+  router:
+    static-resources:
+      swagger:
+        paths: classpath:static/docs
+        mapping: /docs/**
+      swagger-ui:
+        paths: classpath:static/docs/swagger-ui
+        mapping: /swagger-ui/**
+
+netty:
+  default:
+    allocator:
+      max-order: 3

@@ -1,0 +1,78 @@
+rendr: 0
+name: client-ts
+title: Specgen TypeScript Client
+rename: {"gitignore": ".gitignore"}
+args:
+  project:
+    type: string
+    description: project name
+    default: the-client
+  build:
+    type: string
+    description: build system
+    default: npm
+  groupid:
+    type: string
+    description: project group id
+    default: com.company
+  client:
+    type: string
+    description: client library
+    values: [axios, browser-fetch, node-fetch]
+    default: axios
+  validation:
+    type: string
+    description: validation library
+    values: [superstruct, io-ts]
+    default: superstruct
+  package:
+    type: string
+    description: package name
+    default: theclient
+  swagger:
+    type: boolean
+    description: do you want to enable swagger generation and hosting
+    default: yes
+  versions:
+    type: group
+    noinput: true
+    args:
+      typescript:
+        type: string
+        default: 4.7.4
+      node:
+        type: string
+        default: ^16.11.11
+      ts-node:
+        type: string
+        default: ^10.4.0
+      tsm:
+        type: string
+        default: ^2.2.1
+      specgen:
+        type: string
+        default: ^2.1.1853
+      superstruct:
+        type: string
+        default: ^0.15.2
+      fp-ts:
+        type: string
+        default: ^2.9.3
+      io-ts:
+        type: string
+        default: ^2.2.13
+      io-ts-types:
+        type: string
+        default: ^0.5.16
+      monocle-ts:
+        type: string
+        default: ^2.0.0
+      newtype-ts:
+        type: string
+        default: ^0.3.2
+      axios:
+        type: string
+        default: ^0.21.1
+      node-fetch:
+        type: string
+        default: ^3.1.0

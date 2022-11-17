@@ -1,0 +1,7 @@
+build: ./gradlew build
+{{#server.spring}}
+run: ./gradlew bootRun
+{{/server.spring}}
+{{#server.micronaut}}
+run: ./gradlew run
+{{/server.micronaut}}

@@ -1,0 +1,44 @@
+rendr: 0
+name: client-go
+title: Specgen Golang Client
+rename: {"gitignore": ".gitignore"}
+args:
+  project:
+    type: string
+    description: project name
+    default: the-client
+  client:
+    type: string
+    description: client library
+    values: [net/http]
+    default: net/http
+  package:
+    type: string
+    description: package name
+    default: theclient
+  versions:
+    type: group
+    noinput: true
+    args:
+      go:
+        type: string
+        default: 1.18
+      specgen:
+        type: string
+        default: 2.1.1853
+      civil:
+        type: string
+        default: 0.84.0
+      uuid:
+        type: string
+        default: 1.2.0
+      errors:
+        type: string
+        default: 0.9.1
+      decimal:
+        type: string
+        default: 1.2.0
+      logrus:
+        type: string
+        default: 1.8.1
+      

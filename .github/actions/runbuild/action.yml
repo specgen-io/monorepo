@@ -1,0 +1,26 @@
+name: Run build
+description: Executes rendr build commands
+inputs:
+  path:
+    description: Path where template was rendered to.
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Install yq
+      shell: bash
+      run: |
+        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo chmod a+x /usr/local/bin/yq
+        yq --version
+    - name: Run build commands from rendr
+      shell: bash
+      run: |
+        cd ${{ inputs.path }}
+        export BUILD_COMMANDS=$(yq eval .build .rendr.yaml)
+        echo "Build commands:"
+        echo "$BUILD_COMMANDS"
+        echo "$BUILD_COMMANDS" | while read BUILD_COMMAND ; do
+          echo "Executing: $BUILD_COMMAND"
+          $BUILD_COMMAND
+        done

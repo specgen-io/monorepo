@@ -1,0 +1,7 @@
+build: ./mvnw compile
+{{#server.spring}}
+run: ./mvnw spring-boot:run
+{{/server.spring}}
+{{#server.micronaut}}
+run: ./mvnw mn:run
+{{/server.micronaut}}
