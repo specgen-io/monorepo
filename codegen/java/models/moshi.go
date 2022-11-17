@@ -125,7 +125,7 @@ func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.
 	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) modelOneOfImplementation(w generator.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelOneOfImplementation(w *writer.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
 	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
 	w.Line(`  public %s data;`, g.Types.Java(&item.Type.Definition))
 	w.EmptyLine()

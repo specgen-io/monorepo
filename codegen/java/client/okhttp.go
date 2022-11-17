@@ -58,7 +58,7 @@ public class [[.ClassName]] {
 	return w.ToCodeFile()
 }
 
-func (g *Generator) generateClientMethod(w generator.Writer, operation *spec.NamedOperation) {
+func (g *Generator) generateClientMethod(w *writer.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	requestBody := "null"
@@ -135,7 +135,7 @@ func (g *Generator) responses(version *spec.Version) []generator.CodeFile {
 	return files
 }
 
-func generateThrowClientException(w generator.Writer, errorMessage string, wrapException string) {
+func generateThrowClientException(w *writer.Writer, errorMessage string, wrapException string) {
 	w.Line(`var errorMessage = %s;`, errorMessage)
 	w.Line(`logger.error(errorMessage);`)
 	params := "errorMessage"

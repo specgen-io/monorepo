@@ -1,8 +1,6 @@
 package imports
 
-import (
-	"generator"
-)
+import "java/writer"
 
 type imports struct {
 	imports []string
@@ -24,7 +22,7 @@ func (self *imports) AddStatic(imports ...string) *imports {
 	return self
 }
 
-func (self *imports) Write(w generator.Writer) {
+func (self *imports) Write(w *writer.Writer) {
 	for _, imp := range self.imports {
 		w.Line(`import %s;`, imp)
 	}

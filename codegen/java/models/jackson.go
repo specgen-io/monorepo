@@ -155,7 +155,7 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 	return w.ToCodeFile()
 }
 
-func (g *JacksonGenerator) modelOneOfImplementation(w generator.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
+func (g *JacksonGenerator) modelOneOfImplementation(w *writer.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
 	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
 	w.Line(`  @JsonUnwrapped`)
 	w.Line(`  public %s data;`, g.Types.Java(&item.Type.Definition))
