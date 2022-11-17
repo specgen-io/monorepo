@@ -1,0 +1,5 @@
+{
+  "build": "gradle-kotlin",
+  "server": "spring",
+  "jsonlib": "jackson"
+}

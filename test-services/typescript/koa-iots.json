@@ -1,0 +1,4 @@
+{
+  "server": "koa",
+  "validation": "io-ts"
+}

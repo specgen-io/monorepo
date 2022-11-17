@@ -1,0 +1,189 @@
+spec: 2.1
+name: test-service
+version: 1
+
+v2:
+  http:
+    echo:
+      echo_body_model:
+        endpoint: POST /echo/body_model
+        body: Message
+        response:
+          ok: Message
+  models:
+    Message:
+      object:
+        bool_field: boolean
+        string_field: string
+
+http:
+  echo:
+    echo_body_string:
+      endpoint: POST /echo/body_string
+      body: string
+      response:
+        ok: string
+
+    echo_body_model:
+      endpoint: POST /echo/body_model
+      body: Message
+      response:
+        ok: Message    
+
+    echo_body_array:
+      endpoint: POST /echo/body_array
+      body: string[]
+      response:
+        ok: string[]  
+
+    echo_body_map:
+      endpoint: POST /echo/body_map
+      body: string{}
+      response:
+        ok: string{}         
+
+    echo_query:
+      endpoint: GET /echo/query
+      query:
+        int_query: int
+        long_query: long
+        float_query: float
+        double_query: double
+        decimal_query: decimal
+        bool_query: boolean
+        string_query: string
+        string_opt_query: string?
+        string_defaulted_query: string = the default value
+        string_array_query: string[]
+        uuid_query: uuid
+        date_query: date
+        date_array_query: date[]
+        datetime_query: datetime
+        enum_query: Choice
+      response:
+        ok: Parameters
+
+    echo_header:
+      endpoint: GET /echo/header
+      header:
+        Int-Header: int
+        Long-Header: long
+        Float-Header: float
+        Double-Header: double
+        Decimal-Header: decimal
+        Bool-Header: boolean
+        String-Header: string
+        String-Opt-Header: string?
+        String-Defaulted-Header: string = the default value
+        String-Array-Header: string[]
+        Uuid-Header: uuid
+        Date-Header: date
+        Date-Array-Header: date[]
+        Datetime-Header: datetime
+        Enum-Header: Choice
+      response:
+        ok: Parameters
+
+    echo_url_params:
+      endpoint: GET /echo/url_params/{int_url:int}/{long_url:long}/{float_url:float}/{double_url:double}/{decimal_url:decimal}/{bool_url:bool}/{string_url:string}/{uuid_url:uuid}/{date_url:date}/{datetime_url:datetime}/{enum_url:Choice}
+      response:
+        ok: UrlParameters
+
+    echo_everything:
+      endpoint: POST /echo/everything/{date_url:date}/{decimal_url:decimal}
+      body: Message
+      query:
+        float_query: float
+        bool_query: boolean
+      header:
+        Uuid-Header: uuid
+        Datetime-Header: datetime
+      response:
+        ok: Everything
+        forbidden: empty
+
+    same_operation_name:
+      endpoint: GET /echo/same_operation_name
+      response:
+        ok: empty
+        forbidden: empty
+
+  check:
+    check_empty:
+      endpoint: GET /check/empty
+      response:
+        ok: empty
+
+    check_empty_response:
+      endpoint: POST /check/empty_response
+      body: Message
+      response:
+        ok: empty
+
+    check_forbidden:
+      endpoint: GET /check/forbidden
+      response:
+        ok: Message
+        forbidden: empty
+
+    same_operation_name:
+      endpoint: GET /check/same_operation_name
+      response:
+        ok: empty
+        forbidden: empty
+
+    check_bad_request:
+      endpoint: GET /check/bad_request
+      response:
+        ok: empty
+        bad_request: BadRequestError
+
+models:
+  Message:
+    object:
+      int_field: int
+      string_field: string
+  Parameters:
+    object:
+      int_field: int
+      long_field: long
+      float_field: float
+      double_field: double
+      decimal_field: decimal
+      bool_field: boolean
+      string_field: string
+      string_opt_field: string?
+      string_defaulted_field: string
+      string_array_field: string[]
+      uuid_field: uuid
+      date_field: date
+      date_array_field: date[]
+      datetime_field: datetime
+      enum_field: Choice
+  UrlParameters:
+    object:
+      int_field: int
+      long_field: long
+      float_field: float
+      double_field: double
+      decimal_field: decimal
+      bool_field: boolean
+      string_field: string
+      uuid_field: uuid
+      date_field: date
+      datetime_field: datetime
+      enum_field: Choice
+  Everything:
+    object:
+      body_field: Message
+      float_query: float
+      bool_query: boolean
+      uuid_header: uuid
+      datetime_header: datetime
+      date_url: date
+      decimal_url: decimal
+  Choice:
+    enum:
+      first_choice: FIRST_CHOICE
+      second_choice: SECOND_CHOICE
+      third_choice: THIRD_CHOICE

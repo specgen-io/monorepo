@@ -1,0 +1,361 @@
+version: 2.1
+
+orbs:
+  artifactory: specgen/artifactory@0.7.0
+
+parameters:
+  specgen-version:
+    type: string
+    default: 2.1.2202
+  specgen-version-major:
+    type: string
+    default: v2
+
+jobs:
+  tests:
+    docker:
+      - image: cimg/go:1.18.3
+    working_directory: ~/specgen-tests
+    steps:
+      - checkout
+      - run:
+          name: Build tests
+          command: |
+            cd tests
+            go test -c -o service-tests
+      - persist_to_workspace:
+          root: .
+          paths:
+            - tests
+
+  scala-play:
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./scala-play/build.sbt" }}
+      - run:
+          name: Create temp folder for tests results
+          command: mkdir -p /tmp/test-results
+      - artifactory/setup-sbt:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: sbt
+      - run:
+          name: Build service
+          command: |
+            cd ./scala-play
+            sbt compile < /dev/null
+      - run:
+          name: Run service
+          command: |
+            cd ./scala-play
+            sbt -Dhttp.port=8081 run < /dev/null
+          background: true
+      - save_cache:
+          key: cache-{{ checksum "./scala-play/build.sbt" }}
+          paths:
+            - ~/.sbt
+            - ~/.ivy2
+      - wait-url:
+          url: http://localhost:8081/docs/index.html?url=swagger.yaml
+      - go-tests:
+          command: ./tests/service-tests -test.v
+
+  java:
+    parameters:
+      values-file:
+        type: string
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Create temp folder for tests results
+          command: mkdir -p /tmp/test-results
+      - get-specgen
+      - run:
+          name: Copy spec.yaml
+          command: |
+            cp ./spec.yaml ./java/template/spec.yaml
+      - run:
+          name: Generate service
+          command: |
+            cd ./java
+            ../specgen new service-java --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --root file:///./template --out out
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - restore_cache:
+          key: java-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./java/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - yaml-execute:
+          path: ./java/out
+          yaml-file: .rendr.yaml
+          yaml-path: .run
+          background: true
+      - save_cache:
+          key: java-<<parameters.values-file>>
+          paths: [ ~/.m2 ]  
+      - wait-url:
+          url: http://localhost:8081/swagger-ui/
+      - go-tests:
+          command: ./tests/service-tests -test.v
+
+  kotlin:
+    parameters:
+      values-file:
+        type: string
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Create temp folder for tests results
+          command: mkdir -p /tmp/test-results
+      - get-specgen
+      - run:
+          name: Copy spec.yaml
+          command: |
+            cp ./spec.yaml ./kotlin/template/spec.yaml
+      - run:
+          name: Generate service
+          command: |
+            cd ./kotlin
+            ../specgen new service-kotlin --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --root file:///./template --out out
+      - artifactory/setup-gradle-kotlin:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+          project-path: ./kotlin/out
+      - restore_cache:
+          key: kotlin-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./kotlin/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - yaml-execute:
+          path: ./kotlin/out
+          yaml-file: .rendr.yaml
+          yaml-path: .run
+          background: true
+      - save_cache:
+          key: kotlin-<<parameters.values-file>>
+          paths: [ ~/.gradle ]  
+      - wait-url:
+          url: http://localhost:8081/swagger-ui/
+      - go-tests:
+          command: ./tests/service-tests -test.v
+
+  go:
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/go:1.18.3
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Build service
+          command: |
+            cd ./go
+            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
+            go generate
+            go build
+      - run:
+          name: Run service
+          command: |
+            cd ./go
+            go run service.go --port 8081
+          background: true
+      - wait-url:
+          url: http://localhost:8081/docs/
+      - go-tests:
+          command: ./tests/service-tests -test.v
+
+  typescript:
+    parameters:
+      values-file:
+        type: string
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Create temp folder for tests results
+          command: mkdir -p /tmp/test-results
+      - get-specgen
+      - run:
+          name: Copy spec.yaml
+          command: |
+            cp ./spec.yaml ./typescript/template/spec.yaml
+      - run:
+          name: Generate service
+          command: |
+            cd ./typescript
+            ../specgen new service-ts --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --root file:///./template --out out
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+          scope: specgen.io
+      - restore_cache:
+          key: typescript-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./typescript/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - yaml-execute:
+          path: ./typescript/out
+          yaml-file: .rendr.yaml
+          yaml-path: .run
+          background: true
+      - save_cache:
+          key: typescript-<<parameters.values-file>>
+          paths: [ ~/specgen-tests/typescript/out/node_modules ]  
+      - wait-url:
+          url: http://localhost:8081/docs/
+      - go-tests:
+          command: ./tests/service-tests -test.v          
+
+commands:
+  go-tests:
+    parameters:
+      command:
+        type: string
+        default: go test
+    steps:
+      - run:
+          name: Install go-junit-report
+          command: |
+            curl -L https://github.com/specgen-io/go-junit-report/releases/download/latest/go-junit-report_linux_amd64.zip > go-junit-report.zip
+            unzip -o go-junit-report.zip
+      - run:
+          name: Run tests
+          command: |
+            mkdir -p ./test-results
+            <<parameters.command>> 2>&1 | ./go-junit-report > ./test-results/go-test-report.xml
+      - store_test_results:
+          path: ./test-results
+  wait-url:
+    parameters:
+      url:
+        type: string
+      sleep:
+        type: integer
+        default: 5
+      attempts:
+        type: integer
+        default: 12
+    steps:
+      - run:
+          name: Wait until url is available
+          command: |
+            attempt_counter=0
+            max_attempts=<<parameters.attempts>>
+
+            until $(curl --output /dev/null --silent --head --fail <<parameters.url>>); do
+              if [ ${attempt_counter} -eq ${max_attempts} ];then
+                echo "Max attempts reached"
+                exit 1
+              fi
+
+              printf '.'
+              attempt_counter=$(($attempt_counter+1))
+              sleep <<parameters.sleep>>
+            done
+  get-specgen:
+    steps:
+      - run:
+          name: Get specgen
+          command: |
+            curl -L -H "X-JFrog-Art-Api:${JFROG_PASS}" -O "https://specgen.jfrog.io/artifactory/binaries/specgen/v<<pipeline.parameters.specgen-version>>/specgen_linux_amd64.zip"
+            unzip -o specgen_linux_amd64.zip
+            ./specgen help
+  yaml-execute:
+    parameters:
+      path:
+        type: string
+      yaml-file:
+        type: string
+      yaml-path:
+        type: string
+      background:
+        type: boolean
+        default: false
+    steps:
+      - install-yq
+      - run:
+          name: Run commands from YAML file
+          command: |
+            cd <<parameters.path>>
+            export COMMANDS=$(yq eval <<parameters.yaml-path>> <<parameters.yaml-file>>)
+            echo "Commands:"
+            echo "$COMMANDS"
+            echo "$COMMANDS" | while read THE_COMMAND ; do
+              echo "Executing: $THE_COMMAND"
+              $THE_COMMAND
+            done
+          background: <<parameters.background>>
+  install-yq:
+    steps:
+      - run:
+          name: Install yq
+          command: |
+            sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+            sudo chmod a+x /usr/local/bin/yq
+            yq --version
+
+workflows:
+  build-test:
+    jobs:
+      - tests
+      - scala-play:
+          context: specgen
+          requires:
+            - tests
+      - java:
+          matrix:
+            parameters:
+              values-file: ["micronaut-jackson", "micronaut-moshi", "spring-jackson", "spring-moshi"]
+          context: specgen
+          requires:
+            - tests
+      - kotlin:
+          matrix:
+            parameters:
+              values-file: ["micronaut-jackson", "micronaut-moshi", "spring-jackson", "spring-moshi"]
+          context: specgen
+          requires:
+            - tests
+      - go:
+          context: specgen
+          requires:
+            - tests
+      - typescript:
+          matrix:
+            parameters:
+              values-file: ["express-superstruct", "express-iots", "koa-superstruct", "koa-iots"]
+          context: specgen
+          requires:
+            - tests

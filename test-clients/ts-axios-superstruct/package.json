@@ -1,0 +1,41 @@
+{
+  "name": "client-axios",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "specgen": "specgen client-ts --client axios --validation superstruct --spec-file ./../spec.yaml --generate-path ./test-service",
+    "test": "jest",
+    "coverage": "jest --coverage"
+  },
+  "jest": {
+    "reporters": [
+      "default",
+      "jest-junit"
+    ],
+    "transform": {
+      ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ]
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@specgen.io/specgen.io": "^2.0.527",
+    "@types/jest": "^26.0.23",
+    "jest": "^26.6.3",
+    "jest-junit": "^12.0.0",
+    "ts-jest": "^26.4.4",
+    "typescript": "^4.1.3"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "superstruct": "^0.15.2"
+  }
+}

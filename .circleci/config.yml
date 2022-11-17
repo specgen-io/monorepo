@@ -1,8 +1,7 @@
 version: 2.1
 
 orbs:
-  circleci: specgen/circleci@0.1.0
-  artifactory: specgen/artifactory@0.5.0
+  artifactory: specgen/artifactory@0.7.0
 
 parameters:
   specgen-version:
@@ -48,41 +47,6 @@ jobs:
           command: |
             cd codegen/specgen
             ./release.sh <<pipeline.parameters.specgen-version>> artifactory
-      - run:
-          name: Cleanup
-          command: |
-            cd codegen/specgen
-            rm *.zip
-            rm -rf ./dist
-            rm -rf ./test-results
-            rm ./release.sh
-      - run:
-          name: Install goven
-          command: |
-            cd codegen/specgen
-            go install github.com/specgen-io/goven@v0.0.10
-      - run:
-          name: Vendor code with goven
-          command: |
-            cd codegen/specgen
-            goven vendor -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -out vendored
-      - run:
-          name: Copy vendored code
-          command: |
-            cd codegen
-            git clone https://github.com/specgen-io/specgen.git specgen-release
-            rm -rf ./specgen-release/<<pipeline.parameters.specgen-version-major>>
-            cp -a ./specgen/vendored/. ./specgen-release/<<pipeline.parameters.specgen-version-major>>
-      - github-push-tag:
-          path: codegen/specgen-release
-          repo: github.com/specgen-io/specgen.git
-          tag: v<<pipeline.parameters.specgen-version>>-alpha
-          commit: true
-      - run:
-          name: Check released module
-          command: |
-            go install github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>-alpha
-            specgen --help
 
   golang:
     docker:
@@ -495,6 +459,12 @@ jobs:
     steps:
       - run: echo "Build for <<pipeline.parameters.specgen-version>> is complete!!!"
 
+  testing-complete:
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - run: echo "Testing of <<pipeline.parameters.specgen-version>> is complete!!!"
+
   specgen-release:
     docker:
       - image: cimg/go:1.16.4
@@ -509,6 +479,942 @@ jobs:
           command: |
             cd codegen/specgen
             ./release.sh <<pipeline.parameters.specgen-version>> github+artifactory
+      - run:
+          name: Cleanup
+          command: |
+            cd codegen/specgen
+            rm *.zip
+            rm -rf ./dist
+            rm -rf ./test-results
+            rm ./release.sh
+      - run:
+          name: Install goven
+          command: |
+            cd codegen/specgen
+            go install github.com/specgen-io/goven@v0.0.10
+      - run:
+          name: Vendor code with goven
+          command: |
+            cd codegen/specgen
+            goven vendor -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -out vendored
+      - run:
+          name: Copy vendored code
+          command: |
+            cd codegen
+            git clone https://github.com/specgen-io/specgen.git specgen-release
+            rm -rf ./specgen-release/<<pipeline.parameters.specgen-version-major>>
+            cp -a ./specgen/vendored/. ./specgen-release/<<pipeline.parameters.specgen-version-major>>
+      - github-push-tag:
+          path: codegen/specgen-release
+          repo: github.com/specgen-io/specgen.git
+          tag: v<<pipeline.parameters.specgen-version>>
+          commit: true
+      - run:
+          name: Check released module
+          command: |
+            go install github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>
+            specgen --help
+
+
+  models-go:
+    working_directory: ~/test-models-go
+    docker:
+      - image: cimg/go:1.18.3
+    steps:
+      - checkout
+      - run:
+          name: Test Go models
+          command: |
+            cd ./test-models/go
+            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
+            go generate
+            mkdir -p ./test-results
+            go install github.com/jstemmer/go-junit-report@v0.9.1
+            go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
+      - store_test_results:
+          path: ./test-models/go/test-results
+  models-ruby:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/test-models-ruby
+    docker:
+      - image: cimg/ruby:3.0.0
+    steps:
+      - checkout
+      - artifactory/setup-bundler:
+          jfrog-server-url: specgen.jfrog.io
+      - run:
+          name: Setup Gemfile
+          command: |
+            cd ./test-models/ruby
+            tee --append ./Gemfile \<<END
+            source 'https://specgen.jfrog.io/artifactory/api/gems/gems/' do
+              gem 'specgen', '<< pipeline.parameters.specgen-version >>'
+            end
+            END
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./tests-models/ruby/Gemfile" }}
+      - run:
+          name: Test Ruby models
+          command: |
+            cd ./test-models/ruby
+            bundle install
+            rake
+      - save_cache:
+          key: cache-{{ checksum "./test-models/ruby/Gemfile" }}
+          paths:
+            - ~/test-models-ruby/ruby/vendor/bundle
+      - store_test_results:
+          path: ./test-models/ruby/test-results
+  models-ts-superstruct:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/test-models-superstruct
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+          scope: specgen.io
+      - run:
+          name: Setup npm
+          command: |
+            cd ./test-models/ts-superstruct
+            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-models/ts-superstruct/package.json" }}
+      - run:
+          name: Test Superstruct models
+          command: |
+            cd ./test-models/ts-superstruct
+            npm install
+            npm run specgen
+            mkdir -p ./test-results
+            export JEST_JUNIT_OUTPUT_DIR=./test-results
+            npm run test
+      - save_cache:
+          key: cache-{{ checksum "./test-models/ts-superstruct/package.json" }}
+          paths:
+            - ~/test-models-superstruct/ts-superstruct/node_modules
+      - store_test_results:
+          path: ./test-models/ts-superstruct/test-results
+  models-ts-iots:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/test-models-iots
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+          scope: specgen.io
+      - run:
+          name: Setup npm
+          command: |
+            cd ./test-models/ts-iots
+            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-models/ts-iots/package.json" }}
+      - run:
+          name: Test Iots models
+          command: |
+            cd ./test-models/ts-iots
+            npm install
+            npm run specgen
+            mkdir -p ./test-results
+            export JEST_JUNIT_OUTPUT_DIR=./test-results
+            npm run test
+      - save_cache:
+          key: cache-{{ checksum "./test-models/ts-iots/package.json" }}
+          paths:
+            - ~/test-models-iots/ts-iots/node_modules
+      - store_test_results:
+          path: ./test-models/ts-iots/test-results
+  models-scala-circe:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/test-models-circe
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-models/scala-circe/build.sbt" }}
+      - artifactory/setup-sbt:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: sbt
+      - run:
+          name: Test Circe models
+          command: |
+            cd ./test-models/scala-circe
+            mkdir -p ./test-results
+            sbt -Djunitxml=./test-results test < /dev/null
+      - store_test_results:
+          path: ./test-models/test-models/scala-circe/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-models/scala-circe/build.sbt" }}
+          paths:
+            - ~/.sbt
+            - ~/.ivy2
+  models-java-jackson:
+    working_directory: ~/test-models-java-jackson
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-models/java-jackson/pom.xml" }}
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - run:
+          name: Maven build
+          command: |
+            cd ./test-models/java-jackson
+            mkdir -p ./test-results
+            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-models/java-jackson/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-models/java-jackson/pom.xml" }}
+          paths:
+            - ~/.m2
+  models-java-moshi:
+    working_directory: ~/test-models-java-moshi
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-models/java-moshi/pom.xml" }}
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - run:
+          name: Maven build
+          command: |
+            cd ./test-models/java-moshi
+            mkdir -p ./test-results
+            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-models/java-moshi/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-models/java-moshi/pom.xml" }}
+          paths:
+            - ~/.m2
+  models-kotlin-jackson:
+    working_directory: ~/test-models-kotlin-jackson
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - restore_cache:
+          key: cache-{{ checksum "./test-models/kotlin-jackson/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-jackson/settings.gradle.kts" }}
+      - run:
+          name: Gradle build
+          command: |
+            cd ./test-models/kotlin-jackson
+            ./gradlew --build-cache --no-daemon --stacktrace test \
+            -Djfrog.user=$JFROG_USER \
+            -Djfrog.pass=$JFROG_PASS \
+            -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-models/kotlin-jackson/build/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-models/kotlin-jackson/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-jackson/settings.gradle.kts" }}
+          paths: [ ~/.gradle ]
+  models-kotlin-moshi:
+    working_directory: ~/test-models-kotlin-moshi
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - restore_cache:
+          key: cache-{{ checksum "./test-models/kotlin-moshi/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-moshi/settings.gradle.kts" }}
+      - run:
+          name: Gradle build
+          command: |
+            cd ./test-models/kotlin-moshi
+            ./gradlew --build-cache --no-daemon --stacktrace test \
+            -Djfrog.user=$JFROG_USER \
+            -Djfrog.pass=$JFROG_PASS \
+            -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-models/kotlin-moshi/build/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-models/kotlin-moshi/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-moshi/settings.gradle.kts" }}
+          paths: [ ~/.gradle ]
+
+  client-test-service:
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/go:1.18.3
+    steps:
+      - checkout
+      - run:
+          name: Build test-service
+          command: |
+            cd ./test-clients/test-service
+            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
+            go generate
+            go build -o test-service
+      - persist_to_workspace:
+          root: .
+          paths:
+            - test-clients/test-service
+
+  client-go:
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/go:1.18.3
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - start-service:
+          port: 8081
+      - run:
+          name: Test Go client
+          command: |
+            cd ./test-clients/go
+            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
+            go generate
+            mkdir -p ./test-results
+            go install github.com/jstemmer/go-junit-report@v0.9.1
+            go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
+            go test ./... -v
+      - store_test_results:
+          path: ./test-clients/go/test-results
+
+  client-java-okhttp-jackson:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-clients/java-okhttp-jackson/pom.xml" }}
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - start-service:
+          port: 8081
+      - run:
+          name: Test Java OkHttp client
+          command: |
+            cd ./test-clients/java-okhttp-jackson
+            mkdir -p ./test-results
+            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-clients/java-okhttp-jackson/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-clients/java-okhttp-jackson/pom.xml" }}
+          paths:
+            - ~/.m2
+
+  client-java-okhttp-moshi:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-clients/java-okhttp-moshi/pom.xml" }}
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - start-service:
+          port: 8081
+      - run:
+          name: Test Java OkHttp client
+          command: |
+            cd ./test-clients/java-okhttp-moshi
+            mkdir -p ./test-results
+            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-clients/java-okhttp-moshi/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-clients/java-okhttp-moshi/pom.xml" }}
+          paths:
+            - ~/.m2
+
+  client-kotlin-okhttp-jackson:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          key: cache-{{ checksum "./test-clients/kotlin-okhttp-jackson/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-okhttp-jackson/settings.gradle.kts" }}
+      - start-service:
+          port: 8081
+      - run:
+          name: Test Kotlin OkHttp client
+          command: |
+            cd ./test-clients/kotlin-okhttp-jackson
+            ./gradlew --build-cache --no-daemon --stacktrace test \
+            -Djfrog.user=$JFROG_USER \
+            -Djfrog.pass=$JFROG_PASS \
+            -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-clients/kotlin-okhttp-jackson/build/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-clients/kotlin-okhttp-jackson/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-okhttp-jackson/settings.gradle.kts" }}
+          paths: [ ~/.gradle ]
+
+  client-kotlin-okhttp-moshi:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          key: cache-{{ checksum "./test-clients/kotlin-okhttp-moshi/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-okhttp-moshi/settings.gradle.kts" }}
+      - start-service:
+          port: 8081
+      - run:
+          name: Test Kotlin OkHttp client
+          command: |
+            cd ./test-clients/kotlin-okhttp-moshi
+            ./gradlew --build-cache --no-daemon --stacktrace test \
+            -Djfrog.user=$JFROG_USER \
+            -Djfrog.pass=$JFROG_PASS \
+            -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-clients/kotlin-okhttp-moshi/build/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-clients/kotlin-okhttp-moshi/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-okhttp-moshi/settings.gradle.kts" }}
+          paths: [ ~/.gradle ]
+
+  client-kotlin-micronaut-jackson:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          key: cache-{{ checksum "./test-clients/kotlin-micronaut-jackson/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-micronaut-jackson/settings.gradle.kts" }}
+      - start-service:
+          port: 8081
+      - run:
+          name: Test Kotlin Micronaut client
+          command: |
+            cd ./test-clients/kotlin-micronaut-jackson
+            ./gradlew --build-cache --no-daemon --stacktrace test \
+            -Djfrog.user=$JFROG_USER \
+            -Djfrog.pass=$JFROG_PASS \
+            -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-clients/kotlin-micronaut-jackson/build/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-clients/kotlin-micronaut-jackson/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-micronaut-jackson/settings.gradle.kts" }}
+          paths: [ ~/.gradle ]
+
+  client-ruby:
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/ruby:2.4.9
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - artifactory/setup-bundler:
+          jfrog-server-url: specgen.jfrog.io
+      - start-service:
+          port: 8081
+      - run:
+          name: Setup Gemfile
+          command: |
+            cd ./test-clients/ruby
+            tee --append ./Gemfile \<<END
+
+            source 'https://specgen.jfrog.io/artifactory/api/gems/gems/' do
+              gem 'specgen', '<< pipeline.parameters.specgen-version >>'
+            end
+            END
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-clients/ruby/Gemfile.lock" }}
+      - run:
+          name: Test Ruby client
+          command: |
+            cd ./test-clients/ruby
+            bundle install
+            export SERVICE_URL=http://localhost:8081
+            rake
+      - save_cache:
+          key: cache-{{ checksum "./test-clients/ruby/Gemfile.lock" }}
+          paths:
+            - ~/specgen-tests/ruby/vendor/bundle
+      - store_test_results:
+          path: ./test-clients/ruby/test-results
+
+  client-scala-sttp:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-clients/scala-sttp/build.sbt" }}
+      - artifactory/setup-sbt:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: sbt
+      - start-service:
+          port: 8081
+      - run:
+          name: Test Scala sttp client
+          command: |
+            cd ./test-clients/scala-sttp
+            export SERVICE_URL=http://localhost:8081
+            mkdir -p ./test-results
+            sbt -Djunitxml=./test-clients/test-results test < /dev/null
+      - store_test_results:
+          path: ./test-clients/scala-sttp/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-clients/scala-sttp/build.sbt" }}
+          paths:
+            - ~/.sbt
+            - ~/.ivy2
+
+  client-ts-axios-superstruct:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - start-service:
+          port: 8081
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+          scope: specgen.io
+      - run:
+          name: Setup npm
+          command: |
+            cd ./test-clients/ts-axios-superstruct
+            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-clients/ts-axios-superstruct/package.json" }}
+      - run:
+          name: Test axios client
+          command: |
+            cd ./test-clients/ts-axios-superstruct
+            npm install
+            npm run specgen
+            export SERVICE_URL=http://localhost:8081
+            mkdir -p ./test-results
+            export JEST_JUNIT_OUTPUT_DIR=./test-results
+            npm run test
+      - save_cache:
+          key: cache-{{ checksum "./test-clients/ts-axios-superstruct/package.json" }}
+          paths:
+            - ~/specgen-tests/ts-axios-superstruct/node_modules
+      - store_test_results:
+          path: ./test-clients/ts-axios-superstruct/test-results
+
+  client-ts-node-fetch-superstruct:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - start-service:
+          port: 8081
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+          scope: specgen.io
+      - run:
+          name: Setup npm
+          command: |
+            cd ./test-clients/ts-node-fetch-superstruct
+            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-clients/ts-node-fetch-superstruct/package.json" }}
+      - run:
+          name: Test fetch client
+          command: |
+            cd ./test-clients/ts-node-fetch-superstruct
+            npm install
+            npm run specgen
+            export SERVICE_URL=http://localhost:8081
+            mkdir -p ./test-results
+            export JEST_JUNIT_OUTPUT_DIR=./test-results
+            npm run test
+      - save_cache:
+          key: cache-{{ checksum "./test-clients/ts-node-fetch-superstruct/package.json" }}
+          paths:
+            - ~/specgen-tests/ts-node-fetch-superstruct/node_modules
+      - store_test_results:
+          path: ./test-clients/ts-node-fetch-superstruct/test-results
+
+  client-ts-browser-fetch-superstruct:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - start-service:
+          port: 8081
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+          scope: specgen.io
+      - run:
+          name: Setup npm
+          command: |
+            cd ./test-clients/ts-browser-fetch-superstruct
+            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-clients/ts-browser-fetch-superstruct/package.json" }}
+      - run:
+          name: Build code
+          command: |
+            cd ./test-clients/ts-browser-fetch-superstruct
+            npm install
+            npm run specgen
+            npm run build
+      - run:
+          name: Run browser
+          command: |
+            cd ./test-clients/ts-browser-fetch-superstruct
+            npm run start
+          background: true
+      - wait-url:
+          url: http://localhost:8082/
+      - run:
+          name: Test fetch client
+          command: |
+            cd ./test-clients/ts-browser-fetch-superstruct
+            export SERVICE_URL=http://localhost:8081
+            npm run test
+      - save_cache:
+          key: cache-{{ checksum "./test-clients/ts-browser-fetch-superstruct/package.json" }}
+          paths:
+            - ~/specgen-tests/ts-browser-fetch-superstruct/node_modules
+
+  client-ts-axios-iots:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - start-service:
+          port: 8081
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+          scope: specgen.io
+      - run:
+          name: Setup npm
+          command: |
+            cd ./test-clients/ts-axios-iots
+            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./ts-axios-iots/package.json" }}
+      - run:
+          name: Test axios client
+          command: |
+            cd ./test-clients/ts-axios-iots
+            npm install
+            npm run specgen
+            export SERVICE_URL=http://localhost:8081
+            mkdir -p ./test-results
+            export JEST_JUNIT_OUTPUT_DIR=./test-results
+            npm run test
+      - save_cache:
+          key: cache-{{ checksum "./ts-axios-iots/package.json" }}
+          paths:
+            - ~/specgen-tests/ts-axios-iots/node_modules
+      - store_test_results:
+          path: ./test-clients/ts-axios-iots/test-results
+
+  service-tests:
+    docker:
+      - image: cimg/go:1.18.3
+    working_directory: ~/specgen-tests
+    steps:
+      - checkout
+      - run:
+          name: Build tests
+          command: |
+            cd test-services/tests
+            go test -c -o service-tests
+      - persist_to_workspace:
+          root: .
+          paths:
+            - test-services/tests
+
+  service-scala:
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-services/scala-play/build.sbt" }}
+      - run:
+          name: Create temp folder for tests results
+          command: mkdir -p /tmp/test-results
+      - artifactory/setup-sbt:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: sbt
+      - run:
+          name: Build service
+          command: |
+            cd ./test-services/scala-play
+            sbt compile < /dev/null
+      - run:
+          name: Run service
+          command: |
+            cd ./test-services/scala-play
+            sbt -Dhttp.port=8081 run < /dev/null
+          background: true
+      - save_cache:
+          key: cache-{{ checksum "./test-services/scala-play/build.sbt" }}
+          paths:
+            - ~/.sbt
+            - ~/.ivy2
+      - wait-url:
+          url: http://localhost:8081/docs/index.html?url=swagger.yaml
+      - go-tests:
+          command: ./test-services/tests/service-tests -test.v
+
+  service-java:
+    parameters:
+      values-file:
+        type: string
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Create temp folder for tests results
+          command: mkdir -p /tmp/test-results
+      - get-specgen
+      - run:
+          name: Copy spec.yaml
+          command: |
+            cd ./test-services
+            cp ./spec.yaml ./java/template/spec.yaml
+      - run:
+          name: Generate service
+          command: |
+            cd ./test-services/java
+            ../../specgen new service-java --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --root file:///./template --out out
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - restore_cache:
+          key: java-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./test-services/java/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - yaml-execute:
+          path: ./test-services/java/out
+          yaml-file: .rendr.yaml
+          yaml-path: .run
+          background: true
+      - save_cache:
+          key: java-<<parameters.values-file>>
+          paths: [ ~/.m2 ]
+      - wait-url:
+          url: http://localhost:8081/swagger-ui/
+      - go-tests:
+          command: ./test-services/tests/service-tests -test.v
+
+  service-kotlin:
+    parameters:
+      values-file:
+        type: string
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Create temp folder for tests results
+          command: mkdir -p /tmp/test-results
+      - get-specgen
+      - run:
+          name: Copy spec.yaml
+          command: |
+            cd test-services
+            cp ./spec.yaml ./kotlin/template/spec.yaml
+      - run:
+          name: Generate service
+          command: |
+            cd ./test-services/kotlin
+            ../../specgen new service-kotlin --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --root file:///./template --out out
+      - artifactory/setup-gradle-kotlin:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+          project-path: ./test-services/kotlin/out
+      - restore_cache:
+          key: kotlin-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./test-services/kotlin/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - yaml-execute:
+          path: ./test-services/kotlin/out
+          yaml-file: .rendr.yaml
+          yaml-path: .run
+          background: true
+      - save_cache:
+          key: kotlin-<<parameters.values-file>>
+          paths: [ ~/.gradle ]
+      - wait-url:
+          url: http://localhost:8081/swagger-ui/
+      - go-tests:
+          command: ./test-services/tests/service-tests -test.v
+
+  service-go:
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/go:1.18.3
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Build service
+          command: |
+            cd ./test-services/go
+            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
+            go generate
+            go build
+      - run:
+          name: Run service
+          command: |
+            cd ./test-services/go
+            go run service.go --port 8081
+          background: true
+      - wait-url:
+          url: http://localhost:8081/docs/
+      - go-tests:
+          command: ./test-services/tests/service-tests -test.v
+
+  service-typescript:
+    parameters:
+      values-file:
+        type: string
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Create temp folder for tests results
+          command: mkdir -p /tmp/test-results
+      - get-specgen
+      - run:
+          name: Copy spec.yaml
+          command: |
+            cd test-services
+            cp ./spec.yaml ./typescript/template/spec.yaml
+      - run:
+          name: Generate service
+          command: |
+            cd ./test-services/typescript
+            ../../specgen new service-ts --noinput --values <<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --root file:///./template --out out
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+          scope: specgen.io
+      - restore_cache:
+          key: typescript-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./test-services/typescript/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - yaml-execute:
+          path: ./test-services/typescript/out
+          yaml-file: .rendr.yaml
+          yaml-path: .run
+          background: true
+      - save_cache:
+          key: typescript-<<parameters.values-file>>
+          paths: [ ~/specgen-tests/test-services/typescript/out/node_modules ]
+      - wait-url:
+          url: http://localhost:8081/docs/
+      - go-tests:
+          command: ./test-services/tests/service-tests -test.v
 
 commands:
   attach_workspace_folder:
@@ -660,6 +1566,110 @@ commands:
             curl -u$JFROG_USER:$JFROG_PASS https://<< parameters.jfrog-server-url >>/artifactory/api/gems/<< parameters.repo-name >>/api/v1/api_key.yaml > ~/.gem/credentials
             chmod 600 ~/.gem/credentials
 
+
+  start-service:
+    parameters:
+      port:
+        type: integer
+    steps:
+      - run:
+          name: Start test-service
+          command: ./test-clients/test-service/test-service --port << parameters.port >>
+          background: true
+      - wait-url:
+          url: http://localhost:<< parameters.port >>/
+
+  wait-url:
+    parameters:
+      url:
+        type: string
+      sleep:
+        type: integer
+        default: 5
+      attempts:
+        type: integer
+        default: 12
+    steps:
+      - run:
+          name: Wait until url is available
+          command: |
+            attempt_counter=0
+            max_attempts=<< parameters.attempts >>
+
+            until $(curl --output /dev/null --silent --head --fail << parameters.url >>); do
+              if [ ${attempt_counter} -eq ${max_attempts} ];then
+                echo "Max attempts reached"
+                exit 1
+              fi
+
+              printf '.'
+              attempt_counter=$(($attempt_counter+1))
+              sleep << parameters.sleep >>
+            done
+
+
+
+  go-tests:
+    parameters:
+      command:
+        type: string
+        default: go test
+    steps:
+      - run:
+          name: Install go-junit-report
+          command: |
+            curl -L https://github.com/specgen-io/go-junit-report/releases/download/latest/go-junit-report_linux_amd64.zip > go-junit-report.zip
+            unzip -o go-junit-report.zip
+      - run:
+          name: Run tests
+          command: |
+            mkdir -p ./test-results
+            <<parameters.command>> 2>&1 | ./go-junit-report > ./test-results/go-test-report.xml
+      - store_test_results:
+          path: ./test-results
+  get-specgen:
+    steps:
+      - run:
+          name: Get specgen
+          command: |
+            curl -L -H "X-JFrog-Art-Api:${JFROG_PASS}" -O "https://specgen.jfrog.io/artifactory/binaries/specgen/v<<pipeline.parameters.specgen-version>>/specgen_linux_amd64.zip"
+            unzip -o specgen_linux_amd64.zip
+            ./specgen help
+  yaml-execute:
+    parameters:
+      path:
+        type: string
+      yaml-file:
+        type: string
+      yaml-path:
+        type: string
+      background:
+        type: boolean
+        default: false
+    steps:
+      - install-yq
+      - run:
+          name: Run commands from YAML file
+          command: |
+            cd <<parameters.path>>
+            export COMMANDS=$(yq eval <<parameters.yaml-path>> <<parameters.yaml-file>>)
+            echo "Commands:"
+            echo "$COMMANDS"
+            echo "$COMMANDS" | while read THE_COMMAND ; do
+              echo "Executing: $THE_COMMAND"
+              $THE_COMMAND
+            done
+          background: <<parameters.background>>
+  install-yq:
+    steps:
+      - run:
+          name: Install yq
+          command: |
+            sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+            sudo chmod a+x /usr/local/bin/yq
+            yq --version
+
+
 workflows:
   build-release:
     jobs:
@@ -716,34 +1726,166 @@ workflows:
             - gradle-kotlin
             - gem
             - npm
-      - circleci/start-pipeline:
-          name: test-models
-          repository: specgen-io/test-models
-          branch: main
-          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>", "specgen-version-major": "<<pipeline.parameters.specgen-version-major>>"}'
+
+      - models-go:
           context: specgen
           requires:
             - build-complete
-      - circleci/start-pipeline:
-          name: test-clients
-          repository: specgen-io/test-clients
-          branch: main
-          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>", "specgen-version-major": "<<pipeline.parameters.specgen-version-major>>"}'
+      - models-ruby:
           context: specgen
           requires:
             - build-complete
-      - circleci/start-pipeline:
-          name: test-services
-          repository: specgen-io/test-services
-          branch: main
-          pipeline-parameters: '{"specgen-version": "<<pipeline.parameters.specgen-version>>", "specgen-version-major": "<<pipeline.parameters.specgen-version-major>>"}'
+      - models-ts-superstruct:
           context: specgen
           requires:
             - build-complete
+      - models-ts-iots:
+          context: specgen
+          requires:
+            - build-complete
+      - models-scala-circe:
+          context: specgen
+          requires:
+            - build-complete
+      - models-java-jackson:
+          context: specgen
+          requires:
+            - build-complete
+      - models-java-moshi:
+          context: specgen
+          requires:
+            - build-complete
+      - models-kotlin-jackson:
+          context: specgen
+          requires:
+            - build-complete
+      - models-kotlin-moshi:
+          context: specgen
+          requires:
+            - build-complete
+
+
+      - client-test-service:
+          context: specgen
+          requires:
+            - build-complete
+      - client-go:
+          context: specgen
+          requires:
+            - client-test-service
+      - client-java-okhttp-jackson:
+          context: specgen
+          requires:
+            - client-test-service
+      - client-java-okhttp-moshi:
+          context: specgen
+          requires:
+            - client-test-service
+      - client-kotlin-okhttp-jackson:
+          context: specgen
+          requires:
+            - client-test-service
+      - client-kotlin-okhttp-moshi:
+          context: specgen
+          requires:
+            - client-test-service
+      - client-kotlin-micronaut-jackson:
+          context: specgen
+          requires:
+            - client-test-service
+      - client-ruby:
+          context: specgen
+          requires:
+            - client-test-service
+      - client-scala-sttp:
+          context: specgen
+          requires:
+            - client-test-service
+      - client-ts-axios-superstruct:
+          context: specgen
+          requires:
+            - client-test-service
+      - client-ts-node-fetch-superstruct:
+          context: specgen
+          requires:
+            - client-test-service
+      - client-ts-browser-fetch-superstruct:
+          context: specgen
+          requires:
+            - client-test-service
+      - client-ts-axios-iots:
+          context: specgen
+          requires:
+            - client-test-service
+
+
+      - service-tests:
+          requires:
+            - build-complete
+      - service-scala:
+          context: specgen
+          requires:
+            - service-tests
+      - service-java:
+          matrix:
+            parameters:
+              values-file: ["micronaut-jackson", "micronaut-moshi", "spring-jackson", "spring-moshi"]
+          context: specgen
+          requires:
+            - service-tests
+      - service-kotlin:
+          matrix:
+            parameters:
+              values-file: ["micronaut-jackson", "micronaut-moshi", "spring-jackson", "spring-moshi"]
+          context: specgen
+          requires:
+            - service-tests
+      - service-go:
+          context: specgen
+          requires:
+            - service-tests
+      - service-typescript:
+          matrix:
+            parameters:
+              values-file: ["express-superstruct", "express-iots", "koa-superstruct", "koa-iots"]
+          context: specgen
+          requires:
+            - service-tests
+
+
+      - testing-complete:
+          requires:
+            - models-go
+            - models-ruby
+            - models-ts-superstruct
+            - models-ts-iots
+            - models-scala-circe
+            - models-java-jackson
+            - models-java-moshi
+            - models-kotlin-jackson
+            - models-kotlin-moshi
+            - client-go
+            - client-java-okhttp-jackson
+            - client-java-okhttp-moshi
+            - client-kotlin-okhttp-jackson
+            - client-kotlin-okhttp-moshi
+            - client-kotlin-micronaut-jackson
+            - client-ruby
+            - client-scala-sttp
+            - client-ts-axios-superstruct
+            - client-ts-node-fetch-superstruct
+            - client-ts-browser-fetch-superstruct
+            - client-ts-axios-iots
+            - service-scala
+            - service-java
+            - service-kotlin
+            - service-go
+            - service-typescript
+
       - approve-release:
           type: approval
           requires:
-            - build-complete
+            - testing-complete
           filters:
             branches:
               only:

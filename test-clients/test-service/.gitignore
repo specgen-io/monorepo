@@ -1,0 +1,7 @@
+.idea/
+vendor/
+dist/
+zips/
+test-service
+spec/
+service

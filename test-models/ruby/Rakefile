@@ -1,0 +1,12 @@
+require 'specgen'
+
+task default: %w[test]
+
+task :specgen do
+  specgen_models_ruby(spec_file: "./../spec.yaml", generate_path: "./lib")
+end
+
+task :test => :specgen do
+  FileUtils.mkdir_p "./test-results"
+  ruby "-Ilib:test test/*_test.rb --runner=junitxml --junitxml-output-file=./test-results/junit.xml"
+end
