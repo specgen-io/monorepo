@@ -19,7 +19,7 @@ func New(thePackage packages.Package, className string) *Writer {
 	config := JavaConfig()
 	filename := thePackage.GetPath(fmt.Sprintf("%s.java", className))
 	config.Substitutions["[[.ClassName]]"] = className
-	w := generator.NewWriter(filename, config)
+	w := generator.NewWriter(config)
 	w.Line(`package %s;`, thePackage.PackageName)
 	w.EmptyLine()
 	return &Writer{w, filename}

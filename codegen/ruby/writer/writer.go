@@ -12,7 +12,7 @@ type Writer struct {
 }
 
 func New(filename string) *Writer {
-	return &Writer{generator.NewWriter(filename, RubyConfig), filename}
+	return &Writer{generator.NewWriter(RubyConfig), filename}
 }
 
 func (w *Writer) Indented() *Writer {

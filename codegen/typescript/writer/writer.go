@@ -19,7 +19,7 @@ type Writer struct {
 
 func New(module module.Module) *Writer {
 	return &Writer{
-		generator.NewWriter(module.GetPath(), TsConfig()),
+		generator.NewWriter(TsConfig()),
 		module.GetPath(),
 		module,
 		NewImports(module),

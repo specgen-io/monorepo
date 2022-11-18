@@ -19,7 +19,7 @@ func New(thepackage packages.Package, className string) *Writer {
 	config := ScalaConfig()
 	filename := thepackage.GetPath(fmt.Sprintf("%s.scala", className))
 	config.Substitutions["[[.ClassName]]"] = className
-	w := generator.NewWriter(filename, config)
+	w := generator.NewWriter(config)
 	w.Line(`package %s`, thepackage.PackageName)
 	w.EmptyLine()
 	return &Writer{w, filename}
