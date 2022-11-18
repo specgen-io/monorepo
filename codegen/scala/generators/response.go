@@ -1,7 +1,7 @@
 package generators
 
 import (
-	"generator"
+	"scala/writer"
 	"spec"
 )
 
@@ -18,7 +18,7 @@ func responseTypeName(operation *spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Response"
 }
 
-func generateResponse(w generator.Writer, operation *spec.NamedOperation) {
+func generateResponse(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.Responses) > 1 {
 		w.Line(`sealed trait %s`, responseTypeName(operation))
 		w.Line(`object %s {`, responseTypeName(operation))

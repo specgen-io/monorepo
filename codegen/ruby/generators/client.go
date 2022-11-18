@@ -59,7 +59,7 @@ func generateClientApisClasses(specification *spec.Spec, generatePath string) *g
 	return w.ToCodeFile()
 }
 
-func generateVersionClientModule(w generator.Writer, version *spec.Version, moduleName string) {
+func generateVersionClientModule(w *writer.Writer, version *spec.Version, moduleName string) {
 	w.Line("module %s", versionedModule(moduleName, version.Name))
 	for index, api := range version.Http.Apis {
 		if index != 0 {
@@ -92,7 +92,7 @@ func operationResult(operation *spec.NamedOperation, response *spec.Response) st
 	}
 }
 
-func generateClientOperation(w generator.Writer, moduleName string, operation *spec.NamedOperation) {
+func generateClientOperation(w *writer.Writer, moduleName string, operation *spec.NamedOperation) {
 	args := []string{}
 	args = append(args, addParams(operation.HeaderParams)...)
 	if operation.Body != nil {
@@ -156,7 +156,7 @@ func generateClientOperation(w generator.Writer, moduleName string, operation *s
 	w.Line("end")
 }
 
-func generateClientApiClass(w generator.Writer, moduleName string, api *spec.Api) {
+func generateClientApiClass(w *writer.Writer, moduleName string, api *spec.Api) {
 	w.Line("class %s < %s::BaseClient", clientClassName(api.Name), moduleName)
 	for index, operation := range api.Operations {
 		if index != 0 {
@@ -179,7 +179,7 @@ func addParams(params []spec.NamedParam) []string {
 	return args
 }
 
-func addParamsWriting(w generator.Writer, moduleName string, params []spec.NamedParam, paramsName string) {
+func addParamsWriting(w *writer.Writer, moduleName string, params []spec.NamedParam, paramsName string) {
 	if params != nil && len(params) > 0 {
 		w.Line("%s = %s::StringParams.new", paramsName, moduleName)
 		for _, p := range params {

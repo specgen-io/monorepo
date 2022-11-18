@@ -39,7 +39,7 @@ func generateModels(specification *spec.Spec, moduleName string, generatePath st
 	return w.ToCodeFile()
 }
 
-func generateVersionModelsModule(w generator.Writer, version *spec.Version, moduleName string) {
+func generateVersionModelsModule(w *writer.Writer, version *spec.Version, moduleName string) {
 	w.EmptyLine()
 	w.Line(`module %s`, versionedModule(moduleName, version.Name))
 	for index, model := range version.ResolvedModels {
@@ -57,7 +57,7 @@ func generateVersionModelsModule(w generator.Writer, version *spec.Version, modu
 	w.Line(`end`)
 }
 
-func generateObjectModel(w generator.Writer, model *spec.NamedModel) {
+func generateObjectModel(w *writer.Writer, model *spec.NamedModel) {
 	w.Line(`class %s`, model.Name.PascalCase())
 	w.Line(`  include DataClass`)
 	for _, field := range model.Object.Fields {
@@ -67,7 +67,7 @@ func generateObjectModel(w generator.Writer, model *spec.NamedModel) {
 	w.Line(`end`)
 }
 
-func generateEnumModel(w generator.Writer, model *spec.NamedModel) {
+func generateEnumModel(w *writer.Writer, model *spec.NamedModel) {
 	w.Line(`class %s`, model.Name.PascalCase())
 	w.Line(`  include Enum`)
 	for _, enumItem := range model.Enum.Items {
@@ -76,7 +76,7 @@ func generateEnumModel(w generator.Writer, model *spec.NamedModel) {
 	w.Line(`end`)
 }
 
-func generateOneOfModel(w generator.Writer, model *spec.NamedModel) {
+func generateOneOfModel(w *writer.Writer, model *spec.NamedModel) {
 	w.Line(`class %s`, model.Name.PascalCase())
 	w.Line(`  include TaggedUnion`)
 	if model.OneOf.Discriminator != nil {

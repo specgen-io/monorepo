@@ -3,7 +3,6 @@ package models
 import (
 	"fmt"
 	"generator"
-	"java/imports"
 	"java/packages"
 	"java/types"
 	"java/writer"
@@ -54,10 +53,8 @@ func jacksonJsonPropertyAnnotation(field *spec.NamedDefinition) string {
 
 func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
 	w := writer.New(thePackage, model.Name.PascalCase())
-	imports := imports.New()
-	imports.Add(g.modelsDefinitionsImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(g.modelsDefinitionsImports()...)
+	w.Imports.Add(g.Types.Imports()...)
 	w.EmptyLine()
 	w.Line(`public class [[.ClassName]] {`)
 	for _, field := range model.Object.Fields {
@@ -107,10 +104,8 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 
 func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
 	w := writer.New(thePackage, model.Name.PascalCase())
-	imports := imports.New()
-	imports.Add(g.modelsDefinitionsImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(g.modelsDefinitionsImports()...)
+	w.Imports.Add(g.Types.Imports()...)
 	w.EmptyLine()
 	w.Line(`public enum [[.ClassName]] {`)
 	for _, enumItem := range model.Enum.Items {
@@ -122,10 +117,8 @@ func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages
 
 func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
 	w := writer.New(thePackage, model.Name.PascalCase())
-	imports := imports.New()
-	imports.Add(g.modelsDefinitionsImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(g.modelsDefinitionsImports()...)
+	w.Imports.Add(g.Types.Imports()...)
 	w.EmptyLine()
 	if model.OneOf.Discriminator != nil {
 		w.Line(`@JsonTypeInfo(`)
@@ -155,7 +148,7 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 	return w.ToCodeFile()
 }
 
-func (g *JacksonGenerator) modelOneOfImplementation(w generator.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
+func (g *JacksonGenerator) modelOneOfImplementation(w *writer.Writer, item *spec.NamedDefinition, model *spec.NamedModel) {
 	w.Line(`class %s implements %s {`, oneOfItemClassName(item), model.Name.PascalCase())
 	w.Line(`  @JsonUnwrapped`)
 	w.Line(`  public %s data;`, g.Types.Java(&item.Type.Definition))

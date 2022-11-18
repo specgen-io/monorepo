@@ -110,7 +110,7 @@ func generateClientOperationSignature(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`def %s(%s): Future[%s]`, operation.Name.CamelCase(), JoinParams(methodParams), responseType(operation))
 }
 
-func generateClientApiTrait(w generator.Writer, api *spec.Api) {
+func generateClientApiTrait(w *writer.Writer, api *spec.Api) {
 	apiTraitName := clientTraitName(api.Name)
 	w.Line(`trait %s {`, apiTraitName)
 	for _, operation := range api.Operations {
@@ -127,7 +127,7 @@ func clientClassName(apiName spec.Name) string {
 	return apiName.PascalCase() + "Client"
 }
 
-func addParamsWriting(w generator.Writer, params []spec.NamedParam, paramsName string) {
+func addParamsWriting(w *writer.Writer, params []spec.NamedParam, paramsName string) {
 	if params != nil && len(params) > 0 {
 		w.Line(`val %s = new StringParamsWriter()`, paramsName)
 		for _, p := range params {
@@ -136,7 +136,7 @@ func addParamsWriting(w generator.Writer, params []spec.NamedParam, paramsName s
 	}
 }
 
-func generateClientOperationImplementation(w generator.Writer, operation *spec.NamedOperation) {
+func generateClientOperationImplementation(w *writer.Writer, operation *spec.NamedOperation) {
 	httpMethod := strings.ToLower(operation.Endpoint.Method)
 	url := operation.FullUrl()
 	for _, param := range operation.Endpoint.UrlParams {
@@ -199,7 +199,7 @@ func generateClientOperationImplementation(w generator.Writer, operation *spec.N
 	w.Line(`}`)
 }
 
-func generateClientResponses(w generator.Writer, operation *spec.NamedOperation) {
+func generateClientResponses(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]
 		if response.BodyIs(spec.BodyEmpty) {
@@ -226,7 +226,7 @@ func generateClientResponses(w generator.Writer, operation *spec.NamedOperation)
 	}
 }
 
-func generateClientApiClass(w generator.Writer, api *spec.Api) {
+func generateClientApiClass(w *writer.Writer, api *spec.Api) {
 	apiClassName := clientClassName(api.Name)
 	apiTraitName := clientTraitName(api.Name)
 

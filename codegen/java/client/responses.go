@@ -55,7 +55,7 @@ func (g *Generator) responseInterface(types *types.Types, operation *spec.NamedO
 	return w.ToCodeFile()
 }
 
-func responseImpl(w generator.Writer, types *types.Types, response *spec.OperationResponse) {
+func responseImpl(w *writer.Writer, types *types.Types, response *spec.OperationResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
 	w.Line(`class %s implements %s {`, serviceResponseImplementationName, responseInterfaceName(response.Operation))
 	if !response.Type.Definition.IsEmpty() {

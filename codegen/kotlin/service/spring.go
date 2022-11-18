@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"generator"
 	"github.com/pinzolo/casee"
-	"kotlin/imports"
 	"kotlin/models"
 	"kotlin/types"
 	"kotlin/writer"
@@ -48,14 +47,12 @@ func (g *SpringGenerator) ServiceImports() []string {
 
 func (g *SpringGenerator) ExceptionController(responses *spec.Responses) *generator.CodeFile {
 	w := writer.New(g.Packages.RootControllers, `ExceptionController`)
-	imports := imports.New()
-	imports.Add(g.ServiceImports()...)
-	imports.Add(`javax.servlet.http.HttpServletRequest`)
-	imports.Add(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.Errors.PackageStar)
-	imports.Write(w)
+	w.Imports.Add(g.ServiceImports()...)
+	w.Imports.Add(`javax.servlet.http.HttpServletRequest`)
+	w.Imports.Add(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
+	w.Imports.PackageStar(g.Packages.Json)
+	w.Imports.PackageStar(g.Packages.ErrorsModels)
+	w.Imports.PackageStar(g.Packages.Errors)
 	w.EmptyLine()
 	w.Line(`@ControllerAdvice`)
 	w.Line(`class [[.ClassName]](@Autowired private val json: Json) {`)
@@ -66,7 +63,7 @@ func (g *SpringGenerator) ExceptionController(responses *spec.Responses) *genera
 	return w.ToCodeFile()
 }
 
-func (g *SpringGenerator) errorHandler(w generator.Writer, errors spec.Responses) {
+func (g *SpringGenerator) errorHandler(w *writer.Writer, errors spec.Responses) {
 	notFoundError := errors.GetByStatusName(spec.HttpStatusNotFound)
 	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)
 	internalServerError := errors.GetByStatusName(spec.HttpStatusInternalServerError)
@@ -87,18 +84,16 @@ func (g *SpringGenerator) errorHandler(w generator.Writer, errors spec.Responses
 
 func (g *SpringGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Controllers(api.InHttp.InVersion), controllerName(api))
-	imports := imports.New()
-	imports.Add(g.ServiceImports()...)
-	imports.Add(`javax.servlet.http.HttpServletRequest`)
-	imports.Add(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
-	imports.Add(g.Packages.ContentType.PackageStar)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.ServicesApi(api).PackageStar)
-	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(g.ServiceImports()...)
+	w.Imports.Add(`javax.servlet.http.HttpServletRequest`)
+	w.Imports.Add(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
+	w.Imports.PackageStar(g.Packages.ContentType)
+	w.Imports.PackageStar(g.Packages.Json)
+	w.Imports.PackageStar(g.Packages.Models(api.InHttp.InVersion))
+	w.Imports.PackageStar(g.Packages.ErrorsModels)
+	w.Imports.PackageStar(g.Packages.ServicesApi(api))
+	w.Imports.Add(g.Models.ModelsUsageImports()...)
+	w.Imports.Add(g.Types.Imports()...)
 	w.EmptyLine()
 	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.InHttp.InVersion))
 	w.Line(`class [[.ClassName]](`)
@@ -115,7 +110,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *SpringGenerator) controllerMethod(w generator.Writer, operation *spec.NamedOperation) {
+func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, casee.ToPascalCase(methodName), url)
@@ -129,7 +124,7 @@ func (g *SpringGenerator) controllerMethod(w generator.Writer, operation *spec.N
 	w.Line(`}`)
 }
 
-func (g *SpringGenerator) parseBody(w generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
+func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`checkContentType(request, MediaType.TEXT_PLAIN)`)
 	}
@@ -140,7 +135,7 @@ func (g *SpringGenerator) parseBody(w generator.Writer, operation *spec.NamedOpe
 	}
 }
 
-func (g *SpringGenerator) processResponses(w generator.Writer, operation *spec.NamedOperation, resultVarName string) {
+func (g *SpringGenerator) processResponses(w *writer.Writer, operation *spec.NamedOperation, resultVarName string) {
 	if len(operation.Responses) == 1 {
 		g.processResponse(w, &operation.Responses[0].Response, resultVarName)
 	}
@@ -154,7 +149,7 @@ func (g *SpringGenerator) processResponses(w generator.Writer, operation *spec.N
 	}
 }
 
-func (g *SpringGenerator) processResponse(w generator.Writer, response *spec.Response, bodyVar string) {
+func (g *SpringGenerator) processResponse(w *writer.Writer, response *spec.Response, bodyVar string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return ResponseEntity(HttpStatus.%s)`, response.Name.UpperCase())

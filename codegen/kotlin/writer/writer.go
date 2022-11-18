@@ -4,18 +4,40 @@ import (
 	"fmt"
 	"generator"
 	"kotlin/packages"
+	"strings"
 )
 
 func KotlinConfig() generator.Config {
 	return generator.Config{"\t", 2, map[string]string{}}
 }
 
-func New(thePackage packages.Package, className string) generator.Writer {
+type Writer struct {
+	generator.Writer
+	thePackage packages.Package
+	className  string
+	Imports    *imports
+}
+
+func New(thePackage packages.Package, className string) *Writer {
 	config := KotlinConfig()
-	filename := thePackage.GetPath(fmt.Sprintf("%s.kt", className))
 	config.Substitutions["[[.ClassName]]"] = className
-	w := generator.NewWriter(filename, config)
-	w.Line(`package %s`, thePackage.PackageName)
-	w.EmptyLine()
-	return w
+	return &Writer{generator.NewWriter(config), thePackage, className, NewImports()}
+}
+
+func (w *Writer) Indented() *Writer {
+	return &Writer{w.Writer.Indented(), w.thePackage, w.className, w.Imports}
+}
+
+func (w *Writer) IndentedWith(size int) *Writer {
+	return &Writer{w.Writer.IndentedWith(size), w.thePackage, w.className, w.Imports}
+}
+
+func (w *Writer) ToCodeFile() *generator.CodeFile {
+	lines := []string{
+		fmt.Sprintf(`package %s`, w.thePackage.PackageName),
+		``,
+	}
+	lines = append(lines, w.Imports.Lines()...)
+	code := strings.Join(lines, "\n") + w.String()
+	return &generator.CodeFile{w.thePackage.GetPath(fmt.Sprintf("%s.kt", w.className)), code}
 }

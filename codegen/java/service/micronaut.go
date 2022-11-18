@@ -7,7 +7,6 @@ import (
 	"generator"
 
 	"github.com/pinzolo/casee"
-	"java/imports"
 	"java/models"
 	"java/packages"
 	"java/types"
@@ -51,13 +50,11 @@ func (g *MicronautGenerator) ServiceImports() []string {
 
 func (g *MicronautGenerator) ExceptionController(responses *spec.Responses) *generator.CodeFile {
 	w := writer.New(g.Packages.RootControllers, `ExceptionController`)
-	imports := imports.New()
-	imports.Add(g.ServiceImports()...)
-	imports.Add(`io.micronaut.http.annotation.Error`)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.AddStatic(g.Packages.Errors.Subpackage(ErrorsHelpersClassName).PackageStar)
-	imports.Write(w)
+	w.Imports.Add(g.ServiceImports()...)
+	w.Imports.Add(`io.micronaut.http.annotation.Error`)
+	w.Imports.Star(g.Packages.Json)
+	w.Imports.Star(g.Packages.ErrorsModels)
+	w.Imports.StaticStar(g.Packages.Errors.Subpackage(ErrorsHelpersClassName))
 	w.EmptyLine()
 	w.Line(`@Controller`)
 	w.Line(`public class [[.ClassName]] {`)
@@ -71,7 +68,7 @@ func (g *MicronautGenerator) ExceptionController(responses *spec.Responses) *gen
 	return w.ToCodeFile()
 }
 
-func (g *MicronautGenerator) errorHandler(w generator.Writer, errors spec.Responses) {
+func (g *MicronautGenerator) errorHandler(w *writer.Writer, errors spec.Responses) {
 	notFoundError := errors.GetByStatusName(spec.HttpStatusNotFound)
 	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)
 	internalServerError := errors.GetByStatusName(spec.HttpStatusInternalServerError)
@@ -92,17 +89,15 @@ func (g *MicronautGenerator) errorHandler(w generator.Writer, errors spec.Respon
 
 func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Controllers(api.InHttp.InVersion), controllerName(api))
-	imports := imports.New()
-	imports.Add(g.ServiceImports()...)
-	imports.Add(`io.micronaut.core.annotation.Nullable`)
-	imports.Add(g.Packages.ContentType.PackageStar)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Add(g.Packages.ServicesApi(api).PackageStar)
-	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(g.ServiceImports()...)
+	w.Imports.Add(`io.micronaut.core.annotation.Nullable`)
+	w.Imports.Star(g.Packages.ContentType)
+	w.Imports.Star(g.Packages.Json)
+	w.Imports.Star(g.Packages.ErrorsModels)
+	w.Imports.Star(g.Packages.Models(api.InHttp.InVersion))
+	w.Imports.Star(g.Packages.ServicesApi(api))
+	w.Imports.Add(g.Models.ModelsUsageImports()...)
+	w.Imports.Add(g.Types.Imports()...)
 	w.EmptyLine()
 	w.Line(`@Controller`)
 	w.Line(`public class [[.ClassName]] {`)
@@ -121,7 +116,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 	return w.ToCodeFile()
 }
 
-func (g *MicronautGenerator) controllerMethod(w generator.Writer, operation *spec.NamedOperation) {
+func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`@Consumes(MediaType.TEXT_PLAIN)`)
 	}
@@ -141,7 +136,7 @@ func (g *MicronautGenerator) controllerMethod(w generator.Writer, operation *spe
 	w.Line(`}`)
 }
 
-func (g *MicronautGenerator) parseBody(w generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
+func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`ContentType.check(request, MediaType.TEXT_PLAIN);`)
 	}
@@ -151,7 +146,7 @@ func (g *MicronautGenerator) parseBody(w generator.Writer, operation *spec.Named
 	}
 }
 
-func (g *MicronautGenerator) serviceCall(w generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
+func (g *MicronautGenerator) serviceCall(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), strings.Join(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar), ", "))
 	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
 		w.Line(`%s;`, serviceCall)
@@ -163,7 +158,7 @@ func (g *MicronautGenerator) serviceCall(w generator.Writer, operation *spec.Nam
 	}
 }
 
-func (g *MicronautGenerator) processResponses(w generator.Writer, operation *spec.NamedOperation, resultVarName string) {
+func (g *MicronautGenerator) processResponses(w *writer.Writer, operation *spec.NamedOperation, resultVarName string) {
 	if len(operation.Responses) == 1 {
 		g.processResponse(w, &operation.Responses[0].Response, resultVarName)
 	}
@@ -178,7 +173,7 @@ func (g *MicronautGenerator) processResponses(w generator.Writer, operation *spe
 	}
 }
 
-func (g *MicronautGenerator) processResponse(w generator.Writer, response *spec.Response, bodyVar string) {
+func (g *MicronautGenerator) processResponse(w *writer.Writer, response *spec.Response, bodyVar string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s);`, response.Name.UpperCase())

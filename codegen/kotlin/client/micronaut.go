@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 	"generator"
-	"kotlin/imports"
 	"kotlin/models"
 	"kotlin/types"
 	"kotlin/writer"
@@ -35,21 +34,19 @@ func (g *MicronautGenerator) Clients(version *spec.Version) []generator.CodeFile
 
 func (g *MicronautGenerator) client(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Client(api), clientName(api))
-	imports := imports.New()
-	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Add(`io.micronaut.http.HttpHeaders.*`)
-	imports.Add(`io.micronaut.http.HttpRequest.*`)
-	imports.Add(`io.micronaut.http.client.HttpClient`)
-	imports.Add(`java.net.URL`)
-	imports.Add(`org.slf4j.*`)
-	imports.Add(g.Packages.Errors.PackageStar)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.Utils.PackageStar)
-	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`doRequest`).PackageName)
-	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`).PackageName)
-	imports.Write(w)
+	w.Imports.Add(g.Models.ModelsUsageImports()...)
+	w.Imports.Add(g.Types.Imports()...)
+	w.Imports.Add(`io.micronaut.http.HttpHeaders.*`)
+	w.Imports.Add(`io.micronaut.http.HttpRequest.*`)
+	w.Imports.Add(`io.micronaut.http.client.HttpClient`)
+	w.Imports.Add(`java.net.URL`)
+	w.Imports.Add(`org.slf4j.*`)
+	w.Imports.PackageStar(g.Packages.Errors)
+	w.Imports.PackageStar(g.Packages.Json)
+	w.Imports.PackageStar(g.Packages.Utils)
+	w.Imports.PackageStar(g.Packages.Models(api.InHttp.InVersion))
+	w.Imports.Package(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`doRequest`))
+	w.Imports.Package(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`))
 	w.EmptyLine()
 	w.Lines(`
 class [[.ClassName]](private val baseUrl: String) {
@@ -73,7 +70,7 @@ class [[.ClassName]](private val baseUrl: String) {
 	return w.ToCodeFile()
 }
 
-func (g *MicronautGenerator) generateClientMethod(w generator.Writer, operation *spec.NamedOperation) {
+func (g *MicronautGenerator) generateClientMethod(w *writer.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`fun %s {`, operationSignature(g.Types, operation))
@@ -288,15 +285,13 @@ object ClientResponse {
 
 func (g *MicronautGenerator) generateErrorsHandler(errorsResponses *spec.Responses) *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `ErrorsHandler`)
-	imports := imports.New()
-	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(`io.micronaut.http.*`)
-	imports.Add(`org.slf4j.*`)
-	imports.Add(g.Packages.Errors.PackageStar)
-	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`).PackageName)
-	imports.Write(w)
+	w.Imports.Add(g.Models.ModelsUsageImports()...)
+	w.Imports.Add(`io.micronaut.http.*`)
+	w.Imports.Add(`org.slf4j.*`)
+	w.Imports.PackageStar(g.Packages.Errors)
+	w.Imports.PackageStar(g.Packages.ErrorsModels)
+	w.Imports.PackageStar(g.Packages.Json)
+	w.Imports.Package(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`))
 	w.EmptyLine()
 	w.Line(`fun <T> handleErrors(response: HttpResponse<T>, logger: Logger, json: Json) {`)
 	for _, errorResponse := range *errorsResponses {

@@ -17,7 +17,6 @@ type Writer interface {
 	UnindentWith(size int)
 	Indented() Writer
 	IndentedWith(size int) Writer
-	ToCodeFile() *CodeFile
 	String() string
 }
 
@@ -36,26 +35,17 @@ func (c *content) Add(s string) {
 	c.lines = append(c.lines, s)
 }
 
-type TheWriter struct {
-	filename    string
+type writer struct {
 	config      Config
 	content     *content
 	indentation int
 }
 
-func NewWriter(filename string, config Config) Writer {
-	return &TheWriter{
-		filename,
+func NewWriter(config Config) Writer {
+	return &writer{
 		config,
 		&content{[]string{}, []string{}},
 		0,
-	}
-}
-
-func (w *TheWriter) ToCodeFile() *CodeFile {
-	return &CodeFile{
-		Path:    w.filename,
-		Content: w.String(),
 	}
 }
 
@@ -77,17 +67,17 @@ func wrapKeys(vars map[string]string, prefix, postfix string) map[string]string 
 	return result
 }
 
-func (w *TheWriter) write(s string) {
+func (w *writer) write(s string) {
 	w.checkAligned()
 	w.content.Add(s)
 }
 
-func (w *TheWriter) LineAligned(format string, args ...interface{}) {
+func (w *writer) LineAligned(format string, args ...interface{}) {
 	theline := fmt.Sprintf(format, args...)
 	w.content.linesAligned = append(w.content.linesAligned, theline)
 }
 
-func (w *TheWriter) checkAligned() {
+func (w *writer) checkAligned() {
 	if len(w.content.linesAligned) == 0 {
 		return
 	}
@@ -136,7 +126,7 @@ func trimPrefix(str string, prefix string) (string, int) {
 	return trimmed, count
 }
 
-func (w *TheWriter) line(theline string) {
+func (w *writer) line(theline string) {
 	indentation := 0
 	if w.config.LeadSpacesIndentationSize > 0 {
 		prefix := strings.Repeat(" ", w.config.LeadSpacesIndentationSize)
@@ -149,12 +139,12 @@ func (w *TheWriter) line(theline string) {
 	w.write(theline)
 }
 
-func (w *TheWriter) Line(format string, args ...interface{}) {
+func (w *writer) Line(format string, args ...interface{}) {
 	theline := fmt.Sprintf(format, args...)
 	w.line(theline)
 }
 
-func (w *TheWriter) Lines(content string) {
+func (w *writer) Lines(content string) {
 	code := strings.Trim(content, "\n")
 	lines := strings.Split(code, "\n")
 	for _, line := range lines {
@@ -162,51 +152,50 @@ func (w *TheWriter) Lines(content string) {
 	}
 }
 
-func (w *TheWriter) Template(data map[string]string, content string) {
+func (w *writer) Template(data map[string]string, content string) {
 	code := substitute(content, wrapKeys(data, "[[.", "]]"))
 	w.Lines(code)
 }
 
-func (w *TheWriter) EmptyLine() {
+func (w *writer) EmptyLine() {
 	w.write("\n")
 }
 
-func (w *TheWriter) setIndentation(value int) {
+func (w *writer) setIndentation(value int) {
 	w.checkAligned()
 	w.indentation = value
 }
 
-func (w *TheWriter) Indent() {
+func (w *writer) Indent() {
 	w.setIndentation(w.indentation + 1)
 }
 
-func (w *TheWriter) Unindent() {
+func (w *writer) Unindent() {
 	w.setIndentation(w.indentation - 1)
 }
 
-func (w *TheWriter) IndentWith(size int) {
+func (w *writer) IndentWith(size int) {
 	w.setIndentation(w.indentation + size)
 }
 
-func (w *TheWriter) UnindentWith(size int) {
+func (w *writer) UnindentWith(size int) {
 	w.setIndentation(w.indentation - size)
 }
 
-func (w *TheWriter) Indented() Writer {
+func (w *writer) Indented() Writer {
 	return w.IndentedWith(1)
 }
 
-func (w *TheWriter) IndentedWith(size int) Writer {
+func (w *writer) IndentedWith(size int) Writer {
 	w.checkAligned()
-	return &TheWriter{
-		w.filename,
+	return &writer{
 		w.config,
 		w.content,
 		w.indentation + size,
 	}
 }
 
-func (w *TheWriter) String() string {
+func (w *writer) String() string {
 	w.checkAligned()
 	return strings.Join(w.content.lines, ``)
 }

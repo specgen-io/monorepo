@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"generator"
-	"kotlin/imports"
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
@@ -26,10 +25,8 @@ func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFi
 
 func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.ServicesApi(api), serviceInterfaceName(api))
-	imports := imports.New()
-	imports.Add(g.Types.Imports()...)
-	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Write(w)
+	w.Imports.Add(g.Types.Imports()...)
+	w.Imports.PackageStar(g.Packages.Models(api.InHttp.InVersion))
 	w.EmptyLine()
 	w.Line(`interface [[.ClassName]] {`)
 	for _, operation := range api.Operations {

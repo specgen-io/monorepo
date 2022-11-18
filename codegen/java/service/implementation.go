@@ -2,7 +2,6 @@ package service
 
 import (
 	"generator"
-	"java/imports"
 	"java/writer"
 	"spec"
 )
@@ -18,12 +17,10 @@ func (g *Generator) ServicesImplementations(version *spec.Version) []generator.C
 func (g *Generator) serviceImplementation(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.ServicesImpl(api.InHttp.InVersion), serviceImplName(api))
 	annotationImport, annotation := g.ServiceImplAnnotation(api)
-	imports := imports.New()
-	imports.Add(annotationImport)
-	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Add(g.Packages.ServicesApi(api).PackageStar)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(annotationImport)
+	w.Imports.Star(g.Packages.Models(api.InHttp.InVersion))
+	w.Imports.Star(g.Packages.ServicesApi(api))
+	w.Imports.Add(g.Types.Imports()...)
 	w.EmptyLine()
 	w.Line(`@%s`, annotation)
 	w.Line(`public class [[.ClassName]] implements %s {`, serviceInterfaceName(api))

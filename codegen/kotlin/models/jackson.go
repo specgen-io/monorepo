@@ -3,7 +3,6 @@ package models
 import (
 	"fmt"
 	"generator"
-	"kotlin/imports"
 	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
@@ -31,10 +30,8 @@ func (g *JacksonGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.
 
 func (g *JacksonGenerator) models(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
 	w := writer.New(modelsPackage, `models`)
-	imports := imports.New()
-	imports.Add(g.modelsDefinitionsImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(g.modelsDefinitionsImports()...)
+	w.Imports.Add(g.Types.Imports()...)
 
 	for _, model := range models {
 		w.EmptyLine()
@@ -57,7 +54,7 @@ func jacksonPropertyAnnotation(field *spec.NamedDefinition) string {
 	return fmt.Sprintf(`@JsonProperty(value = "%s", required = %s)`, field.Name.Source, required)
 }
 
-func (g *JacksonGenerator) modelObject(w generator.Writer, model *spec.NamedModel) {
+func (g *JacksonGenerator) modelObject(w *writer.Writer, model *spec.NamedModel) {
 	className := model.Name.PascalCase()
 	w.Line(`data class %s(`, className)
 	for _, field := range model.Object.Fields {
@@ -67,7 +64,7 @@ func (g *JacksonGenerator) modelObject(w generator.Writer, model *spec.NamedMode
 	w.Line(`)`)
 }
 
-func (g *JacksonGenerator) modelEnum(w generator.Writer, model *spec.NamedModel) {
+func (g *JacksonGenerator) modelEnum(w *writer.Writer, model *spec.NamedModel) {
 	enumName := model.Name.PascalCase()
 	w.Line(`enum class %s {`, enumName)
 	for _, enumItem := range model.Enum.Items {
@@ -76,7 +73,7 @@ func (g *JacksonGenerator) modelEnum(w generator.Writer, model *spec.NamedModel)
 	w.Line(`}`)
 }
 
-func (g *JacksonGenerator) modelOneOf(w generator.Writer, model *spec.NamedModel) {
+func (g *JacksonGenerator) modelOneOf(w *writer.Writer, model *spec.NamedModel) {
 	interfaceName := model.Name.PascalCase()
 	if model.OneOf.Discriminator != nil {
 		w.Line(`@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "%s")`, *model.OneOf.Discriminator)
@@ -239,7 +236,7 @@ setupObjectMapper(objectMapper)
 }
 
 //TODO - customize mapper for different json libs
-func (g *JacksonGenerator) JsonMapperConfig(w generator.Writer) {
+func (g *JacksonGenerator) JsonMapperConfig(w *writer.Writer) {
 	w.Lines(`
 class ObjectMapperConfig {
 	@Bean
