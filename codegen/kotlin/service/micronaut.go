@@ -65,7 +65,7 @@ func (g *MicronautGenerator) ExceptionController(responses *spec.Responses) *gen
 	return w.ToCodeFile()
 }
 
-func (g *MicronautGenerator) errorHandler(w generator.Writer, errors spec.Responses) {
+func (g *MicronautGenerator) errorHandler(w *writer.Writer, errors spec.Responses) {
 	notFoundError := errors.GetByStatusName(spec.HttpStatusNotFound)
 	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)
 	internalServerError := errors.GetByStatusName(spec.HttpStatusInternalServerError)
@@ -112,7 +112,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 	return w.ToCodeFile()
 }
 
-func (g *MicronautGenerator) controllerMethod(w generator.Writer, operation *spec.NamedOperation) {
+func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`@Consumes(MediaType.TEXT_PLAIN)`)
 	}
@@ -132,7 +132,7 @@ func (g *MicronautGenerator) controllerMethod(w generator.Writer, operation *spe
 	w.Line(`}`)
 }
 
-func (g *MicronautGenerator) parseBody(w generator.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
+func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`checkContentType(request, MediaType.TEXT_PLAIN)`)
 	}
@@ -143,7 +143,7 @@ func (g *MicronautGenerator) parseBody(w generator.Writer, operation *spec.Named
 	}
 }
 
-func (g *MicronautGenerator) processResponses(w generator.Writer, operation *spec.NamedOperation, resultVarName string) {
+func (g *MicronautGenerator) processResponses(w *writer.Writer, operation *spec.NamedOperation, resultVarName string) {
 	if len(operation.Responses) == 1 {
 		g.processResponse(w, &operation.Responses[0].Response, resultVarName)
 	}
@@ -157,7 +157,7 @@ func (g *MicronautGenerator) processResponses(w generator.Writer, operation *spe
 	}
 }
 
-func (g *MicronautGenerator) processResponse(w generator.Writer, response *spec.Response, bodyVar string) {
+func (g *MicronautGenerator) processResponse(w *writer.Writer, response *spec.Response, bodyVar string) {
 	if response.BodyIs(spec.BodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s)`, response.Name.UpperCase())

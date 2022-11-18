@@ -2,7 +2,7 @@ package client
 
 import (
 	"fmt"
-	"generator"
+	"kotlin/writer"
 	"spec"
 )
 
@@ -13,7 +13,7 @@ func addBuilderParam(param *spec.NamedParam) string {
 	return param.Name.CamelCase()
 }
 
-func generateThrowClientException(w generator.Writer, errorMessage string, wrapException string) {
+func generateThrowClientException(w *writer.Writer, errorMessage string, wrapException string) {
 	w.Line(`val errorMessage = %s`, errorMessage)
 	w.Line(`logger.error(errorMessage)`)
 	params := "errorMessage"

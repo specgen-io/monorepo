@@ -70,7 +70,7 @@ class [[.ClassName]](private val baseUrl: String) {
 	return w.ToCodeFile()
 }
 
-func (g *OkHttpGenerator) generateClientMethod(w generator.Writer, operation *spec.NamedOperation) {
+func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`fun %s {`, operationSignature(g.Types, operation))

@@ -56,7 +56,7 @@ func (g *MicronautDeclGenerator) client(api *spec.Api) *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *MicronautDeclGenerator) clientMethod(w generator.Writer, operation *spec.NamedOperation) {
+func (g *MicronautDeclGenerator) clientMethod(w *writer.Writer, operation *spec.NamedOperation) {
 	methodName := casee.ToPascalCase(operation.Endpoint.Method)
 	url := operation.FullUrl()
 
@@ -136,7 +136,7 @@ func (g *MicronautDeclGenerator) response(operation *spec.NamedOperation) *gener
 	return w.ToCodeFile()
 }
 
-func (g *MicronautDeclGenerator) implementations(w generator.Writer, response *spec.OperationResponse) {
+func (g *MicronautDeclGenerator) implementations(w *writer.Writer, response *spec.OperationResponse) {
 	responseImplementationName := response.Name.PascalCase()
 	if !response.Type.Definition.IsEmpty() {
 		w.Line(`class %s(val body: %s) : %s()`, responseImplementationName, g.Types.Kotlin(&response.Type.Definition), responseName(response.Operation))
@@ -145,7 +145,7 @@ func (g *MicronautDeclGenerator) implementations(w generator.Writer, response *s
 	}
 }
 
-func (g *MicronautDeclGenerator) createObjectMethod(w generator.Writer, operation *spec.NamedOperation) {
+func (g *MicronautDeclGenerator) createObjectMethod(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Lines(`
 companion object {
 	fun create(json: Json, response: HttpResponse<String>): EchoSuccessResponse {

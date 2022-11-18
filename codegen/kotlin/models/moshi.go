@@ -59,7 +59,7 @@ func (g *MoshiGenerator) models(models []*spec.NamedModel, modelsPackage package
 	return files
 }
 
-func (g *MoshiGenerator) modelObject(w generator.Writer, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelObject(w *writer.Writer, model *spec.NamedModel) {
 	className := model.Name.PascalCase()
 	w.Line(`data class %s(`, className)
 	for _, field := range model.Object.Fields {
@@ -69,7 +69,7 @@ func (g *MoshiGenerator) modelObject(w generator.Writer, model *spec.NamedModel)
 	w.Line(`)`)
 }
 
-func (g *MoshiGenerator) modelEnum(w generator.Writer, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelEnum(w *writer.Writer, model *spec.NamedModel) {
 	enumName := model.Name.PascalCase()
 	w.Line(`enum class %s {`, enumName)
 	for _, enumItem := range model.Enum.Items {
@@ -79,7 +79,7 @@ func (g *MoshiGenerator) modelEnum(w generator.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func (g *MoshiGenerator) modelOneOf(w generator.Writer, model *spec.NamedModel) {
+func (g *MoshiGenerator) modelOneOf(w *writer.Writer, model *spec.NamedModel) {
 	sealedClassName := model.Name.PascalCase()
 	w.Line(`sealed class %s {`, sealedClassName)
 	for _, item := range model.OneOf.Items {
