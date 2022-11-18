@@ -6,6 +6,23 @@ import (
 
 var RubyConfig = generator.Config{"  ", 2, nil}
 
-func New(filename string) generator.Writer {
-	return generator.NewWriter(filename, RubyConfig)
+type Writer struct {
+	generator.Writer
+	filename string
+}
+
+func New(filename string) *Writer {
+	return &Writer{generator.NewWriter(filename, RubyConfig), filename}
+}
+
+func (w *Writer) Indented() *Writer {
+	return &Writer{w.Writer.Indented(), w.filename}
+}
+
+func (w *Writer) IndentedWith(size int) *Writer {
+	return &Writer{w.Writer.IndentedWith(size), w.filename}
+}
+
+func (w *Writer) ToCodeFile() *generator.CodeFile {
+	return &generator.CodeFile{w.filename, w.String()}
 }
