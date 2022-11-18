@@ -3,7 +3,6 @@ package models
 import (
 	"fmt"
 	"generator"
-	"kotlin/imports"
 	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
@@ -32,10 +31,8 @@ func (g *MoshiGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.Co
 
 func (g *MoshiGenerator) models(models []*spec.NamedModel, modelsPackage packages.Package) []generator.CodeFile {
 	w := writer.New(modelsPackage, `models`)
-	imports := imports.New()
-	imports.Add(g.modelsDefinitionsImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(g.modelsDefinitionsImports()...)
+	w.Imports.Add(g.Types.Imports()...)
 
 	for _, model := range models {
 		w.EmptyLine()
@@ -229,11 +226,9 @@ func (g *MoshiGenerator) setupLibrary() []generator.CodeFile {
 
 func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	w := writer.New(g.Packages.Json, `CustomMoshiAdapters`)
-	imports := imports.New()
-	imports.Add(`com.squareup.moshi.Moshi`)
-	imports.Add(`com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory`)
-	imports.Add(g.Packages.JsonAdapters.PackageStar)
-	imports.Write(w)
+	w.Imports.Add(`com.squareup.moshi.Moshi`)
+	w.Imports.Add(`com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory`)
+	w.Imports.PackageStar(g.Packages.JsonAdapters)
 	w.EmptyLine()
 	w.Line(`fun setupMoshiAdapters(moshiBuilder: Moshi.Builder) {`)
 	w.Line(`  moshiBuilder`)
@@ -254,10 +249,8 @@ func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 
 func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
 	w := writer.New(modelsPackage, `ModelsMoshiAdapters`)
-	imports := imports.New()
-	imports.Add(`com.squareup.moshi.Moshi`)
-	imports.Add(g.Packages.JsonAdapters.PackageStar)
-	imports.Write(w)
+	w.Imports.Add(`com.squareup.moshi.Moshi`)
+	w.Imports.PackageStar(g.Packages.JsonAdapters)
 	w.EmptyLine()
 	w.Line(`fun setupModelsMoshiAdapters(moshiBuilder: Moshi.Builder) {`)
 	for _, model := range models {

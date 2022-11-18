@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 	"generator"
-	"kotlin/imports"
 	"kotlin/models"
 	"kotlin/types"
 	"kotlin/writer"
@@ -33,20 +32,18 @@ func (g *OkHttpGenerator) Clients(version *spec.Version) []generator.CodeFile {
 
 func (g *OkHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Client(api), clientName(api))
-	imports := imports.New()
-	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Add(`okhttp3.*`)
-	imports.Add(`okhttp3.MediaType.Companion.toMediaTypeOrNull`)
-	imports.Add(`okhttp3.RequestBody.Companion.toRequestBody`)
-	imports.Add(`org.slf4j.*`)
-	imports.Add(g.Packages.Errors.PackageStar)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.Utils.PackageStar)
-	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`doRequest`).PackageName)
-	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`).PackageName)
-	imports.Write(w)
+	w.Imports.Add(g.Models.ModelsUsageImports()...)
+	w.Imports.Add(g.Types.Imports()...)
+	w.Imports.Add(`okhttp3.*`)
+	w.Imports.Add(`okhttp3.MediaType.Companion.toMediaTypeOrNull`)
+	w.Imports.Add(`okhttp3.RequestBody.Companion.toRequestBody`)
+	w.Imports.Add(`org.slf4j.*`)
+	w.Imports.PackageStar(g.Packages.Errors)
+	w.Imports.PackageStar(g.Packages.Json)
+	w.Imports.PackageStar(g.Packages.Utils)
+	w.Imports.PackageStar(g.Packages.Models(api.InHttp.InVersion))
+	w.Imports.Package(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`doRequest`))
+	w.Imports.Package(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`))
 	w.EmptyLine()
 	w.Lines(`
 class [[.ClassName]](private val baseUrl: String) {
@@ -261,15 +258,13 @@ object ClientResponse {
 
 func (g *OkHttpGenerator) generateErrorsHandler(errorsResponses *spec.Responses) *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `ErrorsHandler`)
-	imports := imports.New()
-	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(`okhttp3.*`)
-	imports.Add(`org.slf4j.*`)
-	imports.Add(g.Packages.Errors.PackageStar)
-	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`).PackageName)
-	imports.Write(w)
+	w.Imports.Add(g.Models.ModelsUsageImports()...)
+	w.Imports.Add(`okhttp3.*`)
+	w.Imports.Add(`org.slf4j.*`)
+	w.Imports.PackageStar(g.Packages.Errors)
+	w.Imports.PackageStar(g.Packages.ErrorsModels)
+	w.Imports.PackageStar(g.Packages.Json)
+	w.Imports.Package(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`))
 	w.EmptyLine()
 	w.Line(`fun handleErrors(response: Response, logger: Logger, json: Json) {`)
 	for _, errorResponse := range *errorsResponses {

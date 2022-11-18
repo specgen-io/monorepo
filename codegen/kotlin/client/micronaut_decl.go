@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"generator"
 	"github.com/pinzolo/casee"
-	"kotlin/imports"
 	"kotlin/models"
 	"kotlin/types"
 	"kotlin/writer"
@@ -37,14 +36,12 @@ func (g *MicronautDeclGenerator) Clients(version *spec.Version) []generator.Code
 
 func (g *MicronautDeclGenerator) client(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Client(api), clientName(api))
-	imports := imports.New()
-	imports.Add(`io.micronaut.http.*`)
-	imports.Add(`io.micronaut.http.annotation.*`)
-	imports.Add(`io.micronaut.http.client.annotation.Client`)
-	imports.Add(g.Packages.Root.PackageStar)
-	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(`io.micronaut.http.*`)
+	w.Imports.Add(`io.micronaut.http.annotation.*`)
+	w.Imports.Add(`io.micronaut.http.client.annotation.Client`)
+	w.Imports.PackageStar(g.Packages.Root)
+	w.Imports.PackageStar(g.Packages.Models(api.InHttp.InVersion))
+	w.Imports.Add(g.Types.Imports()...)
 	w.EmptyLine()
 	w.Line(`@Client(ClientConfiguration.BASE_URL)`)
 	w.Line(`interface [[.ClassName]] {`)
@@ -114,14 +111,12 @@ func (g *MicronautDeclGenerator) responses(api *spec.Api) []generator.CodeFile {
 
 func (g *MicronautDeclGenerator) response(operation *spec.NamedOperation) *generator.CodeFile {
 	w := writer.New(g.Packages.Client(operation.InApi), responseName(operation))
-	imports := imports.New()
-	imports.Add(`com.fasterxml.jackson.core.type.TypeReference`)
-	imports.Add(`io.micronaut.http.HttpResponse`)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.Models(operation.InApi.InHttp.InVersion).PackageStar)
-	imports.Add(g.Packages.Utils.PackageStar)
-	imports.Add(g.Packages.Errors.PackageStar)
-	imports.Write(w)
+	w.Imports.Add(`com.fasterxml.jackson.core.type.TypeReference`)
+	w.Imports.Add(`io.micronaut.http.HttpResponse`)
+	w.Imports.PackageStar(g.Packages.Json)
+	w.Imports.PackageStar(g.Packages.Models(operation.InApi.InHttp.InVersion))
+	w.Imports.PackageStar(g.Packages.Utils)
+	w.Imports.PackageStar(g.Packages.Errors)
 	w.EmptyLine()
 	w.Line(`open class [[.ClassName]] {`)
 	for index, response := range operation.Responses {

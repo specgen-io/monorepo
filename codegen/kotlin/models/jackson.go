@@ -3,7 +3,6 @@ package models
 import (
 	"fmt"
 	"generator"
-	"kotlin/imports"
 	"kotlin/packages"
 	"kotlin/types"
 	"kotlin/writer"
@@ -31,10 +30,8 @@ func (g *JacksonGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.
 
 func (g *JacksonGenerator) models(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
 	w := writer.New(modelsPackage, `models`)
-	imports := imports.New()
-	imports.Add(g.modelsDefinitionsImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(g.modelsDefinitionsImports()...)
+	w.Imports.Add(g.Types.Imports()...)
 
 	for _, model := range models {
 		w.EmptyLine()
