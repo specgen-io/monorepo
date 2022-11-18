@@ -3,7 +3,6 @@ package models
 import (
 	"fmt"
 	"generator"
-	"java/imports"
 	"java/packages"
 	"java/types"
 	"java/writer"
@@ -55,10 +54,8 @@ func (g *MoshiGenerator) models(models []*spec.NamedModel, modelsPackage package
 
 func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
 	w := writer.New(thePackage, model.Name.PascalCase())
-	imports := imports.New()
-	imports.Add(g.modelsDefinitionsImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(g.modelsDefinitionsImports()...)
+	w.Imports.Add(g.Types.Imports()...)
 	w.EmptyLine()
 	w.Line(`public class [[.ClassName]] {`)
 	for _, field := range model.Object.Fields {
@@ -94,10 +91,8 @@ func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages
 
 func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
 	w := writer.New(thePackage, model.Name.PascalCase())
-	imports := imports.New()
-	imports.Add(g.modelsDefinitionsImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(g.modelsDefinitionsImports()...)
+	w.Imports.Add(g.Types.Imports()...)
 	w.EmptyLine()
 	w.Line(`public enum [[.ClassName]] {`)
 	for _, enumItem := range model.Enum.Items {
@@ -109,10 +104,8 @@ func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.P
 
 func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.Package) *generator.CodeFile {
 	w := writer.New(thePackage, model.Name.PascalCase())
-	imports := imports.New()
-	imports.Add(g.modelsDefinitionsImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(g.modelsDefinitionsImports()...)
+	w.Imports.Add(g.Types.Imports()...)
 	w.EmptyLine()
 	w.Line(`public interface [[.ClassName]] {`)
 	for index, item := range model.OneOf.Items {
@@ -309,10 +302,8 @@ func (g *MoshiGenerator) setupLibrary() []generator.CodeFile {
 
 func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	w := writer.New(g.Packages.Json, moshiCustomAdapters)
-	imports := imports.New()
-	imports.Add(`com.squareup.moshi.Moshi`)
-	imports.Add(g.Packages.JsonAdapters.PackageStar)
-	imports.Write(w)
+	w.Imports.Add(`com.squareup.moshi.Moshi`)
+	w.Imports.Star(g.Packages.JsonAdapters)
 	w.EmptyLine()
 	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  public static void setup(Moshi.Builder moshiBuilder) {`)
@@ -332,10 +323,8 @@ func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 
 func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPackage packages.Package) *generator.CodeFile {
 	w := writer.New(modelsPackage, `ModelsMoshiAdapters`)
-	imports := imports.New()
-	imports.Add(`com.squareup.moshi.Moshi`)
-	imports.Add(g.Packages.JsonAdapters.PackageStar)
-	imports.Write(w)
+	w.Imports.Add(`com.squareup.moshi.Moshi`)
+	w.Imports.Star(g.Packages.JsonAdapters)
 	w.EmptyLine()
 	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  public static void setup(Moshi.Builder moshiBuilder) {`)

@@ -7,7 +7,6 @@ import (
 	"generator"
 
 	"github.com/pinzolo/casee"
-	"java/imports"
 	"java/models"
 	"java/packages"
 	"java/types"
@@ -51,13 +50,11 @@ func (g *MicronautGenerator) ServiceImports() []string {
 
 func (g *MicronautGenerator) ExceptionController(responses *spec.Responses) *generator.CodeFile {
 	w := writer.New(g.Packages.RootControllers, `ExceptionController`)
-	imports := imports.New()
-	imports.Add(g.ServiceImports()...)
-	imports.Add(`io.micronaut.http.annotation.Error`)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.AddStatic(g.Packages.Errors.Subpackage(ErrorsHelpersClassName).PackageStar)
-	imports.Write(w)
+	w.Imports.Add(g.ServiceImports()...)
+	w.Imports.Add(`io.micronaut.http.annotation.Error`)
+	w.Imports.Star(g.Packages.Json)
+	w.Imports.Star(g.Packages.ErrorsModels)
+	w.Imports.StaticStar(g.Packages.Errors.Subpackage(ErrorsHelpersClassName))
 	w.EmptyLine()
 	w.Line(`@Controller`)
 	w.Line(`public class [[.ClassName]] {`)
@@ -92,17 +89,15 @@ func (g *MicronautGenerator) errorHandler(w *writer.Writer, errors spec.Response
 
 func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Controllers(api.InHttp.InVersion), controllerName(api))
-	imports := imports.New()
-	imports.Add(g.ServiceImports()...)
-	imports.Add(`io.micronaut.core.annotation.Nullable`)
-	imports.Add(g.Packages.ContentType.PackageStar)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.Add(g.Packages.ServicesApi(api).PackageStar)
-	imports.Add(g.Models.ModelsUsageImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Write(w)
+	w.Imports.Add(g.ServiceImports()...)
+	w.Imports.Add(`io.micronaut.core.annotation.Nullable`)
+	w.Imports.Star(g.Packages.ContentType)
+	w.Imports.Star(g.Packages.Json)
+	w.Imports.Star(g.Packages.ErrorsModels)
+	w.Imports.Star(g.Packages.Models(api.InHttp.InVersion))
+	w.Imports.Star(g.Packages.ServicesApi(api))
+	w.Imports.Add(g.Models.ModelsUsageImports()...)
+	w.Imports.Add(g.Types.Imports()...)
 	w.EmptyLine()
 	w.Line(`@Controller`)
 	w.Line(`public class [[.ClassName]] {`)

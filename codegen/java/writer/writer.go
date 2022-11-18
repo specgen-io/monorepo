@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"generator"
 	"java/packages"
+	"strings"
 )
 
 func JavaConfig() generator.Config {
@@ -12,27 +13,31 @@ func JavaConfig() generator.Config {
 
 type Writer struct {
 	generator.Writer
-	filename string
+	thePackage packages.Package
+	className  string
+	Imports    *imports
 }
 
 func New(thePackage packages.Package, className string) *Writer {
 	config := JavaConfig()
-	filename := thePackage.GetPath(fmt.Sprintf("%s.java", className))
 	config.Substitutions["[[.ClassName]]"] = className
-	w := generator.NewWriter(config)
-	w.Line(`package %s;`, thePackage.PackageName)
-	w.EmptyLine()
-	return &Writer{w, filename}
+	return &Writer{generator.NewWriter(config), thePackage, className, NewImports()}
 }
 
 func (w *Writer) Indented() *Writer {
-	return &Writer{w.Writer.Indented(), w.filename}
+	return &Writer{w.Writer.Indented(), w.thePackage, w.className, w.Imports}
 }
 
 func (w *Writer) IndentedWith(size int) *Writer {
-	return &Writer{w.Writer.IndentedWith(size), w.filename}
+	return &Writer{w.Writer.IndentedWith(size), w.thePackage, w.className, w.Imports}
 }
 
 func (w *Writer) ToCodeFile() *generator.CodeFile {
-	return &generator.CodeFile{w.filename, w.String()}
+	lines := []string{
+		fmt.Sprintf(`package %s;`, w.thePackage.PackageName),
+		"",
+	}
+	lines = append(lines, w.Imports.Lines()...)
+	code := strings.Join(lines, "\n") + w.String()
+	return &generator.CodeFile{w.thePackage.GetPath(fmt.Sprintf("%s.java", w.className)), code}
 }

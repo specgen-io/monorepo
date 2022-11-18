@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 	"generator"
-	"java/imports"
 	"java/packages"
 	"java/writer"
 	"spec"
@@ -21,18 +20,16 @@ func (g *Generator) Clients(version *spec.Version) []generator.CodeFile {
 
 func (g *Generator) client(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Client(api), clientName(api))
-	imports := imports.New()
-	imports.Add(g.ModelsUsageImports()...)
-	imports.Add(g.Types.Imports()...)
-	imports.Add(`okhttp3.*`)
-	imports.Add(`org.slf4j.*`)
-	imports.Add(g.Packages.Errors.PackageStar)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.Add(g.Packages.Utils.PackageStar)
-	imports.Add(g.Packages.Models(api.InHttp.InVersion).PackageStar)
-	imports.AddStatic(g.Packages.Utils.Subpackage(`ClientResponse`).PackageStar)
-	imports.AddStatic(g.Packages.Utils.Subpackage(`ErrorsHandler`).PackageStar)
-	imports.Write(w)
+	w.Imports.Add(g.ModelsUsageImports()...)
+	w.Imports.Add(g.Types.Imports()...)
+	w.Imports.Add(`okhttp3.*`)
+	w.Imports.Add(`org.slf4j.*`)
+	w.Imports.Star(g.Packages.Errors)
+	w.Imports.Star(g.Packages.Json)
+	w.Imports.Star(g.Packages.Utils)
+	w.Imports.Star(g.Packages.Models(api.InHttp.InVersion))
+	w.Imports.StaticStar(g.Packages.Utils.Subpackage(`ClientResponse`))
+	w.Imports.StaticStar(g.Packages.Utils.Subpackage(`ErrorsHandler`))
 	w.EmptyLine()
 	w.Lines(`
 public class [[.ClassName]] {
@@ -298,15 +295,13 @@ public class ClientResponse {
 
 func (g *Generator) generateErrorsHandler(thePackage packages.Package, errorsResponses *spec.Responses) *generator.CodeFile {
 	w := writer.New(thePackage, `ErrorsHandler`)
-	imports := imports.New()
-	imports.Add(g.ModelsUsageImports()...)
-	imports.Add(`okhttp3.*`)
-	imports.Add(`org.slf4j.*`)
-	imports.Add(g.Packages.Errors.PackageStar)
-	imports.Add(g.Packages.ErrorsModels.PackageStar)
-	imports.Add(g.Packages.Json.PackageStar)
-	imports.AddStatic(g.Packages.Utils.Subpackage(`ClientResponse`).PackageStar)
-	imports.Write(w)
+	w.Imports.Add(g.ModelsUsageImports()...)
+	w.Imports.Add(`okhttp3.*`)
+	w.Imports.Add(`org.slf4j.*`)
+	w.Imports.Star(g.Packages.Errors)
+	w.Imports.Star(g.Packages.ErrorsModels)
+	w.Imports.Star(g.Packages.Json)
+	w.Imports.StaticStar(g.Packages.Utils.Subpackage(`ClientResponse`))
 	w.EmptyLine()
 	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  public static void handleErrors(Response response, Logger logger, Json json) {`)
