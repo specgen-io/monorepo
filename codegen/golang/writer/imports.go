@@ -3,7 +3,7 @@ package writer
 import (
 	"fmt"
 	"golang/module"
-	"golang/types"
+	"golang/walkers"
 	"sort"
 	"spec"
 )
@@ -65,16 +65,16 @@ func (self *imports) Lines() []string {
 }
 
 func (self *imports) AddApiTypes(api *spec.Api) *imports {
-	if types.ApiHasType(api, spec.TypeDate) {
+	if walkers.ApiHasType(api, spec.TypeDate) {
 		self.Add("cloud.google.com/go/civil")
 	}
-	if types.ApiHasType(api, spec.TypeJson) {
+	if walkers.ApiHasType(api, spec.TypeJson) {
 		self.Add("encoding/json")
 	}
-	if types.ApiHasType(api, spec.TypeUuid) {
+	if walkers.ApiHasType(api, spec.TypeUuid) {
 		self.Add("github.com/google/uuid")
 	}
-	if types.ApiHasType(api, spec.TypeDecimal) {
+	if walkers.ApiHasType(api, spec.TypeDecimal) {
 		self.Add("github.com/shopspring/decimal")
 	}
 	return self
@@ -83,13 +83,13 @@ func (self *imports) AddApiTypes(api *spec.Api) *imports {
 func (self *imports) AddModelsTypes(models []*spec.NamedModel) *imports {
 	self.Add("errors")
 	self.Add("encoding/json")
-	if types.ModelsHasType(models, spec.TypeDate) {
+	if walkers.ModelsHasType(models, spec.TypeDate) {
 		self.Add("cloud.google.com/go/civil")
 	}
-	if types.ModelsHasType(models, spec.TypeUuid) {
+	if walkers.ModelsHasType(models, spec.TypeUuid) {
 		self.Add("github.com/google/uuid")
 	}
-	if types.ModelsHasType(models, spec.TypeDecimal) {
+	if walkers.ModelsHasType(models, spec.TypeDecimal) {
 		self.Add("github.com/shopspring/decimal")
 	}
 	return self

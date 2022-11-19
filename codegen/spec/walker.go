@@ -99,6 +99,12 @@ func (w *SpecWalker) HttpErrors(httpErrors *HttpErrors) {
 	}
 }
 
+func (w *SpecWalker) Models(models []*NamedModel) {
+	for index := range models {
+		w.Model(models[index])
+	}
+}
+
 func (w *SpecWalker) Response(response *Response) {
 	if w.onResponse != nil {
 		w.onResponse(response)

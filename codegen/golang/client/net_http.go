@@ -37,7 +37,7 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	w.Imports.Add("net/http")
 	w.Imports.Add("encoding/json")
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
-	if walkers.ApiHasNonEmptyBody(api) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) || walkers.ApiHasBodyOfKind(api, spec.BodyString) {
 		w.Imports.Add("bytes")
 	}
 	if walkers.ApiHasUrlParams(api) {

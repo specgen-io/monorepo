@@ -48,7 +48,7 @@ func (g *VestigoGenerator) routing(api *spec.Api) *generator.CodeFile {
 	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) {
 		w.Imports.Add("encoding/json")
 	}
-	if walkers.ApiHasNonEmptyBody(api) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) || walkers.ApiHasBodyOfKind(api, spec.BodyString) {
 		w.Imports.Module(g.Modules.ContentType)
 	}
 	w.Imports.Module(g.Modules.ServicesApi(api))

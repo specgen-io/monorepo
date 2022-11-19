@@ -4,18 +4,6 @@ import (
 	"spec"
 )
 
-func ApiHasNonEmptyBody(api *spec.Api) bool {
-	hasNonEmptyBody := false
-	walk := spec.NewWalker().
-		OnOperation(func(operation *spec.NamedOperation) {
-			if operation.BodyIs(spec.BodyJson) || operation.BodyIs(spec.BodyString) {
-				hasNonEmptyBody = true
-			}
-		})
-	walk.Api(api)
-	return hasNonEmptyBody
-}
-
 func ApiIsUsingModels(api *spec.Api) bool {
 	foundModels := false
 	walk := spec.NewWalker().
@@ -76,6 +64,18 @@ func ApiHasBodyOfKind(api *spec.Api, kind spec.BodyKind) bool {
 	return result
 }
 
+func ApiHasMultiResponsesWithEmptyBody(api *spec.Api) bool {
+	result := false
+	walk := spec.NewWalker().
+		OnOperationResponse(func(response *spec.OperationResponse) {
+			if len(response.Operation.Responses) > 1 && response.BodyIs(spec.BodyEmpty) {
+				result = true
+			}
+		})
+	walk.Api(api)
+	return result
+}
+
 func ApiHasType(api *spec.Api, typName string) bool {
 	foundType := false
 	walk := spec.NewWalker().
@@ -85,5 +85,17 @@ func ApiHasType(api *spec.Api, typName string) bool {
 			}
 		})
 	walk.Api(api)
+	return foundType
+}
+
+func ModelsHasType(models []*spec.NamedModel, typName string) bool {
+	foundType := false
+	walk := spec.NewWalker().
+		OnTypeDef(func(typ *spec.TypeDef) {
+			if typ.Plain == typName {
+				foundType = true
+			}
+		})
+	walk.Models(models)
 	return foundType
 }
