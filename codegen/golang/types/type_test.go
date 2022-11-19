@@ -6,9 +6,13 @@ import (
 	"testing"
 )
 
+func goType(typ *spec.TypeDef) string {
+	return NewTypes().GoType(typ)
+}
+
 func CheckPlainType(t *testing.T, plainType string, expected string) {
 	typ := spec.Plain(plainType)
-	goType := GoType(typ)
+	goType := goType(typ)
 	assert.Equal(t, goType, expected)
 }
 
@@ -58,18 +62,18 @@ func TestPlainTypeEmpty(t *testing.T) {
 
 func TestNullableType(t *testing.T) {
 	typ := spec.Nullable(spec.Plain(spec.TypeString))
-	goType := GoType(typ)
+	goType := goType(typ)
 	assert.Equal(t, goType, "*string")
 }
 
 func TestArrayType(t *testing.T) {
 	typ := spec.Array(spec.Plain(spec.TypeString))
-	goType := GoType(typ)
+	goType := goType(typ)
 	assert.Equal(t, goType, "[]string")
 }
 
 func TestMapType(t *testing.T) {
 	typ := spec.Map(spec.Plain("Model"))
-	goType := GoType(typ)
+	goType := goType(typ)
 	assert.Equal(t, goType, "map[string]models.Model")
 }
