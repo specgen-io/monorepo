@@ -10,6 +10,9 @@ parameters:
   specgen-version-major:
     type: string
     default: v2
+  rendr-version:
+    type: string
+    default: 0.0.57
 
 jobs:
   specgen:
@@ -1277,6 +1280,7 @@ jobs:
       - run:
           name: Create temp folder for tests results
           command: mkdir -p /tmp/test-results
+      - get-rendr
       - get-specgen
       - run:
           name: Copy spec.yaml
@@ -1653,6 +1657,14 @@ commands:
             curl -L -H "X-JFrog-Art-Api:${JFROG_PASS}" -O "https://specgen.jfrog.io/artifactory/binaries/specgen/v<<pipeline.parameters.specgen-version>>/specgen_linux_amd64.zip"
             unzip -o specgen_linux_amd64.zip
             ./specgen help
+  get-rendr:
+    steps:
+      - run:
+          name: Get specgen
+          command: |
+            curl -L -H "X-JFrog-Art-Api:${JFROG_PASS}" -O "https://specgen.jfrog.io/artifactory/binaries/rendr/v<<pipeline.parameters.rendr-version>>/rendr_linux_amd64.zip"
+            unzip -o rendr_linux_amd64.zip
+            ./rendr help
   yaml-execute:
     parameters:
       path:
