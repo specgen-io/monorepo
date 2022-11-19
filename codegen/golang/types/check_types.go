@@ -57,7 +57,7 @@ func paramHasType(namedParams []spec.NamedParam, typ string) bool {
 	return false
 }
 
-func VersionModelsHasType(models []*spec.NamedModel, typ string) bool {
+func ModelsHasType(models []*spec.NamedModel, typ string) bool {
 	for _, model := range models {
 		if model.IsObject() {
 			for _, field := range model.Object.Fields {
@@ -78,17 +78,15 @@ func VersionModelsHasType(models []*spec.NamedModel, typ string) bool {
 }
 
 func checkType(typedef *spec.TypeDef, typ string) bool {
-	if typedef.Plain != typ {
-		switch typedef.Node {
-		case spec.PlainType:
-			return false
-		case spec.NullableType:
-		case spec.ArrayType:
-		case spec.MapType:
-			return checkType(typedef.Child, typ)
-		default:
-			panic(fmt.Sprintf("Unknown type: %v", typ))
-		}
+	switch typedef.Node {
+	case spec.PlainType:
+		return typedef.Plain == typ
+	case spec.NullableType:
+	case spec.ArrayType:
+	case spec.MapType:
+		return checkType(typedef.Child, typ)
+	default:
+		panic(fmt.Sprintf("Unknown type: %v", typ))
 	}
-	return true
+	return false
 }

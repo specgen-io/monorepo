@@ -83,13 +83,13 @@ func (self *imports) AddApiTypes(api *spec.Api) *imports {
 func (self *imports) AddModelsTypes(models []*spec.NamedModel) *imports {
 	self.Add("errors")
 	self.Add("encoding/json")
-	if types.VersionModelsHasType(models, spec.TypeDate) {
+	if types.ModelsHasType(models, spec.TypeDate) {
 		self.Add("cloud.google.com/go/civil")
 	}
-	if types.VersionModelsHasType(models, spec.TypeUuid) {
+	if types.ModelsHasType(models, spec.TypeUuid) {
 		self.Add("github.com/google/uuid")
 	}
-	if types.VersionModelsHasType(models, spec.TypeDecimal) {
+	if types.ModelsHasType(models, spec.TypeDecimal) {
 		self.Add("github.com/shopspring/decimal")
 	}
 	return self
