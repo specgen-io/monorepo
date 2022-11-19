@@ -5,59 +5,10 @@ import (
 	"spec"
 )
 
-func IsEnumModel(typ *spec.TypeDef) bool {
-	if IsModel(typ) {
-		if typ.Info.Model.IsEnum() {
-			return true
-		}
-	}
-	return false
-}
-
-func IsModel(def *spec.TypeDef) bool {
-	return def.Info.Model != nil
-}
-
 func ModelsHasEnum(models []*spec.NamedModel) bool {
 	for _, model := range models {
 		if model.IsEnum() {
 			return true
-		}
-	}
-	return false
-}
-
-func ApiHasUrlParams(api *spec.Api) bool {
-	for _, operation := range api.Operations {
-		if OperationHasUrlParams(&operation) {
-			return true
-		}
-	}
-	return false
-}
-
-func OperationHasUrlParams(operation *spec.NamedOperation) bool {
-	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		return true
-	}
-	return false
-}
-
-func ApiHasBody(api *spec.Api) bool {
-	for _, operation := range api.Operations {
-		if operation.Body != nil {
-			return true
-		}
-	}
-	return false
-}
-
-func BodyHasType(api *spec.Api, typ string) bool {
-	for _, operation := range api.Operations {
-		if operation.Body != nil {
-			if checkType(&operation.Body.Type.Definition, typ) {
-				return true
-			}
 		}
 	}
 	return false
@@ -132,9 +83,7 @@ func checkType(typedef *spec.TypeDef, typ string) bool {
 		case spec.PlainType:
 			return false
 		case spec.NullableType:
-			return checkType(typedef.Child, typ)
 		case spec.ArrayType:
-			return checkType(typedef.Child, typ)
 		case spec.MapType:
 			return checkType(typedef.Child, typ)
 		default:

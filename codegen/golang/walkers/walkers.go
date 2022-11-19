@@ -52,6 +52,30 @@ func ApiHasNonSingleResponse(api *spec.Api) bool {
 	return hasNonSingleResponse
 }
 
+func ApiHasUrlParams(api *spec.Api) bool {
+	hasUrlParams := false
+	walk := spec.NewWalker().
+		OnOperation(func(operation *spec.NamedOperation) {
+			if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
+				hasUrlParams = true
+			}
+		})
+	walk.Api(api)
+	return hasUrlParams
+}
+
+func ApiHasBodyOfKind(api *spec.Api, kind spec.BodyKind) bool {
+	result := false
+	walk := spec.NewWalker().
+		OnOperation(func(operation *spec.NamedOperation) {
+			if operation.BodyIs(kind) {
+				result = true
+			}
+		})
+	walk.Api(api)
+	return result
+}
+
 func ApiHasType(api *spec.Api, typName string) bool {
 	foundType := false
 	walk := spec.NewWalker().

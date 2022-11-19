@@ -40,10 +40,10 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	if walkers.ApiHasNonEmptyBody(api) {
 		w.Imports.Add("bytes")
 	}
-	if types.ApiHasUrlParams(api) {
+	if walkers.ApiHasUrlParams(api) {
 		w.Imports.Module(g.Modules.Convert)
 	}
-	if types.ApiHasType(api, spec.TypeEmpty) {
+	if walkers.ApiHasType(api, spec.TypeEmpty) {
 		w.Imports.Module(g.Modules.Empty)
 	}
 	w.Imports.Module(g.Modules.HttpErrors)
@@ -150,7 +150,7 @@ func (g *NetHttpGenerator) addRequestUrlParams(operation *spec.NamedOperation) s
 func (g *NetHttpGenerator) addUrlParam(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
-		if types.IsEnumModel(&param.Type.Definition) || g.Types.GoType(&param.Type.Definition) == "string" {
+		if param.Type.Definition.IsEnum() || g.Types.GoType(&param.Type.Definition) == "string" {
 			urlParams = append(urlParams, param.Name.CamelCase())
 		} else {
 			urlParams = append(urlParams, callRawConvert(&param.Type.Definition, param.Name.CamelCase()))

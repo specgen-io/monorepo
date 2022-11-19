@@ -38,15 +38,15 @@ func (g *VestigoGenerator) signatureAddRouting(api *spec.Api) string {
 func (g *VestigoGenerator) routing(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.Routing(api.InHttp.InVersion), fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
-	if types.ApiHasBody(api) {
-		w.Imports.Add("encoding/json")
-	}
 	w.Imports.Add("github.com/husobee/vestigo")
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
 	w.Imports.Add("net/http")
 	w.Imports.Add("fmt")
-	if types.BodyHasType(api, spec.TypeString) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyString) {
 		w.Imports.Add("io/ioutil")
+	}
+	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) {
+		w.Imports.Add("encoding/json")
 	}
 	if walkers.ApiHasNonEmptyBody(api) {
 		w.Imports.Module(g.Modules.ContentType)
