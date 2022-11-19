@@ -3,9 +3,7 @@ package writer
 import (
 	"fmt"
 	"golang/module"
-	"golang/types"
 	"sort"
-	"spec"
 )
 
 type imports struct {
@@ -62,35 +60,4 @@ func (self *imports) Lines() []string {
 		return lines
 	}
 	return []string{}
-}
-
-func (self *imports) AddApiTypes(api *spec.Api) *imports {
-	if types.ApiHasType(api, spec.TypeDate) {
-		self.Add("cloud.google.com/go/civil")
-	}
-	if types.ApiHasType(api, spec.TypeJson) {
-		self.Add("encoding/json")
-	}
-	if types.ApiHasType(api, spec.TypeUuid) {
-		self.Add("github.com/google/uuid")
-	}
-	if types.ApiHasType(api, spec.TypeDecimal) {
-		self.Add("github.com/shopspring/decimal")
-	}
-	return self
-}
-
-func (self *imports) AddModelsTypes(models []*spec.NamedModel) *imports {
-	self.Add("errors")
-	self.Add("encoding/json")
-	if types.VersionModelsHasType(models, spec.TypeDate) {
-		self.Add("cloud.google.com/go/civil")
-	}
-	if types.VersionModelsHasType(models, spec.TypeUuid) {
-		self.Add("github.com/google/uuid")
-	}
-	if types.VersionModelsHasType(models, spec.TypeDecimal) {
-		self.Add("github.com/shopspring/decimal")
-	}
-	return self
 }

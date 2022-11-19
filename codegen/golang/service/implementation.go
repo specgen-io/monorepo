@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 	"generator"
-	"golang/types"
+	"golang/walkers"
 	"golang/writer"
 	"spec"
 )
@@ -20,11 +20,22 @@ func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.ServicesImpl(api.InHttp.InVersion), fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
 	w.Imports.Add("errors")
-	w.Imports.AddApiTypes(api)
-	if types.ApiHasBody(api) {
+	if walkers.ApiHasType(api, spec.TypeDate) {
+		w.Imports.Add("cloud.google.com/go/civil")
+	}
+	if walkers.ApiHasType(api, spec.TypeJson) {
+		w.Imports.Add("encoding/json")
+	}
+	if walkers.ApiHasType(api, spec.TypeUuid) {
+		w.Imports.Add("github.com/google/uuid")
+	}
+	if walkers.ApiHasType(api, spec.TypeDecimal) {
+		w.Imports.Add("github.com/shopspring/decimal")
+	}
+	if walkers.ApiHasNonSingleResponse(api) {
 		w.Imports.Module(g.Modules.ServicesApi(api))
 	}
-	if isContainsModel(api) {
+	if walkers.ApiIsUsingModels(api) {
 		w.Imports.Module(g.Modules.Models(api.InHttp.InVersion))
 	}
 
@@ -44,37 +55,6 @@ func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 	}
 
 	return w.ToCodeFile()
-}
-
-func isContainsModel(api *spec.Api) bool {
-	for _, operation := range api.Operations {
-		if operation.Body != nil {
-			if types.IsModel(&operation.Body.Type.Definition) {
-				return true
-			}
-		}
-		for _, param := range operation.QueryParams {
-			if types.IsModel(&param.Type.Definition) {
-				return true
-			}
-		}
-		for _, param := range operation.HeaderParams {
-			if types.IsModel(&param.Type.Definition) {
-				return true
-			}
-		}
-		for _, param := range operation.Endpoint.UrlParams {
-			if types.IsModel(&param.Type.Definition) {
-				return true
-			}
-		}
-		for _, response := range operation.Responses {
-			if types.IsModel(&response.Type.Definition) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func serviceTypeName(api *spec.Api) string {

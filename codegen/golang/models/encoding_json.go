@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"golang/walkers"
 	"strings"
 
 	"generator"
@@ -28,11 +29,30 @@ func (g *EncodingJsonGenerator) ErrorModels(httperrors *spec.HttpErrors) *genera
 	return g.models(httperrors.ResolvedModels, g.Modules.HttpErrorsModels)
 }
 
+func modelsHasEnum(models []*spec.NamedModel) bool {
+	for _, model := range models {
+		if model.IsEnum() {
+			return true
+		}
+	}
+	return false
+}
+
 func (g *EncodingJsonGenerator) models(models []*spec.NamedModel, modelsModule module.Module) *generator.CodeFile {
 	w := writer.New(modelsModule, "models.go")
 
-	w.Imports.AddModelsTypes(models)
-	if types.ModelsHasEnum(models) {
+	w.Imports.Add("errors")
+	w.Imports.Add("encoding/json")
+	if walkers.ModelsHasType(models, spec.TypeDate) {
+		w.Imports.Add("cloud.google.com/go/civil")
+	}
+	if walkers.ModelsHasType(models, spec.TypeUuid) {
+		w.Imports.Add("github.com/google/uuid")
+	}
+	if walkers.ModelsHasType(models, spec.TypeDecimal) {
+		w.Imports.Add("github.com/shopspring/decimal")
+	}
+	if modelsHasEnum(models) {
 		w.Imports.Module(g.Modules.Enums)
 	}
 
@@ -150,7 +170,7 @@ func (g *EncodingJsonGenerator) enumModel(w *writer.Writer, model *spec.NamedMod
 	w.Line("var %s = []%s{%s}", g.enumValues(model), model.Name.PascalCase(), strings.Join(choiceValuesParams, ", "))
 	w.EmptyLine()
 	w.Line("func (self *%s) UnmarshalJSON(b []byte) error {", model.Name.PascalCase())
-	w.Line("  str, err := enums.ReadStringValue(b, %sValuesStrings)", model.Name.PascalCase())
+	w.Line("  str, err := %s.ReadStringValue(b, %sValuesStrings)", g.Modules.Enums.Name, model.Name.PascalCase())
 	w.Line("  if err != nil {")
 	w.Line("    return err")
 	w.Line("  }")

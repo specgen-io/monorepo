@@ -6,6 +6,7 @@ import (
 	"github.com/pinzolo/casee"
 	"golang/common"
 	"golang/types"
+	"golang/walkers"
 	"golang/writer"
 	"spec"
 	"strings"
@@ -36,17 +37,28 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	w.Imports.Add("net/http")
 	w.Imports.Add("encoding/json")
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
-	if types.ApiHasBody(api) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) || walkers.ApiHasBodyOfKind(api, spec.BodyString) {
 		w.Imports.Add("bytes")
 	}
-	if types.ApiHasUrlParams(api) {
+	if walkers.ApiHasUrlParams(api) {
 		w.Imports.Module(g.Modules.Convert)
 	}
-	if types.ApiHasType(api, spec.TypeEmpty) {
+	if walkers.ApiHasType(api, spec.TypeEmpty) {
 		w.Imports.Module(g.Modules.Empty)
 	}
+	if walkers.ApiHasType(api, spec.TypeDate) {
+		w.Imports.Add("cloud.google.com/go/civil")
+	}
+	if walkers.ApiHasType(api, spec.TypeJson) {
+		w.Imports.Add("encoding/json")
+	}
+	if walkers.ApiHasType(api, spec.TypeUuid) {
+		w.Imports.Add("github.com/google/uuid")
+	}
+	if walkers.ApiHasType(api, spec.TypeDecimal) {
+		w.Imports.Add("github.com/shopspring/decimal")
+	}
 	w.Imports.Module(g.Modules.HttpErrors)
-	w.Imports.AddApiTypes(api)
 	w.Imports.Module(g.Modules.Models(api.InHttp.InVersion))
 	w.Imports.Module(g.Modules.Response)
 
@@ -149,7 +161,7 @@ func (g *NetHttpGenerator) addRequestUrlParams(operation *spec.NamedOperation) s
 func (g *NetHttpGenerator) addUrlParam(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
-		if types.IsEnumModel(&param.Type.Definition) || g.Types.GoType(&param.Type.Definition) == "string" {
+		if param.Type.Definition.IsEnum() || g.Types.GoType(&param.Type.Definition) == "string" {
 			urlParams = append(urlParams, param.Name.CamelCase())
 		} else {
 			urlParams = append(urlParams, callRawConvert(&param.Type.Definition, param.Name.CamelCase()))

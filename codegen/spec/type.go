@@ -48,6 +48,18 @@ func (self *TypeDef) IsNullable() bool {
 	return self.Node == NullableType
 }
 
+func (self *TypeDef) IsModel() bool {
+	return self.Info.Model != nil
+}
+
+func (self *TypeDef) IsEnum() bool {
+	return self.Info.Model != nil && self.Info.Model.IsEnum()
+}
+
+func (self *TypeDef) IsErrorModel() bool {
+	return self.Info.Model != nil && self.Info.Model.InHttpErrors != nil
+}
+
 func (self *TypeDef) BaseType() *TypeDef {
 	if self.IsNullable() {
 		return self.Child
