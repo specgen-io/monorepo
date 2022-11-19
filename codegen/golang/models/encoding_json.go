@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"golang/walkers"
 	"strings"
 
 	"generator"
@@ -40,7 +41,17 @@ func modelsHasEnum(models []*spec.NamedModel) bool {
 func (g *EncodingJsonGenerator) models(models []*spec.NamedModel, modelsModule module.Module) *generator.CodeFile {
 	w := writer.New(modelsModule, "models.go")
 
-	w.Imports.AddModelsTypes(models)
+	w.Imports.Add("errors")
+	w.Imports.Add("encoding/json")
+	if walkers.ModelsHasType(models, spec.TypeDate) {
+		w.Imports.Add("cloud.google.com/go/civil")
+	}
+	if walkers.ModelsHasType(models, spec.TypeUuid) {
+		w.Imports.Add("github.com/google/uuid")
+	}
+	if walkers.ModelsHasType(models, spec.TypeDecimal) {
+		w.Imports.Add("github.com/shopspring/decimal")
+	}
 	if modelsHasEnum(models) {
 		w.Imports.Module(g.Modules.Enums)
 	}

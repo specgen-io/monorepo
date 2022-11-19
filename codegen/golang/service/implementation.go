@@ -20,7 +20,18 @@ func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.ServicesImpl(api.InHttp.InVersion), fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
 	w.Imports.Add("errors")
-	w.Imports.AddApiTypes(api)
+	if walkers.ApiHasType(api, spec.TypeDate) {
+		w.Imports.Add("cloud.google.com/go/civil")
+	}
+	if walkers.ApiHasType(api, spec.TypeJson) {
+		w.Imports.Add("encoding/json")
+	}
+	if walkers.ApiHasType(api, spec.TypeUuid) {
+		w.Imports.Add("github.com/google/uuid")
+	}
+	if walkers.ApiHasType(api, spec.TypeDecimal) {
+		w.Imports.Add("github.com/shopspring/decimal")
+	}
 	if walkers.ApiHasNonSingleResponse(api) {
 		w.Imports.Module(g.Modules.ServicesApi(api))
 	}
