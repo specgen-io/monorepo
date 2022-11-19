@@ -88,7 +88,7 @@ func ApiHasType(api *spec.Api, typName string) bool {
 	return foundType
 }
 
-func ModelsHasType(models []*spec.NamedModel, typName string) bool {
+func ModelHasType(model *spec.NamedModel, typName string) bool {
 	foundType := false
 	walk := spec.NewWalker().
 		OnTypeDef(func(typ *spec.TypeDef) {
@@ -96,6 +96,6 @@ func ModelsHasType(models []*spec.NamedModel, typName string) bool {
 				foundType = true
 			}
 		})
-	walk.Models(models)
+	walk.Model(model)
 	return foundType
 }

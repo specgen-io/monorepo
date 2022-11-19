@@ -21,53 +21,26 @@ type EncodingJsonGenerator struct {
 	Modules *Modules
 }
 
-func (g *EncodingJsonGenerator) Models(version *spec.Version) *generator.CodeFile {
+func (g *EncodingJsonGenerator) Models(version *spec.Version) []generator.CodeFile {
 	return g.models(version.ResolvedModels, g.Modules.Models(version))
 }
 
-func (g *EncodingJsonGenerator) ErrorModels(httperrors *spec.HttpErrors) *generator.CodeFile {
+func (g *EncodingJsonGenerator) ErrorModels(httperrors *spec.HttpErrors) []generator.CodeFile {
 	return g.models(httperrors.ResolvedModels, g.Modules.HttpErrorsModels)
 }
 
-func modelsHasEnum(models []*spec.NamedModel) bool {
+func (g *EncodingJsonGenerator) models(models []*spec.NamedModel, modelsModule module.Module) []generator.CodeFile {
+	files := []generator.CodeFile{}
 	for _, model := range models {
-		if model.IsEnum() {
-			return true
-		}
-	}
-	return false
-}
-
-func (g *EncodingJsonGenerator) models(models []*spec.NamedModel, modelsModule module.Module) *generator.CodeFile {
-	w := writer.New(modelsModule, "models.go")
-
-	w.Imports.Add("errors")
-	w.Imports.Add("encoding/json")
-	if walkers.ModelsHasType(models, spec.TypeDate) {
-		w.Imports.Add("cloud.google.com/go/civil")
-	}
-	if walkers.ModelsHasType(models, spec.TypeUuid) {
-		w.Imports.Add("github.com/google/uuid")
-	}
-	if walkers.ModelsHasType(models, spec.TypeDecimal) {
-		w.Imports.Add("github.com/shopspring/decimal")
-	}
-	if modelsHasEnum(models) {
-		w.Imports.Module(g.Modules.Enums)
-	}
-
-	for _, model := range models {
-		w.EmptyLine()
 		if model.IsObject() {
-			g.objectModel(w, model)
+			files = append(files, *g.objectModel(modelsModule, model))
 		} else if model.IsOneOf() {
-			g.oneOfModel(w, model)
+			files = append(files, *g.oneOfModel(modelsModule, model))
 		} else if model.IsEnum() {
-			g.enumModel(w, model)
+			files = append(files, *g.enumModel(modelsModule, model))
 		}
 	}
-
-	return w.ToCodeFile()
+	return files
 }
 
 func (g *EncodingJsonGenerator) requiredFieldsList(object *spec.Object) string {
@@ -84,7 +57,20 @@ func (g *EncodingJsonGenerator) requiredFields(model *spec.NamedModel) string {
 	return fmt.Sprintf(`%sRequiredFields`, model.Name.CamelCase())
 }
 
-func (g *EncodingJsonGenerator) objectModel(w *writer.Writer, model *spec.NamedModel) {
+func (g *EncodingJsonGenerator) objectModel(modelsModule module.Module, model *spec.NamedModel) *generator.CodeFile {
+	w := writer.New(modelsModule, model.Name.SnakeCase()+`.go`)
+	w.EmptyLine()
+	w.Imports.Add("errors")
+	w.Imports.Add("encoding/json")
+	if walkers.ModelHasType(model, spec.TypeDate) {
+		w.Imports.Add("cloud.google.com/go/civil")
+	}
+	if walkers.ModelHasType(model, spec.TypeUuid) {
+		w.Imports.Add("github.com/google/uuid")
+	}
+	if walkers.ModelHasType(model, spec.TypeDecimal) {
+		w.Imports.Add("github.com/shopspring/decimal")
+	}
 	w.Line("type %s struct {", model.Name.PascalCase())
 	w.Indent()
 	for _, field := range model.Object.Fields {
@@ -146,9 +132,13 @@ func (g *EncodingJsonGenerator) objectModel(w *writer.Writer, model *spec.NamedM
 	w.Line(`	*obj = %s(jsonObj)`, model.Name.PascalCase())
 	w.Line(`	return nil`)
 	w.Line(`}`)
+	return w.ToCodeFile()
 }
 
-func (g *EncodingJsonGenerator) enumModel(w *writer.Writer, model *spec.NamedModel) {
+func (g *EncodingJsonGenerator) enumModel(modelsModule module.Module, model *spec.NamedModel) *generator.CodeFile {
+	w := writer.New(modelsModule, model.Name.SnakeCase()+`.go`)
+	w.EmptyLine()
+	w.Imports.Module(g.Modules.Enums)
 	w.Line("type %s %s", model.Name.PascalCase(), "string")
 	w.EmptyLine()
 	w.Line("const (")
@@ -177,6 +167,7 @@ func (g *EncodingJsonGenerator) enumModel(w *writer.Writer, model *spec.NamedMod
 	w.Line("  *self = %s(str)", model.Name.PascalCase())
 	w.Line("  return nil")
 	w.Line("}")
+	return w.ToCodeFile()
 }
 
 func (g *EncodingJsonGenerator) EnumValuesStrings(model *spec.NamedModel) string {
@@ -187,11 +178,11 @@ func (g *EncodingJsonGenerator) enumValues(model *spec.NamedModel) string {
 	return fmt.Sprintf("%sValues", model.Name.PascalCase())
 }
 
-func (g *EncodingJsonGenerator) oneOfModel(w *writer.Writer, model *spec.NamedModel) {
+func (g *EncodingJsonGenerator) oneOfModel(modelsModule module.Module, model *spec.NamedModel) *generator.CodeFile {
 	if model.OneOf.Discriminator != nil {
-		g.oneOfModelDiscriminator(w, model)
+		return g.oneOfModelDiscriminator(modelsModule, model)
 	} else {
-		g.oneOfModelWrapper(w, model)
+		return g.oneOfModelWrapper(modelsModule, model)
 	}
 }
 
@@ -203,8 +194,20 @@ func (g *EncodingJsonGenerator) getCaseChecks(oneof *spec.OneOf) string {
 	return strings.Join(caseChecks, " && ")
 }
 
-func (g *EncodingJsonGenerator) oneOfModelWrapper(w *writer.Writer, model *spec.NamedModel) {
-	caseChecks := g.getCaseChecks(model.OneOf)
+func (g *EncodingJsonGenerator) oneOfModelWrapper(modelsModule module.Module, model *spec.NamedModel) *generator.CodeFile {
+	w := writer.New(modelsModule, model.Name.SnakeCase()+`.go`)
+	w.EmptyLine()
+	w.Imports.Add("errors")
+	w.Imports.Add("encoding/json")
+	if walkers.ModelHasType(model, spec.TypeDate) {
+		w.Imports.Add("cloud.google.com/go/civil")
+	}
+	if walkers.ModelHasType(model, spec.TypeUuid) {
+		w.Imports.Add("github.com/google/uuid")
+	}
+	if walkers.ModelHasType(model, spec.TypeDecimal) {
+		w.Imports.Add("github.com/shopspring/decimal")
+	}
 	w.Line("type %s struct {", model.Name.PascalCase())
 	w.Indent()
 	for _, item := range model.OneOf.Items {
@@ -219,7 +222,7 @@ func (g *EncodingJsonGenerator) oneOfModelWrapper(w *writer.Writer, model *spec.
 	w.Line(`type %s %s`, model.Name.CamelCase(), model.Name.PascalCase())
 	w.EmptyLine()
 	w.Line(`func (u %s) MarshalJSON() ([]byte, error) {`, model.Name.PascalCase())
-	w.Line(`	if %s {`, caseChecks)
+	w.Line(`	if %s {`, g.getCaseChecks(model.OneOf))
 	w.Line(`		return nil, errors.New("union case is not set")`)
 	w.Line(`	}`)
 	w.Line(`	return json.Marshal(%s(u))`, model.Name.CamelCase())
@@ -232,14 +235,28 @@ func (g *EncodingJsonGenerator) oneOfModelWrapper(w *writer.Writer, model *spec.
 	w.Line(`		return err`)
 	w.Line(`	}`)
 	w.Line(`	*u = %s(jsonObj)`, model.Name.PascalCase())
-	w.Line(`	if %s {`, caseChecks)
+	w.Line(`	if %s {`, g.getCaseChecks(model.OneOf))
 	w.Line(`		return errors.New("union case is not set")`)
 	w.Line(`	}`)
 	w.Line(`	return nil`)
 	w.Line(`}`)
+	return w.ToCodeFile()
 }
 
-func (g *EncodingJsonGenerator) oneOfModelDiscriminator(w *writer.Writer, model *spec.NamedModel) {
+func (g *EncodingJsonGenerator) oneOfModelDiscriminator(modelsModule module.Module, model *spec.NamedModel) *generator.CodeFile {
+	w := writer.New(modelsModule, model.Name.SnakeCase()+`.go`)
+	w.EmptyLine()
+	w.Imports.Add("errors")
+	w.Imports.Add("encoding/json")
+	if walkers.ModelHasType(model, spec.TypeDate) {
+		w.Imports.Add("cloud.google.com/go/civil")
+	}
+	if walkers.ModelHasType(model, spec.TypeUuid) {
+		w.Imports.Add("github.com/google/uuid")
+	}
+	if walkers.ModelHasType(model, spec.TypeDecimal) {
+		w.Imports.Add("github.com/shopspring/decimal")
+	}
 	w.Line("type %s struct {", model.Name.PascalCase())
 	w.Indent()
 	for _, item := range model.OneOf.Items {
@@ -291,4 +308,5 @@ func (g *EncodingJsonGenerator) oneOfModelDiscriminator(w *writer.Writer, model 
 	w.Line(`  }`)
 	w.Line(`  return nil`)
 	w.Line(`}`)
+	return w.ToCodeFile()
 }

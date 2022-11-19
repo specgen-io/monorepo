@@ -14,7 +14,7 @@ func GenerateModels(specification *spec.Spec, moduleName string, generatePath st
 	sources.AddGenerated(generator.EnumsHelperFunctions())
 
 	for _, version := range specification.Versions {
-		sources.AddGenerated(generator.Models(&version))
+		sources.AddGeneratedAll(generator.Models(&version))
 	}
 	return sources
 }
