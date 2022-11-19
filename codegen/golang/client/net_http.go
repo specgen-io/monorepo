@@ -6,6 +6,7 @@ import (
 	"github.com/pinzolo/casee"
 	"golang/common"
 	"golang/types"
+	"golang/walkers"
 	"golang/writer"
 	"spec"
 	"strings"
@@ -36,7 +37,7 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	w.Imports.Add("net/http")
 	w.Imports.Add("encoding/json")
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
-	if types.ApiHasBody(api) {
+	if walkers.ApiHasNonEmptyBody(api) {
 		w.Imports.Add("bytes")
 	}
 	if types.ApiHasUrlParams(api) {

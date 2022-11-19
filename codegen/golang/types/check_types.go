@@ -52,15 +52,6 @@ func ApiHasBody(api *spec.Api) bool {
 	return false
 }
 
-func versionHasType(version *spec.Version, typ string) bool {
-	for _, api := range version.Http.Apis {
-		if ApiHasType(&api, typ) {
-			return true
-		}
-	}
-	return false
-}
-
 func BodyHasType(api *spec.Api, typ string) bool {
 	for _, operation := range api.Operations {
 		if operation.Body != nil {
