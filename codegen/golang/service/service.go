@@ -14,12 +14,12 @@ func GenerateService(specification *spec.Spec, moduleName string, swaggerPath st
 
 	sources.AddGenerated(generator.RootRouting(specification))
 	sources.AddGeneratedAll(generator.AllStaticFiles())
-	sources.AddGenerated(generator.ErrorModels(specification.HttpErrors))
+	sources.AddGeneratedAll(generator.ErrorModels(specification.HttpErrors))
 	sources.AddGeneratedAll(generator.HttpErrors(&specification.HttpErrors.Responses))
 	for _, version := range specification.Versions {
 		sources.AddGeneratedAll(generator.Routings(&version))
 		sources.AddGeneratedAll(generator.ServicesInterfaces(&version))
-		sources.AddGenerated(generator.Models(&version))
+		sources.AddGeneratedAll(generator.Models(&version))
 	}
 
 	if swaggerPath != "" {
