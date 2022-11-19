@@ -80,7 +80,7 @@ func ApiHasType(api *spec.Api, typName string) bool {
 	foundType := false
 	walk := spec.NewWalker().
 		OnTypeDef(func(typ *spec.TypeDef) {
-			if typ.Plain != typName {
+			if typ.Plain == typName {
 				foundType = true
 			}
 		})
