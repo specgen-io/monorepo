@@ -1723,15 +1723,20 @@ workflows:
             - golang
             - service-tests-go
       - client-test-service:
+          name: client-test-service-go
           context: specgen
           requires:
             - golang
       - client-go:
           context: specgen
           requires:
-            - client-test-service
+            - client-test-service-go
       - placeholder:
           name: completed-golang
+          requires:
+            - models-go
+            - service-go
+            - client-go
 
 
       - specgen:
