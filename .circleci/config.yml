@@ -12,8 +12,6 @@ parameters:
     default: v2
   rendr-version:
     type: string
-    type: string
-    type: string
     default: 0.0.59
 
 jobs:
