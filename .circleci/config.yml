@@ -12,6 +12,8 @@ parameters:
     default: v2
   rendr-version:
     type: string
+    type: string
+    type: string
     default: 0.0.59
 
 jobs:
@@ -783,10 +785,16 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Build specgen-golang
+          command: |
+            cd ./codegen/golang
+            go install
+            mv ${GOPATH}/bin/golang ${GOPATH}/bin/specgen-golang 
+            specgen-golang --help
+      - run:
           name: Build test-service
           command: |
             cd ./test-clients/test-service
-            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
             go generate
             go build -o test-service
       - persist_to_workspace:
@@ -1799,6 +1807,18 @@ workflows:
             - client-java-okhttp-moshi
 
 
+      - kotlin:
+          context: specgen
+      - maven-kotlin:
+          context: specgen
+          requires:
+            - kotlin
+      - gradle-kotlin:
+          context: specgen
+          requires:
+            - kotlin
+
+
       - specgen:
           context: specgen
       - ruby:
@@ -1813,16 +1833,6 @@ workflows:
           context: specgen
           requires:
             - scala
-      - kotlin:
-          context: specgen
-      - maven-kotlin:
-          context: specgen
-          requires:
-            - kotlin
-      - gradle-kotlin:
-          context: specgen
-          requires:
-            - kotlin
       - typescript:
           context: specgen
       - npm:
