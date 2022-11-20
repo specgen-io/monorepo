@@ -1230,7 +1230,7 @@ jobs:
           paths:
             - test-services/tests
 
-  service-scala:
+  service-scala-play:
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
     working_directory: ~/specgen-tests
@@ -1933,78 +1933,76 @@ workflows:
             - client-ts-browser-fetch-superstruct
 
 
-      - specgen:
-          context: specgen
       - ruby:
           context: specgen
       - gem:
           context: specgen
+          requires: [ruby]
+      - placeholder:
+          name: ruby-build
+          requires: [gem]
+      - models-ruby:
+          context: specgen
+          requires: [ruby-build]
+      - client-test-service:
+          name: client-test-service-ruby
+          context: specgen
+          requires: [ruby-build]
+      - client-ruby:
+          context: specgen
+          requires: [client-test-service-ruby]
+      - placeholder:
+          name: completed-ruby
           requires:
-            - ruby
+            - models-ruby
+            - client-test-service
+
+
       - scala:
           context: specgen
       - sbt:
           context: specgen
-          requires:
-            - scala
-      - build-complete:
-          requires:
-            - specgen
-            - sbt
-            - gem
-
-      - models-ruby:
-          context: specgen
-          requires:
-            - build-complete
+          requires: [scala]
+      - placeholder:
+          name: scala-build
+          requires: [sbt]
       - models-scala-circe:
           context: specgen
-          requires:
-            - build-complete
-
+          requires: [scala-build]
+      - service-tests:
+          name: service-tests-scala
+          requires: [scala-build]
+      - service-scala-play:
+          context: specgen
+          requires: [service-tests-scala]
       - client-test-service:
+          name: client-test-service-scala
           context: specgen
-          requires:
-            - test-services-complete
-      - client-ruby:
-          context: specgen
-          requires:
-            - client-test-service
+          requires: [scala-build]
       - client-scala-sttp:
           context: specgen
+          requires: [client-test-service-scala]
+      - placeholder:
+          name: completed-scala
           requires:
-            - client-test-service
-
-
-      - service-tests:
-          requires:
-            - test-models-complete
-      - service-scala:
-          context: specgen
-          requires:
-            - service-tests
-
-      - test-models-complete:
-          requires:
-            - models-ruby
             - models-scala-circe
-
-      - test-services-complete:
-          requires:
             - service-scala
+            - client-test-service-scala
 
-      - test-clients-complete:
-          requires:
-            - client-ruby
-            - client-scala-sttp
+
+      - specgen:
+          context: specgen
+
 
       - testing-complete:
           requires:
-            - test-clients-complete
+            - specgen
             - completed-golang
             - completed-java
             - completed-kotlin
             - completed-typescript
+            - completed-scala
+            - completed-ruby
 
       - approve-release:
           type: approval
