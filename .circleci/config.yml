@@ -1955,7 +1955,7 @@ workflows:
           name: completed-ruby
           requires:
             - models-ruby
-            - client-test-service
+            - client-ruby
 
 
       - scala:
