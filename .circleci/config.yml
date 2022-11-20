@@ -1986,7 +1986,7 @@ workflows:
           name: completed-scala
           requires:
             - models-scala-circe
-            - service-scala
+            - service-scala-play
             - client-test-service-scala
 
 
