@@ -1691,33 +1691,26 @@ workflows:
           context: specgen
       - placeholder:
           name: golang-no-plugin
-          requires:
-            - golang
+          requires: [golang]
       - placeholder:
           name: golang-build
-          requires:
-            - golang-no-plugin
+          requires: [golang-no-plugin]
       - models-golang:
           context: specgen
-          requires:
-            - golang-build
+          requires: [golang-build]
       - service-tests:
           name: service-tests-golang
-          requires:
-            - golang-build
+          requires: [golang-build]
       - service-golang:
           context: specgen
-          requires:
-            - service-tests-golang
+          requires: [service-tests-golang]
       - client-test-service:
           name: client-test-service-golang
           context: specgen
-          requires:
-            - golang-build
+          requires: [golang-build]
       - client-golang:
           context: specgen
-          requires:
-            - client-test-service-golang
+          requires: [client-test-service-golang]
       - placeholder:
           name: completed-golang
           requires:
@@ -1730,49 +1723,38 @@ workflows:
           context: specgen
       - maven-java:
           context: specgen
-          requires:
-            - java
+          requires: [java]
       - gradle-java:
           context: specgen
-          requires:
-            - java
+          requires: [java]
       - placeholder:
           name: java-build
-          requires:
-            - maven-java
-            - gradle-java
+          requires: [maven-java, gradle-java]
       - models-java-jackson:
           context: specgen
-          requires:
-            - java-build
+          requires: [java-build]
       - models-java-moshi:
           context: specgen
-          requires:
-            - java-build
+          requires: [java-build]
       - service-tests:
           name: service-tests-java
-          requires:
-            - java-build
+          requires: [java-build]
       - service-java:
           matrix:
             parameters:
               values-file: ["micronaut-jackson", "micronaut-moshi", "spring-jackson", "spring-moshi"]
           context: specgen
-          requires:
-            - service-tests-java
+          requires: [service-tests-java]
       - client-test-service:
           name: client-test-service-java
           context: specgen
-          requires:
-            - java-build
+          requires: [java-build]
       - client-java-okhttp-jackson:
           context: specgen
-          requires:
-            - client-test-service-java
+          requires: [client-test-service-java]
       - client-java-okhttp-moshi:
           context: specgen
-          requires:
-            - client-test-service-java
+          requires: [client-test-service-java]
       - placeholder:
           name: completed-java
           requires:
@@ -1787,53 +1769,41 @@ workflows:
           context: specgen
       - maven-kotlin:
           context: specgen
-          requires:
-            - kotlin
+          requires: [kotlin]
       - gradle-kotlin:
           context: specgen
-          requires:
-            - kotlin
+          requires: [kotlin]
       - placeholder:
           name: kotlin-build
-          requires:
-            - maven-kotlin
-            - gradle-kotlin
+          requires: [maven-kotlin, gradle-kotlin]
       - models-kotlin-jackson:
           context: specgen
-          requires:
-            - kotlin-build
+          requires: [kotlin-build]
       - models-kotlin-moshi:
           context: specgen
-          requires:
-            - kotlin-build
+          requires: [kotlin-build]
       - service-tests:
           name: service-tests-kotlin
-          requires:
-            - kotlin-build
+          requires: [kotlin-build]
       - service-kotlin:
           matrix:
             parameters:
               values-file: ["micronaut-jackson", "micronaut-moshi", "spring-jackson", "spring-moshi"]
           context: specgen
-          requires:
-            - service-tests-kotlin
+          requires: [service-tests-kotlin]
       - client-test-service:
           name: client-test-service-kotlin
           context: specgen
-          requires:
-            - kotlin-build
+          requires: [kotlin-build]
       - client-kotlin-okhttp-jackson:
           context: specgen
-          requires:
-            - client-test-service-kotlin
+          requires: [client-test-service-kotlin]
       - client-kotlin-okhttp-moshi:
           context: specgen
-          requires:
-            - client-test-service-kotlin
+          requires: [client-test-service-kotlin]
       - client-kotlin-micronaut-jackson:
           context: specgen
-          requires:
-            - client-test-service-kotlin
+          requires: [client-test-service-kotlin]
       - placeholder:
           name: completed-kotlin
           requires:
@@ -1849,52 +1819,41 @@ workflows:
           context: specgen
       - npm-typescript:
           context: specgen
-          requires:
-            - typescript
+          requires: [typescript]
       - placeholder:
           name: typescript-build
-          requires:
-            - npm-typescript
+          requires: [npm-typescript]
       - models-ts-superstruct:
           context: specgen
-          requires:
-            - typescript-build
+          requires: [typescript-build]
       - models-ts-iots:
           context: specgen
-          requires:
-            - typescript-build
+          requires: [typescript-build]
       - service-tests:
           name: service-tests-typescript
-          requires:
-            - typescript-build
+          requires: [typescript-build]
       - service-typescript:
           matrix:
             parameters:
               values-file: ["express-superstruct", "express-iots", "koa-superstruct", "koa-iots"]
           context: specgen
-          requires:
-            - service-tests-typescript
+          requires: [service-tests-typescript]
       - client-test-service:
           name: client-test-service-typescript
           context: specgen
-          requires:
-            - typescript-build
+          requires: [typescript-build]
       - client-ts-axios-superstruct:
           context: specgen
-          requires:
-            - client-test-service-typescript
+          requires: [client-test-service-typescript]
       - client-ts-axios-iots:
           context: specgen
-          requires:
-            - client-test-service-typescript
+          requires: [client-test-service-typescript]
       - client-ts-node-fetch-superstruct:
           context: specgen
-          requires:
-            - client-test-service-typescript
+          requires: [client-test-service-typescript]
       - client-ts-browser-fetch-superstruct:
           context: specgen
-          requires:
-            - client-test-service-typescript
+          requires: [client-test-service-typescript]
       - placeholder:
           name: completed-typescript
           requires:
@@ -1985,37 +1944,28 @@ workflows:
                 - /v.*/
       - specgen-release:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
       - golang-release:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
       - maven-java-sonatype:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
       - maven-kotlin-sonatype:
           context: specgen
-          requires:
-            - maven-java-sonatype
+          requires: [maven-java-sonatype]
       - sbt-sonatype:
           context: specgen
-          requires:
-            - maven-kotlin-sonatype
+          requires: [maven-kotlin-sonatype]
       - gradle-java-pluginportal:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
       - gradle-kotlin-pluginportal:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
       - npm-npmjs:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
       - gem-rubygems:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
