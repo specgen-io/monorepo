@@ -1437,6 +1437,13 @@ jobs:
       - go-tests:
           command: ./test-services/tests/service-tests -test.v
 
+  placeholder:
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - run: echo "Just a placeholder job"
+
+
 commands:
   attach_workspace_folder:
     parameters:
@@ -1702,9 +1709,32 @@ commands:
 workflows:
   build-release:
     jobs:
-      - specgen:
-          context: specgen
       - golang:
+          context: specgen
+      - models-go:
+          context: specgen
+          requires:
+            - golang
+      - service-tests:
+          name: service-tests-go
+      - service-go:
+          context: specgen
+          requires:
+            - golang
+            - service-tests-go
+      - client-test-service:
+          context: specgen
+          requires:
+            - golang
+      - client-go:
+          context: specgen
+          requires:
+            - client-test-service
+      - placeholder:
+          name: completed-golang
+
+
+      - specgen:
           context: specgen
       - ruby:
           context: specgen
@@ -1747,7 +1777,6 @@ workflows:
       - build-complete:
           requires:
             - specgen
-            - golang
             - sbt
             - maven-java
             - maven-kotlin
@@ -1756,10 +1785,6 @@ workflows:
             - gem
             - npm
 
-      - models-go:
-          context: specgen
-          requires:
-            - build-complete
       - models-ruby:
           context: specgen
           requires:
@@ -1798,10 +1823,6 @@ workflows:
           context: specgen
           requires:
             - test-services-complete
-      - client-go:
-          context: specgen
-          requires:
-            - client-test-service
       - client-java-okhttp-jackson:
           context: specgen
           requires:
@@ -1869,10 +1890,6 @@ workflows:
           context: specgen
           requires:
             - service-tests
-      - service-go:
-          context: specgen
-          requires:
-            - service-tests
       - service-typescript:
           matrix:
             parameters:
@@ -1883,7 +1900,6 @@ workflows:
 
       - test-models-complete:
           requires:
-            - models-go
             - models-ruby
             - models-ts-superstruct
             - models-ts-iots
@@ -1898,12 +1914,10 @@ workflows:
             - service-scala
             - service-java
             - service-kotlin
-            - service-go
             - service-typescript
 
       - test-clients-complete:
           requires:
-            - client-go
             - client-java-okhttp-jackson
             - client-java-okhttp-moshi
             - client-kotlin-okhttp-jackson
@@ -1919,6 +1933,7 @@ workflows:
       - testing-complete:
           requires:
             - test-clients-complete
+            - completed-golang
 
       - approve-release:
           type: approval
