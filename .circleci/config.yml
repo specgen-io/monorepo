@@ -1880,7 +1880,7 @@ workflows:
       - placeholder:
           name: typescript-build
           requires:
-            - npm
+            - npm-typescript
       - models-ts-superstruct:
           context: specgen
           requires:
