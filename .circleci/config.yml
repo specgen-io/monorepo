@@ -537,7 +537,7 @@ jobs:
             specgen --help
 
 
-  models-go:
+  models-golang:
     working_directory: ~/test-models-go
     docker:
       - image: cimg/go:1.18.3
@@ -794,7 +794,7 @@ jobs:
           paths:
             - test-clients/test-service
 
-  client-go:
+  client-golang:
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/go:1.18.3
@@ -1363,7 +1363,7 @@ jobs:
       - go-tests:
           command: ./test-services/tests/service-tests -test.v
 
-  service-go:
+  service-golang:
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/go:1.18.3
@@ -1711,32 +1711,33 @@ workflows:
     jobs:
       - golang:
           context: specgen
-      - models-go:
+      - models-golang:
           context: specgen
           requires:
             - golang
       - service-tests:
-          name: service-tests-go
-      - service-go:
-          context: specgen
+          name: service-tests-golang
           requires:
             - golang
-            - service-tests-go
+      - service-golang:
+          context: specgen
+          requires:
+            - service-tests-golang
       - client-test-service:
-          name: client-test-service-go
+          name: client-test-service-golang
           context: specgen
           requires:
             - golang
-      - client-go:
+      - client-golang:
           context: specgen
           requires:
-            - client-test-service-go
+            - client-test-service-golang
       - placeholder:
           name: completed-golang
           requires:
-            - models-go
-            - service-go
-            - client-go
+            - models-golang
+            - service-golang
+            - client-golang
 
 
       - specgen:
