@@ -1291,7 +1291,7 @@ jobs:
           name: Generate service
           command: |
             export THE_ROOT=./test-services/java
-            ./specgen new service-java --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///${THE_ROOT}/template --out ${THE_ROOT}/out
+            ./rendr render service-java --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///${THE_ROOT}/template --out ${THE_ROOT}/out
       - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
@@ -1660,7 +1660,7 @@ commands:
   get-rendr:
     steps:
       - run:
-          name: Get specgen
+          name: Get rendr
           command: |
             curl -L -H "X-JFrog-Art-Api:${JFROG_PASS}" -O "https://specgen.jfrog.io/artifactory/binaries/rendr/v<<pipeline.parameters.rendr-version>>/rendr_linux_amd64.zip"
             unzip -o rendr_linux_amd64.zip
