@@ -1933,22 +1933,17 @@ workflows:
             - models-ts-superstruct
             - models-ts-iots
             - models-scala-circe
-            - models-java-jackson
-            - models-java-moshi
             - models-kotlin-jackson
             - models-kotlin-moshi
 
       - test-services-complete:
           requires:
             - service-scala
-            - service-java
             - service-kotlin
             - service-typescript
 
       - test-clients-complete:
           requires:
-            - client-java-okhttp-jackson
-            - client-java-okhttp-moshi
             - client-kotlin-okhttp-jackson
             - client-kotlin-okhttp-moshi
             - client-kotlin-micronaut-jackson
