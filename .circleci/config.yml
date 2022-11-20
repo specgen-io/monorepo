@@ -456,36 +456,6 @@ jobs:
             -Dproject.version=<<pipeline.parameters.specgen-version>>
 
 
-  build-complete:
-    docker:
-      - image: cimg/base:2021.04
-    steps:
-      - run: echo "Build for <<pipeline.parameters.specgen-version>> is complete!!!"
-
-  testing-complete:
-    docker:
-      - image: cimg/base:2021.04
-    steps:
-      - run: echo "Testing of <<pipeline.parameters.specgen-version>> is complete!!!"
-
-  test-models-complete:
-    docker:
-      - image: cimg/base:2021.04
-    steps:
-      - run: echo "Testing of models with <<pipeline.parameters.specgen-version>> is complete!!!"
-
-  test-services-complete:
-    docker:
-      - image: cimg/base:2021.04
-    steps:
-      - run: echo "Testing of services with <<pipeline.parameters.specgen-version>> is complete!!!"
-
-  test-clients-complete:
-    docker:
-      - image: cimg/base:2021.04
-    steps:
-      - run: echo "Testing of clients with <<pipeline.parameters.specgen-version>> is complete!!!"
-
   specgen-release:
     docker:
       - image: cimg/go:1.16.4
@@ -1720,9 +1690,13 @@ workflows:
       - golang:
           context: specgen
       - placeholder:
-          name: golang-build
+          name: golang-no-plugin
           requires:
             - golang
+      - placeholder:
+          name: golang-build
+          requires:
+            - golang-no-plugin
       - models-golang:
           context: specgen
           requires:
@@ -1987,14 +1961,15 @@ workflows:
           requires:
             - models-scala-circe
             - service-scala-play
-            - client-test-service-scala
+            - client-scala-sttp
 
 
       - specgen:
           context: specgen
 
 
-      - testing-complete:
+      - approve-release:
+          type: approval
           requires:
             - specgen
             - completed-golang
@@ -2003,11 +1978,6 @@ workflows:
             - completed-typescript
             - completed-scala
             - completed-ruby
-
-      - approve-release:
-          type: approval
-          requires:
-            - testing-complete
           filters:
             branches:
               only:
