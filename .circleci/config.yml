@@ -12,7 +12,7 @@ parameters:
     default: v2
   rendr-version:
     type: string
-    default: 0.0.57
+    default: 0.0.59
 
 jobs:
   specgen:
@@ -1281,7 +1281,6 @@ jobs:
           name: Create temp folder for tests results
           command: mkdir -p /tmp/test-results
       - get-rendr
-      - get-specgen
       - run:
           name: Copy spec.yaml
           command: |
@@ -1291,7 +1290,7 @@ jobs:
           name: Generate service
           command: |
             export THE_ROOT=./test-services/java
-            ./rendr render service-java --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///${THE_ROOT}/template --out ${THE_ROOT}/out
+            ./rendr  file:///./templates/service-java --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --root file:///${THE_ROOT}/template --out ${THE_ROOT}/out
       - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
