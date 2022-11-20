@@ -1792,7 +1792,8 @@ workflows:
       - placeholder:
           name: completed-java
           requires:
-            - models-java
+            - models-java-jackson
+            - models-java-moshi
             - service-java
             - client-java-okhttp-jackson
             - client-java-okhttp-moshi
