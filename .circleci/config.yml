@@ -1792,7 +1792,7 @@ workflows:
       - placeholder:
           name: completed-java
           requires:
-            - models-golang
+            - models-java
             - service-java
             - client-java-okhttp-jackson
             - client-java-okhttp-moshi
