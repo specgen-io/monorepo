@@ -197,7 +197,7 @@ jobs:
       - build_specgen_plugin:
           plugin-path: codegen/typescript
 
-  npm:
+  npm-typescript:
     docker:
       - image: cimg/node:16.8.0
     steps:
@@ -1871,6 +1871,68 @@ workflows:
             - client-kotlin-micronaut-jackson
 
 
+      - typescript:
+          context: specgen
+      - npm-typescript:
+          context: specgen
+          requires:
+            - typescript
+      - placeholder:
+          name: typescript-build
+          requires:
+            - npm
+      - models-ts-superstruct:
+          context: specgen
+          requires:
+            - typescript-build
+      - models-ts-iots:
+          context: specgen
+          requires:
+            - typescript-build
+      - service-tests:
+          name: service-tests-typescript
+          requires:
+            - typescript-build
+      - service-typescript:
+          matrix:
+            parameters:
+              values-file: ["express-superstruct", "express-iots", "koa-superstruct", "koa-iots"]
+          context: specgen
+          requires:
+            - service-tests-typescript
+      - client-test-service:
+          name: client-test-service-typescript
+          context: specgen
+          requires:
+            - typescript-build
+      - client-ts-axios-superstruct:
+          context: specgen
+          requires:
+            - client-test-service-typescript
+      - client-ts-axios-iots:
+          context: specgen
+          requires:
+            - client-test-service-typescript
+      - client-ts-node-fetch-superstruct:
+          context: specgen
+          requires:
+            - client-test-service-typescript
+      - client-ts-browser-fetch-superstruct:
+          context: specgen
+          requires:
+            - client-test-service-typescript
+      - placeholder:
+          name: completed-typescript
+          requires:
+            - models-ts-superstruct
+            - models-ts-iots
+            - service-typescript
+            - client-ts-axios-superstruct
+            - client-ts-axios-iots
+            - client-ts-node-fetch-superstruct
+            - client-ts-browser-fetch-superstruct
+
+
       - specgen:
           context: specgen
       - ruby:
@@ -1885,28 +1947,13 @@ workflows:
           context: specgen
           requires:
             - scala
-      - typescript:
-          context: specgen
-      - npm:
-          context: specgen
-          requires:
-            - typescript
       - build-complete:
           requires:
             - specgen
             - sbt
             - gem
-            - npm
 
       - models-ruby:
-          context: specgen
-          requires:
-            - build-complete
-      - models-ts-superstruct:
-          context: specgen
-          requires:
-            - build-complete
-      - models-ts-iots:
           context: specgen
           requires:
             - build-complete
@@ -1927,22 +1974,6 @@ workflows:
           context: specgen
           requires:
             - client-test-service
-      - client-ts-axios-superstruct:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-ts-node-fetch-superstruct:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-ts-browser-fetch-superstruct:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-ts-axios-iots:
-          context: specgen
-          requires:
-            - client-test-service
 
 
       - service-tests:
@@ -1952,34 +1983,20 @@ workflows:
           context: specgen
           requires:
             - service-tests
-      - service-typescript:
-          matrix:
-            parameters:
-              values-file: ["express-superstruct", "express-iots", "koa-superstruct", "koa-iots"]
-          context: specgen
-          requires:
-            - service-tests
 
       - test-models-complete:
           requires:
             - models-ruby
-            - models-ts-superstruct
-            - models-ts-iots
             - models-scala-circe
 
       - test-services-complete:
           requires:
             - service-scala
-            - service-typescript
 
       - test-clients-complete:
           requires:
             - client-ruby
             - client-scala-sttp
-            - client-ts-axios-superstruct
-            - client-ts-node-fetch-superstruct
-            - client-ts-browser-fetch-superstruct
-            - client-ts-axios-iots
 
       - testing-complete:
           requires:
@@ -1987,6 +2004,7 @@ workflows:
             - completed-golang
             - completed-java
             - completed-kotlin
+            - completed-typescript
 
       - approve-release:
           type: approval
