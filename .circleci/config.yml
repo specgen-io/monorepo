@@ -1719,14 +1719,18 @@ workflows:
 
       - golang:
           context: specgen
+      - placeholder:
+          name: golang-build
+          requires:
+            - golang
       - models-golang:
           context: specgen
           requires:
-            - golang
+            - golang-build
       - service-tests:
           name: service-tests-golang
           requires:
-            - golang
+            - golang-build
       - service-golang:
           context: specgen
           requires:
@@ -1735,7 +1739,7 @@ workflows:
           name: client-test-service-golang
           context: specgen
           requires:
-            - golang
+            - golang-build
       - client-golang:
           context: specgen
           requires:
