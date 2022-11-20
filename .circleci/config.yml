@@ -58,12 +58,10 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Release vendored module
+          name: Build golang codegen
           command: |
-            go install github.com/specgen-io/goven@v0.0.10
             cd codegen/golang
-            goven release -name github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
-            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>-alpha
+            go build
 
   golang-release:
     docker:
@@ -71,12 +69,12 @@ jobs:
     working_directory: ~/golang
     steps:
       - run:
-          name: Checkout repo
-          command: git clone https://github.com/specgen-io/specgen-golang.git specgen-golang
-      - github-push-tag:
-          path: specgen-golang
-          repo: github.com/specgen-io/specgen-golang.git
-          tag: v<<pipeline.parameters.specgen-version>>
+          name: Release vendored module
+          command: |
+            go install github.com/specgen-io/goven@v0.0.10
+            cd codegen/golang
+            goven release -name github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>> -out vendored
+            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>
 
   ruby:
     docker:
@@ -513,11 +511,11 @@ jobs:
       - image: cimg/go:1.18.3
     steps:
       - checkout
+      - install_specgen_golang
       - run:
           name: Test Go models
           command: |
             cd ./test-models/go
-            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
             go generate
             mkdir -p ./test-results
             go install github.com/jstemmer/go-junit-report@v0.9.1
@@ -752,13 +750,7 @@ jobs:
       - image: cimg/go:1.18.3
     steps:
       - checkout
-      - run:
-          name: Build specgen-golang
-          command: |
-            cd ./codegen/golang
-            go install
-            mv ${GOPATH}/bin/golang ${GOPATH}/bin/specgen-golang 
-            specgen-golang --help
+      - install_specgen_golang
       - run:
           name: Build test-service
           command: |
@@ -780,11 +772,11 @@ jobs:
           at: .
       - start-service:
           port: 8081
+      - install_specgen_golang
       - run:
           name: Test Go client
           command: |
             cd ./test-clients/go
-            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
             go generate
             mkdir -p ./test-results
             go install github.com/jstemmer/go-junit-report@v0.9.1
@@ -1347,11 +1339,11 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - install_specgen_golang
       - run:
           name: Build service
           command: |
             cd ./test-services/go
-            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
             go generate
             go build
       - run:
@@ -1473,6 +1465,16 @@ commands:
             fi
             git tag -f -a << parameters.tag >> -m "Version: << parameters.tag >>"
             git push -f --tags
+
+  install_specgen_golang:
+    steps:
+      - run:
+          name: Build specgen-golang
+          command: |
+            cd ./codegen/golang
+            go install
+            mv ${GOPATH}/bin/golang ${GOPATH}/bin/specgen-golang 
+            specgen-golang --help      
 
   build_specgen_plugin:
     parameters:
