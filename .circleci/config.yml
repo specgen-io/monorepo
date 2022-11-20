@@ -1296,7 +1296,7 @@ jobs:
           name: Generate service
           command: |
             export THE_ROOT=./test-services/java
-            ./rendr  file:///./templates/service-java --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --root file:///${THE_ROOT}/template --out ${THE_ROOT}/out
+            ./rendr file:///./templates/service-java --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
       - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
@@ -1335,7 +1335,7 @@ jobs:
       - run:
           name: Create temp folder for tests results
           command: mkdir -p /tmp/test-results
-      - get-specgen
+      - get-rendr
       - run:
           name: Copy spec.yaml
           command: |
@@ -1345,7 +1345,7 @@ jobs:
           name: Generate service
           command: |
             export THE_ROOT=./test-services/kotlin
-            ./specgen new service-kotlin --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///${THE_ROOT}/template --out ${THE_ROOT}/out
+            ./rendr file:///./templates/service-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
       - artifactory/setup-gradle-kotlin:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
@@ -1409,7 +1409,7 @@ jobs:
       - run:
           name: Create temp folder for tests results
           command: mkdir -p /tmp/test-results
-      - get-specgen
+      - get-rendr
       - run:
           name: Copy spec.yaml
           command: |
@@ -1419,7 +1419,7 @@ jobs:
           name: Generate service
           command: |
             export THE_ROOT=./test-services/typescript
-            ./specgen new service-ts --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///${THE_ROOT}/template --out ${THE_ROOT}/out
+            ./rendr file:///./templates/service-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
