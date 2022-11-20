@@ -1663,7 +1663,7 @@ commands:
           command: |
             curl -L -H "X-JFrog-Art-Api:${JFROG_PASS}" -O "https://specgen.jfrog.io/artifactory/binaries/rendr/v<<pipeline.parameters.rendr-version>>/rendr_linux_amd64.zip"
             unzip -o rendr_linux_amd64.zip
-            ./rendr help
+            ./rendr --help
   yaml-execute:
     parameters:
       path:
