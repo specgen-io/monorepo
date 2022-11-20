@@ -1815,6 +1815,56 @@ workflows:
           context: specgen
           requires:
             - kotlin
+      - placeholder:
+          name: kotlin-build
+          requires:
+            - maven-kotlin
+            - gradle-kotlin
+      - models-kotlin-jackson:
+          context: specgen
+          requires:
+            - kotlin-build
+      - models-kotlin-moshi:
+          context: specgen
+          requires:
+            - kotlin-build
+      - service-tests:
+          name: service-tests-kotlin
+          requires:
+            - kotlin-build
+      - service-kotlin:
+          matrix:
+            parameters:
+              values-file: ["micronaut-jackson", "micronaut-moshi", "spring-jackson", "spring-moshi"]
+          context: specgen
+          requires:
+            - service-tests-kotlin
+      - client-test-service:
+          name: client-test-service-kotlin
+          context: specgen
+          requires:
+            - kotlin-build
+      - client-kotlin-okhttp-jackson:
+          context: specgen
+          requires:
+            - client-test-service-kotlin
+      - client-kotlin-okhttp-moshi:
+          context: specgen
+          requires:
+            - client-test-service-kotlin
+      - client-kotlin-micronaut-jackson:
+          context: specgen
+          requires:
+            - client-test-service-kotlin
+      - placeholder:
+          name: completed-kotlin
+          requires:
+            - models-kotlin-jackson
+            - models-kotlin-moshi
+            - service-kotlin
+            - client-kotlin-okhttp-jackson
+            - client-kotlin-okhttp-moshi
+            - client-kotlin-micronaut-jackson
 
 
       - specgen:
@@ -1841,8 +1891,6 @@ workflows:
           requires:
             - specgen
             - sbt
-            - maven-kotlin
-            - gradle-kotlin
             - gem
             - npm
 
@@ -1862,32 +1910,11 @@ workflows:
           context: specgen
           requires:
             - build-complete
-      - models-kotlin-jackson:
-          context: specgen
-          requires:
-            - build-complete
-      - models-kotlin-moshi:
-          context: specgen
-          requires:
-            - build-complete
-
 
       - client-test-service:
           context: specgen
           requires:
             - test-services-complete
-      - client-kotlin-okhttp-jackson:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-kotlin-okhttp-moshi:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-kotlin-micronaut-jackson:
-          context: specgen
-          requires:
-            - client-test-service
       - client-ruby:
           context: specgen
           requires:
@@ -1921,13 +1948,6 @@ workflows:
           context: specgen
           requires:
             - service-tests
-      - service-kotlin:
-          matrix:
-            parameters:
-              values-file: ["micronaut-jackson", "micronaut-moshi", "spring-jackson", "spring-moshi"]
-          context: specgen
-          requires:
-            - service-tests
       - service-typescript:
           matrix:
             parameters:
@@ -1942,20 +1962,14 @@ workflows:
             - models-ts-superstruct
             - models-ts-iots
             - models-scala-circe
-            - models-kotlin-jackson
-            - models-kotlin-moshi
 
       - test-services-complete:
           requires:
             - service-scala
-            - service-kotlin
             - service-typescript
 
       - test-clients-complete:
           requires:
-            - client-kotlin-okhttp-jackson
-            - client-kotlin-okhttp-moshi
-            - client-kotlin-micronaut-jackson
             - client-ruby
             - client-scala-sttp
             - client-ts-axios-superstruct
@@ -1968,6 +1982,7 @@ workflows:
             - test-clients-complete
             - completed-golang
             - completed-java
+            - completed-kotlin
 
       - approve-release:
           type: approval
