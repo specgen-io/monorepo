@@ -12,7 +12,7 @@ parameters:
     default: v2
   rendr-version:
     type: string
-    default: 0.0.59
+    default: v0.0.59
 
 jobs:
   specgen:
@@ -1634,7 +1634,7 @@ commands:
       - run:
           name: Get rendr
           command: |
-            curl -L -H "X-JFrog-Art-Api:${JFROG_PASS}" -O "https://specgen.jfrog.io/artifactory/binaries/rendr/v<<pipeline.parameters.rendr-version>>/rendr_linux_amd64.zip"
+            curl -L -H "X-JFrog-Art-Api:${JFROG_PASS}" -O "https://specgen.jfrog.io/artifactory/binaries/rendr/<<pipeline.parameters.rendr-version>>/rendr_linux_amd64.zip"
             unzip -o rendr_linux_amd64.zip
             ./rendr --help
   yaml-execute:
