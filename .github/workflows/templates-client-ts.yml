@@ -19,10 +19,10 @@ jobs:
 
       - uses: ./.github/actions/setvars
 
-      - uses: ./.github/actions/getspecgen
+      - uses: ./.github/actions/getrendr
         with:
           jfrog_pass: ${{ secrets.JFROG_PASS }}
-          version: ${SPECGEN_TOOL_VERSION}
+          version: ${RENDR_TOOL_VERSION}
 
       - uses: actions/setup-node@v3
         with:
@@ -30,7 +30,7 @@ jobs:
 
       - name: Rendr template
         run: |
-          ./specgen new client-ts --set client=${{ matrix.client }} --set validation=${{ matrix.validation }} --set versions.specgen=${SPECGEN_VERSION} --noinput --out output --source file:///./templates
+          ./rendr file:///./templates/client-ts --set client=${{ matrix.client }} --set validation=${{ matrix.validation }} --set versions.specgen=${SPECGEN_VERSION} --noinput --out output
 
       - uses: ./.github/actions/runbuild
         with:
