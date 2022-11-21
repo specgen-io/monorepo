@@ -16,4 +16,4 @@ runs:
       run: |
         curl -L -H "X-JFrog-Art-Api:${{ inputs.jfrog_pass }}" -O "https://specgen.jfrog.io/artifactory/binaries/rendr/${{ inputs.version }}/rendr_linux_amd64.zip"
         unzip -o rendr_linux_amd64.zip
-        ./rendr help
+        ./rendr --help
