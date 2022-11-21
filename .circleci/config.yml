@@ -74,7 +74,11 @@ jobs:
             go install github.com/specgen-io/goven@v0.0.10
             cd codegen/golang
             goven release -name github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>> -out vendored
+      - run:
+          name: Check tool installation
+          command: |
             go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>
+            specgen-golang --help
 
   ruby:
     docker:
@@ -477,27 +481,11 @@ jobs:
             rm -rf ./test-results
             rm ./release.sh
       - run:
-          name: Install goven
-          command: |
-            cd codegen/specgen
-            go install github.com/specgen-io/goven@v0.0.10
-      - run:
           name: Vendor code with goven
           command: |
             cd codegen/specgen
-            goven vendor -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -out vendored
-      - run:
-          name: Copy vendored code
-          command: |
-            cd codegen
-            git clone https://github.com/specgen-io/specgen.git specgen-release
-            rm -rf ./specgen-release/<<pipeline.parameters.specgen-version-major>>
-            cp -a ./specgen/vendored/. ./specgen-release/<<pipeline.parameters.specgen-version-major>>
-      - github-push-tag:
-          path: codegen/specgen-release
-          repo: github.com/specgen-io/specgen.git
-          tag: v<<pipeline.parameters.specgen-version>>
-          commit: true
+            go install github.com/specgen-io/goven@v0.0.10
+            goven release -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>> -out vendored
       - run:
           name: Check released module
           command: |
