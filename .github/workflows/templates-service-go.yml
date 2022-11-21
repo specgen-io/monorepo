@@ -18,10 +18,10 @@ jobs:
 
       - uses: ./.github/actions/setvars
 
-      - uses: ./.github/actions/getspecgen
+      - uses: ./.github/actions/getrendr
         with:
           jfrog_pass: ${{ secrets.JFROG_PASS }}
-          version: ${SPECGEN_TOOL_VERSION}
+          version: ${RENDR_TOOL_VERSION}
 
       - uses: actions/setup-go@v3
         with:
@@ -29,7 +29,7 @@ jobs:
 
       - name: Rendr template
         run: |
-          ./specgen new service-go --set server=${{ matrix.server }} --set versions.specgen=${SPECGEN_VERSION} --noinput --out output --source file:///./templates
+          ./rendr file:///./templates/service-go --set server=${{ matrix.server }} --set versions.specgen=${SPECGEN_VERSION} --noinput --out output
 
       - uses: ./.github/actions/runbuild
         with:

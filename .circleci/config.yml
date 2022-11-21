@@ -12,7 +12,7 @@ parameters:
     default: v2
   rendr-version:
     type: string
-    default: 0.0.59
+    default: v0.0.59
 
 jobs:
   specgen:
@@ -58,12 +58,10 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Release vendored module
+          name: Build golang codegen
           command: |
-            go install github.com/specgen-io/goven@v0.0.10
             cd codegen/golang
-            goven release -name github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>>-alpha -out vendored
-            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>-alpha
+            go build
 
   golang-release:
     docker:
@@ -71,12 +69,16 @@ jobs:
     working_directory: ~/golang
     steps:
       - run:
-          name: Checkout repo
-          command: git clone https://github.com/specgen-io/specgen-golang.git specgen-golang
-      - github-push-tag:
-          path: specgen-golang
-          repo: github.com/specgen-io/specgen-golang.git
-          tag: v<<pipeline.parameters.specgen-version>>
+          name: Release vendored module
+          command: |
+            go install github.com/specgen-io/goven@v0.0.10
+            cd codegen/golang
+            goven release -name github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>> -out vendored
+      - run:
+          name: Check tool installation
+          command: |
+            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>
+            specgen-golang --help
 
   ruby:
     docker:
@@ -197,7 +199,7 @@ jobs:
       - build_specgen_plugin:
           plugin-path: codegen/typescript
 
-  npm:
+  npm-typescript:
     docker:
       - image: cimg/node:16.8.0
     steps:
@@ -456,36 +458,6 @@ jobs:
             -Dproject.version=<<pipeline.parameters.specgen-version>>
 
 
-  build-complete:
-    docker:
-      - image: cimg/base:2021.04
-    steps:
-      - run: echo "Build for <<pipeline.parameters.specgen-version>> is complete!!!"
-
-  testing-complete:
-    docker:
-      - image: cimg/base:2021.04
-    steps:
-      - run: echo "Testing of <<pipeline.parameters.specgen-version>> is complete!!!"
-
-  test-models-complete:
-    docker:
-      - image: cimg/base:2021.04
-    steps:
-      - run: echo "Testing of models with <<pipeline.parameters.specgen-version>> is complete!!!"
-
-  test-services-complete:
-    docker:
-      - image: cimg/base:2021.04
-    steps:
-      - run: echo "Testing of services with <<pipeline.parameters.specgen-version>> is complete!!!"
-
-  test-clients-complete:
-    docker:
-      - image: cimg/base:2021.04
-    steps:
-      - run: echo "Testing of clients with <<pipeline.parameters.specgen-version>> is complete!!!"
-
   specgen-release:
     docker:
       - image: cimg/go:1.16.4
@@ -509,27 +481,11 @@ jobs:
             rm -rf ./test-results
             rm ./release.sh
       - run:
-          name: Install goven
-          command: |
-            cd codegen/specgen
-            go install github.com/specgen-io/goven@v0.0.10
-      - run:
           name: Vendor code with goven
           command: |
             cd codegen/specgen
-            goven vendor -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -out vendored
-      - run:
-          name: Copy vendored code
-          command: |
-            cd codegen
-            git clone https://github.com/specgen-io/specgen.git specgen-release
-            rm -rf ./specgen-release/<<pipeline.parameters.specgen-version-major>>
-            cp -a ./specgen/vendored/. ./specgen-release/<<pipeline.parameters.specgen-version-major>>
-      - github-push-tag:
-          path: codegen/specgen-release
-          repo: github.com/specgen-io/specgen.git
-          tag: v<<pipeline.parameters.specgen-version>>
-          commit: true
+            go install github.com/specgen-io/goven@v0.0.10
+            goven release -name github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>> -out vendored
       - run:
           name: Check released module
           command: |
@@ -537,17 +493,17 @@ jobs:
             specgen --help
 
 
-  models-go:
+  models-golang:
     working_directory: ~/test-models-go
     docker:
       - image: cimg/go:1.18.3
     steps:
       - checkout
+      - install_specgen_golang
       - run:
           name: Test Go models
           command: |
             cd ./test-models/go
-            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
             go generate
             mkdir -p ./test-results
             go install github.com/jstemmer/go-junit-report@v0.9.1
@@ -782,11 +738,11 @@ jobs:
       - image: cimg/go:1.18.3
     steps:
       - checkout
+      - install_specgen_golang
       - run:
           name: Build test-service
           command: |
             cd ./test-clients/test-service
-            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
             go generate
             go build -o test-service
       - persist_to_workspace:
@@ -794,7 +750,7 @@ jobs:
           paths:
             - test-clients/test-service
 
-  client-go:
+  client-golang:
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/go:1.18.3
@@ -804,11 +760,11 @@ jobs:
           at: .
       - start-service:
           port: 8081
+      - install_specgen_golang
       - run:
           name: Test Go client
           command: |
             cd ./test-clients/go
-            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
             go generate
             mkdir -p ./test-results
             go install github.com/jstemmer/go-junit-report@v0.9.1
@@ -1224,7 +1180,7 @@ jobs:
           paths:
             - test-services/tests
 
-  service-scala:
+  service-scala-play:
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
     working_directory: ~/specgen-tests
@@ -1290,7 +1246,7 @@ jobs:
           name: Generate service
           command: |
             export THE_ROOT=./test-services/java
-            ./rendr  file:///./templates/service-java --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --root file:///${THE_ROOT}/template --out ${THE_ROOT}/out
+            ./rendr file:///./templates/service-java --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
       - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
@@ -1329,7 +1285,7 @@ jobs:
       - run:
           name: Create temp folder for tests results
           command: mkdir -p /tmp/test-results
-      - get-specgen
+      - get-rendr
       - run:
           name: Copy spec.yaml
           command: |
@@ -1339,7 +1295,7 @@ jobs:
           name: Generate service
           command: |
             export THE_ROOT=./test-services/kotlin
-            ./specgen new service-kotlin --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///${THE_ROOT}/template --out ${THE_ROOT}/out
+            ./rendr file:///./templates/service-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
       - artifactory/setup-gradle-kotlin:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
@@ -1363,7 +1319,7 @@ jobs:
       - go-tests:
           command: ./test-services/tests/service-tests -test.v
 
-  service-go:
+  service-golang:
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/go:1.18.3
@@ -1371,11 +1327,11 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - install_specgen_golang
       - run:
           name: Build service
           command: |
             cd ./test-services/go
-            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
             go generate
             go build
       - run:
@@ -1403,7 +1359,7 @@ jobs:
       - run:
           name: Create temp folder for tests results
           command: mkdir -p /tmp/test-results
-      - get-specgen
+      - get-rendr
       - run:
           name: Copy spec.yaml
           command: |
@@ -1413,7 +1369,7 @@ jobs:
           name: Generate service
           command: |
             export THE_ROOT=./test-services/typescript
-            ./specgen new service-ts --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --source file:///./templates --root file:///${THE_ROOT}/template --out ${THE_ROOT}/out
+            ./rendr file:///./templates/service-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
@@ -1436,6 +1392,13 @@ jobs:
           url: http://localhost:8081/docs/
       - go-tests:
           command: ./test-services/tests/service-tests -test.v
+
+  placeholder:
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - run: echo "Just a placeholder job"
+
 
 commands:
   attach_workspace_folder:
@@ -1490,6 +1453,16 @@ commands:
             fi
             git tag -f -a << parameters.tag >> -m "Version: << parameters.tag >>"
             git push -f --tags
+
+  install_specgen_golang:
+    steps:
+      - run:
+          name: Build specgen-golang
+          command: |
+            cd ./codegen/golang
+            go install
+            mv ${GOPATH}/bin/golang ${GOPATH}/bin/specgen-golang 
+            specgen-golang --help      
 
   build_specgen_plugin:
     parameters:
@@ -1661,7 +1634,7 @@ commands:
       - run:
           name: Get rendr
           command: |
-            curl -L -H "X-JFrog-Art-Api:${JFROG_PASS}" -O "https://specgen.jfrog.io/artifactory/binaries/rendr/v<<pipeline.parameters.rendr-version>>/rendr_linux_amd64.zip"
+            curl -L -H "X-JFrog-Art-Api:${JFROG_PASS}" -O "https://specgen.jfrog.io/artifactory/binaries/rendr/<<pipeline.parameters.rendr-version>>/rendr_linux_amd64.zip"
             unzip -o rendr_linux_amd64.zip
             ./rendr --help
   yaml-execute:
@@ -1702,228 +1675,258 @@ commands:
 workflows:
   build-release:
     jobs:
-      - specgen:
-          context: specgen
+
+
       - golang:
           context: specgen
-      - ruby:
+      - placeholder:
+          name: golang-no-plugin
+          requires: [golang]
+      - placeholder:
+          name: golang-build
+          requires: [golang-no-plugin]
+      - models-golang:
           context: specgen
-      - gem:
+          requires: [golang-build]
+      - service-tests:
+          name: service-tests-golang
+          requires: [golang-build]
+      - service-golang:
           context: specgen
+          requires: [service-tests-golang]
+      - client-test-service:
+          name: client-test-service-golang
+          context: specgen
+          requires: [golang-build]
+      - client-golang:
+          context: specgen
+          requires: [client-test-service-golang]
+      - placeholder:
+          name: completed-golang
           requires:
-            - ruby
-      - scala:
-          context: specgen
-      - sbt:
-          context: specgen
-          requires:
-            - scala
+            - models-golang
+            - service-golang
+            - client-golang
+
+
       - java:
           context: specgen
       - maven-java:
           context: specgen
-          requires:
-            - java
+          requires: [java]
       - gradle-java:
           context: specgen
-          requires:
-            - java
-      - kotlin:
-          context: specgen
-      - maven-kotlin:
-          context: specgen
-          requires:
-            - kotlin
-      - gradle-kotlin:
-          context: specgen
-          requires:
-            - kotlin
-      - typescript:
-          context: specgen
-      - npm:
-          context: specgen
-          requires:
-            - typescript
-      - build-complete:
-          requires:
-            - specgen
-            - golang
-            - sbt
-            - maven-java
-            - maven-kotlin
-            - gradle-java
-            - gradle-kotlin
-            - gem
-            - npm
-
-      - models-go:
-          context: specgen
-          requires:
-            - build-complete
-      - models-ruby:
-          context: specgen
-          requires:
-            - build-complete
-      - models-ts-superstruct:
-          context: specgen
-          requires:
-            - build-complete
-      - models-ts-iots:
-          context: specgen
-          requires:
-            - build-complete
-      - models-scala-circe:
-          context: specgen
-          requires:
-            - build-complete
+          requires: [java]
+      - placeholder:
+          name: java-build
+          requires: [maven-java, gradle-java]
       - models-java-jackson:
           context: specgen
-          requires:
-            - build-complete
+          requires: [java-build]
       - models-java-moshi:
           context: specgen
-          requires:
-            - build-complete
-      - models-kotlin-jackson:
-          context: specgen
-          requires:
-            - build-complete
-      - models-kotlin-moshi:
-          context: specgen
-          requires:
-            - build-complete
-
-
-      - client-test-service:
-          context: specgen
-          requires:
-            - test-services-complete
-      - client-go:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-java-okhttp-jackson:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-java-okhttp-moshi:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-kotlin-okhttp-jackson:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-kotlin-okhttp-moshi:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-kotlin-micronaut-jackson:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-ruby:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-scala-sttp:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-ts-axios-superstruct:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-ts-node-fetch-superstruct:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-ts-browser-fetch-superstruct:
-          context: specgen
-          requires:
-            - client-test-service
-      - client-ts-axios-iots:
-          context: specgen
-          requires:
-            - client-test-service
-
-
+          requires: [java-build]
       - service-tests:
-          requires:
-            - test-models-complete
-      - service-scala:
-          context: specgen
-          requires:
-            - service-tests
+          name: service-tests-java
+          requires: [java-build]
       - service-java:
           matrix:
             parameters:
               values-file: ["micronaut-jackson", "micronaut-moshi", "spring-jackson", "spring-moshi"]
           context: specgen
+          requires: [service-tests-java]
+      - client-test-service:
+          name: client-test-service-java
+          context: specgen
+          requires: [java-build]
+      - client-java-okhttp-jackson:
+          context: specgen
+          requires: [client-test-service-java]
+      - client-java-okhttp-moshi:
+          context: specgen
+          requires: [client-test-service-java]
+      - placeholder:
+          name: completed-java
           requires:
-            - service-tests
+            - models-java-jackson
+            - models-java-moshi
+            - service-java
+            - client-java-okhttp-jackson
+            - client-java-okhttp-moshi
+
+
+      - kotlin:
+          context: specgen
+      - maven-kotlin:
+          context: specgen
+          requires: [kotlin]
+      - gradle-kotlin:
+          context: specgen
+          requires: [kotlin]
+      - placeholder:
+          name: kotlin-build
+          requires: [maven-kotlin, gradle-kotlin]
+      - models-kotlin-jackson:
+          context: specgen
+          requires: [kotlin-build]
+      - models-kotlin-moshi:
+          context: specgen
+          requires: [kotlin-build]
+      - service-tests:
+          name: service-tests-kotlin
+          requires: [kotlin-build]
       - service-kotlin:
           matrix:
             parameters:
               values-file: ["micronaut-jackson", "micronaut-moshi", "spring-jackson", "spring-moshi"]
           context: specgen
-          requires:
-            - service-tests
-      - service-go:
+          requires: [service-tests-kotlin]
+      - client-test-service:
+          name: client-test-service-kotlin
           context: specgen
+          requires: [kotlin-build]
+      - client-kotlin-okhttp-jackson:
+          context: specgen
+          requires: [client-test-service-kotlin]
+      - client-kotlin-okhttp-moshi:
+          context: specgen
+          requires: [client-test-service-kotlin]
+      - client-kotlin-micronaut-jackson:
+          context: specgen
+          requires: [client-test-service-kotlin]
+      - placeholder:
+          name: completed-kotlin
           requires:
-            - service-tests
+            - models-kotlin-jackson
+            - models-kotlin-moshi
+            - service-kotlin
+            - client-kotlin-okhttp-jackson
+            - client-kotlin-okhttp-moshi
+            - client-kotlin-micronaut-jackson
+
+
+      - typescript:
+          context: specgen
+      - npm-typescript:
+          context: specgen
+          requires: [typescript]
+      - placeholder:
+          name: typescript-build
+          requires: [npm-typescript]
+      - models-ts-superstruct:
+          context: specgen
+          requires: [typescript-build]
+      - models-ts-iots:
+          context: specgen
+          requires: [typescript-build]
+      - service-tests:
+          name: service-tests-typescript
+          requires: [typescript-build]
       - service-typescript:
           matrix:
             parameters:
               values-file: ["express-superstruct", "express-iots", "koa-superstruct", "koa-iots"]
           context: specgen
+          requires: [service-tests-typescript]
+      - client-test-service:
+          name: client-test-service-typescript
+          context: specgen
+          requires: [typescript-build]
+      - client-ts-axios-superstruct:
+          context: specgen
+          requires: [client-test-service-typescript]
+      - client-ts-axios-iots:
+          context: specgen
+          requires: [client-test-service-typescript]
+      - client-ts-node-fetch-superstruct:
+          context: specgen
+          requires: [client-test-service-typescript]
+      - client-ts-browser-fetch-superstruct:
+          context: specgen
+          requires: [client-test-service-typescript]
+      - placeholder:
+          name: completed-typescript
           requires:
-            - service-tests
-
-      - test-models-complete:
-          requires:
-            - models-go
-            - models-ruby
             - models-ts-superstruct
             - models-ts-iots
-            - models-scala-circe
-            - models-java-jackson
-            - models-java-moshi
-            - models-kotlin-jackson
-            - models-kotlin-moshi
-
-      - test-services-complete:
-          requires:
-            - service-scala
-            - service-java
-            - service-kotlin
-            - service-go
             - service-typescript
-
-      - test-clients-complete:
-          requires:
-            - client-go
-            - client-java-okhttp-jackson
-            - client-java-okhttp-moshi
-            - client-kotlin-okhttp-jackson
-            - client-kotlin-okhttp-moshi
-            - client-kotlin-micronaut-jackson
-            - client-ruby
-            - client-scala-sttp
             - client-ts-axios-superstruct
+            - client-ts-axios-iots
             - client-ts-node-fetch-superstruct
             - client-ts-browser-fetch-superstruct
-            - client-ts-axios-iots
 
-      - testing-complete:
+
+      - ruby:
+          context: specgen
+      - gem:
+          context: specgen
+          requires: [ruby]
+      - placeholder:
+          name: ruby-build
+          requires: [gem]
+      - models-ruby:
+          context: specgen
+          requires: [ruby-build]
+      - client-test-service:
+          name: client-test-service-ruby
+          context: specgen
+          requires: [ruby-build]
+      - client-ruby:
+          context: specgen
+          requires: [client-test-service-ruby]
+      - placeholder:
+          name: completed-ruby
           requires:
-            - test-clients-complete
+            - models-ruby
+            - client-ruby
+
+
+      - scala:
+          context: specgen
+      - sbt:
+          context: specgen
+          requires: [scala]
+      - placeholder:
+          name: scala-build
+          requires: [sbt]
+      - models-scala-circe:
+          context: specgen
+          requires: [scala-build]
+      - service-tests:
+          name: service-tests-scala
+          requires: [scala-build]
+      - service-scala-play:
+          context: specgen
+          requires: [service-tests-scala]
+      - client-test-service:
+          name: client-test-service-scala
+          context: specgen
+          requires: [scala-build]
+      - client-scala-sttp:
+          context: specgen
+          requires: [client-test-service-scala]
+      - placeholder:
+          name: completed-scala
+          requires:
+            - models-scala-circe
+            - service-scala-play
+            - client-scala-sttp
+
+
+      - specgen:
+          context: specgen
+
 
       - approve-release:
           type: approval
           requires:
-            - testing-complete
+            - specgen
+            - completed-golang
+            - completed-java
+            - completed-kotlin
+            - completed-typescript
+            - completed-scala
+            - completed-ruby
           filters:
             branches:
               only:
@@ -1931,37 +1934,28 @@ workflows:
                 - /v.*/
       - specgen-release:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
       - golang-release:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
       - maven-java-sonatype:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
       - maven-kotlin-sonatype:
           context: specgen
-          requires:
-            - maven-java-sonatype
+          requires: [maven-java-sonatype]
       - sbt-sonatype:
           context: specgen
-          requires:
-            - maven-kotlin-sonatype
+          requires: [maven-kotlin-sonatype]
       - gradle-java-pluginportal:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
       - gradle-kotlin-pluginportal:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
       - npm-npmjs:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
       - gem-rubygems:
           context: specgen
-          requires:
-            - approve-release
+          requires: [approve-release]
