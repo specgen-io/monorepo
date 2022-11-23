@@ -18,6 +18,7 @@ type Writer interface {
 	Indented() Writer
 	IndentedWith(size int) Writer
 	String() string
+	Code() []string
 }
 
 type Config struct {
@@ -198,4 +199,9 @@ func (w *writer) IndentedWith(size int) Writer {
 func (w *writer) String() string {
 	w.checkAligned()
 	return strings.Join(w.content.lines, ``)
+}
+
+func (w *writer) Code() []string {
+	w.checkAligned()
+	return w.content.lines
 }

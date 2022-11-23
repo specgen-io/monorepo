@@ -34,7 +34,13 @@ func (w *Writer) IndentedWith(size int) *Writer {
 
 func (w *Writer) ToCodeFile() *generator.CodeFile {
 	lines := []string{fmt.Sprintf("package %s", w.module.Name), ``}
-	lines = append(lines, w.Imports.Lines()...)
-	code := strings.Join(lines, "\n") + w.String()
+
+	imports := w.Imports.Lines()
+	if len(imports) > 0 {
+		lines = append(lines, imports...)
+		lines = append(lines, "")
+	}
+	lines = append(lines, w.Code()...)
+	code := strings.Join(lines, "\n")
 	return &generator.CodeFile{w.filename, code}
 }
