@@ -42,6 +42,6 @@ func (w *Writer) ToCodeFile() *generator.CodeFile {
 		lines = append(lines, "")
 	}
 	lines = append(lines, w.Code()...)
-	code := strings.Join(w.Imports.Lines(), "\n")
+	code := strings.Join(lines, "\n")
 	return &generator.CodeFile{w.filename, code}
 }
