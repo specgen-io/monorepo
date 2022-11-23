@@ -37,7 +37,12 @@ func (w *Writer) ToCodeFile() *generator.CodeFile {
 		fmt.Sprintf(`package %s;`, w.thePackage.PackageName),
 		"",
 	}
-	lines = append(lines, w.Imports.Lines()...)
-	code := strings.Join(lines, "\n") + w.String()
+	imports := w.Imports.Lines()
+	if len(imports) > 0 {
+		lines = append(lines, imports...)
+		lines = append(lines, "")
+	}
+	lines = append(lines, w.Code()...)
+	code := strings.Join(lines, "\n")
 	return &generator.CodeFile{w.thePackage.GetPath(fmt.Sprintf("%s.java", w.className)), code}
 }
