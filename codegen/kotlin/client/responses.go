@@ -37,11 +37,11 @@ func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPa
 	w.Line(`import %s`, errorModelsPackage.PackageStar)
 	w.EmptyLine()
 	w.Line(`interface [[.ClassName]] {`)
-	for index, response := range operation.Responses {
+	for index, response := range operation.SuccessResponses() {
 		if index > 0 {
 			w.EmptyLine()
 		}
-		responseImpl(w.Indented(), types, &response)
+		responseImpl(w.Indented(), types, response)
 	}
 	w.Line(`}`)
 	return w.ToCodeFile()
