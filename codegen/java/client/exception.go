@@ -3,23 +3,14 @@ package client
 import (
 	"fmt"
 	"generator"
+	"java/packages"
+	"java/types"
 	"java/writer"
 	"spec"
 )
 
-func (g *Generator) Exceptions(errors *spec.Responses) []generator.CodeFile {
-	files := []generator.CodeFile{}
-
-	files = append(files, *g.clientException())
-	for _, errorResponse := range *errors {
-		files = append(files, *g.inheritedClientException(&errorResponse))
-	}
-
-	return files
-}
-
-func (g *Generator) clientException() *generator.CodeFile {
-	w := writer.New(g.Packages.Errors, `ClientException`)
+func clientException(thePackage packages.Package) *generator.CodeFile {
+	w := writer.New(thePackage, `ClientException`)
 	w.Lines(`
 public class ClientException extends RuntimeException {
 	public ClientException() {
@@ -42,13 +33,13 @@ public class ClientException extends RuntimeException {
 	return w.ToCodeFile()
 }
 
-func (g *Generator) inheritedClientException(error *spec.Response) *generator.CodeFile {
-	errorName := g.Types.Java(&error.Type.Definition)
+func inheritedClientException(thePackage, errorsModelsPackage packages.Package, types *types.Types, error *spec.Response) *generator.CodeFile {
+	errorName := types.Java(&error.Type.Definition)
 	className := fmt.Sprintf(`%sException`, errorName)
-	w := writer.New(g.Packages.Errors, className)
+	w := writer.New(thePackage, className)
 	w.Template(
 		map[string]string{
-			`ErrorsModelsPackage`: g.Packages.ErrorsModels.PackageName,
+			`ErrorsModelsPackage`: errorsModelsPackage.PackageName,
 			`ErrorName`:           errorName,
 		}, `
 import [[.ErrorsModelsPackage]].*;

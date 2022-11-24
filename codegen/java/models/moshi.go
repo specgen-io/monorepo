@@ -226,11 +226,9 @@ public class [[.ClassName]] {
 
 func (g *MoshiGenerator) JsonHelpers() []generator.CodeFile {
 	files := []generator.CodeFile{}
-
 	files = append(files, *g.json())
 	files = append(files, *g.jsonParseException())
 	files = append(files, g.setupLibrary()...)
-
 	return files
 }
 
@@ -241,10 +239,10 @@ import com.squareup.moshi.Moshi;
 
 import java.lang.reflect.ParameterizedType;
 
-public class Json {
+public class [[.ClassName]] {
 	private final Moshi moshi;
 
-	public Json(Moshi moshi) {
+	public [[.ClassName]](Moshi moshi) {
 		this.moshi = moshi;
 	}
 
@@ -304,20 +302,24 @@ func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	w := writer.New(g.Packages.Json, moshiCustomAdapters)
 	w.Imports.Add(`com.squareup.moshi.Moshi`)
 	w.Imports.Star(g.Packages.JsonAdapters)
-	w.EmptyLine()
-	w.Line(`public class [[.ClassName]] {`)
-	w.Line(`  public static void setup(Moshi.Builder moshiBuilder) {`)
-	w.Line(`    moshiBuilder`)
-	w.Line(`      .add(new BigDecimalAdapter())`)
-	w.Line(`      .add(new UuidAdapter())`)
-	w.Line(`      .add(new LocalDateAdapter())`)
-	w.Line(`      .add(new LocalDateTimeAdapter());`)
-	w.EmptyLine()
+	w.Lines(`
+public class [[.ClassName]] {
+	public static Moshi.Builder setup(Moshi.Builder moshiBuilder) {
+		moshiBuilder
+			.add(new BigDecimalAdapter())
+			.add(new UuidAdapter())
+			.add(new LocalDateAdapter())
+			.add(new LocalDateTimeAdapter());
+`)
 	for _, setupMoshiMethod := range g.generatedSetupMoshiMethods {
 		w.Line(`    %s(moshiBuilder);`, setupMoshiMethod)
 	}
-	w.Line(`  }`)
-	w.Line(`}`)
+	w.EmptyLine()
+	w.Lines(`
+		return moshiBuilder;
+	}
+}
+`)
 	return w.ToCodeFile()
 }
 
@@ -392,7 +394,7 @@ func localDateAdapter(thePackage packages.Package) *generator.CodeFile {
 import com.squareup.moshi.*;
 import java.time.LocalDate;
 
-public class LocalDateAdapter {
+public class [[.ClassName]] {
 	@FromJson
 	private LocalDate fromJson(String string) {
 		return LocalDate.parse(string);
@@ -459,14 +461,14 @@ import java.lang.reflect.Type;
 import java.util.*;
 import javax.annotation.*;
 
-public final class UnionAdapterFactory<T> implements JsonAdapter.Factory {
+public final class [[.ClassName]]<T> implements JsonAdapter.Factory {
     final Class<T> baseType;
     final String discriminator;
     final List<String> tags;
     final List<Type> subtypes;
     @Nullable final JsonAdapter<Object> fallbackAdapter;
 
-    UnionAdapterFactory(
+    [[.ClassName]](
             Class<T> baseType,
             String discriminator,
             List<String> tags,
@@ -484,19 +486,19 @@ public final class UnionAdapterFactory<T> implements JsonAdapter.Factory {
      *     JSON object.
      */
     @CheckReturnValue
-    public static <T> UnionAdapterFactory<T> of(Class<T> baseType) {
+    public static <T> [[.ClassName]]<T> of(Class<T> baseType) {
         if (baseType == null) throw new NullPointerException("baseType == null");
         return new UnionAdapterFactory<>(baseType, null, Collections.<String>emptyList(), Collections.<Type>emptyList(), null);
     }
 
     /** Returns a new factory that decodes instances of {@code subtype}. */
-    public UnionAdapterFactory<T> withDiscriminator(String discriminator) {
+    public [[.ClassName]]<T> withDiscriminator(String discriminator) {
         if (discriminator == null) throw new NullPointerException("discriminator == null");
         return new UnionAdapterFactory<>(baseType, discriminator, tags, subtypes, fallbackAdapter);
     }
 
     /** Returns a new factory that decodes instances of {@code subtype}. */
-    public UnionAdapterFactory<T> withSubtype(Class<? extends T> subtype, String tag) {
+    public [[.ClassName]]<T> withSubtype(Class<? extends T> subtype, String tag) {
         if (subtype == null) throw new NullPointerException("subtype == null");
         if (tag == null) throw new NullPointerException("tag == null");
         if (tags.contains(tag)) {
@@ -516,7 +518,7 @@ public final class UnionAdapterFactory<T> implements JsonAdapter.Factory {
      * <p>The {@link JsonReader} instance will not be automatically consumed, so make sure to consume
      * it within your implementation of {@link JsonAdapter#fromJson(JsonReader)}
      */
-    public UnionAdapterFactory<T> withFallbackAdapter(@Nullable JsonAdapter<Object> fallbackJsonAdapter) {
+    public [[.ClassName]]<T> withFallbackAdapter(@Nullable JsonAdapter<Object> fallbackJsonAdapter) {
         return new UnionAdapterFactory<>(baseType, discriminator, tags, subtypes, fallbackJsonAdapter);
     }
 
@@ -524,7 +526,7 @@ public final class UnionAdapterFactory<T> implements JsonAdapter.Factory {
      * Returns a new factory that will default to {@code defaultValue} upon decoding of unrecognized
      * tags. The default value should be immutable.
      */
-    public UnionAdapterFactory<T> withDefaultValue(@Nullable T defaultValue) {
+    public [[.ClassName]]<T> withDefaultValue(@Nullable T defaultValue) {
         return withFallbackAdapter(buildFallbackAdapter(defaultValue));
     }
 
@@ -746,10 +748,10 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.Set;
 
-public final class UnwrapFieldAdapterFactory<T> implements JsonAdapter.Factory {
+public final class [[.ClassName]]<T> implements JsonAdapter.Factory {
     final Class<T> type;
 
-    public UnwrapFieldAdapterFactory(Class<T> type) {
+    public [[.ClassName]](Class<T> type) {
         this.type = type;
     }
 
@@ -834,10 +836,10 @@ public final class UnwrapFieldAdapterFactory<T> implements JsonAdapter.Factory {
 	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) CreateJsonHelper(name string) string {
-	return fmt.Sprintf(`
-Moshi.Builder moshiBuilder = new Moshi.Builder();
-%s.setup(moshiBuilder);
-%s = new Json(moshiBuilder.build());
-`, moshiCustomAdapters, name)
+func (g *MoshiGenerator) CreateJsonHelper() string {
+	return fmt.Sprintf(`%s.setup(new Moshi.Builder()).build()`, moshiCustomAdapters)
+}
+
+func (g *MoshiGenerator) JsonMapper() []string {
+	return []string{`Moshi`, `moshi`}
 }

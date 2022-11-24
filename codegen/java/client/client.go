@@ -5,11 +5,11 @@ import (
 	"spec"
 )
 
-func Generate(specification *spec.Spec, jsonlib string, packageName string, generatePath string) *generator.Sources {
+func Generate(specification *spec.Spec, jsonlib, client string, packageName string, generatePath string) *generator.Sources {
 	sources := generator.NewSources()
 
 	packages := NewPackages(packageName, generatePath, specification)
-	generator := NewGenerator(jsonlib, packages)
+	generator := NewGenerator(jsonlib, client, packages)
 
 	sources.AddGeneratedAll(generator.ErrorModels(specification.HttpErrors))
 	sources.AddGeneratedAll(generator.Exceptions(&specification.HttpErrors.Responses))

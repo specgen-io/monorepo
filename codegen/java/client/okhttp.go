@@ -3,24 +3,37 @@ package client
 import (
 	"fmt"
 	"generator"
-	"java/packages"
+	"java/models"
+	"java/types"
 	"java/writer"
 	"spec"
 	"strings"
 )
 
-func (g *Generator) Clients(version *spec.Version) []generator.CodeFile {
+var OkHttp = "okhttp"
+
+type OkHttpGenerator struct {
+	Types    *types.Types
+	Models   models.Generator
+	Packages *Packages
+}
+
+func NewOkHttpGenerator(types *types.Types, models models.Generator, packages *Packages) *OkHttpGenerator {
+	return &OkHttpGenerator{types, models, packages}
+}
+
+func (g *OkHttpGenerator) Clients(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
+		files = append(files, responses(&api, g.Types, g.Packages.Client(&api), g.Packages.Models(api.InHttp.InVersion), g.Packages.ErrorsModels)...)
 		files = append(files, *g.client(&api))
 	}
-	files = append(files, g.responses(version)...)
 	return files
 }
 
-func (g *Generator) client(api *spec.Api) *generator.CodeFile {
+func (g *OkHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Client(api), clientName(api))
-	w.Imports.Add(g.ModelsUsageImports()...)
+	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Add(g.Types.Imports()...)
 	w.Imports.Add(`okhttp3.*`)
 	w.Imports.Add(`org.slf4j.*`)
@@ -29,9 +42,12 @@ func (g *Generator) client(api *spec.Api) *generator.CodeFile {
 	w.Imports.Star(g.Packages.Utils)
 	w.Imports.Star(g.Packages.Models(api.InHttp.InVersion))
 	w.Imports.StaticStar(g.Packages.Utils.Subpackage(`ClientResponse`))
-	w.Imports.StaticStar(g.Packages.Utils.Subpackage(`ErrorsHandler`))
-	w.EmptyLine()
-	w.Lines(`
+	w.Template(
+		map[string]string{
+			`JsonMapper`:     g.Models.JsonMapper()[0],
+			`JsonMapperVar`:  g.Models.JsonMapper()[1],
+			`JsonHelperInit`: g.Models.CreateJsonHelper(),
+		}, `
 public class [[.ClassName]] {
 	private static final Logger logger = LoggerFactory.getLogger([[.ClassName]].class);
 
@@ -39,14 +55,23 @@ public class [[.ClassName]] {
 	private final OkHttpClient client;
 	private final Json json;
 
+	public [[.ClassName]](String baseUrl, OkHttpClient client, [[.JsonMapper]] [[.JsonMapperVar]]) {
+		this.baseUrl = baseUrl;
+		this.client = client;
+		this.json = new Json([[.JsonMapperVar]]);
+	}
+
+	public [[.ClassName]](String baseUrl, OkHttpClient client) {
+		this(baseUrl, client, [[.JsonHelperInit]]);
+	}
+
 	public [[.ClassName]](String baseUrl) {
 		this.baseUrl = baseUrl;
-`)
-	w.IndentedWith(2).Lines(g.CreateJsonHelper(`this.json`))
-	w.Lines(`
-		this.client = new OkHttpClient();
+		this.json = new Json([[.JsonHelperInit]]);
+		this.client = new OkHttpClient().newBuilder().addInterceptor(new ErrorsInterceptor(json)).build();
 	}
 `)
+
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		g.generateClientMethod(w.Indented(), &operation)
@@ -55,7 +80,7 @@ public class [[.ClassName]] {
 	return w.ToCodeFile()
 }
 
-func (g *Generator) generateClientMethod(w *writer.Writer, operation *spec.NamedOperation) {
+func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec.NamedOperation) {
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	requestBody := "null"
@@ -65,7 +90,7 @@ func (g *Generator) generateClientMethod(w *writer.Writer, operation *spec.Named
 		requestBody = "requestBody"
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`  var bodyJson = json.%s;`, g.JsonWrite("body", &operation.Body.Type.Definition))
+		w.Line(`  var bodyJson = json.%s;`, g.Models.JsonWrite("body", &operation.Body.Type.Definition))
 		w.Line(`  var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
 		requestBody = "requestBody"
 	}
@@ -107,55 +132,29 @@ func (g *Generator) generateClientMethod(w *writer.Writer, operation *spec.Named
 			}
 			if response.BodyIs(spec.BodyJson) {
 				w.Line(`var responseBodyString = getResponseBodyString(response, logger);`)
-				responseBody := fmt.Sprintf(`json.%s`, g.JsonRead("responseBodyString", &response.Type.Definition))
+				responseBody := fmt.Sprintf(`json.%s`, g.Models.JsonRead("responseBodyString", &response.Type.Definition))
 				w.Line(responseCreate(&response, responseBody))
 			}
 			w.UnindentWith(2)
 			w.Line(`  }`)
 		}
 	}
-	w.Line(`  handleErrors(response, logger, json);`)
 	w.EmptyLine()
 	generateThrowClientException(w.Indented(), `"Unexpected status code received: " + response.code()`, ``)
 	w.Line(`}`)
 }
 
-func (g *Generator) responses(version *spec.Version) []generator.CodeFile {
+func (g *OkHttpGenerator) Utils(responses *spec.Responses) []generator.CodeFile {
 	files := []generator.CodeFile{}
-	for _, api := range version.Http.Apis {
-		for _, operation := range api.Operations {
-			if successfulResponsesNumber(&operation) > 1 {
-				files = append(files, *g.responseInterface(g.Types, &operation))
-			}
-		}
-	}
+	files = append(files, *g.generateRequestBuilder())
+	files = append(files, *g.generateUrlBuilder())
+	files = append(files, *g.generateStringify())
+	files = append(files, *g.generateClientResponse())
 	return files
 }
 
-func generateThrowClientException(w *writer.Writer, errorMessage string, wrapException string) {
-	w.Line(`var errorMessage = %s;`, errorMessage)
-	w.Line(`logger.error(errorMessage);`)
-	params := "errorMessage"
-	if wrapException != "" {
-		params += ", " + wrapException
-	}
-	w.Line(`throw new ClientException(%s);`, params)
-}
-
-func (g *Generator) Utils(responses *spec.Responses) []generator.CodeFile {
-	files := []generator.CodeFile{}
-
-	files = append(files, *generateRequestBuilder(g.Packages.Utils))
-	files = append(files, *generateUrlBuilder(g.Packages.Utils))
-	files = append(files, *generateStringify(g.Packages.Utils))
-	files = append(files, *generateClientResponse(g.Packages.Utils, g.Packages.Errors))
-	files = append(files, *g.generateErrorsHandler(g.Packages.Utils, responses))
-
-	return files
-}
-
-func generateRequestBuilder(thePackage packages.Package) *generator.CodeFile {
-	w := writer.New(thePackage, `RequestBuilder`)
+func (g *OkHttpGenerator) generateRequestBuilder() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `RequestBuilder`)
 	w.Lines(`
 import okhttp3.*;
 import java.util.List;
@@ -190,8 +189,8 @@ public class RequestBuilder {
 	return w.ToCodeFile()
 }
 
-func generateUrlBuilder(thePackage packages.Package) *generator.CodeFile {
-	w := writer.New(thePackage, `UrlBuilder`)
+func (g *OkHttpGenerator) generateUrlBuilder() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `UrlBuilder`)
 	w.Lines(`
 import okhttp3.HttpUrl;
 import java.util.List;
@@ -237,8 +236,8 @@ public class UrlBuilder {
 	return w.ToCodeFile()
 }
 
-func generateStringify(thePackage packages.Package) *generator.CodeFile {
-	w := writer.New(thePackage, `Stringify`)
+func (g *OkHttpGenerator) generateStringify() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `Stringify`)
 	w.Lines(`
 public class Stringify {
     public static String paramToString(Object value) {
@@ -252,11 +251,11 @@ public class Stringify {
 	return w.ToCodeFile()
 }
 
-func generateClientResponse(thePackage packages.Package, errorsPackage packages.Package) *generator.CodeFile {
-	w := writer.New(thePackage, `ClientResponse`)
+func (g *OkHttpGenerator) generateClientResponse() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `ClientResponse`)
 	w.Template(
 		map[string]string{
-			`ErrorsPackage`: errorsPackage.PackageName,
+			`ErrorsPackage`: g.Packages.Errors.PackageName,
 		}, `
 import okhttp3.*;
 import org.slf4j.*;
@@ -293,27 +292,51 @@ public class ClientResponse {
 	return w.ToCodeFile()
 }
 
-func (g *Generator) generateErrorsHandler(thePackage packages.Package, errorsResponses *spec.Responses) *generator.CodeFile {
-	w := writer.New(thePackage, `ErrorsHandler`)
-	w.Imports.Add(g.ModelsUsageImports()...)
+func (g *OkHttpGenerator) Exceptions(errors *spec.Responses) []generator.CodeFile {
+	files := []generator.CodeFile{}
+	files = append(files, *clientException(g.Packages.Errors))
+	for _, errorResponse := range *errors {
+		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse))
+	}
+	files = append(files, *g.errorsInterceptor(errors))
+	return files
+}
+
+func (g *OkHttpGenerator) errorsInterceptor(errorsResponses *spec.Responses) *generator.CodeFile {
+	w := writer.New(g.Packages.Errors, `ErrorsInterceptor`)
+	w.Imports.Add(g.Models.ModelsUsageImports()...)
+	w.Imports.Add(`java.io.IOException`)
 	w.Imports.Add(`okhttp3.*`)
+	w.Imports.Add(`org.jetbrains.annotations.NotNull`)
 	w.Imports.Add(`org.slf4j.*`)
-	w.Imports.Star(g.Packages.Errors)
 	w.Imports.Star(g.Packages.ErrorsModels)
 	w.Imports.Star(g.Packages.Json)
 	w.Imports.StaticStar(g.Packages.Utils.Subpackage(`ClientResponse`))
-	w.EmptyLine()
-	w.Line(`public class [[.ClassName]] {`)
-	w.Line(`  public static void handleErrors(Response response, Logger logger, Json json) {`)
+	w.Lines(`
+public class [[.ClassName]] implements Interceptor {
+	private static final Logger logger = LoggerFactory.getLogger([[.ClassName]].class);
+
+	private final Json json;
+
+	public [[.ClassName]](Json json) {
+		this.json = json;
+	}
+	
+	@NotNull
+	@Override
+	public Response intercept(@NotNull Chain chain) throws IOException {
+		var request = chain.request();
+		var response = chain.proceed(request);
+`)
 	for _, errorResponse := range *errorsResponses {
 		w.Line(`    if (response.code() == %s) {`, spec.HttpStatusCode(errorResponse.Name))
 		w.Line(`      var responseBodyString = getResponseBodyString(response, logger);`)
-		w.Line(`      var responseBody = json.%s;`, g.JsonRead("responseBodyString", &errorResponse.Type.Definition))
+		w.Line(`      var responseBody = json.%s;`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
 		w.Line(`      throw new %sException(responseBody);`, g.Types.Java(&errorResponse.Type.Definition))
 		w.Line(`    }`)
 	}
+	w.Line(`		return response;`)
 	w.Line(`  }`)
 	w.Line(`}`)
-
 	return w.ToCodeFile()
 }
