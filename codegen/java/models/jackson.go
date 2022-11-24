@@ -327,7 +327,7 @@ public class [[.ClassName]] {
 }
 
 func (g *JacksonGenerator) CreateJsonHelper() string {
-	return fmt.Sprintf(`%s.setup(new ObjectMapper());`, jacksonCustomObjectMapper)
+	return fmt.Sprintf(`%s.setup(new ObjectMapper())`, jacksonCustomObjectMapper)
 }
 
 func (g *JacksonGenerator) JsonMapper() []string {
