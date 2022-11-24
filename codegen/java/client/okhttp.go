@@ -93,26 +93,24 @@ func (g *Generator) generateClientMethod(w *writer.Writer, operation *spec.Named
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s");`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  var response = doRequest(client, request, logger);`)
 	w.EmptyLine()
-	for _, response := range operation.Responses {
-		if isSuccessfulStatusCode(spec.HttpStatusCode(response.Name)) {
-			w.Line(`  if (response.code() == %s) {`, spec.HttpStatusCode(response.Name))
-			w.IndentWith(2)
-			w.Line(`logger.info("Received response with status code {}", response.code());`)
-			if response.BodyIs(spec.BodyEmpty) {
-				w.Line(responseCreate(&response, ""))
-			}
-			if response.BodyIs(spec.BodyString) {
-				responseBodyString := "getResponseBodyString(response, logger)"
-				w.Line(responseCreate(&response, responseBodyString))
-			}
-			if response.BodyIs(spec.BodyJson) {
-				w.Line(`var responseBodyString = getResponseBodyString(response, logger);`)
-				responseBody := fmt.Sprintf(`json.%s`, g.JsonRead("responseBodyString", &response.Type.Definition))
-				w.Line(responseCreate(&response, responseBody))
-			}
-			w.UnindentWith(2)
-			w.Line(`  }`)
+	for _, response := range operation.SuccessResponses() {
+		w.Line(`  if (response.code() == %s) {`, spec.HttpStatusCode(response.Name))
+		w.IndentWith(2)
+		w.Line(`logger.info("Received response with status code {}", response.code());`)
+		if response.BodyIs(spec.BodyEmpty) {
+			w.Line(responseCreate(response, ""))
 		}
+		if response.BodyIs(spec.BodyString) {
+			responseBodyString := "getResponseBodyString(response, logger)"
+			w.Line(responseCreate(response, responseBodyString))
+		}
+		if response.BodyIs(spec.BodyJson) {
+			w.Line(`var responseBodyString = getResponseBodyString(response, logger);`)
+			responseBody := fmt.Sprintf(`json.%s`, g.JsonRead("responseBodyString", &response.Type.Definition))
+			w.Line(responseCreate(response, responseBody))
+		}
+		w.UnindentWith(2)
+		w.Line(`  }`)
 	}
 	w.Line(`  handleErrors(response, logger, json);`)
 	w.EmptyLine()
@@ -124,7 +122,7 @@ func (g *Generator) responses(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
-			if successfulResponsesNumber(&operation) > 1 {
+			if len(operation.SuccessResponses()) > 1 {
 				files = append(files, *g.responseInterface(g.Types, &operation))
 			}
 		}

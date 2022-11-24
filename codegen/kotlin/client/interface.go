@@ -8,19 +8,18 @@ import (
 )
 
 func operationSignature(types *types.Types, operation *spec.NamedOperation) string {
-	if successfulResponsesNumber(operation) == 1 {
-		for _, response := range operation.Responses {
-			if !response.Type.Definition.IsEmpty() {
-				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "), types.Kotlin(&response.Type.Definition))
-			} else {
-				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "))
-			}
-		}
+	return fmt.Sprintf(`%s(%s): %s`,
+		operation.Name.CamelCase(),
+		strings.Join(operationParameters(operation, types), ", "),
+		operationReturnType(types, operation),
+	)
+}
+
+func operationReturnType(types *types.Types, operation *spec.NamedOperation) string {
+	if len(operation.SuccessResponses()) == 1 {
+		return types.Kotlin(&operation.SuccessResponses()[0].Type.Definition)
 	}
-	if successfulResponsesNumber(operation) > 1 {
-		return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "), responseInterfaceName(operation))
-	}
-	return ""
+	return responseInterfaceName(operation)
 }
 
 func operationParameters(operation *spec.NamedOperation, types *types.Types) []string {
