@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"generator"
 	"github.com/pinzolo/casee"
-	"golang/common"
 	"golang/types"
 	"golang/walkers"
 	"golang/writer"
@@ -63,10 +62,7 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	w.Imports.Module(g.Modules.Response)
 
 	for _, operation := range api.Operations {
-		if common.ResponsesNumber(&operation) > 1 {
-			w.EmptyLine()
-			responseStruct(w, g.Types, &operation)
-		}
+		responseStruct(w, g.Types, &operation)
 	}
 	w.EmptyLine()
 	g.clientWithCtor(w)
@@ -89,7 +85,7 @@ func (g *NetHttpGenerator) clientWithCtor(w *writer.Writer) {
 }
 
 func (g *NetHttpGenerator) operation(w *writer.Writer, operation *spec.NamedOperation) {
-	w.Line(`func (client *%s) %s {`, clientTypeName(), operationSignature(operation, g.Types, nil))
+	w.Line(`func (client *%s) %s {`, clientTypeName(), operationSignature(g.Types, operation))
 	w.Line(`  var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(operation), operation.InApi.Name.Source, operation.Name.Source, casee.ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
 	body := "nil"
 	if operation.BodyIs(spec.BodyString) {
@@ -192,13 +188,20 @@ func (g *NetHttpGenerator) addParsedParams(w *writer.Writer, namedParams []spec.
 }
 
 func (g *NetHttpGenerator) addClientResponses(w *writer.Writer, operation *spec.NamedOperation) {
+	needsResponseType := len(operation.SuccessResponses()) > 1
 	for _, response := range operation.Responses {
 		w.EmptyLine()
-		g.response(w, operation, response)
+		g.response(w, response)
 
-		if common.ResponsesNumber(operation) == 1 {
+		if needsResponseType {
 			if response.Type.Definition.IsEmpty() {
-				if common.IsSuccessfulStatusCode(spec.HttpStatusCode(response.Name)) {
+				w.Line(`  return &%s, nil`, newResponse(&response, fmt.Sprintf(`%s{}`, types.EmptyType)))
+			} else {
+				w.Line(`  return &%s, nil`, newResponse(&response, `result`))
+			}
+		} else {
+			if response.Type.Definition.IsEmpty() {
+				if response.IsSuccess() {
 					w.Line(`  return &%s{}, nil`, types.EmptyType)
 				} else {
 					w.Line(`  return nil, err`)
@@ -206,21 +209,15 @@ func (g *NetHttpGenerator) addClientResponses(w *writer.Writer, operation *spec.
 			} else {
 				w.Line(`  return &result, nil`)
 			}
-		} else {
-			if response.Type.Definition.IsEmpty() {
-				w.Line(`  return &%s, nil`, newResponse(&response, fmt.Sprintf(`%s{}`, types.EmptyType)))
-			} else {
-				w.Line(`  return &%s, nil`, newResponse(&response, `result`))
-			}
 		}
 		w.Line(`}`)
 	}
 }
 
-func (g *NetHttpGenerator) response(w *writer.Writer, operation *spec.NamedOperation, response spec.OperationResponse) {
+func (g *NetHttpGenerator) response(w *writer.Writer, response spec.OperationResponse) {
 	w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
 	if response.BodyIs(spec.BodyString) {
-		w.Line(`  responseBody, err := response.Text(%s, resp)`, logFieldsName(operation))
+		w.Line(`  responseBody, err := response.Text(%s, resp)`, logFieldsName(response.Operation))
 		w.Line(`  if err != nil {`)
 		w.Line(`    return nil, err`)
 		w.Line(`  }`)
@@ -228,13 +225,13 @@ func (g *NetHttpGenerator) response(w *writer.Writer, operation *spec.NamedOpera
 	}
 	if response.BodyIs(spec.BodyJson) {
 		w.Line(`  var result %s`, g.Types.GoType(&response.Type.Definition))
-		w.Line(`  err := response.Json(%s, resp, &result)`, logFieldsName(operation))
+		w.Line(`  err := response.Json(%s, resp, &result)`, logFieldsName(response.Operation))
 		w.Line(`  if err != nil {`)
 		w.Line(`    return nil, err`)
 		w.Line(`  }`)
 	}
 	if response.BodyIs(spec.BodyEmpty) {
-		w.Line(`  response.Empty(%s, resp)`, logFieldsName(operation))
+		w.Line(`  response.Empty(%s, resp)`, logFieldsName(response.Operation))
 	}
 }
 

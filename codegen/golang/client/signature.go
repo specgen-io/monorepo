@@ -2,30 +2,26 @@ package client
 
 import (
 	"fmt"
-	"golang/common"
 	"golang/types"
 	"spec"
 	"strings"
 )
 
-func operationSignature(operation *spec.NamedOperation, types *types.Types, apiPackage *string) string {
-	return fmt.Sprintf(`%s(%s) %s`,
+func operationSignature(types *types.Types, operation *spec.NamedOperation) string {
+	return fmt.Sprintf(`%s(%s) (*%s, error)`,
 		operation.Name.PascalCase(),
 		strings.Join(operationParams(types, operation), ", "),
-		operationReturn(operation, types, apiPackage),
+		operationReturnType(types, operation),
 	)
 }
 
-func operationReturn(operation *spec.NamedOperation, types *types.Types, responsePackageName *string) string {
-	if common.ResponsesNumber(operation) == 1 {
-		response := operation.Responses[0]
-		return fmt.Sprintf(`(*%s, error)`, types.GoType(&response.Type.Definition))
+func operationReturnType(types *types.Types, operation *spec.NamedOperation) string {
+	successResponses := operation.SuccessResponses()
+	if len(successResponses) == 1 {
+		return types.GoType(&successResponses[0].Type.Definition)
+	} else {
+		return responseTypeName(operation)
 	}
-	responseType := responseTypeName(operation)
-	if responsePackageName != nil {
-		responseType = *responsePackageName + "." + responseType
-	}
-	return fmt.Sprintf(`(*%s, error)`, responseType)
 }
 
 func operationParams(types *types.Types, operation *spec.NamedOperation) []string {
