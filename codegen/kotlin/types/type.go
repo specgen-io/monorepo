@@ -52,7 +52,7 @@ func (t *Types) PlainKotlinType(typ string) string {
 	case spec.TypeJson:
 		return t.RawJsonType
 	case spec.TypeEmpty:
-		return "Void"
+		return "Unit"
 	default:
 		return typ
 	}
