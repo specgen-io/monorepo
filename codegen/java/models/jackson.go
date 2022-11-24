@@ -260,16 +260,17 @@ func (g *JacksonGenerator) JsonHelpers() []generator.CodeFile {
 
 func (g *JacksonGenerator) json() *generator.CodeFile {
 	w := writer.New(g.Packages.Json, `Json`)
+	w.EmptyLine()
 	w.Lines(`
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 
-public class Json {
+public class [[.ClassName]] {
 	private final ObjectMapper objectMapper;
 
-	public Json(ObjectMapper objectMapper) {
+	public [[.ClassName]](ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
 	}
 
@@ -297,7 +298,7 @@ func (g *JacksonGenerator) jsonParseException() *generator.CodeFile {
 	w := writer.New(g.Packages.Json, `JsonParseException`)
 	w.Lines(`
 public class [[.ClassName]] extends RuntimeException {
-	public JsonParseException(Throwable exception) {
+	public [[.ClassName]](Throwable exception) {
 		super("Failed to parse body: " + exception.getMessage(), exception);
 	}
 }
@@ -313,21 +314,22 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.datatype.jsr310.*;
 
 public class [[.ClassName]] {
-	public static void setup(ObjectMapper objectMapper) {
+	public static ObjectMapper setup(ObjectMapper objectMapper) {
 		objectMapper
 			.registerModule(new JavaTimeModule())
 			.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
 			.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+		return objectMapper;
 	}
 }
 `)
 	return []generator.CodeFile{*w.ToCodeFile()}
 }
 
-func (g *JacksonGenerator) CreateJsonHelper(name string) string {
-	return fmt.Sprintf(`
-ObjectMapper objectMapper = new ObjectMapper();
-%s.setup(objectMapper);
-%s = new Json(objectMapper);
-`, jacksonCustomObjectMapper, name)
+func (g *JacksonGenerator) CreateJsonHelper() string {
+	return fmt.Sprintf(`%s.setup(new ObjectMapper())`, jacksonCustomObjectMapper)
+}
+
+func (g *JacksonGenerator) JsonMapper() []string {
+	return []string{`ObjectMapper`, `objectMapper`}
 }

@@ -13,6 +13,9 @@ public class ClientJavaMojo extends SpecgenAbstractMojo {
 	@Parameter(property = "jsonlib", required = true)
 	private String jsonlib;
 
+	@Parameter(property = "client", required = true)
+	private String client;
+
 	@Parameter(property = "packageName")
 	private String packageName;
 
@@ -29,6 +32,7 @@ public class ClientJavaMojo extends SpecgenAbstractMojo {
 		List<String> commandlineArgs = new ArrayList<>(List.of(
 			"client-java",
 			"--jsonlib", jsonlib,
+			"--client", client,
 			"--spec-file", specFile,
 			"--generate-path", generatePath
 		));

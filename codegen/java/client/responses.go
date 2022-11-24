@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"generator"
+	"java/packages"
 	"java/types"
 	"java/writer"
 	"spec"
@@ -20,17 +21,27 @@ func responseCreate(response *spec.OperationResponse, resultVar string) string {
 	}
 }
 
-func (g *Generator) responseInterface(types *types.Types, operation *spec.NamedOperation) *generator.CodeFile {
-	w := writer.New(g.Packages.Client(operation.InApi), responseInterfaceName(operation))
-	w.Line(`import %s;`, g.Packages.Models(operation.InApi.InHttp.InVersion).PackageStar)
-	w.Line(`import %s;`, g.Packages.ErrorsModels.PackageStar)
+func responses(api *spec.Api, types *types.Types, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package) []generator.CodeFile {
+	files := []generator.CodeFile{}
+	for _, operation := range api.Operations {
+		if len(operation.SuccessResponses()) > 1 {
+			files = append(files, *responseInterface(types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage))
+		}
+	}
+	return files
+}
+
+func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package) *generator.CodeFile {
+	w := writer.New(apiPackage, responseInterfaceName(operation))
+	w.Line(`import %s;`, modelsVersionPackage.PackageStar)
+	w.Line(`import %s;`, errorModelsPackage.PackageStar)
 	w.EmptyLine()
 	w.Line(`public interface [[.ClassName]] {`)
-	for index, response := range operation.Responses {
+	for index, response := range operation.SuccessResponses() {
 		if index > 0 {
 			w.EmptyLine()
 		}
-		responseImpl(w.Indented(), types, &response)
+		responseImpl(w.Indented(), types, response)
 	}
 	w.Line(`}`)
 	return w.ToCodeFile()
