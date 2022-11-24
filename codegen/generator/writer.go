@@ -198,7 +198,7 @@ func (w *writer) IndentedWith(size int) Writer {
 
 func (w *writer) String() string {
 	w.checkAligned()
-	return strings.Join(w.content.lines, ``)
+	return strings.Join(w.content.lines, "\n")
 }
 
 func (w *writer) Code() []string {
