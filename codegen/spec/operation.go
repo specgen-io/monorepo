@@ -18,13 +18,24 @@ type operation struct {
 
 type Operation operation
 
-func (operation *Operation) GetResponse(status string) *OperationResponse {
-	for _, response := range operation.Responses {
-		if response.Name.Source == status {
-			return &response
+func (operation *Operation) SuccessResponses() []*OperationResponse {
+	result := []*OperationResponse{}
+	for index := range operation.Responses {
+		if operation.Responses[index].IsSuccess() {
+			result = append(result, &operation.Responses[index])
 		}
 	}
-	return nil
+	return result
+}
+
+func (operation *Operation) ErrorResponses() []*OperationResponse {
+	result := []*OperationResponse{}
+	for index := range operation.Responses {
+		if !operation.Responses[index].IsSuccess() {
+			result = append(result, &operation.Responses[index])
+		}
+	}
+	return result
 }
 
 func (operation *Operation) BodyIs(kind BodyKind) bool {

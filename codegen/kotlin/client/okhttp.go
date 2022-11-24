@@ -105,27 +105,24 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  val response = doRequest(client, request, logger)`)
 	w.EmptyLine()
-	for _, response := range operation.Responses {
-		statusCode := spec.HttpStatusCode(response.Name)
-		if isSuccessfulStatusCode(statusCode) {
-			w.Line(`  if (response.code == %s) {`, statusCode)
-			w.IndentWith(2)
-			w.Line(`logger.info("Received response with status code {}", response.code)`)
-			if response.BodyIs(spec.BodyEmpty) {
-				w.Line(responseCreate(&response, ""))
-			}
-			if response.BodyIs(spec.BodyString) {
-				responseBodyString := "getResponseBodyString(response, logger)"
-				w.Line(responseCreate(&response, responseBodyString))
-			}
-			if response.BodyIs(spec.BodyJson) {
-				w.Line(`val responseBodyString = getResponseBodyString(response, logger)`)
-				responseBody := fmt.Sprintf(`json.%s`, g.Models.JsonRead("responseBodyString", &response.Type.Definition))
-				w.Line(responseCreate(&response, responseBody))
-			}
-			w.UnindentWith(2)
-			w.Line(`  }`)
+	for _, response := range operation.SuccessResponses() {
+		w.Line(`  if (response.code == %s) {`, spec.HttpStatusCode(response.Name))
+		w.IndentWith(2)
+		w.Line(`logger.info("Received response with status code {}", response.code)`)
+		if response.BodyIs(spec.BodyEmpty) {
+			w.Line(responseCreate(response, ""))
 		}
+		if response.BodyIs(spec.BodyString) {
+			responseBodyString := "getResponseBodyString(response, logger)"
+			w.Line(responseCreate(response, responseBodyString))
+		}
+		if response.BodyIs(spec.BodyJson) {
+			w.Line(`val responseBodyString = getResponseBodyString(response, logger)`)
+			responseBody := fmt.Sprintf(`json.%s`, g.Models.JsonRead("responseBodyString", &response.Type.Definition))
+			w.Line(responseCreate(response, responseBody))
+		}
+		w.UnindentWith(2)
+		w.Line(`  }`)
 	}
 	w.Line(`  handleErrors(response, logger, json)`)
 	w.EmptyLine()

@@ -68,12 +68,25 @@ func (g *MicronautDeclGenerator) clientMethod(w *writer.Writer, operation *spec.
 }
 
 func (g *MicronautDeclGenerator) operationSignature(operation *spec.NamedOperation) string {
-	params := []string{}
+	return fmt.Sprintf(`%s(%s): %s`,
+		operation.Name.CamelCase(),
+		strings.Join(g.operationParameters(operation), ", "),
+		g.operationReturnType(operation),
+	)
+}
 
+func (g *MicronautDeclGenerator) operationReturnType(operation *spec.NamedOperation) string {
+	if len(operation.SuccessResponses()) == 1 {
+		return g.Types.Kotlin(&operation.SuccessResponses()[0].Type.Definition)
+	}
+	return "HttpResponse<String>"
+}
+
+func (g *MicronautDeclGenerator) operationParameters(operation *spec.NamedOperation) []string {
+	params := []string{}
 	if operation.Body != nil {
 		params = append(params, fmt.Sprintf("@Body body: %s", g.Types.Kotlin(&operation.Body.Type.Definition)))
 	}
-
 	for _, param := range operation.QueryParams {
 		params = append(params, fmt.Sprintf(`@QueryValue(value = "%s") %s: %s`, param.Name.Source, param.Name.CamelCase(), g.Types.Kotlin(&param.Type.Definition)))
 	}
@@ -83,26 +96,13 @@ func (g *MicronautDeclGenerator) operationSignature(operation *spec.NamedOperati
 	for _, param := range operation.Endpoint.UrlParams {
 		params = append(params, fmt.Sprintf(`@PathVariable(value = "%s") %s: %s`, param.Name.Source, param.Name.CamelCase(), g.Types.Kotlin(&param.Type.Definition)))
 	}
-
-	if successfulResponsesNumber(operation) == 1 {
-		for _, response := range operation.Responses {
-			if !response.Type.Definition.IsEmpty() {
-				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(params, ", "), g.Types.Kotlin(&response.Type.Definition))
-			} else {
-				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), strings.Join(params, ", "))
-			}
-		}
-	}
-	if successfulResponsesNumber(operation) > 1 {
-		return fmt.Sprintf(`%s(%s): HttpResponse<String>`, operation.Name.CamelCase(), strings.Join(params, ", "))
-	}
-	return ""
+	return params
 }
 
 func (g *MicronautDeclGenerator) responses(api *spec.Api) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, operation := range api.Operations {
-		if successfulResponsesNumber(&operation) > 1 {
+		if len(operation.SuccessResponses()) > 1 {
 			files = append(files, *g.response(&operation))
 		}
 	}

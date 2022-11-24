@@ -135,7 +135,7 @@ func (w *writer) line(theline string) {
 	}
 	realIndentation := indentation + w.indentation
 	indentationStr := strings.Repeat(w.config.IndentationStr, realIndentation)
-	theline = indentationStr + theline + "\n"
+	theline = indentationStr + theline
 	theline = substitute(theline, w.config.Substitutions)
 	w.write(theline)
 }
@@ -159,7 +159,7 @@ func (w *writer) Template(data map[string]string, content string) {
 }
 
 func (w *writer) EmptyLine() {
-	w.write("\n")
+	w.write("")
 }
 
 func (w *writer) setIndentation(value int) {
@@ -198,7 +198,7 @@ func (w *writer) IndentedWith(size int) Writer {
 
 func (w *writer) String() string {
 	w.checkAligned()
-	return strings.Join(w.content.lines, ``)
+	return strings.Join(w.content.lines, "\n")
 }
 
 func (w *writer) Code() []string {

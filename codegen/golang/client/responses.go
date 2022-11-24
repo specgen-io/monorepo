@@ -9,13 +9,16 @@ import (
 )
 
 func responseStruct(w *writer.Writer, types *types.Types, operation *spec.NamedOperation) {
-	w.Line(`type %s struct {`, responseTypeName(operation))
-	w.Indent()
-	for _, response := range operation.Responses {
-		w.LineAligned(`%s %s`, response.Name.PascalCase(), types.GoType(spec.Nullable(&response.Type.Definition)))
+	if len(operation.SuccessResponses()) > 1 {
+		w.EmptyLine()
+		w.Line(`type %s struct {`, responseTypeName(operation))
+		w.Indent()
+		for _, response := range operation.SuccessResponses() {
+			w.LineAligned(`%s %s`, response.Name.PascalCase(), types.GoType(spec.Nullable(&response.Type.Definition)))
+		}
+		w.Unindent()
+		w.Line(`}`)
 	}
-	w.Unindent()
-	w.Line(`}`)
 }
 
 func responseTypeName(operation *spec.NamedOperation) string {
