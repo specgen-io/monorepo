@@ -130,7 +130,7 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
 	w.Line(`}`)
 }
 
-func (g *OkHttpGenerator) Utils(responses *spec.Responses) []generator.CodeFile {
+func (g *OkHttpGenerator) Utils(responses *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.generateRequestBuilder())
 	files = append(files, *g.generateUrlBuilder())
@@ -253,7 +253,7 @@ object ClientResponse {
 	return w.ToCodeFile()
 }
 
-func (g *OkHttpGenerator) generateErrorsHandler(errorsResponses *spec.Responses) *generator.CodeFile {
+func (g *OkHttpGenerator) generateErrorsHandler(errorsResponses *spec.ErrorResponses) *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `ErrorsHandler`)
 	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Add(`okhttp3.*`)
@@ -276,11 +276,11 @@ func (g *OkHttpGenerator) generateErrorsHandler(errorsResponses *spec.Responses)
 	return w.ToCodeFile()
 }
 
-func (g *OkHttpGenerator) Exceptions(errors *spec.Responses) []generator.CodeFile {
+func (g *OkHttpGenerator) Exceptions(errors *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *clientException(g.Packages.Errors))
 	for _, errorResponse := range *errors {
-		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse))
+		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse.Response))
 	}
 	return files
 }

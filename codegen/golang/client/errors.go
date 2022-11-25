@@ -6,7 +6,7 @@ import (
 	"spec"
 )
 
-func (g *Generator) Errors(errors *spec.Responses) []generator.CodeFile {
+func (g *Generator) Errors(errors *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	files = append(files, *g.httpErrors(errors))
@@ -15,7 +15,7 @@ func (g *Generator) Errors(errors *spec.Responses) []generator.CodeFile {
 	return files
 }
 
-func (g *Generator) httpErrors(errors *spec.Responses) *generator.CodeFile {
+func (g *Generator) httpErrors(errors *spec.ErrorResponses) *generator.CodeFile {
 	w := writer.New(g.Modules.HttpErrors, "errors.go")
 
 	w.Imports.Add("fmt")
@@ -35,7 +35,7 @@ func (g *Generator) httpErrors(errors *spec.Responses) *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *Generator) httpErrorsHandler(errors *spec.Responses) *generator.CodeFile {
+func (g *Generator) httpErrorsHandler(errors *spec.ErrorResponses) *generator.CodeFile {
 	w := writer.New(g.Modules.HttpErrors, `errors_handler.go`)
 
 	w.Imports.Module(g.Modules.HttpErrorsModels)

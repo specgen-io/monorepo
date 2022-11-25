@@ -45,7 +45,7 @@ func (g *SpringGenerator) ServiceImports() []string {
 	}
 }
 
-func (g *SpringGenerator) ExceptionController(responses *spec.Responses) *generator.CodeFile {
+func (g *SpringGenerator) ExceptionController(responses *spec.ErrorResponses) *generator.CodeFile {
 	w := writer.New(g.Packages.RootControllers, `ExceptionController`)
 	w.Imports.Add(g.ServiceImports()...)
 	w.Imports.Add(`javax.servlet.http.HttpServletRequest`)
@@ -63,7 +63,7 @@ func (g *SpringGenerator) ExceptionController(responses *spec.Responses) *genera
 	return w.ToCodeFile()
 }
 
-func (g *SpringGenerator) errorHandler(w *writer.Writer, errors spec.Responses) {
+func (g *SpringGenerator) errorHandler(w *writer.Writer, errors spec.ErrorResponses) {
 	notFoundError := errors.GetByStatusName(spec.HttpStatusNotFound)
 	badRequestError := errors.GetByStatusName(spec.HttpStatusBadRequest)
 	internalServerError := errors.GetByStatusName(spec.HttpStatusInternalServerError)
@@ -71,14 +71,14 @@ func (g *SpringGenerator) errorHandler(w *writer.Writer, errors spec.Responses) 
 	w.Line(`fun error(request: HttpServletRequest, exception: Throwable): ResponseEntity<String> {`)
 	w.Line(`  val notFoundError = getNotFoundError(exception)`)
 	w.Line(`  if (notFoundError != null) {`)
-	g.processResponse(w.IndentedWith(2), notFoundError, "notFoundError")
+	g.processResponse(w.IndentedWith(2), &notFoundError.Response, "notFoundError")
 	w.Line(`  }`)
 	w.Line(`  val badRequestError = getBadRequestError(exception)`)
 	w.Line(`  if (badRequestError != null) {`)
-	g.processResponse(w.IndentedWith(2), badRequestError, "badRequestError")
+	g.processResponse(w.IndentedWith(2), &badRequestError.Response, "badRequestError")
 	w.Line(`  }`)
 	w.Line(`  val internalServerError = InternalServerError(exception.message ?: "Unknown error")`)
-	g.processResponse(w.IndentedWith(1), internalServerError, "internalServerError")
+	g.processResponse(w.IndentedWith(1), &internalServerError.Response, "internalServerError")
 	w.Line(`}`)
 }
 

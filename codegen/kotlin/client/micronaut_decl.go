@@ -164,7 +164,7 @@ func responseName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
 }
 
-func (g *MicronautDeclGenerator) Utils(responses *spec.Responses) []generator.CodeFile {
+func (g *MicronautDeclGenerator) Utils(responses *spec.ErrorResponses) []generator.CodeFile {
 	return []generator.CodeFile{*g.generateClientResponse()}
 }
 
@@ -189,6 +189,6 @@ fun <T> getResponseBodyString(response: HttpResponse<T>): String {
 	return w.ToCodeFile()
 }
 
-func (g *MicronautDeclGenerator) Exceptions(errors *spec.Responses) []generator.CodeFile {
+func (g *MicronautDeclGenerator) Exceptions(errors *spec.ErrorResponses) []generator.CodeFile {
 	return []generator.CodeFile{*clientException(g.Packages.Errors)}
 }

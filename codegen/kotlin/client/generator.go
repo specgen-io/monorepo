@@ -10,8 +10,8 @@ import (
 
 type ClientGenerator interface {
 	Clients(version *spec.Version) []generator.CodeFile
-	Utils(responses *spec.Responses) []generator.CodeFile
-	Exceptions(errors *spec.Responses) []generator.CodeFile
+	Utils(responses *spec.ErrorResponses) []generator.CodeFile
+	Exceptions(errors *spec.ErrorResponses) []generator.CodeFile
 }
 
 type Generator struct {

@@ -7,7 +7,7 @@ import (
 	"spec"
 )
 
-func (g *VestigoGenerator) ErrorResponses(errors *spec.Responses) *generator.CodeFile {
+func (g *VestigoGenerator) ErrorResponses(errors *spec.ErrorResponses) *generator.CodeFile {
 	w := writer.New(g.Modules.HttpErrors, "responses.go")
 
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
@@ -19,7 +19,7 @@ func (g *VestigoGenerator) ErrorResponses(errors *spec.Responses) *generator.Cod
 		w.EmptyLine()
 		w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter, error *%s) {`, errorResponse.Name.PascalCase(), g.Types.GoType(&errorResponse.Type.Definition))
 		w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
-		g.WriteResponse(w.Indented(), `logFields`, &errorResponse, `error`)
+		g.WriteResponse(w.Indented(), `logFields`, &errorResponse.Response, `error`)
 		w.Line(`}`)
 	}
 

@@ -142,7 +142,7 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
 	w.Line(`}`)
 }
 
-func (g *OkHttpGenerator) Utils(responses *spec.Responses) []generator.CodeFile {
+func (g *OkHttpGenerator) Utils(responses *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	files = append(files, *g.generateRequestBuilder())
@@ -292,17 +292,17 @@ public class ClientResponse {
 	return w.ToCodeFile()
 }
 
-func (g *OkHttpGenerator) Exceptions(errors *spec.Responses) []generator.CodeFile {
+func (g *OkHttpGenerator) Exceptions(errors *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *clientException(g.Packages.Errors))
 	for _, errorResponse := range *errors {
-		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse))
+		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse.Response))
 	}
 	files = append(files, *g.errorsInterceptor(errors))
 	return files
 }
 
-func (g *OkHttpGenerator) errorsInterceptor(errorsResponses *spec.Responses) *generator.CodeFile {
+func (g *OkHttpGenerator) errorsInterceptor(errorsResponses *spec.ErrorResponses) *generator.CodeFile {
 	w := writer.New(g.Packages.Errors, `ErrorsInterceptor`)
 	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Add(`java.io.IOException`)

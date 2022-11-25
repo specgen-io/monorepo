@@ -149,7 +149,7 @@ func requestBuilderParams(methodName, requestBody string, operation *spec.NamedO
 	return params
 }
 
-func (g *MicronautGenerator) Utils(responses *spec.Responses) []generator.CodeFile {
+func (g *MicronautGenerator) Utils(responses *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.generateRequestBuilder())
 	files = append(files, *g.generateUrlBuilder())
@@ -280,7 +280,7 @@ object ClientResponse {
 	return w.ToCodeFile()
 }
 
-func (g *MicronautGenerator) generateErrorsHandler(errorsResponses *spec.Responses) *generator.CodeFile {
+func (g *MicronautGenerator) generateErrorsHandler(errorsResponses *spec.ErrorResponses) *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `ErrorsHandler`)
 	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Add(`io.micronaut.http.*`)
@@ -303,11 +303,11 @@ func (g *MicronautGenerator) generateErrorsHandler(errorsResponses *spec.Respons
 	return w.ToCodeFile()
 }
 
-func (g *MicronautGenerator) Exceptions(errors *spec.Responses) []generator.CodeFile {
+func (g *MicronautGenerator) Exceptions(errors *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *clientException(g.Packages.Errors))
 	for _, errorResponse := range *errors {
-		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse))
+		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse.Response))
 	}
 	return files
 }

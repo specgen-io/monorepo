@@ -95,7 +95,7 @@ func (w *SpecWalker) HttpErrors(httpErrors *HttpErrors) {
 		w.Model(&httpErrors.Models[index])
 	}
 	for index := range httpErrors.Responses {
-		w.Response(&httpErrors.Responses[index])
+		w.Response(&httpErrors.Responses[index].Response)
 	}
 }
 
