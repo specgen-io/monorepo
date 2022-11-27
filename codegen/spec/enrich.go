@@ -3,10 +3,12 @@ package spec
 import (
 	"errors"
 	"fmt"
+	"gopkg.in/specgen-io/yaml.v3"
 )
 
 func enrich(specification *Spec) (*Messages, error) {
 	messages := NewMessages()
+	addRequiredHttpErrors(specification, messages)
 	if specification.HttpErrors != nil {
 		httpErrors := specification.HttpErrors
 		httpErrors.InSpec = specification
@@ -33,6 +35,78 @@ func enrich(specification *Spec) (*Messages, error) {
 		return messages, errors.New("failed to parse specification")
 	}
 	return messages, nil
+}
+
+func addRequiredHttpErrors(specification *Spec, messages *Messages) {
+	if specification.HttpErrors != nil {
+		hasRequiredErrorModels :=
+			errorModelShouldNotBeDeclared(specification.HttpErrors, messages, BadRequestError) ||
+				errorModelShouldNotBeDeclared(specification.HttpErrors, messages, ValidationError) ||
+				errorModelShouldNotBeDeclared(specification.HttpErrors, messages, ErrorLocation) ||
+				errorModelShouldNotBeDeclared(specification.HttpErrors, messages, InternalServerError) ||
+				errorModelShouldNotBeDeclared(specification.HttpErrors, messages, NotFoundError)
+
+		hasRequiredErrorResponses :=
+			errorResponseShouldNotBeDeclared(specification.HttpErrors, messages, HttpStatusBadRequest) ||
+				errorResponseShouldNotBeDeclared(specification.HttpErrors, messages, HttpStatusNotFound) ||
+				errorResponseShouldNotBeDeclared(specification.HttpErrors, messages, HttpStatusInternalServerError)
+
+		if hasRequiredErrorModels || hasRequiredErrorResponses {
+			return
+		}
+	}
+
+	if hasApis(specification) {
+		if specification.HttpErrors == nil {
+			specification.HttpErrors = &HttpErrors{ErrorResponses{}, Models{}, nil, nil}
+		}
+		errorResponses, err := createErrorResponses()
+		if err != nil {
+			messages.Add(Error(`failed to add required error responses`))
+			return
+		}
+		errorModels, err := createErrorModels()
+		if err != nil {
+			messages.Add(Error(`failed to add required error responses models`))
+			return
+		}
+		specification.HttpErrors.Responses = append(specification.HttpErrors.Responses, errorResponses...)
+		specification.HttpErrors.Models = append(specification.HttpErrors.Models, errorModels...)
+	}
+}
+
+func errorResponseShouldNotBeDeclared(httpErrors *HttpErrors, messages *Messages, httpStatusName string) bool {
+	if httpErrors.Responses != nil {
+		errorResponse := httpErrors.Responses.GetByStatusName(httpStatusName)
+		if errorResponse != nil {
+			messages.Add(Error(`error response '%s' is declared but should not`, httpStatusName).At(locationFromNode(errorResponse.Location)))
+			return true
+		}
+	}
+	return false
+}
+
+func errorModelShouldNotBeDeclared(httpErrors *HttpErrors, messages *Messages, name string) bool {
+	if httpErrors.Models != nil {
+		for _, model := range httpErrors.Models {
+			if model.Name.Source == name {
+				messages.Add(Error(`error model '%s' is declared but should not`, name).At(locationFromNode(model.Location)))
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func hasApis(specification *Spec) bool {
+	hasHttp := false
+	for _, version := range specification.Versions {
+		if len(version.Http.Apis) > 0 {
+			hasHttp = true
+			break
+		}
+	}
+	return hasHttp
 }
 
 type httpEnricher struct {
@@ -127,4 +201,64 @@ func (enricher *httpEnricher) typeDef(starter *Type, typ *TypeDef) {
 			panic(fmt.Sprintf("unknown kind of type: %v", typ))
 		}
 	}
+}
+
+func createErrorModels() (Models, error) {
+	data := `
+BadRequestError:
+  object:
+    message: string
+    location: ErrorLocation
+    errors: ValidationError[]?
+
+ValidationError:
+  object:
+    path: string
+    code: string
+    message: string?
+
+ErrorLocation:
+  enum:
+    - unknown
+    - query
+    - header
+    - body
+
+NotFoundError:
+  object:
+    message: string
+
+InternalServerError:
+  object:
+    message: string
+`
+	var models Models
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &models)
+	if err != nil {
+		return nil, err
+	}
+	return models, nil
+}
+
+const InternalServerError string = "InternalServerError"
+const BadRequestError string = "BadRequestError"
+const NotFoundError string = "NotFound"
+const ValidationError string = "ValidationError"
+const ErrorLocation string = "ErrorLocation"
+
+func createErrorResponses() (ErrorResponses, error) {
+	data := `
+bad_request: BadRequestError   # Service will return this if parameters are not provided or couldn't be parsed correctly
+not_found: NotFoundError   # Service will return this if the endpoint is not found
+internal_server_error: InternalServerError   # Service will return this if unexpected internal error happens
+`
+	var responses ErrorResponses
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &responses)
+	for index := range responses {
+		responses[index].Required = true
+	}
+	if err != nil {
+		return nil, err
+	}
+	return responses, nil
 }
