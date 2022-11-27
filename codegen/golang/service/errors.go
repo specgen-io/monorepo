@@ -15,11 +15,16 @@ func (g *VestigoGenerator) ErrorResponses(errors *spec.ErrorResponses) *generato
 	w.Imports.Module(g.Modules.HttpErrorsModels)
 	w.Imports.Module(g.Modules.Respond)
 
-	for _, errorResponse := range *errors {
+	for _, response := range *errors {
 		w.EmptyLine()
-		w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter, error *%s) {`, errorResponse.Name.PascalCase(), g.Types.GoType(&errorResponse.Type.Definition))
-		w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
-		g.WriteResponse(w.Indented(), `logFields`, &errorResponse.Response, `error`)
+		if response.BodyIs(spec.BodyEmpty) {
+			w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter) {`, response.Name.PascalCase())
+			w.Line(`  log.WithFields(logFields).Warn("")`)
+		} else {
+			w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter, error *%s) {`, response.Name.PascalCase(), g.Types.GoType(&response.Type.Definition))
+			w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
+		}
+		g.WriteResponse(w.Indented(), `logFields`, &response.Response, `error`)
 		w.Line(`}`)
 	}
 
