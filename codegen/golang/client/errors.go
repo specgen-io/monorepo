@@ -52,7 +52,7 @@ func (g *Generator) httpErrorsHandler(errors *spec.ErrorResponses) *generator.Co
 	w.EmptyLine()
 	w.Line(`func HandleErrors(resp *http.Response, log log.Fields) error {`)
 	for _, errorResponse := range *errors {
-		if errorResponse.IsError() {
+		if errorResponse.Required {
 			w.Line(`  if resp.StatusCode == %s {`, spec.HttpStatusCode(errorResponse.Name))
 			w.Line(`    var result %s`, g.Types.GoType(&errorResponse.Type.Definition))
 			w.Line(`    err := response.Json(log, resp, &result)`)
