@@ -83,9 +83,9 @@ func readSpecFile(specFile string) *spec.Spec {
 
 		for _, message := range messages.Items {
 			if message.Level != spec.LevelError {
-				console.PrintLnF("%s %s", message.Level, message)
+				console.PrintLnF(message.String())
 			} else {
-				console.ProblemLnF("%s %s", message.Level, message)
+				console.ProblemLnF(message.String())
 			}
 		}
 	}
