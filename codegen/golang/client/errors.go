@@ -52,14 +52,16 @@ func (g *Generator) httpErrorsHandler(errors *spec.ErrorResponses) *generator.Co
 	w.EmptyLine()
 	w.Line(`func HandleErrors(resp *http.Response, log log.Fields) error {`)
 	for _, errorResponse := range *errors {
-		w.Line(`  if resp.StatusCode == %s {`, spec.HttpStatusCode(errorResponse.Name))
-		w.Line(`    var result %s`, g.Types.GoType(&errorResponse.Type.Definition))
-		w.Line(`    err := response.Json(log, resp, &result)`)
-		w.Line(`    if err != nil {`)
-		w.Line(`      return err`)
-		w.Line(`    }`)
-		w.Line(`    return &%s{Body: result}`, errorResponse.Name.PascalCase())
-		w.Line(`  }`)
+		if errorResponse.IsError() {
+			w.Line(`  if resp.StatusCode == %s {`, spec.HttpStatusCode(errorResponse.Name))
+			w.Line(`    var result %s`, g.Types.GoType(&errorResponse.Type.Definition))
+			w.Line(`    err := response.Json(log, resp, &result)`)
+			w.Line(`    if err != nil {`)
+			w.Line(`      return err`)
+			w.Line(`    }`)
+			w.Line(`    return &%s{Body: result}`, errorResponse.Name.PascalCase())
+			w.Line(`  }`)
+		}
 	}
 	w.Line(`  return nil`)
 	w.Line(`}`)
