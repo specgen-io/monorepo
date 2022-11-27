@@ -21,14 +21,20 @@ func (g *Generator) httpErrors(errors *spec.ErrorResponses) *generator.CodeFile 
 	w.Imports.Add("fmt")
 	w.Imports.Module(g.Modules.HttpErrorsModels)
 
-	for _, errorResponse := range *errors {
+	for _, response := range *errors {
 		w.EmptyLine()
-		w.Line(`type %s struct {`, errorResponse.Name.PascalCase())
-		w.Line(`	Body %s`, g.Types.GoType(&errorResponse.Type.Definition))
+		w.Line(`type %s struct {`, response.Name.PascalCase())
+		if !response.BodyIs(spec.BodyEmpty) {
+			w.Line(`	Body %s`, g.Types.GoType(&response.Type.Definition))
+		}
 		w.Line(`}`)
 		w.EmptyLine()
-		w.Line(`func (obj *%s) Error() string {`, errorResponse.Name.PascalCase())
-		w.Line(`	return fmt.Sprintf("Body:  PERCENT_v", obj.Body)`)
+		w.Line(`func (obj *%s) Error() string {`, response.Name.PascalCase())
+		if response.BodyIs(spec.BodyEmpty) {
+			w.Line(`	return "%s"`, response.Name.PascalCase())
+		} else {
+			w.Line(`	return fmt.Sprintf("%s - Body:  PERCENT_v", obj.Body)`, response.Name.PascalCase())
+		}
 		w.Line(`}`)
 	}
 
