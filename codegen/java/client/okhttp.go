@@ -331,11 +331,13 @@ public class [[.ClassName]] implements Interceptor {
 		var response = chain.proceed(request);
 `)
 	for _, errorResponse := range *errorsResponses {
-		w.Line(`    if (response.code() == %s) {`, spec.HttpStatusCode(errorResponse.Name))
-		w.Line(`      var responseBodyString = getResponseBodyString(response, logger);`)
-		w.Line(`      var responseBody = json.%s;`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
-		w.Line(`      throw new %sException(responseBody);`, g.Types.Java(&errorResponse.Type.Definition))
-		w.Line(`    }`)
+		if errorResponse.Required {
+			w.Line(`    if (response.code() == %s) {`, spec.HttpStatusCode(errorResponse.Name))
+			w.Line(`      var responseBodyString = getResponseBodyString(response, logger);`)
+			w.Line(`      var responseBody = json.%s;`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
+			w.Line(`      throw new %sException(responseBody);`, g.Types.Java(&errorResponse.Type.Definition))
+			w.Line(`    }`)
+		}
 	}
 	w.Line(`		return response;`)
 	w.Line(`  }`)
