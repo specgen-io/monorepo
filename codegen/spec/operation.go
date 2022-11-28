@@ -31,7 +31,27 @@ func (operation *Operation) SuccessResponses() []*OperationResponse {
 func (operation *Operation) ErrorResponses() []*OperationResponse {
 	result := []*OperationResponse{}
 	for index := range operation.Responses {
-		if !operation.Responses[index].IsSuccess() {
+		if operation.Responses[index].ErrorResponse != nil {
+			result = append(result, &operation.Responses[index])
+		}
+	}
+	return result
+}
+
+func (operation *Operation) RequiredErrorResponses() []*OperationResponse {
+	result := []*OperationResponse{}
+	for index := range operation.Responses {
+		if operation.Responses[index].ErrorResponse != nil && operation.Responses[index].ErrorResponse.Required {
+			result = append(result, &operation.Responses[index])
+		}
+	}
+	return result
+}
+
+func (operation *Operation) NonRequiredErrorResponses() []*OperationResponse {
+	result := []*OperationResponse{}
+	for index := range operation.Responses {
+		if operation.Responses[index].ErrorResponse != nil && !operation.Responses[index].ErrorResponse.Required {
 			result = append(result, &operation.Responses[index])
 		}
 	}

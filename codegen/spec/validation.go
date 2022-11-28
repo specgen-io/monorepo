@@ -106,7 +106,7 @@ func (validator *validator) Operation(operation *NamedOperation) {
 }
 
 func (validator *validator) OperationResponse(response *OperationResponse) {
-	if response.IsError() {
+	if response.IsError() { //TODO: Check this logic
 		specification := response.Operation.InApi.InHttp.InVersion.InSpec
 		errorResponse := specification.HttpErrors.Responses.GetByStatusName(response.Name.Source)
 		if errorResponse == nil {

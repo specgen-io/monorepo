@@ -154,6 +154,18 @@ func (enricher *httpEnricher) operation(operation *NamedOperation) {
 
 	for index := range operation.Responses {
 		operation.Responses[index].Operation = operation
+	}
+
+	httpErrors := operation.InApi.InHttp.InVersion.InSpec.HttpErrors
+	if httpErrors != nil {
+		for index := range operation.Responses {
+			responseName := operation.Responses[index].Name.Source
+			errorResponse := httpErrors.Responses.GetByStatusName(responseName)
+			operation.Responses[index].ErrorResponse = errorResponse
+		}
+	}
+
+	for index := range operation.Responses {
 		enricher.definition(&operation.Responses[index].Definition)
 	}
 }

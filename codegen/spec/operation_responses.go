@@ -8,7 +8,8 @@ import (
 
 type OperationResponse struct {
 	Response
-	Operation *NamedOperation
+	Operation     *NamedOperation
+	ErrorResponse *ErrorResponse
 }
 
 type OperationResponses []OperationResponse
@@ -65,7 +66,7 @@ func (value *OperationResponses) UnmarshalYAML(node *yaml.Node) error {
 		if err != nil {
 			return err
 		}
-		array[index] = OperationResponse{Response{Name: name, Definition: definition}, nil}
+		array[index] = OperationResponse{Response{Name: name, Definition: definition}, nil, nil}
 	}
 	*value = array
 	return nil
