@@ -40,6 +40,46 @@ func (responses OperationResponses) HttpStatusCodes() []string {
 	return codes
 }
 
+func (responses OperationResponses) Success() []*OperationResponse {
+	result := []*OperationResponse{}
+	for index := range responses {
+		if responses[index].IsSuccess() {
+			result = append(result, &responses[index])
+		}
+	}
+	return result
+}
+
+func (responses OperationResponses) Errors() []*OperationResponse {
+	result := []*OperationResponse{}
+	for index := range responses {
+		if responses[index].ErrorResponse != nil {
+			result = append(result, &responses[index])
+		}
+	}
+	return result
+}
+
+func (responses OperationResponses) RequiredErrors() []*OperationResponse {
+	result := []*OperationResponse{}
+	for index := range responses {
+		if responses[index].ErrorResponse != nil && responses[index].ErrorResponse.Required {
+			result = append(result, &responses[index])
+		}
+	}
+	return result
+}
+
+func (responses OperationResponses) NonRequiredErrors() []*OperationResponse {
+	result := []*OperationResponse{}
+	for index := range responses {
+		if responses[index].ErrorResponse != nil && !responses[index].ErrorResponse.Required {
+			result = append(result, &responses[index])
+		}
+	}
+	return result
+}
+
 func (value *OperationResponses) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
 		return yamlError(node, "response should be YAML mapping")

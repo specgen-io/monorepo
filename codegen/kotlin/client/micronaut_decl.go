@@ -76,8 +76,8 @@ func (g *MicronautDeclGenerator) operationSignature(operation *spec.NamedOperati
 }
 
 func (g *MicronautDeclGenerator) operationReturnType(operation *spec.NamedOperation) string {
-	if len(operation.SuccessResponses()) == 1 {
-		return g.Types.Kotlin(&operation.SuccessResponses()[0].Type.Definition)
+	if len(operation.Responses.Success()) == 1 {
+		return g.Types.Kotlin(&operation.Responses.Success()[0].Type.Definition)
 	}
 	return "HttpResponse<String>"
 }
@@ -102,7 +102,7 @@ func (g *MicronautDeclGenerator) operationParameters(operation *spec.NamedOperat
 func (g *MicronautDeclGenerator) responses(api *spec.Api) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, operation := range api.Operations {
-		if len(operation.SuccessResponses()) > 1 {
+		if len(operation.Responses.Success()) > 1 {
 			files = append(files, *g.response(&operation))
 		}
 	}

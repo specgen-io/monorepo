@@ -105,7 +105,7 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  val response = doRequest(client, request, logger)`)
 	w.EmptyLine()
-	for _, response := range operation.SuccessResponses() {
+	for _, response := range operation.Responses.Success() {
 		w.Line(`  if (response.code == %s) {`, spec.HttpStatusCode(response.Name))
 		w.IndentWith(2)
 		w.Line(`logger.info("Received response with status code {}", response.code)`)
