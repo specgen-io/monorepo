@@ -265,11 +265,13 @@ func (g *OkHttpGenerator) generateErrorsHandler(errorsResponses *spec.ErrorRespo
 	w.EmptyLine()
 	w.Line(`fun handleErrors(response: Response, logger: Logger, json: Json) {`)
 	for _, errorResponse := range *errorsResponses {
-		w.Line(`  if (response.code == %s) {`, spec.HttpStatusCode(errorResponse.Name))
-		w.Line(`    val responseBodyString = getResponseBodyString(response, logger)`)
-		w.Line(`    val responseBody = json.%s`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
-		w.Line(`    throw %sException(responseBody)`, g.Types.Kotlin(&errorResponse.Type.Definition))
-		w.Line(`  }`)
+		if errorResponse.Required {
+			w.Line(`  if (response.code == %s) {`, spec.HttpStatusCode(errorResponse.Name))
+			w.Line(`    val responseBodyString = getResponseBodyString(response, logger)`)
+			w.Line(`    val responseBody = json.%s`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
+			w.Line(`    throw %sException(responseBody)`, g.Types.Kotlin(&errorResponse.Type.Definition))
+			w.Line(`  }`)
+		}
 	}
 	w.Line(`}`)
 
