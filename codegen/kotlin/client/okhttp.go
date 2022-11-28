@@ -264,14 +264,12 @@ func (g *OkHttpGenerator) generateErrorsHandler(errorsResponses *spec.ErrorRespo
 	w.Imports.Package(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`))
 	w.EmptyLine()
 	w.Line(`fun handleErrors(response: Response, logger: Logger, json: Json) {`)
-	for _, errorResponse := range *errorsResponses {
-		if errorResponse.Required {
-			w.Line(`  if (response.code == %s) {`, spec.HttpStatusCode(errorResponse.Name))
-			w.Line(`    val responseBodyString = getResponseBodyString(response, logger)`)
-			w.Line(`    val responseBody = json.%s`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
-			w.Line(`    throw %sException(responseBody)`, g.Types.Kotlin(&errorResponse.Type.Definition))
-			w.Line(`  }`)
-		}
+	for _, errorResponse := range errorsResponses.Required() {
+		w.Line(`  if (response.code == %s) {`, spec.HttpStatusCode(errorResponse.Name))
+		w.Line(`    val responseBodyString = getResponseBodyString(response, logger)`)
+		w.Line(`    val responseBody = json.%s`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
+		w.Line(`    throw %sException(responseBody)`, g.Types.Kotlin(&errorResponse.Type.Definition))
+		w.Line(`  }`)
 	}
 	w.Line(`}`)
 
@@ -281,10 +279,8 @@ func (g *OkHttpGenerator) generateErrorsHandler(errorsResponses *spec.ErrorRespo
 func (g *OkHttpGenerator) Exceptions(errors *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *clientException(g.Packages.Errors))
-	for _, errorResponse := range *errors {
-		if errorResponse.Required {
-			files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse.Response))
-		}
+	for _, errorResponse := range errors.Required() {
+		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse.Response))
 	}
 	return files
 }

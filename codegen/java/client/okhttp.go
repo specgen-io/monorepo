@@ -295,10 +295,8 @@ public class ClientResponse {
 func (g *OkHttpGenerator) Exceptions(errors *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *clientException(g.Packages.Errors))
-	for _, response := range *errors {
-		if response.Required {
-			files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &response.Response))
-		}
+	for _, response := range errors.Required() {
+		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &response.Response))
 	}
 	files = append(files, *g.errorsInterceptor(errors))
 	return files
@@ -330,14 +328,12 @@ public class [[.ClassName]] implements Interceptor {
 		var request = chain.request();
 		var response = chain.proceed(request);
 `)
-	for _, errorResponse := range *errorsResponses {
-		if errorResponse.Required {
-			w.Line(`    if (response.code() == %s) {`, spec.HttpStatusCode(errorResponse.Name))
-			w.Line(`      var responseBodyString = getResponseBodyString(response, logger);`)
-			w.Line(`      var responseBody = json.%s;`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
-			w.Line(`      throw new %sException(responseBody);`, g.Types.Java(&errorResponse.Type.Definition))
-			w.Line(`    }`)
-		}
+	for _, errorResponse := range errorsResponses.Required() {
+		w.Line(`    if (response.code() == %s) {`, spec.HttpStatusCode(errorResponse.Name))
+		w.Line(`      var responseBodyString = getResponseBodyString(response, logger);`)
+		w.Line(`      var responseBody = json.%s;`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
+		w.Line(`      throw new %sException(responseBody);`, g.Types.Java(&errorResponse.Type.Definition))
+		w.Line(`    }`)
 	}
 	w.Line(`		return response;`)
 	w.Line(`  }`)
