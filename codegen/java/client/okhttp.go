@@ -118,7 +118,7 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s");`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  var response = doRequest(client, request, logger);`)
 	w.EmptyLine()
-	for _, response := range operation.SuccessResponses() {
+	for _, response := range operation.Responses.Success() {
 		w.Line(`  if (response.code() == %s) {`, spec.HttpStatusCode(response.Name))
 		w.IndentWith(2)
 		w.Line(`logger.info("Received response with status code {}", response.code());`)
@@ -142,7 +142,7 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
 	w.Line(`}`)
 }
 
-func (g *OkHttpGenerator) Utils(responses *spec.Responses) []generator.CodeFile {
+func (g *OkHttpGenerator) Utils(responses *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	files = append(files, *g.generateRequestBuilder())
@@ -292,17 +292,17 @@ public class ClientResponse {
 	return w.ToCodeFile()
 }
 
-func (g *OkHttpGenerator) Exceptions(errors *spec.Responses) []generator.CodeFile {
+func (g *OkHttpGenerator) Exceptions(errors *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *clientException(g.Packages.Errors))
-	for _, errorResponse := range *errors {
-		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse))
+	for _, response := range errors.Required() {
+		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &response.Response))
 	}
 	files = append(files, *g.errorsInterceptor(errors))
 	return files
 }
 
-func (g *OkHttpGenerator) errorsInterceptor(errorsResponses *spec.Responses) *generator.CodeFile {
+func (g *OkHttpGenerator) errorsInterceptor(errorsResponses *spec.ErrorResponses) *generator.CodeFile {
 	w := writer.New(g.Packages.Errors, `ErrorsInterceptor`)
 	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Add(`java.io.IOException`)
@@ -328,7 +328,7 @@ public class [[.ClassName]] implements Interceptor {
 		var request = chain.request();
 		var response = chain.proceed(request);
 `)
-	for _, errorResponse := range *errorsResponses {
+	for _, errorResponse := range errorsResponses.Required() {
 		w.Line(`    if (response.code() == %s) {`, spec.HttpStatusCode(errorResponse.Name))
 		w.Line(`      var responseBodyString = getResponseBodyString(response, logger);`)
 		w.Line(`      var responseBody = json.%s;`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))

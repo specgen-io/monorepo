@@ -2,6 +2,10 @@ spec: 2.1
 name: test-service
 version: 1
 
+errors:
+  responses:
+    forbidden: empty
+
 v2:
   http:
     echo:

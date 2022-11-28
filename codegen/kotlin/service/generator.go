@@ -13,7 +13,7 @@ type ServerGenerator interface {
 	ServiceImports() []string
 	ServicesControllers(version *spec.Version) []generator.CodeFile
 	ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string)
-	ExceptionController(responses *spec.Responses) *generator.CodeFile
+	ExceptionController(responses *spec.ErrorResponses) *generator.CodeFile
 	ErrorsHelpers() *generator.CodeFile
 	ContentType() []generator.CodeFile
 }

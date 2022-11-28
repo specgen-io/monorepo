@@ -106,16 +106,17 @@ func (validator *validator) Operation(operation *NamedOperation) {
 }
 
 func (validator *validator) OperationResponse(response *OperationResponse) {
-	if response.Name.Source == HttpStatusInternalServerError || response.Name.Source == HttpStatusNotFound || response.Name.Source == HttpStatusBadRequest {
-		errors := response.Operation.InApi.InHttp.InVersion.InSpec.HttpErrors
-		errorResponse := errors.Responses.GetByStatusName(response.Name.Source)
-		if response.Type.Definition.String() != errorResponse.Type.Definition.String() {
-			messageFormat :=
-				`response %s is recommended to have standard error type "%s", if declared, found: "%s", ` +
-					`error responses should be declared on individual endpoint only if "business" logic is going to return them, ` +
-					`all errors from generated code are automatically attached to all endpoints`
-			message := fmt.Sprintf(messageFormat, response.Name.Source, errorResponse.Type.Definition.String(), response.Type.Definition.String())
-			validator.addWarning(response.Type.Location, message)
+	if response.IsError() { //TODO: Check this logic
+		specification := response.Operation.InApi.InHttp.InVersion.InSpec
+		errorResponse := specification.HttpErrors.Responses.GetByStatusName(response.Name.Source)
+		if errorResponse == nil {
+			validator.addError(response.Location, fmt.Sprintf(`response %s is declared in the operation but it's not declared in errors section`, response.Name.Source))
+		} else {
+			if response.Type.Definition.String() != errorResponse.Type.Definition.String() {
+				messageFormat := `response %s is declared with body type: %s, however errors section declares it with body type: %s`
+				message := fmt.Sprintf(messageFormat, response.Name.Source, response.Type.Definition.String(), errorResponse.Type.Definition.String())
+				validator.addError(response.Type.Location, message)
+			}
 		}
 	}
 	if !response.Type.Definition.IsEmpty() &&

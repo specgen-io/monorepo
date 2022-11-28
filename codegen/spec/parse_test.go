@@ -15,7 +15,6 @@ type ReadSpecificationCase struct {
 }
 
 func assertMessages(t *testing.T, expected []Message, messages *Messages) {
-	assert.Equal(t, len(expected), len(messages.Items), `Expected %s messages, found %s`, len(expected), len(messages.Items))
 	notFoundMessages := []string{}
 	for _, expected := range expected {
 		found := messages.Contains(func(m Message) bool {
@@ -42,6 +41,7 @@ func assertMessages(t *testing.T, expected []Message, messages *Messages) {
 		}
 		t.Errorf("Expected messages were not found:\n%s\nFound:\n%s", strings.Join(notFoundMessages, "\n"), strings.Join(actualMessages, "\n"))
 	}
+	assert.Equal(t, len(expected), len(messages.Items), `Expected %d messages, found %d`, len(expected), len(messages.Items))
 }
 
 const specificationMetaLines = 5

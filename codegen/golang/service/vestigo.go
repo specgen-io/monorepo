@@ -386,7 +386,7 @@ func Check(logFields log.Fields, expectedContentType string, req *http.Request, 
 	return w.ToCodeFile()
 }
 
-func (g *VestigoGenerator) HttpErrors(responses *spec.Responses) []generator.CodeFile {
+func (g *VestigoGenerator) HttpErrors(responses *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 
 	files = append(files, *g.errorsModelsConverter())

@@ -58,7 +58,11 @@ func (value *Spec) UnmarshalYAML(node *yaml.Node) error {
 			}
 
 			theSpec := VersionSpecification{}
-			valueNode.DecodeWith(decodeStrict, &theSpec)
+			err = valueNode.DecodeWith(decodeStrict, &theSpec)
+			if err != nil {
+				return err
+			}
+
 			versions = append(versions, Version{version, theSpec, nil, nil})
 		}
 	}
@@ -72,20 +76,16 @@ func (value *Spec) UnmarshalYAML(node *yaml.Node) error {
 	meta := Meta{}
 	node.DecodeWith(decodeStrict, &meta)
 
-	hasHttp := false
-	for _, version := range versions {
-		if len(version.Http.Apis) > 0 {
-			hasHttp = true
-			break
-		}
-	}
-
 	var httpErrors *HttpErrors = nil
-	if hasHttp {
-		httpErrors, err = createHttpErrors()
+
+	errorsNode := getMappingValue(node, "errors")
+	if errorsNode != nil {
+		httpErrorsValue := HttpErrors{}
+		err := errorsNode.DecodeWith(decodeStrict, &httpErrorsValue)
 		if err != nil {
 			return err
 		}
+		httpErrors = &httpErrorsValue
 	}
 
 	*value = Spec{meta, versions, httpErrors}

@@ -10,7 +10,7 @@ import (
 
 type ServiceGenerator interface {
 	RootRouting(specification *spec.Spec) *generator.CodeFile
-	HttpErrors(responses *spec.Responses) []generator.CodeFile
+	HttpErrors(responses *spec.ErrorResponses) []generator.CodeFile
 	CheckContentType() *generator.CodeFile
 	Routings(version *spec.Version) []generator.CodeFile
 	ResponseHelperFunctions() *generator.CodeFile

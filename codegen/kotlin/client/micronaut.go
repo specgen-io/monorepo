@@ -103,7 +103,7 @@ func (g *MicronautGenerator) generateClientMethod(w *writer.Writer, operation *s
 	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	w.Line(`  val response = doRequest(client, request, logger)`)
 	w.EmptyLine()
-	for _, response := range operation.SuccessResponses() {
+	for _, response := range operation.Responses.Success() {
 		w.Line(`  if (response.code() == %s) {`, spec.HttpStatusCode(response.Name))
 		w.IndentWith(2)
 		w.Line(`logger.info("Received response with status code {}", response.code())`)
@@ -149,7 +149,7 @@ func requestBuilderParams(methodName, requestBody string, operation *spec.NamedO
 	return params
 }
 
-func (g *MicronautGenerator) Utils(responses *spec.Responses) []generator.CodeFile {
+func (g *MicronautGenerator) Utils(responses *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.generateRequestBuilder())
 	files = append(files, *g.generateUrlBuilder())
@@ -280,7 +280,7 @@ object ClientResponse {
 	return w.ToCodeFile()
 }
 
-func (g *MicronautGenerator) generateErrorsHandler(errorsResponses *spec.Responses) *generator.CodeFile {
+func (g *MicronautGenerator) generateErrorsHandler(errorsResponses *spec.ErrorResponses) *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `ErrorsHandler`)
 	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Add(`io.micronaut.http.*`)
@@ -291,7 +291,7 @@ func (g *MicronautGenerator) generateErrorsHandler(errorsResponses *spec.Respons
 	w.Imports.Package(g.Packages.Utils.Subpackage(`ClientResponse`).Subpackage(`getResponseBodyString`))
 	w.EmptyLine()
 	w.Line(`fun <T> handleErrors(response: HttpResponse<T>, logger: Logger, json: Json) {`)
-	for _, errorResponse := range *errorsResponses {
+	for _, errorResponse := range errorsResponses.Required() {
 		w.Line(`  if (response.code() == %s) {`, spec.HttpStatusCode(errorResponse.Name))
 		w.Line(`    val responseBodyString = getResponseBodyString(response, logger)`)
 		w.Line(`    val responseBody = json.%s`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
@@ -303,11 +303,11 @@ func (g *MicronautGenerator) generateErrorsHandler(errorsResponses *spec.Respons
 	return w.ToCodeFile()
 }
 
-func (g *MicronautGenerator) Exceptions(errors *spec.Responses) []generator.CodeFile {
+func (g *MicronautGenerator) Exceptions(errors *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *clientException(g.Packages.Errors))
-	for _, errorResponse := range *errors {
-		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse))
+	for _, errorResponse := range errors.Required() {
+		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse.Response))
 	}
 	return files
 }

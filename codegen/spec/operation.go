@@ -18,26 +18,6 @@ type operation struct {
 
 type Operation operation
 
-func (operation *Operation) SuccessResponses() []*OperationResponse {
-	result := []*OperationResponse{}
-	for index := range operation.Responses {
-		if operation.Responses[index].IsSuccess() {
-			result = append(result, &operation.Responses[index])
-		}
-	}
-	return result
-}
-
-func (operation *Operation) ErrorResponses() []*OperationResponse {
-	result := []*OperationResponse{}
-	for index := range operation.Responses {
-		if !operation.Responses[index].IsSuccess() {
-			result = append(result, &operation.Responses[index])
-		}
-	}
-	return result
-}
-
 func (operation *Operation) BodyIs(kind BodyKind) bool {
 	return kindOf(operation.Body) == kind
 }

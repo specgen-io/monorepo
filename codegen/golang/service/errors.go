@@ -7,7 +7,7 @@ import (
 	"spec"
 )
 
-func (g *VestigoGenerator) ErrorResponses(errors *spec.Responses) *generator.CodeFile {
+func (g *VestigoGenerator) ErrorResponses(errors *spec.ErrorResponses) *generator.CodeFile {
 	w := writer.New(g.Modules.HttpErrors, "responses.go")
 
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
@@ -15,11 +15,16 @@ func (g *VestigoGenerator) ErrorResponses(errors *spec.Responses) *generator.Cod
 	w.Imports.Module(g.Modules.HttpErrorsModels)
 	w.Imports.Module(g.Modules.Respond)
 
-	for _, errorResponse := range *errors {
+	for _, response := range *errors {
 		w.EmptyLine()
-		w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter, error *%s) {`, errorResponse.Name.PascalCase(), g.Types.GoType(&errorResponse.Type.Definition))
-		w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
-		g.WriteResponse(w.Indented(), `logFields`, &errorResponse, `error`)
+		if response.BodyIs(spec.BodyEmpty) {
+			w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter) {`, response.Name.PascalCase())
+			w.Line(`  log.WithFields(logFields).Warn("")`)
+		} else {
+			w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter, error *%s) {`, response.Name.PascalCase(), g.Types.GoType(&response.Type.Definition))
+			w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
+		}
+		g.WriteResponse(w.Indented(), `logFields`, &response.Response, `error`)
 		w.Line(`}`)
 	}
 

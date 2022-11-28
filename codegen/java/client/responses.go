@@ -10,7 +10,7 @@ import (
 )
 
 func responseCreate(response *spec.OperationResponse, resultVar string) string {
-	if len(response.Operation.SuccessResponses()) > 1 {
+	if len(response.Operation.Responses.Success()) > 1 {
 		return fmt.Sprintf(`return new %s.%s(%s);`, responseInterfaceName(response.Operation), response.Name.PascalCase(), resultVar)
 	} else {
 		if resultVar != "" {
@@ -24,7 +24,7 @@ func responseCreate(response *spec.OperationResponse, resultVar string) string {
 func responses(api *spec.Api, types *types.Types, apiPackage packages.Package, modelsVersionPackage packages.Package, errorModelsPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, operation := range api.Operations {
-		if len(operation.SuccessResponses()) > 1 {
+		if len(operation.Responses.Success()) > 1 {
 			files = append(files, *responseInterface(types, &operation, apiPackage, modelsVersionPackage, errorModelsPackage))
 		}
 	}
@@ -37,7 +37,7 @@ func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPa
 	w.Line(`import %s;`, errorModelsPackage.PackageStar)
 	w.EmptyLine()
 	w.Line(`public interface [[.ClassName]] {`)
-	for index, response := range operation.SuccessResponses() {
+	for index, response := range operation.Responses.Success() {
 		if index > 0 {
 			w.EmptyLine()
 		}

@@ -188,7 +188,7 @@ func (g *NetHttpGenerator) addParsedParams(w *writer.Writer, namedParams []spec.
 }
 
 func (g *NetHttpGenerator) addClientResponses(w *writer.Writer, operation *spec.NamedOperation) {
-	needsResponseType := len(operation.SuccessResponses()) > 1
+	needsResponseType := len(operation.Responses.Success()) > 1
 	for _, response := range operation.Responses {
 		w.EmptyLine()
 		g.response(w, response)

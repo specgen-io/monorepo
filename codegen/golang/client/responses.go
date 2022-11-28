@@ -9,11 +9,11 @@ import (
 )
 
 func responseStruct(w *writer.Writer, types *types.Types, operation *spec.NamedOperation) {
-	if len(operation.SuccessResponses()) > 1 {
+	if len(operation.Responses.Success()) > 1 {
 		w.EmptyLine()
 		w.Line(`type %s struct {`, responseTypeName(operation))
 		w.Indent()
-		for _, response := range operation.SuccessResponses() {
+		for _, response := range operation.Responses.Success() {
 			w.LineAligned(`%s %s`, response.Name.PascalCase(), types.GoType(spec.Nullable(&response.Type.Definition)))
 		}
 		w.Unindent()

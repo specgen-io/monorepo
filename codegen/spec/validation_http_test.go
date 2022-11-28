@@ -95,11 +95,11 @@ http:
         not_found: string{}
         bad_request: string{}
 `,
-		nil,
+		errors.New(`failed to validate specification`),
 		[]Message{
-			Warning("response internal_server_error is recommended to have standard error type").At(&Location{specificationMetaLines + 6, 32}),
-			Warning("response not_found is recommended to have standard error type").At(&Location{specificationMetaLines + 7, 20}),
-			Warning("response bad_request is recommended to have standard error type").At(&Location{specificationMetaLines + 8, 22}),
+			Error(`response internal_server_error is declared with body type: string{}, however errors section declares it with body type: InternalServerError`).At(&Location{specificationMetaLines + 6, 32}),
+			Error(`response not_found is declared with body type: string{}, however errors section declares it with body type: NotFoundError`).At(&Location{specificationMetaLines + 7, 20}),
+			Error(`response bad_request is declared with body type: string{}, however errors section declares it with body type: BadRequestError`).At(&Location{specificationMetaLines + 8, 22}),
 		},
 		nil,
 	},

@@ -6,15 +6,14 @@ import (
 	"yamlx"
 )
 
-type OperationResponse struct {
+type ErrorResponse struct {
 	Response
-	Operation     *NamedOperation
-	ErrorResponse *ErrorResponse
+	Required bool
 }
 
-type OperationResponses []OperationResponse
+type ErrorResponses []ErrorResponse
 
-func (responses OperationResponses) Get(httpStatus string) *OperationResponse {
+func (responses ErrorResponses) GetByStatusName(httpStatus string) *ErrorResponse {
 	for _, response := range responses {
 		if response.Name.Source == httpStatus {
 			return &response
@@ -23,7 +22,7 @@ func (responses OperationResponses) Get(httpStatus string) *OperationResponse {
 	return nil
 }
 
-func (responses OperationResponses) GetByStatusCode(statusCode string) *OperationResponse {
+func (responses ErrorResponses) GetByStatusCode(statusCode string) *ErrorResponse {
 	for _, response := range responses {
 		if response.Name.Source == HttpStatusName(statusCode) {
 			return &response
@@ -32,7 +31,7 @@ func (responses OperationResponses) GetByStatusCode(statusCode string) *Operatio
 	return nil
 }
 
-func (responses OperationResponses) HttpStatusCodes() []string {
+func (responses ErrorResponses) HttpStatusCodes() []string {
 	codes := []string{}
 	for _, response := range responses {
 		codes = append(codes, HttpStatusCode(response.Name))
@@ -40,52 +39,32 @@ func (responses OperationResponses) HttpStatusCodes() []string {
 	return codes
 }
 
-func (responses OperationResponses) Success() []*OperationResponse {
-	result := []*OperationResponse{}
+func (responses ErrorResponses) Required() []*ErrorResponse {
+	result := []*ErrorResponse{}
 	for index := range responses {
-		if responses[index].IsSuccess() {
+		if responses[index].Required {
 			result = append(result, &responses[index])
 		}
 	}
 	return result
 }
 
-func (responses OperationResponses) Errors() []*OperationResponse {
-	result := []*OperationResponse{}
+func (responses ErrorResponses) NonRequired() []*ErrorResponse {
+	result := []*ErrorResponse{}
 	for index := range responses {
-		if responses[index].ErrorResponse != nil {
+		if !responses[index].Required {
 			result = append(result, &responses[index])
 		}
 	}
 	return result
 }
 
-func (responses OperationResponses) RequiredErrors() []*OperationResponse {
-	result := []*OperationResponse{}
-	for index := range responses {
-		if responses[index].ErrorResponse != nil && responses[index].ErrorResponse.Required {
-			result = append(result, &responses[index])
-		}
-	}
-	return result
-}
-
-func (responses OperationResponses) NonRequiredErrors() []*OperationResponse {
-	result := []*OperationResponse{}
-	for index := range responses {
-		if responses[index].ErrorResponse != nil && !responses[index].ErrorResponse.Required {
-			result = append(result, &responses[index])
-		}
-	}
-	return result
-}
-
-func (value *OperationResponses) UnmarshalYAML(node *yaml.Node) error {
+func (value *ErrorResponses) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
 		return yamlError(node, "response should be YAML mapping")
 	}
 	count := len(node.Content) / 2
-	array := make([]OperationResponse, count)
+	array := make([]ErrorResponse, count)
 	for index := 0; index < count; index++ {
 		keyNode := node.Content[index*2]
 		valueNode := node.Content[index*2+1]
@@ -106,13 +85,13 @@ func (value *OperationResponses) UnmarshalYAML(node *yaml.Node) error {
 		if err != nil {
 			return err
 		}
-		array[index] = OperationResponse{Response{Name: name, Definition: definition}, nil, nil}
+		array[index] = ErrorResponse{Response{Name: name, Definition: definition}, false}
 	}
 	*value = array
 	return nil
 }
 
-func (value OperationResponses) MarshalYAML() (interface{}, error) {
+func (value ErrorResponses) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
 	for index := 0; index < len(value); index++ {
 		response := value[index]

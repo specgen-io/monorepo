@@ -16,7 +16,7 @@ func operationSignature(types *types.Types, operation *spec.NamedOperation) stri
 }
 
 func operationReturnType(types *types.Types, operation *spec.NamedOperation) string {
-	successResponses := operation.SuccessResponses()
+	successResponses := operation.Responses.Success()
 	if len(successResponses) == 1 {
 		return types.GoType(&successResponses[0].Type.Definition)
 	} else {

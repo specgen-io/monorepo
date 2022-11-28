@@ -76,8 +76,8 @@ func (g *MicronautDeclGenerator) operationSignature(operation *spec.NamedOperati
 }
 
 func (g *MicronautDeclGenerator) operationReturnType(operation *spec.NamedOperation) string {
-	if len(operation.SuccessResponses()) == 1 {
-		return g.Types.Kotlin(&operation.SuccessResponses()[0].Type.Definition)
+	if len(operation.Responses.Success()) == 1 {
+		return g.Types.Kotlin(&operation.Responses.Success()[0].Type.Definition)
 	}
 	return "HttpResponse<String>"
 }
@@ -102,7 +102,7 @@ func (g *MicronautDeclGenerator) operationParameters(operation *spec.NamedOperat
 func (g *MicronautDeclGenerator) responses(api *spec.Api) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, operation := range api.Operations {
-		if len(operation.SuccessResponses()) > 1 {
+		if len(operation.Responses.Success()) > 1 {
 			files = append(files, *g.response(&operation))
 		}
 	}
@@ -164,7 +164,7 @@ func responseName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
 }
 
-func (g *MicronautDeclGenerator) Utils(responses *spec.Responses) []generator.CodeFile {
+func (g *MicronautDeclGenerator) Utils(responses *spec.ErrorResponses) []generator.CodeFile {
 	return []generator.CodeFile{*g.generateClientResponse()}
 }
 
@@ -189,6 +189,6 @@ fun <T> getResponseBodyString(response: HttpResponse<T>): String {
 	return w.ToCodeFile()
 }
 
-func (g *MicronautDeclGenerator) Exceptions(errors *spec.Responses) []generator.CodeFile {
+func (g *MicronautDeclGenerator) Exceptions(errors *spec.ErrorResponses) []generator.CodeFile {
 	return []generator.CodeFile{*clientException(g.Packages.Errors)}
 }
