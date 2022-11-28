@@ -307,7 +307,9 @@ func (g *MicronautGenerator) Exceptions(errors *spec.ErrorResponses) []generator
 	files := []generator.CodeFile{}
 	files = append(files, *clientException(g.Packages.Errors))
 	for _, errorResponse := range *errors {
-		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse.Response))
+		if errorResponse.Required {
+			files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse.Response))
+		}
 	}
 	return files
 }
