@@ -54,7 +54,7 @@ func (c *Converter) responses(responses openapi3.Responses) []spec.OperationResp
 		if status != "default" {
 			statusName = spec.HttpStatusName(status)
 		}
-		result = append(result, spec.OperationResponse{spec.Response{name(statusName), *c.response(response)}, nil})
+		result = append(result, spec.OperationResponse{spec.Response{name(statusName), *c.response(response)}, nil, nil})
 	}
 	return result
 }
