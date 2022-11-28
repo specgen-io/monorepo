@@ -295,8 +295,10 @@ public class ClientResponse {
 func (g *OkHttpGenerator) Exceptions(errors *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *clientException(g.Packages.Errors))
-	for _, errorResponse := range *errors {
-		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse.Response))
+	for _, response := range *errors {
+		if response.Required {
+			files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &response.Response))
+		}
 	}
 	files = append(files, *g.errorsInterceptor(errors))
 	return files
