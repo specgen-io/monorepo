@@ -76,6 +76,18 @@ func ApiHasMultiResponsesWithEmptyBody(api *spec.Api) bool {
 	return result
 }
 
+func ApiHasMultiSuccessResponsesWithEmptyBody(api *spec.Api) bool {
+	result := false
+	walk := spec.NewWalker().
+		OnOperationResponse(func(response *spec.OperationResponse) {
+			if len(response.Operation.Responses.Success()) > 1 && response.BodyIs(spec.BodyEmpty) {
+				result = true
+			}
+		})
+	walk.Api(api)
+	return result
+}
+
 func ApiHasType(api *spec.Api, typName string) bool {
 	foundType := false
 	walk := spec.NewWalker().

@@ -14,6 +14,5 @@ func Test_V2_EchoBodyModel(t *testing.T) {
 	response, err := client.EchoBodyModel(&models.Message{true, "the string"})
 
 	assert.NilError(t, err)
-	assert.NilError(t, err, response)
 	assert.DeepEqual(t, expectedMessage, response)
 }
