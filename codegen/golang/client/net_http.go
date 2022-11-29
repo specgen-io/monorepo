@@ -42,7 +42,7 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	if walkers.ApiHasUrlParams(api) {
 		w.Imports.Module(g.Modules.Convert)
 	}
-	if walkers.ApiHasType(api, spec.TypeEmpty) {
+	if walkers.ApiHasMultiSuccessResponsesWithEmptyBody(api) {
 		w.Imports.Module(g.Modules.Empty)
 	}
 	if walkers.ApiHasType(api, spec.TypeDate) {
@@ -87,49 +87,50 @@ func (g *NetHttpGenerator) clientWithCtor(w *writer.Writer) {
 func (g *NetHttpGenerator) operation(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line(`func (client *%s) %s {`, clientTypeName(), operationSignature(g.Types, operation))
 	w.Line(`  var %s = log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(operation), operation.InApi.Name.Source, operation.Name.Source, casee.ToUpperCase(operation.Endpoint.Method), operation.FullUrl())
-	body := "nil"
+	g.createRequest(w, operation, `req`)
+	g.addQueryParams(w, operation, `req`)
+	g.addHeaderParams(w, operation, `req`)
+	g.sendRequest(w, operation, `req`, `resp`)
+	g.processResponses(w.Indented(), operation)
+	w.Line(`}`)
+}
+
+func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation, requestVar string) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`  bodyData := []byte(body)`)
-		body = "bytes.NewBuffer(bodyData)"
 	}
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`  bodyData, err := json.Marshal(body)`)
 		w.Line(`  if err != nil {`)
-		w.Line(`    return nil, err`)
+		w.Line(`    return %s`, operationError(operation, `err`))
 		w.Line(`  }`)
+	}
+	body := "nil"
+	if !operation.BodyIs(spec.BodyEmpty) {
 		body = "bytes.NewBuffer(bodyData)"
 	}
-	w.Line(`  req, err := http.NewRequest("%s", client.baseUrl+%s, %s)`, operation.Endpoint.Method, g.addRequestUrlParams(operation), body)
+	w.Line(`  %s, err := http.NewRequest("%s", client.baseUrl+%s, %s)`, requestVar, operation.Endpoint.Method, g.addRequestUrlParams(operation), body)
 	w.Line(`  if err != nil {`)
 	w.Line(`    log.WithFields(%s).Error("Failed to create HTTP request", err.Error())`, logFieldsName(operation))
-	w.Line(`    return nil, err`)
+	w.Line(`    return %s`, operationError(operation, `err`))
 	w.Line(`  }`)
 	if operation.BodyIs(spec.BodyString) {
-		w.Line(`  req.Header.Set("Content-Type", "text/plain")`)
+		w.Line(`  %s.Header.Set("Content-Type", "text/plain")`, requestVar)
 	}
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`  req.Header.Set("Content-Type", "application/json")`)
+		w.Line(`  %s.Header.Set("Content-Type", "application/json")`, requestVar)
 	}
 	w.EmptyLine()
-	g.parseParams(w, operation)
+}
+
+func (g *NetHttpGenerator) sendRequest(w *writer.Writer, operation *spec.NamedOperation, requestVar, responseVar string) {
 	w.Line(`  log.WithFields(%s).Info("Sending request")`, logFieldsName(operation))
-	w.Line(`  resp, err := http.DefaultClient.Do(req)`)
+	w.Line(`  %s, err := http.DefaultClient.Do(%s)`, responseVar, requestVar)
 	w.Line(`  if err != nil {`)
 	w.Line(`    log.WithFields(%s).Error("Request failed", err.Error())`, logFieldsName(operation))
-	w.Line(`    return nil, err`)
+	w.Line(`    return %s`, operationError(operation, `err`))
 	w.Line(`  }`)
-	g.addClientResponses(w.Indented(), operation)
-	w.EmptyLine()
-	w.Line(`  err = httperrors.HandleErrors(resp, %s)`, logFieldsName(operation))
-	w.Line(`  if err != nil {`)
-	w.Line(`    return nil, err`)
-	w.Line(`  }`)
-	w.EmptyLine()
-	w.Line(`  msg := fmt.Sprintf("Unexpected status code received: %s", resp.StatusCode)`, "%d")
-	w.Line(`  log.WithFields(%s).Error(msg)`, logFieldsName(operation))
-	w.Line(`  err = errors.New(msg)`)
-	w.Line(`  return nil, err`)
-	w.Line(`}`)
+	w.Line(`  log.WithFields(%s).WithField("status", %s.StatusCode).Info("Received response")`, logFieldsName(operation), responseVar)
 }
 
 func (g *NetHttpGenerator) getUrl(operation *spec.NamedOperation) []string {
@@ -166,73 +167,63 @@ func (g *NetHttpGenerator) addUrlParam(operation *spec.NamedOperation) []string 
 	return urlParams
 }
 
-func (g *NetHttpGenerator) parseParams(w *writer.Writer, operation *spec.NamedOperation) {
+func (g *NetHttpGenerator) addQueryParams(w *writer.Writer, operation *spec.NamedOperation, requestVar string) {
 	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
-		w.Line(`  query := req.URL.Query()`)
-		g.addParsedParams(w, operation.QueryParams, "q", "query")
-		w.Line(`  req.URL.RawQuery = %s.Encode()`, "query")
-		w.EmptyLine()
-	}
-	if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
-		w.Line(`  header := req.Header`)
-		g.addParsedParams(w, operation.HeaderParams, "h", "header")
-		w.EmptyLine()
-	}
-}
-
-func (g *NetHttpGenerator) addParsedParams(w *writer.Writer, namedParams []spec.NamedParam, paramsConverterName string, paramsParserName string) {
-	w.Line(`  %s := convert.NewParamsConverter(%s)`, paramsConverterName, paramsParserName)
-	for _, param := range namedParams {
-		w.Line(`  %s.%s`, paramsConverterName, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
-	}
-}
-
-func (g *NetHttpGenerator) addClientResponses(w *writer.Writer, operation *spec.NamedOperation) {
-	needsResponseType := len(operation.Responses.Success()) > 1
-	for _, response := range operation.Responses {
-		w.EmptyLine()
-		g.response(w, response)
-
-		if needsResponseType {
-			if response.Type.Definition.IsEmpty() {
-				w.Line(`  return &%s, nil`, newResponse(&response, fmt.Sprintf(`%s{}`, types.EmptyType)))
-			} else {
-				w.Line(`  return &%s, nil`, newResponse(&response, `result`))
-			}
-		} else {
-			if response.Type.Definition.IsEmpty() {
-				if response.IsSuccess() {
-					w.Line(`  return &%s{}, nil`, types.EmptyType)
-				} else {
-					w.Line(`  return nil, err`)
-				}
-			} else {
-				w.Line(`  return &result, nil`)
-			}
+		w.Line(`  query := %s.URL.Query()`, requestVar)
+		w.Line(`  q := convert.NewParamsConverter(query)`)
+		for _, param := range operation.QueryParams {
+			w.Line(`  q.%s`, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
 		}
-		w.Line(`}`)
+		w.Line(`  %s.URL.RawQuery = query.Encode()`, requestVar)
+		w.EmptyLine()
 	}
 }
 
-func (g *NetHttpGenerator) response(w *writer.Writer, response spec.OperationResponse) {
-	w.Line(`if resp.StatusCode == %s {`, spec.HttpStatusCode(response.Name))
-	if response.BodyIs(spec.BodyString) {
-		w.Line(`  responseBody, err := response.Text(%s, resp)`, logFieldsName(response.Operation))
-		w.Line(`  if err != nil {`)
-		w.Line(`    return nil, err`)
-		w.Line(`  }`)
-		w.Line(`  result := string(responseBody)`)
+func (g *NetHttpGenerator) addHeaderParams(w *writer.Writer, operation *spec.NamedOperation, requestVar string) {
+	if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
+		w.Line(`  h := convert.NewParamsConverter(%s.Header)`, requestVar)
+		for _, param := range operation.HeaderParams {
+			w.Line(`  h.%s`, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
+		}
+		w.EmptyLine()
 	}
-	if response.BodyIs(spec.BodyJson) {
-		w.Line(`  var result %s`, g.Types.GoType(&response.Type.Definition))
-		w.Line(`  err := response.Json(%s, resp, &result)`, logFieldsName(response.Operation))
-		w.Line(`  if err != nil {`)
-		w.Line(`    return nil, err`)
-		w.Line(`  }`)
+}
+
+func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.NamedOperation) {
+	w.EmptyLine()
+	w.Line(`switch resp.StatusCode {`)
+	for _, response := range operation.Responses {
+		w.Line(`case %s:`, spec.HttpStatusCode(response.Name))
+		if response.BodyIs(spec.BodyString) {
+			w.Line(`  result, err := response.Text(resp)`)
+			w.Line(`  if err != nil {`)
+			w.Line(`    return %s`, operationError(response.Operation, `err`))
+			w.Line(`  }`)
+		}
+		if response.BodyIs(spec.BodyJson) {
+			w.Line(`  var result %s`, g.Types.GoType(&response.Type.Definition))
+			w.Line(`  err := response.Json(resp, &result)`)
+			w.Line(`  if err != nil {`)
+			w.Line(`    return %s`, operationError(response.Operation, `err`))
+			w.Line(`  }`)
+		}
+
+		if response.IsSuccess() {
+			w.Line(`  return %s`, resultSuccess(&response, `result`))
+		} else {
+			w.Line(`  return %s`, resultError(&response, g.Modules.HttpErrors, `result`))
+		}
 	}
-	if response.BodyIs(spec.BodyEmpty) {
-		w.Line(`  response.Empty(%s, resp)`, logFieldsName(response.Operation))
-	}
+	w.Line(`default:`)
+	w.Line(`  err = httperrors.HandleErrors(resp)`)
+	w.Line(`  if err != nil {`)
+	w.Line(`    return %s`, operationError(operation, `err`))
+	w.Line(`  }`)
+	w.EmptyLine()
+	w.Line(`  msg := fmt.Sprintf("Unexpected status code received: %s", resp.StatusCode)`, "%d")
+	w.Line(`  log.WithFields(%s).Error(msg)`, logFieldsName(operation))
+	w.Line(`  return %s`, operationError(operation, `errors.New(msg)`))
+	w.Line(`}`)
 }
 
 func newResponse(response *spec.OperationResponse, body string) string {
@@ -245,4 +236,103 @@ func clientTypeName() string {
 
 func logFieldsName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf("log%s", operation.Name.PascalCase())
+}
+
+func responseStruct(w *writer.Writer, types *types.Types, operation *spec.NamedOperation) {
+	if len(operation.Responses.Success()) > 1 {
+		w.EmptyLine()
+		w.Line(`type %s struct {`, responseTypeName(operation))
+		w.Indent()
+		for _, response := range operation.Responses.Success() {
+			w.LineAligned(`%s %s`, response.Name.PascalCase(), types.GoType(spec.Nullable(&response.Type.Definition)))
+		}
+		w.Unindent()
+		w.Line(`}`)
+	}
+}
+
+func responseTypeName(operation *spec.NamedOperation) string {
+	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
+}
+
+func (g *NetHttpGenerator) ResponseHelperFunctions() *generator.CodeFile {
+	w := writer.New(g.Modules.Response, `response.go`)
+	w.Lines(`
+import (
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+)
+
+func Json(resp *http.Response, result any) error {
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(responseBody, &result)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func Text(resp *http.Response) (string, error) {
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *NetHttpGenerator) ErrorsHandler(errors spec.ErrorResponses) *generator.CodeFile {
+	w := writer.New(g.Modules.HttpErrors, `errors_handler.go`)
+
+	w.Imports.Add("net/http")
+	w.Imports.Module(g.Modules.HttpErrorsModels)
+	w.Imports.Module(g.Modules.Response)
+
+	w.EmptyLine()
+	w.Line(`func HandleErrors(resp *http.Response) error {`)
+	w.Indent()
+	w.Line(`switch resp.StatusCode {`)
+	for _, response := range errors.Required() {
+		w.Line(`case %s:`, spec.HttpStatusCode(response.Name))
+		if response.BodyIs(spec.BodyString) {
+			w.Line(`  result, err := response.Text(resp)`)
+			w.Line(`  if err != nil {`)
+			w.Line(`    return err`)
+			w.Line(`  }`)
+		}
+		if response.BodyIs(spec.BodyJson) {
+			w.Line(`  var result %s`, g.Types.GoType(&response.Type.Definition))
+			w.Line(`  err := response.Json(resp, &result)`)
+			w.Line(`  if err != nil {`)
+			w.Line(`    return err`)
+			w.Line(`  }`)
+		}
+
+		if response.Type.Definition.IsEmpty() {
+			w.Line(`  return &%s{}`, response.Name.PascalCase())
+		} else {
+			w.Line(`  return &%s{result}`, response.Name.PascalCase())
+		}
+	}
+	w.Line(`default:`)
+	w.Line(`  return nil`)
+	w.Line(`}`)
+	w.Unindent()
+	w.Line(`}`)
+
+	return w.ToCodeFile()
 }

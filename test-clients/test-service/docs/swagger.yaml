@@ -26,19 +26,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v2.BadRequestError'
+                $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
         "404":
           description: Service will return this if the endpoint is not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v2.NotFoundError'
+                $ref: '#/components/schemas/NotFoundError'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v2.InternalServerError'
+                $ref: '#/components/schemas/InternalServerError'
   /echo/body_string:
     post:
       operationId: echoEchoBodyString
@@ -63,6 +65,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
         "404":
           description: Service will return this if the endpoint is not found
           content:
@@ -99,6 +103,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
         "404":
           description: Service will return this if the endpoint is not found
           content:
@@ -139,6 +145,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
         "404":
           description: Service will return this if the endpoint is not found
           content:
@@ -179,6 +187,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
         "404":
           description: Service will return this if the endpoint is not found
           content:
@@ -299,6 +309,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
         "404":
           description: Service will return this if the endpoint is not found
           content:
@@ -419,6 +431,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
         "404":
           description: Service will return this if the endpoint is not found
           content:
@@ -513,6 +527,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
         "404":
           description: Service will return this if the endpoint is not found
           content:
@@ -663,6 +679,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
         "404":
           description: Service will return this if the endpoint is not found
           content:
@@ -689,6 +707,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
         "404":
           description: Service will return this if the endpoint is not found
           content:
@@ -721,6 +741,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
         "404":
           description: Service will return this if the endpoint is not found
           content:
@@ -804,52 +826,6 @@ components:
         bool_field:
           type: boolean
         string_field:
-          type: string
-    v2.BadRequestError:
-      type: object
-      required:
-        - message
-        - location
-      properties:
-        message:
-          type: string
-        location:
-          $ref: '#/components/schemas/v2.ErrorLocation'
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/v2.ValidationError'
-    v2.ValidationError:
-      type: object
-      required:
-        - path
-        - code
-      properties:
-        path:
-          type: string
-        code:
-          type: string
-        message:
-          type: string
-    v2.ErrorLocation:
-      type: string
-      enum:
-        - query
-        - header
-        - body
-    v2.NotFoundError:
-      type: object
-      required:
-        - message
-      properties:
-        message:
-          type: string
-    v2.InternalServerError:
-      type: object
-      required:
-        - message
-      properties:
-        message:
           type: string
     Message:
       type: object
@@ -1054,6 +1030,7 @@ components:
     ErrorLocation:
       type: string
       enum:
+        - unknown
         - query
         - header
         - body
