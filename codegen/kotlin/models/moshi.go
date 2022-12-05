@@ -115,6 +115,28 @@ func (g *MoshiGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
 	return fmt.Sprintf(`write(%s, %s)`, adapterParam, varData)
 }
 
+func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) string {
+	switch typ.Node {
+	case spec.ArrayType:
+		return fmt.Sprintf(`readList(%s)`, varJson)
+	case spec.MapType:
+		return fmt.Sprintf(`readMap(%s)`, varJson)
+	default:
+		return fmt.Sprintf(`read(%s)`, varJson)
+	}
+}
+
+func (g *MoshiGenerator) WriteJson(varData string, typ *spec.TypeDef) string {
+	switch typ.Node {
+	case spec.ArrayType:
+		return fmt.Sprintf(`writeList(%s)`, varData)
+	case spec.MapType:
+		return fmt.Sprintf(`writeMap(%s)`, varData)
+	default:
+		return fmt.Sprintf(`write(%s)`, varData)
+	}
+}
+
 func (g *MoshiGenerator) modelsDefinitionsImports() []string {
 	return []string{
 		`com.squareup.moshi.*`,
@@ -173,14 +195,27 @@ func (g *MoshiGenerator) json() *generator.CodeFile {
 	w.Lines(`
 import com.squareup.moshi.*
 import java.lang.reflect.ParameterizedType
+import java.io.Reader
 
 class Json(private val moshi: Moshi) {
 	fun <T> write(type: Class<T>, data: T): String {
 		return moshi.adapter(type).toJson(data)
 	}
 
+	inline fun <reified T> write(data: T) : String {
+		return write(T::class.java, data)
+	}
+
 	fun <T> write(type: ParameterizedType, data: T): String {
 		return moshi.adapter<Any>(type).toJson(data)
+	}
+
+	inline fun <reified T> writeList(data: List<T>): String {
+		return write(Types.newParameterizedType(List::class.java, T::class.java), data)
+	}
+
+	inline fun <reified K, reified V> writeMap(data: Map<K, V>): String {
+		return write(Types.newParameterizedType(MutableMap::class.java, K::class.java, V::class.java), data)
 	}
 
 	fun <T> read(jsonStr: String, type: Class<T>): T {
@@ -197,6 +232,46 @@ class Json(private val moshi: Moshi) {
 		} catch (exception: JsonDataException) {
 			throw JsonParseException(exception)
 		}
+	}
+
+	fun <T> read(reader: Reader, type: Class<T>): T {
+		return try {
+			moshi.adapter(type).fromJson(reader.readText())!!
+		} catch (exception: JsonDataException) {
+			throw JsonParseException(exception)
+		}
+	}
+
+	fun <T> read(reader: Reader, type: ParameterizedType): T {
+		return try {
+			moshi.adapter<T>(type).fromJson(reader.readText())!!
+		} catch (exception: JsonDataException) {
+			throw JsonParseException(exception)
+		}
+	}
+
+	inline fun <reified T> read(jsonStr: String): T {
+		return read(jsonStr, T::class.java)
+	}
+
+	inline fun <reified T> readList(jsonStr: String): List<T> {
+		return read(jsonStr, Types.newParameterizedType(List::class.java, T::class.java))
+	}
+
+	inline fun <reified K, reified V> readMap(jsonStr: String): Map<K, V> {
+		return read(jsonStr, Types.newParameterizedType(MutableMap::class.java, K::class.java, V::class.java))
+	}
+
+	inline fun <reified T> read(reader: Reader): T {
+		return read(reader, T::class.java)
+	}
+
+	inline fun <reified T> readList(reader: Reader): List<T> {
+		return read(reader, Types.newParameterizedType(List::class.java, T::class.java))
+	}
+
+	inline fun <reified K, reified V> readMap(reader: Reader): Map<K, V> {
+		return read(reader, Types.newParameterizedType(MutableMap::class.java, K::class.java, V::class.java))
 	}
 }
 `)
@@ -229,21 +304,26 @@ func (g *MoshiGenerator) setupAdapters() *generator.CodeFile {
 	w.Imports.Add(`com.squareup.moshi.Moshi`)
 	w.Imports.Add(`com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory`)
 	w.Imports.PackageStar(g.Packages.JsonAdapters)
-	w.EmptyLine()
-	w.Line(`fun setupMoshiAdapters(moshiBuilder: Moshi.Builder) {`)
-	w.Line(`  moshiBuilder`)
-	w.Line(`    .add(BigDecimalAdapter())`)
-	w.Line(`    .add(UuidAdapter())`)
-	w.Line(`    .add(LocalDateAdapter())`)
-	w.Line(`    .add(LocalDateTimeAdapter())`)
+	w.Lines(`
+fun setupMoshiAdapters(moshiBuilder: Moshi.Builder): Moshi.Builder {
+	moshiBuilder
+		.add(BigDecimalAdapter())
+		.add(UuidAdapter())
+		.add(LocalDateAdapter())
+		.add(LocalDateTimeAdapter())
+`)
 	w.EmptyLine()
 	for _, setupMoshiMethod := range g.generatedSetupMoshiMethods {
 		w.Line(`	%s(moshiBuilder);`, setupMoshiMethod)
 	}
 	w.EmptyLine()
-	w.Line(`  moshiBuilder`)
-	w.Line(`    .add(KotlinJsonAdapterFactory())`)
-	w.Line(`}`)
+	w.Lines(`
+	moshiBuilder
+		.add(KotlinJsonAdapterFactory())
+
+	return moshiBuilder;
+}
+`)
 	return w.ToCodeFile()
 }
 
@@ -662,4 +742,12 @@ val moshiBuilder = Moshi.Builder()
 setupMoshiAdapters(moshiBuilder)
 %s = Json(moshiBuilder.build())
 `, name)
+}
+
+func (g *MoshiGenerator) InitJsonHelper() string {
+	return fmt.Sprintf(`setupMoshiAdapters(Moshi.Builder()).build()`)
+}
+
+func (g *MoshiGenerator) JsonMapper() []string {
+	return []string{`Moshi`, `moshi`}
 }
