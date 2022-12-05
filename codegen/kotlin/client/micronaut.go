@@ -295,7 +295,7 @@ func (g *MicronautGenerator) generateErrorsHandler(errorsResponses *spec.ErrorRe
 		w.Line(`  if (response.code() == %s) {`, spec.HttpStatusCode(errorResponse.Name))
 		w.Line(`    val responseBodyString = getResponseBodyString(response, logger)`)
 		w.Line(`    val responseBody = json.%s`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
-		w.Line(`    throw %sException(responseBody)`, g.Types.Kotlin(&errorResponse.Type.Definition))
+		w.Line(`    throw %sException(responseBody)`, errorResponse.Name.PascalCase())
 		w.Line(`  }`)
 	}
 	w.Line(`}`)
@@ -306,6 +306,7 @@ func (g *MicronautGenerator) generateErrorsHandler(errorsResponses *spec.ErrorRe
 func (g *MicronautGenerator) Exceptions(errors *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *clientException(g.Packages.Errors))
+	files = append(files, *responseException(g.Packages.Errors))
 	for _, errorResponse := range errors.Required() {
 		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &errorResponse.Response))
 	}

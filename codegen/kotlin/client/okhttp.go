@@ -265,14 +265,13 @@ class [[.ClassName]](private var json: Json) : Interceptor {
 		if errorResponse.BodyIs(spec.BodyEmpty) {
 			responseBody = ""
 		}
-		//TODO
 		if errorResponse.BodyIs(spec.BodyString) {
-			w.Line(`  val responseBody = "response.body!!.string()"`)
-			w.Line(`  logger.error(responseBody)`)
+			w.Line(`  val %s = response.body!!.string()`, responseBody)
+			w.Line(`  logger.error(%s)`, responseBody)
 		}
 		if errorResponse.BodyIs(spec.BodyJson) {
-			w.Line(`  val responseBody: %s = json.%s`, g.Types.Kotlin(&errorResponse.Type.Definition), g.Models.ReadJson(`response.body!!.charStream()`, &errorResponse.Type.Definition))
-			w.Line(`  logger.error(responseBody.message)`)
+			w.Line(`  val %s: %s = json.%s`, responseBody, g.Types.Kotlin(&errorResponse.Type.Definition), g.Models.ReadJson(`response.body!!.charStream()`, &errorResponse.Type.Definition))
+			w.Line(`  logger.error(%s.message)`, responseBody)
 		}
 		w.Line(`  throw %sException(%s)`, errorResponse.Name.PascalCase(), responseBody)
 		w.Line(`}`)
