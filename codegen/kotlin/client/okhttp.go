@@ -132,7 +132,17 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
 		w.Line(`  %s -> %s`, spec.HttpStatusCode(response.Name), responseBody)
 	}
 	for _, errorResponse := range operation.Responses.NonRequiredErrors() {
-		w.Line(`  %s -> throw %sException()`, spec.HttpStatusCode(errorResponse.Name), errorResponse.Name.PascalCase())
+		var responseBody string
+		if errorResponse.BodyIs(spec.BodyEmpty) {
+			responseBody = ""
+		}
+		if errorResponse.BodyIs(spec.BodyString) {
+			responseBody = "response.body!!.string()"
+		}
+		if errorResponse.BodyIs(spec.BodyJson) {
+			responseBody = fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body!!.charStream()`, &errorResponse.Type.Definition))
+		}
+		w.Line(`  %s -> throw %sException(%s)`, spec.HttpStatusCode(errorResponse.Name), errorResponse.Name.PascalCase(), responseBody)
 	}
 	w.Line(`  else -> throw ResponseException("Unexpected status code received: ${response.code}")`)
 	w.Line(`}`)
