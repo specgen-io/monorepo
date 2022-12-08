@@ -58,6 +58,9 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 		w.Imports.Add("github.com/shopspring/decimal")
 	}
 	w.Imports.Module(g.Modules.HttpErrors)
+	if walkers.ApiIsUsingErrorModels(api) {
+		w.Imports.Module(g.Modules.HttpErrorsModels)
+	}
 	w.Imports.Module(g.Modules.Models(api.InHttp.InVersion))
 	w.Imports.Module(g.Modules.Response)
 

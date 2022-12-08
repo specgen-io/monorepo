@@ -4,7 +4,12 @@ version: 1
 
 errors:
   responses:
-    forbidden: empty
+    forbidden: empty  
+    conflict: ConflictMessage
+  models:
+    ConflictMessage:
+      object:
+        message: string
 
 
 v2:
@@ -140,6 +145,18 @@ http:
         ok: Message
         forbidden: empty
 
+    check_conflict:
+      endpoint: GET /check/conflict
+      response:
+        ok: empty
+        conflict: ConflictMessage
+
+    check_bad_request:
+      endpoint: GET /check/bad_request
+      response:
+        ok: empty
+        bad_request: BadRequestError
+
     same_operation_name:
       endpoint: GET /check/same_operation_name
       response:
@@ -203,4 +220,4 @@ models:
       created_result: string
   AcceptedResult:
     object:
-      accepted_result: string       
+      accepted_result: string

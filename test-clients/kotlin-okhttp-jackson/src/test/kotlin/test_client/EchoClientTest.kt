@@ -6,8 +6,7 @@ import org.junit.jupiter.api.Test
 import test_client.clients.echo.*
 import test_client.models.*
 import java.math.BigDecimal
-import java.time.LocalDate
-import java.time.LocalDateTime
+import java.time.*
 import java.util.*
 
 class EchoClientTest {
