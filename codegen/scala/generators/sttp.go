@@ -26,10 +26,16 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 	scalaHttpStaticFile := generateStringParams(paramsPackage)
 	sources.AddGenerated(scalaHttpStaticFile)
 
+	errorsPackage := mainPackage.Subpackage("errors")
+	errorsModelsPackage := errorsPackage.Subpackage("models")
+
+	errorModels := generateCirceModels(specification.HttpErrors.ResolvedModels, errorsModelsPackage, jsonPackage)
+	sources.AddGenerated(errorModels)
+
 	for _, version := range specification.Versions {
 		versionClientPackage := mainPackage.Subpackage(version.Name.FlatCase())
 		versionModelsPackage := versionClientPackage.Subpackage("models")
-		clientImplementations := generateClientImplementations(&version, versionClientPackage, versionModelsPackage, jsonPackage, paramsPackage)
+		clientImplementations := generateClientImplementations(&version, versionClientPackage, versionModelsPackage, errorsModelsPackage, jsonPackage, paramsPackage)
 		sources.AddGeneratedAll(clientImplementations)
 		models := generateCirceModels(version.ResolvedModels, versionModelsPackage, jsonPackage)
 		sources.AddGenerated(models)
@@ -38,22 +44,23 @@ func GenerateSttpClient(specification *spec.Spec, packageName string, generatePa
 	return sources
 }
 
-func generateClientImplementations(version *spec.Version, thepackage, modelsPackage, jsonPackage, paramsPackage packages.Package) []generator.CodeFile {
+func generateClientImplementations(version *spec.Version, thepackage, modelsPackage, errorsModelsPackage, jsonPackage, paramsPackage packages.Package) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		apiPackage := thepackage.Subpackage(api.Name.FlatCase())
-		apiClient := generateApiClientApi(&api, apiPackage, modelsPackage, jsonPackage, paramsPackage)
+		apiClient := generateApiClientApi(&api, apiPackage, modelsPackage, errorsModelsPackage, jsonPackage, paramsPackage)
 		files = append(files, *apiClient)
 	}
 	return files
 }
 
-func generateApiClientApi(api *spec.Api, thepackage, modelsPackage, jsonPackage, stringParamsPackage packages.Package) *generator.CodeFile {
+func generateApiClientApi(api *spec.Api, thepackage, modelsPackage, errorsModelsPackage, jsonPackage, stringParamsPackage packages.Package) *generator.CodeFile {
 	w := writer.New(thepackage, `Client`)
 	w.Line(`import scala.concurrent._`)
 	w.Line(`import org.slf4j._`)
 	w.Line(`import com.softwaremill.sttp._`)
 	w.Line(`import %s.ParamsTypesBindings._`, stringParamsPackage.PackageName)
+	w.Line(`import %s`, errorsModelsPackage.PackageStar)
 	if jsonPackage.PackageName != thepackage.PackageName {
 		w.Line(`import %s.Jsoner`, jsonPackage.PackageName)
 	}
