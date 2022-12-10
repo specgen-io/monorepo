@@ -8,7 +8,7 @@ import (
 )
 
 func KotlinConfig() generator.Config {
-	return generator.Config{"\t", 2, map[string]string{}}
+	return generator.Config{"    ", 4, map[string]string{}}
 }
 
 type Writer struct {

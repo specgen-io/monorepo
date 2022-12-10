@@ -269,10 +269,10 @@ setupObjectMapper(objectMapper)
 `, name)
 }
 
-func (g *JacksonGenerator) InitJsonHelper() string {
+func (g *JacksonGenerator) JsonMapperInit() string {
 	return fmt.Sprintf(`setupObjectMapper(jacksonObjectMapper())`)
 }
 
-func (g *JacksonGenerator) JsonMapper() []string {
-	return []string{`ObjectMapper`, `objectMapper`}
+func (g *JacksonGenerator) JsonMapperType() string {
+	return `ObjectMapper`
 }
