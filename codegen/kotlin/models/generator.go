@@ -18,8 +18,8 @@ type Generator interface {
 	WriteJson(varData string, typ *spec.TypeDef) string
 	JsonHelpers() []generator.CodeFile
 	CreateJsonHelper(name string) string
-	InitJsonHelper() string
-	JsonMapper() []string
+	JsonMapperInit() string
+	JsonMapperType() string
 }
 
 func NewGenerator(jsonlib string, packages *Packages) Generator {

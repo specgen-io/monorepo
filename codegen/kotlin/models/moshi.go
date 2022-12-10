@@ -744,10 +744,10 @@ setupMoshiAdapters(moshiBuilder)
 `, name)
 }
 
-func (g *MoshiGenerator) InitJsonHelper() string {
+func (g *MoshiGenerator) JsonMapperInit() string {
 	return fmt.Sprintf(`setupMoshiAdapters(Moshi.Builder()).build()`)
 }
 
-func (g *MoshiGenerator) JsonMapper() []string {
-	return []string{`Moshi`, `moshi`}
+func (g *MoshiGenerator) JsonMapperType() string {
+	return `Moshi`
 }

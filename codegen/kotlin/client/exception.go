@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"generator"
 	"kotlin/packages"
-	"kotlin/types"
 	"kotlin/writer"
 	"spec"
 )
@@ -34,9 +33,8 @@ open class [[.ClassName]](message: String) : RuntimeException(message)
 	return w.ToCodeFile()
 }
 
-func inheritedClientException(thePackage, errorsModelsPackage packages.Package, types *types.Types, error *spec.Response) *generator.CodeFile {
-	className := fmt.Sprintf(`%sException`, error.Name.PascalCase())
-	w := writer.New(thePackage, className)
+func errorResponseException(thePackage, errorsModelsPackage packages.Package, error *spec.Response) *generator.CodeFile {
+	w := writer.New(thePackage, errorExceptionClassName(error))
 	w.Imports.PackageStar(errorsModelsPackage)
 	errorBody := ""
 	if !error.BodyIs(spec.BodyEmpty) {
@@ -45,4 +43,8 @@ func inheritedClientException(thePackage, errorsModelsPackage packages.Package, 
 	w.Line(`class [[.ClassName]]%s : ResponseException("Error response with status code %s")`, errorBody, spec.HttpStatusCode(error.Name))
 
 	return w.ToCodeFile()
+}
+
+func errorExceptionClassName(error *spec.Response) string {
+	return fmt.Sprintf(`%sException`, error.Name.PascalCase())
 }
