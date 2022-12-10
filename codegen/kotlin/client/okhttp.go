@@ -76,21 +76,7 @@ class [[.ClassName]] {
 	return w.ToCodeFile()
 }
 
-func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec.NamedOperation) {
-	methodName := operation.Endpoint.Method
-	url := operation.FullUrl()
-	w.Line(`fun %s {`, operationSignature(g.Types, operation))
-	w.Line(`    try {`)
-	w.IndentWith(2)
-	requestBody := "null"
-	if operation.BodyIs(spec.BodyString) {
-		w.Line(`val requestBody = body.toRequestBody("text/plain".toMediaTypeOrNull())`)
-		requestBody = "requestBody"
-	}
-	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`val requestBody = json.%s.toRequestBody("application/json".toMediaTypeOrNull())`, g.Models.WriteJson("body", &operation.Body.Type.Definition))
-		requestBody = "requestBody"
-	}
+func (g *OkHttpGenerator) createUrl(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line(`val url = UrlBuilder(baseUrl)`)
 	if operation.InApi.InHttp.GetUrl() != "" {
 		w.Line(`url.addPathSegments("%s")`, trimSlash(operation.InApi.InHttp.GetUrl()))
@@ -106,16 +92,31 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
 	for _, param := range operation.QueryParams {
 		w.Line(`url.addQueryParameter("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))
 	}
-	w.EmptyLine()
-	w.Line(`val request = RequestBuilder("%s", url.build(), %s)`, methodName, requestBody)
+}
+
+func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
+	requestBody := "null"
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`val requestBody = body.toRequestBody("text/plain".toMediaTypeOrNull())`)
+		requestBody = "requestBody"
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`val requestBody = json.%s.toRequestBody("application/json".toMediaTypeOrNull())`, g.Models.WriteJson("body", &operation.Body.Type.Definition))
+		requestBody = "requestBody"
+	}
+	w.Line(`val request = RequestBuilder("%s", url.build(), %s)`, operation.Endpoint.Method, requestBody)
 	for _, param := range operation.HeaderParams {
 		w.Line(`request.addHeaderParameter("%s", %s)`, param.Name.Source, addBuilderParam(&param))
 	}
-	w.EmptyLine()
-	w.Line(`logger.info("Sending request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
+}
+
+func (g *OkHttpGenerator) sendRequest(w *writer.Writer, operation *spec.NamedOperation) {
+	w.Line(`logger.info("Sending request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, operation.Endpoint.Method, operation.FullUrl())
 	w.Line(`val response = client.newCall(request.build()).execute()`)
 	w.Line(`logger.info("Received response with status code ${response.code}")`)
-	w.EmptyLine()
+}
+
+func (g *OkHttpGenerator) processResponse(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line(`when (response.code) {`)
 	for _, response := range operation.Responses.Success() {
 		w.Line(`    %s -> %s`, spec.HttpStatusCode(response.Name), g.successResponse(response))
@@ -125,6 +126,19 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
 	}
 	w.Line(`    else -> throw ResponseException("Unexpected status code received: ${response.code}")`)
 	w.Line(`}`)
+}
+
+func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec.NamedOperation) {
+	w.Line(`fun %s {`, operationSignature(g.Types, operation))
+	w.Line(`    try {`)
+	w.IndentWith(2)
+	g.createUrl(w, operation)
+	w.EmptyLine()
+	g.createRequest(w, operation)
+	w.EmptyLine()
+	g.sendRequest(w, operation)
+	w.EmptyLine()
+	g.processResponse(w, operation)
 	w.UnindentWith(2)
 	w.Lines(`
     } catch (ex: Throwable) {
