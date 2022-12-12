@@ -164,7 +164,7 @@ func responseName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf(`%sResponse`, operation.Name.PascalCase())
 }
 
-func (g *MicronautDeclGenerator) Utils(responses *spec.ErrorResponses) []generator.CodeFile {
+func (g *MicronautDeclGenerator) Utils() []generator.CodeFile {
 	return []generator.CodeFile{*g.generateClientResponse()}
 }
 
