@@ -45,7 +45,7 @@ class CheckClientTest {
 
     @Test
     fun checkBadRequest_checkExceptionBody() {
-        val exception = assertThrows<ClientException> { client.checkBadRequest() }.cause as BadRequestErrorException
+        val exception = assertThrows<ClientException> { client.checkBadRequest() }.cause as BadRequestException
         val expectedBody = BadRequestError("Failed to execute request", ErrorLocation.UNKNOWN, null)
         assertEquals(exception.body, expectedBody)
     }
@@ -53,6 +53,6 @@ class CheckClientTest {
     @Test
     fun checkBadRequest_throwException() {
         val exception = assertThrows<ClientException> { client.checkBadRequest() }
-        assertTrue(exception.cause is BadRequestErrorException)
+        assertTrue(exception.cause is BadRequestException)
     }
 }
