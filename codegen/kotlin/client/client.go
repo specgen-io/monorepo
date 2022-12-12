@@ -13,7 +13,7 @@ func Generate(specification *spec.Spec, jsonlib, client, packageName, generatePa
 
 	sources.AddGeneratedAll(generator.ErrorModels(specification.HttpErrors))
 	sources.AddGeneratedAll(generator.Exceptions(&specification.HttpErrors.Responses))
-	sources.AddGeneratedAll(generator.Utils(&specification.HttpErrors.Responses))
+	sources.AddGeneratedAll(generator.Utils())
 
 	for _, version := range specification.Versions {
 		sources.AddGeneratedAll(generator.Models(&version))

@@ -10,7 +10,7 @@ import (
 
 type ClientGenerator interface {
 	Clients(version *spec.Version) []generator.CodeFile
-	Utils(responses *spec.ErrorResponses) []generator.CodeFile
+	Utils() []generator.CodeFile
 	Exceptions(errors *spec.ErrorResponses) []generator.CodeFile
 }
 

@@ -11,7 +11,6 @@ errors:
       object:
         message: string
 
-
 v2:
   http:
     echo:

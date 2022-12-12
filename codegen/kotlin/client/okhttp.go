@@ -170,7 +170,7 @@ func (g *OkHttpGenerator) errorResponse(response *spec.Response) string {
 	return fmt.Sprintf(`throw %s(%s)`, errorExceptionClassName(response), responseBody)
 }
 
-func (g *OkHttpGenerator) Utils(responses *spec.ErrorResponses) []generator.CodeFile {
+func (g *OkHttpGenerator) Utils() []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.generateRequestBuilder())
 	files = append(files, *g.generateUrlBuilder())
