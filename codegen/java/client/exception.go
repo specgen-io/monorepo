@@ -60,11 +60,9 @@ func errorResponseException(thePackage, errorsModelsPackage packages.Package, er
 		w.Line(`  this.body = body;`)
 		w.Line(`}`)
 		w.EmptyLine()
-		w.Lines(`
-public [[.ClassName]] getBody() {
-	return this.body;
-}
-`)
+		w.Line(`public %s getBody() {`, error.Type.Definition)
+		w.Line(`	return this.body;`)
+		w.Line(`}`)
 	} else {
 		w.Line(`public [[.ClassName]]() {`)
 		w.Line(`  super("Error response with status code %s");`, spec.HttpStatusCode(error.Name))
