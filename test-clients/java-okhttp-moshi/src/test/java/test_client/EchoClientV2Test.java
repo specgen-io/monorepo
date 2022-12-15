@@ -4,18 +4,17 @@ import org.junit.jupiter.api.Test;
 import test_client.v2.clients.echo.EchoClient;
 import test_client.v2.models.Message;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static test_client.Constants.BASE_URL;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class EchoClientV2Test {
-	private final EchoClient client = new EchoClient(BASE_URL);
+	private final String baseUrl = "http://localhost:8081";
+	private final EchoClient client = new EchoClient(baseUrl);
 
 	private final Message message = new Message(true, "the string");
 
 	@Test
 	public void echoBodyModel_responseIsEqualToRequest() {
-		Message response = client.echoBodyModel(message);
+		var response = client.echoBodyModel(message);
 		assertEquals(message, response);
 	}
 

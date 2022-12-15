@@ -38,15 +38,14 @@ func (g *OkHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	w.Imports.Add(`okhttp3.*`)
 	w.Imports.Add(`org.slf4j.*`)
 	w.Imports.Star(g.Packages.Errors)
+	w.Imports.Star(g.Packages.ErrorsModels)
 	w.Imports.Star(g.Packages.Json)
 	w.Imports.Star(g.Packages.Utils)
 	w.Imports.Star(g.Packages.Models(api.InHttp.InVersion))
-	w.Imports.StaticStar(g.Packages.Utils.Subpackage(`ClientResponse`))
 	w.Template(
 		map[string]string{
-			`JsonMapper`:     g.Models.JsonMapper()[0],
-			`JsonMapperVar`:  g.Models.JsonMapper()[1],
-			`JsonHelperInit`: g.Models.CreateJsonHelper(),
+			`JsonMapperType`: g.Models.JsonMapperType(),
+			`JsonMapperInit`: g.Models.JsonMapperInit(),
 		}, `
 public class [[.ClassName]] {
 	private static final Logger logger = LoggerFactory.getLogger([[.ClassName]].class);
@@ -55,23 +54,22 @@ public class [[.ClassName]] {
 	private final OkHttpClient client;
 	private final Json json;
 
-	public [[.ClassName]](String baseUrl, OkHttpClient client, [[.JsonMapper]] [[.JsonMapperVar]]) {
+	public [[.ClassName]](String baseUrl, OkHttpClient client, [[.JsonMapperType]] mapper) {
 		this.baseUrl = baseUrl;
 		this.client = client;
-		this.json = new Json([[.JsonMapperVar]]);
+		this.json = new Json(mapper);
 	}
 
 	public [[.ClassName]](String baseUrl, OkHttpClient client) {
-		this(baseUrl, client, [[.JsonHelperInit]]);
+		this(baseUrl, client, [[.JsonMapperInit]]);
 	}
 
 	public [[.ClassName]](String baseUrl) {
 		this.baseUrl = baseUrl;
-		this.json = new Json([[.JsonHelperInit]]);
+		this.json = new Json([[.JsonMapperInit]]);
 		this.client = new OkHttpClient().newBuilder().addInterceptor(new ErrorsInterceptor(json)).build();
 	}
 `)
-
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		g.generateClientMethod(w.Indented(), &operation)
@@ -80,66 +78,102 @@ public class [[.ClassName]] {
 	return w.ToCodeFile()
 }
 
-func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec.NamedOperation) {
-	methodName := operation.Endpoint.Method
-	url := operation.FullUrl()
-	requestBody := "null"
-	w.Line(`public %s {`, operationSignature(g.Types, operation))
-	if operation.BodyIs(spec.BodyString) {
-		w.Line(`  var requestBody = RequestBody.create(body, MediaType.parse("text/plain"));`)
-		requestBody = "requestBody"
-	}
-	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`  var bodyJson = json.%s;`, g.Models.JsonWrite("body", &operation.Body.Type.Definition))
-		w.Line(`  var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
-		requestBody = "requestBody"
-	}
-	w.Line(`  var url = new UrlBuilder(baseUrl);`)
+func (g *OkHttpGenerator) createUrl(w *writer.Writer, operation *spec.NamedOperation) {
+	w.Line(`var url = new UrlBuilder(baseUrl);`)
 	if operation.InApi.InHttp.GetUrl() != "" {
-		w.Line(`  url.addPathSegments("%s");`, strings.Trim(operation.InApi.InHttp.GetUrl(), "/"))
+		w.Line(`url.addPathSegments("%s");`, strings.Trim(operation.InApi.InHttp.GetUrl(), "/"))
 	}
 	for _, urlPart := range operation.Endpoint.UrlParts {
 		part := strings.Trim(urlPart.Part, "/")
 		if urlPart.Param != nil {
-			w.Line(`  url.addPathParameter(%s);`, urlPart.Param.Name.CamelCase())
+			w.Line(`url.addPathParameter(%s);`, urlPart.Param.Name.CamelCase())
 		} else if len(part) > 0 {
-			w.Line(`  url.addPathSegments("%s");`, part)
+			w.Line(`url.addPathSegments("%s");`, part)
 		}
 	}
 	for _, param := range operation.QueryParams {
-		w.Line(`  url.addQueryParameter("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
+		w.Line(`url.addQueryParameter("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
 	}
-	w.EmptyLine()
-	w.Line(`  var request = new RequestBuilder("%s", url.build(), %s);`, methodName, requestBody)
+}
+
+func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
+	requestBody := "null"
+	if operation.BodyIs(spec.BodyString) {
+		w.Line(`var requestBody = RequestBody.create(body, MediaType.parse("text/plain"));`)
+		requestBody = "requestBody"
+	}
+	if operation.BodyIs(spec.BodyJson) {
+		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite("body", &operation.Body.Type.Definition))
+		w.Line(`var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
+		requestBody = "requestBody"
+	}
+	w.Line(`var request = new RequestBuilder("%s", url.build(), %s);`, operation.Endpoint.Method, requestBody)
 	for _, param := range operation.HeaderParams {
-		w.Line(`  request.addHeaderParameter("%s", %s);`, param.Name.Source, param.Name.CamelCase())
+		w.Line(`request.addHeaderParameter("%s", %s);`, param.Name.Source, param.Name.CamelCase())
 	}
-	w.EmptyLine()
-	w.Line(`  logger.info("Sending request, operationId: %s.%s, method: %s, url: %s");`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
-	w.Line(`  var response = doRequest(client, request, logger);`)
-	w.EmptyLine()
+}
+
+func (g *OkHttpGenerator) sendRequest(w *writer.Writer, operation *spec.NamedOperation) {
+	w.Line(`logger.info("Sending request, operationId: %s.%s, method: %s, url: %s");`, operation.InApi.Name.Source, operation.Name.Source, operation.Endpoint.Method, operation.FullUrl())
+	w.Line(`var response = client.newCall(request.build()).execute();`)
+	w.Line(`logger.info("Received response with status code {}", response.code());`)
+}
+
+func (g *OkHttpGenerator) processResponse(w *writer.Writer, operation *spec.NamedOperation) {
+	w.Line(`switch (response.code()) {`)
 	for _, response := range operation.Responses.Success() {
-		w.Line(`  if (response.code() == %s) {`, spec.HttpStatusCode(response.Name))
-		w.IndentWith(2)
-		w.Line(`logger.info("Received response with status code {}", response.code());`)
-		if response.BodyIs(spec.BodyEmpty) {
-			w.Line(responseCreate(response, ""))
-		}
-		if response.BodyIs(spec.BodyString) {
-			responseBodyString := "getResponseBodyString(response, logger)"
-			w.Line(responseCreate(response, responseBodyString))
-		}
-		if response.BodyIs(spec.BodyJson) {
-			w.Line(`var responseBodyString = getResponseBodyString(response, logger);`)
-			responseBody := fmt.Sprintf(`json.%s`, g.Models.JsonRead("responseBodyString", &response.Type.Definition))
-			w.Line(responseCreate(response, responseBody))
-		}
-		w.UnindentWith(2)
-		w.Line(`  }`)
+		w.Line(`  case %s:`, spec.HttpStatusCode(response.Name))
+		w.Line(`    %s`, g.successResponse(response))
 	}
-	w.EmptyLine()
-	generateThrowClientException(w.Indented(), `"Unexpected status code received: " + response.code()`, ``)
+	for _, response := range operation.Responses.NonRequiredErrors() {
+		w.Line(`  case %s:`, spec.HttpStatusCode(response.Name))
+		w.Line(`    %s`, g.errorResponse(&response.Response))
+	}
+	w.Line(`  default:`)
+	w.Line(`    throw new ResponseException(String.format("Unexpected status code received: {}", response.code()));`)
 	w.Line(`}`)
+}
+
+func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec.NamedOperation) {
+	w.Line(`public %s {`, operationSignature(g.Types, operation))
+	w.Line(`  try {`)
+	w.IndentWith(2)
+	g.createUrl(w, operation)
+	w.EmptyLine()
+	g.createRequest(w, operation)
+	w.EmptyLine()
+	g.sendRequest(w, operation)
+	w.EmptyLine()
+	g.processResponse(w, operation)
+	w.UnindentWith(2)
+	w.Lines(`
+	} catch (Throwable ex) {
+		logger.error(ex.getMessage());
+		throw new ClientException((ex));
+	}
+}
+`)
+}
+
+func (g *OkHttpGenerator) successResponse(response *spec.OperationResponse) string {
+	if response.BodyIs(spec.BodyString) {
+		return responseCreate(response, "response.body().string()")
+	}
+	if response.BodyIs(spec.BodyJson) {
+		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().charStream()`, &response.Type.Definition)))
+	}
+	return responseCreate(response, "")
+}
+
+func (g *OkHttpGenerator) errorResponse(response *spec.Response) string {
+	var responseBody = ""
+	if response.BodyIs(spec.BodyString) {
+		responseBody = "response.body().string()"
+	}
+	if response.BodyIs(spec.BodyJson) {
+		responseBody = fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().charStream()`, &response.Type.Definition))
+	}
+	return fmt.Sprintf(`throw new %s(%s);`, errorExceptionClassName(response), responseBody)
 }
 
 func (g *OkHttpGenerator) Utils(responses *spec.ErrorResponses) []generator.CodeFile {
@@ -147,8 +181,6 @@ func (g *OkHttpGenerator) Utils(responses *spec.ErrorResponses) []generator.Code
 
 	files = append(files, *g.generateRequestBuilder())
 	files = append(files, *g.generateUrlBuilder())
-	files = append(files, *g.generateStringify())
-	files = append(files, *g.generateClientResponse())
 
 	return files
 }
@@ -159,22 +191,21 @@ func (g *OkHttpGenerator) generateRequestBuilder() *generator.CodeFile {
 import okhttp3.*;
 import java.util.List;
 
-public class RequestBuilder {
+public class [[.ClassName]] {
 	private final Request.Builder requestBuilder;
 
-	public RequestBuilder(String method, HttpUrl url, RequestBody body) {
+	public [[.ClassName]](String method, HttpUrl url, RequestBody body) {
 		this.requestBuilder = new Request.Builder().url(url).method(method, body);
 	}
 
-	public RequestBuilder addHeaderParameter(String name, Object value) {
-		var valueStr = Stringify.paramToString(value);
-		if (valueStr != null) {
-			this.requestBuilder.addHeader(name, valueStr);
+	public [[.ClassName]] addHeaderParameter(String name, Object value) {
+		if (value != null) {
+			this.requestBuilder.addHeader(name, String.valueOf(value));
 		}
 		return this;
 	}
 
-	public <T> RequestBuilder addHeaderParameter(String name, List<T> values) {
+	public <T> [[.ClassName]] addHeaderParameter(String name, List<T> values) {
 		for (T val : values) {
 			this.addHeaderParameter(name, val);
 		}
@@ -195,97 +226,39 @@ func (g *OkHttpGenerator) generateUrlBuilder() *generator.CodeFile {
 import okhttp3.HttpUrl;
 import java.util.List;
 
-public class UrlBuilder {
-    private final HttpUrl.Builder urlBuilder;
+public class [[.ClassName]] {
+	private final HttpUrl.Builder urlBuilder;
 
-    public UrlBuilder(String baseUrl) {
-        this.urlBuilder = HttpUrl.get(baseUrl).newBuilder();
-    }
-
-    public UrlBuilder addQueryParameter(String name, Object value) {
-        var valueStr = Stringify.paramToString(value);
-        if (valueStr != null) {
-            this.urlBuilder.addQueryParameter(name, valueStr);
-        }
-        return this;
-    }
-
-    public <T> UrlBuilder addQueryParameter(String name, List<T> values) {
-        for (T val : values) {
-            this.addQueryParameter(name, val);
-        }
-        return this;
-    }
-
-    public UrlBuilder addPathSegments(String value) {
-        this.urlBuilder.addPathSegments(value);
-        return this;
-    }
-
-    public UrlBuilder addPathParameter(Object value) {
-        var valueStr = Stringify.paramToString(value);
-        this.urlBuilder.addPathSegment(valueStr);
-        return this;
-    }
-
-    public HttpUrl build() {
-        return this.urlBuilder.build();
-    }
-}
-`)
-	return w.ToCodeFile()
-}
-
-func (g *OkHttpGenerator) generateStringify() *generator.CodeFile {
-	w := writer.New(g.Packages.Utils, `Stringify`)
-	w.Lines(`
-public class Stringify {
-    public static String paramToString(Object value) {
-        if (value == null) {
-            return null;
-        }
-        return String.valueOf(value);
-    }
-}
-`)
-	return w.ToCodeFile()
-}
-
-func (g *OkHttpGenerator) generateClientResponse() *generator.CodeFile {
-	w := writer.New(g.Packages.Utils, `ClientResponse`)
-	w.Template(
-		map[string]string{
-			`ErrorsPackage`: g.Packages.Errors.PackageName,
-		}, `
-import okhttp3.*;
-import org.slf4j.*;
-import [[.ErrorsPackage]].*;
-
-import java.io.IOException;
-
-public class ClientResponse {
-	public static Response doRequest(OkHttpClient client, RequestBuilder request, Logger logger) {
-		Response response;
-		try {
-			response = client.newCall(request.build()).execute();
-		} catch (IOException e) {
-			var errorMessage = "Failed to execute the request " + e.getMessage();
-			logger.error(errorMessage);
-			throw new ClientException(errorMessage, e);
-		}
-		return response;
+	public [[.ClassName]](String baseUrl) {
+		this.urlBuilder = HttpUrl.get(baseUrl).newBuilder();
 	}
 
-	public static String getResponseBodyString(Response response, Logger logger) {
-		String responseBodyString;
-		try {
-			responseBodyString = response.body().string();
-		} catch (IOException e) {
-			var errorMessage = "Failed to convert response body to string " + e.getMessage();
-			logger.error(errorMessage);
-			throw new ClientException(errorMessage, e);
+	public [[.ClassName]] addQueryParameter(String name, Object value) {
+		if (value != null) {
+			this.urlBuilder.addQueryParameter(name, String.valueOf(value));
 		}
-		return responseBodyString;
+		return this;
+	}
+
+	public <T> [[.ClassName]] addQueryParameter(String name, List<T> values) {
+		for (T val : values) {
+			this.addQueryParameter(name, val);
+		}
+		return this;
+	}
+
+	public [[.ClassName]] addPathSegments(String value) {
+		this.urlBuilder.addPathSegments(value);
+		return this;
+	}
+
+	public [[.ClassName]] addPathParameter(Object value) {
+		this.urlBuilder.addPathSegment(String.valueOf(value));
+		return this;
+	}
+
+	public HttpUrl build() {
+		return this.urlBuilder.build();
 	}
 }
 `)
@@ -295,8 +268,9 @@ public class ClientResponse {
 func (g *OkHttpGenerator) Exceptions(errors *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *clientException(g.Packages.Errors))
-	for _, response := range errors.Required() {
-		files = append(files, *inheritedClientException(g.Packages.Errors, g.Packages.ErrorsModels, g.Types, &response.Response))
+	files = append(files, *responseException(g.Packages.Errors))
+	for _, errorResponse := range *errors {
+		files = append(files, *errorResponseException(g.Packages.Errors, g.Packages.ErrorsModels, &errorResponse.Response))
 	}
 	files = append(files, *g.errorsInterceptor(errors))
 	return files
@@ -308,14 +282,10 @@ func (g *OkHttpGenerator) errorsInterceptor(errorsResponses *spec.ErrorResponses
 	w.Imports.Add(`java.io.IOException`)
 	w.Imports.Add(`okhttp3.*`)
 	w.Imports.Add(`org.jetbrains.annotations.NotNull`)
-	w.Imports.Add(`org.slf4j.*`)
 	w.Imports.Star(g.Packages.ErrorsModels)
 	w.Imports.Star(g.Packages.Json)
-	w.Imports.StaticStar(g.Packages.Utils.Subpackage(`ClientResponse`))
 	w.Lines(`
 public class [[.ClassName]] implements Interceptor {
-	private static final Logger logger = LoggerFactory.getLogger([[.ClassName]].class);
-
 	private final Json json;
 
 	public [[.ClassName]](Json json) {
@@ -327,16 +297,20 @@ public class [[.ClassName]] implements Interceptor {
 	public Response intercept(@NotNull Chain chain) throws IOException {
 		var request = chain.request();
 		var response = chain.proceed(request);
+
+		switch (response.code()) {
 `)
+	w.IndentWith(2)
 	for _, errorResponse := range errorsResponses.Required() {
-		w.Line(`    if (response.code() == %s) {`, spec.HttpStatusCode(errorResponse.Name))
-		w.Line(`      var responseBodyString = getResponseBodyString(response, logger);`)
-		w.Line(`      var responseBody = json.%s;`, g.Models.JsonRead("responseBodyString", &errorResponse.Type.Definition))
-		w.Line(`      throw new %sException(responseBody);`, g.Types.Java(&errorResponse.Type.Definition))
-		w.Line(`    }`)
+		w.Line(`  case %s:`, spec.HttpStatusCode(errorResponse.Name))
+		w.Line(`    %s`, g.errorResponse(&errorResponse.Response))
 	}
-	w.Line(`		return response;`)
-	w.Line(`  }`)
-	w.Line(`}`)
+	w.UnindentWith(2)
+	w.Lines(`
+		}
+		return response;
+	}
+}
+`)
 	return w.ToCodeFile()
 }

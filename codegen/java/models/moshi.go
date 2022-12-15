@@ -228,15 +228,17 @@ func (g *MoshiGenerator) JsonHelpers() []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.json())
 	files = append(files, *g.jsonParseException())
+	files = append(files, *g.textReader())
 	files = append(files, g.setupLibrary()...)
 	return files
 }
 
 func (g *MoshiGenerator) json() *generator.CodeFile {
 	w := writer.New(g.Packages.Json, `Json`)
+	w.Imports.StaticStar(g.Packages.Json.Subpackage(`TextReader`))
 	w.Lines(`
 import com.squareup.moshi.Moshi;
-
+import java.io.Reader;
 import java.lang.reflect.ParameterizedType;
 
 public class [[.ClassName]] {
@@ -268,6 +270,44 @@ public class [[.ClassName]] {
 		} catch (Exception exception) {
 			throw new JsonParseException(exception);
 		}
+	}
+
+	public <T> T read(Reader reader, Class<T> type) {
+		try {
+			return moshi.adapter(type).fromJson(readText(reader));
+		} catch (Exception exception) {
+			throw new JsonParseException(exception);
+		}
+	}
+
+	public <T> T read(Reader reader, ParameterizedType type) {
+		try {
+			return moshi.<T>adapter(type).fromJson(readText(reader));
+		} catch (Exception exception) {
+			throw new JsonParseException(exception);
+		}
+	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *MoshiGenerator) textReader() *generator.CodeFile {
+	w := writer.New(g.Packages.Json, `TextReader`)
+	w.Lines(`
+import java.io.*;
+
+public class [[.ClassName]] {
+	public static String readText(Reader reader) throws IOException {
+		char[] buffer = new char[4096];
+		StringBuilder builder = new StringBuilder();
+		int numChars;
+
+		while ((numChars = reader.read(buffer)) >= 0) {
+			builder.append(buffer, 0, numChars);
+		}
+
+		return builder.toString();
 	}
 }
 `)
@@ -836,10 +876,10 @@ public final class [[.ClassName]]<T> implements JsonAdapter.Factory {
 	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) CreateJsonHelper() string {
+func (g *MoshiGenerator) JsonMapperInit() string {
 	return fmt.Sprintf(`%s.setup(new Moshi.Builder()).build()`, moshiCustomAdapters)
 }
 
-func (g *MoshiGenerator) JsonMapper() []string {
-	return []string{`Moshi`, `moshi`}
+func (g *MoshiGenerator) JsonMapperType() string {
+	return `Moshi`
 }

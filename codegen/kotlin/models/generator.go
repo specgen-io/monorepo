@@ -17,7 +17,7 @@ type Generator interface {
 	ReadJson(varJson string, typ *spec.TypeDef) string
 	WriteJson(varData string, typ *spec.TypeDef) string
 	JsonHelpers() []generator.CodeFile
-	CreateJsonHelper(name string) string
+
 	JsonMapperInit() string
 	JsonMapperType() string
 }

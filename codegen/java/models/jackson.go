@@ -253,6 +253,7 @@ func (g *JacksonGenerator) JsonHelpers() []generator.CodeFile {
 
 	files = append(files, *g.json())
 	files = append(files, *g.jsonParseException())
+	files = append(files, *g.jsonWriteException())
 	files = append(files, g.setupLibrary()...)
 
 	return files
@@ -260,12 +261,11 @@ func (g *JacksonGenerator) JsonHelpers() []generator.CodeFile {
 
 func (g *JacksonGenerator) json() *generator.CodeFile {
 	w := writer.New(g.Packages.Json, `Json`)
-	w.EmptyLine()
 	w.Lines(`
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
+import java.io.*;
 
 public class [[.ClassName]] {
 	private final ObjectMapper objectMapper;
@@ -278,13 +278,21 @@ public class [[.ClassName]] {
 		try {
 			return objectMapper.writeValueAsString(data);
 		} catch (Exception exception) {
-			throw new RuntimeException(exception);
+			throw new JsonWriteException(exception);
 		}
 	}
 
 	public <T> T read(String jsonStr, TypeReference<T> typeReference) {
 		try {
 			return objectMapper.readValue(jsonStr, typeReference);
+		} catch (IOException exception) {
+			throw new JsonParseException(exception);
+		}
+	}
+
+	public <T> T read(Reader reader, TypeReference<T> typeReference) {
+		try {
+			return objectMapper.readValue(reader, typeReference);
 		} catch (IOException exception) {
 			throw new JsonParseException(exception);
 		}
@@ -300,6 +308,18 @@ func (g *JacksonGenerator) jsonParseException() *generator.CodeFile {
 public class [[.ClassName]] extends RuntimeException {
 	public [[.ClassName]](Throwable exception) {
 		super("Failed to parse body: " + exception.getMessage(), exception);
+	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *JacksonGenerator) jsonWriteException() *generator.CodeFile {
+	w := writer.New(g.Packages.Json, `JsonWriteException`)
+	w.Lines(`
+public class [[.ClassName]] extends RuntimeException {
+	public [[.ClassName]](Throwable exception) {
+		super("Failed to write JSON: " + exception.getMessage(), exception);
 	}
 }
 `)
@@ -326,10 +346,10 @@ public class [[.ClassName]] {
 	return []generator.CodeFile{*w.ToCodeFile()}
 }
 
-func (g *JacksonGenerator) CreateJsonHelper() string {
+func (g *JacksonGenerator) JsonMapperInit() string {
 	return fmt.Sprintf(`%s.setup(new ObjectMapper())`, jacksonCustomObjectMapper)
 }
 
-func (g *JacksonGenerator) JsonMapper() []string {
-	return []string{`ObjectMapper`, `objectMapper`}
+func (g *JacksonGenerator) JsonMapperType() string {
+	return `ObjectMapper`
 }
