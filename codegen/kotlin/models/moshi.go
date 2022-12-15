@@ -736,14 +736,6 @@ class UnwrapFieldAdapterFactory<T>(private val type: Class<T>) : JsonAdapter.Fac
 	return w.ToCodeFile()
 }
 
-func (g *MoshiGenerator) CreateJsonHelper(name string) string {
-	return fmt.Sprintf(`
-val moshiBuilder = Moshi.Builder()
-setupMoshiAdapters(moshiBuilder)
-%s = Json(moshiBuilder.build())
-`, name)
-}
-
 func (g *MoshiGenerator) JsonMapperInit() string {
 	return fmt.Sprintf(`setupMoshiAdapters(Moshi.Builder()).build()`)
 }

@@ -261,14 +261,6 @@ fun setupObjectMapper(objectMapper: ObjectMapper): ObjectMapper {
 	return []generator.CodeFile{*w.ToCodeFile()}
 }
 
-func (g *JacksonGenerator) CreateJsonHelper(name string) string {
-	return fmt.Sprintf(`
-val objectMapper = jacksonObjectMapper()
-setupObjectMapper(objectMapper)
-%s = Json(objectMapper)
-`, name)
-}
-
 func (g *JacksonGenerator) JsonMapperInit() string {
 	return fmt.Sprintf(`setupObjectMapper(jacksonObjectMapper())`)
 }

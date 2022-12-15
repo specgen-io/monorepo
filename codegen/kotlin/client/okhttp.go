@@ -182,20 +182,20 @@ func (g *OkHttpGenerator) generateRequestBuilder() *generator.CodeFile {
 	w.Lines(`
 import okhttp3.*
 
-class RequestBuilder(method: String, url: HttpUrl, body: RequestBody?) {
+class [[.ClassName]](method: String, url: HttpUrl, body: RequestBody?) {
 	private val requestBuilder: Request.Builder
 
 	init {
 		requestBuilder = Request.Builder().url(url).method(method, body)
 	}
 
-	fun addHeaderParameter(name: String, value: Any): RequestBuilder {
+	fun addHeaderParameter(name: String, value: Any): [[.ClassName]] {
 		val valueStr = value.toString()
 		this.requestBuilder.addHeader(name, valueStr)
 		return this
 	}
 
-	fun <T> addHeaderParameter(name: String, values: List<T>): RequestBuilder {
+	fun <T> addHeaderParameter(name: String, values: List<T>): [[.ClassName]] {
 		for (value in values) {
 			this.addHeaderParameter(name, value!!)
 		}
@@ -216,32 +216,32 @@ func (g *OkHttpGenerator) generateUrlBuilder() *generator.CodeFile {
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 
-class UrlBuilder(baseUrl: String) {
+class [[.ClassName]](baseUrl: String) {
 	private val urlBuilder: HttpUrl.Builder
 
 	init {
 		this.urlBuilder = baseUrl.toHttpUrl().newBuilder()
 	}
 
-	fun addQueryParameter(name: String, value: Any): UrlBuilder {
+	fun addQueryParameter(name: String, value: Any): [[.ClassName]] {
 		val valueStr = value.toString()
 		urlBuilder.addQueryParameter(name, valueStr)
 		return this
 	}
 
-	fun <T> addQueryParameter(name: String, values: List<T>): UrlBuilder {
+	fun <T> addQueryParameter(name: String, values: List<T>): [[.ClassName]] {
 		for (value in values) {
 			this.addQueryParameter(name, value!!)
 		}
 		return this
 	}
 
-	fun addPathSegments(value: String): UrlBuilder {
+	fun addPathSegments(value: String): [[.ClassName]] {
 		this.urlBuilder.addPathSegments(value)
 		return this
 	}
 
-	fun addPathParameter(value: Any): UrlBuilder {
+	fun addPathParameter(value: Any): [[.ClassName]] {
 		val valueStr = value.toString()
 		this.urlBuilder.addPathSegment(valueStr)
 		return this

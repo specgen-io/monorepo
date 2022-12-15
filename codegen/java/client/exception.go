@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"generator"
 	"java/packages"
-	"java/types"
 	"java/writer"
 	"spec"
 )
@@ -33,44 +32,49 @@ public class ClientException extends RuntimeException {
 	return w.ToCodeFile()
 }
 
-func inheritedClientException(thePackage, errorsModelsPackage packages.Package, types *types.Types, error *spec.Response) *generator.CodeFile {
-	errorName := types.Java(&error.Type.Definition)
-	className := fmt.Sprintf(`%sException`, errorName)
-	w := writer.New(thePackage, className)
-	w.Template(
-		map[string]string{
-			`ErrorsModelsPackage`: errorsModelsPackage.PackageName,
-			`ErrorName`:           errorName,
-		}, `
-import [[.ErrorsModelsPackage]].*;
+func responseException(thePackage packages.Package) *generator.CodeFile {
+	w := writer.New(thePackage, `ResponseException`)
+	w.Lines(`
+import java.lang.RuntimeException;
 
-public class [[.ClassName]] extends ClientException {
-	private final [[.ErrorName]] error;
-
-	public [[.ClassName]]([[.ErrorName]] error) {
-		super("Body: %s" + error);
-		this.error = error;
-	}
-
-	public [[.ClassName]](String message, [[.ErrorName]] error) {
+public class [[.ClassName]] extends RuntimeException {
+	public [[.ClassName]](String message) {
 		super(message);
-		this.error = error;
-	}
-
-	public [[.ClassName]](String message, Throwable cause, [[.ErrorName]] error) {
-		super(message, cause);
-		this.error = error;
-	}
-
-	public [[.ClassName]](Throwable cause, [[.ErrorName]] error) {
-		super(cause);
-		this.error = error;
-	}
-
-	public [[.ErrorName]] getError() {
-		return this.error;
 	}
 }
 `)
 	return w.ToCodeFile()
+}
+
+func errorResponseException(thePackage, errorsModelsPackage packages.Package, error *spec.Response) *generator.CodeFile {
+	w := writer.New(thePackage, errorExceptionClassName(error))
+	w.Imports.Star(errorsModelsPackage)
+	w.Line(`public class [[.ClassName]] extends ResponseException {`)
+	w.Indent()
+	if !error.BodyIs(spec.BodyEmpty) {
+		errorBody := fmt.Sprintf(`%s body`, error.Type.Definition)
+		w.Line(`private final %s;`, errorBody)
+		w.EmptyLine()
+		w.Line(`public [[.ClassName]](%s) {`, errorBody)
+		w.Line(`  super("Error response with status code %s");`, spec.HttpStatusCode(error.Name))
+		w.Line(`  this.body = body;`)
+		w.Line(`}`)
+		w.EmptyLine()
+		w.Lines(`
+public [[.ClassName]] getBody() {
+	return this.body;
+}
+`)
+	} else {
+		w.Line(`public [[.ClassName]]() {`)
+		w.Line(`  super("Error response with status code %s");`, spec.HttpStatusCode(error.Name))
+		w.Line(`}`)
+	}
+	w.Unindent()
+	w.Line(`}`)
+	return w.ToCodeFile()
+}
+
+func errorExceptionClassName(error *spec.Response) string {
+	return fmt.Sprintf(`%sException`, error.Name.PascalCase())
 }
