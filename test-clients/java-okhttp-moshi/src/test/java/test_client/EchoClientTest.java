@@ -1,273 +1,312 @@
 package test_client;
 
 import org.junit.jupiter.api.Test;
-import test_client.clients.echo.EchoClient;
-import test_client.models.Everything;
-import test_client.models.Parameters;
-import test_client.models.UrlParameters;
+import test_client.clients.echo.*;
+import test_client.models.*;
+
+import java.math.BigDecimal;
+import java.time.*;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static test_client.Constants.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class EchoClientTest {
-	private final EchoClient client = new EchoClient(BASE_URL);
+	private final String baseUrl = "http://localhost:8081";
+	private final EchoClient client = new EchoClient(baseUrl);
+
+	private final int intValue = 123;
+	private final long longValue = 12345;
+	private final float floatValue = 1.23f;
+	private final double doubleValue = 12.345;
+	private final BigDecimal decimalValue = new BigDecimal("12345");
+	private final boolean boolValue = true;
+	private final String stringValue = "the value";
+	private final String stringOptValue = "the value";
+	private final String stringDefaultedValue = "value";
+	private final List<String> stringArrayValue = Arrays.asList("the str1", "the str2");
+	private final UUID uuidValue = UUID.fromString("123e4567-e89b-12d3-a456-426655440000");
+	private final LocalDate dateValue = LocalDate.parse("2020-01-01");
+	private final List<LocalDate> dateArrayValue = Arrays.asList(LocalDate.parse("2020-01-01"), LocalDate.parse("2020-01-02"));
+	private final LocalDateTime datetimeValue = LocalDateTime.parse("2019-11-30T17:45:55");
+	private final Choice enumValue = Choice.SECOND_CHOICE;
+
+	private final String bodyString = "TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsu";
+	private final Message message = new Message(intValue, stringValue);
+	private final HashMap<String, String> hashMap = new HashMap<>() {{
+		put("string_field", "the value");
+		put("string_field_2", "the value_2");
+	}};
 
 	@Test
 	public void echoBodyString_responseIsEqualToRequest() {
-		String response = client.echoBodyString(BODY_STRING);
-
-		assertEquals(BODY_STRING, response);
+		String response = client.echoBodyString(bodyString);
+		assertEquals(bodyString, response);
 	}
 
 	@Test
 	public void echoBodyString_doesntThrowException() {
-		assertDoesNotThrow(() -> client.echoBodyString(BODY_STRING));
+		assertDoesNotThrow(() -> client.echoBodyString(bodyString));
 	}
 
 	@Test
 	public void echoBodyModel_responseIsEqualToRequest() {
-		var response = client.echoBodyModel(MESSAGE);
-
-		assertEquals(MESSAGE, response);
+		var response = client.echoBodyModel(message);
+		assertEquals(message, response);
 	}
 
 	@Test
 	public void echoBodyModel_doesntThrowException() {
-		assertDoesNotThrow(() -> client.echoBodyModel(MESSAGE));
+		assertDoesNotThrow(() -> client.echoBodyModel(message));
 	}
 
 	@Test
 	public void echoBodyArray_responseIsEqualToRequest() {
-		var response = client.echoBodyArray(STRING_ARRAY_VALUE);
-
-		assertEquals(STRING_ARRAY_VALUE, response);
+		var response = client.echoBodyArray(stringArrayValue);
+		assertEquals(stringArrayValue, response);
 	}
 
 	@Test
 	public void echoBodyArray_doesntThrowException() {
-		assertDoesNotThrow(() -> client.echoBodyArray(STRING_ARRAY_VALUE));
+		assertDoesNotThrow(() -> client.echoBodyArray(stringArrayValue));
 	}
 
 	@Test
 	public void echoBodyMap_responseIsEqualToRequest() {
-		var response = client.echoBodyMap(STRING_HASH_MAP);
-
-		assertEquals(STRING_HASH_MAP, response);
+		var response = client.echoBodyMap(hashMap);
+		assertEquals(hashMap, response);
 	}
 
 	@Test
 	public void echoBodyMap_doesntThrowException() {
-		assertDoesNotThrow(() -> client.echoBodyMap(STRING_HASH_MAP));
+		assertDoesNotThrow(() -> client.echoBodyMap(hashMap));
 	}
 
 	@Test
 	public void echoQuery_responseIsEqualToRequest() {
 		var request = new Parameters(
-			INT_VALUE,
-			LONG_VALUE,
-			FLOAT_VALUE,
-			DOUBLE_VALUE,
-			DECIMAL_VALUE,
-			BOOL_VALUE,
-			STRING_VALUE,
-			STRING_OPT_VALUE,
-			STRING_DEFAULTED_VALUE,
-			STRING_ARRAY_VALUE,
-			UUID_VALUE,
-			DATE_VALUE,
-			DATE_ARRAY_VALUE,
-			DATETIME_VALUE,
-			ENUM_VALUE
+			intValue,
+			longValue,
+			floatValue,
+			doubleValue,
+			decimalValue,
+			boolValue,
+			stringValue,
+			stringOptValue,
+			stringDefaultedValue,
+			stringArrayValue,
+			uuidValue,
+			dateValue,
+			dateArrayValue,
+			datetimeValue,
+			enumValue
 		);
 		var response = client.echoQuery(
-			INT_VALUE,
-			LONG_VALUE,
-			FLOAT_VALUE,
-			DOUBLE_VALUE,
-			DECIMAL_VALUE,
-			BOOL_VALUE,
-			STRING_VALUE,
-			STRING_OPT_VALUE,
-			STRING_DEFAULTED_VALUE,
-			STRING_ARRAY_VALUE,
-			UUID_VALUE,
-			DATE_VALUE,
-			DATE_ARRAY_VALUE,
-			DATETIME_VALUE,
-			ENUM_VALUE
+			intValue,
+			longValue,
+			floatValue,
+			doubleValue,
+			decimalValue,
+			boolValue,
+			stringValue,
+			stringOptValue,
+			stringDefaultedValue,
+			stringArrayValue,
+			uuidValue,
+			dateValue,
+			dateArrayValue,
+			datetimeValue,
+			enumValue
 		);
-
 		assertEquals(request, response);
 	}
 
 	@Test
 	public void echoQuery_doesntThrowException() {
 		assertDoesNotThrow(() -> client.echoQuery(
-			INT_VALUE,
-			LONG_VALUE,
-			FLOAT_VALUE,
-			DOUBLE_VALUE,
-			DECIMAL_VALUE,
-			BOOL_VALUE,
-			STRING_VALUE,
-			STRING_OPT_VALUE,
-			STRING_DEFAULTED_VALUE,
-			STRING_ARRAY_VALUE,
-			UUID_VALUE,
-			DATE_VALUE,
-			DATE_ARRAY_VALUE,
-			DATETIME_VALUE,
-			ENUM_VALUE
+			intValue,
+			longValue,
+			floatValue,
+			doubleValue,
+			decimalValue,
+			boolValue,
+			stringValue,
+			stringOptValue,
+			stringDefaultedValue,
+			stringArrayValue,
+			uuidValue,
+			dateValue,
+			dateArrayValue,
+			datetimeValue,
+			enumValue
 		));
 	}
-
 
 	@Test
 	public void echoHeader_responseIsEqualToRequest() {
 		var request = new Parameters(
-			INT_VALUE,
-			LONG_VALUE,
-			FLOAT_VALUE,
-			DOUBLE_VALUE,
-			DECIMAL_VALUE,
-			BOOL_VALUE,
-			STRING_VALUE,
-			STRING_OPT_VALUE,
-			STRING_DEFAULTED_VALUE,
-			STRING_ARRAY_VALUE,
-			UUID_VALUE,
-			DATE_VALUE,
-			DATE_ARRAY_VALUE,
-			DATETIME_VALUE,
-			ENUM_VALUE
+			intValue,
+			longValue,
+			floatValue,
+			doubleValue,
+			decimalValue,
+			boolValue,
+			stringValue,
+			stringOptValue,
+			stringDefaultedValue,
+			stringArrayValue,
+			uuidValue,
+			dateValue,
+			dateArrayValue,
+			datetimeValue,
+			enumValue
 		);
 		var response = client.echoHeader(
-			INT_VALUE,
-			LONG_VALUE,
-			FLOAT_VALUE,
-			DOUBLE_VALUE,
-			DECIMAL_VALUE,
-			BOOL_VALUE,
-			STRING_VALUE,
-			STRING_OPT_VALUE,
-			STRING_DEFAULTED_VALUE,
-			STRING_ARRAY_VALUE,
-			UUID_VALUE,
-			DATE_VALUE,
-			DATE_ARRAY_VALUE,
-			DATETIME_VALUE,
-			ENUM_VALUE
+			intValue,
+			longValue,
+			floatValue,
+			doubleValue,
+			decimalValue,
+			boolValue,
+			stringValue,
+			stringOptValue,
+			stringDefaultedValue,
+			stringArrayValue,
+			uuidValue,
+			dateValue,
+			dateArrayValue,
+			datetimeValue,
+			enumValue
 		);
-
 		assertEquals(request, response);
 	}
 
 	@Test
 	public void echoHeader_doesntThrowException() {
 		assertDoesNotThrow(() -> client.echoHeader(
-			INT_VALUE,
-			LONG_VALUE,
-			FLOAT_VALUE,
-			DOUBLE_VALUE,
-			DECIMAL_VALUE,
-			BOOL_VALUE,
-			STRING_VALUE,
-			STRING_OPT_VALUE,
-			STRING_DEFAULTED_VALUE,
-			STRING_ARRAY_VALUE,
-			UUID_VALUE,
-			DATE_VALUE,
-			DATE_ARRAY_VALUE,
-			DATETIME_VALUE,
-			ENUM_VALUE
+			intValue,
+			longValue,
+			floatValue,
+			doubleValue,
+			decimalValue,
+			boolValue,
+			stringValue,
+			stringOptValue,
+			stringDefaultedValue,
+			stringArrayValue,
+			uuidValue,
+			dateValue,
+			dateArrayValue,
+			datetimeValue,
+			enumValue
 		));
 	}
 
 	@Test
 	public void echoUrlParams_responseIsEqualToRequest() {
 		var request = new UrlParameters(
-			INT_VALUE,
-			LONG_VALUE,
-			FLOAT_VALUE,
-			DOUBLE_VALUE,
-			DECIMAL_VALUE,
-			BOOL_VALUE,
-			STRING_VALUE,
-			UUID_VALUE,
-			DATE_VALUE,
-			DATETIME_VALUE,
-			ENUM_VALUE
+			intValue,
+			longValue,
+			floatValue,
+			doubleValue,
+			decimalValue,
+			boolValue,
+			stringValue,
+			uuidValue,
+			dateValue,
+			datetimeValue,
+			enumValue
 		);
 		var response = client.echoUrlParams(
-			INT_VALUE,
-			LONG_VALUE,
-			FLOAT_VALUE,
-			DOUBLE_VALUE,
-			DECIMAL_VALUE,
-			BOOL_VALUE,
-			STRING_VALUE,
-			UUID_VALUE,
-			DATE_VALUE,
-			DATETIME_VALUE,
-			ENUM_VALUE
+			intValue,
+			longValue,
+			floatValue,
+			doubleValue,
+			decimalValue,
+			boolValue,
+			stringValue,
+			uuidValue,
+			dateValue,
+			datetimeValue,
+			enumValue
 		);
-
 		assertEquals(request, response);
 	}
 
 	@Test
 	public void echoUrlParams_doesntThrowException() {
 		assertDoesNotThrow(() -> client.echoUrlParams(
-			INT_VALUE,
-			LONG_VALUE,
-			FLOAT_VALUE,
-			DOUBLE_VALUE,
-			DECIMAL_VALUE,
-			BOOL_VALUE,
-			STRING_VALUE,
-			UUID_VALUE,
-			DATE_VALUE,
-			DATETIME_VALUE,
-			ENUM_VALUE
+			intValue,
+			longValue,
+			floatValue,
+			doubleValue,
+			decimalValue,
+			boolValue,
+			stringValue,
+			uuidValue,
+			dateValue,
+			datetimeValue,
+			enumValue
 		));
 	}
 
 	@Test
 	public void echoEverything_responseIsEqualToRequest() {
 		var request = new Everything(
-			MESSAGE,
-			FLOAT_VALUE,
-			BOOL_VALUE,
-			UUID_VALUE,
-			DATETIME_VALUE,
-			DATE_VALUE,
-			DECIMAL_VALUE
+			message,
+			floatValue,
+			boolValue,
+			uuidValue,
+			datetimeValue,
+			dateValue,
+			decimalValue
 		);
 		var response = client.echoEverything(
-			MESSAGE,
-			FLOAT_VALUE,
-			BOOL_VALUE,
-			UUID_VALUE,
-			DATETIME_VALUE,
-			DATE_VALUE,
-			DECIMAL_VALUE
+			message,
+			floatValue,
+			boolValue,
+			uuidValue,
+			datetimeValue,
+			dateValue,
+			decimalValue
 		);
-
 		assertThat(request).usingRecursiveComparison().isEqualTo(response);
 	}
 
 	@Test
 	public void echoEverything_doesntThrowException() {
 		assertDoesNotThrow(() -> client.echoEverything(
-			MESSAGE,
-			FLOAT_VALUE,
-			BOOL_VALUE,
-			UUID_VALUE,
-			DATETIME_VALUE,
-			DATE_VALUE,
-			DECIMAL_VALUE
+			message,
+			floatValue,
+			boolValue,
+			uuidValue,
+			datetimeValue,
+			dateValue,
+			decimalValue
 		));
+	}
+
+	@Test
+	public void echoSuccess_ok() {
+		var expected = new EchoSuccessResponse.Ok(new OkResult("ok"));
+		var response = client.echoSuccess("ok");
+
+		assertThat(expected).usingRecursiveComparison().isEqualTo(response);
+	}
+
+	@Test
+	public void echoSuccess_created() {
+		var expected = new EchoSuccessResponse.Created(new CreatedResult("created"));
+		var response = client.echoSuccess("created");
+
+		assertThat(expected).usingRecursiveComparison().isEqualTo(response);
+	}
+
+	@Test
+	public void echoSuccess_accepted() {
+		var expected = new EchoSuccessResponse.Accepted(new AcceptedResult("accepted"));
+		var response = client.echoSuccess("accepted");
+
+		assertThat(expected).usingRecursiveComparison().isEqualTo(response);
 	}
 }
