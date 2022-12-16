@@ -114,7 +114,38 @@ jobs:
       - save_cache:
           key: cache-{{ checksum "./java-okhttp-moshi/pom.xml" }}
           paths:
-            - ~/.m2          
+            - ~/.m2
+
+  java-micronaut-jackson:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./java-micronaut-jackson/pom.xml" }}
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - start-service:
+          port: 8081
+      - run:
+          name: Test Java Micronaut client
+          command: |
+            cd ./java-micronaut-jackson
+            mkdir -p ./test-results
+            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./java-micronaut-jackson/test-results
+      - save_cache:
+          key: cache-{{ checksum "./java-micronaut-jackson/pom.xml" }}
+          paths:
+            - ~/.m2               
 
   kotlin-okhttp-jackson:
     environment:
@@ -502,7 +533,11 @@ workflows:
       - java-okhttp-moshi:
           context: specgen
           requires:
-            - test-service      
+            - test-service
+      - java-micronaut-jackson:
+          context: specgen
+          requires:
+            - test-service        
       - kotlin-okhttp-jackson:
           context: specgen
           requires:
