@@ -31,6 +31,9 @@ func NewGenerator(jsonlib string, client string, packages *Packages) *Generator 
 	case OkHttp:
 		clientGenerator = NewOkHttpGenerator(types, models, packages)
 		break
+	case Micronaut:
+		clientGenerator = NewMicronautGenerator(types, models, packages)
+		break
 	default:
 		panic(fmt.Sprintf(`Unsupported client: %s`, client))
 	}

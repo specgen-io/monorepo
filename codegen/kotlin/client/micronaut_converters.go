@@ -23,7 +23,7 @@ import jakarta.inject.Singleton
 import java.util.*
 
 @Singleton
-class ConvertersRegistrar: TypeConverterRegistrar {
+class [[.ClassName]]: TypeConverterRegistrar {
     override fun register(conversionService: ConversionService<*>) {
         conversionService.addConverter(Array<String>::class.java, CharSequence::class.java, StringArrayConverter(conversionService))
     }
@@ -43,9 +43,9 @@ import java.time.LocalDate
 import java.util.*
 
 @Singleton
-class LocalDateConverter : TypeConverter<LocalDate, String> {
+class [[.ClassName]] : TypeConverter<LocalDate, String> {
     init {
-        println("Creating LocalDateConverter")
+        println("Creating [[.ClassName]]")
     }
 
     override fun convert(
@@ -72,9 +72,9 @@ import java.time.LocalDateTime
 import java.util.*
 
 @Singleton
-class LocalDateTimeConverter : TypeConverter<LocalDateTime, String> {
+class [[.ClassName]] : TypeConverter<LocalDateTime, String> {
     init {
-        println("Creating LocalDateTimeConverter")
+        println("Creating [[.ClassName]]")
     }
 
     override fun convert(
@@ -96,9 +96,9 @@ func stringArrayConverter(thePackage packages.Package) *generator.CodeFile {
 import io.micronaut.core.convert.*
 import java.util.*
 
-class StringArrayConverter(private val conversionService: ConversionService<*>) : TypeConverter<Array<String>, CharSequence> {
+class [[.ClassName]](private val conversionService: ConversionService<*>) : TypeConverter<Array<String>, CharSequence> {
     init {
-        println("Creating StringArrayConverter")
+        println("Creating [[.ClassName]]")
     }
 
     override fun convert(
