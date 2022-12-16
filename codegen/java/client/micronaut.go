@@ -41,6 +41,7 @@ func (g *MicronautGenerator) client(api *spec.Api) *generator.CodeFile {
 	w.Imports.Add(`java.net.*`)
 	w.Imports.Add(`org.slf4j.*`)
 	w.Imports.Star(g.Packages.Errors)
+	w.Imports.Star(g.Packages.ErrorsModels)
 	w.Imports.Star(g.Packages.Json)
 	w.Imports.Star(g.Packages.Utils)
 	w.Imports.Star(g.Packages.Models(api.InHttp.InVersion))
@@ -335,7 +336,9 @@ func (g *MicronautGenerator) Exceptions(errors *spec.ErrorResponses) []generator
 
 func (g *MicronautGenerator) errorsHandler(errorsResponses *spec.ErrorResponses) *generator.CodeFile {
 	w := writer.New(g.Packages.Errors, `ErrorsHandler`)
+	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Star(g.Packages.Json)
+	w.Imports.Star(g.Packages.ErrorsModels)
 	w.Lines(`
 import io.micronaut.http.HttpResponse;
 
@@ -351,8 +354,6 @@ public class [[.ClassName]] {
 `)
 	w.IndentWith(2)
 	for _, errorResponse := range errorsResponses.Required() {
-		w.Line(`  %s -> %s`, spec.HttpStatusCode(errorResponse.Name), g.errorResponse(&errorResponse.Response))
-
 		w.Line(`  case %s:`, spec.HttpStatusCode(errorResponse.Name))
 		w.Line(`    %s`, g.errorResponse(&errorResponse.Response))
 	}
