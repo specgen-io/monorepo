@@ -1776,6 +1776,9 @@ workflows:
       - client-java-okhttp-moshi:
           context: specgen
           requires: [client-test-service-java]
+      - client-java-micronaut-jackson:
+          context: specgen
+          requires: [client-test-service-java]
       - placeholder:
           name: completed-java
           requires:
@@ -1784,6 +1787,7 @@ workflows:
             - service-java
             - client-java-okhttp-jackson
             - client-java-okhttp-moshi
+            - client-java-micronaut-jackson
 
 
       - kotlin:
