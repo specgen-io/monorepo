@@ -25,7 +25,7 @@ var Models = generator.Generator{
 	},
 }
 
-var ClientJavaValues = []string{"okhttp"}
+var ClientJavaValues = []string{"okhttp", "micronaut"}
 
 var Client = generator.Generator{
 	"client-java",

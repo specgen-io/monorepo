@@ -8,9 +8,10 @@ import (
 
 type Packages struct {
 	models.Packages
-	clients map[string]map[string]packages.Package
-	Root    packages.Package
-	Utils   packages.Package
+	clients    map[string]map[string]packages.Package
+	Root       packages.Package
+	Utils      packages.Package
+	Converters packages.Package
 }
 
 func NewPackages(packageName, generatePath string, specification *spec.Spec) *Packages {
@@ -20,6 +21,7 @@ func NewPackages(packageName, generatePath string, specification *spec.Spec) *Pa
 
 	generated := packages.New(generatePath, packageName)
 	utils := generated.Subpackage("utils")
+	converters := generated.Subpackage("converters")
 
 	clients := map[string]map[string]packages.Package{}
 	for _, version := range specification.Versions {
@@ -36,6 +38,7 @@ func NewPackages(packageName, generatePath string, specification *spec.Spec) *Pa
 		clients,
 		generated,
 		utils,
+		converters,
 	}
 }
 

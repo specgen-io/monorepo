@@ -150,7 +150,6 @@ func (g *MicronautGenerator) generateClientMethod(w *writer.Writer, operation *s
 	w.Line(`}`)
 }
 
-//TODO
 func (g *MicronautGenerator) successResponse(response *spec.OperationResponse) string {
 	if response.BodyIs(spec.BodyString) {
 		return responseCreate(response, "response.body()!!.toString()")
