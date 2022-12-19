@@ -6,15 +6,28 @@ import (
 )
 
 type Module struct {
-	path string
+	path    string
+	isIndex bool
 }
 
 func New(folderPath string) Module {
-	return Module{path: folderPath}
+	return Module{path: folderPath, isIndex: false}
+}
+
+func NewIndex(folderPath string) Module {
+	return Module{path: folderPath, isIndex: true}
+}
+
+func (m Module) ItIsIndex() {
+	m.isIndex = true
 }
 
 func (m Module) GetPath() string {
-	return fmt.Sprintf(`%s.ts`, m.path)
+	if m.isIndex {
+		return fmt.Sprintf(`%s/index.ts`, m.path)
+	} else {
+		return fmt.Sprintf(`%s.ts`, m.path)
+	}
 }
 
 func (m Module) GetImport(toModule Module) string {
@@ -24,6 +37,13 @@ func (m Module) GetImport(toModule Module) string {
 func (m Module) Submodule(name string) Module {
 	if name != "" {
 		return New(fmt.Sprintf(`%s/%s`, m.path, name))
+	}
+	return m
+}
+
+func (m Module) SubmoduleIndex(name string) Module {
+	if name != "" {
+		return NewIndex(fmt.Sprintf(`%s/%s`, m.path, name))
 	}
 	return m
 }
@@ -46,6 +66,9 @@ func commonPrefixPath(s1, s2 string) string {
 }
 
 func importPath(whatPath string, toPath string) string {
+	if strings.HasSuffix(whatPath, "/index.ts") {
+		whatPath = strings.TrimSuffix(whatPath, "/index.ts")
+	}
 	prefix := commonPrefixPath(whatPath, toPath)
 	pathSegmentsCount := strings.Count(strings.TrimPrefix(toPath, prefix), "/")
 	backwardsPath := strings.Repeat("../", pathSegmentsCount)

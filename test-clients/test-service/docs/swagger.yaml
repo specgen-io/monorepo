@@ -35,6 +35,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -73,6 +79,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -111,6 +123,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -153,6 +171,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -195,6 +219,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -317,6 +347,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -439,6 +475,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -535,6 +577,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -609,6 +657,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -637,6 +691,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -687,6 +747,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -715,6 +781,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -749,6 +821,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -781,6 +859,80 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
+        "500":
+          description: Service will return this if unexpected internal error happens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+  /check/conflict:
+    get:
+      operationId: checkCheckConflict
+      tags:
+        - check
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: Service will return this if parameters are not provided or couldn't be parsed correctly
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
+        "404":
+          description: Service will return this if the endpoint is not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
+        "500":
+          description: Service will return this if unexpected internal error happens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+  /check/bad_request:
+    get:
+      operationId: checkCheckBadRequest
+      tags:
+        - check
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "403":
+          description: ""
+        "404":
+          description: Service will return this if the endpoint is not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -809,6 +961,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        "409":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictMessage'
         "500":
           description: Service will return this if unexpected internal error happens
           content:
@@ -1000,6 +1158,13 @@ components:
         - accepted_result
       properties:
         accepted_result:
+          type: string
+    ConflictMessage:
+      type: object
+      required:
+        - message
+      properties:
+        message:
           type: string
     BadRequestError:
       type: object

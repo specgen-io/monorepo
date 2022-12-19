@@ -11,13 +11,13 @@ import (
 	"typescript/writer"
 )
 
-type fetchGenerator struct {
+type FetchGenerator struct {
 	Modules    *Modules
 	node       bool
 	validation validations.Validation
 }
 
-func (g *fetchGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
+func (g *FetchGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.Client(api))
 	if g.node {
 		w.Imports.LibNames(`url`, `URL`, `URLSearchParams`)
@@ -46,7 +46,7 @@ func (g *fetchGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *fetchGenerator) operation(w *writer.Writer, operation *spec.NamedOperation) {
+func (g *FetchGenerator) operation(w *writer.Writer, operation *spec.NamedOperation) {
 	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0

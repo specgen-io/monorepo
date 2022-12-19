@@ -11,6 +11,8 @@ func GenerateClient(specification *spec.Spec, generatePath string, client string
 	generator := NewClientGenerator(client, validationName, modules)
 	sources.AddGenerated(generator.SetupLibrary())
 	sources.AddGenerated(generator.ParamsBuilder())
+	sources.AddGenerated(generator.Errors(specification.HttpErrors))
+	sources.AddGenerated(generator.ErrorModels(specification.HttpErrors))
 	for _, version := range specification.Versions {
 		sources.AddGenerated(generator.Models(&version))
 		for _, api := range version.Http.Apis {

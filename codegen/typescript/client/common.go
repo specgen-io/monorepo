@@ -55,18 +55,22 @@ func createOperationParams(operation *spec.NamedOperation) string {
 }
 
 func clientResponseBody(validation validations.Validation, response *spec.Response, textResponseData, jsonResponseData string) string {
-	if response.BodyIs(spec.BodyEmpty) {
-		return ""
-	}
 	if response.BodyIs(spec.BodyString) {
 		return textResponseData
-	} else {
+	}
+	if response.BodyIs(spec.BodyJson) {
 		data := fmt.Sprintf(`t.decode(%s, %s)`, validation.RuntimeType(&response.Type.Definition), jsonResponseData)
 		return data
 	}
+	return ""
 }
 
-func (g *Generator) ParamsBuilder() *generator.CodeFile {
+type CommonGenerator struct {
+	Modules    *Modules
+	validation validations.Validation
+}
+
+func (g *CommonGenerator) ParamsBuilder() *generator.CodeFile {
 	w := writer.New(g.Modules.Params)
 	w.Lines(`
 export function stringify(value: ScalarParam): string {
@@ -108,4 +112,15 @@ export function strParamsObject(params: Record<string, ParamType>): Record<strin
       .reduce((obj, paramName) => ({...obj, [paramName]: stringifyX(params[paramName]!)}), {} as Record<string, string | string[]>)
 }`)
 	return w.ToCodeFile()
+}
+
+func (g *CommonGenerator) responseBody(response *spec.Response) string {
+	if response.BodyIs(spec.BodyString) {
+		return `response.data`
+	}
+	if response.BodyIs(spec.BodyJson) {
+		data := fmt.Sprintf(`t.decode(%s, %s)`, g.validation.RuntimeType(&response.Type.Definition), `response.data`)
+		return data
+	}
+	return ""
 }
