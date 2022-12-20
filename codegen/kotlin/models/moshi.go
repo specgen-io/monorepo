@@ -85,36 +85,6 @@ func (g *MoshiGenerator) modelOneOf(w *writer.Writer, model *spec.NamedModel) {
 	w.Line(`}`)
 }
 
-func (g *MoshiGenerator) JsonRead(varJson string, typ *spec.TypeDef) string {
-	adapterParam := fmt.Sprintf(`%s::class.java`, g.Types.Kotlin(typ))
-
-	if typ.Node == spec.MapType {
-		typeKotlin := g.Types.Kotlin(typ.Child)
-		adapterParam = fmt.Sprintf(`Types.newParameterizedType(MutableMap::class.java, String::class.java, %s::class.java)`, typeKotlin)
-	}
-	if typ.Node == spec.ArrayType {
-		typeKotlin := g.Types.Kotlin(typ.Child)
-		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List::class.java, %s::class.java)`, typeKotlin)
-	}
-
-	return fmt.Sprintf(`read(%s, %s)`, varJson, adapterParam)
-}
-
-func (g *MoshiGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
-	adapterParam := fmt.Sprintf(`%s::class.java`, g.Types.Kotlin(typ))
-
-	if typ.Node == spec.MapType {
-		typeKotlin := g.Types.Kotlin(typ.Child)
-		adapterParam = fmt.Sprintf(`Types.newParameterizedType(MutableMap::class.java, String::class.java, %s::class.java)`, typeKotlin)
-	}
-	if typ.Node == spec.ArrayType {
-		typeKotlin := g.Types.Kotlin(typ.Child)
-		adapterParam = fmt.Sprintf(`Types.newParameterizedType(List::class.java, %s::class.java)`, typeKotlin)
-	}
-
-	return fmt.Sprintf(`write(%s, %s)`, adapterParam, varData)
-}
-
 func (g *MoshiGenerator) ReadJson(varJson string, typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.ArrayType:

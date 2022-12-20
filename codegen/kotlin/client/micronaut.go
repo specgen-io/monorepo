@@ -94,7 +94,7 @@ func (g *MicronautGenerator) createUrl(w *writer.Writer, operation *spec.NamedOp
 func (g *MicronautGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
 	requestBody := "body"
 	if operation.BodyIs(spec.BodyJson) {
-		w.Line(`val bodyJson = json.%s`, g.Models.JsonWrite("body", &operation.Body.Type.Definition))
+		w.Line(`val bodyJson = json.%s`, g.Models.WriteJson("body", &operation.Body.Type.Definition))
 		requestBody = "bodyJson"
 	}
 	w.EmptyLine()
