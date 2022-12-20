@@ -116,6 +116,7 @@ func (g *JacksonGenerator) ModelsUsageImports() []string {
 	return []string{
 		`com.fasterxml.jackson.databind.*`,
 		`com.fasterxml.jackson.core.type.*`,
+		`com.fasterxml.jackson.module.kotlin.jacksonObjectMapper`,
 	}
 }
 
