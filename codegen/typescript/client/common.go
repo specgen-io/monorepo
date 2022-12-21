@@ -19,6 +19,10 @@ func getUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
+func operationSignature(operation *spec.NamedOperation) string {
+	return fmt.Sprintf(`%s: async (%s): Promise<%s>`, operation.Name.CamelCase(), createOperationParams(operation), responseType(operation))
+}
+
 func createParams(params []spec.NamedParam, required bool) []string {
 	tsParams := []string{}
 	for _, param := range params {
@@ -54,19 +58,12 @@ func createOperationParams(operation *spec.NamedOperation) string {
 	return fmt.Sprintf("parameters: {%s}", strings.Join(operationParams, ", "))
 }
 
-func clientResponseBody(validation validations.Validation, response *spec.Response, textResponseData, jsonResponseData string) string {
-	if response.BodyIs(spec.BodyEmpty) {
-		return ""
-	}
-	if response.BodyIs(spec.BodyString) {
-		return textResponseData
-	} else {
-		data := fmt.Sprintf(`t.decode(%s, %s)`, validation.RuntimeType(&response.Type.Definition), jsonResponseData)
-		return data
-	}
+type CommonGenerator struct {
+	Modules    *Modules
+	validation validations.Validation
 }
 
-func (g *Generator) ParamsBuilder() *generator.CodeFile {
+func (g *CommonGenerator) ParamsBuilder() *generator.CodeFile {
 	w := writer.New(g.Modules.Params)
 	w.Lines(`
 export function stringify(value: ScalarParam): string {

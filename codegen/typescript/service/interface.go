@@ -5,7 +5,6 @@ import (
 	"generator"
 	"spec"
 	"typescript/common"
-	"typescript/responses"
 	"typescript/types"
 	"typescript/writer"
 )
@@ -29,7 +28,7 @@ func (g *Generator) serviceApi(api *spec.Api) *generator.CodeFile {
 		}
 		if len(operation.Responses) > 1 {
 			w.EmptyLine()
-			responses.GenerateOperationResponse(w, &operation)
+			GenerateOperationResponse(w, &operation)
 		}
 	}
 	w.EmptyLine()
@@ -39,7 +38,7 @@ func (g *Generator) serviceApi(api *spec.Api) *generator.CodeFile {
 		if operation.Body != nil || operation.HasParams() {
 			params = fmt.Sprintf(`params: %s`, operationParamsTypeName(&operation))
 		}
-		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, responses.ResponseType(&operation, ""))
+		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, ResponseType(&operation, ""))
 	}
 	w.Line("}")
 	return w.ToCodeFile()

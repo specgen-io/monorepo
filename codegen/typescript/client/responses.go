@@ -1,4 +1,4 @@
-package responses
+package client
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"typescript/types"
 )
 
-func GenerateOperationResponse(w *writer.Writer, operation *spec.NamedOperation) {
+func generateOperationResponse(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line("export type %s =", responseTypeName(operation))
 	for _, response := range operation.Responses {
 		if !response.Type.Definition.IsEmpty() {
@@ -19,22 +19,20 @@ func GenerateOperationResponse(w *writer.Writer, operation *spec.NamedOperation)
 	}
 }
 
-func ResponseType(operation *spec.NamedOperation, servicePackage string) string {
-	if len(operation.Responses) == 1 {
-		response := operation.Responses[0]
-		if response.Definition.Type.Definition.IsEmpty() {
+func responseType(operation *spec.NamedOperation) string {
+	successResponses := operation.Responses.Success()
+	if len(successResponses) == 1 {
+		if successResponses[0].Definition.Type.Definition.IsEmpty() {
 			return "void"
+		} else {
+			return types.TsType(&successResponses[0].Definition.Type.Definition)
 		}
-		return types.TsType(&response.Definition.Type.Definition)
+	} else {
+		return responseTypeName(operation)
 	}
-	result := responseTypeName(operation)
-	if servicePackage != "" {
-		result = "service." + result
-	}
-	return result
 }
 
-func New(response *spec.Response, body string) string {
+func newResponse(response *spec.Response, body string) string {
 	if body == `` {
 		return fmt.Sprintf(`{ status: "%s" }`, response.Name.Source)
 	} else {

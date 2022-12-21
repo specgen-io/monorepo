@@ -8,13 +8,15 @@ import (
 
 type Modules struct {
 	modules.Modules
-	clients map[string]map[string]module.Module
-	Params  module.Module
+	clients  map[string]map[string]module.Module
+	Params   module.Module
+	Response module.Module
 }
 
 func NewModules(validationName, generatePath string, specification *spec.Spec) *Modules {
 	root := module.New(generatePath)
 	params := root.Submodule("params")
+	response := root.Submodule("response")
 	clients := map[string]map[string]module.Module{}
 	for _, version := range specification.Versions {
 		clients[version.Name.Source] = map[string]module.Module{}
@@ -29,6 +31,7 @@ func NewModules(validationName, generatePath string, specification *spec.Spec) *
 		*modules.NewModules(validationName, generatePath, specification),
 		clients,
 		params,
+		response,
 	}
 }
 

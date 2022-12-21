@@ -1,42 +1,36 @@
-import { test } from 'uvu';
-import * as assert from 'uvu/assert';
-
+import {client} from '../test-service/echo'
 import {Message, Choice, Parameters, UrlParameters} from '../test-service/models'
-import {client as echoClient} from '../test-service/echo'
-import {client as checkClient} from '../test-service/check'
 
-const config = {baseURL: process.env.SERVICE_URL!}
+import { test } from 'uvu'
+import * as assert from 'uvu/assert'
+
+const echoClient = client({baseURL: process.env.SERVICE_URL!})
 
 test('echoBodyString', async function() {
   let body: string = "some text"
-  const client = echoClient(config)
-  let response = await client.echoBodyString({body})
-  assert.equal(response, body, 'response matches request')
+  let response = await echoClient.echoBodyString({body})
+  assert.equal(response, body)
 })
 
 test('echoBodyModel', async function() {
-  const client = echoClient(config)
   let body: Message = {int_field: 123, string_field: "the string"}
-  let response = await client.echoBodyModel({body})
-  assert.equal(response, body, 'response matches request')
+  let response = await echoClient.echoBodyModel({body})
+  assert.equal(response, body)
 })
 
 test('echoBodyArray', async function() {
-  const client = echoClient(config)
   let body: string[] = ["the str1", "the str1"]
-  let response = await client.echoBodyArray({body})
-  assert.equal(response, body, 'response matches request')
+  let response = await echoClient.echoBodyArray({body})
+  assert.equal(response, body)
 })
 
 test('echoBodyMap', async function() {
-  const client = echoClient(config)
   let body: Record<string, string> = {"one": "the str1", "two": "the str1"}
-  let response = await client.echoBodyMap({body})
-  assert.equal(response, body, 'response matches request')
+  let response = await echoClient.echoBodyMap({body})
+  assert.equal(response, body)
 })
 
 test('echoQuery', async function() {
-  const client = echoClient(config)
   let expected: Parameters = {
     int_field: 123, 
     long_field: 12345,
@@ -54,7 +48,7 @@ test('echoQuery', async function() {
     datetime_field: new Date("2021-01-02T23:54"),
     enum_field: Choice.SECOND_CHOICE,
   }
-  let response = await client.echoQuery({
+  let response = await echoClient.echoQuery({
     intQuery: 123, 
     longQuery: 12345,
     floatQuery: 1.23,
@@ -71,11 +65,10 @@ test('echoQuery', async function() {
     datetimeQuery: new Date("2021-01-02T23:54"),
     enumQuery: Choice.SECOND_CHOICE,
   })
-  assert.equal(response, expected, 'response matches expected')
+  assert.equal(response, expected)
 })
 
 test('echoHeader', async function() {
-  const client = echoClient(config)
   let expected: Parameters = {
     int_field: 123, 
     long_field: 12345,
@@ -91,9 +84,9 @@ test('echoHeader', async function() {
     date_field: "2021-01-01",
     date_array_field: ["2021-01-02"],
     datetime_field: new Date("2021-01-02T23:54"),
-    enum_field: Choice.SECOND_CHOICE, 
+    enum_field: Choice.SECOND_CHOICE,
   }
-  let response = await client.echoHeader({
+  let response = await echoClient.echoHeader({
     intHeader: 123, 
     longHeader: 12345,
     floatHeader: 1.23,
@@ -110,11 +103,10 @@ test('echoHeader', async function() {
     datetimeHeader: new Date("2021-01-02T23:54"),
     enumHeader: Choice.SECOND_CHOICE,
   })
-  assert.equal(response, expected, 'response matches expected')
+  assert.equal(response, expected)
 })
 
 test('echoUrlParams', async function() {
-  const client = echoClient(config)
   let expected: UrlParameters = {
     int_field: 123, 
     long_field: 12345,
@@ -128,7 +120,7 @@ test('echoUrlParams', async function() {
     datetime_field: new Date("2021-01-02T23:54"),
     enum_field: Choice.SECOND_CHOICE,
   }
-  let response = await client.echoUrlParams({
+  let response = await echoClient.echoUrlParams({
     intUrl: 123, 
     longUrl: 12345,
     floatUrl: 1.23,
@@ -141,13 +133,7 @@ test('echoUrlParams', async function() {
     datetimeUrl: new Date("2021-01-02T23:54"),
     enumUrl: Choice.SECOND_CHOICE,
   })
-  assert.equal(response, expected, 'response matches expected')
+  assert.equal(response, expected)
 })
 
-test('checkEmpty', async function() {
-  let client = checkClient(config)
-  let response = await client.checkEmpty()
-  assert.is(response, undefined, 'response on check empty is void')
-})
-
-test.run();
+test.run()

@@ -14,7 +14,7 @@ func (g *Generator) Models(version *spec.Version) *generator.CodeFile {
 }
 
 func (g *Generator) ErrorModels(httpErrors *spec.HttpErrors) *generator.CodeFile {
-	return g.models(httpErrors.ResolvedModels, g.Modules.ErrorModules)
+	return g.models(httpErrors.ResolvedModels, g.Modules.ErrorsModels)
 }
 
 func (g *Generator) models(models []*spec.NamedModel, modelsModule module.Module) *generator.CodeFile {

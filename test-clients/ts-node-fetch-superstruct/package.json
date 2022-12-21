@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "specgen": "specgen client-ts --client node-fetch --validation superstruct --spec-file ./../spec.yaml --generate-path ./test-service",
+    "build": "tsc",
     "test": "uvu -r tsm"
   },
   "keywords": [],

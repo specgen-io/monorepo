@@ -7,13 +7,15 @@ import (
 
 type Modules struct {
 	models       map[string]module.Module
-	ErrorModules module.Module
+	Errors       module.Module
+	ErrorsModels module.Module
 	Validation   module.Module
 }
 
 func NewModules(validationName, generatePath string, specification *spec.Spec) *Modules {
 	root := module.New(generatePath)
-	errorModels := root.Submodule("errors")
+	errors := root.SubmoduleIndex("errors")
+	errorModels := errors.Submodule("models")
 	validation := root.Submodule(validationName)
 
 	models := map[string]module.Module{}
@@ -24,6 +26,7 @@ func NewModules(validationName, generatePath string, specification *spec.Spec) *
 
 	return &Modules{
 		models,
+		errors,
 		errorModels,
 		validation,
 	}
