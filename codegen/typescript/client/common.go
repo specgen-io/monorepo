@@ -19,6 +19,10 @@ func getUrl(endpoint spec.Endpoint) string {
 	return url
 }
 
+func operationSignature(operation *spec.NamedOperation) string {
+	return fmt.Sprintf(`%s: async (%s): Promise<%s>`, operation.Name.CamelCase(), createOperationParams(operation), responseType(operation))
+}
+
 func createParams(params []spec.NamedParam, required bool) []string {
 	tsParams := []string{}
 	for _, param := range params {
@@ -52,17 +56,6 @@ func createOperationParams(operation *spec.NamedOperation) string {
 		return ""
 	}
 	return fmt.Sprintf("parameters: {%s}", strings.Join(operationParams, ", "))
-}
-
-func clientResponseBody(validation validations.Validation, response *spec.Response, textResponseData, jsonResponseData string) string {
-	if response.BodyIs(spec.BodyString) {
-		return textResponseData
-	}
-	if response.BodyIs(spec.BodyJson) {
-		data := fmt.Sprintf(`t.decode(%s, %s)`, validation.RuntimeType(&response.Type.Definition), jsonResponseData)
-		return data
-	}
-	return ""
 }
 
 type CommonGenerator struct {
@@ -112,15 +105,4 @@ export function strParamsObject(params: Record<string, ParamType>): Record<strin
       .reduce((obj, paramName) => ({...obj, [paramName]: stringifyX(params[paramName]!)}), {} as Record<string, string | string[]>)
 }`)
 	return w.ToCodeFile()
-}
-
-func (g *CommonGenerator) responseBody(response *spec.Response) string {
-	if response.BodyIs(spec.BodyString) {
-		return `response.data`
-	}
-	if response.BodyIs(spec.BodyJson) {
-		data := fmt.Sprintf(`t.decode(%s, %s)`, g.validation.RuntimeType(&response.Type.Definition), `response.data`)
-		return data
-	}
-	return ""
 }

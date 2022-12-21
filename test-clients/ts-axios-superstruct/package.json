@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "specgen": "specgen client-ts --client axios --validation superstruct --spec-file ./../spec.yaml --generate-path ./test-service",
+    "build": "tsc",
     "test": "uvu -r tsm"
   },
   "keywords": [],

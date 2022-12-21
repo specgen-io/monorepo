@@ -9,6 +9,7 @@ import (
 
 type ClientGenerator interface {
 	ApiClient(api *spec.Api) *generator.CodeFile
+	ErrorResponses(httpErrors *spec.HttpErrors) *generator.CodeFile
 }
 
 type Generator struct {
@@ -26,9 +27,9 @@ func NewClientGenerator(client, validationName string, modules *Modules) *Genera
 	case Axios:
 		clientGenerator = &AxiosGenerator{modules, validation, commonGenerator}
 	case NodeFetch:
-		clientGenerator = &FetchGenerator{modules, true, validation}
+		clientGenerator = &FetchGenerator{modules, true, validation, commonGenerator}
 	case BrowserFetch:
-		clientGenerator = &FetchGenerator{modules, false, validation}
+		clientGenerator = &FetchGenerator{modules, false, validation, commonGenerator}
 	default:
 		panic(fmt.Sprintf("Unknown client: %s", client))
 	}

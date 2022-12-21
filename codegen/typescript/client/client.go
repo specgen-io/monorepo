@@ -13,6 +13,7 @@ func GenerateClient(specification *spec.Spec, generatePath string, client string
 	sources.AddGenerated(generator.ParamsBuilder())
 	sources.AddGenerated(generator.Errors(specification.HttpErrors))
 	sources.AddGenerated(generator.ErrorModels(specification.HttpErrors))
+	sources.AddGenerated(generator.ErrorResponses(specification.HttpErrors))
 	for _, version := range specification.Versions {
 		sources.AddGenerated(generator.Models(&version))
 		for _, api := range version.Http.Apis {

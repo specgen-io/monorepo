@@ -1,4 +1,4 @@
-package responses
+package service
 
 import (
 	"fmt"

@@ -1,5 +1,6 @@
 .idea/
 node_modules/
+dist/
 test-results/
 test-service/
 junit.xml

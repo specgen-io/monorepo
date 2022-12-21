@@ -7,7 +7,6 @@ import (
 
 	"generator"
 	"spec"
-	"typescript/responses"
 	"typescript/writer"
 )
 
@@ -36,7 +35,7 @@ func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 		if operation.Body != nil || operation.HasParams() {
 			params = fmt.Sprintf(`params: service.%s`, operationParamsTypeName(&operation))
 		}
-		w.Line("  const %s = async (%s): Promise<%s> => {", operation.Name.CamelCase(), params, responses.ResponseType(&operation, "service"))
+		w.Line("  const %s = async (%s): Promise<%s> => {", operation.Name.CamelCase(), params, ResponseType(&operation, "service"))
 		w.Line("    throw new Error('Not Implemented')")
 		w.Line("  }")
 		w.EmptyLine()
