@@ -1,3 +1,3 @@
-import {sampleService} from './sample_service'
+import {sampleService} from './sample'
 
 export const services = {sampleService: sampleService()}

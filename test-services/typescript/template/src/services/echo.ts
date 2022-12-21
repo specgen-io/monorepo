@@ -1,5 +1,5 @@
-import * as service from './spec/echo'
-import * as models from './spec/models'
+import * as service from '../spec/echo'
+import * as models from '../spec/models'
 
 export let echoService = (): service.EchoService => {
     let echoBodyString = async (params: service.EchoBodyStringParams): Promise<string> => {
