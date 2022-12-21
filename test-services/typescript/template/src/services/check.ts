@@ -1,6 +1,6 @@
-import * as service from './spec/check'
-import * as models from './spec/models'
-import * as errors from './spec/errors'
+import * as service from '../spec/check'
+import * as models from '../spec/models'
+import * as errors from '../spec/errors'
 
 export let checkService = (): service.CheckService => {
     let checkEmpty = async (): Promise<void> => {}
