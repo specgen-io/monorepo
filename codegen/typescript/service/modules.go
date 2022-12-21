@@ -38,7 +38,7 @@ func NewModules(validationName, generatePath, servicesPath string, specification
 		routings[version.Name.Source] = versionModule.Submodule("routing")
 		for _, api := range version.Http.Apis {
 			serviceApis[version.Name.Source][api.Name.Source] = versionModule.Submodule(api.Name.SnakeCase())
-			serviceImpls[version.Name.Source][api.Name.Source] = services.Submodule(version.Name.FlatCase()).Submodule(api.Name.SnakeCase() + "_service")
+			serviceImpls[version.Name.Source][api.Name.Source] = services.Submodule(version.Name.FlatCase()).Submodule(api.Name.SnakeCase())
 		}
 	}
 
