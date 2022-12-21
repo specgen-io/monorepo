@@ -149,7 +149,7 @@ companion object {
 `)
 	for _, response := range operation.Responses {
 		if !response.BodyIs(spec.BodyEmpty) {
-			w.Line(`      %s -> %s(json.%s)`, spec.HttpStatusCode(response.Name), response.Name.PascalCase(), g.Models.JsonRead("responseBodyString", &response.Type.Definition))
+			w.Line(`      %s -> %s(json.%s)`, spec.HttpStatusCode(response.Name), response.Name.PascalCase(), g.Models.ReadJson("responseBodyString", &response.Type.Definition))
 		}
 	}
 	w.Lines(`

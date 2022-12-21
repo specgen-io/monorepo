@@ -56,7 +56,7 @@ func (g *SpringGenerator) ExceptionController(responses *spec.ErrorResponses) *g
 	w.EmptyLine()
 	w.Line(`@ControllerAdvice`)
 	w.Line(`class [[.ClassName]](@Autowired private val json: Json) {`)
-	w.Line(`  private val logger = LogManager.getLogger([[.ClassName]]::class.java)`)
+	w.Line(`    private val logger = LogManager.getLogger([[.ClassName]]::class.java)`)
 	w.EmptyLine()
 	g.errorHandler(w.Indented(), *responses)
 	w.Line(`}`)
@@ -69,15 +69,15 @@ func (g *SpringGenerator) errorHandler(w *writer.Writer, errors spec.ErrorRespon
 	internalServerError := errors.GetByStatusName(spec.HttpStatusInternalServerError)
 	w.Line(`@ExceptionHandler(Throwable::class)`)
 	w.Line(`fun error(request: HttpServletRequest, exception: Throwable): ResponseEntity<String> {`)
-	w.Line(`  val notFoundError = getNotFoundError(exception)`)
-	w.Line(`  if (notFoundError != null) {`)
+	w.Line(`    val notFoundError = getNotFoundError(exception)`)
+	w.Line(`    if (notFoundError != null) {`)
 	g.processResponse(w.IndentedWith(2), &notFoundError.Response, "notFoundError")
-	w.Line(`  }`)
-	w.Line(`  val badRequestError = getBadRequestError(exception)`)
-	w.Line(`  if (badRequestError != null) {`)
+	w.Line(`    }`)
+	w.Line(`    val badRequestError = getBadRequestError(exception)`)
+	w.Line(`    if (badRequestError != null) {`)
 	g.processResponse(w.IndentedWith(2), &badRequestError.Response, "badRequestError")
-	w.Line(`  }`)
-	w.Line(`  val internalServerError = InternalServerError(exception.message ?: "Unknown error")`)
+	w.Line(`    }`)
+	w.Line(`    val internalServerError = InternalServerError(exception.message ?: "Unknown error")`)
 	g.processResponse(w.IndentedWith(1), &internalServerError.Response, "internalServerError")
 	w.Line(`}`)
 }
@@ -94,14 +94,12 @@ func (g *SpringGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	w.Imports.PackageStar(g.Packages.ServicesApi(api))
 	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Add(g.Types.Imports()...)
-	w.EmptyLine()
 	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.InHttp.InVersion))
 	w.Line(`class [[.ClassName]](`)
-	w.Line(`  @Autowired private val %s: %s,`, serviceVarName(api), serviceInterfaceName(api))
-	w.Line(`  @Autowired private val json: Json`)
+	w.Line(`    @Autowired private val %s: %s,`, serviceVarName(api), serviceInterfaceName(api))
+	w.Line(`    @Autowired private val json: Json`)
 	w.Line(`) {`)
-	w.Line(`  private val logger = LogManager.getLogger([[.ClassName]]::class.java)`)
-
+	w.Line(`    private val logger = LogManager.getLogger([[.ClassName]]::class.java)`)
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		g.controllerMethod(w.Indented(), &operation)
@@ -117,8 +115,12 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 	w.Line(`fun %s(%s): ResponseEntity<String> {`, controllerMethodName(operation), strings.Join(springMethodParams(operation, g.Types), ", "))
 	w.Indent()
 	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
-	g.parseBody(w, operation, "bodyStr", "requestBody")
-	serviceCall(w, operation, "bodyStr", "requestBody", "result")
+	bodyStringVar := "bodyStr"
+	if operation.BodyIs(spec.BodyJson) {
+		bodyStringVar += ".reader()"
+	}
+	g.parseBody(w, operation, bodyStringVar, "requestBody")
+	serviceCall(w, operation, bodyStringVar, "requestBody", "result")
 	g.processResponses(w, operation, "result")
 	w.Unindent()
 	w.Line(`}`)
@@ -131,7 +133,7 @@ func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOpera
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`checkContentType(request, MediaType.APPLICATION_JSON)`)
 		typ := g.Types.Kotlin(&operation.Body.Type.Definition)
-		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.ReadJson(bodyStringVar, &operation.Body.Type.Definition))
 	}
 }
 
@@ -161,7 +163,7 @@ func (g *SpringGenerator) processResponse(w *writer.Writer, response *spec.Respo
 		w.Line(`return ResponseEntity(%s, headers, HttpStatus.%s)`, bodyVar, response.Name.UpperCase())
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`val bodyJson = json.%s`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
+		w.Line(`val bodyJson = json.%s`, g.Models.WriteJson(bodyVar, &response.Type.Definition))
 		w.Line(`val headers = HttpHeaders()`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json")`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())

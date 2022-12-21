@@ -52,10 +52,9 @@ func (g *MicronautGenerator) ExceptionController(responses *spec.ErrorResponses)
 	w.Imports.PackageStar(g.Packages.Json)
 	w.Imports.PackageStar(g.Packages.ErrorsModels)
 	w.Imports.PackageStar(g.Packages.Errors)
-	w.EmptyLine()
 	w.Line(`@Controller`)
 	w.Line(`class [[.ClassName]](@Inject private val json: Json) {`)
-	w.Line(`  private val logger = LoggerFactory.getLogger([[.ClassName]]::class.java)`)
+	w.Line(`    private val logger = LoggerFactory.getLogger([[.ClassName]]::class.java)`)
 	w.EmptyLine()
 	g.errorHandler(w.Indented(), *responses)
 	w.Line(`}`)
@@ -68,15 +67,15 @@ func (g *MicronautGenerator) errorHandler(w *writer.Writer, errors spec.ErrorRes
 	internalServerError := errors.GetByStatusName(spec.HttpStatusInternalServerError)
 	w.Line(`@Error(global = true, exception = Throwable::class)`)
 	w.Line(`fun error(request: HttpRequest<Any>, exception: Throwable): HttpResponse<*> {`)
-	w.Line(`  val notFoundError = getNotFoundError(exception)`)
-	w.Line(`  if (notFoundError != null) {`)
+	w.Line(`    val notFoundError = getNotFoundError(exception)`)
+	w.Line(`    if (notFoundError != null) {`)
 	g.processResponse(w.IndentedWith(2), &notFoundError.Response, "notFoundError")
-	w.Line(`  }`)
-	w.Line(`  val badRequestError = getBadRequestError(exception)`)
-	w.Line(`  if (badRequestError != null) {`)
+	w.Line(`    }`)
+	w.Line(`    val badRequestError = getBadRequestError(exception)`)
+	w.Line(`    if (badRequestError != null) {`)
 	g.processResponse(w.IndentedWith(2), &badRequestError.Response, "badRequestError")
-	w.Line(`  }`)
-	w.Line(`  val internalServerError = InternalServerError(exception.message ?: "Unknown error")`)
+	w.Line(`    }`)
+	w.Line(`    val internalServerError = InternalServerError(exception.message ?: "Unknown error")`)
 	g.processResponse(w.IndentedWith(1), &internalServerError.Response, "internalServerError")
 	w.Line(`}`)
 }
@@ -89,15 +88,13 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 	w.Imports.PackageStar(g.Packages.Models(api.InHttp.InVersion))
 	w.Imports.PackageStar(g.Packages.ErrorsModels)
 	w.Imports.PackageStar(g.Packages.ServicesApi(api))
-	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Add(g.Types.Imports()...)
-	w.EmptyLine()
 	w.Line(`@Controller`)
 	w.Line(`class [[.ClassName]](`)
-	w.Line(`  @Inject private val %s: %s,`, serviceVarName(api), serviceInterfaceName(api))
-	w.Line(`  @Inject private val json: Json`)
+	w.Line(`    @Inject private val %s: %s,`, serviceVarName(api), serviceInterfaceName(api))
+	w.Line(`    @Inject private val json: Json`)
 	w.Line(`) {`)
-	w.Line(`  private val logger = LoggerFactory.getLogger([[.ClassName]]::class.java)`)
+	w.Line(`    private val logger = LoggerFactory.getLogger([[.ClassName]]::class.java)`)
 
 	for _, operation := range api.Operations {
 		w.EmptyLine()
@@ -118,10 +115,14 @@ func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.
 	url := operation.FullUrl()
 	w.Line(`@%s("%s")`, casee.ToPascalCase(methodName), url)
 	w.Line(`fun %s(%s): HttpResponse<*> {`, controllerMethodName(operation), joinParams(micronautMethodParams(operation, g.Types)))
-	w.Line(`  logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
+	w.Line(`    logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	w.Indent()
-	g.parseBody(w, operation, "bodyStr", "requestBody")
-	serviceCall(w, operation, "bodyStr", "requestBody", "result")
+	bodyStringVar := "bodyStr"
+	if operation.BodyIs(spec.BodyJson) {
+		bodyStringVar += ".reader()"
+	}
+	g.parseBody(w, operation, bodyStringVar, "requestBody")
+	serviceCall(w, operation, bodyStringVar, "requestBody", "result")
 	g.processResponses(w, operation, "result")
 	w.Unindent()
 	w.Line(`}`)
@@ -134,7 +135,7 @@ func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOp
 	if operation.BodyIs(spec.BodyJson) {
 		w.Line(`checkContentType(request, MediaType.APPLICATION_JSON)`)
 		typ := g.Types.Kotlin(&operation.Body.Type.Definition)
-		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.ReadJson(bodyStringVar, &operation.Body.Type.Definition))
 	}
 }
 
@@ -162,7 +163,7 @@ func (g *MicronautGenerator) processResponse(w *writer.Writer, response *spec.Re
 		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s).body(%s).contentType("text/plain")`, response.Name.UpperCase(), bodyVar)
 	}
 	if response.BodyIs(spec.BodyJson) {
-		w.Line(`val bodyJson = json.%s`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
+		w.Line(`val bodyJson = json.%s`, g.Models.WriteJson(bodyVar, &response.Type.Definition))
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s).body(bodyJson).contentType("application/json")`, response.Name.UpperCase())
 	}

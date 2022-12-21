@@ -93,14 +93,6 @@ func (g *JacksonGenerator) modelOneOf(w *writer.Writer, model *spec.NamedModel) 
 	w.Line(`}`)
 }
 
-func (g *JacksonGenerator) JsonRead(varJson string, typ *spec.TypeDef) string {
-	return fmt.Sprintf(`read(%s, object : TypeReference<%s>() {})`, varJson, g.Types.Kotlin(typ))
-}
-
-func (g *JacksonGenerator) JsonWrite(varData string, typ *spec.TypeDef) string {
-	return fmt.Sprintf(`write(%s)`, varData)
-}
-
 func (g *JacksonGenerator) ReadJson(varJson string, typ *spec.TypeDef) string {
 	return fmt.Sprintf(`read(%s)`, varJson)
 }
