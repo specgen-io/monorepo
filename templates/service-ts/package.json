@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "specgen": "specgen service-ts --server {{server.value}} --validation {{validation.value}} --spec-file spec.yaml --generate-path ./src/spec {{#swagger.value}}--swagger-path ./docs/swagger.yaml {{/swagger.value}}--services-path ./src",
+    "specgen": "specgen service-ts --server {{server.value}} --validation {{validation.value}} --spec-file spec.yaml --generate-path ./src/spec {{#swagger.value}}--swagger-path ./docs/swagger.yaml {{/swagger.value}}--services-path ./src/services",
     "build": "tsc",
     "prestart": "npm run build",
     "start": "node ."
