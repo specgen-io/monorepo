@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-var Micronaut = "micronaut-low-level"
+var Micronaut = "micronaut"
 
 type MicronautGenerator struct {
 	Types    *types.Types
