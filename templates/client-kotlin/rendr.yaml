@@ -23,7 +23,7 @@ args:
   client:
     type: string
     description: client library
-    values: [okhttp, micronaut]
+    values: [okhttp, micronaut-low-level]
     default: okhttp
   jsonlib:
     type: string
