@@ -9,12 +9,26 @@
     <packaging>jar</packaging>
     <version>1.0-SNAPSHOT</version>
 
+    {{#client.micronaut}}
+    <parent>
+        <groupId>io.micronaut</groupId>
+        <artifactId>micronaut-parent</artifactId>
+        <version>{{versions.micronaut.value}}</version>
+    </parent>
+    {{/client.micronaut}}
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kotlin.code.style>official</kotlin.code.style>
         <kotlin.version>{{versions.kotlin.value}}</kotlin.version>
         <java.version>{{versions.java.value}}</java.version>
         <specgen.version>{{versions.specgen.value}}</specgen.version>
+        {{#client.micronaut}}
+        <micronaut.version>{{versions.micronaut.value}}</micronaut.version>
+        {{/client.micronaut}}
+        {{#client.okhttp}}
+        <okhttp.version>{{versions.okhttp.value}}</okhttp.version>
+        {{/client.okhttp}}
         {{#jsonlib.jackson}}
         <jackson.version>{{versions.jackson.value}}</jackson.version>
         {{/jsonlib.jackson}}
@@ -22,7 +36,6 @@
         <moshi.version>{{versions.moshi.value}}</moshi.version>
         <jsr305.version>{{versions.jsr305.value}}</jsr305.version>
         {{/jsonlib.moshi}}
-        <okhttp.version>{{versions.okhttp.value}}</okhttp.version>
         <log4j.version>{{versions.log4j.value}}</log4j.version>
     </properties>
 
@@ -39,6 +52,42 @@
             <version>${kotlin.version}</version>
             <scope>compile</scope>
         </dependency>
+        {{#client.micronaut}}
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-inject</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-validation</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-http-client</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        {{#jsonlib.jackson}}
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-jackson-databind</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        {{/jsonlib.jackson}}
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        {{/client.micronaut}}
+        {{#client.okhttp}}
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>${okhttp.version}</version>
+        </dependency>
+        {{/client.okhttp}}
         {{#jsonlib.jackson}}
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
@@ -69,11 +118,6 @@
         </dependency>
         {{/jsonlib.moshi}}
         <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>${okhttp.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>${log4j.version}</version>
@@ -94,7 +138,45 @@
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <version>${kotlin.version}</version>
+                <configuration>
+                    <jvmTarget>${jdk.version}</jvmTarget>
+                    <compilerPlugins>
+                        <plugin>all-open</plugin>
+                    </compilerPlugins>
+                </configuration>
                 <executions>
+                    <execution>
+                        <id>kapt</id>
+                        <goals>
+                            <goal>kapt</goal>
+                        </goals>
+                        <configuration>
+                            <sourceDirs>
+                                <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
+                            </sourceDirs>
+                            <annotationProcessorPaths combine.self="override">
+                                <annotationProcessorPath>
+                                    <groupId>io.micronaut</groupId>
+                                    <artifactId>micronaut-inject-java</artifactId>
+                                    <version>${micronaut.version}</version>
+                                </annotationProcessorPath>
+                                <annotationProcessorPath>
+                                    <groupId>io.micronaut</groupId>
+                                    <artifactId>micronaut-http-validation</artifactId>
+                                    <version>${micronaut.version}</version>
+                                </annotationProcessorPath>
+                                <annotationProcessorPath>
+                                    <groupId>io.micronaut</groupId>
+                                    <artifactId>micronaut-validation</artifactId>
+                                    <version>${micronaut.version}</version>
+                                </annotationProcessorPath>
+                            </annotationProcessorPaths>
+                            <annotationProcessorArgs>
+                                <annotationProcessorArg>micronaut.processing.group={{groupid.value}}</annotationProcessorArg>
+                                <annotationProcessorArg>micronaut.processing.module={{project.value}}</annotationProcessorArg>
+                            </annotationProcessorArgs>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>compile</id>
                         <phase>compile</phase>
