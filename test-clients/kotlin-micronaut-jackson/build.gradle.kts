@@ -36,7 +36,7 @@ java {
 specgen {
     clientKotlin {
         jsonlib.set("jackson")
-        client.set("micronaut-low-level")
+        client.set("micronaut")
         packageName.set("test_client")
         specFile.set(file("../spec.yaml"))
     }
