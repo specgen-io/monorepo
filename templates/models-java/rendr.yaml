@@ -1,0 +1,53 @@
+rendr: 0
+name: models-java
+title: Specgen Java Models
+executables: 
+  - "{{#build.maven}}/mvn"
+  - "{{#build.gradle-kotlin}}/gradlew"
+  - "{{#build.gradle-groovy}}/gradlew"
+rename: {"gitignore": ".gitignore"}
+args:
+  project:
+    type: string
+    description: project name
+    default: the-models
+  build:
+    type: string
+    description: build system
+    values: [maven, gradle-kotlin, gradle-groovy]
+    default: maven
+  groupid:
+    type: string
+    description: project group id
+    default: com.company
+  jsonlib:
+    type: string
+    description: JSON library
+    values: [jackson, moshi]
+    default: jackson
+  package:
+    type: string
+    description: package name
+    default: themodels
+  versions:
+    type: group
+    noinput: true
+    args:
+      maven:
+        type: string
+        default: 3.8.1
+      java:
+        type: string
+        default: 11  
+      specgen:
+        type: string
+        default: 2.1.1853
+      jackson:
+        type: string
+        default: 2.13.3
+      moshi:
+        type: string
+        default: 1.13.0
+      jsr305:
+        type: string
+        default: 3.0.2
