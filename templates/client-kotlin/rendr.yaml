@@ -23,7 +23,7 @@ args:
   client:
     type: string
     description: client library
-    values: [okhttp]
+    values: [okhttp, micronaut-low-level]
     default: okhttp
   jsonlib:
     type: string
@@ -43,25 +43,31 @@ args:
         default: 3.8.1
       kotlin:
         type: string
-        default: 1.6.10
+        default: 1.7.20
       java:
         type: string
         default: 11
       specgen:
         type: string
-        default: 2.1.1853
+        default: 2.1.2134
       jackson:
         type: string
-        default: 2.13.3
+        default: 2.14.0
       moshi:
         type: string
-        default: 1.13.0
+        default: 1.14.0
       jsr305:
         type: string
         default: 3.0.2
       okhttp:
         type: string
         default: 4.10.0
+      micronaut:
+        type: string
+        default: 3.6.0
+      micronaut_application:
+        type: string
+        default: 3.6.7  
       log4j:
         type: string
-        default: 2.17.2 
+        default: 2.19.0
