@@ -126,12 +126,6 @@
 
     <build>
         <plugins>
-            {{#client.micronaut-low-level}}
-            <plugin>
-                <groupId>io.micronaut.build</groupId>
-                <artifactId>micronaut-maven-plugin</artifactId>
-            </plugin>
-            {{/client.micronaut-low-level}}
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -139,6 +133,11 @@
                 <configuration>
                     <release>${java.version}</release>
                 </configuration>
+            </plugin>
+            {{#client.micronaut-low-level}}
+            <plugin>
+                <groupId>io.micronaut.build</groupId>
+                <artifactId>micronaut-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -203,6 +202,7 @@
                     </dependency>
                 </dependencies>
             </plugin>
+            {{/client.micronaut-low-level}}
             <plugin>
                 <groupId>io.specgen</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>

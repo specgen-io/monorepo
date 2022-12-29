@@ -48,10 +48,10 @@ args:
     args:
       specgen:
         type: string
-        default: 2.1.1853
+        default: 2.1.2134
       kotlin:
         type: string
-        default: 1.7.0
+        default: 1.7.20
       java:
         type: string
         default: 11
@@ -69,10 +69,10 @@ args:
         default: 1.0.11.RELEASE 
       micronaut:
         type: string
-        default: 3.4.2
+        default: 3.6.0
       micronaut_application:
         type: string
-        default: 3.3.2  
+        default: 3.6.7
       jsr305:
         type: string
         default: 3.0.2
@@ -81,4 +81,4 @@ args:
         default: 2.1.0
       moshi:
         type: string
-        default: 1.13.0  
+        default: 1.14.0  

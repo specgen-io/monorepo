@@ -48,7 +48,7 @@ args:
     args:
       specgen:
         type: string
-        default: 2.1.1853
+        default: 2.1.2134
       java:
         type: string
         default: 11  
@@ -75,4 +75,4 @@ args:
         default: 2.1.0  
       moshi:
         type: string
-        default: 1.13.0
+        default: 1.14.0

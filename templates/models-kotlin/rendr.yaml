@@ -1,6 +1,6 @@
 rendr: 0
-name: client-java
-title: Specgen Java Client
+name: models-kotlin
+title: Specgen Kotlin Models
 executables: 
   - "{{#build.maven}}/mvn"
   - "{{#build.gradle-kotlin}}/gradlew"
@@ -10,7 +10,7 @@ args:
   project:
     type: string
     description: project name
-    default: the-client
+    default: the-models
   build:
     type: string
     description: build system
@@ -20,11 +20,6 @@ args:
     type: string
     description: project group id
     default: com.company
-  client:
-    type: string
-    description: client library
-    values: [okhttp]
-    default: okhttp
   jsonlib:
     type: string
     description: JSON library
@@ -33,7 +28,7 @@ args:
   package:
     type: string
     description: package name
-    default: theclient
+    default: themodels
   versions:
     type: group
     noinput: true
@@ -41,9 +36,12 @@ args:
       maven:
         type: string
         default: 3.8.1
+      kotlin:
+        type: string
+        default: 1.7.20
       java:
         type: string
-        default: 11  
+        default: 11
       specgen:
         type: string
         default: 2.1.2134
@@ -56,9 +54,3 @@ args:
       jsr305:
         type: string
         default: 3.0.2
-      okhttp:
-        type: string
-        default: 4.10.0
-      log4j:
-        type: string
-        default: 2.19.0
