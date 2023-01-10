@@ -282,6 +282,22 @@ public class [[.ClassName]] {
 		}
 	}
 
+	public <T> T read(String jsonStr, Class<T> type) {
+		try {
+			return objectMapper.readValue(jsonStr, type);
+		} catch (IOException exception) {
+			throw new JsonParseException(exception);
+		}
+	}
+
+	public <T> T read(Reader reader, Class<T> type) {
+		try {
+			return objectMapper.readValue(reader, type);
+		} catch (IOException exception) {
+			throw new JsonParseException(exception);
+		}
+	}
+
 	public <T> T read(String jsonStr, TypeReference<T> typeReference) {
 		try {
 			return objectMapper.readValue(jsonStr, typeReference);
