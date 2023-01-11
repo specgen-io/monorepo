@@ -189,6 +189,22 @@ class [[.ClassName]](private val objectMapper: ObjectMapper) {
 		}
 	}
 
+	fun <T> read(jsonStr: String, type: Class<T>): T {
+        return try {
+            objectMapper.readValue(jsonStr, type)
+        } catch (exception: IOException) {
+            throw JsonParseException(exception)
+        }
+    }
+
+    fun <T> read(reader: Reader, type: Class<T>): T {
+        return try {
+            objectMapper.readValue(reader, type)
+        } catch (exception: IOException) {
+            throw JsonParseException(exception)
+        }
+    }
+
 	inline fun <reified T> read(jsonStr: String): T {
 		return read(jsonStr, object: TypeReference<T>(){})
 	}
