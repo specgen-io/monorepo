@@ -3,7 +3,7 @@ plugins {
     id("io.specgen.kotlin.gradle") version "{{versions.specgen.value}}"
     {{#tests.value}}
     id("com.adarshr.test-logger") version "{{versions.test-logger.value}}"
-    {{#tests.value}}
+    {{/tests.value}}
 }
 
 group = "{{groupid.value}}"
@@ -27,7 +27,7 @@ dependencies {
     {{/jsonlib.moshi}}
     {{#tests.value}}
     testImplementation(kotlin("test"))
-    {{#tests.value}}
+    {{/tests.value}}
 }
 
 specgen {
@@ -42,4 +42,4 @@ specgen {
 tasks.test {
     useJUnitPlatform()
 }
-{{#tests.value}}
+{{/tests.value}}

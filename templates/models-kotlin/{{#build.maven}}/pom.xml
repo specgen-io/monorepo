@@ -25,7 +25,7 @@
         {{#tests.value}}
         <junit.version>{{versions.junit.value}}</junit.version>
         <maven-plugins.version>{{versions.maven-plugins.value}}</maven-plugins.version>
-        {{#tests.value}}
+        {{/tests.value}}
     </properties>
 
     <dependencies>
@@ -82,7 +82,9 @@
 
     <build>
         <sourceDirectory>${project.build.directory}/generated-sources/kotlin</sourceDirectory>
+        {{#tests.value}}
         <testSourceDirectory>src/test/kotlin</testSourceDirectory>
+        {{/tests.value}}
         <plugins>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -96,6 +98,7 @@
                             <goal>compile</goal>
                         </goals>
                     </execution>
+                    {{#tests.value}}
                     <execution>
                         <id>test-compile</id>
                         <phase>test-compile</phase>
@@ -103,8 +106,10 @@
                             <goal>test-compile</goal>
                         </goals>
                     </execution>
+                    {{/tests.value}}
                 </executions>
             </plugin>
+            {{#tests.value}}
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-plugins.version}</version>
@@ -113,6 +118,7 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>${maven-plugins.version}</version>
             </plugin>
+            {{/tests.value}}
             <plugin>
                 <groupId>io.specgen</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
