@@ -714,7 +714,7 @@ jobs:
           name: Generate models
           command: |
             export THE_ROOT=./test-models/kotlin
-            ./rendr file:///./templates/models-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out --tests yes
+            ./rendr file:///./templates/models-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
       - restore_cache:
           key: kotlin-<<parameters.values-file>>
       - yaml-execute:

@@ -1,4 +1,5 @@
 {
     "build": "gradle-kotlin",
-    "jsonlib": "moshi"
+    "jsonlib": "moshi",
+    "tests": "yes"
 }
