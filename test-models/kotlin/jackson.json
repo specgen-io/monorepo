@@ -2,5 +2,5 @@
 {
     "build": "gradle-kotlin",
     "jsonlib": "jackson",
-    "tests": "yes"
+    "tests": true
 }
