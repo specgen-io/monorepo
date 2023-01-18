@@ -725,11 +725,6 @@ jobs:
           path: ./test-models/kotlin/out
           yaml-file: .rendr.yaml
           yaml-path: .build
-      - yaml-execute:
-          path: ./test-models/kotlin/out
-          yaml-file: .rendr.yaml
-          yaml-path: .run
-          background: true
       - save_cache:
           key: kotlin-<<parameters.values-file>>
           paths: [ ~/.gradle ]
