@@ -730,49 +730,6 @@ jobs:
           key: kotlin-<<parameters.values-file>>
           paths: [ ~/.gradle ]
 
-  models-kotlin-jackson:
-    working_directory: ~/test-models-kotlin-jackson
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - restore_cache:
-          key: cache-{{ checksum "./test-models/kotlin-jackson/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-jackson/settings.gradle.kts" }}
-      - run:
-          name: Gradle build
-          command: |
-            cd ./test-models/kotlin-jackson
-            ./gradlew --build-cache --no-daemon --stacktrace test \
-            -Djfrog.user=$JFROG_USER \
-            -Djfrog.pass=$JFROG_PASS \
-            -Dspecgen.version=<<pipeline.parameters.specgen-version>>
-      - store_test_results:
-          path: ./test-models/kotlin-jackson/build/test-results
-      - save_cache:
-          key: cache-{{ checksum "./test-models/kotlin-jackson/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-jackson/settings.gradle.kts" }}
-          paths: [ ~/.gradle ]
-  models-kotlin-moshi:
-    working_directory: ~/test-models-kotlin-moshi
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - restore_cache:
-          key: cache-{{ checksum "./test-models/kotlin-moshi/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-moshi/settings.gradle.kts" }}
-      - run:
-          name: Gradle build
-          command: |
-            cd ./test-models/kotlin-moshi
-            ./gradlew --build-cache --no-daemon --stacktrace test \
-            -Djfrog.user=$JFROG_USER \
-            -Djfrog.pass=$JFROG_PASS \
-            -Dspecgen.version=<<pipeline.parameters.specgen-version>>
-      - store_test_results:
-          path: ./test-models/kotlin-moshi/build/test-results
-      - save_cache:
-          key: cache-{{ checksum "./test-models/kotlin-moshi/build.gradle.kts" }}-{{ checksum "./test-models/kotlin-moshi/settings.gradle.kts" }}
-          paths: [ ~/.gradle ]
-
   client-test-service:
     working_directory: ~/specgen-tests
     docker:
@@ -1842,12 +1799,6 @@ workflows:
       - placeholder:
           name: kotlin-build
           requires: [maven-kotlin, gradle-kotlin]
-      - models-kotlin-jackson:
-          context: specgen
-          requires: [kotlin-build]
-      - models-kotlin-moshi:
-          context: specgen
-          requires: [kotlin-build]
       - models-kotlin:
           matrix:
             parameters:
@@ -1879,8 +1830,6 @@ workflows:
       - placeholder:
           name: completed-kotlin
           requires:
-            - models-kotlin-jackson
-            - models-kotlin-moshi
             - models-kotlin
             - service-kotlin
             - client-kotlin-okhttp-jackson
