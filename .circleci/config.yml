@@ -715,6 +715,10 @@ jobs:
           command: |
             export THE_ROOT=./test-models/kotlin
             ./rendr file:///./templates/models-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+      - artifactory/setup-gradle-kotlin:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+          project-path: ./test-models/kotlin/out
       - restore_cache:
           key: kotlin-<<parameters.values-file>>
       - yaml-execute:
