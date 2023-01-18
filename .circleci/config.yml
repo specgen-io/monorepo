@@ -1848,15 +1848,12 @@ workflows:
       - models-kotlin-moshi:
           context: specgen
           requires: [kotlin-build]
-      - models-tests:
-          name: models-tests-kotlin
-          requires: [kotlin-build]
       - models-kotlin:
           matrix:
             parameters:
               values-file: ["jackson", "moshi"]
           context: specgen
-          requires: [models-tests-kotlin]
+          requires: [kotlin-build]
       - service-tests:
           name: service-tests-kotlin
           requires: [kotlin-build]
