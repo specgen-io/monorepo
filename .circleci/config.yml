@@ -689,6 +689,47 @@ jobs:
           key: cache-{{ checksum "./test-models/java-moshi/pom.xml" }}
           paths:
             - ~/.m2
+
+  models-kotlin:
+    parameters:
+      values-file:
+        type: string
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - run:
+          name: Create temp folder for tests results
+          command: mkdir -p /tmp/test-results
+      - get-rendr
+      - run:
+          name: Copy spec.yaml
+          command: |
+            cd test-models
+            cp ./spec.yaml ./kotlin/template/spec.yaml
+      - run:
+          name: Generate models
+          command: |
+            export THE_ROOT=./test-models/kotlin
+            ./rendr file:///./templates/models-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out --tests yes
+      - restore_cache:
+          key: kotlin-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./test-models/kotlin/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - yaml-execute:
+          path: ./test-models/kotlin/out
+          yaml-file: .rendr.yaml
+          yaml-path: .run
+          background: true
+      - save_cache:
+          key: kotlin-<<parameters.values-file>>
+          paths: [ ~/.gradle ]
+
   models-kotlin-jackson:
     working_directory: ~/test-models-kotlin-jackson
     docker:
@@ -1807,6 +1848,15 @@ workflows:
       - models-kotlin-moshi:
           context: specgen
           requires: [kotlin-build]
+      - models-tests:
+          name: models-tests-kotlin
+          requires: [kotlin-build]
+      - models-kotlin:
+          matrix:
+            parameters:
+              values-file: ["jackson", "moshi"]
+          context: specgen
+          requires: [models-tests-kotlin]
       - service-tests:
           name: service-tests-kotlin
           requires: [kotlin-build]
@@ -1834,6 +1884,7 @@ workflows:
           requires:
             - models-kotlin-jackson
             - models-kotlin-moshi
+            - models-kotlin
             - service-kotlin
             - client-kotlin-okhttp-jackson
             - client-kotlin-okhttp-moshi
