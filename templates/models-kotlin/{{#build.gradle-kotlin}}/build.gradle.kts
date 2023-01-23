@@ -1,6 +1,9 @@
 plugins {
     id("org.jetbrains.kotlin.jvm") version "{{versions.kotlin.value}}"
     id("io.specgen.kotlin.gradle") version "{{versions.specgen.value}}"
+    {{#tests.value}}
+    id("com.adarshr.test-logger") version "{{versions.test-logger.value}}"
+    {{/tests.value}}
 }
 
 group = "{{groupid.value}}"
@@ -22,6 +25,9 @@ dependencies {
     implementation("com.squareup.moshi:moshi-adapters:{{versions.moshi.value}}")
     implementation("com.squareup.moshi:moshi-kotlin:{{versions.moshi.value}}")
     {{/jsonlib.moshi}}
+    {{#tests.value}}
+    testImplementation(kotlin("test"))
+    {{/tests.value}}
 }
 
 specgen {
@@ -31,3 +37,9 @@ specgen {
         specFile.set(file("spec.yaml"))
     }
 }
+
+{{#tests.value}}
+tasks.test {
+    useJUnitPlatform()
+}
+{{/tests.value}}

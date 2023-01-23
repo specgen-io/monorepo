@@ -1,30 +1,13 @@
-package test_service.models
+package themodels
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import org.junit.jupiter.api.Test
+import kotlin.test.assertFailsWith
+import themodels.models.*
 import java.math.BigDecimal
 import java.time.*
 import java.util.*
-import kotlin.test.*
-import test_service.json.*
 
-internal class ModelsTest {
-    private val mapper = setupObjectMapper(jacksonObjectMapper())
-
-    private fun <T> checkDeserialization(data: T, jsonStr: String, tClass: Class<T>) {
-        val deserialized: T = mapper.readValue(jsonStr, tClass)
-        assertEquals(data, deserialized)
-    }
-
-    private fun <T> checkSerialization(data: T, jsonStr: String) {
-        val serialized = mapper.writeValueAsString(data)
-        assertEquals(jsonStr, serialized)
-    }
-
-    private fun <T> check(data: T, jsonStr: String, tClass: Class<T>) {
-        checkSerialization(data, jsonStr)
-        checkDeserialization(data, jsonStr, tClass)
-    }
+class CommonJsonTest : JsonTest() {
 
     @Test
     fun objectModel() {
@@ -36,15 +19,22 @@ internal class ModelsTest {
     @Test
     fun objectModelWrongFieldName() {
         assertFailsWith<Throwable> {
-            mapper.readValue("""{"wrong_field":42}""", Message::class.java)
+            json.read("""{"wrong_field":42}""", Message::class.java)
         }
     }
 
     @Test
     fun objectModelMissingField() {
         assertFailsWith<Throwable> {
-            mapper.readValue("""{}""", Message::class.java)
+            json.read("""{}""", Message::class.java)
         }
+    }
+
+    @Test
+    fun objectModelFieldCases() {
+        val data = MessageCases("snake_case value", "camelCase value")
+        val jsonStr = """{"snake_case":"snake_case value","camelCase":"camelCase value"}"""
+        check(data, jsonStr, MessageCases::class.java)
     }
 
     @Test
@@ -57,8 +47,7 @@ internal class ModelsTest {
     @Test
     fun objectFieldNotNull() {
         assertFailsWith<Throwable> {
-            val jsonStr = """{"field":"the string","nested":null}"""
-            mapper.readValue(jsonStr, Parent::class.java)
+            json.read("""{"field":"the string","nested":null}""", Parent::class.java)
         }
     }
 
@@ -72,7 +61,8 @@ internal class ModelsTest {
     @Test
     fun numericTypes() {
         val data = NumericFields(123, 1234, 1.23f, 1.23, BigDecimal("1.23"))
-        val jsonStr = """{"int_field":123,"long_field":1234,"float_field":1.23,"double_field":1.23,"decimal_field":1.23}"""
+        val jsonStr =
+            """{"int_field":123,"long_field":1234,"float_field":1.23,"double_field":1.23,"decimal_field":1.23}"""
         check(data, jsonStr, NumericFields::class.java)
     }
 
@@ -122,35 +112,25 @@ internal class ModelsTest {
     }
 
     @Test
-    fun jsonType() {
-        val jsonField = """{"the_array":[1,"some string"],"the_object":{"the_bool":true,"the_string":"some value"},"the_scalar":123}"""
-        val node: JsonNode = mapper.readTree(jsonField)
-        val data = RawJsonField(node)
-        val jsonStr = """{"json_field":{"the_array":[1,"some string"],"the_object":{"the_bool":true,"the_string":"some value"},"the_scalar":123}}"""
-        check(data, jsonStr, RawJsonField::class.java)
-    }
-
-    @Test
     fun oneOfWrapper() {
-        val canceled = OrderCanceled(UUID.fromString("123e4567-e89b-12d3-a456-426655440000"))
-        val event: OrderEventWrapper = OrderEventWrapper.Canceled(canceled)
+        val data: OrderEventWrapper =
+            OrderEventWrapper.Canceled(OrderCanceled(UUID.fromString("123e4567-e89b-12d3-a456-426655440000")))
         val jsonStr = """{"canceled":{"id":"123e4567-e89b-12d3-a456-426655440000"}}"""
-        check(event, jsonStr, OrderEventWrapper::class.java)
+        check(data, jsonStr, OrderEventWrapper::class.java)
     }
 
     @Test
     fun oneOfWrapperItemNotNull() {
         assertFailsWith<Throwable> {
-            val jsonStr = """{"canceled":null}"""
-            mapper.readValue(jsonStr, OrderEventWrapper::class.java)
+            json.read("""{"canceled":null}""", OrderEventWrapper::class.java)
         }
     }
 
     @Test
     fun oneOfDiscriminatorTest() {
-        val canceled = OrderCanceled(UUID.fromString("123e4567-e89b-12d3-a456-426655440000"))
-        val event: OrderEventDiscriminator = OrderEventDiscriminator.Canceled(canceled)
+        val data: OrderEventDiscriminator =
+            OrderEventDiscriminator.Canceled(OrderCanceled(UUID.fromString("123e4567-e89b-12d3-a456-426655440000")))
         val jsonStr = """{"_type":"canceled","id":"123e4567-e89b-12d3-a456-426655440000"}"""
-        check(event, jsonStr, OrderEventDiscriminator::class.java)
+        check(data, jsonStr, OrderEventDiscriminator::class.java)
     }
 }

@@ -22,6 +22,10 @@
         <moshi.version>{{versions.moshi.value}}</moshi.version>
         <jsr305.version>{{versions.jsr305.value}}</jsr305.version>
         {{/jsonlib.moshi}}
+        {{#tests.value}}
+        <junit.version>{{versions.junit.value}}</junit.version>
+        <maven-plugins.version>{{versions.maven-plugins.value}}</maven-plugins.version>
+        {{/tests.value}}
     </properties>
 
     <dependencies>
@@ -33,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib-jdk8</artifactId>
+            <artifactId>kotlin-stdlib</artifactId>
             <version>${kotlin.version}</version>
             <scope>compile</scope>
         </dependency>
@@ -66,18 +70,55 @@
             <version>${moshi.version}</version>
         </dependency>
         {{/jsonlib.moshi}}
+        {{#tests.value}}
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        {{/tests.value}}
     </dependencies>
 
     <build>
+        <sourceDirectory>${project.build.directory}/generated-sources/kotlin</sourceDirectory>
+        {{#tests.value}}
+        <testSourceDirectory>src/test/kotlin</testSourceDirectory>
+        {{/tests.value}}
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>{{versions.maven.value}}</version>
-                <configuration>
-                    <release>${java.version}</release>
-                </configuration>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-maven-plugin</artifactId>
+                <version>${kotlin.version}</version>
+                <executions>
+                    <execution>
+                        <id>compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    {{#tests.value}}
+                    <execution>
+                        <id>test-compile</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>test-compile</goal>
+                        </goals>
+                    </execution>
+                    {{/tests.value}}
+                </executions>
             </plugin>
+            {{#tests.value}}
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-plugins.version}</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${maven-plugins.version}</version>
+            </plugin>
+            {{/tests.value}}
             <plugin>
                 <groupId>io.specgen</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>

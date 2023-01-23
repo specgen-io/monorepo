@@ -29,6 +29,10 @@ args:
     type: string
     description: package name
     default: themodels
+  tests:
+    type: boolean
+    description: do you want to add tests to the project
+    default: no
   versions:
     type: group
     noinput: true
@@ -38,7 +42,7 @@ args:
         default: 3.8.1
       kotlin:
         type: string
-        default: 1.7.20
+        default: 1.8.0
       java:
         type: string
         default: 11
@@ -54,3 +58,12 @@ args:
       jsr305:
         type: string
         default: 3.0.2
+      test-logger:
+        type: string
+        default: 3.2.0
+      junit:
+        type: string
+        default: 5.9.1
+      maven-plugins:
+        type: string
+        default: 2.22.2

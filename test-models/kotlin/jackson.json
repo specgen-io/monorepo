@@ -1,0 +1,6 @@
+
+{
+    "build": "gradle-kotlin",
+    "jsonlib": "jackson",
+    "tests": true
+}
