@@ -1,1 +1,3 @@
-build: mvn compile
+build: |
+  mvn compile
+  mvn test
