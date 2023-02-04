@@ -1,0 +1,5 @@
+{
+  "build": "maven",
+  "jsonlib": "jackson",
+  "tests": true
+}
