@@ -29,6 +29,10 @@ args:
     type: string
     description: package name
     default: themodels
+  tests:
+    type: boolean
+    description: do you want to add test libraries to the project
+    default: no
   versions:
     type: group
     noinput: true
@@ -51,3 +55,6 @@ args:
       jsr305:
         type: string
         default: 3.0.2
+      junit:
+        type: string
+        default: 5.9.1
