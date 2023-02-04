@@ -58,13 +58,13 @@ public class ToStringTest {
 
     @Test
     public void jsonMapFieldsTest() {
-        MapFields data = new MapFields(new HashMap<String, Integer>() {{
-            put("one", 1);
-            put("two", 2);
-        }}, new HashMap<String, String>() {{
-            put("one", "first");
-            put("two", "second");
-        }});
+        var map1 = new HashMap<String, Integer>();
+        map1.put("one", 1);
+        map1.put("two", 2);
+        var map2 = new HashMap<String, String>();
+        map2.put("one", "first");
+        map2.put("two", "second");
+        MapFields data = new MapFields(map1, map2);
         String expected = "MapFields{intMapField={one=1, two=2}, stringMapField={one=first, two=second}}";
         String dataStr = data.toString();
         assertEquals(dataStr, expected);
