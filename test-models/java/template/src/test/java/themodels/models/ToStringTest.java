@@ -1,4 +1,4 @@
-package test_service.models;
+package themodels.models;
 
 import com.fasterxml.jackson.databind.*;
 import org.junit.jupiter.api.Test;
@@ -9,7 +9,7 @@ import java.time.*;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static test_service.utils.Utils.*;
+import static themodels.utils.Utils.*;
 
 public class ToStringTest {
 

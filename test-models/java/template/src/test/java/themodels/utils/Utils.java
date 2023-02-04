@@ -1,4 +1,4 @@
-package test_service.utils;
+package themodels.utils;
 
 public class Utils {
     public static String fixQuotes(String jsonStr) {

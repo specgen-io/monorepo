@@ -1,9 +1,9 @@
-package test_service.models;
+package themodels.models;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import org.junit.jupiter.api.Test;
-import test_service.json.*;
+import themodels.json.*;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -11,7 +11,7 @@ import java.time.*;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static test_service.utils.Utils.*;
+import static themodels.utils.Utils.*;
 
 public class JsonTest {
 	private final Json json = createJson();
