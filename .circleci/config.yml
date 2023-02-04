@@ -720,6 +720,9 @@ jobs:
           repo-name: maven
       - restore_cache:
           key: java-<<parameters.values-file>>
+      - run:
+          name: Check .rendr.yaml
+          command: cat ./test-models/java/out/.rendr.yaml
       - yaml-execute:
           path: ./test-models/java/out
           yaml-file: .rendr.yaml
