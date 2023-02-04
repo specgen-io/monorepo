@@ -58,3 +58,6 @@ args:
       junit:
         type: string
         default: 5.9.1
+      maven-test-plugins:
+        type: string
+        default: 2.22.2
