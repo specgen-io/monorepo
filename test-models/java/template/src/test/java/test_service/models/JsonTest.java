@@ -100,16 +100,13 @@ public class JsonTest {
 
 	@Test
 	public void mapType() {
-		MapFields data = new MapFields(
-			new HashMap<>() {{
-				put("one", 1);
-				put("two", 2);
-			}},
-			new HashMap<>() {{
-				put("one", "first");
-				put("two", "second");
-			}}
-		);
+    var map1 = new HashMap<String, Integer>();
+    map1.put("one", 1);
+    map1.put("two", 2);
+    var map2 = new HashMap<String, String>();
+    map2.put("one", "first");
+    map2.put("two", "second");
+		MapFields data = new MapFields(map1, map2);
 		String jsonStr = "{'int_map_field':{'one':1,'two':2},'string_map_field':{'one':'first','two':'second'}}";
 		check(data, jsonStr, new TypeReference<>() {});
 	}
