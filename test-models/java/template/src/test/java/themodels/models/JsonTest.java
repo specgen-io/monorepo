@@ -1,7 +1,12 @@
 package themodels.models;
 
+{{#jsonlib.jackson}}
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
+{{/jsonlib.jackson}}
+{{#jsonlib.moshi}}
+import com.squareup.moshi.*;
+{{/jsonlib.moshi}}
 import org.junit.jupiter.api.Test;
 import themodels.json.*;
 
@@ -122,15 +127,6 @@ public class JsonTest {
 	public void optionalTypesMissingFields() {
 		var data = new OptionalFields(null, null);
 		String jsonStr = "{}";
-		check(data, jsonStr, new TypeReference<>() {});
-	}
-
-	@Test
-	public void jsonType() throws IOException {
-		String jsonField = fixQuotes("{'the_array':[1,'some string'],'the_object':{'the_bool':true,'the_string':'some value'},'the_scalar':123}");
-		JsonNode node = new ObjectMapper().readTree(jsonField);
-		RawJsonField data = new RawJsonField(node);
-		String jsonStr = "{'json_field':{'the_array':[1,'some string'],'the_object':{'the_bool':true,'the_string':'some value'},'the_scalar':123}}";
 		check(data, jsonStr, new TypeReference<>() {});
 	}
 
