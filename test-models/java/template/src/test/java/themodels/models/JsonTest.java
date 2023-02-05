@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.*;
 import com.squareup.moshi.*;
 {{/jsonlib.moshi}}
 import org.junit.jupiter.api.Test;
+import org.json.JSONException;
 import org.skyscreamer.jsonassert.*;
 import themodels.json.*;
 import themodels.json.Json;
