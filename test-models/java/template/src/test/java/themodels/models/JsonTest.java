@@ -9,6 +9,7 @@ import com.squareup.moshi.*;
 {{/jsonlib.moshi}}
 import org.junit.jupiter.api.Test;
 import themodels.json.*;
+import themodels.json.Json;
 
 import java.io.IOException;
 import java.math.BigDecimal;
