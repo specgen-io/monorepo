@@ -24,13 +24,13 @@ import static themodels.utils.Utils.*;
 public class JsonTest {
 	private final Json json = createJson();
 
+  {{#jsonlib.jackson}}
 	public static Json createJson() {
 		ObjectMapper objectMapper = new ObjectMapper();
 		CustomObjectMapper.setup(objectMapper);
 		return new Json(objectMapper);
 	}
 
-  {{#jsonlib.jackson}}
 	public <T> void check(T data, String jsonStr, Class<T> tClass) {
 		jsonStr = fixQuotes(jsonStr);
 
@@ -46,6 +46,12 @@ public class JsonTest {
 	}
   {{/jsonlib.jackson}}
   {{#jsonlib.moshi}}
+	public static Json createJson() {
+		Moshi.Builder moshiBuilder = new Moshi.Builder();
+		CustomMoshiAdapters.setup(moshiBuilder);
+		return new Json(moshiBuilder.build());
+	}
+  
 	public <T> void check(T data, String jsonStr, Class<T> tClass) {
 		jsonStr = fixQuotes(jsonStr);
 
