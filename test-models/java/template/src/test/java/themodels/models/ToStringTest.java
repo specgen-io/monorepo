@@ -1,15 +1,12 @@
-package test_service.models;
+package themodels.models;
 
-import com.fasterxml.jackson.databind.*;
 import org.junit.jupiter.api.Test;
 
-import java.io.*;
 import java.math.BigDecimal;
 import java.time.*;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static test_service.utils.Utils.*;
 
 public class ToStringTest {
 
@@ -58,13 +55,13 @@ public class ToStringTest {
 
     @Test
     public void jsonMapFieldsTest() {
-        MapFields data = new MapFields(new HashMap<String, Integer>() {{
-            put("one", 1);
-            put("two", 2);
-        }}, new HashMap<String, String>() {{
-            put("one", "first");
-            put("two", "second");
-        }});
+        var map1 = new HashMap<String, Integer>();
+        map1.put("one", 1);
+        map1.put("two", 2);
+        var map2 = new HashMap<String, String>();
+        map2.put("one", "first");
+        map2.put("two", "second");
+        MapFields data = new MapFields(map1, map2);
         String expected = "MapFields{intMapField={one=1, two=2}, stringMapField={one=first, two=second}}";
         String dataStr = data.toString();
         assertEquals(dataStr, expected);
@@ -74,16 +71,6 @@ public class ToStringTest {
     public void jsonOptionalFieldsTest() {
         OptionalFields data = new OptionalFields(123, "the string");
         String expected = "OptionalFields{intOptionField=123, stringOptionField=the string}";
-        String dataStr = data.toString();
-        assertEquals(dataStr, expected);
-    }
-
-    @Test
-    public void jsonRawJsonFieldTest() throws IOException {
-        String jsonField = fixQuotes("{'the_array':[1,'some string'],'the_object':{'the_bool':true,'the_string':'some value'},'the_scalar':123}");
-        JsonNode node = new ObjectMapper().readTree(jsonField);
-        RawJsonField data = new RawJsonField(node);
-        String expected = fixQuotes("RawJsonField{jsonField={'the_array':[1,'some string'],'the_object':{'the_bool':true,'the_string':'some value'},'the_scalar':123}}");
         String dataStr = data.toString();
         assertEquals(dataStr, expected);
     }

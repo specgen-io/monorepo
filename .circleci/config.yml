@@ -641,54 +641,44 @@ jobs:
           paths:
             - ~/.sbt
             - ~/.ivy2
-  models-java-jackson:
-    working_directory: ~/test-models-java-jackson
+
+  models-java:
+    parameters:
+      values-file:
+        type: string
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
     docker:
       - image: circleci/openjdk:11-jdk
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - cache-{{ checksum "./test-models/java-jackson/pom.xml" }}
+      - run:
+          name: Create temp folder for tests results
+          command: mkdir -p /tmp/test-results
+      - get-rendr
+      - run:
+          name: Copy spec.yaml
+          command: |
+            cd test-models
+            cp ./spec.yaml ./java/template/spec.yaml
+      - run:
+          name: Generate models
+          command: |
+            export THE_ROOT=./test-models/java
+            ./rendr file:///./templates/models-java --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
       - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
-      - run:
-          name: Maven build
-          command: |
-            cd ./test-models/java-jackson
-            mkdir -p ./test-results
-            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
-      - store_test_results:
-          path: ./test-models/java-jackson/test-results
-      - save_cache:
-          key: cache-{{ checksum "./test-models/java-jackson/pom.xml" }}
-          paths:
-            - ~/.m2
-  models-java-moshi:
-    working_directory: ~/test-models-java-moshi
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
       - restore_cache:
-          keys:
-            - cache-{{ checksum "./test-models/java-moshi/pom.xml" }}
-      - artifactory/setup-maven:
-          jfrog-server-url: specgen.jfrog.io
-          repo-name: maven
-      - run:
-          name: Maven build
-          command: |
-            cd ./test-models/java-moshi
-            mkdir -p ./test-results
-            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
-      - store_test_results:
-          path: ./test-models/java-moshi/test-results
+          key: java-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./test-models/java/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
       - save_cache:
-          key: cache-{{ checksum "./test-models/java-moshi/pom.xml" }}
-          paths:
-            - ~/.m2
+          key: java-<<parameters.values-file>>
+          paths: [ ~/.m2 ]
 
   models-kotlin:
     parameters:
@@ -1748,10 +1738,10 @@ workflows:
       - placeholder:
           name: java-build
           requires: [maven-java, gradle-java]
-      - models-java-jackson:
-          context: specgen
-          requires: [java-build]
-      - models-java-moshi:
+      - models-java:
+          matrix:
+            parameters:
+              values-file: ["jackson", "moshi"]
           context: specgen
           requires: [java-build]
       - service-tests:
@@ -1779,8 +1769,7 @@ workflows:
       - placeholder:
           name: completed-java
           requires:
-            - models-java-jackson
-            - models-java-moshi
+            - models-java
             - service-java
             - client-java-okhttp-jackson
             - client-java-okhttp-moshi
