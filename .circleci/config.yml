@@ -641,56 +641,8 @@ jobs:
           paths:
             - ~/.sbt
             - ~/.ivy2
-  models-java-jackson:
-    working_directory: ~/test-models-java-jackson
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - cache-{{ checksum "./test-models/java-jackson/pom.xml" }}
-      - artifactory/setup-maven:
-          jfrog-server-url: specgen.jfrog.io
-          repo-name: maven
-      - run:
-          name: Maven build
-          command: |
-            cd ./test-models/java-jackson
-            mkdir -p ./test-results
-            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
-      - store_test_results:
-          path: ./test-models/java-jackson/test-results
-      - save_cache:
-          key: cache-{{ checksum "./test-models/java-jackson/pom.xml" }}
-          paths:
-            - ~/.m2
-  models-java-moshi:
-    working_directory: ~/test-models-java-moshi
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - cache-{{ checksum "./test-models/java-moshi/pom.xml" }}
-      - artifactory/setup-maven:
-          jfrog-server-url: specgen.jfrog.io
-          repo-name: maven
-      - run:
-          name: Maven build
-          command: |
-            cd ./test-models/java-moshi
-            mkdir -p ./test-results
-            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
-      - store_test_results:
-          path: ./test-models/java-moshi/test-results
-      - save_cache:
-          key: cache-{{ checksum "./test-models/java-moshi/pom.xml" }}
-          paths:
-            - ~/.m2
 
-  models-java2:
+  models-java:
     parameters:
       values-file:
         type: string
@@ -720,9 +672,6 @@ jobs:
           repo-name: maven
       - restore_cache:
           key: java-<<parameters.values-file>>
-      - run:
-          name: Check .rendr.yaml
-          command: cat ./test-models/java/out/.rendr.yaml
       - yaml-execute:
           path: ./test-models/java/out
           yaml-file: .rendr.yaml
@@ -1789,16 +1738,10 @@ workflows:
       - placeholder:
           name: java-build
           requires: [maven-java, gradle-java]
-      - models-java2:
+      - models-java:
           matrix:
             parameters:
               values-file: ["jackson", "moshi"]
-          context: specgen
-          requires: [java-build]
-      - models-java-jackson:
-          context: specgen
-          requires: [java-build]
-      - models-java-moshi:
           context: specgen
           requires: [java-build]
       - service-tests:
@@ -1826,8 +1769,7 @@ workflows:
       - placeholder:
           name: completed-java
           requires:
-            - models-java-jackson
-            - models-java-moshi
+            - models-java
             - service-java
             - client-java-okhttp-jackson
             - client-java-okhttp-moshi
