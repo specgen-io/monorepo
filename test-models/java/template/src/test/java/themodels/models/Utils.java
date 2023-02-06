@@ -9,6 +9,7 @@ import com.squareup.moshi.*;
 import org.json.JSONException;
 import org.skyscreamer.jsonassert.*;
 import themodels.json.*;
+import themodels.json.Json;
 
 import static org.junit.jupiter.api.Assertions.*;
 
