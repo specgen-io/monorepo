@@ -8,6 +8,7 @@ import java.time.*
 import java.util.*
 
 class CommonJsonTest : JsonTest() {
+    val json = createJson()
 
     @Test
     fun objectModel() {
