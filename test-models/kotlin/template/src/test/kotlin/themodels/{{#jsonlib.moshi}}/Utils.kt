@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import themodels.json.Json
 import themodels.json.setupMoshiAdapters
 
-private fun createJson(): Json {
+fun createJson(): Json {
     val moshiBuilder = Moshi.Builder()
     setupMoshiAdapters(moshiBuilder)
     return Json(moshiBuilder.build())
