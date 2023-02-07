@@ -42,6 +42,10 @@ dependencies {
     implementation("com.squareup.moshi:moshi-kotlin:{{versions.moshi.value}}")
     {{/jsonlib.moshi}}
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:{{versions.log4j.value}}")
+    {{#tests.value}}
+    testImplementation(kotlin("test"))
+    testImplementation("org.assertj:assertj-core:{{versions.assertj.value}}")
+    {{/tests.value}}
 }
 
 specgen {

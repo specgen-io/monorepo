@@ -853,6 +853,45 @@ jobs:
           paths:
             - ~/.m2          
 
+  client-kotlin2:
+    parameters:
+      values-file:
+        type: string
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - run:
+          name: Create temp folder for tests results
+          command: mkdir -p /tmp/test-results
+      - get-rendr
+      - run:
+          name: Copy spec.yaml
+          command: |
+            cd test-clients
+            cp ./spec.yaml ./kotlin/template/spec.yaml
+      - run:
+          name: Generate clients
+          command: |
+            export THE_ROOT=./test-clients/kotlin
+            ./rendr file:///./templates/client-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+      - artifactory/setup-gradle-kotlin:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+          project-path: ./test-clients/kotlin/out
+      - restore_cache:
+          key: kotlin-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./test-clients/kotlin/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - save_cache:
+          key: kotlin-<<parameters.values-file>>
+          paths: [ ~/.gradle ]
+
   client-kotlin-okhttp-jackson:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
@@ -1806,6 +1845,12 @@ workflows:
           name: client-test-service-kotlin
           context: specgen
           requires: [kotlin-build]
+      - client-kotlin2:
+          matrix:
+            parameters:
+              values-file: ["micronaut-jackson", "okhttp-jackson", "okhttp-moshi"]
+          context: specgen
+          requires: [client-test-service-kotlin]
       - client-kotlin-okhttp-jackson:
           context: specgen
           requires: [client-test-service-kotlin]
