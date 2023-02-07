@@ -7,7 +7,8 @@ import java.math.BigDecimal
 import java.time.*
 import java.util.*
 
-class CommonJsonTest : JsonTest() {
+class JsonTest {
+    val json = createJson()
 
     @Test
     fun objectModel() {

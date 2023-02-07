@@ -3,7 +3,7 @@ package themodels
 import org.junit.jupiter.api.Test
 import themodels.models.RawJsonField
 
-class MoshiTest : JsonTest() {
+class MoshiTest {
 
     @Test
     fun jsonType() {

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
 import themodels.models.RawJsonField
 
-class JacksonTest : JsonTest() {
+class JacksonTest {
 
     @Test
     fun jsonType() {
