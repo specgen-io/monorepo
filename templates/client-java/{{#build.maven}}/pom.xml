@@ -22,6 +22,10 @@
         {{/jsonlib.moshi}}
         <okhttp.version>{{versions.okhttp.value}}</okhttp.version>
         <log4j.version>{{versions.log4j.value}}</log4j.version>
+        {{#tests.value}}
+        <junit.version>{{versions.junit.value}}</junit.version>
+        <maven-test-plugins.version>{{versions.maven-test-plugins.value}}</maven-test-plugins.version>
+        {{/tests.value}}        
     </properties>
 
     <dependencies>
@@ -74,6 +78,20 @@
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>${log4j.version}</version>
         </dependency>
+        {{#tests.value}}
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>{{versions.assertj.value}}</version>
+            <scope>test</scope>
+        </dependency>
+        {{/tests.value}}
     </dependencies>
 
     <build>
@@ -86,6 +104,16 @@
                     <release>${java.version}</release>
                 </configuration>
             </plugin>
+            {{#tests.value}}
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-test-plugins.version}</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${maven-test-plugins.version}</version>
+            </plugin>
+            {{/tests.value}}
             <plugin>
                 <groupId>io.specgen</groupId>
                 <artifactId>java-maven-plugin</artifactId>
@@ -99,6 +127,7 @@
                 </executions>
                 <configuration>
                     <jsonlib>{{jsonlib.value}}</jsonlib>
+                    <client>{{client.value}}</client>
                     <specFile>${project.basedir}/spec.yaml</specFile>
                     <packageName>{{package.value}}</packageName>
                 </configuration>

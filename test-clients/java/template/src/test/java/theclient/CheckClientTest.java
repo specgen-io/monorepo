@@ -1,10 +1,10 @@
-package test_client;
+package theclient;
 
 import org.junit.jupiter.api.Test;
-import test_client.clients.check.CheckClient;
-import test_client.errors.*;
-import test_client.errors.models.*;
-import test_client.models.*;
+import theclient.clients.check.CheckClient;
+import theclient.errors.*;
+import theclient.errors.models.*;
+import theclient.models.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 

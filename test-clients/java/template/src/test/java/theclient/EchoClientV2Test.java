@@ -1,8 +1,8 @@
-package test_client;
+package theclient;
 
 import org.junit.jupiter.api.Test;
-import test_client.v2.clients.echo.EchoClient;
-import test_client.v2.models.Message;
+import theclient.v2.clients.echo.EchoClient;
+import theclient.v2.models.Message;
 
 import static org.junit.jupiter.api.Assertions.*;
 
