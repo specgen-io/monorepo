@@ -884,6 +884,8 @@ jobs:
           project-path: ./test-clients/kotlin/out
       - restore_cache:
           key: kotlin-<<parameters.values-file>>
+      - start-service:
+          port: 8081
       - yaml-execute:
           path: ./test-clients/kotlin/out
           yaml-file: .rendr.yaml
