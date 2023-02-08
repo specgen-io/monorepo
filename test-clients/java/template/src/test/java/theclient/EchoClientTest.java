@@ -33,10 +33,13 @@ public class EchoClientTest {
 
 	private final String bodyString = "TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsu";
 	private final Message message = new Message(intValue, stringValue);
-	private final HashMap<String, String> hashMap = new HashMap<>() {{
-		put("string_field", "the value");
-		put("string_field_2", "the value_2");
-	}};
+
+  private HashMap<String, String> createHashMap() {
+    var map = new HashMap<String, String>();
+		map.put("string_field", "the value");
+		map.put("string_field_2", "the value_2");
+    return map;
+  }
 
 	@Test
 	public void echoBodyString_responseIsEqualToRequest() {
@@ -73,13 +76,14 @@ public class EchoClientTest {
 
 	@Test
 	public void echoBodyMap_responseIsEqualToRequest() {
+    var hashMap = createHashMap();
 		var response = client.echoBodyMap(hashMap);
 		assertEquals(hashMap, response);
 	}
 
 	@Test
 	public void echoBodyMap_doesntThrowException() {
-		assertDoesNotThrow(() -> client.echoBodyMap(hashMap));
+		assertDoesNotThrow(() -> client.echoBodyMap(createHashMap()));
 	}
 
 	@Test
