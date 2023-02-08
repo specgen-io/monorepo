@@ -127,6 +127,7 @@
                 </executions>
                 <configuration>
                     <jsonlib>{{jsonlib.value}}</jsonlib>
+                    <client>{{client.value}}</client>
                     <specFile>${project.basedir}/spec.yaml</specFile>
                     <packageName>{{package.value}}</packageName>
                 </configuration>
