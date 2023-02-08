@@ -760,68 +760,6 @@ jobs:
       - store_test_results:
           path: ./test-clients/go/test-results
 
-  client-java-okhttp-jackson:
-    environment:
-      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
-    working_directory: ~/specgen-tests
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - restore_cache:
-          keys:
-            - cache-{{ checksum "./test-clients/java-okhttp-jackson/pom.xml" }}
-      - artifactory/setup-maven:
-          jfrog-server-url: specgen.jfrog.io
-          repo-name: maven
-      - start-service:
-          port: 8081
-      - run:
-          name: Test Java OkHttp client
-          command: |
-            cd ./test-clients/java-okhttp-jackson
-            mkdir -p ./test-results
-            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
-      - store_test_results:
-          path: ./test-clients/java-okhttp-jackson/test-results
-      - save_cache:
-          key: cache-{{ checksum "./test-clients/java-okhttp-jackson/pom.xml" }}
-          paths:
-            - ~/.m2
-
-  client-java-okhttp-moshi:
-    environment:
-      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
-    working_directory: ~/specgen-tests
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - restore_cache:
-          keys:
-            - cache-{{ checksum "./test-clients/java-okhttp-moshi/pom.xml" }}
-      - artifactory/setup-maven:
-          jfrog-server-url: specgen.jfrog.io
-          repo-name: maven
-      - start-service:
-          port: 8081
-      - run:
-          name: Test Java OkHttp client
-          command: |
-            cd ./test-clients/java-okhttp-moshi
-            mkdir -p ./test-results
-            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
-      - store_test_results:
-          path: ./test-clients/java-okhttp-moshi/test-results
-      - save_cache:
-          key: cache-{{ checksum "./test-clients/java-okhttp-moshi/pom.xml" }}
-          paths:
-            - ~/.m2
-
   client-java-micronaut-jackson:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
@@ -853,7 +791,7 @@ jobs:
           paths:
             - ~/.m2          
 
-  client-java2:
+  client-java:
     parameters:
       values-file:
         type: string
@@ -1758,19 +1696,13 @@ workflows:
           name: client-test-service-java
           context: specgen
           requires: [java-build]
-      - client-java2:
+      - client-java:
           matrix:
             parameters:
-              values-file: ["okhttp-jackson", "okhttp-moshi", "micronaut-jackson"]
+              values-file: ["okhttp-jackson", "okhttp-moshi"]  # should add "micronaut-jackson" 
           context: specgen
           requires: [client-test-service-java]
-      - client-java-okhttp-jackson:
-          context: specgen
-          requires: [client-test-service-java]
-      - client-java-okhttp-moshi:
-          context: specgen
-          requires: [client-test-service-java]
-      - client-java-micronaut-jackson:
+      - client-java-micronaut-jackson:                         # should be removed
           context: specgen
           requires: [client-test-service-java]
       - placeholder:
@@ -1778,8 +1710,7 @@ workflows:
           requires:
             - models-java
             - service-java
-            - client-java-okhttp-jackson
-            - client-java-okhttp-moshi
+            - client-java
             - client-java-micronaut-jackson
 
 
