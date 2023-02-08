@@ -853,7 +853,7 @@ jobs:
           paths:
             - ~/.m2          
 
-  client-kotlin2:
+  client-kotlin:
     parameters:
       values-file:
         type: string
@@ -894,90 +894,6 @@ jobs:
           yaml-path: .build
       - save_cache:
           key: kotlin-<<parameters.values-file>>
-          paths: [ ~/.gradle ]
-
-  client-kotlin-okhttp-jackson:
-    environment:
-      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
-    working_directory: ~/specgen-tests
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - restore_cache:
-          key: cache-{{ checksum "./test-clients/kotlin-okhttp-jackson/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-okhttp-jackson/settings.gradle.kts" }}
-      - start-service:
-          port: 8081
-      - run:
-          name: Test Kotlin OkHttp client
-          command: |
-            cd ./test-clients/kotlin-okhttp-jackson
-            ./gradlew --build-cache --no-daemon --stacktrace test \
-            -Djfrog.user=$JFROG_USER \
-            -Djfrog.pass=$JFROG_PASS \
-            -Dspecgen.version=<<pipeline.parameters.specgen-version>>
-      - store_test_results:
-          path: ./test-clients/kotlin-okhttp-jackson/build/test-results
-      - save_cache:
-          key: cache-{{ checksum "./test-clients/kotlin-okhttp-jackson/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-okhttp-jackson/settings.gradle.kts" }}
-          paths: [ ~/.gradle ]
-
-  client-kotlin-okhttp-moshi:
-    environment:
-      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
-    working_directory: ~/specgen-tests
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - restore_cache:
-          key: cache-{{ checksum "./test-clients/kotlin-okhttp-moshi/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-okhttp-moshi/settings.gradle.kts" }}
-      - start-service:
-          port: 8081
-      - run:
-          name: Test Kotlin OkHttp client
-          command: |
-            cd ./test-clients/kotlin-okhttp-moshi
-            ./gradlew --build-cache --no-daemon --stacktrace test \
-            -Djfrog.user=$JFROG_USER \
-            -Djfrog.pass=$JFROG_PASS \
-            -Dspecgen.version=<<pipeline.parameters.specgen-version>>
-      - store_test_results:
-          path: ./test-clients/kotlin-okhttp-moshi/build/test-results
-      - save_cache:
-          key: cache-{{ checksum "./test-clients/kotlin-okhttp-moshi/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-okhttp-moshi/settings.gradle.kts" }}
-          paths: [ ~/.gradle ]
-
-  client-kotlin-micronaut-jackson:
-    environment:
-      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
-    working_directory: ~/specgen-tests
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - restore_cache:
-          key: cache-{{ checksum "./test-clients/kotlin-micronaut-jackson/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-micronaut-jackson/settings.gradle.kts" }}
-      - start-service:
-          port: 8081
-      - run:
-          name: Test Kotlin Micronaut client
-          command: |
-            cd ./test-clients/kotlin-micronaut-jackson
-            ./gradlew --build-cache --no-daemon --stacktrace test \
-            -Djfrog.user=$JFROG_USER \
-            -Djfrog.pass=$JFROG_PASS \
-            -Dspecgen.version=<<pipeline.parameters.specgen-version>>
-      - store_test_results:
-          path: ./test-clients/kotlin-micronaut-jackson/build/test-results
-      - save_cache:
-          key: cache-{{ checksum "./test-clients/kotlin-micronaut-jackson/build.gradle.kts" }}-{{ checksum "./test-clients/kotlin-micronaut-jackson/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
 
   client-ruby:
@@ -1849,19 +1765,10 @@ workflows:
           name: client-test-service-kotlin
           context: specgen
           requires: [kotlin-build]
-      - client-kotlin2:
+      - client-kotlin:
           matrix:
             parameters:
               values-file: ["micronaut-jackson", "okhttp-jackson", "okhttp-moshi"]
-          context: specgen
-          requires: [client-test-service-kotlin]
-      - client-kotlin-okhttp-jackson:
-          context: specgen
-          requires: [client-test-service-kotlin]
-      - client-kotlin-okhttp-moshi:
-          context: specgen
-          requires: [client-test-service-kotlin]
-      - client-kotlin-micronaut-jackson:
           context: specgen
           requires: [client-test-service-kotlin]
       - placeholder:
@@ -1869,9 +1776,7 @@ workflows:
           requires:
             - models-kotlin
             - service-kotlin
-            - client-kotlin-okhttp-jackson
-            - client-kotlin-okhttp-moshi
-            - client-kotlin-micronaut-jackson
+            - client-kotlin
 
 
       - typescript:
