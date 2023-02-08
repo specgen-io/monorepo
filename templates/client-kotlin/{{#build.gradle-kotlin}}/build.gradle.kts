@@ -1,10 +1,10 @@
 plugins {
     id("org.jetbrains.kotlin.jvm") version "{{versions.kotlin.value}}"
-    {{#client.micronaut-low-level}}
+    {{#client.micronaut}}
     id("org.jetbrains.kotlin.kapt") version "{{versions.kotlin.value}}"
     id("org.jetbrains.kotlin.plugin.allopen") version "{{versions.kotlin.value}}"
     id("io.micronaut.application") version "{{versions.micronaut_application.value}}"
-    {{/client.micronaut-low-level}}
+    {{/client.micronaut}}
     id("io.specgen.kotlin.gradle") version "{{versions.specgen.value}}"
 }
 
@@ -19,7 +19,7 @@ dependencies {
     {{#client.okhttp}}
     implementation("com.squareup.okhttp3:okhttp:{{versions.okhttp.value}}")
     {{/client.okhttp}}
-    {{#client.micronaut-low-level}}
+    {{#client.micronaut}}
     kapt("io.micronaut:micronaut-http-validation")
     implementation("io.micronaut:micronaut-http-client")
     {{#jsonlib.jackson}}
@@ -29,7 +29,7 @@ dependencies {
     implementation("io.micronaut:micronaut-validation")
     implementation("io.micronaut.kotlin:micronaut-kotlin-runtime")
     implementation("jakarta.annotation:jakarta.annotation-api")
-    {{/client.micronaut-low-level}}
+    {{/client.micronaut}}
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     {{#jsonlib.jackson}}
@@ -42,6 +42,10 @@ dependencies {
     implementation("com.squareup.moshi:moshi-kotlin:{{versions.moshi.value}}")
     {{/jsonlib.moshi}}
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:{{versions.log4j.value}}")
+    {{#tests.value}}
+    testImplementation(kotlin("test"))
+    testImplementation("org.assertj:assertj-core:{{versions.assertj.value}}")
+    {{/tests.value}}
 }
 
 specgen {
@@ -52,3 +56,9 @@ specgen {
         specFile.set(file("spec.yaml"))
     }
 }
+
+{{#tests.value}}
+tasks.test {
+    useJUnitPlatform()
+}
+{{/tests.value}}

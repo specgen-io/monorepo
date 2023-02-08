@@ -1,13 +1,12 @@
-package test_client
+package theclient
 
 import org.assertj.core.api.Assertions.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import test_client.clients.echo.*
-import test_client.models.*
+import theclient.clients.echo.*
+import theclient.models.*
 import java.math.BigDecimal
-import java.time.LocalDate
-import java.time.LocalDateTime
+import java.time.*
 import java.util.*
 
 class EchoClientTest {

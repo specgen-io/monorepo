@@ -1,0 +1,6 @@
+{
+  "build": "gradle-kotlin",
+  "client": "micronaut",
+  "jsonlib": "jackson",
+  "tests": true
+}

@@ -1,9 +1,9 @@
-package test_client
+package theclient
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import test_client.v2.clients.echo.*
-import test_client.v2.models.*
+import theclient.v2.clients.echo.*
+import theclient.v2.models.*
 
 class EchoClientV2Test {
     private val client = EchoClient("http://localhost:8081")

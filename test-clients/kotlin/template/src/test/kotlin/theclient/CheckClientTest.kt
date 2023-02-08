@@ -1,12 +1,12 @@
-package test_client
+package theclient
 
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import test_client.clients.check.CheckClient
-import test_client.errors.*
-import test_client.errors.models.*
-import test_client.models.*
+import theclient.clients.check.CheckClient
+import theclient.errors.*
+import theclient.errors.models.*
+import theclient.models.*
 
 class CheckClientTest {
     private val client = CheckClient("http://localhost:8081")

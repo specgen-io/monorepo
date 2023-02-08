@@ -9,13 +9,13 @@
     <packaging>jar</packaging>
     <version>1.0-SNAPSHOT</version>
 
-    {{#client.micronaut-low-level}}
+    {{#client.micronaut}}
     <parent>
         <groupId>io.micronaut</groupId>
         <artifactId>micronaut-parent</artifactId>
         <version>{{versions.micronaut.value}}</version>
     </parent>
-    {{/client.micronaut-low-level}}
+    {{/client.micronaut}}
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -23,9 +23,9 @@
         <kotlin.version>{{versions.kotlin.value}}</kotlin.version>
         <java.version>{{versions.java.value}}</java.version>
         <specgen.version>{{versions.specgen.value}}</specgen.version>
-        {{#client.micronaut-low-level}}
+        {{#client.micronaut}}
         <micronaut.version>{{versions.micronaut.value}}</micronaut.version>
-        {{/client.micronaut-low-level}}
+        {{/client.micronaut}}
         {{#client.okhttp}}
         <okhttp.version>{{versions.okhttp.value}}</okhttp.version>
         {{/client.okhttp}}
@@ -52,7 +52,7 @@
             <version>${kotlin.version}</version>
             <scope>compile</scope>
         </dependency>
-        {{#client.micronaut-low-level}}
+        {{#client.micronaut}}
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-inject</artifactId>
@@ -80,7 +80,7 @@
             <artifactId>jakarta.annotation-api</artifactId>
             <scope>compile</scope>
         </dependency>
-        {{/client.micronaut-low-level}}
+        {{/client.micronaut}}
         {{#client.okhttp}}
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
@@ -134,7 +134,7 @@
                     <release>${java.version}</release>
                 </configuration>
             </plugin>
-            {{#client.micronaut-low-level}}
+            {{#client.micronaut}}
             <plugin>
                 <groupId>io.micronaut.build</groupId>
                 <artifactId>micronaut-maven-plugin</artifactId>
@@ -202,7 +202,7 @@
                     </dependency>
                 </dependencies>
             </plugin>
-            {{/client.micronaut-low-level}}
+            {{/client.micronaut}}
             <plugin>
                 <groupId>io.specgen</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
