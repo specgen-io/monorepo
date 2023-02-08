@@ -56,3 +56,9 @@ specgen {
         specFile.set(file("spec.yaml"))
     }
 }
+
+{{#tests.value}}
+tasks.test {
+    useJUnitPlatform()
+}
+{{/tests.value}}
