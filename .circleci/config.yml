@@ -864,6 +864,8 @@ jobs:
       - image: circleci/openjdk:11-jdk
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - run:
           name: Create temp folder for tests results
           command: mkdir -p /tmp/test-results
