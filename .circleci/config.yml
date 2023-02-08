@@ -853,6 +853,48 @@ jobs:
           paths:
             - ~/.m2          
 
+  client-java2:
+    parameters:
+      values-file:
+        type: string
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Create temp folder for tests results
+          command: mkdir -p /tmp/test-results
+      - get-rendr
+      - run:
+          name: Copy spec.yaml
+          command: |
+            cd test-clients
+            cp ./spec.yaml ./java/template/spec.yaml
+      - run:
+          name: Generate client
+          command: |
+            export THE_ROOT=./test-clients/java
+            ./rendr file:///./templates/client-java --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - restore_cache:
+          key: java-<<parameters.values-file>>
+      - start-service:
+          port: 8081
+      - yaml-execute:
+          path: ./test-clients/java/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - save_cache:
+          key: java-<<parameters.values-file>>
+          paths: [ ~/.m2 ]
+
   client-kotlin:
     parameters:
       values-file:
@@ -1716,6 +1758,12 @@ workflows:
           name: client-test-service-java
           context: specgen
           requires: [java-build]
+      - client-java2:
+          matrix:
+            parameters:
+              values-file: ["okhttp-jackson", "okhttp-moshi", "micronaut-jackson"]
+          context: specgen
+          requires: [client-test-service-java]
       - client-java-okhttp-jackson:
           context: specgen
           requires: [client-test-service-java]
