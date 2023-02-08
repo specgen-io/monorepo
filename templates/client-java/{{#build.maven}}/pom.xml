@@ -22,6 +22,10 @@
         {{/jsonlib.moshi}}
         <okhttp.version>{{versions.okhttp.value}}</okhttp.version>
         <log4j.version>{{versions.log4j.value}}</log4j.version>
+        {{#tests.value}}
+        <junit.version>{{versions.junit.value}}</junit.version>
+        <maven-test-plugins.version>{{versions.maven-test-plugins.value}}</maven-test-plugins.version>
+        {{/tests.value}}        
     </properties>
 
     <dependencies>
