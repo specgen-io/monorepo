@@ -74,6 +74,20 @@
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>${log4j.version}</version>
         </dependency>
+        {{#tests.value}}
+        <dependency>
+            <groupId>org.skyscreamer</groupId>
+            <artifactId>jsonassert</artifactId>
+            <version>{{versions.jsonassert.value}}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        {{/tests.value}}
     </dependencies>
 
     <build>
@@ -86,6 +100,16 @@
                     <release>${java.version}</release>
                 </configuration>
             </plugin>
+            {{#tests.value}}
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-test-plugins.version}</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${maven-test-plugins.version}</version>
+            </plugin>
+            {{/tests.value}}
             <plugin>
                 <groupId>io.specgen</groupId>
                 <artifactId>java-maven-plugin</artifactId>
