@@ -144,7 +144,7 @@ test('optional fields: encode + decode null values', function() {
 })
 
 test('optional fields: encode + decode undefined values', function() {
-  let decoded: OptionalFields = {int_option_field: undefined, string_option_field: undefined}
+  let decoded: OptionalFields = {}
   let encoded = {}
   checkEncodeDecode(TOptionalFields, decoded, encoded)
 })
