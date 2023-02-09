@@ -22,7 +22,7 @@ import {
   OrderEventWrapper,
   TOrderEventWrapper,
   OrderEventDiscriminator,
-  TOrderEventDiscriminator,
+  TOrderEventDiscriminator
 } from '../test-service/models';
 
 describe('object', function() {
@@ -39,7 +39,7 @@ describe('enum fields', function() {
   let encoded = {'enum_field': 'Three'}
   checkEncodeDecode(TEnumFields, decoded, encoded)
   it('decode fail', function() {
-    expect(() => t.decode(TEnumFields, {})).toThrowError()
+    expect(() => t.decode(TEnumFields, {})).toThrowError('Decoding failed')
   })
 });
 
@@ -54,7 +54,7 @@ describe('nested types', function() {
   }
   checkEncodeDecode(TParent, decoded, encoded)
   it('decode fail', function() {
-    expect(() => t.decode(TParent, {})).toThrowError();
+    expect(() => t.decode(TParent, {})).toThrowError('Decoding failed');
   })
 });
 
@@ -75,7 +75,7 @@ describe('numeric fields', function() {
   }
   checkEncodeDecode(TNumericFields, decoded, encoded)
   it('decode fail', function() {
-    expect(() => t.decode(TNumericFields, {})).toThrowError();
+    expect(() => t.decode(TNumericFields, {})).toThrowError('Decoding failed');
 
   })
 });
@@ -147,20 +147,17 @@ describe('optional fields null', function() {
 });
 
 describe('optional fields missing', function() {
-  let decoded: OptionalFields = {
-    int_option_field: undefined,
-    string_option_field: undefined,
-  }
+  let decoded: OptionalFields = {}
   let encoded = {}
   checkEncodeDecode(TOptionalFields, decoded, encoded)
 });
 
-describe('oneof type - wrapped', function() {
+describe('oneof types - wrapped', function() {
   let decoded: OrderEventWrapper = { changed: { id: 'id123', quantity: 123 } }
   let encoded = { changed: {id: 'id123', quantity: 123} }
   checkEncodeDecode(TOrderEventWrapper, decoded, encoded)
   it('decode breaks', function() {
-    expect(() => t.decode(TOrderEventWrapper, { created: {} })).toThrowError();
+    expect(() => t.decode(TOrderEventWrapper, { created: {} })).toThrowError('Decoding failed');
   })
 });
 
@@ -169,6 +166,6 @@ describe('oneof type - discriminated', function() {
   let encoded = { _type: 'changed', id: 'id123', quantity: 123 }
   checkEncodeDecode(TOrderEventDiscriminator, decoded, encoded)
   it('decode breaks', function() {
-    expect(() => t.decode(TOrderEventDiscriminator, { _type: 'changed' })).toThrowError('Expected the value to satisfy a union');
+    expect(() => t.decode(TOrderEventDiscriminator, { _type: 'changed' })).toThrowError('Decoding failed');
   })
 });
