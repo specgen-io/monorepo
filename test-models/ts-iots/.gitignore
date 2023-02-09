@@ -1,3 +1,5 @@
 node_modules
 junit.xml
 test-service/
+dist/
+.vscode/
