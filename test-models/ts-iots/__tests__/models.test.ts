@@ -1,6 +1,9 @@
 import * as t from '../test-service/io-ts'
 import { checkEncodeDecode, datetime } from './util'
 
+import { test } from 'uvu'
+import * as assert from 'uvu/assert'
+
 import {
   TMessage,
   Message,
@@ -25,40 +28,38 @@ import {
   TOrderEventDiscriminator
 } from '../test-service/models';
 
-describe('object', function() {
+
+test('object: encode + decode', function() {
   let decoded: Message = {field: 123}
   let encoded = {'field': 123}
   checkEncodeDecode(TMessage, decoded, encoded)
-  it('decode breaks', function() {
-    expect(() => t.decode(TMessage, {})).toThrow();
-  })
-});
+})
 
-describe('enum fields', function() {
+test('object: decode missing required fields', function() {
+  assert.throws(() => t.decode(TMessage, {}))
+})
+
+test('enum fields: encode + decode', function() {
   let decoded: EnumFields = {enum_field: Choice.THIRD_CHOICE}
   let encoded = {'enum_field': 'Three'}
   checkEncodeDecode(TEnumFields, decoded, encoded)
-  it('decode fail', function() {
-    expect(() => t.decode(TEnumFields, {})).toThrowError('Decoding failed')
-  })
-});
+})
 
-describe('nested types', function() {
-  let decoded: Parent = {
-    'field': 'the string',
-    'nested': {'field': 123}
-  }
-  let encoded = {
-    'field': 'the string',
-    'nested': {'field': 123}
-  }
+test('enum fields: decode no required fields', function() {
+  assert.throws(() => t.decode(TEnumFields, {}))
+})
+
+test('nested object: encode + decode', function() {
+  let decoded: Parent = {'field': 'the string', 'nested': {'field': 123}}
+  let encoded = {'field': 'the string', 'nested': {'field': 123}}
   checkEncodeDecode(TParent, decoded, encoded)
-  it('decode fail', function() {
-    expect(() => t.decode(TParent, {})).toThrowError('Decoding failed');
-  })
-});
+})
 
-describe('numeric fields', function() {
+test('nested object: required is missing', function() {
+  assert.throws(() => t.decode(TParent, {'field': 'the string'}))
+})
+
+test('numeric fields: encode + decode', function() {
   let decoded: NumericFields = {
     int_field: 123,
     long_field: 123,
@@ -74,13 +75,9 @@ describe('numeric fields', function() {
     decimal_field: 12.3,
   }
   checkEncodeDecode(TNumericFields, decoded, encoded)
-  it('decode fail', function() {
-    expect(() => t.decode(TNumericFields, {})).toThrowError('Decoding failed');
+})
 
-  })
-});
-
-describe('non numeric fields', function() {
+test('non numeric fields: encode + decode', function() {
   let decoded: NonNumericFields = {
     boolean_field: true,
     string_field: 'some string',
@@ -96,9 +93,9 @@ describe('non numeric fields', function() {
     datetime_field: '2021-01-02T04:54:00',
   }
   checkEncodeDecode(TNonNumericFields, decoded, encoded)
-});
+})
 
-describe('array fields', function() {
+test('array fields: encode + decode', function() {
   let decoded: ArrayFields = {
     int_array_field: [1, 2, 3],
     string_array_field: ['one', 'two', 'three'],
@@ -108,9 +105,9 @@ describe('array fields', function() {
     string_array_field: ['one', 'two', 'three'],
   }
   checkEncodeDecode(TArrayFields, decoded, encoded)
-});
+})
 
-describe('map fields', function() {
+test('map fields: encode + decode', function() {
   let decoded: MapFields = {
     int_map_field: {'one': 1, 'two': 2, 'three': 3},
     string_map_field: {'one': 'first', 'two': 'second', 'three': 'third'},
@@ -120,9 +117,9 @@ describe('map fields', function() {
     string_map_field: {'one': 'first', 'two': 'second', 'three': 'third'},
   }
   checkEncodeDecode(TMapFields, decoded, encoded)
-});
+})
 
-describe('optional fields', function() {
+test('optional fields: encode + decode', function() {
   let decoded: OptionalFields = {
     int_option_field: 123,
     string_option_field: 'the string',
@@ -132,9 +129,9 @@ describe('optional fields', function() {
     string_option_field: 'the string',
   }
   checkEncodeDecode(TOptionalFields, decoded, encoded)
-});
+})
 
-describe('optional fields null', function() {
+test('optional fields: encode + decode null values', function() {
   let decoded: OptionalFields = {
     int_option_field: null,
     string_option_field: null,
@@ -144,28 +141,32 @@ describe('optional fields null', function() {
     string_option_field: null,
   }
   checkEncodeDecode(TOptionalFields, decoded, encoded)
-});
+})
 
-describe('optional fields missing', function() {
+test('optional fields: encode + decode undefined values', function() {
   let decoded: OptionalFields = {}
   let encoded = {}
   checkEncodeDecode(TOptionalFields, decoded, encoded)
-});
+})
 
-describe('oneof types', function() {
-  let decoded: OrderEventWrapper = { changed: { id: '123e4567-e89b-12d3-a456-426655440000', quantity: 123 } }
-  let encoded = { changed: {id: '123e4567-e89b-12d3-a456-426655440000', quantity: 123} }
+test('oneof wrapped: encode + decode', function() {
+  let decoded: OrderEventWrapper = { changed: { id: 'id123', quantity: 123 } }
+  let encoded = { changed: {id: 'id123', quantity: 123} }
   checkEncodeDecode(TOrderEventWrapper, decoded, encoded)
-  it('decode breaks', function() {
-    expect(() => t.decode(TOrderEventWrapper, { created: {} })).toThrowError('Decoding failed');
-  })
-});
+})
 
-describe('oneof type - discriminated', function() {
-  let decoded: OrderEventDiscriminator = { _type: 'changed', id: '123e4567-e89b-12d3-a456-426655440000', quantity: 123 }
-  let encoded = { _type: 'changed', id: '123e4567-e89b-12d3-a456-426655440000', quantity: 123 }
+test('oneof wrapped: missing all fields', function() {
+  assert.throws(() => t.decode(TOrderEventWrapper, { created: {} }))
+})
+
+test('oneof discriminator: encode + decode', function() {
+  let decoded: OrderEventDiscriminator = { _type: 'changed', id: 'id123', quantity: 123 }
+  let encoded = { _type: 'changed', id: 'id123', quantity: 123 }
   checkEncodeDecode(TOrderEventDiscriminator, decoded, encoded)
-  it('decode breaks', function() {
-    expect(() => t.decode(TOrderEventDiscriminator, { _type: 'changed' })).toThrowError('Decoding failed');
-  })
-});
+})
+
+test('oneof discriminator: missing all fields', function() {
+  assert.throws(() => t.decode(TOrderEventDiscriminator, { _type: 'changed' }))
+})
+
+test.run()
