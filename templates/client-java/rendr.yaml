@@ -23,7 +23,7 @@ args:
   client:
     type: string
     description: client library
-    values: [okhttp]
+    values: [okhttp, micronaut]
     default: okhttp
   jsonlib:
     type: string
@@ -69,6 +69,12 @@ args:
       junit:
         type: string
         default: 5.9.1
+      micronaut:
+        type: string
+        default: 3.6.0
+      micronaut_application:
+        type: string
+        default: 3.6.7  
       assertj:
         type: string
         default: 3.23.1
