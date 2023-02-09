@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-{{#client.okhttp}}
+    {{#client.okhttp}}
     implementation("com.squareup.okhttp3:okhttp:{{versions.okhttp.value}}")
     {{/client.okhttp}}
     {{#client.micronaut}}
