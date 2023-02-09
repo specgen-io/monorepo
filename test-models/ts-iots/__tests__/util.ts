@@ -2,7 +2,7 @@ import * as t from '../test-service/io-ts'
 
 import * as assert from 'uvu/assert'
 
-export const checkEncodeDecode = <T>(theType: t.Struct<T, unknown>, decoded: T, encoded: unknown) => {
+export const checkEncodeDecode = <A, O, I>(theType: t.Type<A, O, I>, decoded: A, encoded: I) => {
   let encodedActual = t.encode(theType, decoded)
   assert.equal(encoded, encodedActual)
   let decodedActual = t.decode(theType, encoded)
