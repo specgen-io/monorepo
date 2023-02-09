@@ -1,12 +1,12 @@
 import * as t from '../test-service/superstruct'
 
+import * as assert from 'uvu/assert'
+
 export const checkEncodeDecode = <T>(theType: t.Struct<T, unknown>, decoded: T, encoded: unknown) => {
-  it('encode', function() {
-    expect(t.encode(theType, decoded)).toStrictEqual(encoded);
-  })
-  it('decode', function() {
-    expect(t.decode(theType, encoded)).toStrictEqual(decoded);
-  })
+  let encodedActual = t.encode(theType, decoded)
+  assert.equal(encoded, encodedActual)
+  let decodedActual = t.decode(theType, encoded)
+  assert.equal(decoded, decodedActual)
 }
 
 export function datetime(year: number, month: number, date: number, hours: number, minutes: number, seconds: number): Date {
