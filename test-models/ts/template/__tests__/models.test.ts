@@ -1,4 +1,4 @@
-import * as t from '../src/spec/superstruct'
+import * as t from '../src/spec/{{validation.value}}'
 import { checkEncodeDecode, datetime } from './util'
 
 import { test } from 'uvu'
