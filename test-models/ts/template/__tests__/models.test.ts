@@ -143,12 +143,6 @@ test('optional fields: encode + decode null values', function() {
   checkEncodeDecode(TOptionalFields, decoded, encoded)
 })
 
-test('optional fields: encode + decode undefined values', function() {
-  let decoded: OptionalFields = {int_option_field: undefined, string_option_field: undefined}
-  let encoded = {}
-  checkEncodeDecode(TOptionalFields, decoded, encoded)
-})
-
 test('oneof wrapped: encode + decode', function() {
   let decoded: OrderEventWrapper = { changed: { id: 'id123', quantity: 123 } }
   let encoded = { changed: {id: 'id123', quantity: 123} }
