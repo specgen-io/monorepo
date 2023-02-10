@@ -544,76 +544,49 @@ jobs:
             - ~/test-models-ruby/ruby/vendor/bundle
       - store_test_results:
           path: ./test-models/ruby/test-results
-  models-ts-superstruct:
+
+  models-ts:
+    parameters:
+      values-file:
+        type: string
     environment:
-      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
-    working_directory: ~/test-models-superstruct
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
     docker:
       - image: cimg/node:16.8.0
     steps:
       - checkout
+      - get-rendr
+      - run:
+          name: Copy spec.yaml
+          command: cp ./test-models/spec.yaml ./test-models/ts/template/spec.yaml
+      - run:
+          name: Generate models
+          command: |
+            export THE_ROOT=./test-models/ts
+            ./rendr file:///./templates/models-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
           scope: specgen.io
       - run:
-          name: Setup npm
+          name: Setup project for testing
           command: |
-            cd ./test-models/ts-superstruct
+            cd ./test-models/ts/out
+            npm uninstall specgen.io            
             npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+            npm install tsm --save-dev
+            npm install uvu --save-dev
       - restore_cache:
-          keys:
-            - cache-{{ checksum "./test-models/ts-superstruct/package.json" }}
-      - run:
-          name: Test Superstruct models
-          command: |
-            cd ./test-models/ts-superstruct
-            npm install
-            npm run specgen
-            mkdir -p ./test-results
-            export JEST_JUNIT_OUTPUT_DIR=./test-results
-            npm run test
+          key: models-ts-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./test-models/ts/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
       - save_cache:
-          key: cache-{{ checksum "./test-models/ts-superstruct/package.json" }}
-          paths:
-            - ~/test-models-superstruct/ts-superstruct/node_modules
-      - store_test_results:
-          path: ./test-models/ts-superstruct/test-results
-  models-ts-iots:
-    environment:
-      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
-    working_directory: ~/test-models-iots
-    docker:
-      - image: cimg/node:16.8.0
-    steps:
-      - checkout
-      - artifactory/setup-npm:
-          jfrog-server-url: specgen.jfrog.io
-          repo-name: npm
-          scope: specgen.io
-      - run:
-          name: Setup npm
-          command: |
-            cd ./test-models/ts-iots
-            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
-      - restore_cache:
-          keys:
-            - cache-{{ checksum "./test-models/ts-iots/package.json" }}
-      - run:
-          name: Test Iots models
-          command: |
-            cd ./test-models/ts-iots
-            npm install
-            npm run specgen
-            mkdir -p ./test-results
-            export JEST_JUNIT_OUTPUT_DIR=./test-results
-            npm run test
-      - save_cache:
-          key: cache-{{ checksum "./test-models/ts-iots/package.json" }}
-          paths:
-            - ~/test-models-iots/ts-iots/node_modules
-      - store_test_results:
-          path: ./test-models/ts-iots/test-results
+          key: models-ts-<<parameters.values-file>>
+          paths: [ ~/specgen-tests/test-models/ts/out/node_modules ]
+
   models-scala-circe:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
@@ -1766,10 +1739,10 @@ workflows:
       - placeholder:
           name: typescript-build
           requires: [npm-typescript]
-      - models-ts-superstruct:
-          context: specgen
-          requires: [typescript-build]
-      - models-ts-iots:
+      - models-ts:
+          matrix:
+            parameters:
+              values-file: ["superstruct", "iots"]
           context: specgen
           requires: [typescript-build]
       - service-tests:
@@ -1800,8 +1773,7 @@ workflows:
       - placeholder:
           name: completed-typescript
           requires:
-            - models-ts-superstruct
-            - models-ts-iots
+            - models-ts
             - service-typescript
             - client-ts-axios-superstruct
             - client-ts-axios-iots

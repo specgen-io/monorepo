@@ -1,0 +1,5 @@
+build: |
+  npm install
+  npm run specgen
+  npm run build
+  npm run env -- uvu -r tsm

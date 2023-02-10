@@ -1,0 +1,9 @@
+spec: 2.1                    #  Meta information
+name: {{project.value}}
+version: 1
+
+models:                      #  Models
+  Sample:                    #  Model name
+    object:                  #  This model is object model
+      field1: string
+      field2: int
