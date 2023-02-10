@@ -1807,7 +1807,7 @@ workflows:
       - client-ts2:
           matrix:
             parameters:
-              values-file: ["axios-superstruct"]
+              values-file: ["axios-superstruct", "axios-iots", "node-fetch-superstruct"]
           context: specgen
           requires: [client-test-service-typescript]
       - client-ts-axios-superstruct:
