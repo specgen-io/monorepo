@@ -7,14 +7,6 @@ args:
     type: string
     description: project name
     default: the-client
-  build:
-    type: string
-    description: build system
-    default: npm
-  groupid:
-    type: string
-    description: project group id
-    default: com.company
   client:
     type: string
     description: client library
