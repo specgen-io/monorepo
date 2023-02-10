@@ -1,4 +1,4 @@
-import * as t from '../test-service/io-ts'
+import * as t from '../src/spec/io-ts'
 
 import * as assert from 'uvu/assert'
 

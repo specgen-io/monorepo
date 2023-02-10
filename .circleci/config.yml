@@ -1812,7 +1812,7 @@ workflows:
       - models-ts2:
           matrix:
             parameters:
-              values-file: ["superstruct", "io-ts"]
+              values-file: ["superstruct", "iots"]
           context: specgen
           requires: [typescript-build]
       - models-ts-superstruct:
