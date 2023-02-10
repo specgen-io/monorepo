@@ -932,6 +932,10 @@ jobs:
       - image: cimg/node:16.8.0
     steps:
       - checkout
+      - attach_workspace:
+          at: .
+      - start-service:
+          port: 8081
       - get-rendr
       - run:
           name: Copy spec.yaml
