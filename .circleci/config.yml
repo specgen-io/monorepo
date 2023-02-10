@@ -921,6 +921,48 @@ jobs:
             - ~/.sbt
             - ~/.ivy2
 
+  client-ts2:
+    parameters:
+      values-file:
+        type: string
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - get-rendr
+      - run:
+          name: Copy spec.yaml
+          command: cp ./test-clients/spec.yaml ./test-clients/ts/template/spec.yaml
+      - run:
+          name: Generate models
+          command: |
+            export THE_ROOT=./test-clients/ts
+            ./rendr file:///./templates/client-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+          scope: specgen.io
+      - run:
+          name: Setup project for testing
+          command: |
+            cd ./test-clients/ts/out
+            npm uninstall specgen.io            
+            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+            npm install tsm --save-dev
+            npm install uvu --save-dev
+      - restore_cache:
+          key: client-ts-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./test-clients/ts/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - save_cache:
+          key: client-ts-<<parameters.values-file>>
+          paths: [ ~/specgen-tests/test-clients/ts/out/node_modules ]
+
   client-ts-axios-superstruct:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
@@ -1754,6 +1796,12 @@ workflows:
               values-file: ["express-superstruct", "express-iots", "koa-superstruct", "koa-iots"]
           context: specgen
           requires: [service-tests-typescript]
+      - client-ts2:
+          matrix:
+            parameters:
+              values-file: ["axios-superstruct"]
+          context: specgen
+          requires: [typescript-build]
       - client-test-service:
           name: client-test-service-typescript
           context: specgen
