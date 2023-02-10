@@ -1,4 +1,4 @@
-import * as t from '../src/spec/superstruct'
+import * as t from '../test-service/superstruct'
 
 import * as assert from 'uvu/assert'
 
