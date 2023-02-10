@@ -1796,16 +1796,16 @@ workflows:
               values-file: ["express-superstruct", "express-iots", "koa-superstruct", "koa-iots"]
           context: specgen
           requires: [service-tests-typescript]
+      - client-test-service:
+          name: client-test-service-typescript
+          context: specgen
+          requires: [typescript-build]
       - client-ts2:
           matrix:
             parameters:
               values-file: ["axios-superstruct"]
           context: specgen
-          requires: [typescript-build]
-      - client-test-service:
-          name: client-test-service-typescript
-          context: specgen
-          requires: [typescript-build]
+          requires: [client-test-service-typescript]
       - client-ts-axios-superstruct:
           context: specgen
           requires: [client-test-service-typescript]
