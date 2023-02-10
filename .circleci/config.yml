@@ -643,6 +643,7 @@ jobs:
           name: Setup project for testing
           command: |
             cd ./test-models/ts/out
+            npm uninstall specgen.io            
             npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
             npm install tsm --save-dev
             npm install uvu --save-dev
