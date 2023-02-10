@@ -1,10 +1,10 @@
-import {client} from '../test-service/check'
-import {BadRequestException, ConflictException, ForbiddenException} from '../test-service/errors'
+import {client} from '../src/spec/check'
+import {BadRequestException, ConflictException, ForbiddenException} from '../src/spec/errors'
 
 import { test } from 'uvu'
 import * as assert from './assert'
 
-const checkClient = client({baseURL: process.env.SERVICE_URL!})
+const checkClient = client({baseURL: process.env.SERVICE_URL!, timeout: 20000})
 
 test('checkEmpty', async function() {
   assert.not.throws(async () => {

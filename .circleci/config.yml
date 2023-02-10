@@ -921,9 +921,12 @@ jobs:
             - ~/.sbt
             - ~/.ivy2
 
-  client-ts-axios-superstruct:
+  client-ts:
+    parameters:
+      values-file:
+        type: string
     environment:
-      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/node:16.8.0
@@ -933,166 +936,36 @@ jobs:
           at: .
       - start-service:
           port: 8081
+      - get-rendr
+      - run:
+          name: Copy spec.yaml
+          command: cp ./test-clients/spec.yaml ./test-clients/ts/template/spec.yaml
+      - run:
+          name: Generate models
+          command: |
+            export THE_ROOT=./test-clients/ts
+            ./rendr file:///./templates/client-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
           scope: specgen.io
       - run:
-          name: Setup npm
+          name: Setup project for testing
           command: |
-            cd ./test-clients/ts-axios-superstruct
+            cd ./test-clients/ts/out
+            npm uninstall specgen.io            
             npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+            npm install tsm --save-dev
+            npm install uvu --save-dev
       - restore_cache:
-          keys:
-            - cache-{{ checksum "./test-clients/ts-axios-superstruct/package.json" }}
-      - run:
-          name: Test axios client
-          command: |
-            cd ./test-clients/ts-axios-superstruct
-            npm install
-            npm run specgen
-            export SERVICE_URL=http://localhost:8081
-            mkdir -p ./test-results
-            export JEST_JUNIT_OUTPUT_DIR=./test-results
-            npm run test
+          key: client-ts-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./test-clients/ts/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
       - save_cache:
-          key: cache-{{ checksum "./test-clients/ts-axios-superstruct/package.json" }}
-          paths:
-            - ~/specgen-tests/ts-axios-superstruct/node_modules
-      - store_test_results:
-          path: ./test-clients/ts-axios-superstruct/test-results
-
-  client-ts-node-fetch-superstruct:
-    environment:
-      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
-    working_directory: ~/specgen-tests
-    docker:
-      - image: cimg/node:16.8.0
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - start-service:
-          port: 8081
-      - artifactory/setup-npm:
-          jfrog-server-url: specgen.jfrog.io
-          repo-name: npm
-          scope: specgen.io
-      - run:
-          name: Setup npm
-          command: |
-            cd ./test-clients/ts-node-fetch-superstruct
-            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
-      - restore_cache:
-          keys:
-            - cache-{{ checksum "./test-clients/ts-node-fetch-superstruct/package.json" }}
-      - run:
-          name: Test fetch client
-          command: |
-            cd ./test-clients/ts-node-fetch-superstruct
-            npm install
-            npm run specgen
-            export SERVICE_URL=http://localhost:8081
-            mkdir -p ./test-results
-            export JEST_JUNIT_OUTPUT_DIR=./test-results
-            npm run test
-      - save_cache:
-          key: cache-{{ checksum "./test-clients/ts-node-fetch-superstruct/package.json" }}
-          paths:
-            - ~/specgen-tests/ts-node-fetch-superstruct/node_modules
-      - store_test_results:
-          path: ./test-clients/ts-node-fetch-superstruct/test-results
-
-  client-ts-browser-fetch-superstruct:
-    environment:
-      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
-    working_directory: ~/specgen-tests
-    docker:
-      - image: cimg/node:16.8.0
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - start-service:
-          port: 8081
-      - artifactory/setup-npm:
-          jfrog-server-url: specgen.jfrog.io
-          repo-name: npm
-          scope: specgen.io
-      - run:
-          name: Setup npm
-          command: |
-            cd ./test-clients/ts-browser-fetch-superstruct
-            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
-      - restore_cache:
-          keys:
-            - cache-{{ checksum "./test-clients/ts-browser-fetch-superstruct/package.json" }}
-      - run:
-          name: Build code
-          command: |
-            cd ./test-clients/ts-browser-fetch-superstruct
-            npm install
-            npm run specgen
-            npm run build
-      - run:
-          name: Run browser
-          command: |
-            cd ./test-clients/ts-browser-fetch-superstruct
-            npm run start
-          background: true
-      - wait-url:
-          url: http://localhost:8082/
-      - run:
-          name: Test fetch client
-          command: |
-            cd ./test-clients/ts-browser-fetch-superstruct
-            export SERVICE_URL=http://localhost:8081
-            npm run test
-      - save_cache:
-          key: cache-{{ checksum "./test-clients/ts-browser-fetch-superstruct/package.json" }}
-          paths:
-            - ~/specgen-tests/ts-browser-fetch-superstruct/node_modules
-
-  client-ts-axios-iots:
-    environment:
-      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
-    working_directory: ~/specgen-tests
-    docker:
-      - image: cimg/node:16.8.0
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - start-service:
-          port: 8081
-      - artifactory/setup-npm:
-          jfrog-server-url: specgen.jfrog.io
-          repo-name: npm
-          scope: specgen.io
-      - run:
-          name: Setup npm
-          command: |
-            cd ./test-clients/ts-axios-iots
-            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
-      - restore_cache:
-          keys:
-            - cache-{{ checksum "./ts-axios-iots/package.json" }}
-      - run:
-          name: Test axios client
-          command: |
-            cd ./test-clients/ts-axios-iots
-            npm install
-            npm run specgen
-            export SERVICE_URL=http://localhost:8081
-            mkdir -p ./test-results
-            export JEST_JUNIT_OUTPUT_DIR=./test-results
-            npm run test
-      - save_cache:
-          key: cache-{{ checksum "./ts-axios-iots/package.json" }}
-          paths:
-            - ~/specgen-tests/ts-axios-iots/node_modules
-      - store_test_results:
-          path: ./test-clients/ts-axios-iots/test-results
+          key: client-ts-<<parameters.values-file>>
+          paths: [ ~/specgen-tests/test-clients/ts/out/node_modules ]
 
   service-tests:
     docker:
@@ -1758,16 +1631,10 @@ workflows:
           name: client-test-service-typescript
           context: specgen
           requires: [typescript-build]
-      - client-ts-axios-superstruct:
-          context: specgen
-          requires: [client-test-service-typescript]
-      - client-ts-axios-iots:
-          context: specgen
-          requires: [client-test-service-typescript]
-      - client-ts-node-fetch-superstruct:
-          context: specgen
-          requires: [client-test-service-typescript]
-      - client-ts-browser-fetch-superstruct:
+      - client-ts:
+          matrix:
+            parameters:
+              values-file: ["axios-superstruct", "axios-iots", "node-fetch-superstruct"]
           context: specgen
           requires: [client-test-service-typescript]
       - placeholder:
@@ -1775,11 +1642,7 @@ workflows:
           requires:
             - models-ts
             - service-typescript
-            - client-ts-axios-superstruct
-            - client-ts-axios-iots
-            - client-ts-node-fetch-superstruct
-            - client-ts-browser-fetch-superstruct
-
+            - client-ts
 
       - ruby:
           context: specgen

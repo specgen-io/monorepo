@@ -1,10 +1,10 @@
-import {client} from '../test-service/echo'
-import {Message, Choice, Parameters, UrlParameters} from '../test-service/models'
+import {Message, Choice, Parameters, UrlParameters} from '../src/spec/models'
+import {client} from '../src/spec/echo'
 
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-const echoClient = client({baseURL: process.env.SERVICE_URL!})
+const echoClient = client({baseURL: process.env.SERVICE_URL!, timeout: 20000})
 
 test('echoBodyString', async function() {
   let body: string = "some text"

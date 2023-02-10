@@ -1,0 +1,6 @@
+build: |
+  npm install
+  npm run specgen
+  npm run build
+  export SERVICE_URL=http://localhost:8081
+  npm run env -- uvu -r tsm
