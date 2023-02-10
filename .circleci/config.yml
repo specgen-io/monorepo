@@ -614,6 +614,48 @@ jobs:
             - ~/test-models-iots/ts-iots/node_modules
       - store_test_results:
           path: ./test-models/ts-iots/test-results
+
+  models-ts2:
+    parameters:
+      values-file:
+        type: string
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - get-rendr
+      - run:
+          name: Copy spec.yaml
+          command: cp ./test-models/spec.yaml ./test-models/ts/template/spec.yaml
+      - run:
+          name: Generate models
+          command: |
+            export THE_ROOT=./test-models/ts
+            ./rendr file:///./templates/models-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+      - artifactory/setup-npm:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: npm
+          scope: specgen.io
+      - run:
+          name: Setup project for testing
+          command: |
+            cd ./test-models/ts/out
+            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+            npm install tsm --save-dev
+            npm install uvu --save-dev
+      - restore_cache:
+          key: models-ts-<<parameters.values-file>>
+      - yaml-execute:
+          path: ./test-models/ts/out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - save_cache:
+          key: models-ts-<<parameters.values-file>>
+          paths: [ ~/specgen-tests/test-models/ts/out/node_modules ]
+
   models-scala-circe:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
@@ -1766,6 +1808,12 @@ workflows:
       - placeholder:
           name: typescript-build
           requires: [npm-typescript]
+      - models-ts2:
+          matrix:
+            parameters:
+              values-file: ["superstruct", "io-ts"]
+          context: specgen
+          requires: [typescript-build]
       - models-ts-superstruct:
           context: specgen
           requires: [typescript-build]
