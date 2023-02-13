@@ -1423,15 +1423,6 @@ commands:
       - store_test_results:
           path: ./test-results
 
-  get-specgen:
-    steps:
-      - run:
-          name: Get specgen
-          command: |
-            curl -L -H "X-JFrog-Art-Api:${JFROG_PASS}" -O "https://specgen.jfrog.io/artifactory/binaries/specgen/v<<pipeline.parameters.specgen-version>>/specgen_linux_amd64.zip"
-            unzip -o specgen_linux_amd64.zip
-            ./specgen help
-
   get-rendr:
     steps:
       - run:
