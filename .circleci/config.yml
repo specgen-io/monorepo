@@ -45,11 +45,6 @@ jobs:
           root: .
           paths:
             - codegen/specgen/dist
-      - run:
-          name: Release
-          command: |
-            cd codegen/specgen
-            ./release.sh <<pipeline.parameters.specgen-version>> artifactory
 
   golang:
     docker:
