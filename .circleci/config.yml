@@ -194,30 +194,6 @@ jobs:
             - ~/.ivy2
             - ~/.m2
 
-  maven-java-sonatype:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - attach_workspace_folder:
-          folder: codegen/java
-          at: ./plugins/maven-java-specgen/src/main/resources
-      - restore_cache:
-          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
-      - setup-sonatype-maven
-      - run:
-          name: Deploy Maven plugin
-          command: |
-            cd ./plugins/maven-java-specgen
-            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml
-            export GPG_TTY=$(tty)
-            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true
-      - save_cache:
-          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
-          paths:
-            - ~/.ivy2
-            - ~/.m2
-
   gradle-java:
     docker:
       - image: circleci/openjdk:8-jdk
@@ -1036,6 +1012,30 @@ jobs:
           command: |
             go install github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>
             specgen --help
+
+  maven-java-sonatype:
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace_folder:
+          folder: codegen/java
+          at: ./plugins/maven-java-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
+      - setup-sonatype-maven
+      - run:
+          name: Deploy Maven plugin
+          command: |
+            cd ./plugins/maven-java-specgen
+            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml
+            export GPG_TTY=$(tty)
+            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true
+      - save_cache:
+          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
+          paths:
+            - ~/.ivy2
+            - ~/.m2
 
   maven-kotlin-sonatype:
     docker:
