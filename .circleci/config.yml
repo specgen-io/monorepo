@@ -847,11 +847,11 @@ jobs:
       - restore_cache:
           key: service-java-<<parameters.values-file>>
       - yaml-execute:
-          path: ./test-services/java/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - yaml-execute:
-          path: ./test-services/java/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .run
           background: true
@@ -888,15 +888,15 @@ jobs:
       - artifactory/setup-gradle-kotlin:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
-          project-path: ./test-services/kotlin/out
+          project-path: ./out
       - restore_cache:
           key: service-kotlin-<<parameters.values-file>>
       - yaml-execute:
-          path: ./test-services/kotlin/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - yaml-execute:
-          path: ./test-services/kotlin/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .run
           background: true
