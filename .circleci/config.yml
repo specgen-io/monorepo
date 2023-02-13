@@ -58,23 +58,6 @@ jobs:
             cd codegen/golang
             go build
 
-  golang-release:
-    docker:
-      - image: cimg/go:1.18.3
-    working_directory: ~/golang
-    steps:
-      - run:
-          name: Release vendored module
-          command: |
-            go install github.com/specgen-io/goven@v0.0.10
-            cd codegen/golang
-            goven release -name github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>> -out vendored
-      - run:
-          name: Check tool installation
-          command: |
-            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>
-            specgen-golang --help
-
   ruby:
     docker:
       - image: cimg/go:1.18.3
@@ -106,28 +89,6 @@ jobs:
             cd ./plugins/gem-specgen
             export VERSION=<<pipeline.parameters.specgen-version>>
             gem push specgen-$VERSION.gem --host https://specgen.jfrog.io/artifactory/api/gems/gems
-
-  gem-rubygems:
-    docker:
-      - image: circleci/ruby:2.4.9
-    steps:
-      - checkout
-      - attach_workspace_folder:
-          folder: codegen/ruby
-          at: ./plugins/gem-specgen/lib
-      - run:
-          name: Build gem
-          command: |
-            cd ./plugins/gem-specgen
-            export VERSION=<<pipeline.parameters.specgen-version>>
-            gem build specgen.gemspec
-      - setup-rubygems
-      - run:
-          name: Push gem
-          command: |
-            cd ./plugins/gem-specgen
-            export VERSION=<<pipeline.parameters.specgen-version>>
-            gem push --key rubygems specgen-$VERSION.gem
 
   scala:
     docker:
@@ -167,23 +128,6 @@ jobs:
             - ~/.ivy2
             - ~/.m2
 
-  sbt-sonatype:
-    docker:
-      - image: circleci/openjdk:8-jdk
-    steps:
-      - checkout
-      - attach_workspace_folder:
-          folder: codegen/scala
-          at: ./plugins/sbt-specgen/src/main/resources
-      - restore_cache:
-          key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
-      - setup-sonatype-sbt
-      - run:
-          name: Publish SBT plugin
-          command: |
-            cd ./plugins/sbt-specgen
-            sbt -Dversion=<<pipeline.parameters.specgen-version>> publishSigned sonatypeRelease
-
   typescript:
     docker:
       - image: cimg/go:1.18.3
@@ -211,26 +155,6 @@ jobs:
             npm version <<pipeline.parameters.specgen-version>>
             npm install
             npm publish
-
-  npm-npmjs:
-    docker:
-      - image: cimg/node:16.8.0
-    steps:
-      - checkout
-      - attach_workspace_folder:
-          folder: codegen/typescript
-          at: ./plugins/npm-specgen
-      - run:
-          name: npm publish package
-          command: |
-            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
-              cd ./plugins/npm-specgen
-              npm version <<pipeline.parameters.specgen-version>>
-              npm install
-              npm publish
-            else
-              echo "Will not release - not running on main branch"
-            fi
 
   java:
     docker:
@@ -321,25 +245,6 @@ jobs:
           key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
 
-  gradle-java-pluginportal:
-    docker:
-      - image: circleci/openjdk:8-jdk
-    steps:
-      - checkout
-      - attach_workspace_folder:
-          folder: codegen/java
-          at: ./plugins/gradle-java-specgen/src/main/resources
-      - restore_cache:
-          key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
-      - run:
-          name: Deploy Gradle Java plugin
-          command: |
-            cd ./plugins/gradle-java-specgen
-            ./gradlew publishPlugins --build-cache --no-daemon \
-            -Pgradle.publish.key=$GRADLE_PUBLISH_KEY \
-            -Pgradle.publish.secret=$GRADLE_PUBLISH_SECRET \
-            -Dproject.version=<<pipeline.parameters.specgen-version>>
-
   kotlin:
     docker:
       - image: cimg/go:1.18.3
@@ -379,30 +284,6 @@ jobs:
             - ~/.ivy2
             - ~/.m2
 
-  maven-kotlin-sonatype:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - attach_workspace_folder:
-          folder: codegen/kotlin
-          at: ./plugins/maven-kotlin-specgen/src/main/resources
-      - restore_cache:
-          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
-      - setup-sonatype-maven
-      - run:
-          name: Deploy Maven plugin
-          command: |
-            cd ./plugins/maven-kotlin-specgen
-            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml            
-            export GPG_TTY=$(tty)
-            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true
-      - save_cache:
-          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
-          paths:
-            - ~/.ivy2
-            - ~/.m2
-
   gradle-kotlin:
     docker:
       - image: circleci/openjdk:8-jdk
@@ -429,25 +310,6 @@ jobs:
       - save_cache:
           key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
           paths: [ ~/.gradle ]
-
-  gradle-kotlin-pluginportal:
-    docker:
-      - image: circleci/openjdk:8-jdk
-    steps:
-      - checkout
-      - attach_workspace_folder:
-          folder: codegen/kotlin
-          at: ./plugins/gradle-kotlin-specgen/src/main/resources
-      - restore_cache:
-          key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
-      - run:
-          name: Deploy Gradle Kotlin plugin
-          command: |
-            cd ./plugins/gradle-kotlin-specgen
-            ./gradlew publishPlugins --build-cache --no-daemon \
-            -Pgradle.publish.key=$GRADLE_PUBLISH_KEY \
-            -Pgradle.publish.secret=$GRADLE_PUBLISH_SECRET \
-            -Dproject.version=<<pipeline.parameters.specgen-version>>
 
   models-golang:
     working_directory: ~/test-models-go
@@ -1162,6 +1024,23 @@ jobs:
 
 # Release jobs are below
 
+  golang-release:
+    docker:
+      - image: cimg/go:1.18.3
+    working_directory: ~/golang
+    steps:
+      - run:
+          name: Release vendored module
+          command: |
+            go install github.com/specgen-io/goven@v0.0.10
+            cd codegen/golang
+            goven release -name github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>> -version v<<pipeline.parameters.specgen-version>> -out vendored
+      - run:
+          name: Check tool installation
+          command: |
+            go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>
+            specgen-golang --help
+
   specgen-release:
     docker:
       - image: cimg/go:1.16.4
@@ -1196,6 +1075,126 @@ jobs:
             go install github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>
             specgen --help
 
+  maven-kotlin-sonatype:
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace_folder:
+          folder: codegen/kotlin
+          at: ./plugins/maven-kotlin-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
+      - setup-sonatype-maven
+      - run:
+          name: Deploy Maven plugin
+          command: |
+            cd ./plugins/maven-kotlin-specgen
+            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml            
+            export GPG_TTY=$(tty)
+            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true
+      - save_cache:
+          key: cache-{{ checksum "./plugins/maven-kotlin-specgen/pom.xml" }}
+          paths:
+            - ~/.ivy2
+            - ~/.m2
+
+  sbt-sonatype:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - attach_workspace_folder:
+          folder: codegen/scala
+          at: ./plugins/sbt-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/sbt-specgen/build.sbt" }}
+      - setup-sonatype-sbt
+      - run:
+          name: Publish SBT plugin
+          command: |
+            cd ./plugins/sbt-specgen
+            sbt -Dversion=<<pipeline.parameters.specgen-version>> publishSigned sonatypeRelease
+
+  gradle-java-pluginportal:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - attach_workspace_folder:
+          folder: codegen/java
+          at: ./plugins/gradle-java-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
+      - run:
+          name: Deploy Gradle Java plugin
+          command: |
+            cd ./plugins/gradle-java-specgen
+            ./gradlew publishPlugins --build-cache --no-daemon \
+            -Pgradle.publish.key=$GRADLE_PUBLISH_KEY \
+            -Pgradle.publish.secret=$GRADLE_PUBLISH_SECRET \
+            -Dproject.version=<<pipeline.parameters.specgen-version>>
+
+  gradle-kotlin-pluginportal:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - attach_workspace_folder:
+          folder: codegen/kotlin
+          at: ./plugins/gradle-kotlin-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
+      - run:
+          name: Deploy Gradle Kotlin plugin
+          command: |
+            cd ./plugins/gradle-kotlin-specgen
+            ./gradlew publishPlugins --build-cache --no-daemon \
+            -Pgradle.publish.key=$GRADLE_PUBLISH_KEY \
+            -Pgradle.publish.secret=$GRADLE_PUBLISH_SECRET \
+            -Dproject.version=<<pipeline.parameters.specgen-version>>
+
+  npm-npmjs:
+    docker:
+      - image: cimg/node:16.8.0
+    steps:
+      - checkout
+      - attach_workspace_folder:
+          folder: codegen/typescript
+          at: ./plugins/npm-specgen
+      - run:
+          name: npm publish package
+          command: |
+            if [[ $CIRCLE_BRANCH == main ]] || [[ $CIRCLE_BRANCH == v* ]]; then
+              cd ./plugins/npm-specgen
+              npm version <<pipeline.parameters.specgen-version>>
+              npm install
+              npm publish
+            else
+              echo "Will not release - not running on main branch"
+            fi
+
+  gem-rubygems:
+    docker:
+      - image: circleci/ruby:2.4.9
+    steps:
+      - checkout
+      - attach_workspace_folder:
+          folder: codegen/ruby
+          at: ./plugins/gem-specgen/lib
+      - run:
+          name: Build gem
+          command: |
+            cd ./plugins/gem-specgen
+            export VERSION=<<pipeline.parameters.specgen-version>>
+            gem build specgen.gemspec
+      - setup-rubygems
+      - run:
+          name: Push gem
+          command: |
+            cd ./plugins/gem-specgen
+            export VERSION=<<pipeline.parameters.specgen-version>>
+            gem push --key rubygems specgen-$VERSION.gem
 
 
 commands:
@@ -1669,9 +1668,6 @@ workflows:
       - specgen:
           context: specgen
           requires: [approve-release]
-      - golang-release:
-          context: specgen
-          requires: [approve-release]
       - java:
           context: specgen
           requires: [approve-release]
@@ -1693,6 +1689,9 @@ workflows:
       - maven-java-sonatype:
           context: specgen
           requires: [java]
+      - golang-release:
+          context: specgen
+          requires: [approve-release]
       - maven-kotlin-sonatype:
           context: specgen
           requires: [kotlin, maven-java-sonatype]
