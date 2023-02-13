@@ -194,30 +194,6 @@ jobs:
             - ~/.ivy2
             - ~/.m2
 
-  maven-java-sonatype:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    steps:
-      - checkout
-      - attach_workspace_folder:
-          folder: codegen/java
-          at: ./plugins/maven-java-specgen/src/main/resources
-      - restore_cache:
-          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
-      - setup-sonatype-maven
-      - run:
-          name: Deploy Maven plugin
-          command: |
-            cd ./plugins/maven-java-specgen
-            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml
-            export GPG_TTY=$(tty)
-            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true
-      - save_cache:
-          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
-          paths:
-            - ~/.ivy2
-            - ~/.m2
-
   gradle-java:
     docker:
       - image: circleci/openjdk:8-jdk
@@ -383,7 +359,7 @@ jobs:
           name: Generate models
           command: |
             export THE_ROOT=./test-models/ts
-            ./rendr file:///./templates/models-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+            ./rendr file:///./templates/models-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
@@ -391,7 +367,7 @@ jobs:
       - run:
           name: Setup project for testing
           command: |
-            cd ./test-models/ts/out
+            cd ./out
             npm uninstall specgen.io            
             npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
             npm install tsm --save-dev
@@ -399,12 +375,12 @@ jobs:
       - restore_cache:
           key: models-ts-<<parameters.values-file>>
       - yaml-execute:
-          path: ./test-models/ts/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - save_cache:
           key: models-ts-<<parameters.values-file>>
-          paths: [ ~/specgen-tests/test-models/ts/out/node_modules ]
+          paths: [ ~/specgen-tests/out/node_modules ]
 
   models-scala-circe:
     environment:
@@ -445,31 +421,26 @@ jobs:
       - image: circleci/openjdk:11-jdk
     steps:
       - checkout
-      - run:
-          name: Create temp folder for tests results
-          command: mkdir -p /tmp/test-results
       - get-rendr
       - run:
           name: Copy spec.yaml
-          command: |
-            cd test-models
-            cp ./spec.yaml ./java/template/spec.yaml
+          command: cp ./test-models/spec.yaml ./test-models/java/template/spec.yaml
       - run:
           name: Generate models
           command: |
             export THE_ROOT=./test-models/java
-            ./rendr file:///./templates/models-java --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+            ./rendr file:///./templates/models-java --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
       - restore_cache:
-          key: java-<<parameters.values-file>>
+          key: models-java-<<parameters.values-file>>
       - yaml-execute:
-          path: ./test-models/java/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - save_cache:
-          key: java-<<parameters.values-file>>
+          key: models-java-<<parameters.values-file>>
           paths: [ ~/.m2 ]
 
   models-kotlin:
@@ -483,32 +454,27 @@ jobs:
       - image: circleci/openjdk:11-jdk
     steps:
       - checkout
-      - run:
-          name: Create temp folder for tests results
-          command: mkdir -p /tmp/test-results
       - get-rendr
       - run:
           name: Copy spec.yaml
-          command: |
-            cd test-models
-            cp ./spec.yaml ./kotlin/template/spec.yaml
+          command: cp ./test-models/spec.yaml ./test-models/kotlin/template/spec.yaml
       - run:
           name: Generate models
           command: |
             export THE_ROOT=./test-models/kotlin
-            ./rendr file:///./templates/models-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+            ./rendr file:///./templates/models-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - artifactory/setup-gradle-kotlin:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
-          project-path: ./test-models/kotlin/out
+          project-path: ./out
       - restore_cache:
-          key: kotlin-<<parameters.values-file>>
+          key: models-kotlin-<<parameters.values-file>>
       - yaml-execute:
-          path: ./test-models/kotlin/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - save_cache:
-          key: kotlin-<<parameters.values-file>>
+          key: models-kotlin-<<parameters.values-file>>
           paths: [ ~/.gradle ]
 
   client-test-service:
@@ -596,33 +562,28 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run:
-          name: Create temp folder for tests results
-          command: mkdir -p /tmp/test-results
       - get-rendr
       - run:
           name: Copy spec.yaml
-          command: |
-            cd test-clients
-            cp ./spec.yaml ./java/template/spec.yaml
+          command: cp ./test-clients/spec.yaml ./test-clients/java/template/spec.yaml
       - run:
           name: Generate client
           command: |
             export THE_ROOT=./test-clients/java
-            ./rendr file:///./templates/client-java --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+            ./rendr file:///./templates/client-java --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
       - restore_cache:
-          key: java-<<parameters.values-file>>
+          key: client-java-<<parameters.values-file>>
       - start-service:
           port: 8081
       - yaml-execute:
-          path: ./test-clients/java/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - save_cache:
-          key: java-<<parameters.values-file>>
+          key: client-java-<<parameters.values-file>>
           paths: [ ~/.m2 ]
 
   client-kotlin:
@@ -638,34 +599,29 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run:
-          name: Create temp folder for tests results
-          command: mkdir -p /tmp/test-results
       - get-rendr
       - run:
           name: Copy spec.yaml
-          command: |
-            cd test-clients
-            cp ./spec.yaml ./kotlin/template/spec.yaml
+          command: cp ./test-clients/spec.yaml ./test-clients/kotlin/template/spec.yaml
       - run:
           name: Generate clients
           command: |
             export THE_ROOT=./test-clients/kotlin
-            ./rendr file:///./templates/client-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+            ./rendr file:///./templates/client-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - artifactory/setup-gradle-kotlin:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
-          project-path: ./test-clients/kotlin/out
+          project-path: ./out
       - restore_cache:
-          key: kotlin-<<parameters.values-file>>
+          key: client-kotlin-<<parameters.values-file>>
       - start-service:
           port: 8081
       - yaml-execute:
-          path: ./test-clients/kotlin/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - save_cache:
-          key: kotlin-<<parameters.values-file>>
+          key: client-kotlin-<<parameters.values-file>>
           paths: [ ~/.gradle ]
 
   client-ruby:
@@ -763,7 +719,7 @@ jobs:
           name: Generate models
           command: |
             export THE_ROOT=./test-clients/ts
-            ./rendr file:///./templates/client-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+            ./rendr file:///./templates/client-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
@@ -771,7 +727,7 @@ jobs:
       - run:
           name: Setup project for testing
           command: |
-            cd ./test-clients/ts/out
+            cd ./out
             npm uninstall specgen.io            
             npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
             npm install tsm --save-dev
@@ -779,12 +735,12 @@ jobs:
       - restore_cache:
           key: client-ts-<<parameters.values-file>>
       - yaml-execute:
-          path: ./test-clients/ts/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - save_cache:
           key: client-ts-<<parameters.values-file>>
-          paths: [ ~/specgen-tests/test-clients/ts/out/node_modules ]
+          paths: [ ~/specgen-tests/out/node_modules ]
 
   service-tests:
     docker:
@@ -812,15 +768,12 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - restore_cache:
-          keys:
-            - cache-{{ checksum "./test-services/scala-play/build.sbt" }}
-      - run:
-          name: Create temp folder for tests results
-          command: mkdir -p /tmp/test-results
       - artifactory/setup-sbt:
           jfrog-server-url: specgen.jfrog.io
           repo-name: sbt
+      - restore_cache:
+          keys:
+            - scala-play-{{ checksum "./test-services/scala-play/build.sbt" }}
       - run:
           name: Build service
           command: |
@@ -833,7 +786,7 @@ jobs:
             sbt -Dhttp.port=8081 run < /dev/null
           background: true
       - save_cache:
-          key: cache-{{ checksum "./test-services/scala-play/build.sbt" }}
+          key: scala-play-{{ checksum "./test-services/scala-play/build.sbt" }}
           paths:
             - ~/.sbt
             - ~/.ivy2
@@ -855,36 +808,31 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run:
-          name: Create temp folder for tests results
-          command: mkdir -p /tmp/test-results
       - get-rendr
       - run:
           name: Copy spec.yaml
-          command: |
-            cd ./test-services
-            cp ./spec.yaml ./java/template/spec.yaml
+          command: cp ./test-services/spec.yaml ./test-services/java/template/spec.yaml
       - run:
           name: Generate service
           command: |
             export THE_ROOT=./test-services/java
-            ./rendr file:///./templates/service-java --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+            ./rendr file:///./templates/service-java --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
       - restore_cache:
-          key: java-<<parameters.values-file>>
+          key: service-java-<<parameters.values-file>>
       - yaml-execute:
-          path: ./test-services/java/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - yaml-execute:
-          path: ./test-services/java/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .run
           background: true
       - save_cache:
-          key: java-<<parameters.values-file>>
+          key: service-java-<<parameters.values-file>>
           paths: [ ~/.m2 ]
       - wait-url:
           url: http://localhost:8081/swagger-ui/
@@ -904,37 +852,32 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run:
-          name: Create temp folder for tests results
-          command: mkdir -p /tmp/test-results
       - get-rendr
       - run:
           name: Copy spec.yaml
-          command: |
-            cd test-services
-            cp ./spec.yaml ./kotlin/template/spec.yaml
+          command: cp ./test-services/spec.yaml ./test-services/kotlin/template/spec.yaml
       - run:
           name: Generate service
           command: |
             export THE_ROOT=./test-services/kotlin
-            ./rendr file:///./templates/service-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+            ./rendr file:///./templates/service-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - artifactory/setup-gradle-kotlin:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
-          project-path: ./test-services/kotlin/out
+          project-path: ./out
       - restore_cache:
-          key: kotlin-<<parameters.values-file>>
+          key: service-kotlin-<<parameters.values-file>>
       - yaml-execute:
-          path: ./test-services/kotlin/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - yaml-execute:
-          path: ./test-services/kotlin/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .run
           background: true
       - save_cache:
-          key: kotlin-<<parameters.values-file>>
+          key: service-kotlin-<<parameters.values-file>>
           paths: [ ~/.gradle ]
       - wait-url:
           url: http://localhost:8081/swagger-ui/
@@ -978,38 +921,33 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run:
-          name: Create temp folder for tests results
-          command: mkdir -p /tmp/test-results
       - get-rendr
       - run:
           name: Copy spec.yaml
-          command: |
-            cd test-services
-            cp ./spec.yaml ./typescript/template/spec.yaml
+          command: cp ./test-services/spec.yaml ./test-services/typescript/template/spec.yaml
       - run:
           name: Generate service
           command: |
             export THE_ROOT=./test-services/typescript
-            ./rendr file:///./templates/service-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ${THE_ROOT}/out
+            ./rendr file:///./templates/service-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
           scope: specgen.io
       - restore_cache:
-          key: typescript-<<parameters.values-file>>
+          key: service-ts-<<parameters.values-file>>
       - yaml-execute:
-          path: ./test-services/typescript/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - yaml-execute:
-          path: ./test-services/typescript/out
+          path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .run
           background: true
       - save_cache:
-          key: typescript-<<parameters.values-file>>
-          paths: [ ~/specgen-tests/test-services/typescript/out/node_modules ]
+          key: service-ts-<<parameters.values-file>>
+          paths: [ ~/specgen-tests/out/node_modules ]
       - wait-url:
           url: http://localhost:8081/docs/
       - go-tests:
@@ -1074,6 +1012,30 @@ jobs:
           command: |
             go install github.com/specgen-io/specgen/<<pipeline.parameters.specgen-version-major>>@v<<pipeline.parameters.specgen-version>>
             specgen --help
+
+  maven-java-sonatype:
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace_folder:
+          folder: codegen/java
+          at: ./plugins/maven-java-specgen/src/main/resources
+      - restore_cache:
+          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
+      - setup-sonatype-maven
+      - run:
+          name: Deploy Maven plugin
+          command: |
+            cd ./plugins/maven-java-specgen
+            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml
+            export GPG_TTY=$(tty)
+            mvn deploy -Dgpg.passphrase=$SONATYPE_GPG_PASSPHRASE -Dsonatype=true
+      - save_cache:
+          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
+          paths:
+            - ~/.ivy2
+            - ~/.m2
 
   maven-kotlin-sonatype:
     docker:
