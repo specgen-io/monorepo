@@ -1506,12 +1506,6 @@ workflows:
       - client-golang:
           context: specgen
           requires: [client-test-service-golang]
-      - placeholder:
-          name: completed-golang
-          requires:
-            - models-golang
-            - service-golang
-            - client-golang
 
 
       - java:
@@ -1553,13 +1547,6 @@ workflows:
       - client-java-micronaut-jackson:                         # should be removed
           context: specgen
           requires: [client-test-service-java]
-      - placeholder:
-          name: completed-java
-          requires:
-            - models-java
-            - service-java
-            - client-java
-            - client-java-micronaut-jackson
 
 
       - kotlin:
@@ -1598,12 +1585,6 @@ workflows:
               values-file: ["micronaut-jackson", "okhttp-jackson", "okhttp-moshi"]
           context: specgen
           requires: [client-test-service-kotlin]
-      - placeholder:
-          name: completed-kotlin
-          requires:
-            - models-kotlin
-            - service-kotlin
-            - client-kotlin
 
 
       - typescript:
@@ -1639,12 +1620,6 @@ workflows:
               values-file: ["axios-superstruct", "axios-iots", "node-fetch-superstruct"]
           context: specgen
           requires: [client-test-service-typescript]
-      - placeholder:
-          name: completed-typescript
-          requires:
-            - models-ts
-            - service-typescript
-            - client-ts
 
       - ruby:
           context: specgen
@@ -1664,11 +1639,6 @@ workflows:
       - client-ruby:
           context: specgen
           requires: [client-test-service-ruby]
-      - placeholder:
-          name: completed-ruby
-          requires:
-            - models-ruby
-            - client-ruby
 
 
       - scala:
@@ -1695,12 +1665,6 @@ workflows:
       - client-scala-sttp:
           context: specgen
           requires: [client-test-service-scala]
-      - placeholder:
-          name: completed-scala
-          requires:
-            - models-scala-circe
-            - service-scala-play
-            - client-scala-sttp
 
 
       - specgen:
