@@ -1,0 +1,6 @@
+{
+  "build": "maven",
+  "client": "micronaut",
+  "jsonlib": "moshi",
+  "tests": true
+}
