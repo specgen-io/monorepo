@@ -1699,10 +1699,7 @@ workflows:
       - client-java:
           matrix:
             parameters:
-              values-file: ["okhttp-jackson", "okhttp-moshi"]  # should add "micronaut-jackson" 
-          context: specgen
-          requires: [client-test-service-java]
-      - client-java-micronaut-jackson:                         # should be removed
+              values-file: ["okhttp-jackson", "okhttp-moshi", "micronaut-jackson"]
           context: specgen
           requires: [client-test-service-java]
       - placeholder:
@@ -1711,7 +1708,6 @@ workflows:
             - models-java
             - service-java
             - client-java
-            - client-java-micronaut-jackson
 
 
       - kotlin:
