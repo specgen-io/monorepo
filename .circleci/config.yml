@@ -1712,7 +1712,7 @@ workflows:
       - client-kotlin:
           matrix:
             parameters:
-              values-file: ["micronaut-jackson", "okhttp-jackson", "okhttp-moshi"]
+              values-file: ["micronaut-jackson", "okhttp-jackson", "okhttp-moshi", "micronaut-moshi"]
           context: specgen
           requires: [client-test-service-kotlin]
       - placeholder:
