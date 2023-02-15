@@ -1,7 +1,7 @@
 rendr: 0
 name: client-java
 title: Specgen Java Client
-executables: 
+executables:
   - "{{#build.maven}}/mvn"
   - "{{#build.gradle-kotlin}}/gradlew"
   - "{{#build.gradle-groovy}}/gradlew"
@@ -23,7 +23,7 @@ args:
   client:
     type: string
     description: client library
-    values: [okhttp]
+    values: [okhttp, micronaut]
     default: okhttp
   jsonlib:
     type: string
@@ -47,7 +47,7 @@ args:
         default: 3.8.1
       java:
         type: string
-        default: 11  
+        default: 11
       specgen:
         type: string
         default: 2.1.2134
@@ -69,6 +69,12 @@ args:
       junit:
         type: string
         default: 5.9.1
+      micronaut:
+        type: string
+        default: 3.6.0
+      micronaut_application:
+        type: string
+        default: 3.6.7
       assertj:
         type: string
         default: 3.23.1
