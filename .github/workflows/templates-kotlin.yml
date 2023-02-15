@@ -1,0 +1,100 @@
+name: templates-kotlin
+on:
+  push:
+    paths:
+      - .github/variables/**
+      - .github/actions/**
+      - .github/workflows/templates-kotlin.yml
+      - templates/models-kotlin/**
+      - templates/client-kotlin/**
+      - templates/service-kotlin/**
+  workflow_dispatch: {}
+jobs:
+  models:
+    strategy:
+      matrix:
+        build: [maven, gradle-kotlin, gradle-groovy]
+        jsonlib: [jackson, moshi]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/setvars
+
+      - uses: ./.github/actions/getrendr
+        with:
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          version: ${RENDR_TOOL_VERSION}
+
+      - uses: actions/setup-java@v3.1.0
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      - name: Rendr template
+        run: |
+          ./rendr file:///./templates/models-kotlin --set build=${{ matrix.build }} --set jsonlib=${{ matrix.jsonlib }} --set versions.specgen=${SPECGEN_VERSION} --noinput --out output
+
+      - uses: ./.github/actions/runbuild
+        with:
+          path: output
+
+  client:
+    strategy:
+      matrix:
+        build: [maven, gradle-kotlin, gradle-groovy]
+        client: [okhttp, micronaut]
+        jsonlib: [jackson, moshi]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/setvars
+
+      - uses: ./.github/actions/getrendr
+        with:
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          version: ${RENDR_TOOL_VERSION}
+
+      - uses: actions/setup-java@v3.1.0
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      - name: Rendr template
+        run: |
+          ./rendr file:///./templates/client-kotlin --set build=${{ matrix.build }} --set client=${{ matrix.client }} --set jsonlib=${{ matrix.jsonlib }} --set versions.specgen=${SPECGEN_VERSION} --noinput --out output
+
+      - uses: ./.github/actions/runbuild
+        with:
+          path: output
+
+  service:
+    strategy:
+      matrix:
+        build: [maven, gradle-groovy, gradle-kotlin]
+        server: [spring, micronaut]
+        jsonlib: [jackson, moshi]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/setvars
+
+      - uses: ./.github/actions/getrendr
+        with:
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          version: ${RENDR_TOOL_VERSION}
+
+      - uses: actions/setup-java@v3.1.0
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      - name: Rendr template
+        run: |
+          ./rendr file:///./templates/service-kotlin --set build=${{ matrix.build }} --set server=${{ matrix.server }} --set jsonlib=${{ matrix.jsonlib }} --set versions.specgen=${SPECGEN_VERSION} --noinput --out output
+
+      - uses: ./.github/actions/runbuild
+        with:
+          path: output

@@ -1,0 +1,4 @@
+build: |
+  npm install
+  npm run specgen
+  npm run build

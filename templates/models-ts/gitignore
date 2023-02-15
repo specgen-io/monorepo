@@ -1,5 +1,3 @@
-.DS_Store
-
 ### IntelliJ IDEA ###
 .idea
 *.iws
@@ -9,7 +7,8 @@
 ### VS Code ###
 .vscode/
 
+.DS_Store
+
 node_modules/
 src/spec
-docs/swagger.yaml
 dist/

@@ -4,16 +4,10 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "specgen": "specgen client-ts --client {{client.value}} --validation {{validation.value}} --spec-file spec.yaml --generate-path ./src/spec",
+    "specgen": "specgen models-ts --validation {{validation.value}} --spec-file spec.yaml --generate-path ./src/spec",
     "build": "tsc"
   },
   "dependencies": {
-    {{#client.axios}}
-    "axios": "{{versions.axios.value}}",
-    {{/client.axios}}
-    {{#client.node-fetch}}
-    "node-fetch": "{{versions.node-fetch.value}}",
-    {{/client.node-fetch}}
     {{#validation.superstruct}}
     "superstruct": "{{versions.superstruct.value}}"
     {{/validation.superstruct}}
@@ -26,15 +20,6 @@
     {{/validation.io-ts}}
   },
   "devDependencies": {
-    {{#client.browser-fetch}}
-    "@types/node": "{{versions.node.value}}",
-    "ts-node": "{{versions.ts-node.value}}",
-    "tsm": "{{versions.tsm.value}}",
-    {{/client.browser-fetch}}
-    {{#client.node-fetch}}
-    "ts-node": "{{versions.ts-node.value}}",
-    "tsm": "{{versions.tsm.value}}",
-    {{/client.node-fetch}}
     "specgen.io": "{{versions.specgen.value}}",
     "typescript": "{{versions.typescript.value}}"
   }
