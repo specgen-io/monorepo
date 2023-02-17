@@ -43,7 +43,7 @@ jobs:
     strategy:
       matrix:
         build: [maven, gradle-kotlin, gradle-groovy]
-        client: [okhttp]
+        client: [okhttp, micronaut]
         jsonlib: [jackson, moshi]
     runs-on: ubuntu-latest
     steps:
