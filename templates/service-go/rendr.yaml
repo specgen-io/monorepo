@@ -31,7 +31,7 @@ args:
         default: 1.18
       specgen:
         type: string
-        default: 2.1.1853
+        default: 2.1.2134
       civil:
         type: string
         default: 0.82.0

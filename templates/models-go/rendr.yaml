@@ -1,21 +1,16 @@
 rendr: 0
-name: client-go
-title: Specgen Golang Client
+name: models-go
+title: Specgen Golang Models
 rename: {"gitignore": ".gitignore"}
 args:
   project:
     type: string
     description: project name
-    default: the-client
-  client:
-    type: string
-    description: client library
-    values: [net/http]
-    default: net/http
+    default: the-models
   package:
     type: string
     description: package name
-    default: theclient
+    default: themodels
   versions:
     type: group
     noinput: true
@@ -32,13 +27,7 @@ args:
       uuid:
         type: string
         default: 1.2.0
-      errors:
-        type: string
-        default: 0.9.1
       decimal:
         type: string
         default: 1.2.0
-      logrus:
-        type: string
-        default: 1.8.1
       
