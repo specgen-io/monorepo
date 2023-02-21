@@ -288,7 +288,7 @@ jobs:
           paths: [ ~/.gradle ]
 
   models-golang:
-    working_directory: ~/test-models-go
+    working_directory: ~/specgen-tests
     docker:
       - image: cimg/go:1.18.3
     steps:
@@ -301,9 +301,10 @@ jobs:
             go generate
             mkdir -p ./test-results
             go install github.com/jstemmer/go-junit-report@v0.9.1
+            go test ./... -v
             go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
       - store_test_results:
-          path: ./test-models/go/test-results
+          path: ./test-models/go/test-results        
 
   models-ruby:
     environment:
