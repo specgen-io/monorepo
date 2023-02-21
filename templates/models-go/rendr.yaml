@@ -1,0 +1,33 @@
+rendr: 0
+name: models-go
+title: Specgen Golang Models
+rename: {"gitignore": ".gitignore"}
+args:
+  project:
+    type: string
+    description: project name
+    default: the-models
+  package:
+    type: string
+    description: package name
+    default: themodels
+  versions:
+    type: group
+    noinput: true
+    args:
+      go:
+        type: string
+        default: 1.18
+      specgen:
+        type: string
+        default: 2.1.2134
+      civil:
+        type: string
+        default: 0.84.0
+      uuid:
+        type: string
+        default: 1.2.0
+      decimal:
+        type: string
+        default: 1.2.0
+      
