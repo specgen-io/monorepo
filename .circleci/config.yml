@@ -322,7 +322,7 @@ jobs:
           name: Generate models
           command: |
             export THE_ROOT=./test-models/go
-            ./rendr file:///./templates/models-go --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
+            ./rendr file:///./templates/models-go --root file:///${THE_ROOT}/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - run:
           name: Setup project for testing
           command: |
