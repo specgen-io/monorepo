@@ -307,9 +307,6 @@ jobs:
           path: ./test-models/go/test-results       
 
   models-go:
-    parameters:
-      values-file:
-        type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
     working_directory: ~/specgen-tests
@@ -334,13 +331,13 @@ jobs:
             go test ./... -v
             go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
       - restore_cache:
-          key: models-go-<<parameters.values-file>>
+          key: models-go
       - yaml-execute:
           path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - save_cache:
-          key: models-go-<<parameters.values-file>>
+          key: models-go
           paths: [ ~/go/pkg/mod ]
   
   models-ruby:
