@@ -1444,9 +1444,9 @@ workflows:
       - placeholder:
           name: golang-build
           requires: [golang-no-plugin]
-      - models-golang:
+      - models-go:
           context: specgen
-          requires: [golang-build]
+          requires: [golang-build]    
       - service-tests:
           name: service-tests-golang
           requires: [golang-build]
