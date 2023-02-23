@@ -311,7 +311,7 @@ jobs:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
     working_directory: ~/specgen-tests
     docker:
-      - image: cimg/node:16.8.0
+      - image: cimg/go:1.18.3
     steps:
       - checkout
       - install_specgen_golang
