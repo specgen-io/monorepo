@@ -328,8 +328,8 @@ jobs:
           name: Setup project for testing
           command: |
             cd ./out
-            go install github.com/gotestyourself/gotest.tools@v3.4.0
-            go install github.com/jstemmer/go-junit-report@v2.0.0
+            go install gotest.tools/v3@latest
+            go install github.com/jstemmer/go-junit-report@latest
       - restore_cache:
           key: models-go
       - yaml-execute:
