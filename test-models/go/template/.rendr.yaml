@@ -1,4 +1,3 @@
 build: |
-  go install github.com/specgen-io/specgen-golang/<<pipeline.parameters.specgen-version-major>>@v<< pipeline.parameters.specgen-version >>-alpha
   go generate
   go build

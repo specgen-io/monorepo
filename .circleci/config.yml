@@ -314,6 +314,7 @@ jobs:
       - image: cimg/node:16.8.0
     steps:
       - checkout
+      - install_specgen_golang
       - get-rendr
       - run:
           name: Copy spec.yaml
