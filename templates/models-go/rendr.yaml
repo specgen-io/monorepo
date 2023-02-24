@@ -24,6 +24,9 @@ args:
       civil:
         type: string
         default: 0.84.0
+      go-cmp:
+        type: string
+        default: 0.5.6
       uuid:
         type: string
         default: 1.2.0
