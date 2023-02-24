@@ -100,6 +100,11 @@ public class JsonTest {
     }
 
     @Test
+    public void oneOfWrapperItemNotNull() {
+        assertThrows(JsonParseException.class, () -> json.read(fixQuotes("{'canceled':null}"), OrderEventWrapper.class));
+    }
+
+    @Test
     public void oneOfDiscriminator() {
         OrderEventDiscriminator data = new OrderEventDiscriminator.Canceled(new OrderCanceled(UUID.fromString("123e4567-e89b-12d3-a456-426655440000")));
         String jsonStr = "{'_type':'canceled','id':'123e4567-e89b-12d3-a456-426655440000'}";
