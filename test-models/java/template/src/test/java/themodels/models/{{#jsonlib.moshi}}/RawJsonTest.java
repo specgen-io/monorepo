@@ -20,16 +20,14 @@ public class RawJsonTest extends JsonTest {
 	  @Test
 	  public void jsonType() {
 		    //String jsonField = fixQuotes("{'the_array':[true,'some string'],'the_object':{'the_bool':true,'the_string':'some value'},'the_scalar':'the value'}");
-		    var theObject = new HashMap<String, Object>() {{
-			      put("the_bool", true);
-			      put("the_string", "some value");
-		    }};
+		    var theObject = new HashMap<String, Object>();
+        theObject.put("the_bool", true);
+        theObject.put("the_string", "some value");
 		    var theArray = new ArrayList<Object>(List.of(true, "some string"));
-		    var map = new HashMap<String, Object>() {{
-			      put("the_array", theArray);
-			      put("the_object", theObject);
-			      put("the_scalar", "the value");
-		    }};
+		    var map = new HashMap<String, Object>();
+        map.put("the_array", theArray);
+        map.put("the_object", theObject);
+        map.put("the_scalar", "the value");
 		    RawJsonField data = new RawJsonField(map);
 		    String jsonStr = "{'json_field':{'the_array':[true,'some string'],'the_scalar':'the value','the_object':{'the_bool':true,'the_string':'some value'}}}";
 		    check(data, jsonStr, RawJsonField.class);
