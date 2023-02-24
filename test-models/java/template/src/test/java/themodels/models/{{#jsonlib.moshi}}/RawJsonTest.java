@@ -21,7 +21,7 @@ public class RawJsonTest extends JsonTest {
         map.put("the_object", theObject);
         map.put("the_scalar", "the value");
         RawJsonField data = new RawJsonField(map);
-        String expected = fixQuotes("RawJsonField{jsonField={'the_array':[1,'some string'],'the_object':{'the_bool':true,'the_string':'some value'},'the_scalar':'the value'}}");
+        String expected = "RawJsonField{jsonField={the_array=[1, some string], the_scalar=the value, the_object={the_bool=true, the_string=some value}}}";
         String dataStr = data.toString();
         assertEquals(dataStr, expected);
     }
