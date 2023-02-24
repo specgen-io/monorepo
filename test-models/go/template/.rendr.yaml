@@ -1,5 +1,6 @@
 build: |
   go generate
+  go mod tidy
   go build
   go mod tidy
   cd tests
