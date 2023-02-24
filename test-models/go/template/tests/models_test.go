@@ -6,8 +6,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"gotest.tools/v3/assert"
+	"out/spec/models"
 	"reflect"
-	"test-models/spec/models"
 	"testing"
 )
 

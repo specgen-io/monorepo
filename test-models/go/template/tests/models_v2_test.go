@@ -3,8 +3,8 @@ package tests
 import (
 	"encoding/json"
 	"gotest.tools/v3/assert"
+	"out/spec/v2/models"
 	"reflect"
-	"test-models/spec/v2/models"
 	"testing"
 )
 
