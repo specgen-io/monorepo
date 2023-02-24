@@ -2,5 +2,6 @@ build: |
   go generate
   go build
   go mod tidy
+  cd tests
   go test ./... -v
   go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
