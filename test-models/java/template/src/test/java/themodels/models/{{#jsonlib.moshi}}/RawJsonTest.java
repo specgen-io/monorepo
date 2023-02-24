@@ -1,11 +1,13 @@
 package themodels.models;
 
 import org.junit.jupiter.api.Test;
-import themodels.models.RawJsonField;
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.IOException;
 import java.util.*;
+
 import static themodels.models.Utils.*;
+import themodels.models.RawJsonField;
 
 public class RawJsonTest extends JsonTest {
     @Test
