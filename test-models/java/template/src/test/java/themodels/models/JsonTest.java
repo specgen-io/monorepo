@@ -9,6 +9,8 @@ import java.util.*;
 import themodels.json.JsonParseException;
 import static themodels.models.Utils.*;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class JsonTest {
     @Test
     public void objectModel() {
