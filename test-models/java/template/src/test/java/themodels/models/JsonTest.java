@@ -104,6 +104,7 @@ public class JsonTest {
 
     @Test
     public void oneOfWrapperItemNotNull() {
+        var json = createJson();
         assertThrows(JsonParseException.class, () -> json.read(fixQuotes("{'canceled':null}"), OrderEventWrapper.class));
     }
 
