@@ -6,7 +6,10 @@ import java.math.BigDecimal;
 import java.time.*;
 import java.util.*;
 
+import themodels.json.JsonParseException;
 import static themodels.models.Utils.*;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JsonTest {
     @Test
@@ -97,6 +100,12 @@ public class JsonTest {
         OrderEventWrapper data = new OrderEventWrapper.Canceled(new OrderCanceled(UUID.fromString("123e4567-e89b-12d3-a456-426655440000")));
         String jsonStr = "{'canceled':{'id':'123e4567-e89b-12d3-a456-426655440000'}}";
         check(data, jsonStr, OrderEventWrapper.class);
+    }
+
+    @Test
+    public void oneOfWrapperItemNotNull() {
+        var json = createJson();
+        assertThrows(JsonParseException.class, () -> json.read(fixQuotes("{'canceled':null}"), OrderEventWrapper.class));
     }
 
     @Test
