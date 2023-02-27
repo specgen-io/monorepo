@@ -3,9 +3,9 @@ package tests
 import (
 	"encoding/json"
 	"gotest.tools/v3/assert"
-	"out/spec/v2/models"
 	"reflect"
 	"testing"
+	"themodels/spec/v2/models"
 )
 
 func TestMessageV2(t *testing.T) {
