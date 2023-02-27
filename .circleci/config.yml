@@ -304,42 +304,8 @@ jobs:
             go test ./... -v
             go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
       - store_test_results:
-          path: ./test-models/go/test-results       
+          path: ./test-models/go/test-results        
 
-  models-go:
-    environment:
-      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
-    working_directory: ~/specgen-tests
-    docker:
-      - image: cimg/go:1.18.3
-    steps:
-      - checkout
-      - install_specgen_golang
-      - get-rendr
-      - run:
-          name: Copy spec.yaml
-          command: cp ./test-models/spec.yaml ./test-models/go/template/spec.yaml
-      - run:
-          name: Generate models
-          command: |
-            export THE_ROOT=./test-models/go
-            ./rendr file:///./templates/models-go --root file:///${THE_ROOT}/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./out
-      - run:
-          name: Setup project for testing
-          command: |
-            cd ./out
-            go get gotest.tools/v3
-            go install github.com/jstemmer/go-junit-report@latest
-      - restore_cache:
-          key: models-go
-      - yaml-execute:
-          path: ./out
-          yaml-file: .rendr.yaml
-          yaml-path: .build
-      - save_cache:
-          key: models-go
-          paths: [ ~/go/pkg/mod ]
-  
   models-ruby:
     environment:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
@@ -551,7 +517,38 @@ jobs:
             go test ./... -v
             go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
       - store_test_results:
-          path: ./test-clients/go/test-results         
+          path: ./test-clients/go/test-results
+
+  client-java-micronaut-jackson:
+    environment:
+      SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "./test-clients/java-micronaut-jackson/pom.xml" }}
+      - artifactory/setup-maven:
+          jfrog-server-url: specgen.jfrog.io
+          repo-name: maven
+      - start-service:
+          port: 8081
+      - run:
+          name: Test Java Micronaut client
+          command: |
+            cd ./test-clients/java-micronaut-jackson
+            mkdir -p ./test-results
+            mvn clean test -Dspecgen.version=<<pipeline.parameters.specgen-version>>
+      - store_test_results:
+          path: ./test-clients/java-micronaut-jackson/test-results
+      - save_cache:
+          key: cache-{{ checksum "./test-clients/java-micronaut-jackson/pom.xml" }}
+          paths:
+            - ~/.m2          
 
   client-java:
     parameters:
@@ -1441,9 +1438,9 @@ workflows:
       - placeholder:
           name: golang-build
           requires: [golang-no-plugin]
-      - models-go:
+      - models-golang:
           context: specgen
-          requires: [golang-build]    
+          requires: [golang-build]
       - service-tests:
           name: service-tests-golang
           requires: [golang-build]
