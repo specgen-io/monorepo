@@ -20,8 +20,8 @@ args:
     default: theservice
   cors:
     type: boolean
-    description: do you want to disable cors
-    default: yes
+    description: do you want to enable cors
+    default: no
   swagger:
     type: boolean
     description: do you want to enable swagger generation and hosting

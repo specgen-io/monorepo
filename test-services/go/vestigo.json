@@ -1,3 +1,4 @@
 {
-  "server": "vestigo"
+  "server": "vestigo",
+  "cors": false
 }
