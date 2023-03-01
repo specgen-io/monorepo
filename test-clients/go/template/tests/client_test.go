@@ -5,11 +5,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"gotest.tools/assert"
-	"test-client/spec/check"
-	"test-client/spec/echo"
-	"test-client/spec/httperrors"
-	"test-client/spec/models"
 	"testing"
+	"the-client/spec/check"
+	"the-client/spec/echo"
+	"the-client/spec/httperrors"
+	"the-client/spec/models"
 )
 
 var serviceUrl = "http://localhost:8081"

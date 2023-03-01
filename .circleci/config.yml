@@ -285,28 +285,9 @@ jobs:
             -Dproject.version=<<pipeline.parameters.specgen-version>>
       - save_cache:
           key: cache-{{ checksum "./plugins/gradle-kotlin-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-kotlin-specgen/settings.gradle.kts" }}
-          paths: [ ~/.gradle ]
+          paths: [ ~/.gradle ]      
 
   models-golang:
-    working_directory: ~/specgen-tests
-    docker:
-      - image: cimg/go:1.18.3
-    steps:
-      - checkout
-      - install_specgen_golang
-      - run:
-          name: Test Go models
-          command: |
-            cd ./test-models/go
-            go generate
-            mkdir -p ./test-results
-            go install github.com/jstemmer/go-junit-report@v0.9.1
-            go test ./... -v
-            go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
-      - store_test_results:
-          path: ./test-models/go/test-results       
-
-  models-go:
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
     working_directory: ~/specgen-tests
@@ -552,6 +533,44 @@ jobs:
             go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
       - store_test_results:
           path: ./test-clients/go/test-results         
+
+  client-go:
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+    working_directory: ~/specgen-tests
+    docker:
+      - image: cimg/go:1.18.3
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - install_specgen_golang    
+      - get-rendr
+      - run:
+          name: Copy spec.yaml
+          command: cp ./test-clients/spec.yaml ./test-clients/go/template/spec.yaml
+      - run:
+          name: Generate client
+          command: |
+            export THE_ROOT=./test-clients/go
+            ./rendr file:///./templates/client-go --root file:///${THE_ROOT}/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./out
+      - run:
+          name: Setup project for testing
+          command: |
+            cd ./out
+            go get gotest.tools/v3
+            go install github.com/jstemmer/go-junit-report@latest
+      - restore_cache:
+          key: client-go
+      - start-service:
+          port: 8081
+      - yaml-execute:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - save_cache:
+          key: client-go
+          paths: [ ~/go/pkg/mod ]
 
   client-java:
     parameters:
@@ -1441,7 +1460,7 @@ workflows:
       - placeholder:
           name: golang-build
           requires: [golang-no-plugin]
-      - models-go:
+      - models-golang:
           context: specgen
           requires: [golang-build]    
       - service-tests:
@@ -1454,7 +1473,7 @@ workflows:
           name: client-test-service-golang
           context: specgen
           requires: [golang-build]
-      - client-golang:
+      - client-go:
           context: specgen
           requires: [client-test-service-golang]
 

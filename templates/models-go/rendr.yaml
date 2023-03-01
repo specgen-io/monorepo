@@ -6,7 +6,7 @@ args:
   project:
     type: string
     description: project name
-    default: themodels
+    default: the-models
   package:
     type: string
     description: package name

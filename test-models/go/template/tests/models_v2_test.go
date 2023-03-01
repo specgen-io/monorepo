@@ -5,7 +5,7 @@ import (
 	"gotest.tools/v3/assert"
 	"reflect"
 	"testing"
-	"themodels/spec/v2/models"
+	"the-models/spec/v2/models"
 )
 
 func TestMessageV2(t *testing.T) {

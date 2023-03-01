@@ -8,7 +8,7 @@ import (
 	"gotest.tools/v3/assert"
 	"reflect"
 	"testing"
-	"themodels/spec/models"
+	"the-models/spec/models"
 )
 
 func init() {

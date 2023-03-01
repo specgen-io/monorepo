@@ -2,9 +2,9 @@ package tests
 
 import (
 	"gotest.tools/assert"
-	"test-client/spec/v2/echo"
-	"test-client/spec/v2/models"
 	"testing"
+	"the-client/spec/v2/echo"
+	"the-client/spec/v2/models"
 )
 
 func Test_V2_EchoBodyModel(t *testing.T) {
