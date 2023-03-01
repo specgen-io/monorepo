@@ -1,9 +1,9 @@
 package services
 
 import (
-	"test-service/spec/echo"
-	"test-service/spec/empty"
-	"test-service/spec/models"
+	"the-service/spec/echo"
+	"the-service/spec/empty"
+	"the-service/spec/models"
 
 	"cloud.google.com/go/civil"
 	"github.com/google/uuid"

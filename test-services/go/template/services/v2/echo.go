@@ -1,7 +1,7 @@
 package v2
 
 import (
-	"test-service/spec/v2/models"
+	"the-service/spec/v2/models"
 )
 
 type EchoService struct{}

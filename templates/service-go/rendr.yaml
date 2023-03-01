@@ -18,6 +18,10 @@ args:
     type: string
     description: package name
     default: theservice
+  cors:
+    type: boolean
+    description: do you want to disable cors
+    default: yes
   swagger:
     type: boolean
     description: do you want to enable swagger generation and hosting

@@ -509,32 +509,9 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - test-clients/test-service
+            - test-clients/test-service     
 
   client-golang:
-    working_directory: ~/specgen-tests
-    docker:
-      - image: cimg/go:1.18.3
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - start-service:
-          port: 8081
-      - install_specgen_golang
-      - run:
-          name: Test Go client
-          command: |
-            cd ./test-clients/go
-            go generate
-            mkdir -p ./test-results
-            go install github.com/jstemmer/go-junit-report@v0.9.1
-            go test ./... -v
-            go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
-      - store_test_results:
-          path: ./test-clients/go/test-results         
-
-  client-go:
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
     working_directory: ~/specgen-tests
@@ -908,6 +885,11 @@ jobs:
           command: ./test-services/tests/service-tests -test.v
 
   service-golang:
+    parameters:
+      values-file:
+        type: string
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>    
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/go:1.18.3
@@ -916,18 +898,29 @@ jobs:
       - attach_workspace:
           at: .
       - install_specgen_golang
+      - get-rendr
       - run:
-          name: Build service
-          command: |
-            cd ./test-services/go
-            go generate
-            go build
+          name: Copy spec.yaml
+          command: cp ./test-services/spec.yaml ./test-services/go/template/spec.yaml
       - run:
-          name: Run service
+          name: Generate service
           command: |
-            cd ./test-services/go
-            go run service.go --port 8081
+            export THE_ROOT=./test-services/typescript
+            ./rendr file:///./templates/service-go --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
+      - restore_cache:
+          key: client-go
+      - yaml-execute:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - yaml-execute:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .run
           background: true
+      - save_cache:
+          key: client-go
+          paths: [ ~/go/pkg/mod ]    
       - wait-url:
           url: http://localhost:8081/docs/
       - go-tests:
@@ -1473,7 +1466,7 @@ workflows:
           name: client-test-service-golang
           context: specgen
           requires: [golang-build]
-      - client-go:
+      - client-golang:
           context: specgen
           requires: [client-test-service-golang]
 

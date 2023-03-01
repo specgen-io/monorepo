@@ -1,10 +1,10 @@
 package services
 
 import (
-	"test-service/spec/check"
-	"test-service/spec/empty"
-	"test-service/spec/httperrors/errmodels"
-	"test-service/spec/models"
+	"the-service/spec/check"
+	"the-service/spec/empty"
+	"the-service/spec/httperrors/errmodels"
+	"the-service/spec/models"
 )
 
 type CheckService struct{}
