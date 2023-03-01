@@ -1460,6 +1460,9 @@ workflows:
           name: service-tests-golang
           requires: [golang-build]
       - service-golang:
+          matrix:
+            parameters:
+              values-file: ["vestigo"]
           context: specgen
           requires: [service-tests-golang]
       - client-test-service:
