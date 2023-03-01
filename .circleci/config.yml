@@ -544,7 +544,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install_specgen_golang    
+      - install_specgen_golang
       - get-rendr
       - run:
           name: Copy spec.yaml
