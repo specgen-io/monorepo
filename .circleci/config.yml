@@ -905,7 +905,7 @@ jobs:
       - run:
           name: Generate service
           command: |
-            export THE_ROOT=./test-services/typescript
+            export THE_ROOT=./test-services/go
             ./rendr file:///./templates/service-go --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - restore_cache:
           key: client-go
