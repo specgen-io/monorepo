@@ -494,22 +494,39 @@ jobs:
           paths: [ ~/.gradle ]
 
   client-test-service:
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>    
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/go:1.18.3
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install_specgen_golang
+      - get-rendr
       - run:
-          name: Build test-service
+          name: Copy spec.yaml
+          command: cp ./test-clients/spec.yaml ./test-clients/test-service/template/spec.yaml
+      - run:
+          name: Generate service
           command: |
-            cd ./test-clients/test-service
-            go generate
-            go build -o test-service
-      - persist_to_workspace:
-          root: .
-          paths:
-            - test-clients/test-service     
+            export THE_ROOT=./test-clients/test-service
+            ./rendr file:///./templates/service-go --root file:///${THE_ROOT}/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./out
+      - restore_cache:
+          key: test-service
+      - yaml-execute:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - yaml-execute:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .run
+          background: true
+      - save_cache:
+          key: test-service
+          paths: [ ~/go/pkg/mod ]
 
   client-golang:
     environment:
