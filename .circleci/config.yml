@@ -1360,7 +1360,7 @@ commands:
     steps:
       - run:
           name: Start test-service
-          command: ./test-clients/test-service/test-service --port << parameters.port >>
+          command: ./test-clients/test-service/the-service --port << parameters.port >>
           background: true
       - wait-url:
           url: http://localhost:<< parameters.port >>/
