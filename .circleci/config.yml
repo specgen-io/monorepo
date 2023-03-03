@@ -519,11 +519,6 @@ jobs:
           path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
-      - yaml-execute:
-          path: ./out
-          yaml-file: .rendr.yaml
-          yaml-path: .run
-          background: true
       - save_cache:
           key: test-service
           paths: [ ~/go/pkg/mod ]
@@ -1360,7 +1355,7 @@ commands:
     steps:
       - run:
           name: Start test-service
-          command: ./test-clients/test-service/the-service --port << parameters.port >>
+          command: ./test-clients/test-service/out --port << parameters.port >>
           background: true
       - wait-url:
           url: http://localhost:<< parameters.port >>/
