@@ -512,11 +512,11 @@ jobs:
           name: Generate service
           command: |
             export THE_ROOT=./test-clients/test-service
-            ./rendr file:///./templates/service-go --root file:///${THE_ROOT}/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./out
+            ./rendr file:///./templates/service-go --root file:///${THE_ROOT}/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./test-service
       - restore_cache:
           key: test-service
       - yaml-execute:
-          path: ./out
+          path: ./test-service
           yaml-file: .rendr.yaml
           yaml-path: .build
       - save_cache:
@@ -1355,7 +1355,7 @@ commands:
     steps:
       - run:
           name: Start test-service
-          command: ./specgen-tests/out --port << parameters.port >>
+          command: ./test-service --port << parameters.port >>
           background: true
       - wait-url:
           url: http://localhost:<< parameters.port >>/
