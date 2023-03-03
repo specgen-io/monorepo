@@ -511,7 +511,7 @@ jobs:
       - run:
           name: Generate service
           command: |
-            export THE_ROOT=./test-clients/
+            export THE_ROOT=./test-clients/test-service
             ./rendr file:///./templates/service-go --root file:///${THE_ROOT}/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - restore_cache:
           key: test-service
