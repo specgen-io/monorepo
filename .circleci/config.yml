@@ -1355,7 +1355,7 @@ commands:
     steps:
       - run:
           name: Start test-service
-          command: ./test-clients/test-service/out --port << parameters.port >>
+          command: ./specgen-tests/out --port << parameters.port >>
           background: true
       - wait-url:
           url: http://localhost:<< parameters.port >>/
