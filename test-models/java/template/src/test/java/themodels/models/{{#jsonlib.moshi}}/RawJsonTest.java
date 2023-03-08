@@ -9,7 +9,7 @@ import java.util.*;
 import static themodels.models.Utils.*;
 import themodels.models.RawJsonField;
 
-public class RawJsonTest extends JsonTest {
+public class RawJsonTest {
     @Test
     public void stringify() throws IOException {
 		    var theObject = new HashMap<String, Object>();

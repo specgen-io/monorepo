@@ -20,18 +20,32 @@ public class JsonTest {
     }
 
     @Test
+    public void nestedObject() {
+        Parent data = new Parent("the string", new Message(123));
+        String jsonStr = "{'field':'the string','nested':{'field':123}}";
+        check(data, jsonStr, Parent.class);
+    }
+
+    @Test
     public void objectModelFieldCases() {
         MessageCases data = new MessageCases("snake_case value", "camelCase value");
         String jsonStr = "{'camelCase':'camelCase value','snake_case':'snake_case value'}";
         check(data, jsonStr, MessageCases.class);
     }
 
+    {{^jsonlib.moshi}}
     @Test
-    public void nestedObject() {
-        Parent data = new Parent("the string", new Message(123));
-        String jsonStr = "{'field':'the string','nested':{'field':123}}";
-        check(data, jsonStr, Parent.class);
+    public void objectModelMissingValueTypeField() {
+        var json = createJson();
+        assertThrows(JsonParseException.class, () -> json.read("{}", Message.class));
     }
+
+    @Test
+    public void objectFieldIsNull() {
+        var json = createJson();
+        assertThrows(JsonParseException.class, () -> json.read(fixQuotes("{'field':'the string','nested':null}"), Parent.class));
+    }
+    {{/jsonlib.moshi}}
 
     @Test
     public void enumModel() {
