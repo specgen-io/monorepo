@@ -40,11 +40,11 @@ public class JsonTest {
         assertThrows(JsonParseException.class, () -> json.read("{}", Message.class));
     }
 
-	  @Test
-	  public void objectFieldIsNull() {
+    @Test
+    public void objectFieldIsNull() {
         var json = createJson();
-		    assertThrows(JsonParseException.class, () -> json.read(fixQuotes("{'field':'the string','nested':null}"), Parent.class));
-	  }
+        assertThrows(JsonParseException.class, () -> json.read(fixQuotes("{'field':'the string','nested':null}"), Parent.class));
+    }
     {{/jsonlib.moshi}}
 
     @Test
