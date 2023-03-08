@@ -25,10 +25,10 @@ class JsonTest {
     }
 
     @Test
-    fun objectModelMissingField() {
-        assertFailsWith<Throwable> {
-            json.read("""{}""", Message::class.java)
-        }
+    fun nestedObject() {
+        val data = Parent("the string", Message(123))
+        val jsonStr = """{"field":"the string","nested":{"field":123}}"""
+        check(data, jsonStr, Parent::class.java)
     }
 
     @Test
@@ -39,14 +39,14 @@ class JsonTest {
     }
 
     @Test
-    fun nestedObject() {
-        val data = Parent("the string", Message(123))
-        val jsonStr = """{"field":"the string","nested":{"field":123}}"""
-        check(data, jsonStr, Parent::class.java)
+    fun objectModelMissingField() {
+        assertFailsWith<Throwable> {
+            json.read("""{}""", Message::class.java)
+        }
     }
 
     @Test
-    fun objectFieldNotNull() {
+    fun objectFieldIsNull() {
         assertFailsWith<Throwable> {
             json.read("""{"field":"the string","nested":null}""", Parent::class.java)
         }
