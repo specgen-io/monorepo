@@ -28,6 +28,7 @@ public class JsonTest {
 
     @Test
     public void objectModelMissingValueTypeField() {
+        var json = createJson();
         assertThrows(JsonParseException.class, () -> json.read("{}", Message.class));
     }
 
@@ -40,6 +41,7 @@ public class JsonTest {
 
 	  @Test
 	  public void objectFieldIsNull() {
+        var json = createJson();
 		    assertThrows(JsonParseException.class, () -> json.read(fixQuotes("{'field':'the string','nested':null}"), Parent.class));
 	  }
 
