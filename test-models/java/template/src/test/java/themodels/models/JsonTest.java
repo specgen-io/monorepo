@@ -45,7 +45,7 @@ public class JsonTest {
         var json = createJson();
 		    assertThrows(JsonParseException.class, () -> json.read(fixQuotes("{'field':'the string','nested':null}"), Parent.class));
 	  }
-    {{#jsonlib.moshi}}
+    {{/jsonlib.moshi}}
 
     @Test
     public void enumModel() {
