@@ -27,11 +27,21 @@ public class JsonTest {
     }
 
     @Test
+    public void objectModelMissingValueTypeField() {
+        assertThrows(JsonParseException.class, () -> json.read("{}", Message.class));
+    }
+
+    @Test
     public void nestedObject() {
         Parent data = new Parent("the string", new Message(123));
         String jsonStr = "{'field':'the string','nested':{'field':123}}";
         check(data, jsonStr, Parent.class);
     }
+
+	  @Test
+	  public void objectFieldIsNull() {
+		    assertThrows(JsonParseException.class, () -> json.read(fixQuotes("{'field':'the string','nested':null}"), Parent.class));
+	  }
 
     @Test
     public void enumModel() {
