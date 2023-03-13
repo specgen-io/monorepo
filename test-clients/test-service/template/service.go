@@ -21,11 +21,12 @@ func main() {
 	decimal.MarshalJSONWithoutQuotes = true
 
 	router := vestigo.NewRouter()
-	{{#cors.value}}
+
+	router.Get("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) })
+
 	router.SetGlobalCors(&vestigo.CorsAccessControl{
 		AllowOrigin: []string{"*", "*"},
 	})
-	{{/cors.value}}
 
 	echoServiceV2 := &v2.EchoService{}
 	echoService := &services.EchoService{}
