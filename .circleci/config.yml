@@ -522,11 +522,11 @@ jobs:
       - save_cache:
           key: test-service
           paths: [ ~/go/pkg/mod ]
-      - run: ls -la ./test-clients/test-service
+      - run: ls -la ./test-service
       - persist_to_workspace:
           root: .
           paths:
-            - test-clients/test-service
+            - test-service
 
   client-golang:
     environment:
