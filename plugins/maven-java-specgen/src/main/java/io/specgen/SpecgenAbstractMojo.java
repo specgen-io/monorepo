@@ -16,12 +16,17 @@ public abstract class SpecgenAbstractMojo extends AbstractMojo {
 
 		Result result = executeCommand(specgenCommand);
 
-		if (result.exitCode != 0) {
-			throw new RuntimeException("Failed to run specgen tool, exit code: " + result.exitCode);
-		}
+		var exitMessage = "Program exited with code: " + result.exitCode;
 
-		getLog().info("Program exited with code: " + result.exitCode);
-		getLog().info(result.stdout);
+		if (result.exitCode != 0) {
+			getLog().error(exitMessage);
+			getLog().error(result.stderr);
+
+			throw new RuntimeException("Failed to run specgen tool, exit code: " + result.exitCode);
+		} else {
+			getLog().info(exitMessage);
+			getLog().info(result.stderr);
+		}
 	}
 
 	private String getSpecgenPath() {
