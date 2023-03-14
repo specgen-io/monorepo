@@ -1,15 +1,17 @@
-//go:generate specgen-golang service-go --spec-file spec.yaml --module-name {{project.value}} --generate-path ./spec --services-path ./services {{#swagger.value}}--swagger-path docs/swagger.yaml {{/swagger.value}}
+//go:generate specgen-golang service-go --spec-file spec.yaml --module-name the-service --generate-path ./spec --services-path ./services --swagger-path docs/swagger.yaml
 
 package main
 
 import (
 	"flag"
+	"net/http"
+	"the-service/services"
+	"the-service/services/v2"
+	"the-service/spec"
+
 	"github.com/husobee/vestigo"
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"{{project.value}}/services"
-	"{{project.value}}/spec"
 )
 
 func main() {
@@ -19,15 +21,18 @@ func main() {
 	decimal.MarshalJSONWithoutQuotes = true
 
 	router := vestigo.NewRouter()
-	{{#cors.value}}
+
+	router.Get("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) })
+
 	router.SetGlobalCors(&vestigo.CorsAccessControl{
 		AllowOrigin: []string{"*", "*"},
 	})
-	{{/cors.value}}
 
-	sampleService := &services.SampleService{}
+	echoServiceV2 := &v2.EchoService{}
+	echoService := &services.EchoService{}
+	checkService := &services.CheckService{}
 
-	spec.AddRoutes(router, sampleService)
+	spec.AddRoutes(router, echoServiceV2, echoService, checkService)
 
 	router.Get("/docs/*", http.StripPrefix("/docs/", http.FileServer(http.Dir("docs"))).ServeHTTP)
 

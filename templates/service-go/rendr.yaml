@@ -18,6 +18,10 @@ args:
     type: string
     description: package name
     default: theservice
+  cors:
+    type: boolean
+    description: do you want to enable cors
+    default: no
   swagger:
     type: boolean
     description: do you want to enable swagger generation and hosting
@@ -31,7 +35,7 @@ args:
         default: 1.18
       specgen:
         type: string
-        default: 2.1.1853
+        default: 2.1.2134
       civil:
         type: string
         default: 0.82.0
