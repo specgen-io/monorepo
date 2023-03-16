@@ -17,7 +17,6 @@ public abstract class SpecgenAbstractMojo extends AbstractMojo {
 		Result result = executeCommand(specgenCommand);
 
 		var exitMessage = "Program exited with code: " + result.exitCode;
-
 		if (result.exitCode != 0) {
 			getLog().error(exitMessage);
 			getLog().error(result.stderr);

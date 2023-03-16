@@ -49,8 +49,13 @@ public abstract class SpecgenBaseTask : DefaultTask() {
                     executable.setExecutable(true)
                 }
                 executable(executable)
+
+                logger.lifecycle("Running specgen tool")
+                logger.lifecycle(args.joinToString(" "))
                 args(args)
-            }.assertNormalExitValue()
+            }.assertNormalExitValue().apply {
+                logger.lifecycle("Program exited with code: $exitValue")
+            }
         } catch (error: Exception) {
             throw SpecgenException("Source generation failed: ${error.message}", error)
         }

@@ -17,7 +17,6 @@ public abstract class SpecgenAbstractMojo extends AbstractMojo {
 		Result result = executeCommand(specgenCommand);
 
 		var exitMessage = "Program exited with code: " + result.exitCode;
-
 		if (result.exitCode != 0) {
 			getLog().error(exitMessage);
 			getLog().error(result.stderr);
@@ -108,7 +107,7 @@ public abstract class SpecgenAbstractMojo extends AbstractMojo {
 	private static String getArchName() {
 		String archName = System.getProperty("os.arch");
 		String arch;
-		switch(archName) {
+		switch (archName) {
 			case "ia64":
 			case "amd64":
 			case "x86_64":
@@ -118,7 +117,7 @@ public abstract class SpecgenAbstractMojo extends AbstractMojo {
 				arch = "arm64";
 				break;
 			default:
-			    throw new RuntimeException("Unsupported architecture: "+archName);
+				throw new RuntimeException("Unsupported architecture: " + archName);
 		}
 		return arch;
 	}
