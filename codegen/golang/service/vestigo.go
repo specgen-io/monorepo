@@ -12,6 +12,8 @@ import (
 	"strings"
 )
 
+var Vestigo = "vestigo"
+
 type VestigoGenerator struct {
 	Types   *types.Types
 	Models  models.Generator

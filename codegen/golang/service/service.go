@@ -6,11 +6,11 @@ import (
 	"spec"
 )
 
-func GenerateService(specification *spec.Spec, moduleName string, swaggerPath string, generatePath string, servicesPath string) *generator.Sources {
+func GenerateService(specification *spec.Spec, server, moduleName string, swaggerPath string, generatePath string, servicesPath string) *generator.Sources {
 	sources := generator.NewSources()
 
 	modules := NewModules(moduleName, generatePath, servicesPath, specification)
-	generator := NewGenerator(modules)
+	generator := NewGenerator(server, modules)
 
 	sources.AddGenerated(generator.RootRouting(specification))
 	sources.AddGeneratedAll(generator.AllStaticFiles())
