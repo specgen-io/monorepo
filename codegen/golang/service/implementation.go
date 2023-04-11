@@ -39,7 +39,6 @@ func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 		w.Imports.Module(g.Modules.Models(api.InHttp.InVersion))
 	}
 
-	w.EmptyLine()
 	w.Line(`type %s struct{}`, serviceTypeName(api))
 	w.EmptyLine()
 	apiPackage := api.Name.SnakeCase()
@@ -52,6 +51,7 @@ func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 			w.Line(`  return nil, errors.New("implementation has not added yet")`)
 		}
 		w.Line(`}`)
+		w.EmptyLine()
 	}
 
 	return w.ToCodeFile()

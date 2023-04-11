@@ -52,6 +52,18 @@ func ApiHasUrlParams(api *spec.Api) bool {
 	return hasUrlParams
 }
 
+func OperationHasHeaderParams(operation *spec.NamedOperation) bool {
+	hasHeaderParams := false
+	walk := spec.NewWalker().
+		OnOperation(func(operation *spec.NamedOperation) {
+			if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
+				hasHeaderParams = true
+			}
+		})
+	walk.Operation(operation)
+	return hasHeaderParams
+}
+
 func ApiHasBodyOfKind(api *spec.Api, kind spec.BodyKind) bool {
 	result := false
 	walk := spec.NewWalker().
