@@ -1,4 +1,4 @@
-//go:generate specgen-golang service-go --spec-file spec.yaml --module-name {{project.value}} --generate-path ./spec --services-path ./services {{#swagger.value}}--swagger-path docs/swagger.yaml {{/swagger.value}}
+//go:generate specgen-golang service-go --server httprouter --spec-file spec.yaml --module-name {{project.value}} --generate-path ./spec --services-path ./services {{#swagger.value}}--swagger-path docs/swagger.yaml {{/swagger.value}}
 
 package main
 
@@ -33,7 +33,9 @@ func main() {
 
 	spec.AddRoutes(router, sampleService)
 
+	{{#swagger.value}}
 	router.ServeFiles("/docs/*filepath", http.Dir("./docs"))
+	{{/swagger.value}}
 
 	log.Infof("Starting service on port: %s", *port)
 	log.Fatal(http.ListenAndServe(":"+*port, router))
