@@ -25,7 +25,13 @@ func main() {
 
 	decimal.MarshalJSONWithoutQuotes = true
 
+	{{#server.vestigo}}
 	router := vestigo.NewRouter()
+	{{/server.vestigo}}
+	{{#server.httprouter}}
+	router := httprouter.New()
+	{{/server.httprouter}}
+
 	{{#cors.value}}
 	{{#server.vestigo}}
 	router.SetGlobalCors(&vestigo.CorsAccessControl{
