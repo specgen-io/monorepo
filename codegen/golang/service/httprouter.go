@@ -12,19 +12,19 @@ import (
 	"strings"
 )
 
-var Vestigo = "vestigo"
+var HttpRouter = "httprouter"
 
-type VestigoGenerator struct {
+type HttpRouterGenerator struct {
 	Types   *types.Types
 	Models  models.Generator
 	Modules *Modules
 }
 
-func NewVestigoGenerator(types *types.Types, models models.Generator, modules *Modules) *VestigoGenerator {
-	return &VestigoGenerator{types, models, modules}
+func NewHttpRouterGenerator(types *types.Types, models models.Generator, modules *Modules) *HttpRouterGenerator {
+	return &HttpRouterGenerator{types, models, modules}
 }
 
-func (g *VestigoGenerator) Routings(version *spec.Version) []generator.CodeFile {
+func (g *HttpRouterGenerator) Routings(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
 		files = append(files, *g.routing(&api))
@@ -32,10 +32,10 @@ func (g *VestigoGenerator) Routings(version *spec.Version) []generator.CodeFile 
 	return files
 }
 
-func (g *VestigoGenerator) routing(api *spec.Api) *generator.CodeFile {
+func (g *HttpRouterGenerator) routing(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.Routing(api.InHttp.InVersion), fmt.Sprintf("%s.go", api.Name.SnakeCase()))
 
-	w.Imports.Add("github.com/husobee/vestigo")
+	w.Imports.Add("github.com/julienschmidt/httprouter")
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
 	w.Imports.Add("net/http")
 	w.Imports.Add("fmt")
@@ -58,18 +58,14 @@ func (g *VestigoGenerator) routing(api *spec.Api) *generator.CodeFile {
 		w.Imports.Module(g.Modules.ParamsParser)
 	}
 	w.Imports.Module(g.Modules.Respond)
-	w.EmptyLine()
-	w.Line(`func %s(router *vestigo.Router, %s %s) {`, addRoutesMethodName(api), serviceInterfaceTypeVar(api), g.Modules.ServicesApi(api).Get(serviceInterfaceName))
+	w.Line(`func %s(router *httprouter.Router, %s %s) {`, addRoutesMethodName(api), serviceInterfaceTypeVar(api), g.Modules.ServicesApi(api).Get(serviceInterfaceName))
 	w.Indent()
 	for _, operation := range api.Operations {
 		url := g.getEndpointUrl(&operation)
 		w.Line(`%s := log.Fields{"operationId": "%s.%s", "method": "%s", "url": "%s"}`, logFieldsName(&operation), operation.InApi.Name.Source, operation.Name.Source, casee.ToUpperCase(operation.Endpoint.Method), url)
-		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request) {`, casee.ToPascalCase(operation.Endpoint.Method), url)
+		w.Line(`router.%s("%s", func(res http.ResponseWriter, req *http.Request, params httprouter.Params) {`, casee.ToUpperCase(operation.Endpoint.Method), url)
 		g.operation(w.Indented(), &operation)
 		w.Line(`})`)
-		if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
-			g.addSetCors(w, &operation)
-		}
 		w.EmptyLine()
 	}
 	w.Unindent()
@@ -78,7 +74,7 @@ func (g *VestigoGenerator) routing(api *spec.Api) *generator.CodeFile {
 	return w.ToCodeFile()
 }
 
-func (g *VestigoGenerator) getEndpointUrl(operation *spec.NamedOperation) string {
+func (g *HttpRouterGenerator) getEndpointUrl(operation *spec.NamedOperation) string {
 	url := operation.FullUrl()
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
 		for _, param := range operation.Endpoint.UrlParams {
@@ -88,22 +84,16 @@ func (g *VestigoGenerator) getEndpointUrl(operation *spec.NamedOperation) string
 	return url
 }
 
-func (g *VestigoGenerator) addSetCors(w *writer.Writer, operation *spec.NamedOperation) {
-	w.Line(`router.SetCors("%s", &vestigo.CorsAccessControl{`, g.getEndpointUrl(operation))
+func (g *HttpRouterGenerator) addSetCors(w *writer.Writer, operation *spec.NamedOperation) {
 	params := []string{}
 	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf(`"%s"`, param.Name.Source))
+		params = append(params, fmt.Sprintf(`%s`, param.Name.Source))
 	}
-	w.Line(`  AllowHeaders: []string{%s},`, strings.Join(params, ", "))
-	w.Line(`})`)
+	w.Line(`res.Header().Set("Access-Control-Allow-Headers", "%s")`, strings.Join(params, ", "))
 }
 
-func (g *VestigoGenerator) parserParameterCall(isUrlParam bool, param *spec.NamedParam, paramsParserName string) string {
-	paramNameSource := param.Name.Source
-	if isUrlParam {
-		paramNameSource = ":" + paramNameSource
-	}
-	parserParams := []string{fmt.Sprintf(`"%s"`, paramNameSource)}
+func (g *HttpRouterGenerator) parserParameterCall(param *spec.NamedParam, paramsParserName string) string {
+	parserParams := []string{fmt.Sprintf(`"%s"`, param.Name.Source)}
 	methodName, defaultParam := parserDefaultName(param)
 	isEnum := param.Type.Definition.Info.Model != nil && param.Type.Definition.Info.Model.IsEnum()
 	enumModel := param.Type.Definition.Info.Model
@@ -120,19 +110,19 @@ func (g *VestigoGenerator) parserParameterCall(isUrlParam bool, param *spec.Name
 	return call
 }
 
-func (g *VestigoGenerator) headerParsing(w *writer.Writer, operation *spec.NamedOperation) {
+func (g *HttpRouterGenerator) headerParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	g.parametersParsing(w, operation, operation.HeaderParams, "header", "req.Header")
 }
 
-func (g *VestigoGenerator) queryParsing(w *writer.Writer, operation *spec.NamedOperation) {
+func (g *HttpRouterGenerator) queryParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	g.parametersParsing(w, operation, operation.QueryParams, "query", "req.URL.Query()")
 }
 
-func (g *VestigoGenerator) urlParamsParsing(w *writer.Writer, operation *spec.NamedOperation) {
+func (g *HttpRouterGenerator) urlParamsParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.Endpoint.UrlParams != nil && len(operation.Endpoint.UrlParams) > 0 {
-		w.Line(`urlParams := paramsparser.New(req.URL.Query(), false)`)
+		w.Line(`urlParams := paramsparser.NewUrlParser(params, false)`)
 		for _, param := range operation.Endpoint.UrlParams {
-			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(true, &param, "urlParams"))
+			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(&param, "urlParams"))
 		}
 		w.Line(`if len(urlParams.Errors) > 0 {`)
 		respondNotFound(w.Indented(), operation, g.Types, fmt.Sprintf(`"Failed to parse url parameters"`))
@@ -140,11 +130,11 @@ func (g *VestigoGenerator) urlParamsParsing(w *writer.Writer, operation *spec.Na
 	}
 }
 
-func (g *VestigoGenerator) parametersParsing(w *writer.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramsValuesVar string) {
+func (g *HttpRouterGenerator) parametersParsing(w *writer.Writer, operation *spec.NamedOperation, namedParams []spec.NamedParam, paramsParserName string, paramsValuesVar string) {
 	if namedParams != nil && len(namedParams) > 0 {
 		w.Line(`%s := paramsparser.New(%s, true)`, paramsParserName, paramsValuesVar)
 		for _, param := range namedParams {
-			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(false, &param, paramsParserName))
+			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(&param, paramsParserName))
 		}
 		w.Line(`if len(%s.Errors) > 0 {`, paramsParserName)
 		respondBadRequest(w.Indented(), operation, g.Types, paramsParserName, fmt.Sprintf(`"Failed to parse %s"`, paramsParserName), fmt.Sprintf(`httperrors.Convert(%s.Errors)`, paramsParserName))
@@ -152,7 +142,7 @@ func (g *VestigoGenerator) parametersParsing(w *writer.Writer, operation *spec.N
 	}
 }
 
-func (g *VestigoGenerator) serviceCallAndResponseCheck(w *writer.Writer, operation *spec.NamedOperation, responseVar string) {
+func (g *HttpRouterGenerator) serviceCallAndResponseCheck(w *writer.Writer, operation *spec.NamedOperation, responseVar string) {
 	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
 	serviceCall := serviceCall(serviceInterfaceTypeVar(operation.InApi), operation)
 	if singleEmptyResponse {
@@ -170,7 +160,7 @@ func (g *VestigoGenerator) serviceCallAndResponseCheck(w *writer.Writer, operati
 	}
 }
 
-func (g *VestigoGenerator) operation(w *writer.Writer, operation *spec.NamedOperation) {
+func (g *HttpRouterGenerator) operation(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line(`log.WithFields(%s).Info("Received request")`, logFieldsName(operation))
 	w.Line(`var err error`)
 	g.urlParamsParsing(w, operation)
@@ -181,8 +171,11 @@ func (g *VestigoGenerator) operation(w *writer.Writer, operation *spec.NamedOper
 	g.response(w, operation, `response`)
 }
 
-func (g *VestigoGenerator) response(w *writer.Writer, operation *spec.NamedOperation, responseVar string) {
+func (g *HttpRouterGenerator) response(w *writer.Writer, operation *spec.NamedOperation, responseVar string) {
 	if len(operation.Responses) == 1 {
+		if walkers.OperationHasHeaderParams(operation) {
+			g.addSetCors(w, operation)
+		}
 		writeResponse(w, logFieldsName(operation), &operation.Responses[0].Response, responseVar)
 	} else {
 		for _, response := range operation.Responses {
@@ -192,11 +185,14 @@ func (g *VestigoGenerator) response(w *writer.Writer, operation *spec.NamedOpera
 			w.Line(`  return`)
 			w.Line(`}`)
 		}
+		if walkers.OperationHasHeaderParams(operation) {
+			g.addSetCors(w, operation)
+		}
 		respondInternalServerError(w, operation, g.Types, `"Result from service implementation does not have anything in it"`)
 	}
 }
 
-func (g *VestigoGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
+func (g *HttpRouterGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.BodyIs(spec.BodyString) {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"text/plain"`, "req", "res"))
 		w.Line(`  return`)
@@ -224,10 +220,10 @@ func (g *VestigoGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOp
 	}
 }
 
-func (g *VestigoGenerator) RootRouting(specification *spec.Spec) *generator.CodeFile {
+func (g *HttpRouterGenerator) RootRouting(specification *spec.Spec) *generator.CodeFile {
 	w := writer.New(g.Modules.Root, "spec.go")
 
-	w.Imports.Add("github.com/husobee/vestigo")
+	w.Imports.Add("github.com/julienschmidt/httprouter")
 	for _, version := range specification.Versions {
 		w.Imports.ModuleAliased(g.Modules.Routing(&version).Aliased(routingPackageAlias(&version)))
 		for _, api := range version.Http.Apis {
@@ -241,7 +237,7 @@ func (g *VestigoGenerator) RootRouting(specification *spec.Spec) *generator.Code
 			routesParams = append(routesParams, fmt.Sprintf(`%s %s`, serviceApiNameVersioned(&api), apiModule.Get(serviceInterfaceName)))
 		}
 	}
-	w.Line(`func AddRoutes(router *vestigo.Router, %s) {`, strings.Join(routesParams, ", "))
+	w.Line(`func AddRoutes(router *httprouter.Router, %s) {`, strings.Join(routesParams, ", "))
 	for _, version := range specification.Versions {
 		routingModule := g.Modules.Routing(&version).Aliased(routingPackageAlias(&version))
 		for _, api := range version.Http.Apis {
@@ -253,6 +249,23 @@ func (g *VestigoGenerator) RootRouting(specification *spec.Spec) *generator.Code
 	return w.ToCodeFile()
 }
 
-func (g *VestigoGenerator) GenerateUrlParamsCtor() *generator.CodeFile {
-	return nil
+func (g *HttpRouterGenerator) GenerateUrlParamsCtor() *generator.CodeFile {
+	w := writer.New(g.Modules.ParamsParser, `url_parser.go`)
+
+	w.Lines(`
+import (
+	"github.com/julienschmidt/httprouter"
+	"net/url"
+)
+
+func NewUrlParser(params httprouter.Params, parseCommaSeparatedArray bool) *ParamsParser {
+	values := make(url.Values)
+	for _, param := range params {
+		values.Add(param.Key, param.Value)
+	}
+	return &ParamsParser{values, parseCommaSeparatedArray, []ParsingError{}}
+}
+`)
+
+	return w.ToCodeFile()
 }

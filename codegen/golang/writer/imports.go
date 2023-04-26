@@ -50,9 +50,9 @@ func (self *imports) Lines() []string {
 		for _, theImport := range imports {
 			alias := self.imports[theImport]
 			if alias != "" {
-				lines = append(lines, fmt.Sprintf(`  %s "%s"`, alias, theImport))
+				lines = append(lines, fmt.Sprintf(`	%s "%s"`, alias, theImport))
 			} else {
-				lines = append(lines, fmt.Sprintf(`  "%s"`, theImport))
+				lines = append(lines, fmt.Sprintf(`	"%s"`, theImport))
 			}
 		}
 		lines = append(lines, `)`)

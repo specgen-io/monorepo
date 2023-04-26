@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"generator"
-	"golang/module"
 	"golang/types"
 	"golang/writer"
 	"spec"
@@ -62,8 +61,9 @@ func parserMethodNamePlain(typ *spec.TypeDef) string {
 	}
 }
 
-func generateParamsParser(paramsParserModule module.Module) *generator.CodeFile {
-	w := writer.New(paramsParserModule, `parser.go`)
+func (g *Generator) GenerateParamsParser() *generator.CodeFile {
+	w := writer.New(g.Modules.ParamsParser, `parser.go`)
+
 	w.Lines(`
 import (
 	"fmt"
@@ -616,5 +616,6 @@ func (parser *ParamsParser) StringEnumArray(name string, values []string) []stri
 	return convertedValues
 }
 `)
+
 	return w.ToCodeFile()
 }

@@ -36,19 +36,22 @@ var Client = generator.Generator{
 	},
 }
 
+var ServerGoValues = []string{"vestigo", "httprouter"}
+
 var Service = generator.Generator{
 	"service-go",
 	"Go Service",
 	"Generate Go service source code",
 	[]generator.GeneratorArg{
 		{Arg: generator.ArgSpecFile, Required: true},
+		{Arg: generator.ArgServer, Required: true, Values: ServerGoValues},
 		{Arg: generator.ArgModuleName, Required: true},
 		{Arg: generator.ArgSwaggerPath, Required: false},
 		{Arg: generator.ArgGeneratePath, Required: true},
 		{Arg: generator.ArgServicesPath, Required: false},
 	},
 	func(specification *spec.Spec, params generator.GeneratorArgsValues) *generator.Sources {
-		return service.GenerateService(specification, params[generator.ArgModuleName], params[generator.ArgSwaggerPath], params[generator.ArgGeneratePath], params[generator.ArgServicesPath])
+		return service.GenerateService(specification, params[generator.ArgServer], params[generator.ArgModuleName], params[generator.ArgSwaggerPath], params[generator.ArgGeneratePath], params[generator.ArgServicesPath])
 	},
 }
 
