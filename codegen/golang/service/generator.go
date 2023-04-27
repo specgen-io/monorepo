@@ -33,6 +33,9 @@ func NewGenerator(server string, modules *Modules) *Generator {
 	case HttpRouter:
 		serverGenerator = NewHttpRouterGenerator(types, models, modules)
 		break
+	case Chi:
+		serverGenerator = NewChiGenerator(types, models, modules)
+		break
 	default:
 		panic(fmt.Sprintf(`Unsupported server: %s`, server))
 	}
@@ -44,13 +47,3 @@ func NewGenerator(server string, modules *Modules) *Generator {
 		modules,
 	}
 }
-
-//func (g *Generator) AllStaticFiles() []generator.CodeFile {
-//	return []generator.CodeFile{
-//		*empty.GenerateEmpty(g.Modules.Empty),
-//		*g.EnumsHelperFunctions(),
-//		*g.ResponseHelperFunctions(),
-//		*g.CheckContentType(),
-//		*g.GenerateParamsParser(),
-//	}
-//}

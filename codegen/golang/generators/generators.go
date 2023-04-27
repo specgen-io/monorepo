@@ -36,7 +36,7 @@ var Client = generator.Generator{
 	},
 }
 
-var ServerGoValues = []string{"vestigo", "httprouter"}
+var ServerGoValues = []string{"vestigo", "httprouter", "chi"}
 
 var Service = generator.Generator{
 	"service-go",
