@@ -8,13 +8,18 @@ import (
 	"the-service/services"
 	"the-service/services/v2"
 	"the-service/spec"
-
 	{{#server.vestigo}}
 	"github.com/husobee/vestigo"
 	{{/server.vestigo}}
 	{{#server.httprouter}}
 	"github.com/julienschmidt/httprouter"
 	{{/server.httprouter}}
+	{{#server.chi}}
+	"github.com/go-chi/chi/v5"
+	{{#cors.value}}
+	"github.com/go-chi/cors"
+	{{/cors.value}}
+	{{/server.chi}}
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 )
@@ -31,6 +36,9 @@ func main() {
 	{{#server.httprouter}}
 	router := httprouter.New()
 	{{/server.httprouter}}
+	{{#server.chi}}
+	router := chi.NewRouter()
+	{{/server.chi}}
 
 	{{#cors.value}}
 	{{#server.vestigo}}
@@ -46,6 +54,11 @@ func main() {
 		}
 	})
 	{{/server.httprouter}}
+	{{#server.chi}}
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{"*", "*"},
+	}))
+	{{/server.chi}}
 	{{/cors.value}}
 
 	echoServiceV2 := &v2.EchoService{}
@@ -60,6 +73,9 @@ func main() {
 	{{#server.httprouter}}
 	router.ServeFiles("/docs/*filepath", http.Dir("./docs"))
 	{{/server.httprouter}}
+	{{#server.chi}}
+	router.Handle("/docs/*", http.StripPrefix("/docs/", http.FileServer(http.Dir("docs"))))
+	{{/server.chi}}
 
 	log.Infof("Starting service on port: %s", *port)
 	log.Fatal(http.ListenAndServe(":"+*port, router))

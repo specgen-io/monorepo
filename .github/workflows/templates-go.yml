@@ -61,7 +61,7 @@ jobs:
   service:
     strategy:
       matrix:
-        server: [vestigo, httprouter]
+        server: [vestigo, httprouter, chi]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
