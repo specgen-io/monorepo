@@ -11,7 +11,15 @@ require (
 	{{#server.httprouter}}
 	github.com/julienschmidt/httprouter v{{versions.httprouter.value}}
 	{{/server.httprouter}}
+	{{#server.chi}}
+	github.com/go-chi/chi/v5 v{{versions.chi.value}}
+	{{/server.chi}}
 	github.com/shopspring/decimal v{{versions.decimal.value}}
 	github.com/sirupsen/logrus v{{versions.logrus.value}}
 	github.com/stretchr/testify v{{versions.testify.value}} // indirect
+	{{#cors.value}}
+	{{#server.chi}}
+	github.com/go-chi/cors v{{versions.chi-cors.value}} // indirect
+	{{/server.chi}}
+	{{/cors.value}}
 )
