@@ -1,4 +1,5 @@
 {
+  "jsonmode": "strict",
   "server": "httprouter",
   "cors": false
 }

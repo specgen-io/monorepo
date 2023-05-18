@@ -1,4 +1,4 @@
-//go:generate specgen-golang service-go --server vestigo --spec-file spec.yaml --module-name {{project.value}} --generate-path ./spec --services-path ./services {{#swagger.value}}--swagger-path docs/swagger.yaml {{/swagger.value}}
+//go:generate specgen-golang service-go --jsonmode {{jsonmode.value}} --server vestigo --spec-file spec.yaml --module-name {{project.value}} --generate-path ./spec --services-path ./services {{#swagger.value}}--swagger-path docs/swagger.yaml {{/swagger.value}}
 
 package main
 
