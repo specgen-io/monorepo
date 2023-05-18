@@ -21,10 +21,10 @@ type Generator struct {
 	Modules *Modules
 }
 
-func NewGenerator(modules *Modules) *Generator {
+func NewGenerator(jsonmode string, modules *Modules) *Generator {
 	types := types.NewTypes()
 	return &Generator{
-		models.NewGenerator(&(modules.Modules)),
+		models.NewGenerator(jsonmode, &(modules.Modules)),
 		NewNetHttpGenerator(modules, types),
 		types,
 		modules,

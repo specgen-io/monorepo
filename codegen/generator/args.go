@@ -28,6 +28,10 @@ const Jsonlib = "jsonlib"
 const JsonlibTitle = "JSON library"
 const JsonlibDescription = "json serialization/deserialization library"
 
+const Jsonmode = "jsonmode"
+const JsonmodeTitle = "JSON mode"
+const JsonmodeDescription = "json serialization/deserialization mode"
+
 const Validation = "validation"
 const ValidationTitle = "Type validation library"
 const ValidationDescription = "type validation library"
@@ -52,6 +56,7 @@ var ArgSwaggerPath = Arg{SwaggerPath, SwaggerPathTitle, SwaggerPathDescription}
 var ArgServicesPath = Arg{ServicesPath, ServicesPathTitle, ServicesPathDescription}
 var ArgPackageName = Arg{PackageName, PackageNameTitle, PackageNameDescription}
 var ArgJsonlib = Arg{Jsonlib, JsonlibTitle, JsonlibDescription}
+var ArgJsonmode = Arg{Jsonmode, JsonmodeTitle, JsonmodeDescription}
 var ArgValidation = Arg{Validation, ValidationTitle, ValidationDescription}
 var ArgClient = Arg{Client, ClientTitle, ClientDescription}
 var ArgServer = Arg{Server, ServerTitle, ServerDescription}
