@@ -288,6 +288,9 @@ jobs:
           paths: [ ~/.gradle ]      
 
   models-golang:
+    parameters:
+      values-file:
+        type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
     working_directory: ~/specgen-tests
