@@ -8,7 +8,7 @@ args:
   project:
     type: string
     description: project name
-    default: the-srvice
+    default: the-service
   jsonmode:
     type: string
     description: JSON mode
