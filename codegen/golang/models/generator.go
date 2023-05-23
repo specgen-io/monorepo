@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"generator"
 	"golang/types"
 	"spec"
@@ -13,7 +14,18 @@ type Generator interface {
 	EnumsHelperFunctions() *generator.CodeFile
 }
 
-func NewGenerator(modules *Modules) Generator {
+func NewGenerator(jsonmode string, modules *Modules) Generator {
 	types := types.NewTypes()
-	return NewEncodingJsonGenerator(types, modules)
+
+	if jsonmode == Strict {
+		return NewEncodingJsonGenerator(types, modules, true)
+	}
+	if jsonmode == NonStrict {
+		return NewEncodingJsonGenerator(types, modules, false)
+	}
+
+	panic(fmt.Sprintf(`Unknown jsonmode: %s`, jsonmode))
 }
+
+var Strict = "strict"
+var NonStrict = "nonstrict"

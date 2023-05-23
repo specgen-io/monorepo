@@ -9,6 +9,11 @@ args:
     type: string
     description: project name
     default: the-service
+  jsonmode:
+    type: string
+    description: JSON mode
+    values: [strict, nonstrict]
+    default: strict  
   server:
     type: string
     description: server framework

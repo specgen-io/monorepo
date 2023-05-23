@@ -288,6 +288,9 @@ jobs:
           paths: [ ~/.gradle ]      
 
   models-golang:
+    parameters:
+      values-file:
+        type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
     working_directory: ~/specgen-tests
@@ -304,7 +307,7 @@ jobs:
           name: Generate models
           command: |
             export THE_ROOT=./test-models/go
-            ./rendr file:///./templates/models-go --root file:///${THE_ROOT}/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./out
+            ./rendr file:///./templates/models-go --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
       - run:
           name: Setup project for testing
           command: |
@@ -312,13 +315,13 @@ jobs:
             go get gotest.tools/v3
             go install github.com/jstemmer/go-junit-report@latest
       - restore_cache:
-          key: models-go
+          key: models-go-<<parameters.values-file>>
       - yaml-execute:
           path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
       - save_cache:
-          key: models-go
+          key: models-go-<<parameters.values-file>>
           paths: [ ~/go/pkg/mod ]
   
   models-ruby:
@@ -1470,6 +1473,9 @@ workflows:
           name: golang-build
           requires: [golang-no-plugin]
       - models-golang:
+          matrix:
+            parameters:
+              values-file: ["strict"]
           context: specgen
           requires: [golang-build]    
       - service-tests:
@@ -1478,7 +1484,7 @@ workflows:
       - service-golang:
           matrix:
             parameters:
-              values-file: ["vestigo", "chi"]    #should add "httprouter"
+              values-file: ["vestigo-strict", "chi-strict"]    #should add "httprouter"
           context: specgen
           requires: [service-tests-golang]
       - client-test-service:

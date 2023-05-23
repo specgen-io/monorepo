@@ -21,9 +21,9 @@ type Generator struct {
 	Modules *Modules
 }
 
-func NewGenerator(server string, modules *Modules) *Generator {
+func NewGenerator(jsonmode, server string, modules *Modules) *Generator {
 	types := types.NewTypes()
-	models := models.NewGenerator(&(modules.Modules))
+	models := models.NewGenerator(jsonmode, &(modules.Modules))
 
 	var serverGenerator ServerGenerator = nil
 	switch server {

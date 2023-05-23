@@ -11,6 +11,9 @@ on:
   workflow_dispatch: {}
 jobs:
   models:
+    strategy:
+      matrix:
+        jsonmode: [strict, nonstrict]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -28,7 +31,7 @@ jobs:
 
       - name: Rendr template
         run: |
-          ./rendr file:///./templates/models-go --set versions.specgen=${SPECGEN_VERSION} --noinput --out output
+          ./rendr file:///./templates/models-go --set jsonmode=${{ matrix.jsonmode }} --set versions.specgen=${SPECGEN_VERSION} --noinput --out output
 
       - uses: ./.github/actions/runbuild
         with:

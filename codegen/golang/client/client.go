@@ -5,11 +5,11 @@ import (
 	"spec"
 )
 
-func GenerateClient(specification *spec.Spec, moduleName string, generatePath string) *generator.Sources {
+func GenerateClient(specification *spec.Spec, jsonmode string, moduleName string, generatePath string) *generator.Sources {
 	sources := generator.NewSources()
 
 	modules := NewModules(moduleName, generatePath, specification)
-	generator := NewGenerator(modules)
+	generator := NewGenerator(jsonmode, modules)
 
 	sources.AddGeneratedAll(generator.AllStaticFiles())
 
