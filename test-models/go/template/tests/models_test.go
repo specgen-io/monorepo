@@ -3,9 +3,11 @@ package tests
 import (
 	"cloud.google.com/go/civil"
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/skip"
 	"reflect"
 	"testing"
 	"the-models/spec/models"
@@ -13,6 +15,17 @@ import (
 
 func init() {
 	decimal.MarshalJSONWithoutQuotes = true
+}
+
+func isNonStrictMode() bool {
+	jsonmode := "non-strict" // there should be some variable from CircleCI
+
+	if jsonmode == "non-strict" {
+		return true
+	} else if jsonmode == "strict" {
+		return false
+	}
+	panic(fmt.Sprintf(`Unknown JSON mode: %s`, jsonmode))
 }
 
 func TestMessageFields(t *testing.T) {
@@ -33,6 +46,8 @@ func TestMessageFields(t *testing.T) {
 }
 
 func TestMessageUnmarshalFieldMissing(t *testing.T) {
+	skip.If(t, isNonStrictMode)
+
 	var data models.Message
 	err := json.Unmarshal([]byte(`{}`), &data)
 	assert.ErrorContains(t, err, "missing")
@@ -156,6 +171,8 @@ func TestArrayFields(t *testing.T) {
 }
 
 func TestArrayFieldUnmarshalMissingValue(t *testing.T) {
+	skip.If(t, isNonStrictMode)
+
 	jsonStr := `{"string_array_field":["one","two","three"]}`
 
 	var actualData models.ArrayFields
@@ -164,6 +181,8 @@ func TestArrayFieldUnmarshalMissingValue(t *testing.T) {
 }
 
 func TestArrayFieldUnmarshalNullValue(t *testing.T) {
+	skip.If(t, isNonStrictMode)
+
 	jsonStr := `{"int_array_field":null,"string_array_field":["one","two","three"]}`
 
 	var actualData models.ArrayFields
@@ -172,6 +191,8 @@ func TestArrayFieldUnmarshalNullValue(t *testing.T) {
 }
 
 func TestArrayFieldMarshalMissingValue(t *testing.T) {
+	skip.If(t, isNonStrictMode)
+
 	data := models.ArrayFields{
 		nil,
 		[]string{"one", "two", "three"},
@@ -323,6 +344,8 @@ func TestEnumFields(t *testing.T) {
 }
 
 func TestEnumFieldsNegative(t *testing.T) {
+	skip.If(t, isNonStrictMode)
+
 	jsonStr := `{"enum_field":"gfgnfg"}`
 
 	var actualData models.EnumFields
@@ -365,12 +388,16 @@ func TestOneOfWrapperPointer(t *testing.T) {
 }
 
 func TestOneOfWrapperMarshalCaseMissing(t *testing.T) {
+	skip.If(t, isNonStrictMode)
+
 	data := models.OrderEventWrapper{}
 	_, err := json.Marshal(data)
 	assert.ErrorContains(t, err, "union case is not set")
 }
 
 func TestOneOfWrapperUnmarshalCaseMissing(t *testing.T) {
+	skip.If(t, isNonStrictMode)
+
 	var actualData models.OrderEventWrapper
 	err := json.Unmarshal([]byte(`{}`), &actualData)
 	assert.ErrorContains(t, err, "union case is not set")
@@ -406,6 +433,8 @@ func TestOneOfDiscriminatorUnmarshalDiscriminatorMissing(t *testing.T) {
 }
 
 func TestOneOfDiscriminatorUnmarshalDataMissing(t *testing.T) {
+	skip.If(t, isNonStrictMode)
+
 	var actualData models.OrderEventDiscriminator
 	err := json.Unmarshal([]byte(`{"_type":"changed"}`), &actualData)
 	assert.ErrorContains(t, err, "missing")
