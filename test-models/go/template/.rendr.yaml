@@ -3,5 +3,6 @@ build: |
   go mod tidy
   go build
   cd tests
+  export jsonmode={{jsonmode.value}}
   go test ./... -v
   go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml

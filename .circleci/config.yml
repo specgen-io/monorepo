@@ -1475,7 +1475,7 @@ workflows:
       - models-golang:
           matrix:
             parameters:
-              values-file: ["strict"]
+              values-file: ["strict", "nonstrict"]
           context: specgen
           requires: [golang-build]    
       - service-tests:
