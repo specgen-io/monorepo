@@ -3,11 +3,11 @@ package tests
 import (
 	"cloud.google.com/go/civil"
 	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/skip"
+	"os"
 	"reflect"
 	"testing"
 	"the-models/spec/models"
@@ -18,14 +18,8 @@ func init() {
 }
 
 func isNonStrictMode() bool {
-	jsonmode := "non-strict" // there should be some variable from CircleCI
-
-	if jsonmode == "non-strict" {
-		return true
-	} else if jsonmode == "strict" {
-		return false
-	}
-	panic(fmt.Sprintf(`Unknown JSON mode: %s`, jsonmode))
+	jsonmode := os.Getenv("jsonmode")
+	return jsonmode == "nonstrict"
 }
 
 func TestMessageFields(t *testing.T) {
