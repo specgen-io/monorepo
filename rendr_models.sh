@@ -29,4 +29,4 @@ if [ -n "$4" ]; then
 fi
 
 rendr file:///./templates/models-${GENERATOR} --root file:///./test-models/${GENERATOR}/template --noinput --values ./test-models/${GENERATOR}/${PARAMS}.json --set versions.specgen=${SPECGEN_VERSION} --out ${OUT_FOLDER}
-cp ./test-models/spec.yaml ./${OUT_FOLDER}/spec.yaml
+cp ./test-models/spec.yaml ${OUT_FOLDER}/spec.yaml
