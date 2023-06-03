@@ -1,6 +1,6 @@
 #!/bin/bash +x
 
-USAGE="usage: ./rendr_tests.sh <GENERATOR> <PARAMS> <SPECGEN_VERSION>"
+USAGE="usage: ./rendr_models.sh <GENERATOR> <PARAMS> <SPECGEN_VERSION> [<OUT_FOLDER>]"
 
 if [ -n "$1" ]; then
     GENERATOR=$1
