@@ -14,10 +14,10 @@ GENERATOR=$1
 LANGUAGE=$2
 PARAMS=$3
 SPECGEN_VERSION=$4
-OUT_FOLDER=./the-${GENERATOR}-${LANGUAGE}
 
+OUT_FOLDER=./the-${GENERATOR}-${LANGUAGE}
 if [ -n "$5" ]; then
-    OUT_FOLDER=$4
+    OUT_FOLDER=$5
 fi
 
 if [ "$GENERATOR" == "models" ]; then
