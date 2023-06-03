@@ -20,7 +20,11 @@ if [ -n "$5" ]; then
     OUT_FOLDER=$4
 fi
 
-TESTS_FOLDER=test-${GENERATOR}s
+if [ "$GENERATOR" == "models" ]; then
+    TESTS_FOLDER=test-${GENERATOR}
+else
+    TESTS_FOLDER=test-${GENERATOR}s
+fi
 
 MAIN_TEMPLATE=./templates/${GENERATOR}-${LANGUAGE}
 TEST_TEMPLATE=./${TESTS_FOLDER}/${LANGUAGE}/template
