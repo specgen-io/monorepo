@@ -63,7 +63,7 @@ func (g *koaGenerator) VersionRouting(version *spec.Version) *generator.CodeFile
 	routingModule := g.Modules.Routing(version)
 
 	w := writer.New(routingModule)
-	w.Imports.LibNames(`@koa/router`, `Router`)
+	w.Imports.Default(`@koa/router`, `Router`)
 	w.Imports.LibNames(`koa`, `ExtendableContext`)
 	w.Imports.Names(g.Modules.Params, `zipHeaders`)
 	w.Imports.Star(g.Modules.Validation, `t`)
