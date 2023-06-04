@@ -931,14 +931,14 @@ jobs:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
           scope: specgen.io
+      - restore_cache:
+          key: service-ts-<<parameters.values-file>>
       - run:
           name: Setup project for code generation
           command: |
             cd ./out
             npm uninstall specgen.io
             npm install @specgen.io/specgen.io@${SPECGEN_VERSION} --save-dev
-            npm install
-            ls -la ./node_modules/@specgen.io/specgen.io
       - yaml-execute:
           path: ./out
           yaml-file: .rendr.yaml
