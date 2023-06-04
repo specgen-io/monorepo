@@ -67,7 +67,7 @@ func (g *koaGenerator) VersionRouting(version *spec.Version) *generator.CodeFile
 	w.Line(`import {zipHeaders} from '%s'`, g.Modules.Params.GetImport(routingModule))
 	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(routingModule))
 	w.Line(`import * as models from '%s'`, g.Modules.Models(version).GetImport(routingModule))
-	w.Line(`import * as errors from '%s'`, g.Modules.Errors.GetImport(routingModule))
+	w.Line(`import * as errors from '%s'`, g.Modules.ErrorsModels.GetImport(routingModule))
 	w.Line(`import * as responses from '%s'`, g.Modules.Responses.GetImport(routingModule))
 
 	for _, api := range version.Http.Apis {
@@ -230,7 +230,7 @@ func (g *koaGenerator) Responses() *generator.CodeFile {
 	w := writer.New(g.Modules.Responses)
 	w.Line(`import { ExtendableContext } from 'koa'`)
 	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(g.Modules.Responses))
-	w.Line(`import * as errors from '%s'`, g.Modules.Errors.GetImport(g.Modules.Responses))
+	w.Line(`import * as errors from '%s'`, g.Modules.ErrorsModels.GetImport(g.Modules.Responses))
 
 	w.EmptyLine()
 	code := `
