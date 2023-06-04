@@ -377,7 +377,7 @@ jobs:
           name: Setup project for testing
           command: |
             cd ./out
-            npm uninstall specgen.io            
+            npm uninstall specgen.io
             npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
             npm install tsm --save-dev
             npm install uvu --save-dev
@@ -931,6 +931,12 @@ jobs:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
           scope: specgen.io
+      - run:
+          name: Setup project for code generation
+          command: |
+            cd ./out
+            npm uninstall specgen.io
+            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
       - restore_cache:
           key: service-ts-<<parameters.values-file>>
       - yaml-execute:
