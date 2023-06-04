@@ -303,18 +303,16 @@ jobs:
       - run:
           name: Render project
           command: ./rendr_test.sh models go <<parameters.values-file>> ${SPECGEN_VERSION} ./out
-      - run:
-          name: Setup project for testing
-          command: |
-            cd ./out
-            go get gotest.tools/v3
-            go install github.com/jstemmer/go-junit-report@latest
       - restore_cache:
           key: models-go-<<parameters.values-file>>
       - yaml-execute:
           path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
+      - yaml-execute:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .test
       - save_cache:
           key: models-go-<<parameters.values-file>>
           paths: [ ~/go/pkg/mod ]

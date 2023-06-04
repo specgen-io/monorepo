@@ -2,6 +2,9 @@ build: |
   go generate
   go mod tidy
   go build
+test: |
+  go get gotest.tools/v3
+  go install github.com/jstemmer/go-junit-report@latest
   cd tests
   export jsonmode={{jsonmode.value}}
   go test ./... -v
