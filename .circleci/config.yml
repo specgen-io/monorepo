@@ -910,10 +910,12 @@ jobs:
       - go-tests:
           command: ./test-services/tests/service-tests -test.v
 
-  service-typescript:
+  service-ts:
     parameters:
       values-file:
         type: string
+    environment:
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/node:16.8.0
@@ -1547,16 +1549,16 @@ workflows:
           context: specgen
           requires: [typescript-build]
       - service-tests:
-          name: service-tests-typescript
+          name: service-tests-ts
           requires: [typescript-build]
-      - service-typescript:
+      - service-ts:
           matrix:
             parameters:
               values-file: ["express-superstruct", "express-iots", "koa-superstruct", "koa-iots"]
           context: specgen
-          requires: [service-tests-typescript]
+          requires: [service-tests-ts]
       - client-test-service:
-          name: client-test-service-typescript
+          name: client-test-service-ts
           context: specgen
           requires: [typescript-build]
       - client-ts:
@@ -1564,7 +1566,7 @@ workflows:
             parameters:
               values-file: ["axios-superstruct", "axios-iots", "node-fetch-superstruct"]
           context: specgen
-          requires: [client-test-service-typescript]
+          requires: [client-test-service-ts]
 
       - ruby:
           context: specgen
