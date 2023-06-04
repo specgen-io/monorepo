@@ -523,13 +523,8 @@ jobs:
       - install_specgen_golang
       - get-rendr
       - run:
-          name: Copy spec.yaml
-          command: cp ./test-clients/spec.yaml ./test-clients/go/template/spec.yaml
-      - run:
-          name: Generate client
-          command: |
-            export THE_ROOT=./test-clients/go
-            ./rendr file:///./templates/client-go --root file:///${THE_ROOT}/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./out
+          name: Render project
+          command: ./rendr_test.sh client go <<parameters.values-file>> ${SPECGEN_VERSION} ./out
       - run:
           name: Setup project for testing
           command: |
@@ -563,13 +558,8 @@ jobs:
           at: .
       - get-rendr
       - run:
-          name: Copy spec.yaml
-          command: cp ./test-clients/spec.yaml ./test-clients/java/template/spec.yaml
-      - run:
-          name: Generate client
-          command: |
-            export THE_ROOT=./test-clients/java
-            ./rendr file:///./templates/client-java --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
+          name: Render project
+          command: ./rendr_test.sh client java <<parameters.values-file>> ${SPECGEN_VERSION} ./out
       - artifactory/setup-maven:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
@@ -600,13 +590,8 @@ jobs:
           at: .
       - get-rendr
       - run:
-          name: Copy spec.yaml
-          command: cp ./test-clients/spec.yaml ./test-clients/kotlin/template/spec.yaml
-      - run:
-          name: Generate clients
-          command: |
-            export THE_ROOT=./test-clients/kotlin
-            ./rendr file:///./templates/client-kotlin --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
+          name: Render project
+          command: ./rendr_test.sh client kotlin <<parameters.values-file>> ${SPECGEN_VERSION} ./out
       - artifactory/setup-gradle-kotlin:
           jfrog-server-url: specgen.jfrog.io
           repo-name: maven
@@ -712,13 +697,8 @@ jobs:
           port: 8081
       - get-rendr
       - run:
-          name: Copy spec.yaml
-          command: cp ./test-clients/spec.yaml ./test-clients/ts/template/spec.yaml
-      - run:
-          name: Generate models
-          command: |
-            export THE_ROOT=./test-clients/ts
-            ./rendr file:///./templates/client-ts --root file:///${THE_ROOT}/template --noinput --values ${THE_ROOT}/<<parameters.values-file>>.json --set versions.specgen=${SPECGEN_VERSION} --out ./out
+          name: Render project
+          command: ./rendr_test.sh client ts <<parameters.values-file>> ${SPECGEN_VERSION} ./out
       - artifactory/setup-npm:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
