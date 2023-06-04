@@ -939,8 +939,6 @@ jobs:
             npm install @specgen.io/specgen.io@${SPECGEN_VERSION} --save-dev
             npm install
             ls -la ./node_modules/@specgen.io/specgen.io
-      - restore_cache:
-          key: service-ts-<<parameters.values-file>>
       - yaml-execute:
           path: ./out
           yaml-file: .rendr.yaml
