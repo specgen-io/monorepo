@@ -5,6 +5,7 @@ import (
 	"generator"
 	"spec"
 	"strings"
+	"typescript/types"
 	"typescript/validations"
 	"typescript/writer"
 )
@@ -62,12 +63,12 @@ func (g *expressGenerator) VersionRouting(version *spec.Version) *generator.Code
 	routingModule := g.Modules.Routing(version)
 
 	w := writer.New(routingModule)
-	w.Line(`import {Router, Request, Response} from 'express'`)
-	w.Line(`import {zipHeaders} from '%s'`, g.Modules.Params.GetImport(routingModule))
-	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(routingModule))
-	w.Line(`import * as models from '%s'`, g.Modules.Models(version).GetImport(routingModule))
-	w.Line(`import * as errors from '%s'`, g.Modules.ErrorsModels.GetImport(routingModule))
-	w.Line(`import * as responses from '%s'`, g.Modules.Responses.GetImport(routingModule))
+	w.Imports.LibNames(`express`, `Router`, `Request`, `Response`)
+	w.Imports.Names(g.Modules.Params, `zipHeaders`)
+	w.Imports.Star(g.Modules.Validation, `t`)
+	w.Imports.Star(g.Modules.Models(version), types.ModelsPackage)
+	w.Imports.Star(g.Modules.ErrorsModels, types.ErrorsPackage)
+	w.Imports.Star(g.Modules.Responses, `responses`)
 
 	for _, api := range version.Http.Apis {
 		w.Line("import {%s} from './%s'", serviceInterfaceName(&api), g.Modules.ServiceApi(&api).GetImport(routingModule))
@@ -227,10 +228,9 @@ func (g *expressGenerator) respondInternalServerError(w *writer.Writer) {
 
 func (g *expressGenerator) Responses() *generator.CodeFile {
 	w := writer.New(g.Modules.Responses)
-
-	w.Line(`import {Request, Response} from 'express'`)
-	w.Line(`import * as t from '%s'`, g.Modules.Validation.GetImport(g.Modules.Responses))
-	w.Line(`import * as errors from '%s'`, g.Modules.ErrorsModels.GetImport(g.Modules.Responses))
+	w.Imports.LibNames(`express`, `Request`, `Response`)
+	w.Imports.Star(g.Modules.Validation, `t`)
+	w.Imports.Star(g.Modules.ErrorsModels, types.ErrorsPackage)
 
 	w.EmptyLine()
 	code := `
