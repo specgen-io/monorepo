@@ -526,16 +526,14 @@ jobs:
       - run:
           name: Render project
           command: ./rendr_test.sh client go <<parameters.values-file>> ${SPECGEN_VERSION} ./out
-      - run:
-          name: Setup project for testing
-          command: |
-            cd ./out
-            go get gotest.tools/v3
-            go install github.com/jstemmer/go-junit-report@latest
       - restore_cache:
           key: client-go
       - start-service:
           port: 8081
+      - yaml-execute:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .test
       - yaml-execute:
           path: ./out
           yaml-file: .rendr.yaml
@@ -873,7 +871,7 @@ jobs:
           name: Render project
           command: ./rendr_test.sh service go <<parameters.values-file>> ${SPECGEN_VERSION} ./out
       - restore_cache:
-          key: client-go
+          key: service-go-<<parameters.values-file>>
       - yaml-execute:
           path: ./out
           yaml-file: .rendr.yaml
@@ -884,7 +882,7 @@ jobs:
           yaml-path: .run
           background: true
       - save_cache:
-          key: client-go
+          key: service-go-<<parameters.values-file>>
           paths: [ ~/go/pkg/mod ]    
       - wait-url:
           url: http://localhost:8081/docs/
