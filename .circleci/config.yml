@@ -511,6 +511,9 @@ jobs:
             - test-service
 
   client-golang:
+    parameters:
+      values-file:
+        type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
     working_directory: ~/specgen-tests
@@ -1440,6 +1443,9 @@ workflows:
           context: specgen
           requires: [golang-build]
       - client-golang:
+          matrix:
+            parameters:
+              values-file: ["strict", "nonstrict"]
           context: specgen
           requires: [client-test-service-golang]
 
