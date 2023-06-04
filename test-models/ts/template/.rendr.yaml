@@ -1,5 +1,11 @@
+setup: |
+  npm uninstall specgen.io
+  npm install @specgen.io/specgen.io@{{versions.specgen.value}} --save-dev
+  npm install tsm --save-dev
+  npm install uvu --save-dev
 build: |
   npm install
   npm run specgen
   npm run build
+test: |
   npm run env -- uvu -r tsm
