@@ -936,7 +936,9 @@ jobs:
           command: |
             cd ./out
             npm uninstall specgen.io
-            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
+            npm install @specgen.io/specgen.io@${SPECGEN_VERSION} --save-dev
+            npm install
+            ls -la ./node_modules/@specgen.io/specgen.io
       - restore_cache:
           key: service-ts-<<parameters.values-file>>
       - yaml-execute:
