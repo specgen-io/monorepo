@@ -1,12 +1,8 @@
-setup:
+setup: |
   npm uninstall specgen.io
   npm install @specgen.io/specgen.io@{{versions.specgen.value}} --save-dev
-  npm install tsm --save-dev
-  npm install uvu --save-dev
 build: |
   npm install
   npm run specgen
   npm run build
-test: |
-  export SERVICE_URL=http://localhost:8081
-  npm run env -- uvu -r tsm
+run: npm run start

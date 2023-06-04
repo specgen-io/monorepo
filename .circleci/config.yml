@@ -706,20 +706,20 @@ jobs:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
           scope: specgen.io
-      - run:
-          name: Setup project for testing
-          command: |
-            cd ./out
-            npm uninstall specgen.io            
-            npm install @specgen.io/specgen.io@$SPECGEN_VERSION --save-dev
-            npm install tsm --save-dev
-            npm install uvu --save-dev
       - restore_cache:
           key: client-ts-<<parameters.values-file>>
       - yaml-execute:
           path: ./out
           yaml-file: .rendr.yaml
+          yaml-path: .setup
+      - yaml-execute:
+          path: ./out
+          yaml-file: .rendr.yaml
           yaml-path: .build
+      - yaml-execute:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .test
       - save_cache:
           key: client-ts-<<parameters.values-file>>
           paths: [ ~/specgen-tests/out/node_modules ]
@@ -916,12 +916,10 @@ jobs:
           scope: specgen.io
       - restore_cache:
           key: service-ts-<<parameters.values-file>>
-      - run:
-          name: Setup project for code generation
-          command: |
-            cd ./out
-            npm uninstall specgen.io
-            npm install @specgen.io/specgen.io@${SPECGEN_VERSION} --save-dev
+      - yaml-execute:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .setup
       - yaml-execute:
           path: ./out
           yaml-file: .rendr.yaml
