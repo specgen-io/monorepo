@@ -1335,8 +1335,7 @@ commands:
             attempt_counter=0
             max_attempts=<< parameters.attempts >>
 
-            until $(curl --output /dev/null --silent --head --fail << parameters.url >>); do
-              curl --head << parameters.url >>
+            until $(curl --output /dev/null --silent --fail << parameters.url >>); do
               if [ ${attempt_counter} -eq ${max_attempts} ];then
                 echo "Max attempts reached"
                 exit 1
