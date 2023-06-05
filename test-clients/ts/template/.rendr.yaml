@@ -1,4 +1,4 @@
-setup:
+setup: |
   npm uninstall specgen.io
   npm install @specgen.io/specgen.io@{{versions.specgen.value}} --save-dev
   npm install tsm --save-dev
