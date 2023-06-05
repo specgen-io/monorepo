@@ -1433,7 +1433,7 @@ workflows:
       - service-golang:
           matrix:
             parameters:
-              values-file: ["vestigo-strict", "chi-strict"]    #should add "httprouter"
+              values-file: ["vestigo-strict", "chi-strict", "httprouter-strict"]
           context: specgen
           requires: [service-tests-golang]
       - client-test-service:
