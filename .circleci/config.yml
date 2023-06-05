@@ -293,6 +293,7 @@ jobs:
         type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+      RENDR_PATH: ./
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/go:1.18.3
@@ -358,6 +359,7 @@ jobs:
         type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+      RENDR_PATH: ./
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/node:16.8.0
@@ -423,6 +425,7 @@ jobs:
         type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+      RENDR_PATH: ./
     working_directory: ~/specgen-tests
     docker:
       - image: circleci/openjdk:11-jdk
@@ -451,6 +454,7 @@ jobs:
         type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+      RENDR_PATH: ./
     working_directory: ~/specgen-tests
     docker:
       - image: circleci/openjdk:11-jdk
@@ -514,6 +518,7 @@ jobs:
         type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+      RENDR_PATH: ./
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/go:1.18.3
@@ -552,6 +557,7 @@ jobs:
         type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+      RENDR_PATH: ./
     working_directory: ~/specgen-tests
     docker:
       - image: circleci/openjdk:11-jdk
@@ -584,6 +590,7 @@ jobs:
         type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+      RENDR_PATH: ./
     working_directory: ~/specgen-tests
     docker:
       - image: circleci/openjdk:11-jdk
@@ -689,6 +696,7 @@ jobs:
         type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+      RENDR_PATH: ./
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/node:16.8.0
@@ -783,6 +791,7 @@ jobs:
         type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+      RENDR_PATH: ./
     working_directory: ~/specgen-tests
     docker:
       - image: circleci/openjdk:11-jdk
@@ -822,6 +831,7 @@ jobs:
         type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+      RENDR_PATH: ./
     working_directory: ~/specgen-tests
     docker:
       - image: circleci/openjdk:11-jdk
@@ -861,7 +871,8 @@ jobs:
       values-file:
         type: string
     environment:
-      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>    
+      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+      RENDR_PATH: ./
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/go:1.18.3
@@ -901,6 +912,7 @@ jobs:
         type: string
     environment:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+      RENDR_PATH: ./
     working_directory: ~/specgen-tests
     docker:
       - image: cimg/node:16.8.0

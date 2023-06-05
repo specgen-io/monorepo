@@ -31,10 +31,10 @@ TEST_TEMPLATE=./${TESTS_FOLDER}/${LANGUAGE}/template
 PARAMS_FILE=./${TESTS_FOLDER}/${LANGUAGE}/${PARAMS}.json
 SPEC_FILE=./${TESTS_FOLDER}/spec.yaml
 
-echo "MAIN_TEMPLATE: ${MAIN_TEMPLATE}"
-echo "TEST_TEMPLATE: ${TEST_TEMPLATE}"
-echo "PARAMS_FILE:   ${PARAMS_FILE}"
-echo "SPEC_FILE:     ${SPEC_FILE}"
+COMMAND="${RENDR_PATH}rendr file:///${MAIN_TEMPLATE} --root file:///${TEST_TEMPLATE} --noinput --values ${PARAMS_FILE} --set versions.specgen=${SPECGEN_VERSION} --out ${OUT_FOLDER}"
+echo "Executing: ${COMMAND}"
+$COMMAND
 
-./rendr file:///${MAIN_TEMPLATE} --root file:///${TEST_TEMPLATE} --noinput --values ${PARAMS_FILE} --set versions.specgen=${SPECGEN_VERSION} --out ${OUT_FOLDER}
-cp ${SPEC_FILE} ${OUT_FOLDER}/spec.yaml
+COMMAND="cp ${SPEC_FILE} ${OUT_FOLDER}/spec.yaml"
+echo "Executing: ${COMMAND}"
+$COMMAND
