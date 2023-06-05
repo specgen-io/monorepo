@@ -6,7 +6,6 @@ import (
 	"flag"
 	"net/http"
 	"the-service/services"
-	"the-service/services/v2"
 	"the-service/spec"
 
 	"github.com/husobee/vestigo"
@@ -28,11 +27,7 @@ func main() {
 		AllowOrigin: []string{"*", "*"},
 	})
 
-	echoServiceV2 := &v2.EchoService{}
-	echoService := &services.EchoService{}
-	checkService := &services.CheckService{}
-
-	spec.AddRoutes(router, echoServiceV2, echoService, checkService)
+	spec.AddRoutes(router, services.Create())
 
 	router.Get("/docs/*", http.StripPrefix("/docs/", http.FileServer(http.Dir("docs"))).ServeHTTP)
 
