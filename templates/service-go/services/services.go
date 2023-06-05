@@ -6,5 +6,5 @@ import (
 
 func Create() spec.Services {
 	sampleService := &SampleService{}
-	return Services{sampleService}
+	return spec.Services{sampleService}
 }

@@ -9,5 +9,5 @@ func Create() spec.Services {
 	echoServiceV2 := &v2.EchoService{}
 	echoService := &EchoService{}
 	checkService := &CheckService{}
-	return Services{echoServiceV2, echoService, checkService}
+	return spec.Services{echoServiceV2, echoService, checkService}
 }
