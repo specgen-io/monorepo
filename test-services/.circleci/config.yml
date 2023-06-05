@@ -184,7 +184,7 @@ jobs:
           name: Run service
           command: |
             cd ./go
-            go run service.go --port 8081
+            go run server.go --port 8081
           background: true
       - wait-url:
           url: http://localhost:8081/docs/

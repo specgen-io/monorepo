@@ -16,7 +16,7 @@ func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFi
 }
 
 func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
-	w := writer.New(g.Modules.ServicesApi(api), "service.go")
+	w := writer.New(g.Modules.ServicesApi(api), "server.go")
 
 	if walkers.ApiHasType(api, spec.TypeDate) {
 		w.Imports.Add("cloud.google.com/go/civil")
