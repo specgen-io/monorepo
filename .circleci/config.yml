@@ -706,8 +706,8 @@ jobs:
           jfrog-server-url: specgen.jfrog.io
           repo-name: npm
           scope: specgen.io
-      - restore_cache:
-          key: client-ts-<<parameters.values-file>>
+#      - restore_cache:
+#          key: client-ts-<<parameters.values-file>>
       - yaml-execute:
           path: ./out
           yaml-file: .rendr.yaml
