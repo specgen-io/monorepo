@@ -18,6 +18,10 @@ func serviceApiNameVersioned(api *spec.Api) string {
 	return fmt.Sprintf(`%sService%s`, api.Name.Source, api.InHttp.InVersion.Name.PascalCase())
 }
 
+func serviceApiPublicNameVersioned(api *spec.Api) string {
+	return fmt.Sprintf(`%sService%s`, api.Name.PascalCase(), api.InHttp.InVersion.Name.PascalCase())
+}
+
 func callCheckContentType(logFieldsVar, expectedContentType, requestVar, responseVar string) string {
 	return fmt.Sprintf(`contenttype.Check(%s, %s, %s, %s)`, logFieldsVar, expectedContentType, requestVar, responseVar)
 }

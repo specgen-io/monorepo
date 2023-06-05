@@ -230,18 +230,21 @@ func (g *HttpRouterGenerator) RootRouting(specification *spec.Spec) *generator.C
 			w.Imports.ModuleAliased(g.Modules.ServicesApi(&api).Aliased(apiPackageAlias(&api)))
 		}
 	}
-	routesParams := []string{}
+	w.EmptyLine()
+	w.Line(`type Services struct {`)
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
 			apiModule := g.Modules.ServicesApi(&api).Aliased(apiPackageAlias(&api))
-			routesParams = append(routesParams, fmt.Sprintf(`%s %s`, serviceApiNameVersioned(&api), apiModule.Get(serviceInterfaceName)))
+			w.LineAligned(`  %s %s`, serviceApiPublicNameVersioned(&api), apiModule.Get(serviceInterfaceName))
 		}
 	}
-	w.Line(`func AddRoutes(router *httprouter.Router, %s) {`, strings.Join(routesParams, ", "))
+	w.Line(`}`)
+	w.EmptyLine()
+	w.Line(`func AddRoutes(router *httprouter.Router, services Services) {`)
 	for _, version := range specification.Versions {
 		routingModule := g.Modules.Routing(&version).Aliased(routingPackageAlias(&version))
 		for _, api := range version.Http.Apis {
-			w.Line(`  %s(router, %s)`, routingModule.Get(addRoutesMethodName(&api)), serviceApiNameVersioned(&api))
+			w.Line(`  %s(router, services.%s)`, routingModule.Get(addRoutesMethodName(&api)), serviceApiPublicNameVersioned(&api))
 		}
 	}
 	w.Line(`}`)

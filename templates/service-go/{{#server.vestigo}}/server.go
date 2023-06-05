@@ -25,9 +25,7 @@ func main() {
 	})
 	{{/cors.value}}
 
-	sampleService := &services.SampleService{}
-
-	spec.AddRoutes(router, sampleService)
+	spec.AddRoutes(router, services.Create())
 
 	{{#swagger.value}}
 	router.Get("/docs/*", http.StripPrefix("/docs/", http.FileServer(http.Dir("docs"))).ServeHTTP)
