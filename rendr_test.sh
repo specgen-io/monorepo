@@ -36,5 +36,5 @@ echo "TEST_TEMPLATE: ${TEST_TEMPLATE}"
 echo "PARAMS_FILE:   ${PARAMS_FILE}"
 echo "SPEC_FILE:     ${SPEC_FILE}"
 
-./rendr file:///${MAIN_TEMPLATE} --root file:///${TEST_TEMPLATE} --noinput --values ${PARAMS_FILE} --set versions.specgen=${SPECGEN_VERSION} --out ${OUT_FOLDER}
+rendr file:///${MAIN_TEMPLATE} --root file:///${TEST_TEMPLATE} --noinput --values ${PARAMS_FILE} --set versions.specgen=${SPECGEN_VERSION} --out ${OUT_FOLDER}
 cp ${SPEC_FILE} ${OUT_FOLDER}/spec.yaml

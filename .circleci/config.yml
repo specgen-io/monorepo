@@ -874,6 +874,8 @@ jobs:
       - run:
           name: Render project
           command: ./rendr_test.sh service go <<parameters.values-file>> ${SPECGEN_VERSION} ./out
+      - store_artifacts:
+          path: ~/specgen-tests/out
       - restore_cache:
           key: service-go-<<parameters.values-file>>
       - yaml-execute:
@@ -1334,6 +1336,7 @@ commands:
             max_attempts=<< parameters.attempts >>
 
             until $(curl --output /dev/null --silent --head --fail << parameters.url >>); do
+              curl --head << parameters.url >>
               if [ ${attempt_counter} -eq ${max_attempts} ];then
                 echo "Max attempts reached"
                 exit 1
