@@ -497,19 +497,16 @@ jobs:
           name: Generate service
           command: |
             ./rendr file:///./templates/service-go --root file:///./test-clients/test-service/template --noinput --set cors=true --set versions.specgen=${SPECGEN_VERSION} --out ./test-service
-      - restore_cache:
-          key: test-service
       - yaml-execute:
           path: ./test-service
           yaml-file: .rendr.yaml
           yaml-path: .build
-      - save_cache:
-          key: test-service
-          paths: [ ~/go/pkg/mod ]
       - persist_to_workspace:
           root: .
           paths:
             - test-service
+      - store_artifacts:
+          path: ~/specgen-tests/test-service
 
   client-golang:
     parameters:
