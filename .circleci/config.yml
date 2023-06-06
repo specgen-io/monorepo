@@ -1324,7 +1324,7 @@ commands:
           command: ./test-service/the-service --port << parameters.port >>
           background: true
       - wait-url:
-          url: http://localhost:<< parameters.port >>/docs/
+          url: http://localhost:<< parameters.port >>/
 
   wait-url:
     parameters:
