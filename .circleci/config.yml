@@ -496,7 +496,7 @@ jobs:
       - run:
           name: Generate service
           command: |
-            ./rendr file:///./templates/service-go --root file:///./test-clients/test-service/template --noinput --set cors=true --set versions.specgen=${SPECGEN_VERSION} --out ./test-service
+            ./rendr file:///./templates/service-go --root file:///./test-clients/test-service/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./test-service
       - yaml-execute:
           path: ./test-service
           yaml-file: .rendr.yaml
@@ -1321,7 +1321,9 @@ commands:
     steps:
       - run:
           name: Start test-service
-          command: ./test-service/the-service --port << parameters.port >>
+          command: |
+            cd ./test-service
+            ./the-service --port << parameters.port >>
           background: true
       - wait-url:
           url: http://localhost:<< parameters.port >>/docs/
