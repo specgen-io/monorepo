@@ -4,13 +4,12 @@ package main
 
 import (
 	"flag"
-	"net/http"
-	"the-service/services"
-	"the-service/spec"
-
 	"github.com/husobee/vestigo"
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
+	"net/http"
+	"the-service/services"
+	"the-service/spec"
 )
 
 func main() {
@@ -20,12 +19,6 @@ func main() {
 	decimal.MarshalJSONWithoutQuotes = true
 
 	router := vestigo.NewRouter()
-
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) })
-
-	router.SetGlobalCors(&vestigo.CorsAccessControl{
-		AllowOrigin: []string{"*", "*"},
-	})
 
 	spec.AddRoutes(router, services.Create())
 
