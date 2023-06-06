@@ -1,5 +1,0 @@
-build: |
-  go generate
-  go mod tidy
-  go build
-run: go run server.go --port 8081
