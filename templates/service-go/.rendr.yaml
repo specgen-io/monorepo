@@ -1,5 +1,6 @@
-build: |
+setup: |
   go install github.com/specgen-io/specgen-golang/v2@v{{versions.specgen.value}}
+build: |
   go generate
   go mod tidy
   go build

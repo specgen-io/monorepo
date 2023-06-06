@@ -491,12 +491,12 @@ jobs:
       - install_specgen_golang
       - get-rendr
       - run:
-          name: Copy spec.yaml
-          command: cp ./test-clients/spec.yaml ./test-clients/test-service/template/spec.yaml
-      - run:
           name: Generate service
           command: |
             ./rendr file:///./templates/service-go --root file:///./test-clients/test-service/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./test-service
+      - run:
+          name: Copy spec.yaml
+          command: cp ./test-clients/spec.yaml ./test-service/spec.yaml
       - yaml-execute:
           path: ./test-service
           yaml-file: .rendr.yaml
@@ -529,7 +529,7 @@ jobs:
           command: ./rendr_test.sh client go <<parameters.values-file>> ${SPECGEN_VERSION} ./out
       - restore_cache:
           key: client-go
-      - start-service:
+      - start-test-service:
           port: 8081
       - yaml-execute:
           path: ./out
@@ -570,7 +570,7 @@ jobs:
           repo-name: maven
       - restore_cache:
           key: client-java-<<parameters.values-file>>
-      - start-service:
+      - start-test-service:
           port: 8081
       - yaml-execute:
           path: ./out
@@ -604,7 +604,7 @@ jobs:
           project-path: ./out
       - restore_cache:
           key: client-kotlin-<<parameters.values-file>>
-      - start-service:
+      - start-test-service:
           port: 8081
       - yaml-execute:
           path: ./out
@@ -624,7 +624,7 @@ jobs:
           at: .
       - artifactory/setup-bundler:
           jfrog-server-url: specgen.jfrog.io
-      - start-service:
+      - start-test-service:
           port: 8081
       - run:
           name: Setup Gemfile
@@ -669,7 +669,7 @@ jobs:
       - artifactory/setup-sbt:
           jfrog-server-url: specgen.jfrog.io
           repo-name: sbt
-      - start-service:
+      - start-test-service:
           port: 8081
       - run:
           name: Test Scala sttp client
@@ -700,7 +700,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - start-service:
+      - start-test-service:
           port: 8081
       - get-rendr
       - run:
@@ -1314,7 +1314,7 @@ commands:
             curl -u$JFROG_USER:$JFROG_PASS https://<< parameters.jfrog-server-url >>/artifactory/api/gems/<< parameters.repo-name >>/api/v1/api_key.yaml > ~/.gem/credentials
             chmod 600 ~/.gem/credentials
 
-  start-service:
+  start-test-service:
     parameters:
       port:
         type: integer
