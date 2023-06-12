@@ -35,10 +35,6 @@
         <jsr305.version>{{versions.jsr305.value}}</jsr305.version>
         {{/jsonlib.moshi}}
         <log4j.version>{{versions.log4j.value}}</log4j.version>
-        {{#tests.value}}
-        <junit.version>{{versions.junit.value}}</junit.version>
-        <maven-test-plugins.version>{{versions.maven-test-plugins.value}}</maven-test-plugins.version>
-        {{/tests.value}}
     </properties>
 
     <dependencies>
@@ -126,13 +122,13 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
+            <version>5.9.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>{{versions.assertj.value}}</version>
+            <version>3.23.1</version>
             <scope>test</scope>
         </dependency>
         {{/tests.value}}
@@ -167,16 +163,6 @@
                 </configuration>
             </plugin>
             {{/client.micronaut}}
-            {{#tests.value}}
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven-test-plugins.version}</version>
-            </plugin>
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>${maven-test-plugins.version}</version>
-            </plugin>
-            {{/tests.value}}
             <plugin>
                 <groupId>io.specgen</groupId>
                 <artifactId>java-maven-plugin</artifactId>
@@ -195,6 +181,16 @@
                     <packageName>{{package.value}}</packageName>
                 </configuration>
             </plugin>
+            {{#tests.value}}
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.22.2</version>
+            </plugin>
+            {{/tests.value}}
         </plugins>
     </build>
 </project>

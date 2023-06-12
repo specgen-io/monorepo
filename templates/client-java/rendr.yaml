@@ -66,18 +66,9 @@ args:
       log4j:
         type: string
         default: 2.19.0
-      junit:
-        type: string
-        default: 5.9.1
       micronaut:
         type: string
         default: 3.6.0
       micronaut_application:
         type: string
         default: 3.6.7
-      assertj:
-        type: string
-        default: 3.23.1
-      maven-test-plugins:
-        type: string
-        default: 2.22.2
