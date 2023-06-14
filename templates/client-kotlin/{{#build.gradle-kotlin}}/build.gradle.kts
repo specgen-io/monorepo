@@ -42,10 +42,6 @@ dependencies {
     implementation("com.squareup.moshi:moshi-kotlin:{{versions.moshi.value}}")
     {{/jsonlib.moshi}}
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:{{versions.log4j.value}}")
-    {{#tests.value}}
-    testImplementation("org.assertj:assertj-core:3.23.1")
-    testImplementation(kotlin("test"))
-    {{/tests.value}}
 }
 
 specgen {
@@ -56,7 +52,3 @@ specgen {
         specFile.set(file("spec.yaml"))
     }
 }
-
-{{#tests.value}}
-tasks.test { useJUnitPlatform() }
-{{/tests.value}}

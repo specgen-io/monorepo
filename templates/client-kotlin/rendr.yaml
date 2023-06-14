@@ -34,10 +34,6 @@ args:
     type: string
     description: package name
     default: theclient
-  tests:
-    type: boolean
-    description: do you want to add test libraries to the project
-    default: no
   versions:
     type: group
     noinput: true
@@ -75,6 +71,3 @@ args:
       log4j:
         type: string
         default: 2.19.0
-      assertj:
-        type: string
-        default: 3.23.1
