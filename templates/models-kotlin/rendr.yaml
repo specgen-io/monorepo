@@ -29,10 +29,6 @@ args:
     type: string
     description: package name
     default: themodels
-  tests:
-    type: boolean
-    description: do you want to add tests to the project
-    default: no
   versions:
     type: group
     noinput: true
@@ -61,9 +57,3 @@ args:
       test-logger:
         type: string
         default: 3.2.0
-      junit:
-        type: string
-        default: 5.9.1
-      maven-plugins:
-        type: string
-        default: 2.22.2
