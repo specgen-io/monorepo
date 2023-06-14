@@ -1,1 +1,4 @@
-build: ./gradlew test
+setup: |
+  chmod +x ./setup.sh
+  ./setup.sh
+test: ./gradlew test

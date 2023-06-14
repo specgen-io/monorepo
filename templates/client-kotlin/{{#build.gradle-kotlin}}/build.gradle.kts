@@ -43,8 +43,8 @@ dependencies {
     {{/jsonlib.moshi}}
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:{{versions.log4j.value}}")
     {{#tests.value}}
+    testImplementation("org.assertj:assertj-core:3.23.1")
     testImplementation(kotlin("test"))
-    testImplementation("org.assertj:assertj-core:{{versions.assertj.value}}")
     {{/tests.value}}
 }
 
@@ -58,7 +58,5 @@ specgen {
 }
 
 {{#tests.value}}
-tasks.test {
-    useJUnitPlatform()
-}
+tasks.test { useJUnitPlatform() }
 {{/tests.value}}
