@@ -1,4 +1,4 @@
 setup: |
   chmod +x ./setup.sh
   ./setup.sh
-build: mvn test
+test: mvn test
