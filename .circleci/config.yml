@@ -579,7 +579,11 @@ jobs:
       - yaml-execute:
           path: ./out
           yaml-file: .rendr.yaml
-          yaml-path: .build
+          yaml-path: .setup
+      - yaml-execute:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .test
       - save_cache:
           key: client-java-<<parameters.values-file>>
           paths: [ ~/.m2 ]
