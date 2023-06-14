@@ -477,7 +477,11 @@ jobs:
       - yaml-execute:
           path: ./out
           yaml-file: .rendr.yaml
-          yaml-path: .build
+          yaml-path: .setup
+      - yaml-execute:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .test
       - save_cache:
           key: models-kotlin-<<parameters.values-file>>
           paths: [ ~/.gradle ]
