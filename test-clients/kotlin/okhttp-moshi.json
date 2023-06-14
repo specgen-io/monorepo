@@ -1,6 +1,5 @@
 {
   "build": "gradle-kotlin",
   "client": "okhttp",
-  "jsonlib": "moshi",
-  "tests": true
+  "jsonlib": "moshi"
 }

@@ -1,6 +1,5 @@
 {
   "build": "gradle-kotlin",
   "client": "okhttp",
-  "jsonlib": "jackson",
-  "tests": true
+  "jsonlib": "jackson"
 }

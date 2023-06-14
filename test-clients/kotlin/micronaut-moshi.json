@@ -1,6 +1,5 @@
 {
   "build": "gradle-kotlin",
   "client": "micronaut",
-  "jsonlib": "moshi",
-  "tests": true
+  "jsonlib": "moshi"
 }
