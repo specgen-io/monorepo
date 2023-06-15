@@ -31,7 +31,7 @@ TEST_TEMPLATE=./${TESTS_FOLDER}/${LANGUAGE}/template
 PARAMS_FILE=./${TESTS_FOLDER}/${LANGUAGE}/${PARAMS}.yaml
 SPEC_FILE=./${TESTS_FOLDER}/spec.yaml
 
-COMMAND="${RENDR_PATH}rendr file:///${MAIN_TEMPLATE} --root file:///${TEST_TEMPLATE} --noinput --values ${PARAMS_FILE} --set versions.specgen=${SPECGEN_VERSION} --out ${OUT_FOLDER}"
+COMMAND="${RENDR_PATH}rendr file:///${MAIN_TEMPLATE} --root file:///${TEST_TEMPLATE} --noinput --values ${PARAMS_FILE} --set versions.specgen=${SPECGEN_VERSION} --out ${OUT_FOLDER}" --verbose
 echo "Executing: ${COMMAND}"
 $COMMAND
 
