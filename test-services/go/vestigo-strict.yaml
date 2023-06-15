@@ -1,0 +1,3 @@
+jsonmode: strict
+server: vestigo
+cors: false

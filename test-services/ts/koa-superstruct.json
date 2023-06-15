@@ -1,4 +1,0 @@
-{
-  "server": "koa",
-  "validation": "superstruct"
-}

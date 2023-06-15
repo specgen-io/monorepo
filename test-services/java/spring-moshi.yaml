@@ -1,0 +1,3 @@
+build: maven
+server: spring
+jsonlib: moshi

@@ -1,4 +1,0 @@
-{
-  "client": "axios",
-  "validation": "io-ts"
-}

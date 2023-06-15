@@ -1,5 +1,0 @@
-{
-  "build": "gradle-kotlin",
-  "server": "micronaut",
-  "jsonlib": "jackson"
-}

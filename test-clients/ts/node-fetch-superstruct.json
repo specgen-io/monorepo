@@ -1,4 +1,0 @@
-{
-  "client": "node-fetch",
-  "validation": "superstruct"
-}

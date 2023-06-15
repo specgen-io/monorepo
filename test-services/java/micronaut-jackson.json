@@ -1,5 +1,0 @@
-{
-  "build": "maven",
-  "server": "micronaut",
-  "jsonlib": "jackson"
-}

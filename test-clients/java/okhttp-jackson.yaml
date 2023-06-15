@@ -1,0 +1,3 @@
+build: maven
+client: okhttp
+jsonlib: jackson

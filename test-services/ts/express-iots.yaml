@@ -1,0 +1,2 @@
+server: express
+validation: io-ts
