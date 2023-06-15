@@ -12,7 +12,7 @@ parameters:
     default: v2
   rendr-version:
     type: string
-    default: v0.0.59
+    default: v0.0.60
 
 jobs:
   specgen:
