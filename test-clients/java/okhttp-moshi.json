@@ -1,5 +1,0 @@
-{
-  "build": "maven",
-  "client": "okhttp",
-  "jsonlib": "moshi"
-}
