@@ -45,11 +45,11 @@ const (
 	RequestBodyJson   RequestBodyKind = "json"
 )
 
-func kindOfRequestBody(definition *RequestBody) RequestBodyKind {
-	if definition != nil {
-		if definition.Type.Definition.IsEmpty() {
+func kindOfRequestBody(body *RequestBody) RequestBodyKind {
+	if body != nil {
+		if body.Type.Definition.IsEmpty() {
 			return RequestBodyEmpty
-		} else if definition.Type.Definition.Plain == TypeString {
+		} else if body.Type.Definition.Plain == TypeString {
 			return RequestBodyString
 		} else {
 			return RequestBodyJson
