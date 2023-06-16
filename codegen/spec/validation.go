@@ -97,7 +97,7 @@ func (validator *validator) Operation(operation *NamedOperation) {
 			message := fmt.Sprintf("body should be object, array or string type, found %s", bodyType.Definition.Name)
 			validator.addError(operation.Body.Location, message)
 		}
-		validator.Definition(operation.Body)
+		validator.RequestBody(operation.Body)
 	}
 
 	for index := range operation.Responses {
@@ -291,4 +291,7 @@ func enumContainsItem(enum *Enum, what string) bool {
 }
 
 func (validator *validator) Definition(definition *Definition) {
+}
+
+func (validator *validator) RequestBody(body *RequestBody) {
 }

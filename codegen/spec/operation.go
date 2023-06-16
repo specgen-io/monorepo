@@ -11,7 +11,7 @@ type operation struct {
 	Description  *string            `yaml:"description,omitempty"`
 	HeaderParams HeaderParams       `yaml:"header,omitempty"`
 	QueryParams  QueryParams        `yaml:"query,omitempty"`
-	Body         *Definition        `yaml:"body,omitempty"`
+	Body         *RequestBody       `yaml:"body,omitempty"`
 	Responses    OperationResponses `yaml:"response"`
 	Location     *yaml.Node
 }
@@ -19,7 +19,7 @@ type operation struct {
 type Operation operation
 
 func (operation *Operation) BodyIs(kind BodyKind) bool {
-	return kindOf(operation.Body) == kind
+	return kindOfRequestBody(operation.Body) == kind
 }
 
 func (operation *Operation) HasParams() bool {

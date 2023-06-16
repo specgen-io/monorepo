@@ -149,7 +149,7 @@ func (enricher *httpEnricher) operation(operation *NamedOperation) {
 	enricher.params(operation.HeaderParams)
 
 	if operation.Body != nil {
-		enricher.definition(operation.Body)
+		enricher.requestBody(operation.Body)
 	}
 
 	for index := range operation.Responses {
@@ -179,6 +179,12 @@ func (enricher *httpEnricher) params(params []NamedParam) {
 func (enricher *httpEnricher) definition(definition *Definition) {
 	if definition != nil {
 		enricher.typ(&definition.Type)
+	}
+}
+
+func (enricher *httpEnricher) requestBody(definition *RequestBody) {
+	if definition != nil {
+		enricher.typ(definition.Type)
 	}
 }
 
