@@ -37,23 +37,23 @@ func (value RequestBody) MarshalYAML() (interface{}, error) {
 	return node, nil
 }
 
-//type BodyKind string
-//
-//const (
-//	BodyEmpty  BodyKind = "empty"
-//	BodyString BodyKind = "string"
-//	BodyJson   BodyKind = "json"
-//)
+type RequestBodyKind string
 
-func kindOfRequestBody(definition *RequestBody) BodyKind {
+const (
+	RequestBodyEmpty  RequestBodyKind = "empty"
+	RequestBodyString RequestBodyKind = "string"
+	RequestBodyJson   RequestBodyKind = "json"
+)
+
+func kindOfRequestBody(definition *RequestBody) RequestBodyKind {
 	if definition != nil {
 		if definition.Type.Definition.IsEmpty() {
-			return BodyEmpty
+			return RequestBodyEmpty
 		} else if definition.Type.Definition.Plain == TypeString {
-			return BodyString
+			return RequestBodyString
 		} else {
-			return BodyJson
+			return RequestBodyJson
 		}
 	}
-	return BodyEmpty
+	return RequestBodyEmpty
 }

@@ -18,7 +18,7 @@ type operation struct {
 
 type Operation operation
 
-func (operation *Operation) BodyIs(kind BodyKind) bool {
+func (operation *Operation) BodyIs(kind RequestBodyKind) bool {
 	return kindOfRequestBody(operation.Body) == kind
 }
 

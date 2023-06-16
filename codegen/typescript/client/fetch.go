@@ -68,20 +68,20 @@ func (g *FetchGenerator) operation(w *writer.Writer, operation *spec.NamedOperat
 		for _, p := range operation.HeaderParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
-		if operation.BodyIs(spec.BodyString) {
+		if operation.BodyIs(spec.RequestBodyString) {
 			w.Line(`    "Content-Type": "text/plain"`)
 		}
-		if operation.BodyIs(spec.BodyJson) {
+		if operation.BodyIs(spec.RequestBodyJson) {
 			w.Line(`    "Content-Type": "application/json"`)
 		}
 		w.Line(`  })`)
 		fetchConfigParts = append(fetchConfigParts, `headers: headers`)
 	}
 	w.Line("  const url = config.baseURL+`%s%s`", getUrl(operation.Endpoint), params)
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		fetchConfigParts = append(fetchConfigParts, `body: parameters.body`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeType(&body.Type.Definition))
 		fetchConfigParts = append(fetchConfigParts, `body: JSON.stringify(bodyJson)`)
 	}

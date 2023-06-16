@@ -105,10 +105,10 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 }
 
 func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`@Consumes(MediaType.TEXT_PLAIN)`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`@Consumes(MediaType.APPLICATION_JSON)`)
 	}
 	methodName := operation.Endpoint.Method
@@ -118,7 +118,7 @@ func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.
 	w.Line(`    logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	w.Indent()
 	bodyStringVar := "bodyStr"
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		bodyStringVar += ".reader()"
 	}
 	g.parseBody(w, operation, bodyStringVar, "requestBody")
@@ -129,10 +129,10 @@ func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.
 }
 
 func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`checkContentType(request, MediaType.TEXT_PLAIN)`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`checkContentType(request, MediaType.APPLICATION_JSON)`)
 		typ := g.Types.Kotlin(&operation.Body.Type.Definition)
 		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.ReadJson(bodyStringVar, &operation.Body.Type.Definition))

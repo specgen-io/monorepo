@@ -32,10 +32,10 @@ func (g *Generator) operationReturn(operation *spec.NamedOperation, responsePack
 
 func operationParams(types *types.Types, operation *spec.NamedOperation) []string {
 	params := []string{}
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		params = append(params, fmt.Sprintf("body %s", types.GoType(&operation.Body.Type.Definition)))
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		params = append(params, fmt.Sprintf("body *%s", types.GoType(&operation.Body.Type.Definition)))
 	}
 	for _, param := range operation.QueryParams {

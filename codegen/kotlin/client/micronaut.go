@@ -93,16 +93,16 @@ func (g *MicronautGenerator) createUrl(w *writer.Writer, operation *spec.NamedOp
 
 func (g *MicronautGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
 	requestBody := "body"
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`val bodyJson = json.%s`, g.Models.WriteJson("body", &operation.Body.Type.Definition))
 		requestBody = "bodyJson"
 	}
 	w.EmptyLine()
 	w.Line(`val request = RequestBuilder(%s)`, requestBuilderParams(operation.Endpoint.Method, requestBody, operation))
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`request.headerParam(CONTENT_TYPE, "application/json")`)
 	}
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`request.headerParam(CONTENT_TYPE, "text/plain")`)
 	}
 	for _, param := range operation.HeaderParams {
@@ -185,7 +185,7 @@ func requestBuilderParams(methodName, requestBody string, operation *spec.NamedO
 		urlParam = "url.expand()"
 	}
 	params := fmt.Sprintf(`%s, %s, ::%s`, urlParam, requestBody, methodName)
-	if operation.BodyIs(spec.BodyEmpty) {
+	if operation.BodyIs(spec.RequestBodyEmpty) {
 		params = fmt.Sprintf(`%s, ::%s`, urlParam, methodName)
 	}
 

@@ -42,13 +42,13 @@ func (g *ChiGenerator) routing(api *spec.Api) *generator.CodeFile {
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
 	w.Imports.Add("net/http")
 	w.Imports.Add("fmt")
-	if walkers.ApiHasBodyOfKind(api, spec.BodyString) {
+	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyString) {
 		w.Imports.Add("io/ioutil")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) {
+	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) {
 		w.Imports.Add("encoding/json")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) || walkers.ApiHasBodyOfKind(api, spec.BodyString) {
+	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) || walkers.ApiHasBodyOfKind(api, spec.RequestBodyString) {
 		w.Imports.Module(g.Modules.ContentType)
 	}
 	w.Imports.Module(g.Modules.ServicesApi(api))
@@ -195,7 +195,7 @@ func (g *ChiGenerator) response(w *writer.Writer, operation *spec.NamedOperation
 }
 
 func (g *ChiGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"text/plain"`, "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)
@@ -205,7 +205,7 @@ func (g *ChiGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperat
 		w.Line(`}`)
 		w.Line(`body := string(bodyData)`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"application/json"`, "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)

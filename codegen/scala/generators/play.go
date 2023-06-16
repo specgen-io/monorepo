@@ -307,11 +307,11 @@ func generateControllerMethodRequest(w *writer.Writer, operation *spec.NamedOper
 }
 
 func genBodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`checkContentType(request, "text/plain")`)
 		w.Line(`val body = request.body.utf8String`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`checkContentType(request, "application/json")`)
 		w.Line(`val body = Jsoner.readThrowing[%s](request.body.utf8String)`, ScalaType(&operation.Body.Type.Definition))
 	}
