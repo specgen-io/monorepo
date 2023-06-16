@@ -56,10 +56,10 @@ func apiPackageAlias(api *spec.Api) string {
 
 func serviceCall(serviceVar string, operation *spec.NamedOperation) string {
 	params := []string{}
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		params = append(params, "body")
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		params = append(params, "&body")
 	}
 	for _, param := range operation.QueryParams {

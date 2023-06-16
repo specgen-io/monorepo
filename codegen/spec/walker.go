@@ -143,7 +143,7 @@ func (w *SpecWalker) Operation(operation *NamedOperation) {
 	w.params(operation.HeaderParams)
 
 	if operation.Body != nil {
-		w.Type(&operation.Body.Type)
+		w.Type(operation.Body.Type)
 	}
 
 	for index := range operation.Responses {

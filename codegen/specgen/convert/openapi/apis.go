@@ -97,7 +97,7 @@ func (c *Converter) param(parameter *openapi3.ParameterRef) *spec.NamedParam {
 	}
 }
 
-func (c *Converter) requestBody(body *openapi3.RequestBodyRef) *spec.Definition {
+func (c *Converter) requestBody(body *openapi3.RequestBodyRef) *spec.RequestBody {
 	if body == nil {
 		return nil // this is fair - no body means nil definition
 	}
@@ -109,7 +109,11 @@ func (c *Converter) requestBody(body *openapi3.RequestBodyRef) *spec.Definition 
 		return nil
 	}
 	//TODO: check if non-required body is allowed
-	definition := spec.Definition{*specType(media.Schema, body.Value.Required), &body.Value.Description, nil}
+	definition := spec.RequestBody{
+		Type:        specType(media.Schema, body.Value.Required),
+		Description: &body.Value.Description,
+		Location:    nil,
+	}
 	return &definition
 }
 

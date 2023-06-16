@@ -116,7 +116,7 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 	w.Indent()
 	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	bodyStringVar := "bodyStr"
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		bodyStringVar += ".reader()"
 	}
 	g.parseBody(w, operation, bodyStringVar, "requestBody")
@@ -127,10 +127,10 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 }
 
 func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`checkContentType(request, MediaType.TEXT_PLAIN)`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`checkContentType(request, MediaType.APPLICATION_JSON)`)
 		typ := g.Types.Kotlin(&operation.Body.Type.Definition)
 		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.ReadJson(bodyStringVar, &operation.Body.Type.Definition))

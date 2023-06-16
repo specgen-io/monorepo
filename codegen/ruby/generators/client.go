@@ -131,11 +131,11 @@ func generateClientOperation(w *writer.Writer, moduleName string, operation *spe
 		w.Line("header.params.each { |name, value| request.add_field(name, value) }")
 	}
 
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`request.add_field('Content-Type', 'text/plain')`)
 		w.Line("request.body = T.check_var('body', String, body)")
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`request.add_field('Content-Type', 'application/json')`)
 		bodyRubyType := RubyType(&operation.Body.Type.Definition)
 		w.Line(fmt.Sprintf("body_json = Jsoner.to_json(%s, T.check_var('body', %s, body))", bodyRubyType, bodyRubyType))

@@ -57,9 +57,9 @@ func (g *MicronautDeclGenerator) clientMethod(w *writer.Writer, operation *spec.
 	methodName := casee.ToPascalCase(operation.Endpoint.Method)
 	url := operation.FullUrl()
 
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`@%s(value = "%s", processes = [MediaType.TEXT_PLAIN])`, methodName, url)
-	} else if operation.BodyIs(spec.BodyJson) {
+	} else if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`@%s(value = "%s", processes = [MediaType.APPLICATION_JSON])`, methodName, url)
 	} else {
 		w.Line(`@%s(value = "%s")`, methodName, url)

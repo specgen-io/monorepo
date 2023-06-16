@@ -117,10 +117,10 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 }
 
 func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`@Consumes(MediaType.TEXT_PLAIN)`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`@Consumes(MediaType.APPLICATION_JSON)`)
 	}
 	methodName := operation.Endpoint.Method
@@ -137,10 +137,10 @@ func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.
 }
 
 func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`ContentType.check(request, MediaType.TEXT_PLAIN);`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`ContentType.check(request, MediaType.APPLICATION_JSON);`)
 		w.Line(`%s %s = json.%s;`, g.Types.Java(&operation.Body.Type.Definition), bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
 	}

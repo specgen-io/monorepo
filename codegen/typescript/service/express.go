@@ -136,12 +136,12 @@ func (g *expressGenerator) responses(w *writer.Writer, responses spec.OperationR
 }
 
 func (g *expressGenerator) checkContentType(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`if (!responses.assertContentType(request, response, "text/plain")) {`)
 		w.Line(`  return`)
 		w.Line(`}`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`if (!responses.assertContentType(request, response, "application/json")) {`)
 		w.Line(`  return`)
 		w.Line(`}`)
@@ -199,10 +199,10 @@ func (g *expressGenerator) queryParsing(w *writer.Writer, operation *spec.NamedO
 }
 
 func (g *expressGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`const body: string = request.body`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line("const bodyDecode = t.decodeR(%s, request.body)", g.Validation.RuntimeType(&operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
 		g.respondBadRequest(w.Indented(), "BODY", "bodyDecode.error", "Failed to parse body")

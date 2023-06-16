@@ -39,13 +39,13 @@ func (g *HttpRouterGenerator) routing(api *spec.Api) *generator.CodeFile {
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
 	w.Imports.Add("net/http")
 	w.Imports.Add("fmt")
-	if walkers.ApiHasBodyOfKind(api, spec.BodyString) {
+	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyString) {
 		w.Imports.Add("io/ioutil")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) {
+	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) {
 		w.Imports.Add("encoding/json")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) || walkers.ApiHasBodyOfKind(api, spec.BodyString) {
+	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) || walkers.ApiHasBodyOfKind(api, spec.RequestBodyString) {
 		w.Imports.Module(g.Modules.ContentType)
 	}
 	w.Imports.Module(g.Modules.ServicesApi(api))
@@ -193,7 +193,7 @@ func (g *HttpRouterGenerator) response(w *writer.Writer, operation *spec.NamedOp
 }
 
 func (g *HttpRouterGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"text/plain"`, "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)
@@ -203,7 +203,7 @@ func (g *HttpRouterGenerator) bodyParsing(w *writer.Writer, operation *spec.Name
 		w.Line(`}`)
 		w.Line(`body := string(bodyData)`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"application/json"`, "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)

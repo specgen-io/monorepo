@@ -158,13 +158,13 @@ func generateClientOperationImplementation(w *writer.Writer, operation *spec.Nam
 	}
 
 	addParamsWriting(w, operation.HeaderParams, "headers")
-	if operation.BodyIs(spec.BodyEmpty) {
+	if operation.BodyIs(spec.RequestBodyEmpty) {
 		w.Line(`logger.debug(s"Request to url: ${url}")`)
 	}
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`logger.debug(s"Request to url: ${url}, body: ${body}")`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`val bodyJson = Jsoner.write(body)`)
 		w.Line(`logger.debug(s"Request to url: ${url}, body: ${bodyJson}")`)
 	}
@@ -175,11 +175,11 @@ func generateClientOperationImplementation(w *writer.Writer, operation *spec.Nam
 	if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
 		w.Line(`    .headers(headers.params:_*)`)
 	}
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`    .header("Content-Type", "text/plain")`)
 		w.Line(`    .body(body)`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`    .header("Content-Type", "application/json")`)
 		w.Line(`    .body(bodyJson)`)
 	}

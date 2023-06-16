@@ -36,7 +36,7 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	w.Imports.Add("net/http")
 	w.Imports.Add("encoding/json")
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
-	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) || walkers.ApiHasBodyOfKind(api, spec.BodyString) {
+	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) || walkers.ApiHasBodyOfKind(api, spec.RequestBodyString) {
 		w.Imports.Add("bytes")
 	}
 	if walkers.ApiHasUrlParams(api) {
@@ -99,17 +99,17 @@ func (g *NetHttpGenerator) operation(w *writer.Writer, operation *spec.NamedOper
 }
 
 func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation, requestVar string) {
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`  bodyData := []byte(body)`)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`  bodyData, err := json.Marshal(body)`)
 		w.Line(`  if err != nil {`)
 		w.Line(`    return %s`, operationError(operation, `err`))
 		w.Line(`  }`)
 	}
 	body := "nil"
-	if !operation.BodyIs(spec.BodyEmpty) {
+	if !operation.BodyIs(spec.RequestBodyEmpty) {
 		body = "bytes.NewBuffer(bodyData)"
 	}
 	w.Line(`  %s, err := http.NewRequest("%s", client.baseUrl+%s, %s)`, requestVar, operation.Endpoint.Method, g.addRequestUrlParams(operation), body)
@@ -117,10 +117,10 @@ func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.Named
 	w.Line(`    log.WithFields(%s).Error("Failed to create HTTP request", err.Error())`, logFieldsName(operation))
 	w.Line(`    return %s`, operationError(operation, `err`))
 	w.Line(`  }`)
-	if operation.BodyIs(spec.BodyString) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`  %s.Header.Set("Content-Type", "text/plain")`, requestVar)
 	}
-	if operation.BodyIs(spec.BodyJson) {
+	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`  %s.Header.Set("Content-Type", "application/json")`, requestVar)
 	}
 	w.EmptyLine()
