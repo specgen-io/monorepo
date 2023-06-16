@@ -1,6 +1,9 @@
 package spec
 
-import "gopkg.in/specgen-io/yaml.v3"
+import (
+	"gopkg.in/specgen-io/yaml.v3"
+	"yamlx"
+)
 
 type FormDataParams Params
 type FormUrlEncodedParams Params
@@ -47,11 +50,7 @@ func (value *RequestBody) UnmarshalYAML(node *yaml.Node) error {
 		if err != nil {
 			return yamlError(node, err.Error())
 		}
-		parsed := RequestBody{
-			Type:        &Type{*typ, node},
-			Description: getDescriptionFromComment(node),
-			Location:    node,
-		}
+		parsed := RequestBody{Type: &Type{*typ, node}, Description: getDescriptionFromComment(node), Location: node}
 		*value = parsed
 		return nil
 	} else if node.Kind == yaml.MappingNode {
@@ -59,26 +58,18 @@ func (value *RequestBody) UnmarshalYAML(node *yaml.Node) error {
 			params := FormDataParams{}
 			err := paramsNode.DecodeWith(decodeLooze, &params)
 			if err != nil {
-				return err
+				return yamlError(node, err.Error())
 			}
-			parsed := RequestBody{
-				FormData:    params,
-				Description: getDescriptionFromComment(node),
-				Location:    node,
-			}
+			parsed := RequestBody{FormData: params, Description: getDescriptionFromComment(node), Location: node}
 			*value = parsed
 			return nil
 		} else if paramsNode := getMappingValue(node, "form-urlencoded"); paramsNode != nil {
 			params := FormUrlEncodedParams{}
 			err := paramsNode.DecodeWith(decodeLooze, &params)
 			if err != nil {
-				return err
+				return yamlError(node, err.Error())
 			}
-			parsed := RequestBody{
-				FormUrlEncoded: params,
-				Description:    getDescriptionFromComment(node),
-				Location:       node,
-			}
+			parsed := RequestBody{FormUrlEncoded: params, Description: getDescriptionFromComment(node), Location: node}
 			*value = parsed
 			return nil
 		}
@@ -88,10 +79,18 @@ func (value *RequestBody) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (value RequestBody) MarshalYAML() (interface{}, error) {
-	yamlValue := value.Type.Definition.String()
-	node := yaml.Node{
-		Kind:  yaml.ScalarNode,
-		Value: yamlValue,
+	var node yaml.Node
+	if value.Type != nil {
+		yamlValue := value.Type.Definition.String()
+		node = yaml.Node{Kind: yaml.ScalarNode, Value: yamlValue}
+	} else if value.FormData != nil {
+		yamlMap := yamlx.Map()
+		yamlMap.Add("form-data", value.FormData)
+		node = yamlMap.Node
+	} else if value.FormUrlEncoded != nil {
+		yamlMap := yamlx.Map()
+		yamlMap.Add("form-urlencoded", value.FormUrlEncoded)
+		node = yamlMap.Node
 	}
 	if value.Description != nil {
 		node.LineComment = "# " + *value.Description
