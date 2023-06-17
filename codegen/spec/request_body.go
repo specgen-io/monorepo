@@ -54,6 +54,9 @@ func (value *RequestBody) UnmarshalYAML(node *yaml.Node) error {
 		*value = parsed
 		return nil
 	} else if node.Kind == yaml.MappingNode {
+		if len(node.Content) != 2 {
+			return yamlError(node, `body has to be either type or an object with single field: form-data or form-urlencoded`)
+		}
 		if paramsNode := getMappingValue(node, "form-data"); paramsNode != nil {
 			params := FormDataParams{}
 			err := paramsNode.DecodeWith(decodeLooze, &params)
