@@ -318,10 +318,10 @@ func genBodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
 }
 
 func getPlayStatus(response *spec.Response) string {
-	if response.BodyIs(spec.BodyEmpty) {
+	if response.BodyIs(spec.ResponseBodyEmpty) {
 		return fmt.Sprintf(`new Status(%s)`, spec.HttpStatusCode(response.Name))
 	}
-	if response.BodyIs(spec.BodyString) {
+	if response.BodyIs(spec.ResponseBodyString) {
 		return fmt.Sprintf(`new Status(%s)(body)`, spec.HttpStatusCode(response.Name))
 	} else {
 		return fmt.Sprintf(`new Status(%s)(Jsoner.write(body)).as("application/json")`, spec.HttpStatusCode(response.Name))

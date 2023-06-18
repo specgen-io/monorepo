@@ -76,7 +76,7 @@ func (g *Generator) ErrorResponses(errors *spec.ErrorResponses) *generator.CodeF
 	w.Imports.Module(g.Modules.Respond)
 
 	for _, response := range *errors {
-		if response.BodyIs(spec.BodyEmpty) {
+		if response.BodyIs(spec.ResponseBodyEmpty) {
 			w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter) {`, response.Name.PascalCase())
 			w.Line(`  log.WithFields(logFields).Warn("")`)
 		} else {

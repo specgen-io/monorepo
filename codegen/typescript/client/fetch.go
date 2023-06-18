@@ -119,10 +119,10 @@ func (g *FetchGenerator) operationReturn(response *spec.OperationResponse) strin
 }
 
 func (g *FetchGenerator) responseBody(response *spec.Response) string {
-	if response.BodyIs(spec.BodyString) {
+	if response.BodyIs(spec.ResponseBodyString) {
 		return `await response.text()`
 	}
-	if response.BodyIs(spec.BodyJson) {
+	if response.BodyIs(spec.ResponseBodyJson) {
 		data := fmt.Sprintf(`t.decode(%s, %s)`, g.validation.RuntimeType(&response.Type.Definition), `await response.json()`)
 		return data
 	}

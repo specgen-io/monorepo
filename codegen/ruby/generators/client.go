@@ -80,10 +80,10 @@ func operationResult(operation *spec.NamedOperation, response *spec.Response) st
 		}
 	}
 
-	if response.BodyIs(spec.BodyString) {
+	if response.BodyIs(spec.ResponseBodyString) {
 		body := "response.body"
 		return fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags)
-	} else if response.BodyIs(spec.BodyJson) {
+	} else if response.BodyIs(spec.ResponseBodyJson) {
 		body := fmt.Sprintf("Jsoner.from_json(%s, response.body)", RubyType(&response.Type.Definition))
 		return fmt.Sprintf("OpenStruct.new(:%s => %s%s)", response.Name.Source, body, flags)
 	} else {

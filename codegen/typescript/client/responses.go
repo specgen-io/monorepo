@@ -22,10 +22,10 @@ func generateOperationResponse(w *writer.Writer, operation *spec.NamedOperation)
 func responseType(operation *spec.NamedOperation) string {
 	successResponses := operation.Responses.Success()
 	if len(successResponses) == 1 {
-		if successResponses[0].Definition.Type.Definition.IsEmpty() {
+		if successResponses[0].ResponseBody.Type.Definition.IsEmpty() {
 			return "void"
 		} else {
-			return types.TsType(&successResponses[0].Definition.Type.Definition)
+			return types.TsType(&successResponses[0].ResponseBody.Type.Definition)
 		}
 	} else {
 		return responseTypeName(operation)

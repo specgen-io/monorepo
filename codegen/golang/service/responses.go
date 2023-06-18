@@ -24,13 +24,13 @@ func respondEmpty(logFields, resVar, statusCode string) string {
 }
 
 func writeResponse(w *writer.Writer, logFieldsName string, response *spec.Response, responseVar string) {
-	if response.BodyIs(spec.BodyEmpty) {
+	if response.BodyIs(spec.ResponseBodyEmpty) {
 		w.Line(respondEmpty(logFieldsName, `res`, spec.HttpStatusCode(response.Name)))
 	}
-	if response.BodyIs(spec.BodyString) {
+	if response.BodyIs(spec.ResponseBodyString) {
 		w.Line(respondText(logFieldsName, `res`, spec.HttpStatusCode(response.Name), `*`+responseVar))
 	}
-	if response.BodyIs(spec.BodyJson) {
+	if response.BodyIs(spec.ResponseBodyJson) {
 		w.Line(respondJson(logFieldsName, `res`, spec.HttpStatusCode(response.Name), responseVar))
 	}
 }

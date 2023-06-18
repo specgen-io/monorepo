@@ -4,15 +4,15 @@ import "strconv"
 
 type Response struct {
 	Name Name
-	Definition
+	ResponseBody
 }
 
-func (response *Response) BodyKind() BodyKind {
-	return kindOf(&response.Definition)
+func (response *Response) BodyKind() ResponseBodyKind {
+	return kindOfResponseBody(&response.ResponseBody)
 }
 
-func (response *Response) BodyIs(kind BodyKind) bool {
-	return kindOf(&response.Definition) == kind
+func (response *Response) BodyIs(kind ResponseBodyKind) bool {
+	return kindOfResponseBody(&response.ResponseBody) == kind
 }
 
 func (response *Response) IsSuccess() bool {

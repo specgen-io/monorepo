@@ -59,15 +59,15 @@ func (c *Converter) responses(responses openapi3.Responses) []spec.OperationResp
 	return result
 }
 
-func (c *Converter) response(response *openapi3.ResponseRef) *spec.Definition {
+func (c *Converter) response(response *openapi3.ResponseRef) *spec.ResponseBody {
 	if response.Value == nil {
 		return nil //TODO: not sure in this - what if ref is specified here
 	}
-	definition := &spec.Definition{emptyType, response.Value.Description, nil}
+	definition := &spec.ResponseBody{emptyType, response.Value.Description, nil}
 	for mediaType, media := range response.Value.Content {
 		switch mediaType {
 		case "application/json":
-			definition = &spec.Definition{*specType(media.Schema, true), response.Value.Description, nil}
+			definition = &spec.ResponseBody{*specType(media.Schema, true), response.Value.Description, nil}
 			break
 		default:
 			panic(fmt.Sprintf("Unsupported media type: %s", mediaType))

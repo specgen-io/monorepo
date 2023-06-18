@@ -22,10 +22,10 @@ func GenerateOperationResponse(w *writer.Writer, operation *spec.NamedOperation)
 func ResponseType(operation *spec.NamedOperation, servicePackage string) string {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]
-		if response.Definition.Type.Definition.IsEmpty() {
+		if response.ResponseBody.Type.Definition.IsEmpty() {
 			return "void"
 		}
-		return types.TsType(&response.Definition.Type.Definition)
+		return types.TsType(&response.ResponseBody.Type.Definition)
 	}
 	result := responseTypeName(operation)
 	if servicePackage != "" {
