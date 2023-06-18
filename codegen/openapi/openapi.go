@@ -141,16 +141,16 @@ func generateResponses(operation *spec.NamedOperation) *yamlx.YamlMap {
 	for _, statusCode := range statusCodes {
 		response := operation.Responses.GetByStatusCode(statusCode)
 		errorResponse := operation.InApi.InHttp.InVersion.InSpec.HttpErrors.Responses.GetByStatusCode(statusCode)
-		var responseDefinition *spec.Definition = nil
-		var alternateDefinition *spec.Definition = nil
+		var responseDefinition *spec.ResponseBody = nil
+		var alternateDefinition *spec.ResponseBody = nil
 
 		if response != nil {
-			responseDefinition = &response.Definition
-			if errorResponse != nil && response.Definition.Type.String() != errorResponse.Definition.Type.String() {
-				alternateDefinition = &errorResponse.Definition
+			responseDefinition = &response.ResponseBody
+			if errorResponse != nil && response.ResponseBody.Type.String() != errorResponse.ResponseBody.Type.String() {
+				alternateDefinition = &errorResponse.ResponseBody
 			}
 		} else {
-			responseDefinition = &errorResponse.Definition
+			responseDefinition = &errorResponse.ResponseBody
 		}
 
 		result.Add(statusCode, generateResponse(responseDefinition, alternateDefinition))
@@ -159,7 +159,7 @@ func generateResponses(operation *spec.NamedOperation) *yamlx.YamlMap {
 	return result
 }
 
-func generateResponse(response *spec.Definition, alternate *spec.Definition) *yamlx.YamlMap {
+func generateResponse(response *spec.ResponseBody, alternate *spec.ResponseBody) *yamlx.YamlMap {
 	result := yamlx.Map()
 	description := ""
 	if response.Description != nil {

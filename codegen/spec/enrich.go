@@ -139,7 +139,7 @@ func (enricher *httpEnricher) httpErrors(httpErrors *HttpErrors) {
 	}
 
 	for index := range httpErrors.Responses {
-		enricher.definition(&httpErrors.Responses[index].Definition)
+		enricher.responseBody(&httpErrors.Responses[index].ResponseBody)
 	}
 }
 
@@ -166,7 +166,7 @@ func (enricher *httpEnricher) operation(operation *NamedOperation) {
 	}
 
 	for index := range operation.Responses {
-		enricher.definition(&operation.Responses[index].Definition)
+		enricher.responseBody(&operation.Responses[index].ResponseBody)
 	}
 }
 
@@ -182,9 +182,15 @@ func (enricher *httpEnricher) definition(definition *Definition) {
 	}
 }
 
-func (enricher *httpEnricher) requestBody(definition *RequestBody) {
-	if definition != nil {
-		enricher.typ(definition.Type)
+func (enricher *httpEnricher) requestBody(body *RequestBody) {
+	if body != nil {
+		enricher.typ(body.Type)
+	}
+}
+
+func (enricher *httpEnricher) responseBody(body *ResponseBody) {
+	if body != nil {
+		enricher.typ(&body.Type)
 	}
 }
 

@@ -51,7 +51,7 @@ func errorResponseException(thePackage, errorsModelsPackage packages.Package, er
 	w.Imports.Star(errorsModelsPackage)
 	w.Line(`public class [[.ClassName]] extends ResponseException {`)
 	w.Indent()
-	if !error.BodyIs(spec.BodyEmpty) {
+	if !error.BodyIs(spec.ResponseBodyEmpty) {
 		errorBody := fmt.Sprintf(`%s body`, error.Type.Definition)
 		w.Line(`private final %s;`, errorBody)
 		w.EmptyLine()

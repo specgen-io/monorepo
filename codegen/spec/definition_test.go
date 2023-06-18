@@ -29,10 +29,6 @@ func Test_Definition_Unmarshal_Short(t *testing.T) {
 	assert.Equal(t, *definition.Description, "some description")
 }
 
-func StrPtr(str string) *string {
-	return &str
-}
-
 func Test_DefinitionDefault_Marshal_Short(t *testing.T) {
 	definition := &DefinitionDefault{
 		Type:        Type{Definition: *Plain("string")},

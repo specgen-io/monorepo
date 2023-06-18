@@ -126,7 +126,7 @@ func (validator *validator) OperationResponse(response *OperationResponse) {
 		message := fmt.Sprintf("response %s should be either empty or some type with structure of an object or array, found %s", response.Name.Source, response.Type.Definition.Name)
 		validator.addError(response.Type.Location, message)
 	}
-	validator.Definition(&response.Definition)
+	validator.ResponseBody(&response.ResponseBody)
 }
 
 func (validator *validator) Params(params []NamedParam, allowArrayTypes bool) {
@@ -294,4 +294,7 @@ func (validator *validator) Definition(definition *Definition) {
 }
 
 func (validator *validator) RequestBody(body *RequestBody) {
+}
+
+func (validator *validator) ResponseBody(body *ResponseBody) {
 }

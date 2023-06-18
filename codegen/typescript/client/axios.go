@@ -116,10 +116,10 @@ func (g *AxiosGenerator) operationReturn(response *spec.OperationResponse) strin
 }
 
 func (g *AxiosGenerator) responseBody(response *spec.Response) string {
-	if response.BodyIs(spec.BodyString) {
+	if response.BodyIs(spec.ResponseBodyString) {
 		return `response.data`
 	}
-	if response.BodyIs(spec.BodyJson) {
+	if response.BodyIs(spec.ResponseBodyJson) {
 		data := fmt.Sprintf(`t.decode(%s, %s)`, g.validation.RuntimeType(&response.Type.Definition), `response.data`)
 		return data
 	}

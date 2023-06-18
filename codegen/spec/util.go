@@ -19,3 +19,7 @@ func checkUnmarshalMarshal(t *testing.T, expectedYaml string, value interface{})
 
 	assert.Equal(t, expectedYaml, actualYaml)
 }
+
+func StrPtr(str string) *string {
+	return &str
+}
