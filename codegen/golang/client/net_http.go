@@ -197,13 +197,13 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 	w.Line(`switch resp.StatusCode {`)
 	for _, response := range operation.Responses {
 		w.Line(`case %s:`, spec.HttpStatusCode(response.Name))
-		if response.BodyIs(spec.ResponseBodyString) {
+		if response.Body.Is(spec.ResponseBodyString) {
 			w.Line(`  result, err := response.Text(resp)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    return %s`, operationError(response.Operation, `err`))
 			w.Line(`  }`)
 		}
-		if response.BodyIs(spec.ResponseBodyJson) {
+		if response.Body.Is(spec.ResponseBodyJson) {
 			w.Line(`  var result %s`, g.Types.GoType(&response.Body.Type.Definition))
 			w.Line(`  err := response.Json(resp, &result)`)
 			w.Line(`  if err != nil {`)
@@ -311,13 +311,13 @@ func (g *NetHttpGenerator) ErrorsHandler(errors spec.ErrorResponses) *generator.
 	w.Line(`switch resp.StatusCode {`)
 	for _, response := range errors.Required() {
 		w.Line(`case %s:`, spec.HttpStatusCode(response.Name))
-		if response.BodyIs(spec.ResponseBodyString) {
+		if response.Body.Is(spec.ResponseBodyString) {
 			w.Line(`  result, err := response.Text(resp)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    return err`)
 			w.Line(`  }`)
 		}
-		if response.BodyIs(spec.ResponseBodyJson) {
+		if response.Body.Is(spec.ResponseBodyJson) {
 			w.Line(`  var result %s`, g.Types.GoType(&response.Body.Type.Definition))
 			w.Line(`  err := response.Json(resp, &result)`)
 			w.Line(`  if err != nil {`)

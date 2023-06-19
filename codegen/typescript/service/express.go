@@ -108,15 +108,15 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 }
 
 func (g *expressGenerator) response(w *writer.Writer, response *spec.Response, dataParam string) {
-	if response.BodyIs(spec.ResponseBodyEmpty) {
+	if response.Body.Is(spec.ResponseBodyEmpty) {
 		w.Line("response.status(%s).send()", spec.HttpStatusCode(response.Name))
 		w.Line("return")
 	}
-	if response.BodyIs(spec.ResponseBodyString) {
+	if response.Body.Is(spec.ResponseBodyString) {
 		w.Line("response.status(%s).type('text').send(%s)", spec.HttpStatusCode(response.Name), dataParam)
 		w.Line("return")
 	}
-	if response.BodyIs(spec.ResponseBodyJson) {
+	if response.Body.Is(spec.ResponseBodyJson) {
 		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.Validation.RuntimeType(&response.Body.Type.Definition), dataParam)
 		w.Line("return")
 	}

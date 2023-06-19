@@ -8,10 +8,6 @@ type Response struct {
 	Description *string
 }
 
-func (response *Response) BodyIs(kind ResponseBodyKind) bool {
-	return response.Body.Is(kind)
-}
-
 func (response *Response) IsSuccess() bool {
 	statusCode, _ := strconv.Atoi(HttpStatusCode(response.Name))
 	return statusCode >= 200 && statusCode <= 399

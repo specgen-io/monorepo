@@ -148,7 +148,7 @@ companion object {
 		return when(response.code()) {
 `)
 	for _, response := range operation.Responses {
-		if !response.BodyIs(spec.ResponseBodyEmpty) {
+		if !response.Body.Is(spec.ResponseBodyEmpty) {
 			w.Line(`      %s -> %s(json.%s)`, spec.HttpStatusCode(response.Name), response.Name.PascalCase(), g.Models.ReadJson("responseBodyString", &response.Body.Type.Definition))
 		}
 	}
