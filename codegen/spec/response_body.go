@@ -3,9 +3,8 @@ package spec
 import "gopkg.in/specgen-io/yaml.v3"
 
 type ResponseBody struct {
-	Type        Type
-	Description *string
-	Location    *yaml.Node
+	Type     Type
+	Location *yaml.Node
 }
 
 func (value *ResponseBody) UnmarshalYAML(node *yaml.Node) error {
@@ -16,11 +15,7 @@ func (value *ResponseBody) UnmarshalYAML(node *yaml.Node) error {
 	if err != nil {
 		return yamlError(node, err.Error())
 	}
-	parsed := ResponseBody{
-		Type:        Type{*typ, node},
-		Description: getDescriptionFromComment(node),
-		Location:    node,
-	}
+	parsed := ResponseBody{Type{*typ, node}, node}
 	*value = parsed
 	return nil
 }
@@ -30,9 +25,6 @@ func (value ResponseBody) MarshalYAML() (interface{}, error) {
 	node := yaml.Node{
 		Kind:  yaml.ScalarNode,
 		Value: yamlValue,
-	}
-	if value.Description != nil {
-		node.LineComment = "# " + *value.Description
 	}
 	return node, nil
 }
