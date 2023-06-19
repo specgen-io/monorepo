@@ -109,7 +109,7 @@ func (w *SpecWalker) Response(response *Response) {
 	if w.onResponse != nil {
 		w.onResponse(response)
 	}
-	w.Type(&response.ResponseBody.Type)
+	w.Type(&response.Body.Type)
 }
 
 func (w *SpecWalker) Version(version *Version) {
@@ -155,7 +155,7 @@ func (w *SpecWalker) OperationResponse(response *OperationResponse) {
 	if w.onOperationResponse != nil {
 		w.onOperationResponse(response)
 	}
-	w.Type(&response.ResponseBody.Type)
+	w.Type(&response.Body.Type)
 }
 
 func (w *SpecWalker) params(params []NamedParam) {

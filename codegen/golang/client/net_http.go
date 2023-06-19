@@ -197,14 +197,14 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 	w.Line(`switch resp.StatusCode {`)
 	for _, response := range operation.Responses {
 		w.Line(`case %s:`, spec.HttpStatusCode(response.Name))
-		if response.BodyIs(spec.ResponseBodyString) {
+		if response.Body.Is(spec.ResponseBodyString) {
 			w.Line(`  result, err := response.Text(resp)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    return %s`, operationError(response.Operation, `err`))
 			w.Line(`  }`)
 		}
-		if response.BodyIs(spec.ResponseBodyJson) {
-			w.Line(`  var result %s`, g.Types.GoType(&response.Type.Definition))
+		if response.Body.Is(spec.ResponseBodyJson) {
+			w.Line(`  var result %s`, g.Types.GoType(&response.Body.Type.Definition))
 			w.Line(`  err := response.Json(resp, &result)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    return %s`, operationError(response.Operation, `err`))
@@ -247,7 +247,7 @@ func responseStruct(w *writer.Writer, types *types.Types, operation *spec.NamedO
 		w.Line(`type %s struct {`, responseTypeName(operation))
 		w.Indent()
 		for _, response := range operation.Responses.Success() {
-			w.LineAligned(`%s %s`, response.Name.PascalCase(), types.GoType(spec.Nullable(&response.Type.Definition)))
+			w.LineAligned(`%s %s`, response.Name.PascalCase(), types.GoType(spec.Nullable(&response.Body.Type.Definition)))
 		}
 		w.Unindent()
 		w.Line(`}`)
@@ -311,21 +311,21 @@ func (g *NetHttpGenerator) ErrorsHandler(errors spec.ErrorResponses) *generator.
 	w.Line(`switch resp.StatusCode {`)
 	for _, response := range errors.Required() {
 		w.Line(`case %s:`, spec.HttpStatusCode(response.Name))
-		if response.BodyIs(spec.ResponseBodyString) {
+		if response.Body.Is(spec.ResponseBodyString) {
 			w.Line(`  result, err := response.Text(resp)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    return err`)
 			w.Line(`  }`)
 		}
-		if response.BodyIs(spec.ResponseBodyJson) {
-			w.Line(`  var result %s`, g.Types.GoType(&response.Type.Definition))
+		if response.Body.Is(spec.ResponseBodyJson) {
+			w.Line(`  var result %s`, g.Types.GoType(&response.Body.Type.Definition))
 			w.Line(`  err := response.Json(resp, &result)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    return err`)
 			w.Line(`  }`)
 		}
 
-		if response.Type.Definition.IsEmpty() {
+		if response.Body.Type.Definition.IsEmpty() {
 			w.Line(`  return &%s{}`, response.Name.PascalCase())
 		} else {
 			w.Line(`  return &%s{result}`, response.Name.PascalCase())

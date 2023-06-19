@@ -110,15 +110,15 @@ func getKoaUrl(endpoint spec.Endpoint) string {
 
 func (g *koaGenerator) response(w *writer.Writer, response *spec.Response, dataParam string) {
 	w.Line("ctx.status = %s", spec.HttpStatusCode(response.Name))
-	if response.BodyIs(spec.ResponseBodyEmpty) {
+	if response.Body.Is(spec.ResponseBodyEmpty) {
 		w.Line("return")
 	}
-	if response.BodyIs(spec.ResponseBodyString) {
+	if response.Body.Is(spec.ResponseBodyString) {
 		w.Line("ctx.body = %s", dataParam)
 		w.Line("return")
 	}
-	if response.BodyIs(spec.ResponseBodyJson) {
-		w.Line("ctx.body = t.encode(%s, %s)", g.Validation.RuntimeType(&response.Type.Definition), dataParam)
+	if response.Body.Is(spec.ResponseBodyJson) {
+		w.Line("ctx.body = t.encode(%s, %s)", g.Validation.RuntimeType(&response.Body.Type.Definition), dataParam)
 		w.Line("return")
 	}
 }

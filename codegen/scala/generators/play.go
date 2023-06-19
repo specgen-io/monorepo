@@ -318,10 +318,10 @@ func genBodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
 }
 
 func getPlayStatus(response *spec.Response) string {
-	if response.BodyIs(spec.ResponseBodyEmpty) {
+	if response.Body.Is(spec.ResponseBodyEmpty) {
 		return fmt.Sprintf(`new Status(%s)`, spec.HttpStatusCode(response.Name))
 	}
-	if response.BodyIs(spec.ResponseBodyString) {
+	if response.Body.Is(spec.ResponseBodyString) {
 		return fmt.Sprintf(`new Status(%s)(body)`, spec.HttpStatusCode(response.Name))
 	} else {
 		return fmt.Sprintf(`new Status(%s)(Jsoner.write(body)).as("application/json")`, spec.HttpStatusCode(response.Name))
@@ -333,14 +333,14 @@ func genMatchResult(w *writer.Writer, operation *spec.NamedOperation, resultVarN
 	w.Indent()
 	if len(operation.Responses) == 1 {
 		r := operation.Responses[0]
-		if !r.Type.Definition.IsEmpty() {
+		if !r.Body.Type.Definition.IsEmpty() {
 			w.Line(`body => %s`, getPlayStatus(&r.Response))
 		} else {
 			w.Line(`_ => %s`, getPlayStatus(&r.Response))
 		}
 	} else {
 		for _, r := range operation.Responses {
-			if !r.Type.Definition.IsEmpty() {
+			if !r.Body.Type.Definition.IsEmpty() {
 				w.Line(`case %s.%s(body) => %s`, responseType(operation), r.Name.PascalCase(), getPlayStatus(&r.Response))
 			} else {
 				w.Line(`case %s.%s() => %s`, responseType(operation), r.Name.PascalCase(), getPlayStatus(&r.Response))

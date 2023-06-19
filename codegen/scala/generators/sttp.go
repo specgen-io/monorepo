@@ -209,25 +209,25 @@ func generateClientOperationImplementation(w *writer.Writer, operation *spec.Nam
 func generateClientResponses(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]
-		if response.BodyIs(spec.ResponseBodyEmpty) {
+		if response.Body.Is(spec.ResponseBodyEmpty) {
 			w.Line(`case %s => ()`, spec.HttpStatusCode(response.Name))
 		}
-		if response.BodyIs(spec.ResponseBodyString) {
+		if response.Body.Is(spec.ResponseBodyString) {
 			w.Line(`case %s => body`, spec.HttpStatusCode(response.Name))
 		}
-		if response.BodyIs(spec.ResponseBodyJson) {
-			w.Line(`case %s => Jsoner.readThrowing[%s](body)`, spec.HttpStatusCode(response.Name), ScalaType(&response.Type.Definition))
+		if response.Body.Is(spec.ResponseBodyJson) {
+			w.Line(`case %s => Jsoner.readThrowing[%s](body)`, spec.HttpStatusCode(response.Name), ScalaType(&response.Body.Type.Definition))
 		}
 	} else {
 		for _, response := range operation.Responses {
-			if response.BodyIs(spec.ResponseBodyEmpty) {
+			if response.Body.Is(spec.ResponseBodyEmpty) {
 				w.Line(`case %s => %s.%s()`, spec.HttpStatusCode(response.Name), responseTypeName(operation), response.Name.PascalCase())
 			}
-			if response.BodyIs(spec.ResponseBodyString) {
+			if response.Body.Is(spec.ResponseBodyString) {
 				w.Line(`case %s => %s.%s(body)`, spec.HttpStatusCode(response.Name), responseTypeName(operation), response.Name.PascalCase())
 			}
-			if response.BodyIs(spec.ResponseBodyJson) {
-				w.Line(`case %s => %s.%s(Jsoner.readThrowing[%s](body))`, spec.HttpStatusCode(response.Name), responseTypeName(operation), response.Name.PascalCase(), ScalaType(&response.Type.Definition))
+			if response.Body.Is(spec.ResponseBodyJson) {
+				w.Line(`case %s => %s.%s(Jsoner.readThrowing[%s](body))`, spec.HttpStatusCode(response.Name), responseTypeName(operation), response.Name.PascalCase(), ScalaType(&response.Body.Type.Definition))
 			}
 		}
 	}

@@ -30,7 +30,7 @@ func getApiCallParamsObject(operation *spec.NamedOperation) string {
 }
 
 func serviceCall(operation *spec.NamedOperation, paramsObject string) string {
-	if len(operation.Responses) == 1 && operation.Responses[0].ResponseBody.Type.Definition.IsEmpty() {
+	if len(operation.Responses) == 1 && operation.Responses[0].Body.Type.Definition.IsEmpty() {
 		return fmt.Sprintf("await service.%s(%s)", operation.Name.CamelCase(), paramsObject)
 	}
 	return fmt.Sprintf("const result = await service.%s(%s)", operation.Name.CamelCase(), paramsObject)

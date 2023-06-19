@@ -18,10 +18,10 @@ func (g *Generator) operationSignature(operation *spec.NamedOperation, apiPackag
 func (g *Generator) operationReturn(operation *spec.NamedOperation, responsePackageName *string) string {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]
-		if response.Type.Definition.IsEmpty() {
+		if response.Body.Type.Definition.IsEmpty() {
 			return `error`
 		}
-		return fmt.Sprintf(`(*%s, error)`, g.Types.GoType(&response.Type.Definition))
+		return fmt.Sprintf(`(*%s, error)`, g.Types.GoType(&response.Body.Type.Definition))
 	}
 	responseType := responseTypeName(operation)
 	if responsePackageName != nil {

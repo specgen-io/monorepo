@@ -85,7 +85,8 @@ func (value *ErrorResponses) UnmarshalYAML(node *yaml.Node) error {
 		if err != nil {
 			return err
 		}
-		array[index] = ErrorResponse{Response{Name: name, ResponseBody: body}, false}
+		response := Response{name, body, getDescriptionFromComment(valueNode)}
+		array[index] = ErrorResponse{response, false}
 	}
 	*value = array
 	return nil
@@ -95,7 +96,7 @@ func (value ErrorResponses) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
 	for index := 0; index < len(value); index++ {
 		response := value[index]
-		err := yamlMap.AddWithComment(response.Name, response.ResponseBody, response.Description)
+		err := yamlMap.AddWithComment(response.Name, response.Body, response.Description)
 		if err != nil {
 			return nil, err
 		}

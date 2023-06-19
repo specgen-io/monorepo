@@ -49,8 +49,8 @@ func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPa
 
 func responseImpl(w *writer.Writer, types *types.Types, response *spec.OperationResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
-	if !response.Type.Definition.IsEmpty() {
-		w.Line(`class %s(var body: %s) : %s`, serviceResponseImplementationName, types.Kotlin(&response.Type.Definition), responseInterfaceName(response.Operation))
+	if !response.Body.Type.Definition.IsEmpty() {
+		w.Line(`class %s(var body: %s) : %s`, serviceResponseImplementationName, types.Kotlin(&response.Body.Type.Definition), responseInterfaceName(response.Operation))
 	} else {
 		w.Line(`class %s : %s`, serviceResponseImplementationName, responseInterfaceName(response.Operation))
 	}

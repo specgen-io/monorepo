@@ -79,7 +79,7 @@ func errorResponseShouldNotBeDeclared(httpErrors *HttpErrors, messages *Messages
 	if httpErrors.Responses != nil {
 		errorResponse := httpErrors.Responses.GetByStatusName(httpStatusName)
 		if errorResponse != nil {
-			messages.Add(Error(`error response '%s' is declared but should not`, httpStatusName).At(locationFromNode(errorResponse.Location)))
+			messages.Add(Error(`error response '%s' is declared but should not`, httpStatusName).At(locationFromNode(errorResponse.Name.Location)))
 			return true
 		}
 	}
@@ -139,7 +139,7 @@ func (enricher *httpEnricher) httpErrors(httpErrors *HttpErrors) {
 	}
 
 	for index := range httpErrors.Responses {
-		enricher.responseBody(&httpErrors.Responses[index].ResponseBody)
+		enricher.responseBody(&httpErrors.Responses[index].Body)
 	}
 }
 
@@ -166,7 +166,7 @@ func (enricher *httpEnricher) operation(operation *NamedOperation) {
 	}
 
 	for index := range operation.Responses {
-		enricher.responseBody(&operation.Responses[index].ResponseBody)
+		enricher.responseBody(&operation.Responses[index].Body)
 	}
 }
 

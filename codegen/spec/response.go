@@ -3,16 +3,9 @@ package spec
 import "strconv"
 
 type Response struct {
-	Name Name
-	ResponseBody
-}
-
-func (response *Response) BodyKind() ResponseBodyKind {
-	return kindOfResponseBody(&response.ResponseBody)
-}
-
-func (response *Response) BodyIs(kind ResponseBodyKind) bool {
-	return kindOfResponseBody(&response.ResponseBody) == kind
+	Name        Name
+	Body        ResponseBody
+	Description *string
 }
 
 func (response *Response) IsSuccess() bool {
