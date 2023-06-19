@@ -39,8 +39,8 @@ func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
 func operationSignature(types *types.Types, operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
-			if !response.Type.Definition.IsEmpty() {
-				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "), types.Kotlin(&response.Type.Definition))
+			if !response.ResponseBody.Type.Definition.IsEmpty() {
+				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "), types.Kotlin(&response.ResponseBody.Type.Definition))
 			} else {
 				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "))
 			}

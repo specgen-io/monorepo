@@ -16,7 +16,7 @@ func (g *Generator) Errors(errors *spec.ErrorResponses) *generator.CodeFile {
 		w.EmptyLine()
 		w.Line(`type %s struct {`, response.Name.PascalCase())
 		if !response.BodyIs(spec.ResponseBodyEmpty) {
-			w.Line(`	Body %s`, g.Types.GoType(&response.Type.Definition))
+			w.Line(`	Body %s`, g.Types.GoType(&response.ResponseBody.Type.Definition))
 		}
 		w.Line(`}`)
 		w.EmptyLine()

@@ -168,11 +168,11 @@ func generateResponse(response *spec.Response, alternate *spec.Response) *yamlx.
 	result.Add("description", description)
 
 	types := []*spec.TypeDef{}
-	if !response.Type.Definition.IsEmpty() {
-		types = append(types, &response.Type.Definition)
+	if !response.ResponseBody.Type.Definition.IsEmpty() {
+		types = append(types, &response.ResponseBody.Type.Definition)
 	}
-	if alternate != nil && !alternate.Type.Definition.IsEmpty() {
-		types = append(types, &alternate.Type.Definition)
+	if alternate != nil && !alternate.ResponseBody.Type.Definition.IsEmpty() {
+		types = append(types, &alternate.ResponseBody.Type.Definition)
 	}
 
 	if len(types) > 0 {

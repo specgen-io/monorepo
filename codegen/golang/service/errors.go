@@ -11,7 +11,7 @@ import (
 func respondNotFound(w *writer.Writer, operation *spec.NamedOperation, types *types.Types, message string) {
 	specification := operation.InApi.InHttp.InVersion.InSpec
 	badRequest := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusNotFound)
-	errorMessage := fmt.Sprintf(`%s{Message: %s}`, types.GoType(&badRequest.Type.Definition), message)
+	errorMessage := fmt.Sprintf(`%s{Message: %s}`, types.GoType(&badRequest.ResponseBody.Type.Definition), message)
 	w.Line(`httperrors.RespondNotFound(%s, res, &%s)`, logFieldsName(operation), errorMessage)
 	w.Line(`return`)
 }
@@ -19,7 +19,7 @@ func respondNotFound(w *writer.Writer, operation *spec.NamedOperation, types *ty
 func respondBadRequest(w *writer.Writer, operation *spec.NamedOperation, types *types.Types, location string, message string, params string) {
 	specification := operation.InApi.InHttp.InVersion.InSpec
 	badRequest := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusBadRequest)
-	errorMessage := fmt.Sprintf(`%s{Location: "%s", Message: %s, Errors: %s}`, types.GoType(&badRequest.Type.Definition), location, message, params)
+	errorMessage := fmt.Sprintf(`%s{Location: "%s", Message: %s, Errors: %s}`, types.GoType(&badRequest.ResponseBody.Type.Definition), location, message, params)
 	w.Line(`httperrors.RespondBadRequest(%s, res, &%s)`, logFieldsName(operation), errorMessage)
 	w.Line(`return`)
 }
@@ -27,7 +27,7 @@ func respondBadRequest(w *writer.Writer, operation *spec.NamedOperation, types *
 func respondInternalServerError(w *writer.Writer, operation *spec.NamedOperation, types *types.Types, message string) {
 	specification := operation.InApi.InHttp.InVersion.InSpec
 	internalServerError := specification.HttpErrors.Responses.GetByStatusName(spec.HttpStatusInternalServerError)
-	errorMessage := fmt.Sprintf(`%s{Message: %s}`, types.GoType(&internalServerError.Type.Definition), message)
+	errorMessage := fmt.Sprintf(`%s{Message: %s}`, types.GoType(&internalServerError.ResponseBody.Type.Definition), message)
 	w.Line(`httperrors.RespondInternalServerError(%s, res, &%s)`, logFieldsName(operation), errorMessage)
 	w.Line(`return`)
 }
@@ -80,7 +80,7 @@ func (g *Generator) ErrorResponses(errors *spec.ErrorResponses) *generator.CodeF
 			w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter) {`, response.Name.PascalCase())
 			w.Line(`  log.WithFields(logFields).Warn("")`)
 		} else {
-			w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter, error *%s) {`, response.Name.PascalCase(), g.Types.GoType(&response.Type.Definition))
+			w.Line(`func Respond%s(logFields log.Fields, res http.ResponseWriter, error *%s) {`, response.Name.PascalCase(), g.Types.GoType(&response.ResponseBody.Type.Definition))
 			w.Line(`  log.WithFields(logFields).Warn(error.Message)`)
 		}
 		writeResponse(w.Indented(), `logFields`, &response.Response, `error`)

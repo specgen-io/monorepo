@@ -79,7 +79,7 @@ func errorResponseShouldNotBeDeclared(httpErrors *HttpErrors, messages *Messages
 	if httpErrors.Responses != nil {
 		errorResponse := httpErrors.Responses.GetByStatusName(httpStatusName)
 		if errorResponse != nil {
-			messages.Add(Error(`error response '%s' is declared but should not`, httpStatusName).At(locationFromNode(errorResponse.Location)))
+			messages.Add(Error(`error response '%s' is declared but should not`, httpStatusName).At(locationFromNode(errorResponse.Name.Location)))
 			return true
 		}
 	}

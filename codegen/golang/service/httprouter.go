@@ -143,7 +143,7 @@ func (g *HttpRouterGenerator) parametersParsing(w *writer.Writer, operation *spe
 }
 
 func (g *HttpRouterGenerator) serviceCallAndResponseCheck(w *writer.Writer, operation *spec.NamedOperation, responseVar string) {
-	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
+	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].ResponseBody.Type.Definition.IsEmpty()
 	serviceCall := serviceCall(serviceInterfaceTypeVar(operation.InApi), operation)
 	if singleEmptyResponse {
 		w.Line(`err = %s`, serviceCall)

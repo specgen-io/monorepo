@@ -154,7 +154,7 @@ func (g *OkHttpGenerator) successResponse(response *spec.OperationResponse) stri
 		return responseCreate(response, "response.body!!.string()")
 	}
 	if response.BodyIs(spec.ResponseBodyJson) {
-		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body!!.charStream()`, &response.Type.Definition)))
+		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body!!.charStream()`, &response.ResponseBody.Type.Definition)))
 	}
 	return responseCreate(response, "")
 }
@@ -165,7 +165,7 @@ func (g *OkHttpGenerator) errorResponse(response *spec.Response) string {
 		responseBody = "response.body!!.string()"
 	}
 	if response.BodyIs(spec.ResponseBodyJson) {
-		responseBody = fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body!!.charStream()`, &response.Type.Definition))
+		responseBody = fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body!!.charStream()`, &response.ResponseBody.Type.Definition))
 	}
 	return fmt.Sprintf(`throw %s(%s)`, errorExceptionClassName(response), responseBody)
 }

@@ -333,14 +333,14 @@ func genMatchResult(w *writer.Writer, operation *spec.NamedOperation, resultVarN
 	w.Indent()
 	if len(operation.Responses) == 1 {
 		r := operation.Responses[0]
-		if !r.Type.Definition.IsEmpty() {
+		if !r.ResponseBody.Type.Definition.IsEmpty() {
 			w.Line(`body => %s`, getPlayStatus(&r.Response))
 		} else {
 			w.Line(`_ => %s`, getPlayStatus(&r.Response))
 		}
 	} else {
 		for _, r := range operation.Responses {
-			if !r.Type.Definition.IsEmpty() {
+			if !r.ResponseBody.Type.Definition.IsEmpty() {
 				w.Line(`case %s.%s(body) => %s`, responseType(operation), r.Name.PascalCase(), getPlayStatus(&r.Response))
 			} else {
 				w.Line(`case %s.%s() => %s`, responseType(operation), r.Name.PascalCase(), getPlayStatus(&r.Response))

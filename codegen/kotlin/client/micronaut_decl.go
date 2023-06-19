@@ -77,7 +77,7 @@ func (g *MicronautDeclGenerator) operationSignature(operation *spec.NamedOperati
 
 func (g *MicronautDeclGenerator) operationReturnType(operation *spec.NamedOperation) string {
 	if len(operation.Responses.Success()) == 1 {
-		return g.Types.Kotlin(&operation.Responses.Success()[0].Type.Definition)
+		return g.Types.Kotlin(&operation.Responses.Success()[0].ResponseBody.Type.Definition)
 	}
 	return "HttpResponse<String>"
 }
@@ -133,8 +133,8 @@ func (g *MicronautDeclGenerator) response(operation *spec.NamedOperation) *gener
 
 func (g *MicronautDeclGenerator) implementations(w *writer.Writer, response *spec.OperationResponse) {
 	responseImplementationName := response.Name.PascalCase()
-	if !response.Type.Definition.IsEmpty() {
-		w.Line(`class %s(val body: %s) : %s()`, responseImplementationName, g.Types.Kotlin(&response.Type.Definition), responseName(response.Operation))
+	if !response.ResponseBody.Type.Definition.IsEmpty() {
+		w.Line(`class %s(val body: %s) : %s()`, responseImplementationName, g.Types.Kotlin(&response.ResponseBody.Type.Definition), responseName(response.Operation))
 	} else {
 		w.Line(`class %s : %s()`, responseImplementationName, responseName(response.Operation))
 	}
@@ -149,7 +149,7 @@ companion object {
 `)
 	for _, response := range operation.Responses {
 		if !response.BodyIs(spec.ResponseBodyEmpty) {
-			w.Line(`      %s -> %s(json.%s)`, spec.HttpStatusCode(response.Name), response.Name.PascalCase(), g.Models.ReadJson("responseBodyString", &response.Type.Definition))
+			w.Line(`      %s -> %s(json.%s)`, spec.HttpStatusCode(response.Name), response.Name.PascalCase(), g.Models.ReadJson("responseBodyString", &response.ResponseBody.Type.Definition))
 		}
 	}
 	w.Lines(`

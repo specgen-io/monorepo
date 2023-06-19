@@ -22,7 +22,7 @@ func operationReturn(types *types.Types, operation *spec.NamedOperation) string 
 		if successResponses[0].BodyIs(spec.ResponseBodyEmpty) {
 			return `error`
 		} else {
-			return fmt.Sprintf(`(*%s, error)`, types.GoType(&successResponses[0].Type.Definition))
+			return fmt.Sprintf(`(*%s, error)`, types.GoType(&successResponses[0].ResponseBody.Type.Definition))
 		}
 	} else {
 		return fmt.Sprintf(`(*%s, error)`, responseTypeName(operation))

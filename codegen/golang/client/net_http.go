@@ -204,7 +204,7 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 			w.Line(`  }`)
 		}
 		if response.BodyIs(spec.ResponseBodyJson) {
-			w.Line(`  var result %s`, g.Types.GoType(&response.Type.Definition))
+			w.Line(`  var result %s`, g.Types.GoType(&response.ResponseBody.Type.Definition))
 			w.Line(`  err := response.Json(resp, &result)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    return %s`, operationError(response.Operation, `err`))
@@ -247,7 +247,7 @@ func responseStruct(w *writer.Writer, types *types.Types, operation *spec.NamedO
 		w.Line(`type %s struct {`, responseTypeName(operation))
 		w.Indent()
 		for _, response := range operation.Responses.Success() {
-			w.LineAligned(`%s %s`, response.Name.PascalCase(), types.GoType(spec.Nullable(&response.Type.Definition)))
+			w.LineAligned(`%s %s`, response.Name.PascalCase(), types.GoType(spec.Nullable(&response.ResponseBody.Type.Definition)))
 		}
 		w.Unindent()
 		w.Line(`}`)
@@ -318,14 +318,14 @@ func (g *NetHttpGenerator) ErrorsHandler(errors spec.ErrorResponses) *generator.
 			w.Line(`  }`)
 		}
 		if response.BodyIs(spec.ResponseBodyJson) {
-			w.Line(`  var result %s`, g.Types.GoType(&response.Type.Definition))
+			w.Line(`  var result %s`, g.Types.GoType(&response.ResponseBody.Type.Definition))
 			w.Line(`  err := response.Json(resp, &result)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    return err`)
 			w.Line(`  }`)
 		}
 
-		if response.Type.Definition.IsEmpty() {
+		if response.ResponseBody.Type.Definition.IsEmpty() {
 			w.Line(`  return &%s{}`, response.Name.PascalCase())
 		} else {
 			w.Line(`  return &%s{result}`, response.Name.PascalCase())

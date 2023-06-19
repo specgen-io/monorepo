@@ -120,7 +120,7 @@ func (g *AxiosGenerator) responseBody(response *spec.Response) string {
 		return `response.data`
 	}
 	if response.BodyIs(spec.ResponseBodyJson) {
-		data := fmt.Sprintf(`t.decode(%s, %s)`, g.validation.RuntimeType(&response.Type.Definition), `response.data`)
+		data := fmt.Sprintf(`t.decode(%s, %s)`, g.validation.RuntimeType(&response.ResponseBody.Type.Definition), `response.data`)
 		return data
 	}
 	return ""

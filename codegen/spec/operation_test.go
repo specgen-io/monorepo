@@ -24,7 +24,7 @@ response:
 	assert.Equal(t, len(operation.Responses), 1)
 	response := operation.Responses[0]
 	assert.Equal(t, response.Name.Source, "ok")
-	assert.Equal(t, response.Type.Definition, ParseType("empty"))
+	assert.Equal(t, response.ResponseBody.Type.Definition, ParseType("empty"))
 }
 
 func Test_Operation_Unmarshal_QueryParams(t *testing.T) {
