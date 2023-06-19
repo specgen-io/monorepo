@@ -5,6 +5,7 @@ import "strconv"
 type Response struct {
 	Name Name
 	ResponseBody
+	Description *string
 }
 
 func (response *Response) BodyKind() ResponseBodyKind {

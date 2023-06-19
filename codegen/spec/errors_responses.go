@@ -85,7 +85,8 @@ func (value *ErrorResponses) UnmarshalYAML(node *yaml.Node) error {
 		if err != nil {
 			return err
 		}
-		array[index] = ErrorResponse{Response{Name: name, ResponseBody: body}, false}
+		response := Response{name, body, getDescriptionFromComment(valueNode)}
+		array[index] = ErrorResponse{response, false}
 	}
 	*value = array
 	return nil
