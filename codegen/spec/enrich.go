@@ -139,7 +139,7 @@ func (enricher *httpEnricher) httpErrors(httpErrors *HttpErrors) {
 	}
 
 	for index := range httpErrors.Responses {
-		enricher.responseBody(&httpErrors.Responses[index].ResponseBody)
+		enricher.responseBody(&httpErrors.Responses[index].Body)
 	}
 }
 
@@ -166,7 +166,7 @@ func (enricher *httpEnricher) operation(operation *NamedOperation) {
 	}
 
 	for index := range operation.Responses {
-		enricher.responseBody(&operation.Responses[index].ResponseBody)
+		enricher.responseBody(&operation.Responses[index].Body)
 	}
 }
 

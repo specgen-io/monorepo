@@ -179,7 +179,7 @@ func (g *SpringGenerator) processResponse(w *writer.Writer, response *spec.Respo
 		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, bodyVar, response.Name.UpperCase())
 	}
 	if response.BodyIs(spec.ResponseBodyJson) {
-		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.ResponseBody.Type.Definition))
+		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Body.Type.Definition))
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json");`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())

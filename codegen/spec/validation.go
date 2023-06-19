@@ -112,22 +112,22 @@ func (validator *validator) OperationResponse(response *OperationResponse) {
 		if errorResponse == nil {
 			validator.addError(response.Name.Location, fmt.Sprintf(`response %s is declared in the operation but it's not declared in errors section`, response.Name.Source))
 		} else {
-			if response.ResponseBody.Type.Definition.String() != errorResponse.ResponseBody.Type.Definition.String() {
+			if response.Body.Type.Definition.String() != errorResponse.Body.Type.Definition.String() {
 				messageFormat := `response %s is declared with body type: %s, however errors section declares it with body type: %s`
-				message := fmt.Sprintf(messageFormat, response.Name.Source, response.ResponseBody.Type.Definition.String(), errorResponse.ResponseBody.Type.Definition.String())
-				validator.addError(response.ResponseBody.Type.Location, message)
+				message := fmt.Sprintf(messageFormat, response.Name.Source, response.Body.Type.Definition.String(), errorResponse.Body.Type.Definition.String())
+				validator.addError(response.Body.Type.Location, message)
 			}
 		}
 	}
-	resposeType := response.ResponseBody.Type.Definition
+	resposeType := response.Body.Type.Definition
 	if !resposeType.IsEmpty() &&
 		resposeType.Info.Structure != StructureObject &&
 		resposeType.Info.Structure != StructureArray &&
 		resposeType.String() != TypeString {
 		message := fmt.Sprintf("response %s should be either empty or some type with structure of an object or array, found %s", response.Name.Source, resposeType.Name)
-		validator.addError(response.ResponseBody.Type.Location, message)
+		validator.addError(response.Body.Type.Location, message)
 	}
-	validator.ResponseBody(&response.ResponseBody)
+	validator.ResponseBody(&response.Body)
 }
 
 func (validator *validator) Params(params []NamedParam, allowArrayTypes bool) {

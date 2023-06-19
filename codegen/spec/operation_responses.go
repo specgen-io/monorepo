@@ -117,7 +117,7 @@ func (value OperationResponses) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
 	for index := 0; index < len(value); index++ {
 		response := value[index]
-		err := yamlMap.AddWithComment(response.Name, response.ResponseBody, response.Description)
+		err := yamlMap.AddWithComment(response.Name, response.Body, response.Description)
 		if err != nil {
 			return nil, err
 		}

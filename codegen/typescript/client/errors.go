@@ -32,9 +32,9 @@ export class ResponseException extends Error {
 			w.Line(`    super('Error response with status code %s')`, spec.HttpStatusCode(response.Name))
 			w.Line(`  }`)
 		} else {
-			w.Line(`  public body: %s`, types.TsType(&response.ResponseBody.Type.Definition))
+			w.Line(`  public body: %s`, types.TsType(&response.Body.Type.Definition))
 			w.EmptyLine()
-			w.Line(`  constructor(body: %s) {`, types.TsType(&response.ResponseBody.Type.Definition))
+			w.Line(`  constructor(body: %s) {`, types.TsType(&response.Body.Type.Definition))
 			w.Line(`    super('Error response with status code %s')`, spec.HttpStatusCode(response.Name))
 			w.Line(`    this.body = body`)
 			w.Line(`  }`)

@@ -123,7 +123,7 @@ func (g *FetchGenerator) responseBody(response *spec.Response) string {
 		return `await response.text()`
 	}
 	if response.BodyIs(spec.ResponseBodyJson) {
-		data := fmt.Sprintf(`t.decode(%s, %s)`, g.validation.RuntimeType(&response.ResponseBody.Type.Definition), `await response.json()`)
+		data := fmt.Sprintf(`t.decode(%s, %s)`, g.validation.RuntimeType(&response.Body.Type.Definition), `await response.json()`)
 		return data
 	}
 	return ""

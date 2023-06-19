@@ -216,7 +216,7 @@ func generateClientResponses(w *writer.Writer, operation *spec.NamedOperation) {
 			w.Line(`case %s => body`, spec.HttpStatusCode(response.Name))
 		}
 		if response.BodyIs(spec.ResponseBodyJson) {
-			w.Line(`case %s => Jsoner.readThrowing[%s](body)`, spec.HttpStatusCode(response.Name), ScalaType(&response.ResponseBody.Type.Definition))
+			w.Line(`case %s => Jsoner.readThrowing[%s](body)`, spec.HttpStatusCode(response.Name), ScalaType(&response.Body.Type.Definition))
 		}
 	} else {
 		for _, response := range operation.Responses {
@@ -227,7 +227,7 @@ func generateClientResponses(w *writer.Writer, operation *spec.NamedOperation) {
 				w.Line(`case %s => %s.%s(body)`, spec.HttpStatusCode(response.Name), responseTypeName(operation), response.Name.PascalCase())
 			}
 			if response.BodyIs(spec.ResponseBodyJson) {
-				w.Line(`case %s => %s.%s(Jsoner.readThrowing[%s](body))`, spec.HttpStatusCode(response.Name), responseTypeName(operation), response.Name.PascalCase(), ScalaType(&response.ResponseBody.Type.Definition))
+				w.Line(`case %s => %s.%s(Jsoner.readThrowing[%s](body))`, spec.HttpStatusCode(response.Name), responseTypeName(operation), response.Name.PascalCase(), ScalaType(&response.Body.Type.Definition))
 			}
 		}
 	}

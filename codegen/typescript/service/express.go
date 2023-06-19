@@ -117,7 +117,7 @@ func (g *expressGenerator) response(w *writer.Writer, response *spec.Response, d
 		w.Line("return")
 	}
 	if response.BodyIs(spec.ResponseBodyJson) {
-		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.Validation.RuntimeType(&response.ResponseBody.Type.Definition), dataParam)
+		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.Validation.RuntimeType(&response.Body.Type.Definition), dataParam)
 		w.Line("return")
 	}
 }

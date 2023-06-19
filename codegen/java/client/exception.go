@@ -52,7 +52,7 @@ func errorResponseException(thePackage, errorsModelsPackage packages.Package, er
 	w.Line(`public class [[.ClassName]] extends ResponseException {`)
 	w.Indent()
 	if !error.BodyIs(spec.ResponseBodyEmpty) {
-		errorBody := fmt.Sprintf(`%s body`, error.ResponseBody.Type.Definition)
+		errorBody := fmt.Sprintf(`%s body`, error.Body.Type.Definition)
 		w.Line(`private final %s;`, errorBody)
 		w.EmptyLine()
 		w.Line(`public [[.ClassName]](%s) {`, errorBody)
@@ -60,7 +60,7 @@ func errorResponseException(thePackage, errorsModelsPackage packages.Package, er
 		w.Line(`  this.body = body;`)
 		w.Line(`}`)
 		w.EmptyLine()
-		w.Line(`public %s getBody() {`, error.ResponseBody.Type.Definition)
+		w.Line(`public %s getBody() {`, error.Body.Type.Definition)
 		w.Line(`	return this.body;`)
 		w.Line(`}`)
 	} else {

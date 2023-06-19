@@ -7,6 +7,31 @@ type ResponseBody struct {
 	Location *yaml.Node
 }
 
+type ResponseBodyKind string
+
+const (
+	ResponseBodyEmpty  ResponseBodyKind = "empty"
+	ResponseBodyString ResponseBodyKind = "string"
+	ResponseBodyJson   ResponseBodyKind = "json"
+)
+
+func (body *ResponseBody) Kind() ResponseBodyKind {
+	if body != nil {
+		if body.Type.Definition.IsEmpty() {
+			return ResponseBodyEmpty
+		} else if body.Type.Definition.Plain == TypeString {
+			return ResponseBodyString
+		} else {
+			return ResponseBodyJson
+		}
+	}
+	return ResponseBodyEmpty
+}
+
+func (body *ResponseBody) Is(kind ResponseBodyKind) bool {
+	return body.Kind() == kind
+}
+
 func (value *ResponseBody) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.ScalarNode {
 		return yamlError(node, "definition has to be scalar value")
@@ -27,25 +52,4 @@ func (value ResponseBody) MarshalYAML() (interface{}, error) {
 		Value: yamlValue,
 	}
 	return node, nil
-}
-
-type ResponseBodyKind string
-
-const (
-	ResponseBodyEmpty  ResponseBodyKind = "empty"
-	ResponseBodyString ResponseBodyKind = "string"
-	ResponseBodyJson   ResponseBodyKind = "json"
-)
-
-func kindOfResponseBody(definition *ResponseBody) ResponseBodyKind {
-	if definition != nil {
-		if definition.Type.Definition.IsEmpty() {
-			return ResponseBodyEmpty
-		} else if definition.Type.Definition.Plain == TypeString {
-			return ResponseBodyString
-		} else {
-			return ResponseBodyJson
-		}
-	}
-	return ResponseBodyEmpty
 }

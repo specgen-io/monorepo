@@ -118,7 +118,7 @@ func (g *koaGenerator) response(w *writer.Writer, response *spec.Response, dataP
 		w.Line("return")
 	}
 	if response.BodyIs(spec.ResponseBodyJson) {
-		w.Line("ctx.body = t.encode(%s, %s)", g.Validation.RuntimeType(&response.ResponseBody.Type.Definition), dataParam)
+		w.Line("ctx.body = t.encode(%s, %s)", g.Validation.RuntimeType(&response.Body.Type.Definition), dataParam)
 		w.Line("return")
 	}
 }

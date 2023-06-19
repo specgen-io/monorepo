@@ -44,7 +44,7 @@ func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 	apiPackage := api.Name.SnakeCase()
 	for _, operation := range api.Operations {
 		w.Line(`func (service *%s) %s {`, serviceTypeName(api), g.operationSignature(&operation, &apiPackage))
-		singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].ResponseBody.Type.Definition.IsEmpty()
+		singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Body.Type.Definition.IsEmpty()
 		if singleEmptyResponse {
 			w.Line(`  return errors.New("implementation has not added yet")`)
 		} else {

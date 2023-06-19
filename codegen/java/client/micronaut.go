@@ -168,7 +168,7 @@ func (g *MicronautGenerator) successResponse(response *spec.OperationResponse) s
 		return responseCreate(response, "response.body().toString()")
 	}
 	if response.BodyIs(spec.ResponseBodyJson) {
-		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().toString()`, &response.ResponseBody.Type.Definition)))
+		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().toString()`, &response.Body.Type.Definition)))
 	}
 	return responseCreate(response, "")
 }
@@ -179,7 +179,7 @@ func (g *MicronautGenerator) errorResponse(response *spec.Response) string {
 		responseBody = "response.body().toString()"
 	}
 	if response.BodyIs(spec.ResponseBodyJson) {
-		responseBody = fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().toString()`, &response.ResponseBody.Type.Definition))
+		responseBody = fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().toString()`, &response.Body.Type.Definition))
 	}
 	return fmt.Sprintf(`throw new %s(%s);`, errorExceptionClassName(response), responseBody)
 }

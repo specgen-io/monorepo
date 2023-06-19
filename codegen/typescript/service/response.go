@@ -11,8 +11,8 @@ import (
 func GenerateOperationResponse(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line("export type %s =", responseTypeName(operation))
 	for _, response := range operation.Responses {
-		if !response.ResponseBody.Type.Definition.IsEmpty() {
-			w.Line(`  | { status: "%s", data: %s }`, response.Name.Source, types.TsType(&response.ResponseBody.Type.Definition))
+		if !response.Body.Type.Definition.IsEmpty() {
+			w.Line(`  | { status: "%s", data: %s }`, response.Name.Source, types.TsType(&response.Body.Type.Definition))
 		} else {
 			w.Line(`  | { status: "%s" }`, response.Name.Source)
 		}
@@ -22,10 +22,10 @@ func GenerateOperationResponse(w *writer.Writer, operation *spec.NamedOperation)
 func ResponseType(operation *spec.NamedOperation, servicePackage string) string {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]
-		if response.ResponseBody.Type.Definition.IsEmpty() {
+		if response.Body.Type.Definition.IsEmpty() {
 			return "void"
 		}
-		return types.TsType(&response.ResponseBody.Type.Definition)
+		return types.TsType(&response.Body.Type.Definition)
 	}
 	result := responseTypeName(operation)
 	if servicePackage != "" {
