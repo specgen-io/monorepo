@@ -99,17 +99,16 @@ func (g *NetHttpGenerator) operation(w *writer.Writer, operation *spec.NamedOper
 }
 
 func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation, requestVar string) {
+	body := "nil"
 	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`  bodyData := []byte(body)`)
+		body = "bytes.NewBuffer(bodyData)"
 	}
 	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`  bodyData, err := json.Marshal(body)`)
 		w.Line(`  if err != nil {`)
 		w.Line(`    return %s`, operationError(operation, `err`))
 		w.Line(`  }`)
-	}
-	body := "nil"
-	if !operation.BodyIs(spec.RequestBodyEmpty) {
 		body = "bytes.NewBuffer(bodyData)"
 	}
 	w.Line(`  %s, err := http.NewRequest("%s", client.baseUrl+%s, %s)`, requestVar, operation.Endpoint.Method, g.addRequestUrlParams(operation), body)
