@@ -89,7 +89,7 @@ func (validator *validator) Operation(operation *NamedOperation) {
 	validator.Params(operation.QueryParams, true)
 	validator.Params(operation.HeaderParams, true)
 
-	if operation.Body != nil && !operation.Body.Type.Definition.IsEmpty() {
+	if !operation.BodyIs(RequestBodyEmpty) && operation.Body.Type != nil {
 		bodyType := operation.Body.Type
 		if bodyType.Definition.Info.Structure != StructureObject &&
 			bodyType.Definition.Info.Structure != StructureArray &&
@@ -97,6 +97,8 @@ func (validator *validator) Operation(operation *NamedOperation) {
 			message := fmt.Sprintf("body should be object, array or string type, found %s", bodyType.Definition.Name)
 			validator.addError(operation.Body.Location, message)
 		}
+	}
+	if operation.Body != nil {
 		validator.RequestBody(operation.Body)
 	}
 
@@ -119,12 +121,11 @@ func (validator *validator) OperationResponse(response *OperationResponse) {
 			}
 		}
 	}
-	resposeType := response.Body.Type.Definition
-	if !resposeType.IsEmpty() &&
-		resposeType.Info.Structure != StructureObject &&
-		resposeType.Info.Structure != StructureArray &&
-		resposeType.String() != TypeString {
-		message := fmt.Sprintf("response %s should be either empty or some type with structure of an object or array, found %s", response.Name.Source, resposeType.Name)
+	resposeType := response.Body.Type
+	if response.Body.IsJson() &&
+		resposeType.Definition.Info.Structure != StructureObject &&
+		resposeType.Definition.Info.Structure != StructureArray {
+		message := fmt.Sprintf("response %s should be either empty or some type with structure of an object or array, found %s", response.Name.Source, resposeType.Definition.Name)
 		validator.addError(response.Body.Type.Location, message)
 	}
 	validator.ResponseBody(&response.Body)

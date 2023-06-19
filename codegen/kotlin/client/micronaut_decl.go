@@ -136,7 +136,7 @@ func (g *MicronautDeclGenerator) response(operation *spec.NamedOperation) *gener
 
 func (g *MicronautDeclGenerator) implementations(w *writer.Writer, response *spec.OperationResponse) {
 	responseImplementationName := response.Name.PascalCase()
-	if !response.Body.Type.Definition.IsEmpty() {
+	if !response.Body.IsEmpty() {
 		w.Line(`class %s(val body: %s) : %s()`, responseImplementationName, g.Types.Kotlin(&response.Body.Type.Definition), responseName(response.Operation))
 	} else {
 		w.Line(`class %s : %s()`, responseImplementationName, responseName(response.Operation))
@@ -151,7 +151,7 @@ companion object {
 		return when(response.code()) {
 `)
 	for _, response := range operation.Responses {
-		if !response.Body.Is(spec.ResponseBodyEmpty) {
+		if !response.Body.IsEmpty() {
 			w.Line(`      %s -> %s(json.%s)`, spec.HttpStatusCode(response.Name), response.Name.PascalCase(), g.Models.ReadJson("responseBodyString", &response.Body.Type.Definition))
 		}
 	}

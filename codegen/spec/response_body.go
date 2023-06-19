@@ -32,6 +32,18 @@ func (body *ResponseBody) Is(kind ResponseBodyKind) bool {
 	return body.Kind() == kind
 }
 
+func (body *ResponseBody) IsEmpty() bool {
+	return body.Kind() == ResponseBodyEmpty
+}
+
+func (body *ResponseBody) IsText() bool {
+	return body.Kind() == ResponseBodyString
+}
+
+func (body *ResponseBody) IsJson() bool {
+	return body.Kind() == ResponseBodyJson
+}
+
 func (value *ResponseBody) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.ScalarNode {
 		return yamlError(node, "definition has to be scalar value")
