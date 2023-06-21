@@ -619,3 +619,46 @@ func (parser *ParamsParser) StringEnumArray(name string, values []string) []stri
 
 	return w.ToCodeFile()
 }
+
+func (g *Generator) GenerateFormDataParamsParser() *generator.CodeFile {
+	w := writer.New(g.Modules.ParamsParser, `form_data_parser.go`)
+
+	w.Lines(`
+import (
+	"net/http"
+)
+
+func NewFormDataParser(req *http.Request, parseCommaSeparatedArray bool) (*ParamsParser, error) {
+	const defaultMaxMemory = 32 << 20 // 32 MB
+	err := req.ParseMultipartForm(defaultMaxMemory)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ParamsParser{req.PostForm, parseCommaSeparatedArray, []ParsingError{}}, nil
+}
+`)
+
+	return w.ToCodeFile()
+}
+
+func (g *Generator) GenerateFormUrlencodedParamsParser() *generator.CodeFile {
+	w := writer.New(g.Modules.ParamsParser, `form_urlencoded_parser.go`)
+
+	w.Lines(`
+import (
+	"net/http"
+)
+
+func NewFormDataParser(req *http.Request, parseCommaSeparatedArray bool) (*ParamsParser, error) {
+	err := req.ParseForm()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ParamsParser{req.PostForm, parseCommaSeparatedArray, []ParsingError{}}, nil
+}
+`)
+
+	return w.ToCodeFile()
+}
