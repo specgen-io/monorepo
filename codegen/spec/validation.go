@@ -89,7 +89,7 @@ func (validator *validator) Operation(operation *NamedOperation) {
 	validator.Params(operation.QueryParams, true)
 	validator.Params(operation.HeaderParams, true)
 
-	if operation.Body != nil && !operation.Body.Type.Definition.IsEmpty() {
+	if operation.Body != nil && operation.Body.Type != nil && !operation.Body.Type.Definition.IsEmpty() {
 		bodyType := operation.Body.Type
 		if bodyType.Definition.Info.Structure != StructureObject &&
 			bodyType.Definition.Info.Structure != StructureArray &&

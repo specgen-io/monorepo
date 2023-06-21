@@ -184,7 +184,9 @@ func (enricher *httpEnricher) definition(definition *Definition) {
 
 func (enricher *httpEnricher) requestBody(body *RequestBody) {
 	if body != nil {
-		enricher.typ(body.Type)
+		if body.Type != nil {
+			enricher.typ(body.Type)
+		}
 	}
 }
 
