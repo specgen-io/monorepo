@@ -143,7 +143,15 @@ func (w *SpecWalker) Operation(operation *NamedOperation) {
 	w.params(operation.HeaderParams)
 
 	if operation.Body != nil {
-		w.Type(operation.Body.Type)
+		if operation.Body.Type != nil {
+			w.Type(operation.Body.Type)
+		}
+		if operation.Body.FormData != nil {
+			w.params(operation.Body.FormData)
+		}
+		if operation.Body.FormUrlEncoded != nil {
+			w.params(operation.Body.FormUrlEncoded)
+		}
 	}
 
 	for index := range operation.Responses {
