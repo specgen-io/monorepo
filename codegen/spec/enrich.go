@@ -187,6 +187,12 @@ func (enricher *httpEnricher) requestBody(body *RequestBody) {
 		if body.Type != nil {
 			enricher.typ(body.Type)
 		}
+		if body.FormData != nil {
+			enricher.params(body.FormData)
+		}
+		if body.FormUrlEncoded != nil {
+			enricher.params(body.FormUrlEncoded)
+		}
 	}
 }
 
