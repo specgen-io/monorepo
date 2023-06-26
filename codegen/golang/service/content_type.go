@@ -7,7 +7,7 @@ import (
 	"spec"
 )
 
-func GetContentType(operation *spec.NamedOperation) string {
+func ContentType(operation *spec.NamedOperation) string {
 	if operation.BodyIs(spec.RequestBodyEmpty) {
 		return ""
 	} else if operation.BodyIs(spec.RequestBodyString) {

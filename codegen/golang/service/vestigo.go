@@ -197,7 +197,7 @@ func (g *VestigoGenerator) response(w *writer.Writer, operation *spec.NamedOpera
 
 func (g *VestigoGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if operation.Body != nil {
-		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, GetContentType(operation)), "req", "res"))
+		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)
 	}
@@ -221,15 +221,18 @@ func (g *VestigoGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOp
 		w.Line(`}`)
 	}
 	if operation.BodyIs(spec.RequestBodyFormData) || operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
-		w.Line(`formBody, err := paramsparser.New%sParser(req, true)`, casee.ToPascalCase(string(spec.RequestBodyFormData)))
+		w.Line(`formBody, err := paramsparser.New%sParser(req, true)`, casee.ToPascalCase(formBodyTypeName(operation)))
 		w.Line(`if err != nil {`)
-		respondBadRequest(w.Indented(), operation, g.Types, "body", `"Failed to parse body"`, "errors")
+		respondBadRequest(w.Indented(), operation, g.Types, "body", `"Failed to parse body"`, fmt.Sprintf(`[]errmodels.ValidationError{{Path: "", Code: "%s_parse_failed"}}`, formBodyTypeName(operation)))
 		w.Line(`}`)
 		for _, param := range operation.Body.FormData {
 			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(false, &param, "formBody"))
 		}
+		for _, param := range operation.Body.FormUrlEncoded {
+			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(false, &param, "formBody"))
+		}
 		w.Line(`if len(formBody.Errors) > 0 {`)
-		respondBadRequest(w.Indented(), operation, g.Types, "body", fmt.Sprintf(`"Failed to body"`), fmt.Sprintf(`httperrors.Convert(formBody.Errors)`))
+		respondBadRequest(w.Indented(), operation, g.Types, "body", fmt.Sprintf(`"Failed to parse body"`), fmt.Sprintf(`httperrors.Convert(formBody.Errors)`))
 		w.Line(`}`)
 	}
 }
@@ -244,7 +247,6 @@ func (g *VestigoGenerator) RootRouting(specification *spec.Spec) *generator.Code
 			w.Imports.ModuleAliased(g.Modules.ServicesApi(&api).Aliased(apiPackageAlias(&api)))
 		}
 	}
-	w.EmptyLine()
 	w.Line(`type Services struct {`)
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {
