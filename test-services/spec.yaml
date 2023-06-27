@@ -46,49 +46,49 @@ http:
       response:
         ok: string{}         
 
-    echo_form_data:
-      endpoint: POST /echo/form_data
-      body:
-        form-data:
-          int_param: int
-          long_param: long
-          float_param: float
-          double_param: double
-          decimal_param: decimal
-          bool_param: boolean
-          string_param: string
-          string_opt_param: string?
-          string_defaulted_param: string = the default value
-          string_array_param: string[]
-          uuid_param: uuid
-          date_param: date
-          date_array_param: date[]
-          datetime_param: datetime
-          enum_param: Choice
-      response:
-        ok: FormParameters
-
-    echo_form_urlencoded:
-      endpoint: POST /echo/form_urlencoded
-      body:
-        form-urlencoded:
-          int_param: int
-          long_param: long
-          float_param: float
-          double_param: double
-          decimal_param: decimal
-          bool_param: boolean
-          string_param: string
-          string_opt_param: string?
-          string_defaulted_param: string = the default value
-          string_array_param: string[]
-          uuid_param: uuid
-          date_param: date
-          date_array_param: date[]
-          datetime_param: datetime
-          enum_param: Choice
-      response:
-        ok: FormParameters
+#    echo_form_data:
+#      endpoint: POST /echo/form_data
+#      body:
+#        form-data:
+#          int_param: int
+#          long_param: long
+#          float_param: float
+#          double_param: double
+#          decimal_param: decimal
+#          bool_param: boolean
+#          string_param: string
+#          string_opt_param: string?
+#          string_defaulted_param: string = the default value
+#          string_array_param: string[]
+#          uuid_param: uuid
+#          date_param: date
+#          date_array_param: date[]
+#          datetime_param: datetime
+#          enum_param: Choice
+#      response:
+#        ok: FormParameters
+#
+#    echo_form_urlencoded:
+#      endpoint: POST /echo/form_urlencoded
+#      body:
+#        form-urlencoded:
+#          int_param: int
+#          long_param: long
+#          float_param: float
+#          double_param: double
+#          decimal_param: decimal
+#          bool_param: boolean
+#          string_param: string
+#          string_opt_param: string?
+#          string_defaulted_param: string = the default value
+#          string_array_param: string[]
+#          uuid_param: uuid
+#          date_param: date
+#          date_array_param: date[]
+#          datetime_param: datetime
+#          enum_param: Choice
+#      response:
+#        ok: FormParameters
 
     echo_query:
       endpoint: GET /echo/query
@@ -191,23 +191,23 @@ models:
     object:
       int_field: int
       string_field: string
-  FormParameters:
-    object:
-      int_field: int
-      long_field: long
-      float_field: float
-      double_field: double
-      decimal_field: decimal
-      bool_field: boolean
-      string_field: string
-      string_opt_field: string?
-      string_defaulted_field: string
-      string_array_field: string[]
-      uuid_field: uuid
-      date_field: date
-      date_array_field: date[]
-      datetime_field: datetime
-      enum_field: Choice
+#  FormParameters:
+#    object:
+#      int_field: int
+#      long_field: long
+#      float_field: float
+#      double_field: double
+#      decimal_field: decimal
+#      bool_field: boolean
+#      string_field: string
+#      string_opt_field: string?
+#      string_defaulted_field: string
+#      string_array_field: string[]
+#      uuid_field: uuid
+#      date_field: date
+#      date_array_field: date[]
+#      datetime_field: datetime
+#      enum_field: Choice
   Parameters:
     object:
       int_field: int
