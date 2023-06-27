@@ -191,23 +191,23 @@ models:
     object:
       int_field: int
       string_field: string
-#  FormParameters:
-#    object:
-#      int_field: int
-#      long_field: long
-#      float_field: float
-#      double_field: double
-#      decimal_field: decimal
-#      bool_field: boolean
-#      string_field: string
-#      string_opt_field: string?
-#      string_defaulted_field: string
-#      string_array_field: string[]
-#      uuid_field: uuid
-#      date_field: date
-#      date_array_field: date[]
-#      datetime_field: datetime
-#      enum_field: Choice
+  FormParameters:
+    object:
+      int_field: int
+      long_field: long
+      float_field: float
+      double_field: double
+      decimal_field: decimal
+      bool_field: boolean
+      string_field: string
+      string_opt_field: string?
+      string_defaulted_field: string
+      string_array_field: string[]
+      uuid_field: uuid
+      date_field: date
+      date_array_field: date[]
+      datetime_field: datetime
+      enum_field: Choice
   Parameters:
     object:
       int_field: int
