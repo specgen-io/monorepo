@@ -650,7 +650,7 @@ import (
 	"net/http"
 )
 
-func NewFormDataParser(req *http.Request, parseCommaSeparatedArray bool) (*ParamsParser, error) {
+func NewFormUrlencodedParser(req *http.Request, parseCommaSeparatedArray bool) (*ParamsParser, error) {
 	err := req.ParseForm()
 	if err != nil {
 		return nil, err
