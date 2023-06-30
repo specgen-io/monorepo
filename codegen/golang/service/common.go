@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+func formBodyTypeName(operation *spec.NamedOperation) string {
+	parts := strings.Split(operation.Name.Source, fmt.Sprintf(`%s_`, operation.InApi.Name.Source))
+	typeName := strings.Join(parts[1:], "")
+	return typeName
+}
+
 func logFieldsName(operation *spec.NamedOperation) string {
 	return fmt.Sprintf("log%s", operation.Name.PascalCase())
 }
@@ -61,6 +67,16 @@ func serviceCall(serviceVar string, operation *spec.NamedOperation) string {
 	}
 	if operation.BodyIs(spec.RequestBodyJson) {
 		params = append(params, "&body")
+	}
+	if operation.BodyIs(spec.RequestBodyFormData) {
+		for _, param := range operation.Body.FormData {
+			params = append(params, param.Name.CamelCase())
+		}
+	}
+	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		for _, param := range operation.Body.FormUrlEncoded {
+			params = append(params, param.Name.CamelCase())
+		}
 	}
 	for _, param := range operation.QueryParams {
 		params = append(params, param.Name.CamelCase())
