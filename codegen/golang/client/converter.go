@@ -58,12 +58,11 @@ func converterMethodNamePlain(typ *spec.TypeDef) string {
 	}
 }
 
-func (g *Generator) Converter() *generator.CodeFile {
-	w := writer.New(g.Modules.Convert, `convert.go`)
+func (g *Generator) TypeConverter() *generator.CodeFile {
+	w := writer.New(g.Modules.Convert, `convert_types.go`)
 	w.Lines(`
 import (
 	"cloud.google.com/go/civil"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"strconv"
@@ -104,6 +103,19 @@ func Date(value civil.Date) string {
 func DateTime(value civil.DateTime) string {
 	return value.String()
 }
+`)
+	return w.ToCodeFile()
+}
+
+func (g *Generator) ParamsConverter() *generator.CodeFile {
+	w := writer.New(g.Modules.Convert, `convert_params.go`)
+	w.Lines(`
+import (
+	"cloud.google.com/go/civil"
+	"fmt"
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+)
 
 type ParamsSetter interface {
 	Add(key string, value string)
@@ -270,6 +282,208 @@ func (self *ParamsConverter) StringEnumArray(key string, values []interface{}) {
 	for _, value := range values {
 		self.parser.Add(key, fmt.Sprintf("%v", value))
 	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *Generator) FormDataParamsConverter() *generator.CodeFile {
+	w := writer.New(g.Modules.Convert, `convert_form_data_params.go`)
+	w.Lines(`
+import (
+	"cloud.google.com/go/civil"
+	"fmt"
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+	"mime/multipart"
+)
+
+type FormDataParamsWriter interface {
+	WriteField(fieldname, value string)
+}
+
+type FormDataParamsConverter struct {
+	parser *multipart.Writer
+}
+
+func NewFormDataParamsConverter(writer *multipart.Writer) *FormDataParamsConverter {
+	return &FormDataParamsConverter{writer}
+}
+
+func (self *FormDataParamsConverter) String(key string, value string) error {
+	return self.parser.WriteField(key, value)
+}
+
+func (self *FormDataParamsConverter) StringNullable(key string, value *string) error {
+	return self.parser.WriteField(key, *value)
+}
+
+func (self *FormDataParamsConverter) StringArray(key string, values []string) error {
+	var err error
+	for _, value := range values {
+		err = self.parser.WriteField(key, value)
+	}
+	return err
+}
+
+func (self *FormDataParamsConverter) Int(key string, value int) error {
+	return self.parser.WriteField(key, Int(value))
+}
+
+func (self *FormDataParamsConverter) IntNullable(key string, value *int) error {
+	return self.parser.WriteField(key, Int(*value))
+}
+
+func (self *FormDataParamsConverter) IntArray(key string, values []int) error {
+	var err error
+	for _, value := range values {
+		err = self.parser.WriteField(key, Int(value))
+	}
+	return err
+}
+
+func (self *FormDataParamsConverter) Int64(key string, value int64) error {
+	return self.parser.WriteField(key, Int64(value))
+}
+
+func (self *FormDataParamsConverter) Int64Nullable(key string, value *int64) error {
+	return self.parser.WriteField(key, Int64(*value))
+}
+
+func (self *FormDataParamsConverter) Int64Array(key string, values []int64) error {
+	var err error
+	for _, value := range values {
+		err = self.parser.WriteField(key, Int64(value))
+	}
+	return err
+}
+
+func (self *FormDataParamsConverter) Float32(key string, value float32) error {
+	return self.parser.WriteField(key, Float32(value))
+}
+
+func (self *FormDataParamsConverter) Float32Nullable(key string, value *float32) error {
+	return self.parser.WriteField(key, Float32(*value))
+}
+
+func (self *FormDataParamsConverter) Float32Array(key string, values []float32) error {
+	var err error
+	for _, value := range values {
+		err = self.parser.WriteField(key, Float32(value))
+	}
+	return err
+}
+
+func (self *FormDataParamsConverter) Float64(key string, value float64) error {
+	return self.parser.WriteField(key, Float64(value))
+}
+
+func (self *FormDataParamsConverter) Float64Nullable(key string, value *float64) error {
+	return self.parser.WriteField(key, Float64(*value))
+}
+
+func (self *FormDataParamsConverter) Float64Array(key string, values []float64) error {
+	var err error
+	for _, value := range values {
+		err = self.parser.WriteField(key, Float64(value))
+	}
+	return err
+}
+
+func (self *FormDataParamsConverter) Decimal(key string, value decimal.Decimal) error {
+	return self.parser.WriteField(key, Decimal(value))
+}
+
+func (self *FormDataParamsConverter) DecimalNullable(key string, value *decimal.Decimal) error {
+	return self.parser.WriteField(key, Decimal(*value))
+}
+
+func (self *FormDataParamsConverter) DecimalArray(key string, values []decimal.Decimal) error {
+	var err error
+	for _, value := range values {
+		err = self.parser.WriteField(key, Decimal(value))
+	}
+	return err
+}
+
+func (self *FormDataParamsConverter) Bool(key string, value bool) error {
+	return self.parser.WriteField(key, Bool(value))
+}
+
+func (self *FormDataParamsConverter) BoolNullable(key string, value *bool) error {
+	return self.parser.WriteField(key, Bool(*value))
+}
+
+func (self *FormDataParamsConverter) BoolArray(key string, values []bool) error {
+	var err error
+	for _, value := range values {
+		err = self.parser.WriteField(key, Bool(value))
+	}
+	return err
+}
+
+func (self *FormDataParamsConverter) Uuid(key string, value uuid.UUID) error {
+	return self.parser.WriteField(key, Uuid(value))
+}
+
+func (self *FormDataParamsConverter) UuidNullable(key string, value *uuid.UUID) error {
+	return self.parser.WriteField(key, Uuid(*value))
+}
+
+func (self *FormDataParamsConverter) UuidArray(key string, values []uuid.UUID) error {
+	var err error
+	for _, value := range values {
+		err = self.parser.WriteField(key, Uuid(value))
+	}
+	return err
+}
+
+func (self *FormDataParamsConverter) Date(key string, value civil.Date) error {
+	return self.parser.WriteField(key, Date(value))
+}
+
+func (self *FormDataParamsConverter) DateNullable(key string, value *civil.Date) error {
+	return self.parser.WriteField(key, Date(*value))
+}
+
+func (self *FormDataParamsConverter) DateArray(key string, values []civil.Date) error {
+	var err error
+	for _, value := range values {
+		err = self.parser.WriteField(key, Date(value))
+	}
+	return err
+}
+
+func (self *FormDataParamsConverter) DateTime(key string, value civil.DateTime) error {
+	return self.parser.WriteField(key, DateTime(value))
+}
+
+func (self *FormDataParamsConverter) DateTimeNullable(key string, value *civil.DateTime) error {
+	return self.parser.WriteField(key, DateTime(*value))
+}
+
+func (self *FormDataParamsConverter) DateTimeArray(key string, values []civil.DateTime) error {
+	var err error
+	for _, value := range values {
+		err = self.parser.WriteField(key, DateTime(value))
+	}
+	return err
+}
+
+func (self *FormDataParamsConverter) StringEnum(key string, value interface{}) error {
+	return self.parser.WriteField(key, fmt.Sprintf("%v", value))
+}
+
+func (self *FormDataParamsConverter) StringEnumNullable(key string, value *interface{}) error {
+	return self.parser.WriteField(key, fmt.Sprintf("%v", *value))
+}
+
+func (self *FormDataParamsConverter) StringEnumArray(key string, values []interface{}) error {
+	var err error
+	for _, value := range values {
+		err = self.parser.WriteField(key, fmt.Sprintf("%v", value))
+	}
+	return err
 }
 `)
 	return w.ToCodeFile()

@@ -39,7 +39,9 @@ func (g *Generator) AllStaticFiles() []generator.CodeFile {
 	return []generator.CodeFile{
 		*g.EnumsHelperFunctions(),
 		*g.EmptyType(),
-		*g.Converter(),
+		*g.TypeConverter(),
+		*g.ParamsConverter(),
+		*g.FormDataParamsConverter(),
 		*g.ResponseHelperFunctions(),
 	}
 }

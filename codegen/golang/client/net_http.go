@@ -39,6 +39,13 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) || walkers.ApiHasBodyOfKind(api, spec.RequestBodyString) {
 		w.Imports.Add("bytes")
 	}
+	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyFormData) {
+		w.Imports.Add("mime/multipart")
+	}
+	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyFormUrlEncoded) {
+		w.Imports.Add("strings")
+		w.Imports.Add("net/url")
+	}
 	if walkers.ApiHasUrlParams(api) {
 		w.Imports.Module(g.Modules.Convert)
 	}
@@ -111,16 +118,37 @@ func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.Named
 		w.Line(`  }`)
 		body = "bytes.NewBuffer(bodyData)"
 	}
+	if operation.BodyIs(spec.RequestBodyFormData) {
+		w.Line(`  bodyData := &bytes.Buffer{}`)
+		w.Line(`  writer := multipart.NewWriter(bodyData)`)
+		w.Line(`  f := convert.NewFormDataParamsConverter(writer)`)
+		w.Line(`  var err error`)
+		for _, param := range operation.Body.FormData {
+			w.Line(`  err = f.%s`, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
+		}
+		w.Line(`  err = writer.Close()`)
+		w.Line(`  if err != nil {`)
+		w.Line(`    log.WithFields(%s).Error("Failed to write body field", err.Error())`, logFieldsName(operation))
+		w.Line(`    return %s`, operationError(operation, `err`))
+		w.Line(`  }`)
+		body = "bodyData"
+	}
+	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		w.Line(`  formUrlencodedValues := url.Values{}`)
+		w.Line(`  f := convert.NewParamsConverter(formUrlencodedValues)`)
+		for _, param := range operation.Body.FormUrlEncoded {
+			w.Line(`  f.%s`, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
+		}
+		w.Line(`  bodyData := formUrlencodedValues.Encode()`)
+		body = "strings.NewReader(bodyData)"
+	}
 	w.Line(`  %s, err := http.NewRequest("%s", client.baseUrl+%s, %s)`, requestVar, operation.Endpoint.Method, g.addRequestUrlParams(operation), body)
 	w.Line(`  if err != nil {`)
 	w.Line(`    log.WithFields(%s).Error("Failed to create HTTP request", err.Error())`, logFieldsName(operation))
 	w.Line(`    return %s`, operationError(operation, `err`))
 	w.Line(`  }`)
-	if operation.BodyIs(spec.RequestBodyString) {
-		w.Line(`  %s.Header.Set("Content-Type", "text/plain")`, requestVar)
-	}
-	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`  %s.Header.Set("Content-Type", "application/json")`, requestVar)
+	if operation.Body != nil {
+		w.Line(`  %s.Header.Set("Content-Type", %s)`, requestVar, ContentType(operation))
 	}
 	w.EmptyLine()
 }
@@ -242,7 +270,6 @@ func logFieldsName(operation *spec.NamedOperation) string {
 
 func responseStruct(w *writer.Writer, types *types.Types, operation *spec.NamedOperation) {
 	if len(operation.Responses.Success()) > 1 {
-		w.EmptyLine()
 		w.Line(`type %s struct {`, responseTypeName(operation))
 		w.Indent()
 		for _, response := range operation.Responses.Success() {
