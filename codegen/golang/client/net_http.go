@@ -99,17 +99,16 @@ func (g *NetHttpGenerator) operation(w *writer.Writer, operation *spec.NamedOper
 }
 
 func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation, requestVar string) {
+	body := "nil"
 	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`  bodyData := []byte(body)`)
+		body = "bytes.NewBuffer(bodyData)"
 	}
 	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`  bodyData, err := json.Marshal(body)`)
 		w.Line(`  if err != nil {`)
 		w.Line(`    return %s`, operationError(operation, `err`))
 		w.Line(`  }`)
-	}
-	body := "nil"
-	if !operation.BodyIs(spec.RequestBodyEmpty) {
 		body = "bytes.NewBuffer(bodyData)"
 	}
 	w.Line(`  %s, err := http.NewRequest("%s", client.baseUrl+%s, %s)`, requestVar, operation.Endpoint.Method, g.addRequestUrlParams(operation), body)
@@ -311,13 +310,13 @@ func (g *NetHttpGenerator) ErrorsHandler(errors spec.ErrorResponses) *generator.
 	w.Line(`switch resp.StatusCode {`)
 	for _, response := range errors.Required() {
 		w.Line(`case %s:`, spec.HttpStatusCode(response.Name))
-		if response.Body.Is(spec.ResponseBodyString) {
+		if response.Body.IsText() {
 			w.Line(`  result, err := response.Text(resp)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    return err`)
 			w.Line(`  }`)
 		}
-		if response.Body.Is(spec.ResponseBodyJson) {
+		if response.Body.IsJson() {
 			w.Line(`  var result %s`, g.Types.GoType(&response.Body.Type.Definition))
 			w.Line(`  err := response.Json(resp, &result)`)
 			w.Line(`  if err != nil {`)
@@ -325,7 +324,7 @@ func (g *NetHttpGenerator) ErrorsHandler(errors spec.ErrorResponses) *generator.
 			w.Line(`  }`)
 		}
 
-		if response.Body.Type.Definition.IsEmpty() {
+		if response.Body.IsEmpty() {
 			w.Line(`  return &%s{}`, response.Name.PascalCase())
 		} else {
 			w.Line(`  return &%s{result}`, response.Name.PascalCase())

@@ -26,7 +26,7 @@ func (g *Generator) responseInterface(operation *spec.NamedOperation) *generator
 
 func responseImpl(w *writer.Writer, types *types.Types, response *spec.OperationResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
-	if !response.Body.Type.Definition.IsEmpty() {
+	if !response.Body.IsEmpty() {
 		w.Line(`class %s(var body: %s) : %s`, serviceResponseImplementationName, types.Kotlin(&response.Body.Type.Definition), responseInterfaceName(response.Operation))
 	} else {
 		w.Line(`class %s : %s`, serviceResponseImplementationName, responseInterfaceName(response.Operation))
