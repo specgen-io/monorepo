@@ -143,7 +143,7 @@ func (g *HttpRouterGenerator) parametersParsing(w *writer.Writer, operation *spe
 }
 
 func (g *HttpRouterGenerator) serviceCallAndResponseCheck(w *writer.Writer, operation *spec.NamedOperation, responseVar string) {
-	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Type.Definition.IsEmpty()
+	singleEmptyResponse := len(operation.Responses) == 1 && operation.Responses[0].Body.IsEmpty()
 	serviceCall := serviceCall(serviceInterfaceTypeVar(operation.InApi), operation)
 	if singleEmptyResponse {
 		w.Line(`err = %s`, serviceCall)
@@ -193,10 +193,12 @@ func (g *HttpRouterGenerator) response(w *writer.Writer, operation *spec.NamedOp
 }
 
 func (g *HttpRouterGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.RequestBodyString) {
-		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"text/plain"`, "req", "res"))
+	if operation.Body != nil {
+		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)
+	}
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
 		w.Line(`if err != nil {`)
 		respondBadRequest(w.Indented(), operation, g.Types, "body", genFmtSprintf(`Reading request body failed: %s`, `err.Error()`), "nil")
@@ -204,9 +206,6 @@ func (g *HttpRouterGenerator) bodyParsing(w *writer.Writer, operation *spec.Name
 		w.Line(`body := string(bodyData)`)
 	}
 	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), `"application/json"`, "req", "res"))
-		w.Line(`  return`)
-		w.Line(`}`)
 		w.Line(`var body %s`, g.Types.GoType(&operation.Body.Type.Definition))
 		w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
 		w.Line(`if err != nil {`)
@@ -216,6 +215,21 @@ func (g *HttpRouterGenerator) bodyParsing(w *writer.Writer, operation *spec.Name
 		w.Line(`    errors = []errmodels.ValidationError{{Path: unmarshalError.Field, Code: "parsing_failed", Message: &message}}`)
 		w.Line(`  }`)
 		respondBadRequest(w.Indented(), operation, g.Types, "body", `"Failed to parse body"`, "errors")
+		w.Line(`}`)
+	}
+	if operation.BodyIs(spec.RequestBodyFormData) || operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		w.Line(`formBody, err := paramsparser.New%sParser(req, true)`, casee.ToPascalCase(formBodyTypeName(operation)))
+		w.Line(`if err != nil {`)
+		respondBadRequest(w.Indented(), operation, g.Types, "body", `"Failed to parse body"`, fmt.Sprintf(`[]errmodels.ValidationError{{Path: "", Code: "%s_parse_failed"}}`, formBodyTypeName(operation)))
+		w.Line(`}`)
+		for _, param := range operation.Body.FormData {
+			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(&param, "formBody"))
+		}
+		for _, param := range operation.Body.FormUrlEncoded {
+			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(&param, "formBody"))
+		}
+		w.Line(`if len(formBody.Errors) > 0 {`)
+		respondBadRequest(w.Indented(), operation, g.Types, "body", fmt.Sprintf(`"Failed to parse body"`), fmt.Sprintf(`httperrors.Convert(formBody.Errors)`))
 		w.Line(`}`)
 	}
 }
@@ -230,7 +244,6 @@ func (g *HttpRouterGenerator) RootRouting(specification *spec.Spec) *generator.C
 			w.Imports.ModuleAliased(g.Modules.ServicesApi(&api).Aliased(apiPackageAlias(&api)))
 		}
 	}
-	w.EmptyLine()
 	w.Line(`type Services struct {`)
 	for _, version := range specification.Versions {
 		for _, api := range version.Http.Apis {

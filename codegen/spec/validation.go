@@ -89,7 +89,7 @@ func (validator *validator) Operation(operation *NamedOperation) {
 	validator.Params(operation.QueryParams, true)
 	validator.Params(operation.HeaderParams, true)
 
-	if operation.Body != nil && !operation.Body.Type.Definition.IsEmpty() {
+	if !operation.BodyIs(RequestBodyEmpty) && operation.Body.Type != nil {
 		bodyType := operation.Body.Type
 		if bodyType.Definition.Info.Structure != StructureObject &&
 			bodyType.Definition.Info.Structure != StructureArray &&
@@ -97,6 +97,8 @@ func (validator *validator) Operation(operation *NamedOperation) {
 			message := fmt.Sprintf("body should be object, array or string type, found %s", bodyType.Definition.Name)
 			validator.addError(operation.Body.Location, message)
 		}
+	}
+	if operation.Body != nil {
 		validator.RequestBody(operation.Body)
 	}
 
@@ -110,23 +112,23 @@ func (validator *validator) OperationResponse(response *OperationResponse) {
 		specification := response.Operation.InApi.InHttp.InVersion.InSpec
 		errorResponse := specification.HttpErrors.Responses.GetByStatusName(response.Name.Source)
 		if errorResponse == nil {
-			validator.addError(response.Location, fmt.Sprintf(`response %s is declared in the operation but it's not declared in errors section`, response.Name.Source))
+			validator.addError(response.Name.Location, fmt.Sprintf(`response %s is declared in the operation but it's not declared in errors section`, response.Name.Source))
 		} else {
-			if response.Type.Definition.String() != errorResponse.Type.Definition.String() {
+			if response.Body.Type.Definition.String() != errorResponse.Body.Type.Definition.String() {
 				messageFormat := `response %s is declared with body type: %s, however errors section declares it with body type: %s`
-				message := fmt.Sprintf(messageFormat, response.Name.Source, response.Type.Definition.String(), errorResponse.Type.Definition.String())
-				validator.addError(response.Type.Location, message)
+				message := fmt.Sprintf(messageFormat, response.Name.Source, response.Body.Type.Definition.String(), errorResponse.Body.Type.Definition.String())
+				validator.addError(response.Body.Type.Location, message)
 			}
 		}
 	}
-	if !response.Type.Definition.IsEmpty() &&
-		response.Type.Definition.Info.Structure != StructureObject &&
-		response.Type.Definition.Info.Structure != StructureArray &&
-		response.Type.Definition.String() != TypeString {
-		message := fmt.Sprintf("response %s should be either empty or some type with structure of an object or array, found %s", response.Name.Source, response.Type.Definition.Name)
-		validator.addError(response.Type.Location, message)
+	resposeType := response.Body.Type
+	if response.Body.IsJson() &&
+		resposeType.Definition.Info.Structure != StructureObject &&
+		resposeType.Definition.Info.Structure != StructureArray {
+		message := fmt.Sprintf("response %s should be either empty or some type with structure of an object or array, found %s", response.Name.Source, resposeType.Definition.Name)
+		validator.addError(response.Body.Type.Location, message)
 	}
-	validator.Definition(&response.Definition)
+	validator.ResponseBody(&response.Body)
 }
 
 func (validator *validator) Params(params []NamedParam, allowArrayTypes bool) {
@@ -294,4 +296,7 @@ func (validator *validator) Definition(definition *Definition) {
 }
 
 func (validator *validator) RequestBody(body *RequestBody) {
+}
+
+func (validator *validator) ResponseBody(body *ResponseBody) {
 }

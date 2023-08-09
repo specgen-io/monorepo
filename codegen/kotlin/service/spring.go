@@ -152,18 +152,18 @@ func (g *SpringGenerator) processResponses(w *writer.Writer, operation *spec.Nam
 }
 
 func (g *SpringGenerator) processResponse(w *writer.Writer, response *spec.Response, bodyVar string) {
-	if response.BodyIs(spec.BodyEmpty) {
+	if response.Body.Is(spec.ResponseBodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return ResponseEntity(HttpStatus.%s)`, response.Name.UpperCase())
 	}
-	if response.BodyIs(spec.BodyString) {
+	if response.Body.Is(spec.ResponseBodyString) {
 		w.Line(`val headers = HttpHeaders()`)
 		w.Line(`headers.add(CONTENT_TYPE, "text/plain")`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return ResponseEntity(%s, headers, HttpStatus.%s)`, bodyVar, response.Name.UpperCase())
 	}
-	if response.BodyIs(spec.BodyJson) {
-		w.Line(`val bodyJson = json.%s`, g.Models.WriteJson(bodyVar, &response.Type.Definition))
+	if response.Body.Is(spec.ResponseBodyJson) {
+		w.Line(`val bodyJson = json.%s`, g.Models.WriteJson(bodyVar, &response.Body.Type.Definition))
 		w.Line(`val headers = HttpHeaders()`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json")`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())

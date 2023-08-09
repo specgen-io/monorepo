@@ -24,13 +24,13 @@ func respondEmpty(logFields, resVar, statusCode string) string {
 }
 
 func writeResponse(w *writer.Writer, logFieldsName string, response *spec.Response, responseVar string) {
-	if response.BodyIs(spec.BodyEmpty) {
+	if response.Body.Is(spec.ResponseBodyEmpty) {
 		w.Line(respondEmpty(logFieldsName, `res`, spec.HttpStatusCode(response.Name)))
 	}
-	if response.BodyIs(spec.BodyString) {
+	if response.Body.Is(spec.ResponseBodyString) {
 		w.Line(respondText(logFieldsName, `res`, spec.HttpStatusCode(response.Name), `*`+responseVar))
 	}
-	if response.BodyIs(spec.BodyJson) {
+	if response.Body.Is(spec.ResponseBodyJson) {
 		w.Line(respondJson(logFieldsName, `res`, spec.HttpStatusCode(response.Name), responseVar))
 	}
 }
@@ -39,7 +39,7 @@ func (g *Generator) Response(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line(`type %s struct {`, responseTypeName(operation))
 	w.Indent()
 	for _, response := range operation.Responses {
-		w.LineAligned(`%s %s`, response.Name.PascalCase(), g.Types.GoType(spec.Nullable(&response.Type.Definition)))
+		w.LineAligned(`%s %s`, response.Name.PascalCase(), g.Types.GoType(spec.Nullable(&response.Body.Type.Definition)))
 	}
 	w.Unindent()
 	w.Line(`}`)

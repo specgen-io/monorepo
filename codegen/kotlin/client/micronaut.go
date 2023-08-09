@@ -151,22 +151,22 @@ func (g *MicronautGenerator) generateClientMethod(w *writer.Writer, operation *s
 }
 
 func (g *MicronautGenerator) successResponse(response *spec.OperationResponse) string {
-	if response.BodyIs(spec.BodyString) {
+	if response.Body.Is(spec.ResponseBodyString) {
 		return responseCreate(response, "response.body()!!.toString()")
 	}
-	if response.BodyIs(spec.BodyJson) {
-		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body()!!.toString()`, &response.Type.Definition)))
+	if response.Body.Is(spec.ResponseBodyJson) {
+		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body()!!.toString()`, &response.Body.Type.Definition)))
 	}
 	return responseCreate(response, "")
 }
 
 func (g *MicronautGenerator) errorResponse(response *spec.Response) string {
 	var responseBody = ""
-	if response.BodyIs(spec.BodyString) {
+	if response.Body.Is(spec.ResponseBodyString) {
 		responseBody = "response.body()!!.string()"
 	}
-	if response.BodyIs(spec.BodyJson) {
-		responseBody = fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body()!!.toString()`, &response.Type.Definition))
+	if response.Body.Is(spec.ResponseBodyJson) {
+		responseBody = fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body()!!.toString()`, &response.Body.Type.Definition))
 	}
 	return fmt.Sprintf(`throw %s(%s)`, errorExceptionClassName(response), responseBody)
 }

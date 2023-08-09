@@ -156,22 +156,22 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
 }
 
 func (g *OkHttpGenerator) successResponse(response *spec.OperationResponse) string {
-	if response.BodyIs(spec.BodyString) {
+	if response.Body.Is(spec.ResponseBodyString) {
 		return responseCreate(response, "response.body().string()")
 	}
-	if response.BodyIs(spec.BodyJson) {
-		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().charStream()`, &response.Type.Definition)))
+	if response.Body.Is(spec.ResponseBodyJson) {
+		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().charStream()`, &response.Body.Type.Definition)))
 	}
 	return responseCreate(response, "")
 }
 
 func (g *OkHttpGenerator) errorResponse(response *spec.Response) string {
 	var responseBody = ""
-	if response.BodyIs(spec.BodyString) {
+	if response.Body.Is(spec.ResponseBodyString) {
 		responseBody = "response.body().string()"
 	}
-	if response.BodyIs(spec.BodyJson) {
-		responseBody = fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().charStream()`, &response.Type.Definition))
+	if response.Body.Is(spec.ResponseBodyJson) {
+		responseBody = fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().charStream()`, &response.Body.Type.Definition))
 	}
 	return fmt.Sprintf(`throw new %s(%s);`, errorExceptionClassName(response), responseBody)
 }

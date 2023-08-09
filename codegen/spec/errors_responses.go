@@ -80,12 +80,13 @@ func (value *ErrorResponses) UnmarshalYAML(node *yaml.Node) error {
 		if _, ok := httpStatusCode[name.Source]; !ok {
 			return yamlError(keyNode, fmt.Sprintf("unknown response name %s", name.Source))
 		}
-		definition := Definition{}
-		err = valueNode.DecodeWith(decodeStrict, &definition)
+		body := ResponseBody{}
+		err = valueNode.DecodeWith(decodeStrict, &body)
 		if err != nil {
 			return err
 		}
-		array[index] = ErrorResponse{Response{Name: name, Definition: definition}, false}
+		response := Response{name, body, getDescriptionFromComment(valueNode)}
+		array[index] = ErrorResponse{response, false}
 	}
 	*value = array
 	return nil
@@ -95,7 +96,7 @@ func (value ErrorResponses) MarshalYAML() (interface{}, error) {
 	yamlMap := yamlx.Map()
 	for index := 0; index < len(value); index++ {
 		response := value[index]
-		err := yamlMap.AddWithComment(response.Name, response.Definition, response.Description)
+		err := yamlMap.AddWithComment(response.Name, response.Body, response.Description)
 		if err != nil {
 			return nil, err
 		}

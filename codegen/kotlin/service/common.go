@@ -33,7 +33,7 @@ func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJ
 
 func serviceCall(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar)))
-	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
+	if len(operation.Responses) == 1 && operation.Responses[0].Body.Is(spec.ResponseBodyEmpty) {
 		w.Line(serviceCall)
 	} else {
 		w.Line(`val %s = %s`, resultVarName, serviceCall)

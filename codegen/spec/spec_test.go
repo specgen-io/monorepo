@@ -89,6 +89,33 @@ http:
 	assert.Equal(t, api.Operations[1].Name.Source, "ping")
 }
 
+func Test_ParseSpec_Http_Body_FormData(t *testing.T) {
+	data := `
+spec: 2.1
+name: bla-api
+http:
+    test:
+        some_url:
+            endpoint: POST /some/url
+            body:
+                form-data:
+                    int_param: int
+                    str_param: string
+            response:
+                ok: empty
+`
+	spec, _, err := ReadSpec([]byte(data))
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, len(spec.Versions), 1)
+	version := spec.Versions[0]
+	assert.Equal(t, len(version.Http.Apis), 1)
+	api := version.Http.Apis[0]
+	assert.Equal(t, api.Name.Source, "test")
+	assert.Equal(t, len(api.Operations), 1)
+	assert.Equal(t, api.Operations[0].Name.Source, "some_url")
+}
+
 func Test_ParseSpec_Http_Versions(t *testing.T) {
 	data := `
 spec: 2.1

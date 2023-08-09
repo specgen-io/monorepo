@@ -27,14 +27,14 @@ export class ResponseException extends Error {
 	for _, response := range httpErrors.Responses {
 		w.EmptyLine()
 		w.Line(`export class %s extends ResponseException {`, errorExceptionName(&response.Response))
-		if response.BodyIs(spec.BodyEmpty) {
+		if response.Body.Is(spec.ResponseBodyEmpty) {
 			w.Line(`  constructor() {`)
 			w.Line(`    super('Error response with status code %s')`, spec.HttpStatusCode(response.Name))
 			w.Line(`  }`)
 		} else {
-			w.Line(`  public body: %s`, types.TsType(&response.Type.Definition))
+			w.Line(`  public body: %s`, types.TsType(&response.Body.Type.Definition))
 			w.EmptyLine()
-			w.Line(`  constructor(body: %s) {`, types.TsType(&response.Type.Definition))
+			w.Line(`  constructor(body: %s) {`, types.TsType(&response.Body.Type.Definition))
 			w.Line(`    super('Error response with status code %s')`, spec.HttpStatusCode(response.Name))
 			w.Line(`    this.body = body`)
 			w.Line(`  }`)

@@ -142,7 +142,7 @@ func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOpera
 
 func (g *SpringGenerator) serviceCall(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), strings.Join(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar), ", "))
-	if len(operation.Responses) == 1 && operation.Responses[0].BodyIs(spec.BodyEmpty) {
+	if len(operation.Responses) == 1 && operation.Responses[0].Body.Is(spec.ResponseBodyEmpty) {
 		w.Line(`%s;`, serviceCall)
 	} else {
 		w.Line(`var %s = %s;`, resultVarName, serviceCall)
@@ -168,18 +168,18 @@ func (g *SpringGenerator) processResponses(w *writer.Writer, operation *spec.Nam
 }
 
 func (g *SpringGenerator) processResponse(w *writer.Writer, response *spec.Response, bodyVar string) {
-	if response.BodyIs(spec.BodyEmpty) {
+	if response.Body.Is(spec.ResponseBodyEmpty) {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return new ResponseEntity<>(HttpStatus.%s);`, response.Name.UpperCase())
 	}
-	if response.BodyIs(spec.BodyString) {
+	if response.Body.Is(spec.ResponseBodyString) {
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
 		w.Line(`headers.add(CONTENT_TYPE, "text/plain");`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, bodyVar, response.Name.UpperCase())
 	}
-	if response.BodyIs(spec.BodyJson) {
-		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Type.Definition))
+	if response.Body.Is(spec.ResponseBodyJson) {
+		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Body.Type.Definition))
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json");`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())

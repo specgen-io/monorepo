@@ -19,10 +19,10 @@ func operationSignature(types *types.Types, operation *spec.NamedOperation) stri
 func operationReturn(types *types.Types, operation *spec.NamedOperation) string {
 	successResponses := operation.Responses.Success()
 	if len(successResponses) == 1 {
-		if successResponses[0].BodyIs(spec.BodyEmpty) {
+		if successResponses[0].Body.Is(spec.ResponseBodyEmpty) {
 			return `error`
 		} else {
-			return fmt.Sprintf(`(*%s, error)`, types.GoType(&successResponses[0].Type.Definition))
+			return fmt.Sprintf(`(*%s, error)`, types.GoType(&successResponses[0].Body.Type.Definition))
 		}
 	} else {
 		return fmt.Sprintf(`(*%s, error)`, responseTypeName(operation))
@@ -31,7 +31,7 @@ func operationReturn(types *types.Types, operation *spec.NamedOperation) string 
 
 func operationError(operation *spec.NamedOperation, errorVar string) string {
 	successResponses := operation.Responses.Success()
-	if len(successResponses) == 1 && successResponses[0].BodyIs(spec.BodyEmpty) {
+	if len(successResponses) == 1 && successResponses[0].Body.Is(spec.ResponseBodyEmpty) {
 		return errorVar
 	} else {
 		return fmt.Sprintf(`nil, %s`, errorVar)
@@ -41,7 +41,7 @@ func operationError(operation *spec.NamedOperation, errorVar string) string {
 func resultSuccess(response *spec.OperationResponse, resultVar string) string {
 	successResponses := response.Operation.Responses.Success()
 	if len(successResponses) == 1 {
-		if successResponses[0].BodyIs(spec.BodyEmpty) {
+		if successResponses[0].Body.Is(spec.ResponseBodyEmpty) {
 			return `nil`
 		} else {
 			return fmt.Sprintf(`&%s, nil`, resultVar)
@@ -53,12 +53,12 @@ func resultSuccess(response *spec.OperationResponse, resultVar string) string {
 
 func resultError(response *spec.OperationResponse, errorsModules module.Module, resultVar string) string {
 	errorBody := ``
-	if !response.BodyIs(spec.BodyEmpty) {
+	if !response.Body.Is(spec.ResponseBodyEmpty) {
 		errorBody = resultVar
 	}
 	result := fmt.Sprintf(`&%s{%s}`, errorsModules.Get(response.Name.PascalCase()), errorBody)
 	successResponses := response.Operation.Responses.Success()
-	if len(successResponses) == 1 && successResponses[0].BodyIs(spec.BodyEmpty) {
+	if len(successResponses) == 1 && successResponses[0].Body.Is(spec.ResponseBodyEmpty) {
 		return result
 	} else {
 		return fmt.Sprintf(`nil, %s`, result)

@@ -91,24 +91,3 @@ func (value Definition) MarshalYAML() (interface{}, error) {
 	}
 	return node, nil
 }
-
-type BodyKind string
-
-const (
-	BodyEmpty  BodyKind = "empty"
-	BodyString BodyKind = "string"
-	BodyJson   BodyKind = "json"
-)
-
-func kindOf(definition *Definition) BodyKind {
-	if definition != nil {
-		if definition.Type.Definition.IsEmpty() {
-			return BodyEmpty
-		} else if definition.Type.Definition.Plain == TypeString {
-			return BodyString
-		} else {
-			return BodyJson
-		}
-	}
-	return BodyEmpty
-}

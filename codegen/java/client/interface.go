@@ -17,7 +17,7 @@ func operationSignature(types *types.Types, operation *spec.NamedOperation) stri
 
 func operationReturnType(types *types.Types, operation *spec.NamedOperation) string {
 	if len(operation.Responses.Success()) == 1 {
-		return types.Java(&operation.Responses.Success()[0].Type.Definition)
+		return types.Java(&operation.Responses.Success()[0].Body.Type.Definition)
 	}
 	return responseInterfaceName(operation)
 }

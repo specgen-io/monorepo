@@ -18,6 +18,10 @@ type operation struct {
 
 type Operation operation
 
+func (operation *Operation) BodyKind() RequestBodyKind {
+	return kindOfRequestBody(operation.Body)
+}
+
 func (operation *Operation) BodyIs(kind RequestBodyKind) bool {
 	return kindOfRequestBody(operation.Body) == kind
 }

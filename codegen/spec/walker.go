@@ -6,9 +6,11 @@ type SpecWalker struct {
 	onSpecification     func(specification *Spec)
 	onHttpErrors        func(httpErrors *HttpErrors)
 	onResponse          func(response *Response)
+	onResponseBody      func(body *ResponseBody)
 	onVersion           func(version *Version)
 	onApi               func(api *Api)
 	onOperation         func(operation *NamedOperation)
+	onRequestBody       func(body *RequestBody)
 	onOperationResponse func(response *OperationResponse)
 	onParam             func(param *NamedParam)
 	onModel             func(model *NamedModel)
@@ -35,6 +37,11 @@ func (w *SpecWalker) OnResponse(callback func(response *Response)) *SpecWalker {
 	return w
 }
 
+func (w *SpecWalker) OnResponseBody(callback func(body *ResponseBody)) *SpecWalker {
+	w.onResponseBody = callback
+	return w
+}
+
 func (w *SpecWalker) OnVersion(callback func(version *Version)) *SpecWalker {
 	w.onVersion = callback
 	return w
@@ -47,6 +54,11 @@ func (w *SpecWalker) OnApi(callback func(api *Api)) *SpecWalker {
 
 func (w *SpecWalker) OnOperation(callback func(operation *NamedOperation)) *SpecWalker {
 	w.onOperation = callback
+	return w
+}
+
+func (w *SpecWalker) OnRequestBody(callback func(operation *RequestBody)) *SpecWalker {
+	w.onRequestBody = callback
 	return w
 }
 
@@ -105,11 +117,18 @@ func (w *SpecWalker) Models(models []*NamedModel) {
 	}
 }
 
+func (w *SpecWalker) ResponseBody(body *ResponseBody) {
+	if w.onResponseBody != nil {
+		w.onResponseBody(body)
+	}
+	w.Type(&body.Type)
+}
+
 func (w *SpecWalker) Response(response *Response) {
 	if w.onResponse != nil {
 		w.onResponse(response)
 	}
-	w.Type(&response.Definition.Type)
+	w.ResponseBody(&response.Body)
 }
 
 func (w *SpecWalker) Version(version *Version) {
@@ -143,7 +162,7 @@ func (w *SpecWalker) Operation(operation *NamedOperation) {
 	w.params(operation.HeaderParams)
 
 	if operation.Body != nil {
-		w.Type(operation.Body.Type)
+		w.RequestBody(operation.Body)
 	}
 
 	for index := range operation.Responses {
@@ -155,7 +174,22 @@ func (w *SpecWalker) OperationResponse(response *OperationResponse) {
 	if w.onOperationResponse != nil {
 		w.onOperationResponse(response)
 	}
-	w.Type(&response.Definition.Type)
+	w.Type(&response.Body.Type)
+}
+
+func (w *SpecWalker) RequestBody(body *RequestBody) {
+	if w.onRequestBody != nil {
+		w.onRequestBody(body)
+	}
+	if body.Type != nil {
+		w.Type(body.Type)
+	}
+	if body.FormData != nil {
+		w.params(body.FormData)
+	}
+	if body.FormUrlEncoded != nil {
+		w.params(body.FormUrlEncoded)
+	}
 }
 
 func (w *SpecWalker) params(params []NamedParam) {

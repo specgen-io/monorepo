@@ -50,13 +50,13 @@ func responseInterface(types *types.Types, operation *spec.NamedOperation, apiPa
 func responseImpl(w *writer.Writer, types *types.Types, response *spec.OperationResponse) {
 	serviceResponseImplementationName := response.Name.PascalCase()
 	w.Line(`class %s implements %s {`, serviceResponseImplementationName, responseInterfaceName(response.Operation))
-	if !response.Type.Definition.IsEmpty() {
-		w.Line(`  public %s body;`, types.Java(&response.Type.Definition))
+	if !response.Body.IsEmpty() {
+		w.Line(`  public %s body;`, types.Java(&response.Body.Type.Definition))
 		w.EmptyLine()
 		w.Line(`  public %s() {`, serviceResponseImplementationName)
 		w.Line(`  }`)
 		w.EmptyLine()
-		w.Line(`  public %s(%s body) {`, serviceResponseImplementationName, types.Java(&response.Type.Definition))
+		w.Line(`  public %s(%s body) {`, serviceResponseImplementationName, types.Java(&response.Body.Type.Definition))
 		w.Line(`    this.body = body;`)
 		w.Line(`  }`)
 	}

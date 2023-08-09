@@ -79,7 +79,7 @@ func errorResponseShouldNotBeDeclared(httpErrors *HttpErrors, messages *Messages
 	if httpErrors.Responses != nil {
 		errorResponse := httpErrors.Responses.GetByStatusName(httpStatusName)
 		if errorResponse != nil {
-			messages.Add(Error(`error response '%s' is declared but should not`, httpStatusName).At(locationFromNode(errorResponse.Location)))
+			messages.Add(Error(`error response '%s' is declared but should not`, httpStatusName).At(locationFromNode(errorResponse.Name.Location)))
 			return true
 		}
 	}
@@ -139,7 +139,7 @@ func (enricher *httpEnricher) httpErrors(httpErrors *HttpErrors) {
 	}
 
 	for index := range httpErrors.Responses {
-		enricher.definition(&httpErrors.Responses[index].Definition)
+		enricher.responseBody(&httpErrors.Responses[index].Body)
 	}
 }
 
@@ -166,7 +166,7 @@ func (enricher *httpEnricher) operation(operation *NamedOperation) {
 	}
 
 	for index := range operation.Responses {
-		enricher.definition(&operation.Responses[index].Definition)
+		enricher.responseBody(&operation.Responses[index].Body)
 	}
 }
 
@@ -182,9 +182,23 @@ func (enricher *httpEnricher) definition(definition *Definition) {
 	}
 }
 
-func (enricher *httpEnricher) requestBody(definition *RequestBody) {
-	if definition != nil {
-		enricher.typ(definition.Type)
+func (enricher *httpEnricher) requestBody(body *RequestBody) {
+	if body != nil {
+		if body.Type != nil {
+			enricher.typ(body.Type)
+		}
+		if body.FormData != nil {
+			enricher.params(body.FormData)
+		}
+		if body.FormUrlEncoded != nil {
+			enricher.params(body.FormUrlEncoded)
+		}
+	}
+}
+
+func (enricher *httpEnricher) responseBody(body *ResponseBody) {
+	if body != nil {
+		enricher.typ(&body.Type)
 	}
 }
 

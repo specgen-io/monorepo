@@ -37,8 +37,8 @@ func errorResponseException(thePackage, errorsModelsPackage packages.Package, er
 	w := writer.New(thePackage, errorExceptionClassName(error))
 	w.Imports.PackageStar(errorsModelsPackage)
 	errorBody := ""
-	if !error.BodyIs(spec.BodyEmpty) {
-		errorBody = fmt.Sprintf(`(val body: %s)`, error.Type.Definition)
+	if !error.Body.Is(spec.ResponseBodyEmpty) {
+		errorBody = fmt.Sprintf(`(val body: %s)`, error.Body.Type.Definition)
 	}
 	w.Line(`class [[.ClassName]]%s : ResponseException("Error response with status code %s")`, errorBody, spec.HttpStatusCode(error.Name))
 

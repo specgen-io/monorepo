@@ -8,7 +8,7 @@ import (
 func responseType(operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]
-		return ScalaType(&response.Type.Definition)
+		return ScalaType(&response.Body.Type.Definition)
 	} else {
 		return responseTypeName(operation)
 	}
@@ -24,8 +24,8 @@ func generateResponse(w *writer.Writer, operation *spec.NamedOperation) {
 		w.Line(`object %s {`, responseTypeName(operation))
 		for _, response := range operation.Responses {
 			var bodyParam = ""
-			if !response.Type.Definition.IsEmpty() {
-				bodyParam = `body: ` + ScalaType(&response.Type.Definition)
+			if !response.Body.IsEmpty() {
+				bodyParam = `body: ` + ScalaType(&response.Body.Type.Definition)
 			}
 			w.Line(`  case class %s(%s) extends %s`, response.Name.PascalCase(), bodyParam, responseTypeName(operation))
 		}

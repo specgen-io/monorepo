@@ -82,7 +82,7 @@ func generateOperation(o *spec.NamedOperation) *yamlx.YamlMap {
 	if o.Operation.Description != nil {
 		operation.Add("description", o.Operation.Description)
 	}
-	if o.Operation.Body != nil {
+	if o.Operation.Body != nil && o.Operation.Body.Type != nil {
 		body := o.Operation.Body
 		request := yamlx.Map()
 		if body.Description != nil {
@@ -141,25 +141,25 @@ func generateResponses(operation *spec.NamedOperation) *yamlx.YamlMap {
 	for _, statusCode := range statusCodes {
 		response := operation.Responses.GetByStatusCode(statusCode)
 		errorResponse := operation.InApi.InHttp.InVersion.InSpec.HttpErrors.Responses.GetByStatusCode(statusCode)
-		var responseDefinition *spec.Definition = nil
-		var alternateDefinition *spec.Definition = nil
+		var mainResponse *spec.Response = nil
+		var alternateResponse *spec.Response = nil
 
 		if response != nil {
-			responseDefinition = &response.Definition
-			if errorResponse != nil && response.Definition.Type.String() != errorResponse.Definition.Type.String() {
-				alternateDefinition = &errorResponse.Definition
+			mainResponse = &response.Response
+			if errorResponse != nil && response.Body.Type.String() != errorResponse.Body.Type.String() {
+				alternateResponse = &errorResponse.Response
 			}
 		} else {
-			responseDefinition = &errorResponse.Definition
+			mainResponse = &errorResponse.Response
 		}
 
-		result.Add(statusCode, generateResponse(responseDefinition, alternateDefinition))
+		result.Add(statusCode, generateResponse(mainResponse, alternateResponse))
 	}
 
 	return result
 }
 
-func generateResponse(response *spec.Definition, alternate *spec.Definition) *yamlx.YamlMap {
+func generateResponse(response *spec.Response, alternate *spec.Response) *yamlx.YamlMap {
 	result := yamlx.Map()
 	description := ""
 	if response.Description != nil {
@@ -168,11 +168,11 @@ func generateResponse(response *spec.Definition, alternate *spec.Definition) *ya
 	result.Add("description", description)
 
 	types := []*spec.TypeDef{}
-	if !response.Type.Definition.IsEmpty() {
-		types = append(types, &response.Type.Definition)
+	if !response.Body.IsEmpty() {
+		types = append(types, &response.Body.Type.Definition)
 	}
-	if alternate != nil && !alternate.Type.Definition.IsEmpty() {
-		types = append(types, &alternate.Type.Definition)
+	if alternate != nil && !alternate.Body.IsEmpty() {
+		types = append(types, &alternate.Body.Type.Definition)
 	}
 
 	if len(types) > 0 {
