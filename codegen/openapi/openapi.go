@@ -82,7 +82,7 @@ func generateOperation(o *spec.NamedOperation) *yamlx.YamlMap {
 	if o.Operation.Description != nil {
 		operation.Add("description", o.Operation.Description)
 	}
-	if o.Operation.Body != nil {
+	if o.Operation.Body != nil && o.Operation.Body.Type != nil {
 		body := o.Operation.Body
 		request := yamlx.Map()
 		if body.Description != nil {

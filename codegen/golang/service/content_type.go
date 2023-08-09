@@ -1,9 +1,27 @@
 package service
 
 import (
+	"fmt"
 	"generator"
 	"golang/writer"
+	"spec"
 )
+
+func ContentType(operation *spec.NamedOperation) string {
+	if operation.BodyIs(spec.RequestBodyEmpty) {
+		return ""
+	} else if operation.BodyIs(spec.RequestBodyString) {
+		return "text/plain"
+	} else if operation.BodyIs(spec.RequestBodyJson) {
+		return "application/json"
+	} else if operation.BodyIs(spec.RequestBodyFormData) {
+		return "multipart/form-data"
+	} else if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		return "application/x-www-form-urlencoded"
+	} else {
+		panic(fmt.Sprintf("Unknown Contet Type"))
+	}
+}
 
 func (g *Generator) CheckContentType() *generator.CodeFile {
 	w := writer.New(g.Modules.ContentType, `check.go`)
