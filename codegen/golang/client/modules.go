@@ -11,14 +11,14 @@ type Modules struct {
 	clients  map[string]map[string]module.Module
 	Root     module.Module
 	Empty    module.Module
-	Convert  module.Module
+	Params   module.Module
 	Response module.Module
 }
 
 func NewModules(moduleName string, generatePath string, specification *spec.Spec) *Modules {
 	root := module.New(moduleName, generatePath)
 	empty := root.Submodule("empty")
-	convert := root.Submodule("convert")
+	convert := root.Submodule("params")
 	response := root.Submodule("response")
 
 	clients := map[string]map[string]module.Module{}

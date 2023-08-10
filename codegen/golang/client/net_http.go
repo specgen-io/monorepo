@@ -47,7 +47,7 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 		w.Imports.Add("net/url")
 	}
 	if walkers.ApiHasUrlParams(api) {
-		w.Imports.Module(g.Modules.Convert)
+		w.Imports.Module(g.Modules.Params)
 	}
 	if walkers.ApiHasMultiSuccessResponsesWithEmptyBody(api) {
 		w.Imports.Module(g.Modules.Empty)
@@ -121,23 +121,22 @@ func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.Named
 	if operation.BodyIs(spec.RequestBodyFormData) {
 		w.Line(`  bodyData := &bytes.Buffer{}`)
 		w.Line(`  writer := multipart.NewWriter(bodyData)`)
-		w.Line(`  f := convert.NewFormDataParamsConverter(writer)`)
-		w.Line(`  var err error`)
+		w.Line(`  f := params.NewFormDataParamsWriter(writer)`)
 		for _, param := range operation.Body.FormData {
-			w.Line(`  err = f.%s`, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
+			w.Line(`  f.%s`, callTypesConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
 		}
-		w.Line(`  err = writer.Close()`)
+		w.Line(`  err := f.CloseWriter()`)
 		w.Line(`  if err != nil {`)
-		w.Line(`    log.WithFields(%s).Error("Failed to write body field", err.Error())`, logFieldsName(operation))
+		w.Line(`    log.WithFields(%s).Error("Failed to write form-data params", err.Error())`, logFieldsName(operation))
 		w.Line(`    return %s`, operationError(operation, `err`))
 		w.Line(`  }`)
 		body = "bodyData"
 	}
 	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
 		w.Line(`  formUrlencodedValues := url.Values{}`)
-		w.Line(`  f := convert.NewParamsConverter(formUrlencodedValues)`)
+		w.Line(`  f := params.NewParamsWriter(formUrlencodedValues)`)
 		for _, param := range operation.Body.FormUrlEncoded {
-			w.Line(`  f.%s`, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
+			w.Line(`  f.%s`, callTypesConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
 		}
 		w.Line(`  bodyData := formUrlencodedValues.Encode()`)
 		body = "strings.NewReader(bodyData)"
@@ -191,7 +190,7 @@ func (g *NetHttpGenerator) addUrlParam(operation *spec.NamedOperation) []string 
 		if param.Type.Definition.IsEnum() || g.Types.GoType(&param.Type.Definition) == "string" {
 			urlParams = append(urlParams, param.Name.CamelCase())
 		} else {
-			urlParams = append(urlParams, callRawConvert(&param.Type.Definition, param.Name.CamelCase()))
+			urlParams = append(urlParams, callRawParamsConvert(&param.Type.Definition, param.Name.CamelCase()))
 		}
 	}
 	return urlParams
@@ -200,9 +199,9 @@ func (g *NetHttpGenerator) addUrlParam(operation *spec.NamedOperation) []string 
 func (g *NetHttpGenerator) addQueryParams(w *writer.Writer, operation *spec.NamedOperation, requestVar string) {
 	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		w.Line(`  query := %s.URL.Query()`, requestVar)
-		w.Line(`  q := convert.NewParamsConverter(query)`)
+		w.Line(`  q := params.NewParamsWriter(query)`)
 		for _, param := range operation.QueryParams {
-			w.Line(`  q.%s`, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
+			w.Line(`  q.%s`, callTypesConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
 		}
 		w.Line(`  %s.URL.RawQuery = query.Encode()`, requestVar)
 		w.EmptyLine()
@@ -211,9 +210,9 @@ func (g *NetHttpGenerator) addQueryParams(w *writer.Writer, operation *spec.Name
 
 func (g *NetHttpGenerator) addHeaderParams(w *writer.Writer, operation *spec.NamedOperation, requestVar string) {
 	if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
-		w.Line(`  h := convert.NewParamsConverter(%s.Header)`, requestVar)
+		w.Line(`  h := params.NewParamsWriter(%s.Header)`, requestVar)
 		for _, param := range operation.HeaderParams {
-			w.Line(`  h.%s`, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
+			w.Line(`  h.%s`, callTypesConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
 		}
 		w.EmptyLine()
 	}
@@ -331,7 +330,6 @@ func (g *NetHttpGenerator) ErrorsHandler(errors spec.ErrorResponses) *generator.
 	w.Imports.Module(g.Modules.HttpErrorsModels)
 	w.Imports.Module(g.Modules.Response)
 
-	w.EmptyLine()
 	w.Line(`func HandleErrors(resp *http.Response) error {`)
 	w.Indent()
 	w.Line(`switch resp.StatusCode {`)

@@ -40,8 +40,8 @@ func (g *Generator) AllStaticFiles() []generator.CodeFile {
 		*g.EnumsHelperFunctions(),
 		*g.EmptyType(),
 		*g.TypeConverter(),
-		*g.ParamsConverter(),
-		*g.FormDataParamsConverter(),
+		*g.Params(),
+		*g.FormDataParams(),
 		*g.ResponseHelperFunctions(),
 	}
 }
