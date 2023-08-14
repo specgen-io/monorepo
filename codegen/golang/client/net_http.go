@@ -39,8 +39,15 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) || walkers.ApiHasBodyOfKind(api, spec.RequestBodyString) {
 		w.Imports.Add("bytes")
 	}
+	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyFormData) {
+		w.Imports.Add("mime/multipart")
+	}
+	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyFormUrlEncoded) {
+		w.Imports.Add("strings")
+		w.Imports.Add("net/url")
+	}
 	if walkers.ApiHasUrlParams(api) {
-		w.Imports.Module(g.Modules.Convert)
+		w.Imports.Module(g.Modules.Params)
 	}
 	if walkers.ApiHasMultiSuccessResponsesWithEmptyBody(api) {
 		w.Imports.Module(g.Modules.Empty)
@@ -111,16 +118,36 @@ func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.Named
 		w.Line(`  }`)
 		body = "bytes.NewBuffer(bodyData)"
 	}
+	if operation.BodyIs(spec.RequestBodyFormData) {
+		w.Line(`  bodyData := &bytes.Buffer{}`)
+		w.Line(`  writer := multipart.NewWriter(bodyData)`)
+		w.Line(`  f := params.NewFormDataParamsWriter(writer)`)
+		for _, param := range operation.Body.FormData {
+			w.Line(`  f.%s`, callTypesConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
+		}
+		w.Line(`  err := f.CloseWriter()`)
+		w.Line(`  if err != nil {`)
+		w.Line(`    log.WithFields(%s).Error("Failed to write form-data params", err.Error())`, logFieldsName(operation))
+		w.Line(`    return %s`, operationError(operation, `err`))
+		w.Line(`  }`)
+		body = "bodyData"
+	}
+	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		w.Line(`  formUrlencodedValues := url.Values{}`)
+		w.Line(`  f := params.NewParamsWriter(formUrlencodedValues)`)
+		for _, param := range operation.Body.FormUrlEncoded {
+			w.Line(`  f.%s`, callTypesConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
+		}
+		w.Line(`  bodyData := formUrlencodedValues.Encode()`)
+		body = "strings.NewReader(bodyData)"
+	}
 	w.Line(`  %s, err := http.NewRequest("%s", client.baseUrl+%s, %s)`, requestVar, operation.Endpoint.Method, g.addRequestUrlParams(operation), body)
 	w.Line(`  if err != nil {`)
 	w.Line(`    log.WithFields(%s).Error("Failed to create HTTP request", err.Error())`, logFieldsName(operation))
 	w.Line(`    return %s`, operationError(operation, `err`))
 	w.Line(`  }`)
-	if operation.BodyIs(spec.RequestBodyString) {
-		w.Line(`  %s.Header.Set("Content-Type", "text/plain")`, requestVar)
-	}
-	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`  %s.Header.Set("Content-Type", "application/json")`, requestVar)
+	if operation.Body != nil {
+		w.Line(`  %s.Header.Set("Content-Type", %s)`, requestVar, ContentType(operation))
 	}
 	w.EmptyLine()
 }
@@ -163,7 +190,7 @@ func (g *NetHttpGenerator) addUrlParam(operation *spec.NamedOperation) []string 
 		if param.Type.Definition.IsEnum() || g.Types.GoType(&param.Type.Definition) == "string" {
 			urlParams = append(urlParams, param.Name.CamelCase())
 		} else {
-			urlParams = append(urlParams, callRawConvert(&param.Type.Definition, param.Name.CamelCase()))
+			urlParams = append(urlParams, callRawParamsConvert(&param.Type.Definition, param.Name.CamelCase()))
 		}
 	}
 	return urlParams
@@ -172,9 +199,9 @@ func (g *NetHttpGenerator) addUrlParam(operation *spec.NamedOperation) []string 
 func (g *NetHttpGenerator) addQueryParams(w *writer.Writer, operation *spec.NamedOperation, requestVar string) {
 	if operation.QueryParams != nil && len(operation.QueryParams) > 0 {
 		w.Line(`  query := %s.URL.Query()`, requestVar)
-		w.Line(`  q := convert.NewParamsConverter(query)`)
+		w.Line(`  q := params.NewParamsWriter(query)`)
 		for _, param := range operation.QueryParams {
-			w.Line(`  q.%s`, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
+			w.Line(`  q.%s`, callTypesConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
 		}
 		w.Line(`  %s.URL.RawQuery = query.Encode()`, requestVar)
 		w.EmptyLine()
@@ -183,9 +210,9 @@ func (g *NetHttpGenerator) addQueryParams(w *writer.Writer, operation *spec.Name
 
 func (g *NetHttpGenerator) addHeaderParams(w *writer.Writer, operation *spec.NamedOperation, requestVar string) {
 	if operation.HeaderParams != nil && len(operation.HeaderParams) > 0 {
-		w.Line(`  h := convert.NewParamsConverter(%s.Header)`, requestVar)
+		w.Line(`  h := params.NewParamsWriter(%s.Header)`, requestVar)
 		for _, param := range operation.HeaderParams {
-			w.Line(`  h.%s`, callConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
+			w.Line(`  h.%s`, callTypesConverter(&param.Type.Definition, param.Name.Source, param.Name.CamelCase()))
 		}
 		w.EmptyLine()
 	}
@@ -242,7 +269,6 @@ func logFieldsName(operation *spec.NamedOperation) string {
 
 func responseStruct(w *writer.Writer, types *types.Types, operation *spec.NamedOperation) {
 	if len(operation.Responses.Success()) > 1 {
-		w.EmptyLine()
 		w.Line(`type %s struct {`, responseTypeName(operation))
 		w.Indent()
 		for _, response := range operation.Responses.Success() {
@@ -304,7 +330,6 @@ func (g *NetHttpGenerator) ErrorsHandler(errors spec.ErrorResponses) *generator.
 	w.Imports.Module(g.Modules.HttpErrorsModels)
 	w.Imports.Module(g.Modules.Response)
 
-	w.EmptyLine()
 	w.Line(`func HandleErrors(resp *http.Response) error {`)
 	w.Indent()
 	w.Line(`switch resp.StatusCode {`)
