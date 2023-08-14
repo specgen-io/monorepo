@@ -299,7 +299,7 @@ public class [[.ClassName]] {
 func springMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"HttpServletRequest request"}
 
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		methodParams = append(methodParams, "@RequestBody String bodyStr")
 	}
 	methodParams = append(methodParams, generateSpringMethodParam(operation.QueryParams, "RequestParam", types)...)
