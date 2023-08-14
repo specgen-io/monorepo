@@ -146,7 +146,7 @@ func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.Named
 	w.Line(`    log.WithFields(%s).Error("Failed to create HTTP request", err.Error())`, logFieldsName(operation))
 	w.Line(`    return %s`, operationError(operation, `err`))
 	w.Line(`  }`)
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`  %s.Header.Set("Content-Type", %s)`, requestVar, ContentType(operation))
 	}
 	w.EmptyLine()
