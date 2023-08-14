@@ -49,7 +49,6 @@ func (g *FetchGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 }
 
 func (g *FetchGenerator) operation(w *writer.Writer, operation *spec.NamedOperation) {
-	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0
 	w.Line(`%s => {`, operationSignature(operation))
@@ -63,7 +62,7 @@ func (g *FetchGenerator) operation(w *writer.Writer, operation *spec.NamedOperat
 		params = `?${new URLSearchParams(query)}`
 	}
 	fetchConfigParts := []string{fmt.Sprintf(`method: '%s'`, strings.ToUpper(operation.Endpoint.Method))}
-	if hasHeaderParams || body != nil {
+	if hasHeaderParams || operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`  const headers = strParamsItems({`)
 		for _, p := range operation.HeaderParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
@@ -82,7 +81,7 @@ func (g *FetchGenerator) operation(w *writer.Writer, operation *spec.NamedOperat
 		fetchConfigParts = append(fetchConfigParts, `body: parameters.body`)
 	}
 	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeType(&body.Type.Definition))
+		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeType(&operation.Body.Type.Definition))
 		fetchConfigParts = append(fetchConfigParts, `body: JSON.stringify(bodyJson)`)
 	}
 	fetchConfig := strings.Join(fetchConfigParts, ", ")

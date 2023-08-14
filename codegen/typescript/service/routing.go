@@ -7,12 +7,12 @@ import (
 )
 
 func getApiCallParamsObject(operation *spec.NamedOperation) string {
-	if operation.Body == nil && !operation.HasParams() {
+	if operation.BodyIs(spec.RequestBodyEmpty) && !operation.HasParams() {
 		return ""
 	}
 
 	apiCallParams := []string{}
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		apiCallParams = append(apiCallParams, "body")
 	}
 	if len(operation.Endpoint.UrlParams) > 0 {

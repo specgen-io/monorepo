@@ -45,7 +45,7 @@ func createParams(params []spec.NamedParam, required bool) []string {
 func createOperationParams(operation *spec.NamedOperation) string {
 	operationParams := []string{}
 	operationParams = append(operationParams, createParams(operation.HeaderParams, true)...)
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		operationParams = append(operationParams, "body: "+types.TsType(&operation.Body.Type.Definition))
 	}
 	operationParams = append(operationParams, createParams(operation.Endpoint.UrlParams, true)...)

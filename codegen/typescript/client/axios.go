@@ -47,7 +47,6 @@ func (g *AxiosGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 }
 
 func (g *AxiosGenerator) operation(w *writer.Writer, operation *spec.NamedOperation) {
-	body := operation.Body
 	hasQueryParams := len(operation.QueryParams) > 0
 	hasHeaderParams := len(operation.HeaderParams) > 0
 	w.EmptyLine()
@@ -61,7 +60,7 @@ func (g *AxiosGenerator) operation(w *writer.Writer, operation *spec.NamedOperat
 		w.Line(`  })`)
 		axiosConfigParts = append(axiosConfigParts, `params: new URLSearchParams(query)`)
 	}
-	if hasHeaderParams || body != nil {
+	if hasHeaderParams || operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`  const headers = strParamsObject({`)
 		for _, p := range operation.HeaderParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
@@ -83,7 +82,7 @@ func (g *AxiosGenerator) operation(w *writer.Writer, operation *spec.NamedOperat
 		w.Line("  const response = await axiosInstance.%s(`%s`, parameters.body, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 	}
 	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeType(&body.Type.Definition))
+		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeType(&operation.Body.Type.Definition))
 		w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 	}
 	w.Line(`  switch (response.status) {`)
