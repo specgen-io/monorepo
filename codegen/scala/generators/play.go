@@ -98,7 +98,7 @@ func operationSignature(operation *spec.NamedOperation) string {
 	for _, param := range operation.HeaderParams {
 		params = append(params, fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), ScalaType(&param.Type.Definition)))
 	}
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		params = append(params, fmt.Sprintf(`body: %s`, ScalaType(&operation.Body.Type.Definition)))
 	}
 	for _, param := range operation.Endpoint.UrlParams {
@@ -272,7 +272,7 @@ func generateControllerMethod(w *writer.Writer, operation *spec.NamedOperation) 
 	params := getControllerParams(operation, true)
 
 	payload := ``
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		payload = `(parse.byteString)`
 	}
 
@@ -358,7 +358,7 @@ func getOperationCallParams(operation *spec.NamedOperation) []string {
 			params = append(params, param.Name.CamelCase())
 		}
 	}
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		params = append(params, "body")
 	}
 	for _, param := range operation.Endpoint.UrlParams {
@@ -384,7 +384,7 @@ func getParsedOperationParams(operation *spec.NamedOperation) []string {
 			params = append(params, param.Name.CamelCase())
 		}
 	}
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		params = append(params, "body")
 	}
 	return params
