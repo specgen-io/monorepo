@@ -42,7 +42,7 @@ func (g *Generator) HttpErrors(responses *spec.ErrorResponses) []generator.CodeF
 }
 
 func (g *Generator) errorsModelsConverter() *generator.CodeFile {
-	w := writer.New(g.Modules.HttpErrors, `converter.go`)
+	w := writer.New(g.Modules.HttpErrors, `params.go`)
 	w.Template(
 		map[string]string{
 			`ErrorsModelsPackage`: g.Modules.HttpErrorsModels.Package,
