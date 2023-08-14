@@ -95,7 +95,7 @@ func operationResult(operation *spec.NamedOperation, response *spec.Response) st
 func generateClientOperation(w *writer.Writer, moduleName string, operation *spec.NamedOperation) {
 	args := []string{}
 	args = append(args, addParams(operation.HeaderParams)...)
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		args = append(args, "body:")
 	}
 	args = append(args, addParams(operation.Endpoint.UrlParams)...)
