@@ -20,11 +20,11 @@ response:
 
 	assert.Equal(t, operation.Endpoint.Method, "GET")
 	assert.Equal(t, operation.Endpoint.Url, "/some/url")
-	assert.Equal(t, operation.Body.Type.Definition, ParseType("empty"))
+	assert.Assert(t, operation.BodyIs(RequestBodyEmpty))
 	assert.Equal(t, len(operation.Responses), 1)
 	response := operation.Responses[0]
 	assert.Equal(t, response.Name.Source, "ok")
-	assert.Equal(t, response.Body.Type.Definition, ParseType("empty"))
+	assert.Assert(t, response.Body.IsEmpty())
 }
 
 func Test_Operation_Unmarshal_QueryParams(t *testing.T) {
