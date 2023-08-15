@@ -100,7 +100,7 @@ jobs:
 
   sbt:
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: circleci/openjdk:11-jdk
     steps:
       - checkout
       - attach_workspace_folder:
@@ -196,7 +196,7 @@ jobs:
 
   gradle-java:
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: circleci/openjdk:11-jdk
     steps:
       - checkout
       - attach_workspace_folder:
@@ -262,7 +262,7 @@ jobs:
 
   gradle-kotlin:
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: circleci/openjdk:11-jdk
     steps:
       - checkout
       - attach_workspace_folder:
@@ -396,7 +396,7 @@ jobs:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/test-models-circe
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: circleci/openjdk:11-jdk
     steps:
       - checkout
       - restore_cache:
@@ -674,7 +674,7 @@ jobs:
       SPECGEN_VERSION: << pipeline.parameters.specgen-version >>
     working_directory: ~/specgen-tests
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: circleci/openjdk:11-jdk
     steps:
       - checkout
       - attach_workspace:
@@ -765,7 +765,7 @@ jobs:
       SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
     working_directory: ~/specgen-tests
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: circleci/openjdk:11-jdk
     steps:
       - checkout
       - attach_workspace:
@@ -1073,7 +1073,7 @@ jobs:
 
   sbt-sonatype:
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: circleci/openjdk:11-jdk
     steps:
       - checkout
       - attach_workspace_folder:
@@ -1090,7 +1090,7 @@ jobs:
 
   gradle-java-pluginportal:
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: circleci/openjdk:11-jdk
     steps:
       - checkout
       - attach_workspace_folder:
@@ -1109,7 +1109,7 @@ jobs:
 
   gradle-kotlin-pluginportal:
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: circleci/openjdk:11-jdk
     steps:
       - checkout
       - attach_workspace_folder:
