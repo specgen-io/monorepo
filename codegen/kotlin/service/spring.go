@@ -272,7 +272,7 @@ fun getBadRequestError(exception: Throwable): BadRequestError? {
 func springMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"request: HttpServletRequest"}
 
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		methodParams = append(methodParams, "@RequestBody bodyStr: String")
 	}
 	methodParams = append(methodParams, generateSpringMethodParam(operation.QueryParams, "RequestParam", types)...)

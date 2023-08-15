@@ -333,7 +333,7 @@ public class [[.ClassName]] {
 func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"HttpRequest<?> request"}
 
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		methodParams = append(methodParams, "@Body String bodyStr")
 	}
 

@@ -38,6 +38,9 @@ func (value *Operation) UnmarshalYAML(node *yaml.Node) error {
 	}
 	internal.Location = node
 	operation := Operation(internal)
+	if operation.Body == nil {
+		operation.Body = &RequestBody{Type: NewType("empty")}
+	}
 	if operation.Body != nil && operation.Body.Description == nil {
 		operation.Body.Description = getDescriptionFromComment(getMappingKey(node, "body"))
 	}
@@ -55,7 +58,9 @@ func (value Operation) MarshalYAML() (interface{}, error) {
 	if len(value.QueryParams) > 0 {
 		yamlMap.Add("query", value.QueryParams)
 	}
-	yamlMap.AddOmitNil("body", value.Body)
+	if !value.BodyIs(RequestBodyEmpty) {
+		yamlMap.Add("body", value.Body)
+	}
 	yamlMap.Add("response", value.Responses)
 	return yamlMap.Node, nil
 }

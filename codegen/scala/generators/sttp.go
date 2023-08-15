@@ -106,7 +106,7 @@ func createUrlParams(urlParams []spec.NamedParam) []string {
 func generateClientOperationSignature(operation *spec.NamedOperation) string {
 	methodParams := []string{}
 	methodParams = append(methodParams, createParams(operation.HeaderParams, false)...)
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		methodParams = append(methodParams, fmt.Sprintf(`body: %s`, ScalaType(&operation.Body.Type.Definition)))
 	}
 	methodParams = append(methodParams, createUrlParams(operation.Endpoint.UrlParams)...)

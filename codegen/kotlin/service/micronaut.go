@@ -309,7 +309,7 @@ fun getBadRequestError(exception: Throwable): BadRequestError? {
 func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"request: HttpRequest<*>"}
 
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		methodParams = append(methodParams, "@Body bodyStr: String")
 	}
 

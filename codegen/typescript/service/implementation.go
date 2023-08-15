@@ -32,7 +32,7 @@ func (g *Generator) serviceImpl(api *spec.Api) *generator.CodeFile {
 	for _, operation := range api.Operations {
 		operations = append(operations, operation.Name.CamelCase())
 		params := ""
-		if operation.Body != nil || operation.HasParams() {
+		if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) || operation.HasParams() {
 			params = fmt.Sprintf(`params: service.%s`, operationParamsTypeName(&operation))
 		}
 		w.Line("  const %s = async (%s): Promise<%s> => {", operation.Name.CamelCase(), params, ResponseType(&operation, "service"))

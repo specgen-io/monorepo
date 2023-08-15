@@ -24,7 +24,7 @@ func operationReturnType(types *types.Types, operation *spec.NamedOperation) str
 
 func operationParameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		params = append(params, fmt.Sprintf("%s body", types.Java(&operation.Body.Type.Definition)))
 	}
 	for _, param := range operation.QueryParams {

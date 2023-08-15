@@ -195,12 +195,10 @@ func (g *ChiGenerator) response(w *writer.Writer, operation *spec.NamedOperation
 }
 
 func (g *ChiGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.Body != nil {
+	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)
-	}
-	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
 		w.Line(`if err != nil {`)
 		respondBadRequest(w.Indented(), operation, g.Types, "body", genFmtSprintf(`Reading request body failed: %s`, `err.Error()`), "nil")
@@ -208,6 +206,9 @@ func (g *ChiGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperat
 		w.Line(`body := string(bodyData)`)
 	}
 	if operation.BodyIs(spec.RequestBodyJson) {
+		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
+		w.Line(`  return`)
+		w.Line(`}`)
 		w.Line(`var body %s`, g.Types.GoType(&operation.Body.Type.Definition))
 		w.Line(`err = json.NewDecoder(req.Body).Decode(&body)`)
 		w.Line(`if err != nil {`)
@@ -220,6 +221,9 @@ func (g *ChiGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperat
 		w.Line(`}`)
 	}
 	if operation.BodyIs(spec.RequestBodyFormData) || operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
+		w.Line(`  return`)
+		w.Line(`}`)
 		w.Line(`formBody, err := paramsparser.New%sParser(req, true)`, casee.ToPascalCase(formBodyTypeName(operation)))
 		w.Line(`if err != nil {`)
 		respondBadRequest(w.Indented(), operation, g.Types, "body", `"Failed to parse body"`, fmt.Sprintf(`[]errmodels.ValidationError{{Path: "", Code: "%s_parse_failed"}}`, formBodyTypeName(operation)))
