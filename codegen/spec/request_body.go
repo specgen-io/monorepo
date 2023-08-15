@@ -133,3 +133,23 @@ func (body *RequestBody) Kind() RequestBodyKind {
 func (body *RequestBody) Is(kind RequestBodyKind) bool {
 	return body.Kind() == kind
 }
+
+func (body *RequestBody) IsEmpty() bool {
+	return body.Kind() == RequestBodyEmpty
+}
+
+func (body *RequestBody) IsText() bool {
+	return body.Kind() == RequestBodyString
+}
+
+func (body *RequestBody) IsJson() bool {
+	return body.Kind() == RequestBodyJson
+}
+
+func (body *RequestBody) IsBodyFormData() bool {
+	return body.Kind() == RequestBodyFormData
+}
+
+func (body *RequestBody) IsBodyFormUrlEncoded() bool {
+	return body.Kind() == RequestBodyFormUrlEncoded
+}
