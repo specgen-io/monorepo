@@ -68,7 +68,7 @@ jobs:
 
   gem:
     docker:
-      - image: circleci/ruby:2.4.9
+      - image: cimg/ruby:2.4.9
     steps:
       - checkout
       - attach_workspace_folder:
@@ -633,7 +633,7 @@ jobs:
   client-ruby:
     working_directory: ~/specgen-tests
     docker:
-      - image: circleci/ruby:2.4.9
+      - image: cimg/ruby:2.4.9
     steps:
       - checkout
       - attach_workspace:
@@ -1148,7 +1148,7 @@ jobs:
 
   gem-rubygems:
     docker:
-      - image: circleci/ruby:2.4.9
+      - image: cimg/ruby:2.4.9
     steps:
       - checkout
       - attach_workspace_folder:
