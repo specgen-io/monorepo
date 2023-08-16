@@ -16,6 +16,7 @@ type SpecWalker struct {
 	onModel             func(model *NamedModel)
 	onType              func(typ *Type)
 	onTypeDef           func(typ *TypeDef)
+	onEmpty             func()
 }
 
 func NewWalker() *SpecWalker {
@@ -87,6 +88,11 @@ func (w *SpecWalker) OnTypeDef(callback func(typ *TypeDef)) *SpecWalker {
 	return w
 }
 
+func (w *SpecWalker) OnEmpty(callback func()) *SpecWalker {
+	w.onEmpty = callback
+	return w
+}
+
 func (w *SpecWalker) Specification(specification *Spec) {
 	if w.onSpecification != nil {
 		w.onSpecification(specification)
@@ -121,7 +127,11 @@ func (w *SpecWalker) ResponseBody(body *ResponseBody) {
 	if w.onResponseBody != nil {
 		w.onResponseBody(body)
 	}
-	w.Type(&body.Type)
+	if body.IsEmpty() {
+		w.Empty()
+	} else {
+		w.Type(body.Type)
+	}
 }
 
 func (w *SpecWalker) Response(response *Response) {
@@ -174,7 +184,7 @@ func (w *SpecWalker) OperationResponse(response *OperationResponse) {
 	if w.onOperationResponse != nil {
 		w.onOperationResponse(response)
 	}
-	w.Type(&response.Body.Type)
+	w.Response(&response.Response)
 }
 
 func (w *SpecWalker) RequestBody(body *RequestBody) {
@@ -220,6 +230,12 @@ func (w *SpecWalker) Model(model *NamedModel) {
 			item := &model.OneOf.Items[index]
 			w.Type(&item.Definition.Type)
 		}
+	}
+}
+
+func (w *SpecWalker) Empty() {
+	if w.onEmpty != nil {
+		w.onEmpty()
 	}
 }
 
