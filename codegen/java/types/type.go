@@ -9,6 +9,14 @@ type Types struct {
 	RawJsonType string
 }
 
+func (t *Types) ResponseBodyType(body *spec.ResponseBody) string {
+	if body.IsEmpty() {
+		return "void"
+	} else {
+		return t.Java(&body.Type.Definition)
+	}
+}
+
 func (t *Types) Java(typ *spec.TypeDef) string {
 	javaType, _ := t.javaType(typ, false)
 	return javaType
