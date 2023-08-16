@@ -5,7 +5,7 @@ import (
 	"spec"
 )
 
-func ResponseBodyType(body *spec.ResponseBody) string {
+func ResponseBodyScalaType(body *spec.ResponseBody) string {
 	if body.IsEmpty() {
 		return "Unit"
 	} else {

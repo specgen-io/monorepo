@@ -39,7 +39,7 @@ func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
 func operationSignature(types *types.Types, operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
-			return fmt.Sprintf(`%s %s(%s)`, types.ResponseBodyType(&response.Body), operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "))
+			return fmt.Sprintf(`%s %s(%s)`, types.ResponseBodyJavaType(&response.Body), operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "))
 		}
 	}
 	if len(operation.Responses) > 1 {

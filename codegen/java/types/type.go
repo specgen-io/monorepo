@@ -9,7 +9,7 @@ type Types struct {
 	RawJsonType string
 }
 
-func (t *Types) ResponseBodyType(body *spec.ResponseBody) string {
+func (t *Types) ResponseBodyJavaType(body *spec.ResponseBody) string {
 	if body.IsEmpty() {
 		return "void"
 	} else {

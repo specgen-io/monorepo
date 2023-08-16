@@ -9,7 +9,7 @@ type Types struct {
 	RawJsonType string
 }
 
-func (t *Types) ResponseBodyType(body *spec.ResponseBody) string {
+func (t *Types) ResponseBodyKotlinType(body *spec.ResponseBody) string {
 	if body.IsEmpty() {
 		return "Unit"
 	} else {

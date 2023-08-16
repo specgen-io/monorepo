@@ -14,7 +14,7 @@ func NewTypes() *Types {
 	return &Types{}
 }
 
-func (types *Types) ResponseBodyType(body *spec.ResponseBody) string {
+func (types *Types) ResponseBodyGoType(body *spec.ResponseBody) string {
 	if body.IsEmpty() {
 		return EmptyType
 	} else {
