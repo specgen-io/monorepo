@@ -21,7 +21,7 @@ func (g *Generator) operationReturn(operation *spec.NamedOperation, responsePack
 		if response.Body.IsEmpty() {
 			return `error`
 		}
-		return fmt.Sprintf(`(*%s, error)`, g.Types.ResponseBodyType(&response.Body))
+		return fmt.Sprintf(`(*%s, error)`, g.Types.ResponseBodyType(&response.Body, false))
 	}
 	responseType := responseTypeName(operation)
 	if responsePackageName != nil {
