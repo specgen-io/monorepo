@@ -14,19 +14,11 @@ func NewTypes() *Types {
 	return &Types{}
 }
 
-func (types *Types) ResponseBodyType(body *spec.ResponseBody, nullable bool) string {
-	if nullable {
-		if body.IsEmpty() {
-			return `*` + EmptyType
-		} else {
-			return types.GoType(spec.Nullable(&body.Type.Definition))
-		}
+func (types *Types) ResponseBodyType(body *spec.ResponseBody) string {
+	if body.IsEmpty() {
+		return EmptyType
 	} else {
-		if body.IsEmpty() {
-			return EmptyType
-		} else {
-			return types.GoType(&body.Type.Definition)
-		}
+		return types.GoType(&body.Type.Definition)
 	}
 }
 

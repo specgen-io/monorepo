@@ -272,7 +272,7 @@ func responseStruct(w *writer.Writer, types *types.Types, operation *spec.NamedO
 		w.Line(`type %s struct {`, responseTypeName(operation))
 		w.Indent()
 		for _, response := range operation.Responses.Success() {
-			w.LineAligned(`%s %s`, response.Name.PascalCase(), types.ResponseBodyType(&response.Body, true))
+			w.LineAligned(`%s *%s`, response.Name.PascalCase(), types.ResponseBodyType(&response.Body))
 		}
 		w.Unindent()
 		w.Line(`}`)
