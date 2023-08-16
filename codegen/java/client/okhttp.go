@@ -98,6 +98,7 @@ func (g *OkHttpGenerator) createUrl(w *writer.Writer, operation *spec.NamedOpera
 
 func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
 	requestBody := "null"
+	w.EmptyLine()
 	if operation.BodyIs(spec.RequestBodyString) {
 		w.Line(`var requestBody = RequestBody.create(body, MediaType.parse("text/plain"));`)
 		requestBody = "requestBody"
@@ -107,6 +108,21 @@ func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedO
 		w.Line(`var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
 		requestBody = "requestBody"
 	}
+	if operation.BodyIs(spec.RequestBodyFormData) {
+		w.Line(`var body = new MultipartBodyBuilder(MultipartBody.FORM);`)
+		for _, param := range operation.Body.FormData {
+			w.Line(`body.addFormDataPart("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
+		}
+		requestBody = "body.build()"
+	}
+	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		w.Line(`var body = new UrlencodedFormBodyBuilder();`)
+		for _, param := range operation.Body.FormUrlEncoded {
+			w.Line(`body.add("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
+		}
+		requestBody = "body.build()"
+	}
+	w.EmptyLine()
 	w.Line(`var request = new RequestBuilder("%s", url.build(), %s);`, operation.Endpoint.Method, requestBody)
 	for _, param := range operation.HeaderParams {
 		w.Line(`request.addHeaderParameter("%s", %s);`, param.Name.Source, param.Name.CamelCase())
@@ -139,7 +155,6 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
 	w.Line(`  try {`)
 	w.IndentWith(2)
 	g.createUrl(w, operation)
-	w.EmptyLine()
 	g.createRequest(w, operation)
 	w.EmptyLine()
 	g.sendRequest(w, operation)
@@ -181,6 +196,8 @@ func (g *OkHttpGenerator) Utils(responses *spec.ErrorResponses) []generator.Code
 
 	files = append(files, *g.generateRequestBuilder())
 	files = append(files, *g.generateUrlBuilder())
+	files = append(files, *g.multipartBodyBuilder())
+	files = append(files, *g.urlencodedFormBodyBuilder())
 
 	return files
 }
@@ -188,8 +205,8 @@ func (g *OkHttpGenerator) Utils(responses *spec.ErrorResponses) []generator.Code
 func (g *OkHttpGenerator) generateRequestBuilder() *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `RequestBuilder`)
 	w.Lines(`
-import okhttp3.*;
 import java.util.List;
+import okhttp3.*;
 
 public class [[.ClassName]] {
 	private final Request.Builder requestBuilder;
@@ -223,8 +240,8 @@ public class [[.ClassName]] {
 func (g *OkHttpGenerator) generateUrlBuilder() *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `UrlBuilder`)
 	w.Lines(`
-import okhttp3.HttpUrl;
 import java.util.List;
+import okhttp3.HttpUrl;
 
 public class [[.ClassName]] {
 	private final HttpUrl.Builder urlBuilder;
@@ -259,6 +276,77 @@ public class [[.ClassName]] {
 
 	public HttpUrl build() {
 		return this.urlBuilder.build();
+	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *OkHttpGenerator) multipartBodyBuilder() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `MultipartBodyBuilder`)
+	w.Lines(`
+import java.util.List;
+import okhttp3.*;
+import okhttp3.MultipartBody.Part;
+
+public class MultipartBodyBuilder {
+	private final MultipartBody.Builder multipartBodyBuilder;
+
+	public MultipartBodyBuilder(MediaType type) {
+		this.multipartBodyBuilder = new MultipartBody.Builder().setType(type);
+	}
+
+	public MultipartBodyBuilder addFormDataPart(String name, Object value) {
+		if (value != null) {
+			this.multipartBodyBuilder.addPart(Part.createFormData(name, String.valueOf(value)));
+		}
+		return this;
+	}
+
+	public <T> MultipartBodyBuilder addFormDataPart(String name, List<T> values) {
+		for (T val : values) {
+			this.multipartBodyBuilder.addPart(Part.createFormData(name, String.valueOf(val)));
+		}
+		return this;
+	}
+
+	public MultipartBody build() {
+		return this.multipartBodyBuilder.build();
+	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *OkHttpGenerator) urlencodedFormBodyBuilder() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `UrlencodedFormBodyBuilder`)
+	w.Lines(`
+import java.util.List;
+import okhttp3.FormBody;
+
+public class UrlencodedFormBodyBuilder {
+	private final FormBody.Builder formBodyBuilder;
+
+	public UrlencodedFormBodyBuilder() {
+		this.formBodyBuilder = new FormBody.Builder();
+	}
+
+	public UrlencodedFormBodyBuilder add(String name, Object value) {
+		if (value != null) {
+			this.formBodyBuilder.add(name, String.valueOf(value));
+		}
+		return this;
+	}
+
+	public <T> UrlencodedFormBodyBuilder add(String name, List<T> values) {
+		for (T val : values) {
+			this.formBodyBuilder.add(name, String.valueOf(val));
+		}
+		return this;
+	}
+
+	public FormBody build() {
+		return this.formBodyBuilder.build();
 	}
 }
 `)

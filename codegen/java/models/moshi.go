@@ -56,7 +56,6 @@ func (g *MoshiGenerator) modelObject(model *spec.NamedModel, thePackage packages
 	w := writer.New(thePackage, model.Name.PascalCase())
 	w.Imports.Add(g.modelsDefinitionsImports()...)
 	w.Imports.Add(g.Types.Imports()...)
-	w.EmptyLine()
 	w.Line(`public class [[.ClassName]] {`)
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
@@ -93,7 +92,6 @@ func (g *MoshiGenerator) modelEnum(model *spec.NamedModel, thePackage packages.P
 	w := writer.New(thePackage, model.Name.PascalCase())
 	w.Imports.Add(g.modelsDefinitionsImports()...)
 	w.Imports.Add(g.Types.Imports()...)
-	w.EmptyLine()
 	w.Line(`public enum [[.ClassName]] {`)
 	for _, enumItem := range model.Enum.Items {
 		w.Line(`  @Json(name = "%s") %s,`, enumItem.Value, enumItem.Name.UpperCase())
@@ -106,7 +104,6 @@ func (g *MoshiGenerator) modelOneOf(model *spec.NamedModel, thePackage packages.
 	w := writer.New(thePackage, model.Name.PascalCase())
 	w.Imports.Add(g.modelsDefinitionsImports()...)
 	w.Imports.Add(g.Types.Imports()...)
-	w.EmptyLine()
 	w.Line(`public interface [[.ClassName]] {`)
 	for index, item := range model.OneOf.Items {
 		if index > 0 {

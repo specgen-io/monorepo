@@ -17,15 +17,28 @@ func operationSignature(types *types.Types, operation *spec.NamedOperation) stri
 
 func operationReturnType(types *types.Types, operation *spec.NamedOperation) string {
 	if len(operation.Responses.Success()) == 1 {
-		return types.ResponseBodyJavaType(&operation.Responses.Success()[0].Body)
+		return types.Java(&operation.Responses.Success()[0].Body.Type.Definition)
 	}
 	return responseInterfaceName(operation)
 }
 
 func operationParameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
-	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
+	if operation.BodyIs(spec.RequestBodyString) {
 		params = append(params, fmt.Sprintf("%s body", types.Java(&operation.Body.Type.Definition)))
+	}
+	if operation.BodyIs(spec.RequestBodyJson) {
+		params = append(params, fmt.Sprintf("%s body", types.Java(&operation.Body.Type.Definition)))
+	}
+	if operation.BodyIs(spec.RequestBodyFormData) {
+		for _, param := range operation.Body.FormData {
+			params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
+		}
+	}
+	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		for _, param := range operation.Body.FormUrlEncoded {
+			params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
+		}
 	}
 	for _, param := range operation.QueryParams {
 		params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))

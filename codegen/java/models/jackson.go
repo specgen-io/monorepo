@@ -55,7 +55,6 @@ func (g *JacksonGenerator) modelObject(model *spec.NamedModel, thePackage packag
 	w := writer.New(thePackage, model.Name.PascalCase())
 	w.Imports.Add(g.modelsDefinitionsImports()...)
 	w.Imports.Add(g.Types.Imports()...)
-	w.EmptyLine()
 	w.Line(`public class [[.ClassName]] {`)
 	for _, field := range model.Object.Fields {
 		w.EmptyLine()
@@ -106,7 +105,6 @@ func (g *JacksonGenerator) modelEnum(model *spec.NamedModel, thePackage packages
 	w := writer.New(thePackage, model.Name.PascalCase())
 	w.Imports.Add(g.modelsDefinitionsImports()...)
 	w.Imports.Add(g.Types.Imports()...)
-	w.EmptyLine()
 	w.Line(`public enum [[.ClassName]] {`)
 	for _, enumItem := range model.Enum.Items {
 		w.Line(`  @JsonProperty("%s") %s,`, enumItem.Value, enumItem.Name.UpperCase())
@@ -119,7 +117,6 @@ func (g *JacksonGenerator) modelOneOf(model *spec.NamedModel, thePackage package
 	w := writer.New(thePackage, model.Name.PascalCase())
 	w.Imports.Add(g.modelsDefinitionsImports()...)
 	w.Imports.Add(g.Types.Imports()...)
-	w.EmptyLine()
 	if model.OneOf.Discriminator != nil {
 		w.Line(`@JsonTypeInfo(`)
 		w.Line(`  use = JsonTypeInfo.Id.NAME,`)
