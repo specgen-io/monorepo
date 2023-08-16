@@ -8,7 +8,7 @@ import (
 func responseType(operation *spec.NamedOperation) string {
 	if len(operation.Responses) == 1 {
 		response := operation.Responses[0]
-		return ScalaType(&response.Body.Type.Definition)
+		return ResponseBodyType(&response.Body)
 	} else {
 		return responseTypeName(operation)
 	}

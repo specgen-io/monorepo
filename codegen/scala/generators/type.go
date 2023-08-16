@@ -5,6 +5,14 @@ import (
 	"spec"
 )
 
+func ResponseBodyType(body *spec.ResponseBody) string {
+	if body.IsEmpty() {
+		return "Unit"
+	} else {
+		return ScalaType(&body.Type.Definition)
+	}
+}
+
 func ScalaType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
