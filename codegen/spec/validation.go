@@ -98,9 +98,7 @@ func (validator *validator) Operation(operation *NamedOperation) {
 			validator.addError(operation.Body.Location, message)
 		}
 	}
-	if operation.Body != nil {
-		validator.RequestBody(operation.Body)
-	}
+	validator.RequestBody(&operation.Body)
 
 	for index := range operation.Responses {
 		validator.OperationResponse(&operation.Responses[index])

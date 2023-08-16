@@ -171,9 +171,7 @@ func (w *SpecWalker) Operation(operation *NamedOperation) {
 	w.params(operation.QueryParams)
 	w.params(operation.HeaderParams)
 
-	if operation.Body != nil {
-		w.RequestBody(operation.Body)
-	}
+	w.RequestBody(&operation.Body)
 
 	for index := range operation.Responses {
 		w.OperationResponse(&operation.Responses[index])
@@ -190,6 +188,9 @@ func (w *SpecWalker) OperationResponse(response *OperationResponse) {
 func (w *SpecWalker) RequestBody(body *RequestBody) {
 	if w.onRequestBody != nil {
 		w.onRequestBody(body)
+	}
+	if body.IsEmpty() {
+		w.Empty()
 	}
 	if body.Type != nil {
 		w.Type(body.Type)

@@ -11,7 +11,7 @@ type operation struct {
 	Description  *string            `yaml:"description,omitempty"`
 	HeaderParams HeaderParams       `yaml:"header,omitempty"`
 	QueryParams  QueryParams        `yaml:"query,omitempty"`
-	Body         *RequestBody       `yaml:"body,omitempty"`
+	Body         RequestBody        `yaml:"body,omitempty"`
 	Responses    OperationResponses `yaml:"response"`
 	Location     *yaml.Node
 }
@@ -34,10 +34,7 @@ func (value *Operation) UnmarshalYAML(node *yaml.Node) error {
 	}
 	internal.Location = node
 	operation := Operation(internal)
-	if operation.Body == nil {
-		operation.Body = &RequestBody{Type: NewType("empty")}
-	}
-	if operation.Body != nil && operation.Body.Description == nil {
+	if operation.Body.Description == nil {
 		operation.Body.Description = getDescriptionFromComment(getMappingKey(node, "body"))
 	}
 	*value = operation

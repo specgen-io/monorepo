@@ -148,9 +148,7 @@ func (enricher *httpEnricher) operation(operation *NamedOperation) {
 	enricher.params(operation.QueryParams)
 	enricher.params(operation.HeaderParams)
 
-	if operation.Body != nil {
-		enricher.requestBody(operation.Body)
-	}
+	enricher.requestBody(&operation.Body)
 
 	for index := range operation.Responses {
 		operation.Responses[index].Operation = operation
