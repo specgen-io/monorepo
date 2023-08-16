@@ -197,13 +197,15 @@ func (enricher *httpEnricher) requestBody(body *RequestBody) {
 }
 
 func (enricher *httpEnricher) responseBody(body *ResponseBody) {
-	if body != nil {
-		enricher.typ(&body.Type)
+	if body != nil && body.Type != nil {
+		enricher.typ(body.Type)
 	}
 }
 
 func (enricher *httpEnricher) typ(typ *Type) {
-	enricher.typeDef(typ, &typ.Definition)
+	if typ != nil {
+		enricher.typeDef(typ, &typ.Definition)
+	}
 }
 
 func (enricher *httpEnricher) typeDef(starter *Type, typ *TypeDef) {

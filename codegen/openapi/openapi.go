@@ -146,7 +146,7 @@ func generateResponses(operation *spec.NamedOperation) *yamlx.YamlMap {
 
 		if response != nil {
 			mainResponse = &response.Response
-			if errorResponse != nil && response.Body.Type.String() != errorResponse.Body.Type.String() {
+			if errorResponse != nil && response.Body.String() != errorResponse.Body.String() {
 				alternateResponse = &errorResponse.Response
 			}
 		} else {

@@ -1,9 +1,11 @@
 package spec
 
-import "gopkg.in/specgen-io/yaml.v3"
+import (
+	"gopkg.in/specgen-io/yaml.v3"
+)
 
 type ResponseBody struct {
-	Type     Type
+	Type     *Type
 	Location *yaml.Node
 }
 
@@ -17,7 +19,7 @@ const (
 
 func (body *ResponseBody) Kind() ResponseBodyKind {
 	if body != nil {
-		if body.Type.Definition.IsEmpty() {
+		if body.Type == nil || body.Type.Definition.IsEmpty() {
 			return ResponseBodyEmpty
 		} else if body.Type.Definition.Plain == TypeString {
 			return ResponseBodyString
@@ -48,20 +50,33 @@ func (value *ResponseBody) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.ScalarNode {
 		return yamlError(node, "definition has to be scalar value")
 	}
-	typ, err := parseType(node.Value)
-	if err != nil {
-		return yamlError(node, err.Error())
+	if node.Value == "empty" {
+		*value = ResponseBody{Location: node}
+	} else {
+		typ, err := parseType(node.Value)
+		if err != nil {
+			return yamlError(node, err.Error())
+		}
+		*value = ResponseBody{&Type{*typ, node}, node}
 	}
-	parsed := ResponseBody{Type{*typ, node}, node}
-	*value = parsed
 	return nil
 }
 
 func (value ResponseBody) MarshalYAML() (interface{}, error) {
-	yamlValue := value.Type.Definition.String()
-	node := yaml.Node{
-		Kind:  yaml.ScalarNode,
-		Value: yamlValue,
+	if value.IsEmpty() {
+		node := yaml.Node{Kind: yaml.ScalarNode, Value: "empty"}
+		return node, nil
+	} else {
+		yamlValue := value.Type.Definition.String()
+		node := yaml.Node{Kind: yaml.ScalarNode, Value: yamlValue}
+		return node, nil
 	}
-	return node, nil
+}
+
+func (value *ResponseBody) String() string {
+	if value.IsEmpty() {
+		return "empty"
+	} else {
+		return value.Type.Definition.String()
+	}
 }

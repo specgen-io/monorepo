@@ -9,6 +9,14 @@ type Types struct {
 	RawJsonType string
 }
 
+func (t *Types) ResponseBodyKotlinType(body *spec.ResponseBody) string {
+	if body.IsEmpty() {
+		return "Unit"
+	} else {
+		return t.Kotlin(&body.Type.Definition)
+	}
+}
+
 func (t *Types) Kotlin(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:

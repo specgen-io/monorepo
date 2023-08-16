@@ -111,23 +111,45 @@ const (
 	RequestBodyFormUrlEncoded RequestBodyKind = "form-urlencoded"
 )
 
-func kindOfRequestBody(body *RequestBody) RequestBodyKind {
-	if body != nil {
-		if body.Type != nil {
-			if body.Type.Definition.IsEmpty() {
-				return RequestBodyEmpty
-			} else if body.Type.Definition.Plain == TypeString {
-				return RequestBodyString
-			} else {
-				return RequestBodyJson
-			}
-		}
-		if body.FormData != nil {
-			return RequestBodyFormData
-		}
-		if body.FormUrlEncoded != nil {
-			return RequestBodyFormUrlEncoded
+func (body *RequestBody) Kind() RequestBodyKind {
+	if body.Type != nil {
+		if body.Type.Definition.IsEmpty() {
+			return RequestBodyEmpty
+		} else if body.Type.Definition.Plain == TypeString {
+			return RequestBodyString
+		} else {
+			return RequestBodyJson
 		}
 	}
+	if body.FormData != nil {
+		return RequestBodyFormData
+	}
+	if body.FormUrlEncoded != nil {
+		return RequestBodyFormUrlEncoded
+	}
 	return RequestBodyEmpty
+}
+
+func (body *RequestBody) Is(kind RequestBodyKind) bool {
+	return body.Kind() == kind
+}
+
+func (body *RequestBody) IsEmpty() bool {
+	return body.Kind() == RequestBodyEmpty
+}
+
+func (body *RequestBody) IsText() bool {
+	return body.Kind() == RequestBodyString
+}
+
+func (body *RequestBody) IsJson() bool {
+	return body.Kind() == RequestBodyJson
+}
+
+func (body *RequestBody) IsBodyFormData() bool {
+	return body.Kind() == RequestBodyFormData
+}
+
+func (body *RequestBody) IsBodyFormUrlEncoded() bool {
+	return body.Kind() == RequestBodyFormUrlEncoded
 }
