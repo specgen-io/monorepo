@@ -17,7 +17,7 @@ func operationSignature(types *types.Types, operation *spec.NamedOperation) stri
 
 func operationReturnType(types *types.Types, operation *spec.NamedOperation) string {
 	if len(operation.Responses.Success()) == 1 {
-		return types.Kotlin(&operation.Responses.Success()[0].Body.Type.Definition)
+		return types.ResponseBodyType(&operation.Responses.Success()[0].Body)
 	}
 	return responseInterfaceName(operation)
 }
