@@ -8,12 +8,56 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.18'
+      - uses: actions/setup-go@v4
+        with: { go-version: '1.18' }
 
       - name: Build golang codegen
         run: |
           cd codegen/golang
           go build
+
+  models-golang:
+    needs: golang
+    strategy:
+      matrix:
+        values-file: [strict, nonstrict]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+        with: { go-version: '1.18' }
+      - uses: ./.github/actions/setvars
+      - uses: ./.github/actions/install-specgen-golang
+      - uses: ./.github/actions/getrendr
+        with:
+          jfrog_pass: ${{ secrets.JFROG_PASS }}å
+          version: ${RENDR_TOOL_VERSION}
+      - name: Render project
+        run: ./rendr_test.sh models go <<parameters.values-file>> ${SPECGEN_VERSION} ./out
+
+
+#    parameters:
+#      values-file:
+#        type: string
+#    environment:
+#      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+#      RENDR_PATH: ./
+#    steps:
+#      - checkout
+#      - install_specgen_golang
+#      - get-rendr
+#      - run:
+#          name: Render project
+#          command: ./rendr_test.sh models go <<parameters.values-file>> ${SPECGEN_VERSION} ./out
+#      - restore_cache:
+#          key: models-go-<<parameters.values-file>>
+#      - yaml-execute:
+#          path: ./out
+#          yaml-file: .rendr.yaml
+#          yaml-path: .build
+#      - yaml-execute:
+#          path: ./out
+#          yaml-file: .rendr.yaml
+#          yaml-path: .test
+#      - save_cache:
+#          key: models-go-<<parameters.values-file>>
+#          paths: [ ~/go/pkg/mod ]

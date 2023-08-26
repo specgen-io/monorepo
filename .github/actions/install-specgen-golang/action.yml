@@ -1,0 +1,12 @@
+name: Install specgen golang
+description: Installs specgen golang tool
+runs:
+  using: "composite"
+  steps:
+    - name: Install specgen-golang
+      shell: bash
+      run: |
+        cd ./codegen/golang
+        go install
+        mv ${GOPATH}/bin/golang ${GOPATH}/bin/specgen-golang
+        specgen-golang --help
