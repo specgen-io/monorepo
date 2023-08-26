@@ -6,11 +6,9 @@ jobs:
   golang:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
       - uses: actions/setup-go@v4
         with: { go-version: '1.18' }
-
+      - uses: actions/checkout@v3
       - name: Build golang codegen
         run: |
           cd codegen/golang
@@ -25,6 +23,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v4
         with: { go-version: '1.18' }
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/setvars
       - uses: ./.github/actions/install-specgen-golang
       - uses: ./.github/actions/getrendr
@@ -32,7 +31,7 @@ jobs:
           jfrog_pass: ${{ secrets.JFROG_PASS }}å
           version: ${RENDR_TOOL_VERSION}
       - name: Render project
-        run: ./rendr_test.sh models go <<parameters.values-file>> ${SPECGEN_VERSION} ./out
+        run: ./rendr_test.sh models go ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
 
 
 #    parameters:
