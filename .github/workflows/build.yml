@@ -94,6 +94,8 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: golang-service-tests
+      - name: Debugging tests
+        run: ls -la ./test-services/tests/
       - uses: ./.github/actions/run-go-tests
         with:
           command: ./test-services/tests/service-tests -test.v
