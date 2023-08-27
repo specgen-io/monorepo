@@ -79,14 +79,19 @@ jobs:
           path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
-      - uses: ./.github/actions/yaml-execute
-        with:
-          path: ./out
-          yaml-file: .rendr.yaml
-          yaml-path: .run
+      - name: Start server
+        run: go run server.go --port 8081 &
+#      - uses: ./.github/actions/yaml-execute
+#        with:
+#          path: ./out
+#          yaml-file: .rendr.yaml
+#          yaml-path: .run
       - uses: ./.github/actions/wait-url
         with:
           url: http://localhost:8081/docs/
+      - uses: actions/download-artifact@v3
+        with:
+          name: golang-service-tests
       - uses: ./.github/actions/run-go-tests
         with:
           command: ./test-services/tests/service-tests -test.v
