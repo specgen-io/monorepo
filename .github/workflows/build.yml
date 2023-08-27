@@ -26,9 +26,9 @@ jobs:
       - uses: actions/setup-go@v4
         with: { go-version: '1.18' }
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setvars
+      - uses: ./.github/actions/set-env-vars
       - uses: ./.github/actions/install-specgen-golang
-      - uses: ./.github/actions/getrendr
+      - uses: ./.github/actions/get-rendr
         with:
           jfrog_pass: ${{ secrets.JFROG_PASS }}
           version: ${RENDR_TOOL_VERSION}
@@ -44,31 +44,3 @@ jobs:
           path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .test
-
-
-#    parameters:
-#      values-file:
-#        type: string
-#    environment:
-#      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
-#      RENDR_PATH: ./
-#    steps:
-#      - checkout
-#      - install_specgen_golang
-#      - get-rendr
-#      - run:
-#          name: Render project
-#          command: ./rendr_test.sh models go <<parameters.values-file>> ${SPECGEN_VERSION} ./out
-#      - restore_cache:
-#          key: models-go-<<parameters.values-file>>
-#      - yaml-execute:
-#          path: ./out
-#          yaml-file: .rendr.yaml
-#          yaml-path: .build
-#      - yaml-execute:
-#          path: ./out
-#          yaml-file: .rendr.yaml
-#          yaml-path: .test
-#      - save_cache:
-#          key: models-go-<<parameters.values-file>>
-#          paths: [ ~/go/pkg/mod ]
