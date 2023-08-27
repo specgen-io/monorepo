@@ -1,0 +1,33 @@
+name: Wait for URL to be available
+description: Execute commands in YAML file
+inputs:
+  url:
+    description: The URL to wait for.
+    required: true
+  sleep:
+    description: Sleep between hits of the URL.
+    required: false
+    default: "5"
+  attempts:
+    description: Number of attempts to hit the URL.
+    required: false
+    default: "12"
+runs:
+  using: composite
+  steps:
+    - name: Wait until url is available
+      shell: bash
+      run: |
+        attempt_counter=0
+        max_attempts=${{ inputs.attempts }}
+        
+        until $(curl --output /dev/null --silent --fail ${{ inputs.url }}); do
+          if [ ${attempt_counter} -eq ${max_attempts} ];then
+            echo "Max attempts reached"
+            exit 1
+          fi
+        
+          printf '.'
+          attempt_counter=$(($attempt_counter+1))
+          sleep ${{ inputs.sleep }}
+        done

@@ -1,0 +1,22 @@
+name: Run go tests
+description: Run go tests
+inputs:
+  command:
+    description: The command to execute tests.
+    required: true
+    default: go test
+runs:
+  using: composite
+  steps:
+    - name: Install go-junit-report
+      shell: bash
+      run: |
+        curl -L https://github.com/specgen-io/go-junit-report/releases/download/latest/go-junit-report_linux_amd64.zip > go-junit-report.zip
+        unzip -o go-junit-report.zip
+    - name: Run tests
+      shell: bash
+      run: |
+        mkdir -p ./test-results
+        ${{ inputs.command }} 2>&1 | ./go-junit-report > ./test-results/go-test-report.xml
+#    - store_test_results:
+#        path: ./test-results
