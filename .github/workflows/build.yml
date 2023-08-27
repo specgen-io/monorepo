@@ -14,7 +14,7 @@ jobs:
           cd codegen/golang
           go build
 
-  models-golang:
+  golang-models:
     needs: golang
     strategy:
       matrix:
@@ -45,34 +45,10 @@ jobs:
           yaml-file: .rendr.yaml
           yaml-path: .test
 
-  service-tests-golang:
+  golang-service-tests:
     needs: golang
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v4
-        with: { go-version: '1.18' }
-      - uses: actions/checkout@v3
-      - name: Build tests
-        run: |
-          cd test-services/tests
-          go test -c -o service-tests
-      - uses: actions/upload-artifact@v3
+      - uses: ./.github/actions/build-service-tests
         with:
-          name: service-tests
-          path: test-services/tests
-
-#  service-tests:
-#    docker:
-#      - image: cimg/go:1.18.3
-#    working_directory: ~/specgen-tests
-#    steps:
-#      - checkout
-#      - run:
-#          name: Build tests
-#          command: |
-#            cd test-services/tests
-#            go test -c -o service-tests
-#      - persist_to_workspace:
-#          root: .
-#          paths:
-#            - test-services/tests
+          artifact-name: golang-service-tests

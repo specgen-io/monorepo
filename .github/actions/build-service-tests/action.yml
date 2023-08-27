@@ -1,0 +1,21 @@
+name: Build service tests
+description: Build service tests
+inputs:
+  artifact-name:
+    description: Name of the artifact to upload.
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v4
+      with: { go-version: '1.18' }
+    - uses: actions/checkout@v3
+    - name: Build tests
+      shell: bash
+      run: |
+        cd test-services/tests
+        go test -c -o service-tests
+    - uses: actions/upload-artifact@v3
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: test-services/tests
