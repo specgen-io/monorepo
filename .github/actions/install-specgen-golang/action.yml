@@ -8,6 +8,7 @@ runs:
       run: |
         cd ./codegen/golang
         go env
+        echo "GOPATH=${GOPATH}"
         go install
         mv ${GOPATH}/bin/golang ${GOPATH}/bin/specgen-golang
         specgen-golang --help
