@@ -55,7 +55,7 @@ jobs:
           artifact-name: golang-service-tests
 
   golang-service:
-    needs: golang
+    needs: golang-service-tests
     strategy:
       matrix:
         values-file: [vestigo-strict, chi-strict, httprouter-strict]
