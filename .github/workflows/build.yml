@@ -34,6 +34,16 @@ jobs:
           version: ${RENDR_TOOL_VERSION}
       - name: Render project
         run: ./rendr_test.sh models go ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .test
 
 
 #    parameters:

@@ -1,0 +1,26 @@
+name: Execute YAML commands
+description: Execute commands in YAML file
+inputs:
+  path:
+    description: Path where YAML file is located.
+    required: true
+  yaml-file:
+    description: Name of the YAML file.
+    required: false
+  yaml-path:
+    description: Path inside of YAML data to commands that should be executed.
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Execute YAML commands
+      shell: bash
+      run: |
+        cd ${{ inputs.path }}
+        export COMMANDS=$(yq eval ${{ inputs.yaml-path }} ${{ inputs.yaml-file }})
+        echo "Commands:"
+        echo "$COMMANDS"
+        echo "$COMMANDS" | while read THE_COMMAND ; do
+          echo "Executing: $THE_COMMAND"
+          $THE_COMMAND
+        done
