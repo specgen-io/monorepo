@@ -95,7 +95,11 @@ jobs:
         with:
           name: golang-service-tests
       - name: Debugging tests
-        run: ls -la ./test-services/tests/
+        run: |
+          echo "./test-services/tests/"
+          ls -la ./test-services/tests/
+          echo "."
+          ls -la .
       - uses: ./.github/actions/run-go-tests
         with:
           command: ./test-services/tests/service-tests -test.v
