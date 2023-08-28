@@ -124,7 +124,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: golang-client-test-service
-          path: ./test-service/the-service
+          path: ./test-service
 
   golang-client:
     needs: golang-client-test-service
