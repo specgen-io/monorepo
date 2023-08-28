@@ -1,0 +1,20 @@
+name: Start test service
+description: Start service with mock functionality to test clients
+inputs:
+  port:
+    description: Post to start service on.
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: goland-client-test-service
+    - name: Start test service
+      shell: bash
+      run: |
+        chmod +x ./test-service
+        ./the-service --port ${{ parameters.port }} &
+    - uses: ./.github/actions/wait-url
+      with:
+        url: http://localhost:${{ parameters.port }}/docs/

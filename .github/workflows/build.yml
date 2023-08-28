@@ -125,3 +125,39 @@ jobs:
         with:
           name: goland-client-test-service
           path: ./specgen-tests/test-service
+
+  golang-client:
+    needs: goland-client-test-service
+    strategy:
+      matrix:
+        values-file: [strict, nonstrict]
+    runs-on: ubuntu-latest
+    env:
+      RENDR_PATH: ./
+    steps:
+      - uses: actions/setup-go@v4
+        with: { go-version: '1.18' }
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/install-specgen-golang
+      - uses: ./.github/actions/get-rendr
+      - name: Render project
+        run: ./rendr_test.sh client go ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+      - uses: ./.github/actions/start-test-service
+        with:
+          port: "8081"
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .setup
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .test
