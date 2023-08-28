@@ -99,7 +99,7 @@ jobs:
           chmod +x ./service-tests
           ./service-tests -test.v
 
-  goland-client-test-service:
+  golang-client-test-service:
     needs: golang
     runs-on: ubuntu-latest
     steps:
@@ -123,11 +123,11 @@ jobs:
           yaml-path: .build
       - uses: actions/upload-artifact@v3
         with:
-          name: goland-client-test-service
-          path: ./specgen-tests/test-service
+          name: golang-client-test-service
+          path: ./test-service/test-service
 
   golang-client:
-    needs: goland-client-test-service
+    needs: golang-client-test-service
     strategy:
       matrix:
         values-file: [strict, nonstrict]
