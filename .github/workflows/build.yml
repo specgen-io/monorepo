@@ -116,21 +116,7 @@ jobs:
       - name: Start service
         run: |
           cd ./out
-          export COMMAND=$(yq eval .run .rendr.yaml)
-          echo "Will run: ${COMMAND}"
-          ${COMMAND} &
-
-#      - name: Start server
-#        run: |
-#          cd ./out
-#          go run server.go --port 8081 &
-
-#      - uses: ./.github/actions/yaml-execute
-#        with:
-#          path: ./out
-#          yaml-file: .rendr.yaml
-#          yaml-path: .run
-
+          $(yq eval .run .rendr.yaml) &
       - uses: ./.github/actions/wait-url
         with:
           url: http://localhost:8081/docs/
