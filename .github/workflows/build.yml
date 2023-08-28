@@ -121,10 +121,12 @@ jobs:
           path: ./test-service
           yaml-file: .rendr.yaml
           yaml-path: .build
+      - name: Debugging
+        run: ls -la ./test-service
       - uses: actions/upload-artifact@v3
         with:
           name: golang-client-test-service
-          path: ./test-service/test-service
+          path: ./test-service
 
   golang-client:
     needs: golang-client-test-service
