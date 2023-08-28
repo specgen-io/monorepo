@@ -13,7 +13,7 @@ runs:
     - name: Start test service
       shell: bash
       run: |
-        chmod +x ./test-service
+        chmod +x ./the-service
         ./the-service --port ${{ inputs.port }} &
     - uses: ./.github/actions/wait-url
       with:
