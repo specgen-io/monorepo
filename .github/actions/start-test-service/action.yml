@@ -9,7 +9,7 @@ runs:
   steps:
     - uses: actions/download-artifact@v3
       with:
-        name: golang-client-test-service
+        name: client-test-service
     - name: Start test service
       shell: bash
       run: |

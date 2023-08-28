@@ -14,6 +14,49 @@ jobs:
           cd codegen/golang
           go build
 
+  _service-tests:
+    needs: golang
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with: { go-version: '1.18' }
+      - name: Build tests
+        run: |
+          cd test-services/tests
+          go test -c -o service-tests
+      - uses: actions/upload-artifact@v3
+        with:
+          name: service-tests
+          path: test-services/tests
+
+  _client-test-service:
+    needs: golang
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+        with: { go-version: '1.18' }
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/install-specgen-golang
+      - uses: ./.github/actions/get-rendr
+        with:
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          version: ${RENDR_TOOL_VERSION}
+      - name: Render project
+        run: ./rendr file:///./templates/service-go --root file:///./test-clients/test-service/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./test-service
+      - name: Copy spec.yaml
+        run: cp ./test-clients/spec.yaml ./test-service/spec.yaml
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./test-service
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: client-test-service
+          path: ./test-service
+
   golang-models:
     needs: golang
     strategy:
@@ -45,17 +88,8 @@ jobs:
           yaml-file: .rendr.yaml
           yaml-path: .test
 
-  golang-service-tests:
-    needs: golang
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/build-service-tests
-        with:
-          artifact-name: golang-service-tests
-
   golang-service:
-    needs: golang-service-tests
+    needs: _service-tests
     strategy:
       matrix:
         values-file: [vestigo-strict, chi-strict, httprouter-strict]
@@ -93,41 +127,14 @@ jobs:
           url: http://localhost:8081/docs/
       - uses: actions/download-artifact@v3
         with:
-          name: golang-service-tests
+          name: service-tests
       - name: Run tests
         run: |
           chmod +x ./service-tests
           ./service-tests -test.v
 
-  golang-client-test-service:
-    needs: golang
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/setup-go@v4
-        with: { go-version: '1.18' }
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/set-env-vars
-      - uses: ./.github/actions/install-specgen-golang
-      - uses: ./.github/actions/get-rendr
-        with:
-          jfrog_pass: ${{ secrets.JFROG_PASS }}
-          version: ${RENDR_TOOL_VERSION}
-      - name: Render project
-        run: ./rendr file:///./templates/service-go --root file:///./test-clients/test-service/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./test-service
-      - name: Copy spec.yaml
-        run: cp ./test-clients/spec.yaml ./test-service/spec.yaml
-      - uses: ./.github/actions/yaml-execute
-        with:
-          path: ./test-service
-          yaml-file: .rendr.yaml
-          yaml-path: .build
-      - uses: actions/upload-artifact@v3
-        with:
-          name: golang-client-test-service
-          path: ./test-service
-
   golang-client:
-    needs: golang-client-test-service
+    needs: _client-test-service
     strategy:
       matrix:
         values-file: [strict, nonstrict]
