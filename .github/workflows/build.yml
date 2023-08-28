@@ -3,6 +3,15 @@ name: build
 on: [push]
 
 jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/set-version-vars
+      - name: Print version vars
+        run: |
+          echo "SPECGEN_VERSION_MAJOR: ${SPECGEN_VERSION_MAJOR}"
+          echo "SPECGEN_VERSION: ${SPECGEN_VERSION}"
+
   golang:
     runs-on: ubuntu-latest
     steps:
