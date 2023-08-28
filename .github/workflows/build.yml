@@ -114,7 +114,9 @@ jobs:
           yaml-file: .rendr.yaml
           yaml-path: .build
       - name: Start service
-        run: $(yq eval .run ./out/.rendr.yaml)
+        run: |
+          cd ./out
+          $(yq eval .run .rendr.yaml)
 
 #      - name: Start server
 #        run: |
