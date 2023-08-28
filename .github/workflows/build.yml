@@ -102,4 +102,4 @@ jobs:
           ls -la .
       - uses: ./.github/actions/run-go-tests
         with:
-          command: ./test-services/tests/service-tests -test.v
+          command: ./service-tests -test.v
