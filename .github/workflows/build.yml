@@ -117,8 +117,8 @@ jobs:
         run: |
           cd ./out
           export COMMAND=$(yq eval .run .rendr.yaml)
-          echo "${COMMAND}"
-          ${COMMAND}
+          echo "Will run: ${COMMAND}"
+          ${COMMAND} &
 
 #      - name: Start server
 #        run: |
