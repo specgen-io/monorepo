@@ -14,7 +14,7 @@ jobs:
           cd codegen/golang
           go build
 
-  _service-tests:
+  service-tests:
     needs: golang
     runs-on: ubuntu-latest
     steps:
@@ -30,7 +30,7 @@ jobs:
           name: service-tests
           path: test-services/tests
 
-  _client-test-service:
+  client-test-service:
     needs: golang
     runs-on: ubuntu-latest
     steps:
@@ -89,7 +89,7 @@ jobs:
           yaml-path: .test
 
   golang-service:
-    needs: _service-tests
+    needs: service-tests
     strategy:
       matrix:
         values-file: [vestigo-strict, chi-strict, httprouter-strict]
@@ -134,7 +134,7 @@ jobs:
           ./service-tests -test.v
 
   golang-client:
-    needs: _client-test-service
+    needs: client-test-service
     strategy:
       matrix:
         values-file: [strict, nonstrict]
