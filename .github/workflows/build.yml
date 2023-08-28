@@ -94,16 +94,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: golang-service-tests
-      - name: Debugging tests
-        run: |
-          echo "./test-services/tests/"
-          ls -la ./test-services/tests/
-          echo "."
-          ls -la .
       - name: Run tests
         run: |
           chmod +x ./service-tests
-          ./service-tests
-#      - uses: ./.github/actions/run-go-tests
-#        with:
-#          command: ./service-tests -test.v
+          ./service-tests -test.v
