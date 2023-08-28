@@ -63,8 +63,6 @@ jobs:
       matrix:
         values-file: [strict, nonstrict]
     runs-on: ubuntu-latest
-    env:
-      RENDR_PATH: ./
     steps:
       - uses: actions/setup-go@v4
         with: { go-version: '1.18' }
@@ -94,8 +92,6 @@ jobs:
       matrix:
         values-file: [vestigo-strict, chi-strict, httprouter-strict]
     runs-on: ubuntu-latest
-    env:
-      RENDR_PATH: ./
     steps:
       - uses: actions/setup-go@v4
         with: { go-version: '1.18' }
@@ -134,8 +130,6 @@ jobs:
       matrix:
         values-file: [strict, nonstrict]
     runs-on: ubuntu-latest
-    env:
-      RENDR_PATH: ./
     steps:
       - uses: actions/setup-go@v4
         with: { go-version: '1.18' }
