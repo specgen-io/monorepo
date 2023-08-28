@@ -100,6 +100,10 @@ jobs:
           ls -la ./test-services/tests/
           echo "."
           ls -la .
-      - uses: ./.github/actions/run-go-tests
-        with:
-          command: ./service-tests -test.v
+      - name: Run tests
+        run: |
+          chmod +x ./service-tests
+          ./service-tests
+#      - uses: ./.github/actions/run-go-tests
+#        with:
+#          command: ./service-tests -test.v
