@@ -113,15 +113,20 @@ jobs:
           path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .build
-      - name: Start server
-        run: |
-          cd ./out
-          go run server.go --port 8081 &
+      - name: Start service
+        run: $(yq eval ./out/.rendr.yaml .run)
+
+#      - name: Start server
+#        run: |
+#          cd ./out
+#          go run server.go --port 8081 &
+
 #      - uses: ./.github/actions/yaml-execute
 #        with:
 #          path: ./out
 #          yaml-file: .rendr.yaml
 #          yaml-path: .run
+
       - uses: ./.github/actions/wait-url
         with:
           url: http://localhost:8081/docs/
