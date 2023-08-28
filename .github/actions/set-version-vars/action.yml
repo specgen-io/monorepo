@@ -6,4 +6,4 @@ runs:
     - shell: bash
       run: |
         echo "SPECGEN_VERSION_MAJOR=v2" >> $GITHUB_ENV
-        echo "SPECGEN_VERSION=2.2.${{ github.run_id }}" >> $GITHUB_ENV
+        echo "SPECGEN_VERSION=2.2.${{ github.run_number }}" >> $GITHUB_ENV
