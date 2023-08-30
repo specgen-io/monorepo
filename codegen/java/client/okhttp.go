@@ -289,21 +289,21 @@ import java.util.List;
 import okhttp3.*;
 import okhttp3.MultipartBody.Part;
 
-public class MultipartBodyBuilder {
+public class [[.ClassName]] {
 	private final MultipartBody.Builder multipartBodyBuilder;
 
-	public MultipartBodyBuilder(MediaType type) {
+	public [[.ClassName]](MediaType type) {
 		this.multipartBodyBuilder = new MultipartBody.Builder().setType(type);
 	}
 
-	public MultipartBodyBuilder addFormDataPart(String name, Object value) {
+	public [[.ClassName]] addFormDataPart(String name, Object value) {
 		if (value != null) {
 			this.multipartBodyBuilder.addPart(Part.createFormData(name, String.valueOf(value)));
 		}
 		return this;
 	}
 
-	public <T> MultipartBodyBuilder addFormDataPart(String name, List<T> values) {
+	public <T> [[.ClassName]] addFormDataPart(String name, List<T> values) {
 		for (T val : values) {
 			this.multipartBodyBuilder.addPart(Part.createFormData(name, String.valueOf(val)));
 		}
@@ -324,21 +324,21 @@ func (g *OkHttpGenerator) urlencodedFormBodyBuilder() *generator.CodeFile {
 import java.util.List;
 import okhttp3.FormBody;
 
-public class UrlencodedFormBodyBuilder {
+public class [[.ClassName]] {
 	private final FormBody.Builder formBodyBuilder;
 
-	public UrlencodedFormBodyBuilder() {
+	public [[.ClassName]]() {
 		this.formBodyBuilder = new FormBody.Builder();
 	}
 
-	public UrlencodedFormBodyBuilder add(String name, Object value) {
+	public [[.ClassName]] add(String name, Object value) {
 		if (value != null) {
 			this.formBodyBuilder.add(name, String.valueOf(value));
 		}
 		return this;
 	}
 
-	public <T> UrlencodedFormBodyBuilder add(String name, List<T> values) {
+	public <T> [[.ClassName]] add(String name, List<T> values) {
 		for (T val : values) {
 			this.formBodyBuilder.add(name, String.valueOf(val));
 		}
