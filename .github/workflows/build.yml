@@ -175,6 +175,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: ./.github/actions/set-env-vars
       - uses: ./.github/actions/build-specgen-plugin
         with: { plugin-path: codegen/java, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-java }
 
