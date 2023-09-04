@@ -167,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/set-version-vars
       - uses: ./.github/actions/build-specgen-plugin
         with: { plugin-path: codegen/java, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-java }
 
@@ -176,11 +176,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/set-version-vars
       - uses: actions/setup-java@v3
         with: { distribution: 'corretto', java-version: '11' }
       - uses: actions/download-artifact@v3
-        with: { name: specgen-java, path: ./plugins/maven-java-specgen/src/main/resources }
+        with: { name: specgen-java, path: ./plugins/maven-java-specgen/src/main/resources/dist }
       - uses: ./.github/actions/artifactory-setup-maven
         with: { jfrog-server-url: specgen.jfrog.io, repo-name: maven, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
       - name: Build Maven plugin
