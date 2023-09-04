@@ -1,0 +1,24 @@
+name: Build specgen plugin
+description: Build specgen code generation plugin command line tool
+inputs:
+  plugin-path:
+    description: Path to generator.
+    required: true
+  specgen-version:
+    description: Version of specgen to stamp
+    required: true
+  artifact-name:
+    description: Name of built artifact
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Build codegen
+      shell: bash
+      run: |
+        cd ./codegen/${{ inputs.plugin-path }}
+        ../build.sh ${{ inputs.specgen-version }}
+    - uses: actions/upload-artifact@v3
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ./codegen/${{ inputs.generator }}/dist

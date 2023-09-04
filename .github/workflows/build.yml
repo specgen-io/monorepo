@@ -170,3 +170,51 @@ jobs:
           path: ./out
           yaml-file: .rendr.yaml
           yaml-path: .test
+
+  java:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/yaml-execute
+        with: { plugin-path: codegen/java, specgen-version: ${SPECGEN_VERSION}, artifact-name: specgen-java }
+
+#  java-maven:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/setup-java@v3
+#        with: { distribution: 'oracle', java-version: '11' }
+#      - uses: actions/checkout@v3
+#      - name: Build golang codegen
+#        run: |
+#          cd codegen/golang
+#          go build
+
+#  maven-java:
+#    docker:
+#      - image: cimg/openjdk:11.0.20
+#    steps:
+#      - checkout
+#      - attach_workspace_folder:
+#          folder: codegen/java
+#          at: ./plugins/maven-java-specgen/src/main/resources
+#      - restore_cache:
+#          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
+#      - artifactory/setup-maven:
+#          jfrog-server-url: specgen.jfrog.io
+#          repo-name: maven
+#      - run:
+#          name: Build Maven plugin
+#          command: |
+#            cd ./plugins/maven-java-specgen
+#            sed -i.bak 's/PROJECT_VERSION/<<pipeline.parameters.specgen-version>>/g' pom.xml
+#            mvn clean install
+#      - run:
+#          name: Deploy Maven plugin
+#          command: |
+#            cd ./plugins/maven-java-specgen
+#            mvn deploy -Dartifactory=true
+#      - save_cache:
+#          key: cache-{{ checksum "./plugins/maven-java-specgen/pom.xml" }}
+#          paths:
+#            - ~/.ivy2
+#            - ~/.m2
