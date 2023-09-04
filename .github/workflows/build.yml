@@ -179,16 +179,24 @@ jobs:
       - uses: ./.github/actions/build-specgen-plugin
         with: { plugin-path: codegen/java, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-java }
 
-#  java-maven:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/setup-java@v3
-#        with: { distribution: 'oracle', java-version: '11' }
-#      - uses: actions/checkout@v3
-#      - name: Build golang codegen
-#        run: |
-#          cd codegen/golang
-#          go build
+  java-maven:
+    needs: java
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v3
+        with: { distribution: 'oracle', java-version: '11' }
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with: { name: specgen-java }
+      - name: Debug files
+        run: |
+          ls -la .
+      - name: Build Maven plugin
+        run: |
+          cd ./plugins/maven-java-specgen
+          sed -i.bak 's/PROJECT_VERSION/${SPECGEN_VERSION}/g' pom.xml
+          mvn clean install
+
 
 #  maven-java:
 #    docker:
