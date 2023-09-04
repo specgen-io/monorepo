@@ -13,12 +13,14 @@ inputs:
 runs:
   using: composite
   steps:
+    - uses: actions/setup-go@v4
+      with: { go-version: '1.18' }
     - name: Build codegen
       shell: bash
       run: |
-        cd ./codegen/${{ inputs.plugin-path }}
+        cd ./${{ inputs.plugin-path }}
         ../build.sh ${{ inputs.specgen-version }}
     - uses: actions/upload-artifact@v3
       with:
         name: ${{ inputs.artifact-name }}
-        path: ./codegen/${{ inputs.generator }}/dist
+        path: ./${{ inputs.plugin-path }}/dist
