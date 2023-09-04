@@ -183,19 +183,23 @@ jobs:
     needs: java
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/set-env-vars
       - uses: actions/setup-java@v3
         with: { distribution: 'corretto', java-version: '11' }
-      - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
-        with: { name: specgen-java }
+        with: { name: specgen-java, path: ./plugins/maven-java-specgen/src/main/resources }
       - name: Debug files
         run: |
+          echo "Directory ."
           ls -la .
+          echo "Directory ./plugins/maven-java-specgen/src/main/resources"
+          ls -la ./plugins/maven-java-specgen/src/main/resources
       - name: Build Maven plugin
         run: |
           cd ./plugins/maven-java-specgen
           sed -i.bak 's/PROJECT_VERSION/${SPECGEN_VERSION}/g' pom.xml
-          mvn clean install
+          mvn clean install --no-transfer-progress
 
 
 #  maven-java:
