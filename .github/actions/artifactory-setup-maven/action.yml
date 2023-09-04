@@ -1,0 +1,57 @@
+name: Setup Maven to use Artifactory
+description: Downloads rendr tool
+inputs:
+  jfrog-server-url:
+    description: JFrog Artfactory server URL.
+    required: true
+  repo-name:
+    description: Name of repo in artifactory.
+    required: true
+  jfrog-user:
+    description: JFrog Artfactory pass code.
+    required: true
+  jfrog-pass:
+    description: JFrog Artfactory pass code.
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Artifactory for Maven
+      shell: bash
+      run: |
+        mkdir -p ~/.m2
+        tee > ~/.m2/settings.xml \<<END
+        <?xml version="1.0" encoding="UTF-8"?>
+        <settings xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 http://maven.apache.org/xsd/settings-1.2.0.xsd" xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <servers>
+            <server>
+              <id>artifactory</id>
+              <username>${{ inputs.jfrog-user }}</username>
+              <password>${{ inputs.jfrog-pass }}</password>
+            </server>
+          </servers>
+          <profiles>
+            <profile>
+              <id>artifactory</id>
+              <repositories>
+                <repository>
+                  <id>artifactory</id>
+                  <name>maven</name>
+                  <url>https://${{ inputs.jfrog-server-url }}/artifactory/${{ inputs.parameters.repo-name }}</url>
+                </repository>
+              </repositories>
+              <pluginRepositories>
+                <pluginRepository>
+                  <id>artifactory</id>
+                  <name>maven</name>
+                  <url>https://${{ inputs.jfrog-server-url }}/artifactory/${{ inputs.parameters.repo-name }}</url>
+                </pluginRepository>
+              </pluginRepositories>
+              <activation>
+                <activeByDefault>true</activeByDefault>
+              </activation>
+            </profile>
+          </profiles>
+        </settings>
+        END
