@@ -220,6 +220,7 @@ jobs:
   java-build:
     needs: [java-maven, java-gradle]
     runs-on: ubuntu-latest
+    steps: [ run: "echo 'Just a placeholder'" ]
 
 
 #  gradle-java:
