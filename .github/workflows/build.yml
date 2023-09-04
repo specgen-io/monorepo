@@ -191,6 +191,8 @@ jobs:
         with: { jfrog-server-url: specgen.jfrog.io, repo-name: maven, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
       - name: Build Maven plugin
         run: |
+          echo "~/.m2 directory"
+          ls -la ~/.m2
           cd ./plugins/maven-java-specgen
           sed -i.bak 's/PROJECT_VERSION/${SPECGEN_VERSION}/g' pom.xml
           mvn clean install --no-transfer-progress
