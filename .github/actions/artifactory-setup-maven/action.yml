@@ -38,14 +38,14 @@ runs:
                 <repository>
                   <id>artifactory</id>
                   <name>maven</name>
-                  <url>https://${{ inputs.jfrog-server-url }}/artifactory/${{ inputs.parameters.repo-name }}</url>
+                  <url>https://${{ inputs.jfrog-server-url }}/artifactory/${{ inputs.repo-name }}</url>
                 </repository>
               </repositories>
               <pluginRepositories>
                 <pluginRepository>
                   <id>artifactory</id>
                   <name>maven</name>
-                  <url>https://${{ inputs.jfrog-server-url }}/artifactory/${{ inputs.parameters.repo-name }}</url>
+                  <url>https://${{ inputs.jfrog-server-url }}/artifactory/${{ inputs.repo-name }}</url>
                 </pluginRepository>
               </pluginRepositories>
               <activation>
