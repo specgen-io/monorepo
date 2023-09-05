@@ -4,6 +4,7 @@ on: [push]
 
 jobs:
   service-tests:
+    needs: kotlin
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -19,6 +20,7 @@ jobs:
           path: test-services/tests
 
   client-test-service:
+    needs: kotlin
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v4
@@ -95,13 +97,8 @@ jobs:
           -Djfrog.pass=${{ secrets.JFROG_PASS }} \
           -Dproject.version=${SPECGEN_VERSION}
 
-  kotlin-build:
-    needs: [kotlin-maven, kotlin-gradle]
-    runs-on: ubuntu-latest
-    steps: [ run: "echo 'Just a placeholder'" ]
-
   kotlin-models:
-    needs: java-build
+    needs: kotlin-gradle
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -130,7 +127,7 @@ jobs:
           yaml-path: .test
 
   kotlin-service:
-    needs: [kotlin-build, service-tests]
+    needs: [kotlin-gradle, service-tests]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -168,7 +165,7 @@ jobs:
           ./service-tests -test.v
 
   kotlin-client:
-    needs: [kotlin-build, client-test-service]
+    needs: [kotlin-gradle, client-test-service]
     runs-on: ubuntu-latest
     strategy:
       matrix:
