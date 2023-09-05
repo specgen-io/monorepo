@@ -1,0 +1,186 @@
+name: typescript
+
+on: [push]
+
+jobs:
+  service-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with: { go-version: '1.18' }
+      - name: Build tests
+        run: |
+          cd test-services/tests
+          go test -c -o service-tests
+      - uses: actions/upload-artifact@v3
+        with:
+          name: service-tests
+          path: test-services/tests
+
+  client-test-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+        with: { go-version: '1.18' }
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/set-version-vars
+      - uses: ./.github/actions/install-specgen-golang
+      - uses: ./.github/actions/get-rendr
+        with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
+      - name: Render project
+        run: ./rendr file:///./templates/service-go --root file:///./test-clients/test-service/template --noinput --set versions.specgen=${SPECGEN_VERSION} --out ./test-service
+      - name: Copy spec.yaml
+        run: cp ./test-clients/spec.yaml ./test-service/spec.yaml
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./test-service
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: client-test-service
+          path: ./test-service
+
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/set-version-vars
+      - uses: ./.github/actions/build-specgen-plugin
+        with: { plugin-path: codegen/typescript, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-typescript }
+
+  typescript-npm:
+    needs: typescript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/set-version-vars
+      - uses: actions/setup-node@v3
+        with: { node-version: 16 }
+      - uses: actions/download-artifact@v3
+        with: { name: specgen-typescript, path: ./plugins/npm-specgen/dist }
+      - uses: ./.github/actions/artifactory-setup-npm
+        with: { jfrog-server-url: specgen.jfrog.io, repo-name: npm, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
+      - name: Deploy npm plugin
+        run: |
+          cd ./plugins/npm-specgen
+          npm pkg set name=@specgen.io/specgen.io
+          npm version ${SPECGEN_VERSION}
+          npm install
+          npm publish
+
+  typescript-models:
+    needs: typescript-npm
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        values-file: [superstruct, iots]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with: { node-version: 16 }
+      - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/set-version-vars
+      - uses: ./.github/actions/get-rendr
+        with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
+      - name: Render project
+        run: ./rendr_test.sh models ts ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+      - uses: ./.github/actions/artifactory-setup-npm
+        with: { scope: specgen.io, jfrog-server-url: specgen.jfrog.io, repo-name: npm, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .setup
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .test
+
+  typescript-service:
+    needs: [typescript-npm, service-tests]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        values-file: [express-superstruct, express-iots, koa-superstruct, koa-iots]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with: { node-version: 16 }
+      - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/set-version-vars
+      - uses: ./.github/actions/get-rendr
+        with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
+      - name: Render project
+        run: ./rendr_test.sh service ts ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+      - uses: ./.github/actions/artifactory-setup-npm
+        with: { scope: specgen.io, jfrog-server-url: specgen.jfrog.io, repo-name: npm, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .setup
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - name: Start service
+        run: |
+          cd ./out
+          $(yq eval .run .rendr.yaml) &
+      - uses: ./.github/actions/wait-url
+        with:
+          url: http://localhost:8081/docs/
+      - uses: actions/download-artifact@v3
+        with:
+          name: service-tests
+      - name: Run tests
+        run: |
+          chmod +x ./service-tests
+          ./service-tests -test.v
+
+  typescript-client:
+    needs: [typescript-npm, client-test-service]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        values-file: [axios-superstruct, axios-iots, node-fetch-superstruct]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with: { node-version: 16 }
+      - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/set-version-vars
+      - uses: ./.github/actions/get-rendr
+        with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
+      - name: Render project
+        run: ./rendr_test.sh client ts ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+      - uses: ./.github/actions/artifactory-setup-npm
+        with: { scope: specgen.io, jfrog-server-url: specgen.jfrog.io, repo-name: npm, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
+      - uses: ./.github/actions/start-test-service
+        with:
+          port: "8081"
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .setup
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .test
