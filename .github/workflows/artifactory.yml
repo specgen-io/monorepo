@@ -1,0 +1,16 @@
+name: artifactory
+
+on:
+  schedule: [cron: "0 7 * * *"]
+  workflow_dispatch: {}
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleaning npm
+        run: curl -u${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASS }} -X DELETE https://specgen.jfrog.io/artifactory/npm-local/@specgen.io/
+      - name: Cleaning maven
+        run: curl -u${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASS }} -X DELETE https://specgen.jfrog.io/artifactory/maven-local/io/specgen/
+      - name: Cleaning maven
+        run: curl -u${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASS }} -X DELETE https://specgen.jfrog.io/artifactory/maven-local/io/specgen/
