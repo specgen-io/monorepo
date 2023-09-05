@@ -1,7 +1,7 @@
 name: Get rendr
 description: Downloads rendr tool
 inputs:
-  jfrog_pass:
+  jfrog-pass:
     description: JFrog Artfactory pass code.
     required: true
   version:
@@ -14,6 +14,6 @@ runs:
     - name: Get rendr
       shell: bash
       run: |
-        curl -L -H "X-JFrog-Art-Api:${{ inputs.jfrog_pass }}" -O "https://specgen.jfrog.io/artifactory/binaries/rendr/${{ inputs.version }}/rendr_linux_amd64.zip"
+        curl -L -H "X-JFrog-Art-Api:${{ inputs.jfrog-pass }}" -O "https://specgen.jfrog.io/artifactory/binaries/rendr/${{ inputs.version }}/rendr_linux_amd64.zip"
         unzip -o rendr_linux_amd64.zip
         ./rendr --help

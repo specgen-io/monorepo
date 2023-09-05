@@ -237,7 +237,7 @@ jobs:
       - uses: ./.github/actions/set-env-vars
       - uses: ./.github/actions/set-version-vars
       - uses: ./.github/actions/get-rendr
-        with: { jfrog_pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
+        with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
       - name: Render project
         run: ./rendr_test.sh models java ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
       - uses: ./.github/actions/artifactory-setup-maven
@@ -266,7 +266,7 @@ jobs:
       - uses: ./.github/actions/set-env-vars
       - uses: ./.github/actions/set-version-vars
       - uses: ./.github/actions/get-rendr
-        with: { jfrog_pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
+        with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
       - name: Render project
         run: ./rendr_test.sh service java ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
       - uses: ./.github/actions/artifactory-setup-maven
@@ -304,7 +304,7 @@ jobs:
       - uses: ./.github/actions/set-env-vars
       - uses: ./.github/actions/set-version-vars
       - uses: ./.github/actions/get-rendr
-        with: { jfrog_pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
+        with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
       - name: Render project
         run: ./rendr_test.sh client java ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
       - uses: ./.github/actions/artifactory-setup-maven
@@ -323,32 +323,59 @@ jobs:
           yaml-file: .rendr.yaml
           yaml-path: .test
 
+  kotlin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/set-version-vars
+      - uses: ./.github/actions/build-specgen-plugin
+        with: { plugin-path: codegen/kotlin, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-kotlin }
 
+  kotlin-maven:
+    needs: kotlin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/set-version-vars
+      - uses: actions/setup-java@v3
+        with: { distribution: 'corretto', java-version: '11' }
+      - uses: actions/download-artifact@v3
+        with: { name: specgen-kotlin, path: ./plugins/maven-kotlin-specgen/src/main/resources/dist }
+      - uses: ./.github/actions/artifactory-setup-maven
+        with: { jfrog-server-url: specgen.jfrog.io, repo-name: maven, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
+      - name: Build Maven plugin
+        run: |
+          cd ./plugins/maven-kotlin-specgen
+          sed -i.bak "s/PROJECT_VERSION/${SPECGEN_VERSION}/g" pom.xml
+          mvn clean install --no-transfer-progress
+      - name: Deploy Maven plugin
+        run: |
+          cd ./plugins/maven-kotlin-specgen
+          mvn deploy -Dartifactory=true --no-transfer-progress
 
-#  client-java:
-#    steps:
-#      - checkout
-#      - attach_workspace:
-#          at: .
-#      - get-rendr
-#      - run:
-#          name: Render project
-#          command: ./rendr_test.sh client java <<parameters.values-file>> ${SPECGEN_VERSION} ./out
-#      - artifactory/setup-maven:
-#          jfrog-server-url: specgen.jfrog.io
-#          repo-name: maven
-#      - restore_cache:
-#          key: client-java-<<parameters.values-file>>
-#      - start-test-service:
-#          port: 8081
-#      - yaml-execute:
-#          path: ./out
-#          yaml-file: .rendr.yaml
-#          yaml-path: .setup
-#      - yaml-execute:
-#          path: ./out
-#          yaml-file: .rendr.yaml
-#          yaml-path: .test
-#      - save_cache:
-#          key: client-java-<<parameters.values-file>>
-#          paths: [ ~/.m2 ]
+  kotlin-gradle:
+    needs: kotlin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/set-version-vars
+      - uses: actions/setup-java@v3
+        with: { distribution: 'corretto', java-version: '11' }
+      - uses: actions/download-artifact@v3
+        with: { name: specgen-kotlin, path: ./plugins/gradle-kotlin-specgen/src/main/resources/dist }
+      - name: Build Gradle plugin
+        run: |
+          cd ./plugins/gradle-kotlin-specgen
+          ./gradlew build --build-cache --no-daemon -Pproject.version=${SPECGEN_VERSION}
+      - name: Deploy Gradle plugin
+        run: |
+          cd ./plugins/gradle-kotlin-specgen
+          ./gradlew publishAllPublicationsToArtifactoryRepository --build-cache --no-daemon \
+          -Djfrog.user=${{ secrets.JFROG_USER }} \
+          -Djfrog.pass=${{ secrets.JFROG_PASS }} \
+          -Dproject.version=${SPECGEN_VERSION}
+
+  kotlin-build:
+    needs: [kotlin-maven, kotlin-gradle]
+    runs-on: ubuntu-latest
+    steps: [ run: "echo 'Just a placeholder'" ]
