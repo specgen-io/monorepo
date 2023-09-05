@@ -42,6 +42,19 @@ const getSpecgenPath = () => {
     if (!fs.existsSync(specgenPath)) {
         throw Error(`Can't find specgen tool at ${specgenPath}`)
     }
+    if (osname !== `windows`) {
+        const chmodCommandLine = `chmod +x ${specgenPath}`
+        console.log(`Giving permissions to specgen tool: ${chmodCommandLine}`)
+        exec(chmodCommandLine, (error, stdout, stderr) => {
+            console.error(stderr);
+            console.log(stdout);
+            if (error) {
+                console.error(`Failed to grant execution permission to the specgen tool, exit code: ${error.code}`);
+                console.error(error.message);
+                if (error.code !== 0) { process.exit(error.code) }
+            }
+        })
+    }
     return specgenPath
 }
 
