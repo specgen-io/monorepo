@@ -48,6 +48,7 @@ jobs:
         with: { go-version: '1.18' }
       - uses: actions/checkout@v3
       - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/set-version-vars
       - uses: ./.github/actions/install-specgen-golang
       - uses: ./.github/actions/get-rendr
         with: { jfrog_pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
@@ -67,15 +68,16 @@ jobs:
 
   golang-models:
     needs: golang
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         values-file: [strict, nonstrict]
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v4
         with: { go-version: '1.18' }
       - uses: actions/checkout@v3
       - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/set-version-vars
       - uses: ./.github/actions/install-specgen-golang
       - uses: ./.github/actions/get-rendr
         with: { jfrog_pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
@@ -103,6 +105,7 @@ jobs:
         with: { go-version: '1.18' }
       - uses: actions/checkout@v3
       - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/set-version-vars
       - uses: ./.github/actions/install-specgen-golang
       - uses: ./.github/actions/get-rendr
         with: { jfrog_pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
@@ -139,6 +142,7 @@ jobs:
         with: { go-version: '1.18' }
       - uses: actions/checkout@v3
       - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/set-version-vars
       - uses: ./.github/actions/install-specgen-golang
       - uses: ./.github/actions/get-rendr
         with: { jfrog_pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
@@ -185,8 +189,6 @@ jobs:
         with: { jfrog-server-url: specgen.jfrog.io, repo-name: maven, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
       - name: Build Maven plugin
         run: |
-          echo "~/.m2 directory"
-          ls -la ~/.m2
           cd ./plugins/maven-java-specgen
           sed -i.bak 's/PROJECT_VERSION/${SPECGEN_VERSION}/g' pom.xml
           mvn clean install --no-transfer-progress
@@ -222,30 +224,62 @@ jobs:
     runs-on: ubuntu-latest
     steps: [ run: "echo 'Just a placeholder'" ]
 
+  java-models:
+    needs: java-build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        values-file: [jackson, moshi]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with: { distribution: 'corretto', java-version: '11' }
+      - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/set-version-vars
+      - name: Render project
+        run: ./rendr_test.sh models java ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+      - uses: ./.github/actions/artifactory-setup-maven
+        with: { jfrog-server-url: specgen.jfrog.io, repo-name: maven, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .setup
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .test
 
-#  gradle-java:
+#  models-java:
+#    parameters:
+#      values-file:
+#        type: string
+#    environment:
+#      SPECGEN_VERSION: <<pipeline.parameters.specgen-version>>
+#      RENDR_PATH: ./
+#    working_directory: ~/specgen-tests
 #    docker:
 #      - image: cimg/openjdk:11.0.20
 #    steps:
 #      - checkout
-#      - attach_workspace_folder:
-#          folder: codegen/java
-#          at: ./plugins/gradle-java-specgen/src/main/resources
+#      - get-rendr
+#      - run:
+#          name: Render project
+#          command: ./rendr_test.sh models java <<parameters.values-file>> ${SPECGEN_VERSION} ./out
+#      - artifactory/setup-maven:
+#          jfrog-server-url: specgen.jfrog.io
+#          repo-name: maven
 #      - restore_cache:
-#          key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
-#      - run:
-#          name: Build Gradle plugin
-#          command: |
-#            cd ./plugins/gradle-java-specgen
-#            ./gradlew build --build-cache --no-daemon -Pproject.version=<<pipeline.parameters.specgen-version>>
-#      - run:
-#          name: Deploy Gradle plugin
-#          command: |
-#            cd ./plugins/gradle-java-specgen
-#            ./gradlew publishAllPublicationsToArtifactoryRepository --build-cache --no-daemon \
-#            -Djfrog.user=$JFROG_USER \
-#            -Djfrog.pass=$JFROG_PASS \
-#            -Dproject.version=<<pipeline.parameters.specgen-version>>
+#          key: models-java-<<parameters.values-file>>
+#      - yaml-execute:
+#          path: ./out
+#          yaml-file: .rendr.yaml
+#          yaml-path: .setup
+#      - yaml-execute:
+#          path: ./out
+#          yaml-file: .rendr.yaml
+#          yaml-path: .test
 #      - save_cache:
-#          key: cache-{{ checksum "./plugins/gradle-java-specgen/build.gradle.kts" }}-{{ checksum "./plugins/gradle-java-specgen/settings.gradle.kts" }}
-#          paths: [ ~/.gradle ]
+#          key: models-java-<<parameters.values-file>>
+#          paths: [ ~/.m2 ]
