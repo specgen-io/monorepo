@@ -529,6 +529,48 @@ jobs:
           yaml-file: .rendr.yaml
           yaml-path: .test
 
+  typescript-service:
+    needs: [typescript-npm, service-tests]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        values-file: [express-superstruct, express-iots, koa-superstruct, koa-iots]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with: { node-version: 16 }
+      - uses: ./.github/actions/set-env-vars
+      - uses: ./.github/actions/set-version-vars
+      - uses: ./.github/actions/get-rendr
+        with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
+      - name: Render project
+        run: ./rendr_test.sh service ts ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+      - uses: ./.github/actions/artifactory-setup-npm
+        with: { scope: specgen.io, jfrog-server-url: specgen.jfrog.io, repo-name: npm, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .setup
+      - uses: ./.github/actions/yaml-execute
+        with:
+          path: ./out
+          yaml-file: .rendr.yaml
+          yaml-path: .build
+      - name: Start service
+        run: |
+          cd ./out
+          $(yq eval .run .rendr.yaml) &
+      - uses: ./.github/actions/wait-url
+        with:
+          url: http://localhost:8081/docs/
+      - uses: actions/download-artifact@v3
+        with:
+          name: service-tests
+      - name: Run tests
+        run: |
+          chmod +x ./service-tests
+          ./service-tests -test.v
 
 #  models-ts:
 #    parameters:
@@ -567,32 +609,3 @@ jobs:
 #      - save_cache:
 #          key: models-ts-<<parameters.values-file>>
 #          paths: [ ~/specgen-tests/out/node_modules ]
-
-
-#  typescript:
-#    docker:
-#      - image: cimg/go:1.18.3
-#    working_directory: ~/specgen
-#    steps:
-#      - build_specgen_plugin:
-#          plugin-path: codegen/typescript
-#
-#  npm-typescript:
-#    docker:
-#      - image: cimg/node:16.8.0
-#    steps:
-#      - checkout
-#      - attach_workspace_folder:
-#          folder: codegen/typescript
-#          at: ./plugins/npm-specgen
-#      - artifactory/setup-npm:
-#          jfrog-server-url: specgen.jfrog.io
-#          repo-name: npm
-#      - run:
-#          name: npm publish package
-#          command: |
-#            cd ./plugins/npm-specgen
-#            npm pkg set name=@specgen.io/specgen.io
-#            npm version <<pipeline.parameters.specgen-version>>
-#            npm install
-#            npm publish
