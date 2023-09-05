@@ -87,6 +87,165 @@ public class EchoClientTest {
 	}
 
 	@Test
+	public void echoFormData_responseIsEqualToRequest() {
+	  var request = new FormParameters(
+			  intValue,
+			  longValue,
+			  floatValue,
+			  doubleValue,
+			  decimalValue,
+			  boolValue,
+			  stringValue,
+			  stringOptValue,
+			  stringDefaultedValue,
+			  stringArrayValue,
+			  uuidValue,
+			  dateValue,
+			  dateArrayValue,
+			  datetimeValue,
+			  enumValue
+	  );
+	  var response = client.echoFormData(
+			  intValue,
+			  longValue,
+			  floatValue,
+			  doubleValue,
+			  decimalValue,
+			  boolValue,
+			  stringValue,
+			  stringOptValue,
+			  stringDefaultedValue,
+			  stringArrayValue,
+			  uuidValue,
+			  dateValue,
+			  dateArrayValue,
+			  datetimeValue,
+			  enumValue
+	  );
+	  assertEquals(request, response);
+  }
+
+	@Test
+	public void echoFormData_doesntThrowException() {
+	  assertDoesNotThrow(() -> client.echoFormData(
+			  intValue,
+			  longValue,
+			  floatValue,
+			  doubleValue,
+			  decimalValue,
+			  boolValue,
+			  stringValue,
+			  stringOptValue,
+			  stringDefaultedValue,
+			  stringArrayValue,
+			  uuidValue,
+			  dateValue,
+			  dateArrayValue,
+			  datetimeValue,
+			  enumValue
+	  ));
+  }
+
+	@Test
+	public void echoFormUrlencoded_responseIsEqualToRequest() {
+	  var request = new FormParameters(
+			  intValue,
+			  longValue,
+			  floatValue,
+			  doubleValue,
+			  decimalValue,
+			  boolValue,
+			  stringValue,
+			  stringOptValue,
+			  stringDefaultedValue,
+			  stringArrayValue,
+			  uuidValue,
+			  dateValue,
+			  dateArrayValue,
+			  datetimeValue,
+			  enumValue
+	  );
+	  var response = client.echoFormUrlencoded(
+			  intValue,
+			  longValue,
+			  floatValue,
+			  doubleValue,
+			  decimalValue,
+			  boolValue,
+			  stringValue,
+			  stringOptValue,
+			  stringDefaultedValue,
+			  stringArrayValue,
+			  uuidValue,
+			  dateValue,
+			  dateArrayValue,
+			  datetimeValue,
+			  enumValue
+	  );
+	  assertEquals(request, response);
+  }
+
+	@Test
+	public void echoFormUrlencoded_doesntThrowException() {
+	  assertDoesNotThrow(() -> client.echoFormUrlencoded(
+			  intValue,
+			  longValue,
+			  floatValue,
+			  doubleValue,
+			  decimalValue,
+			  boolValue,
+			  stringValue,
+			  stringOptValue,
+			  stringDefaultedValue,
+			  stringArrayValue,
+			  uuidValue,
+			  dateValue,
+			  dateArrayValue,
+			  datetimeValue,
+			  enumValue
+	  ));
+  }
+
+	@Test
+	public void echoQuery_responseIsEqualToRequest() {
+	  var request = new Parameters(
+			  intValue,
+			  longValue,
+			  floatValue,
+			  doubleValue,
+			  decimalValue,
+			  boolValue,
+			  stringValue,
+			  stringOptValue,
+			  stringDefaultedValue,
+			  stringArrayValue,
+			  uuidValue,
+			  dateValue,
+			  dateArrayValue,
+			  datetimeValue,
+			  enumValue
+	  );
+	  var response = client.echoQuery(
+			  intValue,
+			  longValue,
+			  floatValue,
+			  doubleValue,
+			  decimalValue,
+			  boolValue,
+			  stringValue,
+			  stringOptValue,
+			  stringDefaultedValue,
+			  stringArrayValue,
+			  uuidValue,
+			  dateValue,
+			  dateArrayValue,
+			  datetimeValue,
+			  enumValue
+	  );
+	  assertEquals(request, response);
+  }
+
+	@Test
 	public void echoQuery_responseIsEqualToRequest() {
 		var request = new Parameters(
 			intValue,
