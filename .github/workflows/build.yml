@@ -3,16 +3,6 @@ name: build
 on: [push]
 
 jobs:
-  check-versions:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/set-version-vars
-      - name: Print version vars
-        run: |
-          echo "SPECGEN_VERSION_MAJOR: ${SPECGEN_VERSION_MAJOR}"
-          echo "SPECGEN_VERSION: ${SPECGEN_VERSION}"
-
   golang:
     runs-on: ubuntu-latest
     steps:
@@ -25,7 +15,6 @@ jobs:
           go build
 
   service-tests:
-    needs: golang
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -41,7 +30,6 @@ jobs:
           path: test-services/tests
 
   client-test-service:
-    needs: golang
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v4
@@ -95,7 +83,7 @@ jobs:
           yaml-path: .test
 
   golang-service:
-    needs: service-tests
+    needs: [golang, service-tests]
     strategy:
       matrix:
         values-file: [vestigo-strict, chi-strict, httprouter-strict]
@@ -132,7 +120,7 @@ jobs:
           ./service-tests -test.v
 
   golang-client:
-    needs: client-test-service
+    needs: [golang, client-test-service]
     strategy:
       matrix:
         values-file: [strict, nonstrict]
