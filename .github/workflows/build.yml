@@ -190,7 +190,7 @@ jobs:
       - name: Build Maven plugin
         run: |
           cd ./plugins/maven-java-specgen
-          sed -i.bak 's/PROJECT_VERSION/${SPECGEN_VERSION}/g' pom.xml
+          sed -i.bak "s/PROJECT_VERSION/${SPECGEN_VERSION}/g" pom.xml
           echo "pom.xml content:"
           cat pom.xml
           mvn clean install --no-transfer-progress
