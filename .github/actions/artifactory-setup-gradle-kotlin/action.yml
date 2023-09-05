@@ -1,0 +1,39 @@
+name: Setup Gradle project to use Artifactory
+description: Create settings.gradle.kts file to point to Artifactory
+inputs:
+  project-path:
+    description: Path to the project.
+    required: true
+  jfrog-server-url:
+    description: JFrog Artfactory server URL.
+    required: true
+  repo-name:
+    description: Name of repo in artifactory.
+    required: true
+  jfrog-user:
+    description: JFrog Artfactory user.
+    required: true
+  jfrog-pass:
+    description: JFrog Artfactory pass code.
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Artifactory for Maven
+      shell: bash
+      run: |
+        tee > ${{ inputs.project-path }}/settings.gradle.kts <<END
+        pluginManagement {
+            repositories {
+                maven("https://${{ inputs.jfrog-server-url }}/artifactory/${{ inputs.repo-name }}") {
+                    credentials {
+                        username = "${{ inputs.jfrog-user }}"
+                        password = "${{ inputs.jfrog-pass }}"
+                    }
+                }
+  
+                mavenLocal()
+                gradlePluginPortal()
+            }
+        }
+        END

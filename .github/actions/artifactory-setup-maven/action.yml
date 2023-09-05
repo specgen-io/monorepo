@@ -1,5 +1,5 @@
 name: Setup Maven to use Artifactory
-description: Downloads rendr tool
+description: Setup Maven settings.xml to point to Artifactory
 inputs:
   jfrog-server-url:
     description: JFrog Artfactory server URL.
@@ -8,7 +8,7 @@ inputs:
     description: Name of repo in artifactory.
     required: true
   jfrog-user:
-    description: JFrog Artfactory pass code.
+    description: JFrog Artfactory user.
     required: true
   jfrog-pass:
     description: JFrog Artfactory pass code.
