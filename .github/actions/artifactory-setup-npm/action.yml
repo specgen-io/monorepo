@@ -1,0 +1,31 @@
+name: Setup npm to use Artifactory
+description: Setup .npmrc to use Artifactory for the given scope
+inputs:
+  scope:
+    description: Scope to point to Artifactory.
+    required: true
+    default: ""
+  jfrog-server-url:
+    description: JFrog Artfactory server URL.
+    required: true
+  repo-name:
+    description: Name of repo in artifactory.
+    required: true
+  jfrog-user:
+    description: JFrog Artfactory user.
+    required: true
+  jfrog-pass:
+    description: JFrog Artfactory pass code.
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Artifactory for npm
+      shell: bash
+      run: |
+        export NPM_SCOPE_PREFIX=""
+        if [ "${{ inputs.scope }}" != "" ]; then
+          export NPM_SCOPE_PREFIX="@${{ inputs.scope }}:"
+        fi
+        echo "${NPM_SCOPE_PREFIX}registry = https://${{ inputs.jfrog-server-url }}/artifactory/api/npm/${{ inputs.repo-name }}/" > ~/.npmrc
+        curl --silent  -u${{ inputs.jfrog-user }}:${{ inputs.jfrog-pass }} https://${{ inputs.jfrog-server-url }}/artifactory/api/npm/auth | awk '{print "//${{ inputs.jfrog-server-url }}/artifactory/api/npm/${{ inputs.repo-name }}/:" $0}' >> ~/.npmrc
