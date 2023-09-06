@@ -88,45 +88,6 @@ public class EchoClientTest {
 
 	@Test
 	public void echoQuery_responseIsEqualToRequest() {
-	  var request = new Parameters(
-			  intValue,
-			  longValue,
-			  floatValue,
-			  doubleValue,
-			  decimalValue,
-			  boolValue,
-			  stringValue,
-			  stringOptValue,
-			  stringDefaultedValue,
-			  stringArrayValue,
-			  uuidValue,
-			  dateValue,
-			  dateArrayValue,
-			  datetimeValue,
-			  enumValue
-	  );
-	  var response = client.echoQuery(
-			  intValue,
-			  longValue,
-			  floatValue,
-			  doubleValue,
-			  decimalValue,
-			  boolValue,
-			  stringValue,
-			  stringOptValue,
-			  stringDefaultedValue,
-			  stringArrayValue,
-			  uuidValue,
-			  dateValue,
-			  dateArrayValue,
-			  datetimeValue,
-			  enumValue
-	  );
-	  assertEquals(request, response);
-  }
-
-	@Test
-	public void echoQuery_responseIsEqualToRequest() {
 		var request = new Parameters(
 			intValue,
 			longValue,
