@@ -27,7 +27,12 @@ jobs:
         run: |
           cd codegen/specgen
           go install github.com/specgen-io/goven@v0.0.10
-          goven release -name github.com/specgen-io/specgen/${SPECGEN_VERSION_MAJOR} -version v${SPECGEN_VERSION} -out vendored
+          goven release -name github.com/specgen-io/specgen/${SPECGEN_VERSION_MAJOR} \
+            -version v${SPECGEN_VERSION} -out vendored \
+            -github-name ${{ secrets.GH_NAME }} \
+            -github-email ${{ secrets.GH_EMAIL }} \
+            -github-user ${{ secrets.GH_USER }} \
+            -github-token ${{ secrets.GH_TOKEN }}
       - name: Check released tool
         run: |
           go install github.com/specgen-io/specgen/${SPECGEN_VERSION_MAJOR}@v${SPECGEN_VERSION}

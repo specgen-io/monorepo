@@ -27,38 +27,45 @@ echo "Releasing $VERSION"
 RELEASE_NAME=v$VERSION
 
 if [[ $TARGET == *"github"* ]]; then
+    if [[ $GH_TOKEN == "" ]]; then
+        echo '$GH_TOKEN variable is not set'
+        exit 1ååååå
+    fi
 
     GITHUB_ORG="specgen-io"
     GITHUB_REPO="specgen"
-
-    if [[ $GITHUB_TOKEN == "" ]]; then
-        echo 'GITHUB_TOKEN variable is not set'
-        exit 1
-    fi
 
     go get github.com/aktau/github-release
 
     echo "Creating release in Github: $RELEASE_NAME"
     set +e
-    $GOPATH/bin/github-release release --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME
+    $GOPATH/bin/github-release release --security-token $GH_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME
     set -e
 
     sleep 10
 
     echo "Releasing specgen_darwin_amd64.zip"
-    $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_darwin_amd64.zip  --file ./specgen_darwin_amd64.zip
+    $GOPATH/bin/github-release upload --replace --security-token $GH_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_darwin_amd64.zip  --file ./specgen_darwin_amd64.zip
     echo "Releasing specgen_darwin_arm64.zip"
-    $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_darwin_arm64.zip  --file ./specgen_darwin_arm64.zip
+    $GOPATH/bin/github-release upload --replace --security-token $GH_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_darwin_arm64.zip  --file ./specgen_darwin_arm64.zip
     echo "Releasing specgen_linux_amd64.zip"
-    $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_linux_amd64.zip   --file ./specgen_linux_amd64.zip
+    $GOPATH/bin/github-release upload --replace --security-token $GH_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_linux_amd64.zip   --file ./specgen_linux_amd64.zip
     echo "Releasing specgen_windows_amd64.zip"
-    $GOPATH/bin/github-release upload --replace --security-token $GITHUB_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_windows_amd64.zip --file ./specgen_windows_amd64.zip
+    $GOPATH/bin/github-release upload --replace --security-token $GH_TOKEN --user $GITHUB_ORG --repo $GITHUB_REPO --tag $RELEASE_NAME --name specgen_windows_amd64.zip --file ./specgen_windows_amd64.zip
 
     echo "Done releasing to Github $RELEASE_NAME"
 
 fi
 
 if [[ $TARGET == *"artifactory"* ]]; then
+    if [[ $JFROG_USER == "" ]]; then
+        echo '$JFROG_USER variable is not set'
+        exit 1
+    fi
+    if [[ $JFROG_PASS == "" ]]; then
+        echo '$JFROG_PASS variable is not set'
+        exit 1
+    fi
 
     ARTFACTORY_URL="https://specgen.jfrog.io/artifactory/binaries/specgen"
 
