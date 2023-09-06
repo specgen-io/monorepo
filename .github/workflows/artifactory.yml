@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cleaning npm
-        run: curl --output /dev/null --silent --head --fail -u${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASS }} -X DELETE https://specgen.jfrog.io/artifactory/npm-local/@specgen.io/
+        run: curl --silent -u${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASS }} -X DELETE https://specgen.jfrog.io/artifactory/npm-local/@specgen.io/
       - name: Cleaning maven
-        run: curl --output /dev/null --silent --head --fail -u${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASS }} -X DELETE https://specgen.jfrog.io/artifactory/maven-local/io/specgen/
+        run: curl --silent -u${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASS }} -X DELETE https://specgen.jfrog.io/artifactory/maven-local/io/specgen/
       - name: Cleaning sbt
-        run: curl --output /dev/null --silent --head --fail -u${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASS }} -X DELETE https://specgen.jfrog.io/artifactory/sbt-local/io/specgen/
+        run: curl --silent -u${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASS }} -X DELETE https://specgen.jfrog.io/artifactory/sbt-local/io/specgen/
       - name: Cleaning gems
-        run: curl --output /dev/null --silent --head --fail -u${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASS }} -X DELETE https://specgen.jfrog.io/artifactory/gems-local/gems/
+        run: curl --silent -u${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASS }} -X DELETE https://specgen.jfrog.io/artifactory/gems-local/gems/
