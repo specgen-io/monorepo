@@ -1,0 +1,44 @@
+name: Commit and push files to git repo and create tag
+description: Commit and push files to git repo and create tag
+inputs:
+  path:
+    description: Path to files.
+    required: false
+    default: "."
+  repo:
+    description: Git repository.
+    required: true
+  message:
+    description: Commit message.
+    required: true
+  tag:
+    description: Tag name to create.
+    required: true
+  github-user:
+    description: Github user to use for commit.
+    required: true
+  github-email:
+    description: Github user to use for commit.
+    required: true
+  github-token:
+    description: Github access token for push and tag.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Push and create tag
+      shell: bash
+      run: |
+        cd ${{ inputs.path }}
+        git config --global user.email ${{ inputs.github-email }}
+        git config --global user.name ${{ inputs.github-user }}
+        git remote set-url origin https://${{ inputs.github-user }}:${{ inputs.github-token }}@${{ inputs.repo }}
+        git add --all
+        if [[ `git status --porcelain` ]]; then
+          git commit -m "${{ inputs.message }}"
+          git push
+        else
+          echo "No changes detected - nothing to commit"
+        fi
+        git tag -f -a ${{ inputs.tag }}
+        git push -f --tags
