@@ -26,8 +26,8 @@ jobs:
       - uses: actions/setup-go@v4
         with: { go-version: '1.18' }
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/set-env-vars
-      - uses: ./.github/actions/set-version-vars
+      - uses: ./.github/actions/env-common
+      - uses: ./.github/actions/env-build-version
       - uses: ./.github/actions/install-specgen-golang
       - uses: ./.github/actions/get-rendr
         with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
@@ -66,8 +66,8 @@ jobs:
       - uses: actions/setup-go@v4
         with: { go-version: '1.18' }
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/set-env-vars
-      - uses: ./.github/actions/set-version-vars
+      - uses: ./.github/actions/env-common
+      - uses: ./.github/actions/env-build-version
       - uses: ./.github/actions/install-specgen-golang
       - uses: ./.github/actions/get-rendr
         with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
@@ -94,8 +94,8 @@ jobs:
       - uses: actions/setup-go@v4
         with: { go-version: '1.18' }
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/set-env-vars
-      - uses: ./.github/actions/set-version-vars
+      - uses: ./.github/actions/env-common
+      - uses: ./.github/actions/env-build-version
       - uses: ./.github/actions/install-specgen-golang
       - uses: ./.github/actions/get-rendr
         with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
@@ -131,8 +131,8 @@ jobs:
       - uses: actions/setup-go@v4
         with: { go-version: '1.18' }
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/set-env-vars
-      - uses: ./.github/actions/set-version-vars
+      - uses: ./.github/actions/env-common
+      - uses: ./.github/actions/env-build-version
       - uses: ./.github/actions/install-specgen-golang
       - uses: ./.github/actions/get-rendr
         with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
