@@ -7,6 +7,7 @@ runs:
       with:
         name: service-tests
     - name: Run tests
+      shell: bash
       run: |
         chmod +x ./service-tests
         ./service-tests -test.v
