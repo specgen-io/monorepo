@@ -1,4 +1,4 @@
-name: artifactory
+name: release
 
 on:
   workflow_dispatch: {}
