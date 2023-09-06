@@ -29,7 +29,7 @@ RELEASE_NAME=v$VERSION
 if [[ $TARGET == *"github"* ]]; then
     if [[ $GH_TOKEN == "" ]]; then
         echo '$GH_TOKEN variable is not set'
-        exit 1ååååå
+        exit 1
     fi
 
     GITHUB_ORG="specgen-io"

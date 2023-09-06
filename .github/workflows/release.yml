@@ -13,10 +13,10 @@ jobs:
       - uses: ./.github/actions/env-release-version
       - uses: ./.github/actions/build-specgen-plugin
         with: { plugin-path: codegen/specgen, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen }
-      - name: Release binary
-        run: |
-          cd codegen/specgen
-          ./release.sh ${SPECGEN_VERSION} github+artifactory
+#      - name: Release binary
+#        run: |
+#          cd codegen/specgen
+#          ./release.sh ${SPECGEN_VERSION} github+artifactory
       - name: Cleanup
         run: |
           cd codegen/specgen
