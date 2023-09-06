@@ -13,10 +13,6 @@ jobs:
       - uses: ./.github/actions/env-release-version
       - uses: ./.github/actions/build-specgen-plugin
         with: { plugin-path: codegen/specgen, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen }
-#      - name: Release binary
-#        run: |
-#          cd codegen/specgen
-#          ./release.sh ${SPECGEN_VERSION} github+artifactory
       - name: Cleanup
         run: |
           cd codegen/specgen
@@ -28,11 +24,57 @@ jobs:
           go install github.com/specgen-io/goven@v0.0.10
           goven release -name github.com/specgen-io/specgen/${SPECGEN_VERSION_MAJOR} \
             -version v${SPECGEN_VERSION} -out vendored \
-            -github-name ${{ secrets.GH_NAME }} \
+            -github-name  ${{ secrets.GH_NAME }} \
             -github-email ${{ secrets.GH_EMAIL }} \
-            -github-user ${{ secrets.GH_USER }} \
+            -github-user  ${{ secrets.GH_USER }} \
             -github-token ${{ secrets.GH_TOKEN }}
       - name: Check released tool
         run: |
           go install github.com/specgen-io/specgen/${SPECGEN_VERSION_MAJOR}@v${SPECGEN_VERSION}
           specgen --help
+
+  specgen-golang:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+        with: { go-version: '1.18', cache-dependency-path: codegen/specgen }
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/env-release-version
+      - name: Vendor
+        run: |
+          cd codegen/golang
+          go install github.com/specgen-io/goven@v0.0.10
+          goven release -name github.com/specgen-io/specgen-golang/${SPECGEN_VERSION_MAJOR} \
+            -version v${SPECGEN_VERSION} -out vendored \
+            -github-name  ${{ secrets.GH_NAME }} \
+            -github-email ${{ secrets.GH_EMAIL }} \
+            -github-user  ${{ secrets.GH_USER }} \
+            -github-token ${{ secrets.GH_TOKEN }}
+      - name: Check released tool
+        run: |
+          go install github.com/specgen-io/specgen-golang/${SPECGEN_VERSION_MAJOR}@v${SPECGEN_VERSION}
+          specgen-golang --help
+
+  java:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/env-release-version
+      - uses: ./.github/actions/build-specgen-plugin
+        with: { plugin-path: codegen/java, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-java }
+
+  kotlin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/env-release-version
+      - uses: ./.github/actions/build-specgen-plugin
+        with: { plugin-path: codegen/kotlin, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-kotlin }
+
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/env-release-version
+      - uses: ./.github/actions/build-specgen-plugin
+        with: { plugin-path: codegen/typescript, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-typescript }
