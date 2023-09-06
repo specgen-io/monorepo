@@ -1,0 +1,9 @@
+name: Set release version to environment variables
+description: Set release version to environment variables
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        echo "SPECGEN_VERSION_MAJOR=v2" >> $GITHUB_ENV
+        echo "SPECGEN_VERSION=2.2.0" >> $GITHUB_ENV

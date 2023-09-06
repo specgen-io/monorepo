@@ -1,0 +1,34 @@
+name: artifactory
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  specgen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+        with: { go-version: '1.18', cache-dependency-path: codegen/specgen }
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/env-release-version
+      - uses: ./.github/actions/build-specgen-plugin
+        with: { plugin-path: codegen/specgen, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen }
+      - name: Release binary
+        run: |
+          cd codegen/specgen
+          ./release.sh ${SPECGEN_VERSION} github+artifactory
+      - name: Cleanup
+        run: |
+          cd codegen/specgen
+          rm *.zip
+          rm -rf ./dist
+          rm ./release.sh
+      - name: Vendor
+        run: |
+          cd codegen/specgen
+          go install github.com/specgen-io/goven@v0.0.10
+          goven release -name github.com/specgen-io/specgen/${SPECGEN_VERSION_MAJOR} -version v${SPECGEN_VERSION} -out vendored
+      - name: Check released tool
+        run: |
+          go install github.com/specgen-io/specgen/${SPECGEN_VERSION_MAJOR}@v${SPECGEN_VERSION}
+          specgen --help
