@@ -20,7 +20,6 @@ jobs:
       - name: Cleanup
         run: |
           cd codegen/specgen
-          rm *.zip
           rm -rf ./dist
           rm ./release.sh
       - name: Vendor
