@@ -183,8 +183,7 @@ jobs:
       - uses: ./.github/actions/artifactory-setup-maven
         with: { jfrog-server-url: specgen.jfrog.io, repo-name: maven, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
       - uses: ./.github/actions/start-test-service
-        with:
-          port: "8081"
+        with: { port: "8081" }
       - uses: ./.github/actions/yaml-execute
         with:
           path: ./out

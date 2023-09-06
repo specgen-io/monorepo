@@ -139,8 +139,7 @@ jobs:
       - name: Render project
         run: ./rendr_test.sh client go ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
       - uses: ./.github/actions/start-test-service
-        with:
-          port: "8081"
+        with: { port: "8081" }
       - uses: ./.github/actions/yaml-execute
         with:
           path: ./out
