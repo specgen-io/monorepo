@@ -142,13 +142,7 @@ jobs:
       - uses: ./.github/actions/wait-url
         with:
           url: http://localhost:8081/docs/
-      - uses: actions/download-artifact@v3
-        with:
-          name: service-tests
-      - name: Run tests
-        run: |
-          chmod +x ./service-tests
-          ./service-tests -test.v
+      - uses: ./.github/actions/run-service-tests
 
   typescript-client:
     needs: [typescript-npm, client-test-service]

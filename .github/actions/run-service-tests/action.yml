@@ -1,0 +1,12 @@
+name: Run service tests
+description: Run service tests
+runs:
+  using: composite
+  steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: service-tests
+    - name: Run tests
+      run: |
+        chmod +x ./service-tests
+        ./service-tests -test.v
