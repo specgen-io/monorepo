@@ -38,6 +38,7 @@ func (g *MicronautGenerator) client(api *spec.Api) *generator.CodeFile {
 	w.Imports.Add(g.Types.Imports()...)
 	w.Imports.Add(`io.micronaut.http.HttpHeaders.*`)
 	w.Imports.Add(`io.micronaut.http.HttpRequest.*`)
+	w.Imports.Add(`io.micronaut.http.MediaType`)
 	w.Imports.Add(`io.micronaut.http.client.*`)
 	w.Imports.Add(`java.net.URL`)
 	w.Imports.Add(`org.slf4j.*`)
@@ -92,21 +93,53 @@ func (g *MicronautGenerator) createUrl(w *writer.Writer, operation *spec.NamedOp
 }
 
 func (g *MicronautGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
-	requestBody := "body"
+	var requestBody string
+	if operation.BodyIs(spec.RequestBodyString) {
+		requestBody = "body"
+	}
 	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`val bodyJson = json.%s`, g.Models.WriteJson("body", &operation.Body.Type.Definition))
 		requestBody = "bodyJson"
 	}
+	if operation.BodyIs(spec.RequestBodyFormData) {
+		w.EmptyLine()
+		w.Line(`val body = MultipartBodyBuilder()`)
+		for _, param := range operation.Body.FormData {
+			w.Line(`body.addPart("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))
+		}
+		requestBody = "body.build()"
+	}
+	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		w.EmptyLine()
+		w.Line(`val body = UrlencodedFormBodyBuilder()`)
+		for _, param := range operation.Body.FormUrlEncoded {
+			w.Line(`body.addParameter("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))
+		}
+		requestBody = "body.build()"
+	}
 	w.EmptyLine()
 	w.Line(`val request = RequestBuilder(%s)`, requestBuilderParams(operation.Endpoint.Method, requestBody, operation))
-	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`request.headerParam(CONTENT_TYPE, "application/json")`)
-	}
-	if operation.BodyIs(spec.RequestBodyString) {
-		w.Line(`request.headerParam(CONTENT_TYPE, "text/plain")`)
-	}
 	for _, param := range operation.HeaderParams {
 		w.Line(`request.headerParam("%s", %s)`, param.Name.Source, addBuilderParam(&param))
+	}
+	if !operation.Body.IsEmpty() {
+		w.Line(`request.contentType(%s)`, contentType(operation))
+	}
+}
+
+func contentType(operation *spec.NamedOperation) string {
+	if operation.Body.IsEmpty() {
+		return ""
+	} else if operation.Body.IsText() {
+		return `MediaType.TEXT_PLAIN_TYPE`
+	} else if operation.Body.IsJson() {
+		return `MediaType.APPLICATION_JSON_TYPE`
+	} else if operation.Body.IsBodyFormData() {
+		return `MediaType.MULTIPART_FORM_DATA_TYPE`
+	} else if operation.Body.IsBodyFormUrlEncoded() {
+		return `MediaType.FORM`
+	} else {
+		panic(fmt.Sprintf("Unknown Contet Type"))
 	}
 }
 
@@ -196,6 +229,8 @@ func (g *MicronautGenerator) Utils() []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.generateRequestBuilder())
 	files = append(files, *g.generateUrlBuilder())
+	files = append(files, *g.generateMultipartBodyBuilder())
+	files = append(files, *g.generateUrlencodedFormBodyBuilder())
 	files = append(files, *g.generateRequestor())
 	return files
 }
@@ -203,10 +238,10 @@ func (g *MicronautGenerator) Utils() []generator.CodeFile {
 func (g *MicronautGenerator) generateRequestBuilder() *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `RequestBuilder`)
 	w.Lines(`
-import io.micronaut.http.MutableHttpRequest
+import io.micronaut.http.*
 import java.net.URI
 
-class RequestBuilder {
+class [[.ClassName]] {
 	private var generateRequestBuilder: MutableHttpRequest<Any>
 
 	constructor(url: URI, body: Any?, method: (URI, Any?) -> MutableHttpRequest<Any>) {
@@ -217,13 +252,18 @@ class RequestBuilder {
 		this.generateRequestBuilder = method(url)
 	}
 
-	fun headerParam(name: String, value: Any): RequestBuilder {
+	fun contentType(mediaType: MediaType): [[.ClassName]] {
+		this.generateRequestBuilder.contentType(mediaType)
+		return this
+	}
+
+	fun headerParam(name: String, value: Any): [[.ClassName]] {
 		val valueStr = value.toString()
 		this.generateRequestBuilder.header(name, valueStr)
 		return this
 	}
 
-	fun <T> headerParam(name: String, values: List<T>): RequestBuilder {
+	fun <T> headerParam(name: String, values: List<T>): [[.ClassName]] {
 		for (value in values) {
 			this.headerParam(name, value!!)
 		}
@@ -245,24 +285,24 @@ import io.micronaut.http.uri.UriBuilder
 import java.net.URI
 import java.util.*
 
-class UrlBuilder(url: String) {
+class [[.ClassName]](url: String) {
 	private val uriBuilder: UriBuilder = UriBuilder.of(url)
 	private val urlMap: MutableMap<String, Any> = mutableMapOf()
 
-	fun queryParam(name: String, value: Any): UrlBuilder {
+	fun queryParam(name: String, value: Any): [[.ClassName]] {
 		val valueStr = value.toString()
 		uriBuilder.queryParam(name, valueStr)
 		return this
 	}
 
-	fun <T> queryParam(name: String, values: List<T>): UrlBuilder {
+	fun <T> queryParam(name: String, values: List<T>): [[.ClassName]] {
 		for (value in values) {
 			this.queryParam(name, value!!)
 		}
 		return this
 	}
 
-	fun pathParam(name: String, value: Any): UrlBuilder {
+	fun pathParam(name: String, value: Any): [[.ClassName]] {
 		this.uriBuilder.path("{$name}")
 		this.urlMap += mapOf(name to value)
 		return this
@@ -279,6 +319,75 @@ class UrlBuilder(url: String) {
 	fun build(): URI {
 		return this.uriBuilder.build()
 	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *MicronautGenerator) generateMultipartBodyBuilder() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `MultipartBodyBuilder`)
+	w.Lines(`
+import io.micronaut.http.client.multipart.MultipartBody
+
+class [[.ClassName]] {
+	private val multipartBodyBuilder: MultipartBody.Builder = MultipartBody.builder()
+
+	fun addPart(name: String, value: Any): [[.ClassName]] {
+		this.multipartBodyBuilder.addPart(name, value.toString())
+		return this
+	}
+
+	fun <T> addPart(name: String, values: List<T>): [[.ClassName]] {
+		for (value in values) {
+			this.multipartBodyBuilder.addPart(name, value.toString())
+		}
+		return this
+	}
+
+	fun build(): MultipartBody {
+		return this.multipartBodyBuilder.build()
+	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *MicronautGenerator) generateUrlencodedFormBodyBuilder() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `UrlencodedFormBodyBuilder`)
+	w.Lines(`
+import java.net.URLEncoder
+import java.util.stream.Collectors
+
+class [[.ClassName]] {
+	private val paramValues: MutableList<ParamValues>
+
+	init {
+		this.paramValues = ArrayList()
+	}
+
+	fun addParameter(name: String, value: Any): [[.ClassName]] {
+		this.paramValues.add(ParamValues(name, value))
+		return this
+	}
+
+	fun <T> addParameter(name: String, values: List<T>): [[.ClassName]] {
+		for (value in values) {
+			this.paramValues.add(ParamValues(name, value!!))
+		}
+		return this
+	}
+
+	fun build(): String {
+		return this.paramValues.stream()
+			.map { entry: ParamValues -> encode(entry.name) + "=" + encode(entry.value.toString()) }
+			.collect(Collectors.joining("&"))
+	}
+
+	private fun encode(string: String): String {
+		return URLEncoder.encode(string, "UTF-8")
+	}
+
+	private class ParamValues(val name: String, val value: Any)
 }
 `)
 	return w.ToCodeFile()

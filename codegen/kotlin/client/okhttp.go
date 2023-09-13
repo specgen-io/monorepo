@@ -104,6 +104,20 @@ func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedO
 		w.Line(`val requestBody = json.%s.toRequestBody("application/json".toMediaTypeOrNull())`, g.Models.WriteJson("body", &operation.Body.Type.Definition))
 		requestBody = "requestBody"
 	}
+	if operation.BodyIs(spec.RequestBodyFormData) {
+		w.Line(`val body = MultipartBodyBuilder(MultipartBody.FORM)`)
+		for _, param := range operation.Body.FormData {
+			w.Line(`body.addFormDataPart("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))
+		}
+		requestBody = "body.build()"
+	}
+	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		w.Line(`val body = UrlencodedFormBodyBuilder()`)
+		for _, param := range operation.Body.FormUrlEncoded {
+			w.Line(`body.add("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))
+		}
+		requestBody = "body.build()"
+	}
 	w.Line(`val request = RequestBuilder("%s", url.build(), %s)`, operation.Endpoint.Method, requestBody)
 	for _, param := range operation.HeaderParams {
 		w.Line(`request.addHeaderParameter("%s", %s)`, param.Name.Source, addBuilderParam(&param))
@@ -174,6 +188,8 @@ func (g *OkHttpGenerator) Utils() []generator.CodeFile {
 	files := []generator.CodeFile{}
 	files = append(files, *g.generateRequestBuilder())
 	files = append(files, *g.generateUrlBuilder())
+	files = append(files, *g.generateMultipartBodyBuilder())
+	files = append(files, *g.generateUrlencodedFormBodyBuilder())
 	return files
 }
 
@@ -249,6 +265,67 @@ class [[.ClassName]](baseUrl: String) {
 
 	fun build(): HttpUrl {
 		return this.urlBuilder.build()
+	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *OkHttpGenerator) generateMultipartBodyBuilder() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `MultipartBodyBuilder`)
+	w.Lines(`
+import okhttp3.*
+import okhttp3.MultipartBody.Part
+
+class [[.ClassName]](type: MediaType) {
+	private val multipartBodyBuilder: MultipartBody.Builder
+
+	init {
+		this.multipartBodyBuilder = MultipartBody.Builder().setType(type)
+	}
+
+	fun addFormDataPart(name: String, value: Any): [[.ClassName]] {
+		this.multipartBodyBuilder.addPart(Part.createFormData(name, value.toString()))
+		return this
+	}
+
+	fun <T> addFormDataPart(name: String, values: List<T>): [[.ClassName]] {
+		for (value in values) {
+			this.multipartBodyBuilder.addPart(Part.createFormData(name, value.toString()))
+		}
+		return this
+	}
+
+	fun build(): MultipartBody {
+		return this.multipartBodyBuilder.build()
+	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *OkHttpGenerator) generateUrlencodedFormBodyBuilder() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `UrlencodedFormBodyBuilder`)
+	w.Lines(`
+import okhttp3.FormBody
+
+class [[.ClassName]] {
+	private val formBodyBuilder: FormBody.Builder = FormBody.Builder()
+
+	fun add(name: String, value: Any): [[.ClassName]] {
+		this.formBodyBuilder.add(name, value.toString())
+		return this
+	}
+
+	fun <T> add(name: String, values: List<T>): [[.ClassName]] {
+		for (value in values) {
+			this.formBodyBuilder.add(name, value.toString())
+		}
+		return this
+	}
+
+	fun build(): FormBody {
+		return this.formBodyBuilder.build()
 	}
 }
 `)
