@@ -11,27 +11,37 @@ jobs:
         with: { go-version: '1.18', cache-dependency-path: codegen/specgen }
       - uses: actions/checkout@v3
       - uses: ./.github/actions/env-release-version
-      - uses: ./.github/actions/build-specgen-plugin
-        with: { plugin-path: codegen/specgen, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen }
-      - name: Cleanup
-        run: |
-          cd codegen/specgen
-          rm -rf ./dist
-          rm ./release.sh
+      - uses: ./.github/actions/stamp-version-specgen-plugin
+        with: { plugin-path: codegen/specgen, specgen-version: "${SPECGEN_VERSION}" }
       - name: Vendor
         run: |
           cd codegen/specgen
-          go install github.com/specgen-io/goven@v0.0.10
+          go install github.com/specgen-io/goven@v0.0.11
           goven release -name github.com/specgen-io/specgen/${SPECGEN_VERSION_MAJOR} \
             -version v${SPECGEN_VERSION} -out vendored \
             -github-name  ${{ secrets.GH_NAME }} \
             -github-email ${{ secrets.GH_EMAIL }} \
             -github-user  ${{ secrets.GH_USER }} \
             -github-token ${{ secrets.GH_TOKEN }}
-      - name: Check released tool
+      - name: Check released go tool
         run: |
           go install github.com/specgen-io/specgen/${SPECGEN_VERSION_MAJOR}@v${SPECGEN_VERSION}
           specgen --help
+      - uses: ./.github/actions/build-specgen-plugin
+        with: { plugin-path: codegen/specgen, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen }
+      - name: Zip tool binaries
+        run: |
+          cd codegen/specgen
+          zip "./specgen_darwin_amd64.zip" "./dist/darwin_amd64/specgen" -q -j
+          zip "./specgen_darwin_arm64.zip" "./dist/darwin_arm64/specgen" -q -j
+          zip "./specgen_linux_amd64.zip" "./dist/linux_amd64/specgen" -q -j
+          zip "./specgen_windows_amd64.zip" "./dist/windows_amd64/specgen.exe" -q -j
+      - name: Release tool binaries
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          cd codegen/specgen
+          ../release-github.sh ${SPECGEN_VERSION} github
 
   specgen-golang:
     runs-on: ubuntu-latest
@@ -40,17 +50,19 @@ jobs:
         with: { go-version: '1.18', cache-dependency-path: codegen/specgen }
       - uses: actions/checkout@v3
       - uses: ./.github/actions/env-release-version
+      - uses: ./.github/actions/stamp-version-specgen-plugin
+        with: { plugin-path: codegen/golang, specgen-version: "${SPECGEN_VERSION}" }
       - name: Vendor
         run: |
           cd codegen/golang
-          go install github.com/specgen-io/goven@v0.0.10
+          go install github.com/specgen-io/goven@v0.0.11
           goven release -name github.com/specgen-io/specgen-golang/${SPECGEN_VERSION_MAJOR} \
             -version v${SPECGEN_VERSION} -out vendored \
             -github-name  ${{ secrets.GH_NAME }} \
             -github-email ${{ secrets.GH_EMAIL }} \
             -github-user  ${{ secrets.GH_USER }} \
             -github-token ${{ secrets.GH_TOKEN }}
-      - name: Check released tool
+      - name: Check released go tool
         run: |
           go install github.com/specgen-io/specgen-golang/${SPECGEN_VERSION_MAJOR}@v${SPECGEN_VERSION}
           specgen-golang --help

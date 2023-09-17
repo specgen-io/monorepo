@@ -1,0 +1,23 @@
+name: Stamp version on specgen plugin
+description: Generates version code file into the codebase of the specgen plugin
+inputs:
+  plugin-path:
+    description: Path to generator.
+    required: true
+  specgen-version:
+    description: Version of specgen to stamp
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Build codegen
+      shell: bash
+      run: |
+        cd ./${{ inputs.plugin-path }}
+        echo "Stamping version to the source code: ${{ inputs.specgen-version }}"
+        cat <<END > ./version/version.go
+        package version
+        
+        var Current = "$VERSION"
+        
+        END
