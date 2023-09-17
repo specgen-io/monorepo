@@ -18,6 +18,6 @@ runs:
         cat <<END > ./version/version.go
         package version
         
-        var Current = "$VERSION"
+        var Current = "${{ inputs.specgen-version }}"
         
         END
