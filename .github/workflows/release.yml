@@ -185,10 +185,9 @@ jobs:
         run: |
           git clone https://github.com/specgen-io/templates.git templates-release
           cd ./templates-release
-          rm -rf client-*
-          rm -rf service-*
-          rm -rf models-*
-          cp -r ../templates/ .
+          rm -rf client-* service-* models-*
+          cp -r ../templates/ ./
+          ls -la
       - uses: ./.github/actions/github-push-tag
         with:
           path: "./templates-release"

@@ -40,5 +40,6 @@ runs:
         else
           echo "No changes detected - nothing to commit"
         fi
+        echo "Will create tag ${{ inputs.tag }}"
         git tag -f -a ${{ inputs.tag }}
         git push -f --tags
