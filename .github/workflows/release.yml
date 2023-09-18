@@ -58,125 +58,131 @@ jobs:
 #        run: |
 #          go install github.com/specgen-io/specgen-golang/${SPECGEN_VERSION_MAJOR}@v${SPECGEN_VERSION}
 #          specgen-golang --help
-
-  java:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/env-release-version
-      - uses: ./.github/actions/build-specgen-plugin
-        with: { plugin-path: codegen/java, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-java }
-
-  kotlin:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/env-release-version
-      - uses: ./.github/actions/build-specgen-plugin
-        with: { plugin-path: codegen/kotlin, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-kotlin }
-
-  typescript:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/env-release-version
-      - uses: ./.github/actions/build-specgen-plugin
-        with: { plugin-path: codegen/typescript, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-typescript }
-
-  java-gradle-pluginportal:
-    needs: java
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/env-build-version
-      - uses: actions/setup-java@v3
-        with: { distribution: 'corretto', java-version: '11' }
-      - uses: actions/download-artifact@v3
-        with: { name: specgen-java, path: ./plugins/gradle-java-specgen/src/main/resources/dist }
-      - name: Deploy Gradle Java plugin
-        run: |
-          cd ./plugins/gradle-java-specgen
+#
+#  java:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: ./.github/actions/env-release-version
+#      - uses: ./.github/actions/build-specgen-plugin
+#        with: { plugin-path: codegen/java, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-java }
+#
+#  kotlin:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: ./.github/actions/env-release-version
+#      - uses: ./.github/actions/build-specgen-plugin
+#        with: { plugin-path: codegen/kotlin, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-kotlin }
+#
+#  typescript:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: ./.github/actions/env-release-version
+#      - uses: ./.github/actions/build-specgen-plugin
+#        with: { plugin-path: codegen/typescript, specgen-version: "${SPECGEN_VERSION}", artifact-name: specgen-typescript }
+#
+#  java-gradle-pluginportal:
+#    needs: java
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: ./.github/actions/env-build-version
+#      - uses: actions/setup-java@v3
+#        with: { distribution: 'corretto', java-version: '11' }
+#      - uses: actions/download-artifact@v3
+#        with: { name: specgen-java, path: ./plugins/gradle-java-specgen/src/main/resources/dist }
+#      - name: Deploy Gradle Java plugin
+#        run: |
+#          cd ./plugins/gradle-java-specgen
 #          ./gradlew publishPlugins --build-cache --no-daemon \
 #          -Pgradle.publish.key=${{ secrets.GRADLE_PUBLISH_KEY }} \
 #          -Pgradle.publish.secret=${{ secrets.GRADLE_PUBLISH_SECRET }} \
 #          -Dproject.version=${SPECGEN_VERSION}
-
-  kotlin-gradle-pluginportal:
-    needs: [kotlin, java-gradle-pluginportal]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/env-build-version
-      - uses: actions/setup-java@v3
-        with: { distribution: 'corretto', java-version: '11' }
-      - uses: actions/download-artifact@v3
-        with: { name: specgen-kotlin, path: ./plugins/gradle-kotlin-specgen/src/main/resources/dist }
-      - name: Deploy Gradle plugin
-        run: |
-          cd ./plugins/gradle-kotlin-specgen
+#
+#  kotlin-gradle-pluginportal:
+#    needs: [kotlin, java-gradle-pluginportal]
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: ./.github/actions/env-build-version
+#      - uses: actions/setup-java@v3
+#        with: { distribution: 'corretto', java-version: '11' }
+#      - uses: actions/download-artifact@v3
+#        with: { name: specgen-kotlin, path: ./plugins/gradle-kotlin-specgen/src/main/resources/dist }
+#      - name: Deploy Gradle plugin
+#        run: |
+#          cd ./plugins/gradle-kotlin-specgen
 #          ./gradlew publishPlugins --build-cache --no-daemon \
 #          -Pgradle.publish.key=${{ secrets.GRADLE_PUBLISH_KEY }} \
 #          -Pgradle.publish.secret=${{ secrets.GRADLE_PUBLISH_SECRET }} \
 #          -Dproject.version=${SPECGEN_VERSION}
-
-
-  java-maven-sonatype:
-    needs: java
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/env-build-version
-      - uses: actions/setup-java@v3
-        with: { distribution: 'corretto', java-version: '11' }
-      - uses: actions/download-artifact@v3
-        with: { name: specgen-java, path: ./plugins/maven-java-specgen/src/main/resources/dist }
-      - uses: ./.github/actions/sonatype-setup-maven
-        with: { sonatype-user: "${{ secrets.SONATYPE_USER }}", sonatype-password: "secrets.SONATYPE_PASSWORD", sonatype-gpg-secret-key: "${{ secrets.SONATYPE_GPG_SECRET_KEY }}" }
-      - name: Build Maven plugin
-        run: |
-          cd ./plugins/maven-java-specgen
-          sed -i.bak "s/PROJECT_VERSION/${SPECGEN_VERSION}/g" pom.xml
-          export GPG_TTY=$(tty)
+#
+#
+#  java-maven-sonatype:
+#    needs: java
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: ./.github/actions/env-build-version
+#      - uses: actions/setup-java@v3
+#        with: { distribution: 'corretto', java-version: '11' }
+#      - uses: actions/download-artifact@v3
+#        with: { name: specgen-java, path: ./plugins/maven-java-specgen/src/main/resources/dist }
+#      - uses: ./.github/actions/sonatype-setup-maven
+#        with: { sonatype-user: "${{ secrets.SONATYPE_USER }}", sonatype-password: "secrets.SONATYPE_PASSWORD", sonatype-gpg-secret-key: "${{ secrets.SONATYPE_GPG_SECRET_KEY }}" }
+#      - name: Build Maven plugin
+#        run: |
+#          cd ./plugins/maven-java-specgen
+#          sed -i.bak "s/PROJECT_VERSION/${SPECGEN_VERSION}/g" pom.xml
+#          export GPG_TTY=$(tty)
 #          mvn deploy -Dgpg.passphrase=${{ secrets.SONATYPE_GPG_PASSPHRASE }} -Dsonatype=true
-
-  kotlin-maven-sonatype:
-    needs: [kotlin, java-maven-sonatype]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/env-build-version
-      - uses: actions/setup-java@v3
-        with: { distribution: 'corretto', java-version: '11' }
-      - uses: actions/download-artifact@v3
-        with: { name: specgen-kotlin, path: ./plugins/maven-kotlin-specgen/src/main/resources/dist }
-      - uses: ./.github/actions/sonatype-setup-maven
-        with: { sonatype-user: "${{ secrets.SONATYPE_USER }}", sonatype-password: "${{ secrets.SONATYPE_PASSWORD }}", sonatype-gpg-secret-key: "${{ secrets.SONATYPE_GPG_SECRET_KEY }}" }
-      - name: Build Maven plugin
-        run: |
-          cd ./plugins/maven-kotlin-specgen
-          sed -i.bak "s/PROJECT_VERSION/${SPECGEN_VERSION}/g" pom.xml
-          export GPG_TTY=$(tty)
+#
+#  kotlin-maven-sonatype:
+#    needs: [kotlin, java-maven-sonatype]
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: ./.github/actions/env-build-version
+#      - uses: actions/setup-java@v3
+#        with: { distribution: 'corretto', java-version: '11' }
+#      - uses: actions/download-artifact@v3
+#        with: { name: specgen-kotlin, path: ./plugins/maven-kotlin-specgen/src/main/resources/dist }
+#      - uses: ./.github/actions/sonatype-setup-maven
+#        with: { sonatype-user: "${{ secrets.SONATYPE_USER }}", sonatype-password: "${{ secrets.SONATYPE_PASSWORD }}", sonatype-gpg-secret-key: "${{ secrets.SONATYPE_GPG_SECRET_KEY }}" }
+#      - name: Build Maven plugin
+#        run: |
+#          cd ./plugins/maven-kotlin-specgen
+#          sed -i.bak "s/PROJECT_VERSION/${SPECGEN_VERSION}/g" pom.xml
+#          export GPG_TTY=$(tty)
 #          mvn deploy -Dgpg.passphrase=${{ secrets.SONATYPE_GPG_PASSPHRASE }} -Dsonatype=true
-
-  typescript-npm-npmjs:
-    needs: typescript
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/env-build-version
-      - uses: actions/setup-node@v3
-        with: { node-version: 16 }
-      - uses: actions/download-artifact@v3
-        with: { name: specgen-typescript, path: ./plugins/npm-specgen/dist }
-      - name: Deploy npm plugin
-        env: { NPM_TOKEN: "${{ secrets.NPM_TOKEN }}"}
-        run: |
-          cd ./plugins/npm-specgen
-          npm version ${SPECGEN_VERSION}
-          npm install
+#
+#  typescript-npm-npmjs:
+#    needs: typescript
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: ./.github/actions/env-build-version
+#      - uses: actions/setup-node@v3
+#        with: { node-version: 16 }
+#      - uses: actions/download-artifact@v3
+#        with: { name: specgen-typescript, path: ./plugins/npm-specgen/dist }
+#      - name: Deploy npm plugin
+#        env: { NPM_TOKEN: "${{ secrets.NPM_TOKEN }}"}
+#        run: |
+#          cd ./plugins/npm-specgen
+#          npm version ${SPECGEN_VERSION}
+#          npm install
 #          npm publish
 
   templates:
+#    needs:
+#      - typescript-npm-npmjs
+#      - kotlin-maven-sonatype
+#      - java-maven-sonatype
+#      - kotlin-gradle-pluginportal
+#      - java-gradle-pluginportal
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -187,7 +193,7 @@ jobs:
           cd ./templates-release
           rm -rf client-* service-* models-*
           cp -r ../templates/* ./
-          ls -la
+          yq " .args.versions.args.specgen.default = '${SPECGEN_VERSION}'" ./client-go/rendr.yaml
       - uses: ./.github/actions/github-push-tag
         with:
           path: "./templates-release"
