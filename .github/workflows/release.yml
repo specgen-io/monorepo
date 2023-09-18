@@ -193,7 +193,18 @@ jobs:
           cd ./templates-release
           rm -rf client-* service-* models-*
           cp -r ../templates/* ./
-          yq " .args.versions.args.specgen.default = '${SPECGEN_VERSION}'" ./client-go/rendr.yaml
+          yq -i ".args.versions.args.specgen.default=\"${SPECGEN_VERSION}\"" ./client-go/rendr.yaml
+          yq -i ".args.versions.args.specgen.default=\"${SPECGEN_VERSION}\"" ./client-java/rendr.yaml
+          yq -i ".args.versions.args.specgen.default=\"${SPECGEN_VERSION}\"" ./client-kotlin/rendr.yaml
+          yq -i ".args.versions.args.specgen.default=\"${SPECGEN_VERSION}\"" ./client-ts/rendr.yaml
+          yq -i ".args.versions.args.specgen.default=\"${SPECGEN_VERSION}\"" ./models-go/rendr.yaml
+          yq -i ".args.versions.args.specgen.default=\"${SPECGEN_VERSION}\"" ./models-java/rendr.yaml
+          yq -i ".args.versions.args.specgen.default=\"${SPECGEN_VERSION}\"" ./models-kotlin/rendr.yaml
+          yq -i ".args.versions.args.specgen.default=\"${SPECGEN_VERSION}\"" ./models-ts/rendr.yaml
+          yq -i ".args.versions.args.specgen.default=\"${SPECGEN_VERSION}\"" ./service-go/rendr.yaml
+          yq -i ".args.versions.args.specgen.default=\"${SPECGEN_VERSION}\"" ./service-java/rendr.yaml
+          yq -i ".args.versions.args.specgen.default=\"${SPECGEN_VERSION}\"" ./service-kotlin/rendr.yaml
+          yq -i ".args.versions.args.specgen.default=\"${SPECGEN_VERSION}\"" ./service-ts/rendr.yaml
       - uses: ./.github/actions/github-push-tag
         with:
           path: "./templates-release"
