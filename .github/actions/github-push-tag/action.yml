@@ -42,4 +42,5 @@ runs:
         fi
         echo "Will create tag ${{ inputs.tag }}"
         git tag -f -a ${{ inputs.tag }} -m "${{ inputs.message }}"
+        echo "Will push tag ${{ inputs.tag }}"
         git push -f --tags
