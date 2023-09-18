@@ -96,10 +96,10 @@ jobs:
       - name: Deploy Gradle Java plugin
         run: |
           cd ./plugins/gradle-java-specgen
-          ./gradlew publishPlugins --build-cache --no-daemon \
-          -Pgradle.publish.key=${{ secrets.GRADLE_PUBLISH_KEY }} \
-          -Pgradle.publish.secret=${{ secrets.GRADLE_PUBLISH_SECRET }} \
-          -Dproject.version=${SPECGEN_VERSION}
+#          ./gradlew publishPlugins --build-cache --no-daemon \
+#          -Pgradle.publish.key=${{ secrets.GRADLE_PUBLISH_KEY }} \
+#          -Pgradle.publish.secret=${{ secrets.GRADLE_PUBLISH_SECRET }} \
+#          -Dproject.version=${SPECGEN_VERSION}
 
   kotlin-gradle-pluginportal:
     needs: [kotlin, java-gradle-pluginportal]
@@ -114,10 +114,10 @@ jobs:
       - name: Deploy Gradle plugin
         run: |
           cd ./plugins/gradle-kotlin-specgen
-          ./gradlew publishPlugins --build-cache --no-daemon \
-          -Pgradle.publish.key=${{ secrets.GRADLE_PUBLISH_KEY }} \
-          -Pgradle.publish.secret=${{ secrets.GRADLE_PUBLISH_SECRET }} \
-          -Dproject.version=${SPECGEN_VERSION}
+#          ./gradlew publishPlugins --build-cache --no-daemon \
+#          -Pgradle.publish.key=${{ secrets.GRADLE_PUBLISH_KEY }} \
+#          -Pgradle.publish.secret=${{ secrets.GRADLE_PUBLISH_SECRET }} \
+#          -Dproject.version=${SPECGEN_VERSION}
 
 
   java-maven-sonatype:
@@ -137,7 +137,7 @@ jobs:
           cd ./plugins/maven-java-specgen
           sed -i.bak "s/PROJECT_VERSION/${SPECGEN_VERSION}/g" pom.xml
           export GPG_TTY=$(tty)
-          mvn deploy -Dgpg.passphrase=${{ secrets.SONATYPE_GPG_PASSPHRASE }} -Dsonatype=true
+#          mvn deploy -Dgpg.passphrase=${{ secrets.SONATYPE_GPG_PASSPHRASE }} -Dsonatype=true
 
   kotlin-maven-sonatype:
     needs: [kotlin, java-maven-sonatype]
@@ -156,7 +156,7 @@ jobs:
           cd ./plugins/maven-kotlin-specgen
           sed -i.bak "s/PROJECT_VERSION/${SPECGEN_VERSION}/g" pom.xml
           export GPG_TTY=$(tty)
-          mvn deploy -Dgpg.passphrase=${{ secrets.SONATYPE_GPG_PASSPHRASE }} -Dsonatype=true
+#          mvn deploy -Dgpg.passphrase=${{ secrets.SONATYPE_GPG_PASSPHRASE }} -Dsonatype=true
 
   typescript-npm-npmjs:
     needs: typescript
@@ -174,4 +174,4 @@ jobs:
           cd ./plugins/npm-specgen
           npm version ${SPECGEN_VERSION}
           npm install
-          npm publish
+#          npm publish
