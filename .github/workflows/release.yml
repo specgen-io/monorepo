@@ -192,7 +192,7 @@ jobs:
       - uses: ./.github/actions/github-push-tag
         with:
           path: "./templates-release"
-          repo: "https://github.com/specgen-io/templates.git"
+          repo: "github.com/specgen-io/templates.git"
           message: "Release v${SPECGEN_VERSION}"
           tag: "v${SPECGEN_VERSION}"
           github-user: "${{ secrets.GH_USER }}"
