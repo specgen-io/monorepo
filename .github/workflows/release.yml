@@ -175,3 +175,26 @@ jobs:
           npm version ${SPECGEN_VERSION}
           npm install
 #          npm publish
+
+  templates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/env-release-version
+      - name: Prepare templates
+        run: |
+          git clone https://github.com/specgen-io/templates.git templates-release
+          cd ./templates-release
+          rm -rf client-*
+          rm -rf service-*
+          rm -rf models-*
+          cp -r ../templates/ .
+      - uses: ./.github/actions/github-push-tag
+        with:
+          path: "./templates-release"
+          repo: "https://github.com/specgen-io/templates.git"
+          message: "Release v${SPECGEN_VERSION}"
+          tag: "v${SPECGEN_VERSION}"
+          github-user: "${{ secrets.GH_USER }}"
+          github-email: "${{ secrets.GH_EMAIL }}"
+          github-token: "${{ secrets.GH_TOKEN }}"
