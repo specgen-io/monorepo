@@ -6,8 +6,6 @@ import (
 	java "java/generators"
 	kotlin "kotlin/generators"
 	"openapi"
-	ruby "ruby/generators"
-	scala "scala/generators"
 	typescript "typescript/generators"
 )
 
@@ -21,11 +19,6 @@ var All = []generator.Generator{
 	kotlin.Models,
 	kotlin.Client,
 	kotlin.Service,
-	ruby.Models,
-	ruby.Client,
-	scala.Models,
-	scala.Client,
-	scala.Service,
 	typescript.Models,
 	typescript.Client,
 	typescript.Service,

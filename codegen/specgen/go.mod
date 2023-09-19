@@ -10,10 +10,6 @@ replace generator => ../generator
 
 replace openapi => ../openapi
 
-replace ruby => ../ruby
-
-replace scala => ../scala
-
 replace typescript => ../typescript
 
 replace golang => ../golang
@@ -34,8 +30,6 @@ require (
 	java v0.0.0-00010101000000-000000000000
 	kotlin v0.0.0-00010101000000-000000000000
 	openapi v0.0.0-00010101000000-000000000000
-	ruby v0.0.0-00010101000000-000000000000
-	scala v0.0.0-00010101000000-000000000000
 	spec v0.0.0-00010101000000-000000000000
 	typescript v0.0.0-00010101000000-000000000000
 )
