@@ -33,7 +33,7 @@ jobs:
         env: { GH_TOKEN: "${{ secrets.GH_TOKEN }}" }
         run: |
           cd codegen/specgen
-          ../release.sh ${SPECGEN_VERSION} github
+          ../../scripts/release.sh ${SPECGEN_VERSION} github
 
   specgen-golang:
     runs-on: ubuntu-latest

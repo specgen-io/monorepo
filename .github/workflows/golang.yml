@@ -72,7 +72,7 @@ jobs:
       - uses: ./.github/actions/get-rendr
         with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
       - name: Render project
-        run: ./rendr_test.sh models go ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+        run: ./scripts/rendr-test.sh models go ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
       - uses: ./.github/actions/yaml-execute
         with:
           path: ./out
@@ -100,7 +100,7 @@ jobs:
       - uses: ./.github/actions/get-rendr
         with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
       - name: Render project
-        run: ./rendr_test.sh service go ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+        run: ./scripts/rendr-test.sh service go ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
       - uses: ./.github/actions/yaml-execute
         with:
           path: ./out
@@ -131,7 +131,7 @@ jobs:
       - uses: ./.github/actions/get-rendr
         with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
       - name: Render project
-        run: ./rendr_test.sh client go ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+        run: ./scripts/rendr-test.sh client go ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
       - uses: ./.github/actions/start-test-service
         with: { port: "8081" }
       - uses: ./.github/actions/yaml-execute

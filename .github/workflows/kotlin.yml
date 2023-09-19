@@ -112,7 +112,7 @@ jobs:
       - uses: ./.github/actions/get-rendr
         with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
       - name: Render project
-        run: ./rendr_test.sh models kotlin ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+        run: ./scripts/rendr-test.sh models kotlin ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
       - uses: ./.github/actions/artifactory-setup-gradle-kotlin
         with: { project-path: ./out, jfrog-server-url: specgen.jfrog.io, repo-name: maven, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
       - uses: ./.github/actions/yaml-execute
@@ -141,7 +141,7 @@ jobs:
       - uses: ./.github/actions/get-rendr
         with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
       - name: Render project
-        run: ./rendr_test.sh service kotlin ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+        run: ./scripts/rendr-test.sh service kotlin ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
       - uses: ./.github/actions/artifactory-setup-gradle-kotlin
         with: { project-path: ./out, jfrog-server-url: specgen.jfrog.io, repo-name: maven, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
       - uses: ./.github/actions/yaml-execute
@@ -173,7 +173,7 @@ jobs:
       - uses: ./.github/actions/get-rendr
         with: { jfrog-pass: "${{ secrets.JFROG_PASS }}", version: "${RENDR_TOOL_VERSION}" }
       - name: Render project
-        run: ./rendr_test.sh client kotlin ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
+        run: ./scripts/rendr-test.sh client kotlin ${{ matrix.values-file }} ${SPECGEN_VERSION} ./out
       - uses: ./.github/actions/artifactory-setup-gradle-kotlin
         with: { project-path: ./out, jfrog-server-url: specgen.jfrog.io, repo-name: maven, jfrog-user: "${{ secrets.JFROG_USER }}", jfrog-pass: "${{ secrets.JFROG_PASS }}" }
       - uses: ./.github/actions/start-test-service

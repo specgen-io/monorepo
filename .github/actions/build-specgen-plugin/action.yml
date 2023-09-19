@@ -19,7 +19,7 @@ runs:
       shell: bash
       run: |
         cd ./${{ inputs.plugin-path }}
-        ../build.sh ${{ inputs.specgen-version }}
+        ../../scripts/build-plugin.sh ${{ inputs.specgen-version }}
     - uses: actions/upload-artifact@v3
       with:
         name: ${{ inputs.artifact-name }}

@@ -1,12 +1,12 @@
 #!/bin/bash +x
 
-USAGE="usage: ./rendr_test.sh <GENERATOR> <LANGUAGE> <PARAMS> <SPECGEN_VERSION> [<OUT_FOLDER>]"
+USAGE="usage: ./scripts/rendr-test.sh <GENERATOR> <LANGUAGE> <PARAMS> <SPECGEN_VERSION> [<OUT_FOLDER>]"
 
 if [ -z "$4" ];
 then
     echo "Error: not enough params."
-    echo "Usage: ./rendr_test.sh <GENERATOR> <LANGUAGE> <PARAMS> <SPECGEN_VERSION> [<OUT_FOLDER>]"
-    echo "Example: ./rendr_test.sh service kotlin spring-jackson 0.0.0"
+    echo "Usage: ./scripts/rendr-test.sh <GENERATOR> <LANGUAGE> <PARAMS> <SPECGEN_VERSION> [<OUT_FOLDER>]"
+    echo "Example: ./scripts/rendr-test.sh service kotlin spring-jackson 0.0.0"
     exit 1
 fi
 
