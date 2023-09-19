@@ -4,8 +4,6 @@ build: |
   go build
 test: |
   go get gotest.tools/v3
-  go install github.com/jstemmer/go-junit-report@latest
   cd tests
   export jsonmode={{jsonmode.value}}
   go test ./... -v
-  go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml

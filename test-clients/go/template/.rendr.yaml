@@ -1,6 +1,5 @@
 setup: |
   go get gotest.tools/v3
-  go install github.com/jstemmer/go-junit-report@latest
 build: |
   go generate
   go mod tidy
@@ -8,4 +7,3 @@ build: |
 test: |
   cd tests
   go test ./... -v
-  go test ./... -v 2>&1 | go-junit-report > ./test-results/go-test-report.xml
