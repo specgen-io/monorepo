@@ -7,7 +7,7 @@ import (
 
 const ERRORS = "TEST_ERRORS"
 const PARAMETERS_MODE = "TEST_PARAMETERS_MODE"
-const FORM_PARAMS = "TEST_FORM_PARAMS"
+const NO_FORM_DATA = "TEST_NO_FORM_DATA"
 
 func check(name string) bool {
 	return os.Getenv(name) == "true"

@@ -8,7 +8,7 @@ import (
 )
 
 func Test_EchoFormData(t *testing.T) {
-	skipIfNot(t, FORM_PARAMS)
+	skipIf(t, NO_FORM_DATA)
 	dataJson := `
 	{
 		"int_field":123,
@@ -56,7 +56,7 @@ func Test_EchoFormData(t *testing.T) {
 }
 
 func Test_EchoFormData_Missing_Required_Param(t *testing.T) {
-	skipIfNot(t, FORM_PARAMS)
+	skipIf(t, NO_FORM_DATA)
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	_ = writer.WriteField("int_param", "123")
@@ -99,7 +99,7 @@ func Test_EchoFormData_Missing_Required_Param(t *testing.T) {
 }
 
 func Test_EchoFormData_Missing_Optional_Param(t *testing.T) {
-	skipIfNot(t, FORM_PARAMS)
+	skipIf(t, NO_FORM_DATA)
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	_ = writer.WriteField("int_param", "123")
@@ -128,7 +128,7 @@ func Test_EchoFormData_Missing_Optional_Param(t *testing.T) {
 }
 
 func Test_EchoFormData_Missing_Defaulted_Param(t *testing.T) {
-	skipIfNot(t, FORM_PARAMS)
+	skipIf(t, NO_FORM_DATA)
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	_ = writer.WriteField("int_param", "123")
@@ -159,7 +159,7 @@ func Test_EchoFormData_Missing_Defaulted_Param(t *testing.T) {
 }
 
 func Test_EchoFormData_WrongFormat(t *testing.T) {
-	skipIfNot(t, FORM_PARAMS)
+	skipIf(t, NO_FORM_DATA)
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	_ = writer.WriteField("int_param", "abc")
