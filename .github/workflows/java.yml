@@ -157,6 +157,7 @@ jobs:
         with:
           url: http://localhost:8081/swagger-ui/
       - uses: ./.github/actions/run-service-tests
+        with: { setup-script: ./out/setup-tests.sh }
 
   java-client:
     needs: [java-maven, client-test-service]
