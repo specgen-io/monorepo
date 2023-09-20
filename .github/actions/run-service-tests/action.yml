@@ -18,7 +18,5 @@ runs:
           . ${{ inputs.setup-script }}
         fi
         
-        echo "PARAMETERS_MODE: $PARAMETERS_MODE"
-        
         chmod +x ./service-tests
         ./service-tests -test.v
