@@ -13,7 +13,7 @@ runs:
     - name: Run tests
       shell: bash
       run: |
-        if [ -e ${{ inputs.setup-script }}]; then
+        if [ -e "${{ inputs.setup-script }}"]; then
           echo "Executing setup-script: ${{ inputs.setup-script }}"
           ${{ inputs.setup-script }}
         fi
