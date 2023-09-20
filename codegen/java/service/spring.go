@@ -265,7 +265,7 @@ public class [[.ClassName]] {
         }
         if (exception instanceof ContentTypeMismatchException) {
             var error = new ValidationError("Content-Type", "missing", exception.getMessage());
-            return new BadRequestError("Failed to parse header", ErrorLocation.PARAMETERS, List.of(error));
+            return new BadRequestError("Failed to parse header", ErrorLocation.HEADER, List.of(error));
         }
         if (exception instanceof MissingServletRequestParameterException) {
             var e = (MissingServletRequestParameterException) exception;
