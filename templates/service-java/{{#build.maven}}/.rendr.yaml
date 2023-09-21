@@ -1,4 +1,4 @@
-build: ./mvnw compile
+build: ./mvnw compile --no-transfer-progress
 {{#server.spring}}
 run: ./mvnw spring-boot:run
 {{/server.spring}}
