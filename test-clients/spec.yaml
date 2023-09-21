@@ -49,7 +49,7 @@ http:
       endpoint: POST /echo/body_map
       body: string{}
       response:
-        ok: string{}         
+        ok: string{}
 
     echo_query:
       endpoint: GET /echo/query

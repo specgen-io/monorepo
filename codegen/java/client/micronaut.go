@@ -36,7 +36,7 @@ func (g *MicronautGenerator) client(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Client(api), clientName(api))
 	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Add(g.Types.Imports()...)
-	w.Imports.Add(`io.micronaut.http.HttpRequest`)
+	w.Imports.Add(`io.micronaut.http.*`)
 	w.Imports.Add(`io.micronaut.http.client.*`)
 	w.Imports.Add(`java.net.*`)
 	w.Imports.Add(`org.slf4j.*`)
@@ -45,7 +45,6 @@ func (g *MicronautGenerator) client(api *spec.Api) *generator.CodeFile {
 	w.Imports.Star(g.Packages.Json)
 	w.Imports.Star(g.Packages.Utils)
 	w.Imports.Star(g.Packages.Models(api.InHttp.InVersion))
-	w.Imports.AddStatic(`io.micronaut.http.HttpHeaders.CONTENT_TYPE`)
 	w.Imports.StaticStar(g.Packages.Utils.Subpackage(`Requestor`))
 	w.Template(
 		map[string]string{
@@ -102,21 +101,53 @@ func (g *MicronautGenerator) createUrl(w *writer.Writer, operation *spec.NamedOp
 }
 
 func (g *MicronautGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
-	requestBody := "body"
+	var requestBody string
+	if operation.BodyIs(spec.RequestBodyString) {
+		requestBody = "body"
+	}
 	if operation.BodyIs(spec.RequestBodyJson) {
 		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite("body", &operation.Body.Type.Definition))
 		requestBody = "bodyJson"
 	}
+	if operation.BodyIs(spec.RequestBodyFormData) {
+		w.EmptyLine()
+		w.Line(`var body = new MultipartBodyBuilder();`)
+		for _, param := range operation.Body.FormData {
+			w.Line(`body.addPart("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
+		}
+		requestBody = "body.build()"
+	}
+	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		w.EmptyLine()
+		w.Line(`var body = new UrlencodedFormBodyBuilder();`)
+		for _, param := range operation.Body.FormUrlEncoded {
+			w.Line(`body.addParameter("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
+		}
+		requestBody = "body.build()"
+	}
 	w.EmptyLine()
 	w.Line(`var request = new RequestBuilder(%s);`, requestBuilderParams(operation.Endpoint.Method, requestBody, operation))
-	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`request.headerParam(CONTENT_TYPE, "application/json");`)
-	}
-	if operation.BodyIs(spec.RequestBodyString) {
-		w.Line(`request.headerParam(CONTENT_TYPE, "text/plain");`)
-	}
 	for _, param := range operation.HeaderParams {
 		w.Line(`request.headerParam("%s", %s);`, param.Name.Source, param.Name.CamelCase())
+	}
+	if !operation.Body.IsEmpty() {
+		w.Line(`request.contentType(%s);`, contentType(operation))
+	}
+}
+
+func contentType(operation *spec.NamedOperation) string {
+	if operation.Body.IsEmpty() {
+		return ""
+	} else if operation.Body.IsText() {
+		return `MediaType.TEXT_PLAIN_TYPE`
+	} else if operation.Body.IsJson() {
+		return `MediaType.APPLICATION_JSON_TYPE`
+	} else if operation.Body.IsBodyFormData() {
+		return `MediaType.MULTIPART_FORM_DATA_TYPE`
+	} else if operation.Body.IsBodyFormUrlEncoded() {
+		return `MediaType.FORM`
+	} else {
+		panic(fmt.Sprintf("Unknown Contet Type"))
 	}
 }
 
@@ -209,6 +240,8 @@ func (g *MicronautGenerator) Utils(responses *spec.ErrorResponses) []generator.C
 	files := []generator.CodeFile{}
 	files = append(files, *g.generateRequestBuilder())
 	files = append(files, *g.generateUrlBuilder())
+	files = append(files, *g.multipartBodyBuilder())
+	files = append(files, *g.urlencodedFormBodyBuilder())
 	files = append(files, *g.generateRequestor())
 	return files
 }
@@ -216,8 +249,8 @@ func (g *MicronautGenerator) Utils(responses *spec.ErrorResponses) []generator.C
 func (g *MicronautGenerator) generateRequestBuilder() *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `RequestBuilder`)
 	w.Lines(`
+import io.micronaut.http.MediaType;
 import io.micronaut.http.MutableHttpRequest;
-
 import java.net.URI;
 import java.util.List;
 import java.util.function.*;
@@ -231,6 +264,11 @@ public class [[.ClassName]] {
 
 	public [[.ClassName]](URI url, Function<URI, MutableHttpRequest<?>> method) {
 		this.requestBuilder = method.apply(url);
+	}
+
+	public [[.ClassName]] contentType(MediaType mediaType) {
+		this.requestBuilder.contentType(mediaType);
+		return this;
 	}
 
 	public [[.ClassName]] headerParam(String name, Object value) {
@@ -297,6 +335,94 @@ public class [[.ClassName]] {
 
 	public URI build() {
 		return this.uriBuilder.build();
+	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *MicronautGenerator) multipartBodyBuilder() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `MultipartBodyBuilder`)
+	w.Lines(`
+import io.micronaut.http.client.multipart.MultipartBody;
+import java.util.List;
+
+public class [[.ClassName]] {
+	private final MultipartBody.Builder multipartBodyBuilder;
+
+	public [[.ClassName]]() {
+		this.multipartBodyBuilder = MultipartBody.builder();
+	}
+
+	public [[.ClassName]] addPart(String name, Object value) {
+		if (value != null) {
+			this.multipartBodyBuilder.addPart(name, String.valueOf(value));
+		}
+		return this;
+	}
+
+	public <T> [[.ClassName]] addPart(String name, List<T> values) {
+		for (T val : values) {
+			this.multipartBodyBuilder.addPart(name, String.valueOf(val));
+		}
+		return this;
+	}
+
+	public MultipartBody build() {
+		return this.multipartBodyBuilder.build();
+	}
+}
+`)
+	return w.ToCodeFile()
+}
+
+func (g *MicronautGenerator) urlencodedFormBodyBuilder() *generator.CodeFile {
+	w := writer.New(g.Packages.Utils, `UrlencodedFormBodyBuilder`)
+	w.Lines(`
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class [[.ClassName]] {
+	private final List<ParamValues> paramValues;
+
+	public [[.ClassName]]() {
+		this.paramValues = new ArrayList<>();
+	}
+
+	public [[.ClassName]] addParameter(String name, Object value) {
+		if (value != null) {
+			this.paramValues.add(new ParamValues(name, value));
+		}
+		return this;
+	}
+
+	public <T> [[.ClassName]] addParameter(String name, List<T> values) {
+		for (T val : values) {
+			this.paramValues.add(new ParamValues(name, val));
+		}
+		return this;
+	}
+
+	public String build() {
+		return this.paramValues.stream()
+			.map(entry -> encode(entry.name) + "=" + encode(entry.value.toString()))
+			.collect(Collectors.joining("&"));
+	}
+
+	private static String encode(String string) {
+		return URLEncoder.encode(string, StandardCharsets.UTF_8);
+	}
+
+	private static class ParamValues {
+		private final String name;
+		private final Object value;
+
+		public ParamValues(String name, Object value) {
+			this.name = name;
+			this.value = value;
+		}
 	}
 }
 `)
