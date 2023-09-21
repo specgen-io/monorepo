@@ -44,7 +44,13 @@ func assertEqualJson(t *testing.T, actual []byte, expected string) {
 		}
 
 		if !reflect.DeepEqual(actualData, expectedData) {
-			t.Errorf("\nexpected: %s\nactual: %s", expected, actual)
+			actualJsonBytes, _ := json.Marshal(actualData)
+			expectedJsonBytes, _ := json.Marshal(expectedData)
+
+			actualJson := string(actualJsonBytes)
+			expectedJson := string(expectedJsonBytes)
+
+			t.Errorf("\nexpected:\n  %s\nactual:\n  %s", expectedJson, actualJson)
 		}
 	}
 }
