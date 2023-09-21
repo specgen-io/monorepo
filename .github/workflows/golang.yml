@@ -114,6 +114,7 @@ jobs:
         with:
           url: http://localhost:8081/docs/
       - uses: ./.github/actions/run-service-tests
+        with: { setup-script: ./out/setup-tests.sh }
 
   golang-client:
     needs: [golang, client-test-service]
