@@ -245,17 +245,16 @@ fun getBadRequestError(exception: Throwable): BadRequestError? {
 		return BadRequestError("Failed to parse header", ErrorLocation.HEADER, listOf(error))
 	}
 	if (exception is MissingServletRequestParameterException) {
-		val message = String.format("Failed to parse query")
+		val message = String.format("Failed to parse parameters")
 		val validation = ValidationError(exception.parameterName, "missing", exception.message)
-		return BadRequestError(message, ErrorLocation.QUERY, listOf(validation))
+		return BadRequestError(message, ErrorLocation.PARAMETERS, listOf(validation))
 	}
 	if (exception is MethodArgumentTypeMismatchException) {
-		val message = String.format("Failed to parse query")
 		val validation = ValidationError(exception.name, "parsing_failed", exception.message)
 		if (exception.parameter.hasParameterAnnotation(RequestParam::class.java)) {
-			return BadRequestError(message, ErrorLocation.QUERY, listOf(validation))
+			return BadRequestError("Failed to parse parameters", ErrorLocation.PARAMETERS, listOf(validation))
 		} else if (exception.parameter.hasParameterAnnotation(RequestHeader::class.java)) {
-			return BadRequestError(message, ErrorLocation.HEADER, listOf(validation))
+			return BadRequestError("Failed to parse header", ErrorLocation.HEADER, listOf(validation))
 		}
 	}
 	if (exception is MissingRequestHeaderException) {

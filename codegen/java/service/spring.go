@@ -269,18 +269,17 @@ public class [[.ClassName]] {
         }
         if (exception instanceof MissingServletRequestParameterException) {
             var e = (MissingServletRequestParameterException) exception;
-            var message = "Failed to parse query";
+            var message = "Failed to parse parameters";
             var validation = new ValidationError(e.getParameterName(), "missing", e.getMessage());
-            return new BadRequestError(message, ErrorLocation.QUERY, List.of(validation));
+            return new BadRequestError(message, ErrorLocation.PARAMETERS, List.of(validation));
         }
         if (exception instanceof MethodArgumentTypeMismatchException) {
             var e = (MethodArgumentTypeMismatchException) exception;
-            var message = "Failed to parse query";
             var validation = new ValidationError(e.getName(), "parsing_failed", e.getMessage());
             if (e.getParameter().hasParameterAnnotation(RequestParam.class)) {
-                return new BadRequestError(message, ErrorLocation.QUERY, List.of(validation));
+                return new BadRequestError("Failed to parse parameters", ErrorLocation.PARAMETERS, List.of(validation));
             } else if (e.getParameter().hasParameterAnnotation(RequestHeader.class)) {
-                return new BadRequestError(message, ErrorLocation.HEADER, List.of(validation));
+                return new BadRequestError("Failed to parse header", ErrorLocation.HEADER, List.of(validation));
             }
         }
         if (exception instanceof MissingRequestHeaderException) {

@@ -256,6 +256,7 @@ ErrorLocation:
     - unknown
     - query
     - header
+    - parameters
     - body
 
 NotFoundError:
