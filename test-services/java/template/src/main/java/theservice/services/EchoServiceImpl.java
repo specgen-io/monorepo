@@ -46,6 +46,11 @@ public class EchoServiceImpl implements EchoService {
 		return new Parameters(intQuery, longQuery, floatQuery, doubleQuery, decimalQuery, boolQuery, stringQuery, stringOptQuery, stringDefaultedQuery, stringArrayQuery, uuidQuery, dateQuery, dateArrayQuery, datetimeQuery, enumQuery);
 	}
 
+    @Override
+    public FormParameters echoFormData(int intParam, long longParam, float floatParam, double doubleParam, BigDecimal decimalParam, boolean boolParam, String stringParam, String stringOptParam, String stringDefaultedParam, List<String> stringArrayParam, UUID uuidParam, LocalDate dateParam, List<LocalDate> dateArrayParam, LocalDateTime datetimeParam, Choice enumParam) {
+        return new FormParameters(intParam, longParam, floatParam, doubleParam, decimalParam, boolParam, stringParam, stringOptParam, stringDefaultedParam, stringArrayParam, uuidParam, dateParam, dateArrayParam, datetimeParam, enumParam);
+    }
+
 	@Override
 	public Parameters echoHeader(int intHeader, long longHeader, float floatHeader, double doubleHeader, BigDecimal decimalHeader, boolean boolHeader, String stringHeader, String stringOptHeader, String stringDefaultedHeader, List<String> stringArrayHeader, UUID uuidHeader, LocalDate dateHeader, List<LocalDate> dateArrayHeader, LocalDateTime datetimeHeader, Choice enumHeader) {
 		return new Parameters(intHeader, longHeader, floatHeader, doubleHeader, decimalHeader, boolHeader, stringHeader, stringOptHeader, stringDefaultedHeader, stringArrayHeader, uuidHeader, dateHeader, dateArrayHeader, datetimeHeader, enumHeader);
