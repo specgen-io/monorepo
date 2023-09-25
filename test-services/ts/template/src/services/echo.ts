@@ -101,5 +101,5 @@ export let echoService = (): service.EchoService => {
         return {status: 'ok'}
     }
 
-    return {echoBodyString, echoBodyModel, echoBodyArray, echoBodyMap, echoQuery, echoHeader, echoUrlParams, echoEverything, sameOperationName}
+    return {echoBodyString, echoBodyModel, echoBodyArray, echoBodyMap, echoFormData, echoFormUrlencoded, echoQuery, echoHeader, echoUrlParams, echoEverything, sameOperationName}
 }
