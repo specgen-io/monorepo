@@ -12,6 +12,16 @@ func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJ
 	if operation.BodyIs(spec.RequestBodyJson) {
 		methodParams = append(methodParams, bodyJsonVar)
 	}
+	if operation.BodyIs(spec.RequestBodyFormData) {
+		for _, param := range operation.Body.FormData {
+			methodParams = append(methodParams, param.Name.CamelCase())
+		}
+	}
+	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		for _, param := range operation.Body.FormUrlEncoded {
+			methodParams = append(methodParams, param.Name.CamelCase())
+		}
+	}
 	for _, param := range operation.QueryParams {
 		methodParams = append(methodParams, param.Name.CamelCase())
 	}
