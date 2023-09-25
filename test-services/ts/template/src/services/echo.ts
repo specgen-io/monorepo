@@ -18,6 +18,14 @@ export let echoService = (): service.EchoService => {
         return params.body
     }
 
+    let echoFormData = async (): Promise<models.FormParameters> => {
+        return ({} as models.FormParameters)
+    }
+
+    let echoFormUrlencoded = async (): Promise<models.FormParameters> => {
+        return ({} as models.FormParameters)
+    }
+
     let echoQuery = async (params: service.EchoQueryParams): Promise<models.Parameters> => {
         return {
             int_field: params.int_query,
