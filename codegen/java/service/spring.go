@@ -52,7 +52,6 @@ func (g *SpringGenerator) ExceptionController(responses *spec.ErrorResponses) *g
 	w.Imports.Star(g.Packages.ErrorsModels)
 	w.Imports.StaticStar(g.Packages.Errors.Subpackage(ErrorsHelpersClassName))
 	w.Imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
-	w.EmptyLine()
 	w.Line(`@ControllerAdvice`)
 	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  private static final Logger logger = LogManager.getLogger([[.ClassName]].class);`)
@@ -96,7 +95,6 @@ func (g *SpringGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Add(g.Types.Imports()...)
 	w.Imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
-	w.EmptyLine()
 	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.InHttp.InVersion))
 	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  private static final Logger logger = LogManager.getLogger([[.ClassName]].class);`)
@@ -106,7 +104,6 @@ func (g *SpringGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	w.EmptyLine()
 	w.Line(`  @Autowired`)
 	w.Line(`  private Json json;`)
-
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		g.controllerMethod(w.Indented(), &operation)
@@ -130,13 +127,28 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 }
 
 func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
-	if operation.BodyIs(spec.RequestBodyString) {
-		w.Line(`ContentType.check(request, MediaType.TEXT_PLAIN);`)
+	if !operation.BodyIs(spec.RequestBodyEmpty) {
+		w.Line(`ContentType.check(request, %s);`, g.contentType(operation))
 	}
 	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`ContentType.check(request, MediaType.APPLICATION_JSON);`)
 		typ := g.Types.Java(&operation.Body.Type.Definition)
 		w.Line(`%s %s = json.%s;`, typ, bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+	}
+}
+
+func (g *SpringGenerator) contentType(operation *spec.NamedOperation) string {
+	if operation.Body.IsEmpty() {
+		return ""
+	} else if operation.BodyIs(spec.RequestBodyString) {
+		return `MediaType.TEXT_PLAIN`
+	} else if operation.BodyIs(spec.RequestBodyJson) {
+		return `MediaType.APPLICATION_JSON`
+	} else if operation.BodyIs(spec.RequestBodyFormData) {
+		return `MediaType.MULTIPART_FORM_DATA`
+	} else if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		return `MediaType.APPLICATION_FORM_URLENCODED`
+	} else {
+		panic(fmt.Sprintf("Unknown Contet Type"))
 	}
 }
 
@@ -301,6 +313,8 @@ func springMethodParams(operation *spec.NamedOperation, types *types.Types) []st
 	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		methodParams = append(methodParams, "@RequestBody String bodyStr")
 	}
+	methodParams = append(methodParams, generateSpringMethodParam(operation.Body.FormData, "RequestParam", types)...)
+	methodParams = append(methodParams, generateSpringMethodParam(operation.Body.FormUrlEncoded, "RequestParam", types)...)
 	methodParams = append(methodParams, generateSpringMethodParam(operation.QueryParams, "RequestParam", types)...)
 	methodParams = append(methodParams, generateSpringMethodParam(operation.HeaderParams, "RequestHeader", types)...)
 	methodParams = append(methodParams, generateSpringMethodParam(operation.Endpoint.UrlParams, "PathVariable", types)...)
