@@ -4,8 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const child_process = require("child_process");
 const util = require('util');
-//const exec = util.promisify(child_process.exec);
-const exec = child_process.exec
+const exec = util.promisify(child_process.exec)
 
 const getOsName = () => {
     switch(process.platform) {
@@ -34,7 +33,7 @@ const getArch = () => {
     throw Error(`Unsupported architecture: ${process.arch}`)
 }
 
-const getSpecgenPath = () => {
+const getSpecgenPath = async () => {
     const osname = getOsName()
     const arch = getArch()
 
@@ -45,35 +44,42 @@ const getSpecgenPath = () => {
     if (osname !== `windows`) {
         const chmodCommandLine = `chmod +x ${specgenPath}`
         console.log(`Giving permissions to specgen tool: ${chmodCommandLine}`)
-        exec(chmodCommandLine, (error, stdout, stderr) => {
+        try {
+            const {stdout, stderr} = await exec(chmodCommandLine)
             console.error(stderr);
             console.log(stdout);
-            if (error) {
-                console.error(`Failed to grant execution permission to the specgen tool, exit code: ${error.code}`);
-                console.error(error.message);
-                if (error.code !== 0) { process.exit(error.code) }
-            }
-        })
+        } catch (error) {
+            console.error(error.stderr)
+            console.log(error.stdout)
+            console.error(`Failed to grant execution permission to the specgen tool, exit code: ${error.code}`);
+            console.error(error.message);
+            if (error.code !== 0) { process.exit(error.code) }
+        }
     }
     return specgenPath
 }
 
-const runSpecgen = (specgenCommand) => {
+const runSpecgen = async (specgenCommand) => {
     const specgenCommandLine = specgenCommand.join(" ")
     console.log(`Running specgen tool: ${specgenCommandLine}`)
-
-    exec(specgenCommandLine, (error, stdout, stderr) => {
-        console.error(stderr);
-        console.log(stdout);
-        if (error) {
-            console.error(`Specgen tool raised error, exit code: ${error.code}`);
-            console.error(error.message);
-            if (error.code !== 0) { process.exit(error.code) }
-        }
-    })
+    try {
+        const {stdout, stderr} = await exec(specgenCommandLine)
+        console.error(stderr)
+        console.log(stdout)
+    } catch (error) {
+        console.error(error.stderr)
+        console.log(error.stdout)
+        console.error(`Specgen tool raised error, exit code: ${error.code}`);
+        console.error(error.message);
+        if (error.code !== 0) { process.exit(error.code) }
+    }
 }
 
-var args = process.argv.slice(2);
-const specgenPath = getSpecgenPath()
-args.unshift(specgenPath)
-runSpecgen(args)
+const main = async () => {
+    var args = process.argv.slice(2);
+    const specgenPath = await getSpecgenPath()
+    args.unshift(specgenPath)
+    await runSpecgen(args)
+}
+
+main()

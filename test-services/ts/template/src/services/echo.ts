@@ -1,7 +1,7 @@
 import * as service from '../spec/echo'
 import * as models from '../spec/models'
 
-export let echoService = (): service.EchoService => {
+export let echoService = () => {
     let echoBodyString = async (params: service.EchoBodyStringParams): Promise<string> => {
         return params.body
     }
@@ -16,6 +16,14 @@ export let echoService = (): service.EchoService => {
 
     let echoBodyMap = async (params: service.EchoBodyMapParams): Promise<Record<string, string>> => {
         return params.body
+    }
+
+    let echoFormData = async (): Promise<models.FormParameters> => {
+        return ({} as models.FormParameters)
+    }
+
+    let echoFormUrlencoded = async (): Promise<models.FormParameters> => {
+        return ({} as models.FormParameters)
     }
 
     let echoQuery = async (params: service.EchoQueryParams): Promise<models.Parameters> => {
@@ -93,5 +101,5 @@ export let echoService = (): service.EchoService => {
         return {status: 'ok'}
     }
 
-    return {echoBodyString, echoBodyModel, echoBodyArray, echoBodyMap, echoQuery, echoHeader, echoUrlParams, echoEverything, sameOperationName}
+    return {echoBodyString, echoBodyModel, echoBodyArray, echoBodyMap, echoFormData, echoFormUrlencoded, echoQuery, echoHeader, echoUrlParams, echoEverything, sameOperationName}
 }
