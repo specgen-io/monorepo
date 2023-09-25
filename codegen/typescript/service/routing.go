@@ -7,7 +7,7 @@ import (
 )
 
 func getApiCallParamsObject(operation *spec.NamedOperation) string {
-	if operation.BodyIs(spec.RequestBodyEmpty) && !operation.HasParams() {
+	if (operation.BodyIs(spec.RequestBodyEmpty) || operation.BodyIs(spec.RequestBodyFormData) || operation.BodyIs(spec.RequestBodyFormUrlEncoded)) && !operation.HasParams() {
 		return ""
 	}
 
