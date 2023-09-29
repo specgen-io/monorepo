@@ -53,7 +53,6 @@ func (g *SpringGenerator) ExceptionController(responses *spec.ErrorResponses) *g
 	w.Imports.PackageStar(g.Packages.Json)
 	w.Imports.PackageStar(g.Packages.ErrorsModels)
 	w.Imports.PackageStar(g.Packages.Errors)
-	w.EmptyLine()
 	w.Line(`@ControllerAdvice`)
 	w.Line(`class [[.ClassName]](@Autowired private val json: Json) {`)
 	w.Line(`    private val logger = LogManager.getLogger([[.ClassName]]::class.java)`)
@@ -127,13 +126,28 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 }
 
 func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
-	if operation.BodyIs(spec.RequestBodyString) {
-		w.Line(`checkContentType(request, MediaType.TEXT_PLAIN)`)
+	if !operation.BodyIs(spec.RequestBodyEmpty) {
+		w.Line(`checkContentType(request, %s)`, g.contentType(operation))
 	}
 	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`checkContentType(request, MediaType.APPLICATION_JSON)`)
 		typ := g.Types.Kotlin(&operation.Body.Type.Definition)
 		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.ReadJson(bodyStringVar, &operation.Body.Type.Definition))
+	}
+}
+
+func (g *SpringGenerator) contentType(operation *spec.NamedOperation) string {
+	if operation.Body.IsEmpty() {
+		return ""
+	} else if operation.BodyIs(spec.RequestBodyString) {
+		return `MediaType.TEXT_PLAIN`
+	} else if operation.BodyIs(spec.RequestBodyJson) {
+		return `MediaType.APPLICATION_JSON`
+	} else if operation.BodyIs(spec.RequestBodyFormData) {
+		return `MediaType.MULTIPART_FORM_DATA`
+	} else if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		return `MediaType.APPLICATION_FORM_URLENCODED`
+	} else {
+		panic(fmt.Sprintf("Unknown Contet Type"))
 	}
 }
 
@@ -274,6 +288,8 @@ func springMethodParams(operation *spec.NamedOperation, types *types.Types) []st
 	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
 		methodParams = append(methodParams, "@RequestBody bodyStr: String")
 	}
+	methodParams = append(methodParams, generateSpringMethodParam(operation.Body.FormData, "RequestParam", types)...)
+	methodParams = append(methodParams, generateSpringMethodParam(operation.Body.FormUrlEncoded, "RequestParam", types)...)
 	methodParams = append(methodParams, generateSpringMethodParam(operation.QueryParams, "RequestParam", types)...)
 	methodParams = append(methodParams, generateSpringMethodParam(operation.HeaderParams, "RequestHeader", types)...)
 	methodParams = append(methodParams, generateSpringMethodParam(operation.Endpoint.UrlParams, "PathVariable", types)...)
