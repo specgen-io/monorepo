@@ -364,7 +364,6 @@ func (g *MoshiGenerator) setupOneOfAdapters(models []*spec.NamedModel, modelsPac
 	w := writer.New(modelsPackage, `ModelsMoshiAdapters`)
 	w.Imports.Add(`com.squareup.moshi.Moshi`)
 	w.Imports.Star(g.Packages.JsonAdapters)
-	w.EmptyLine()
 	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  public static void setup(Moshi.Builder moshiBuilder) {`)
 	for _, model := range models {

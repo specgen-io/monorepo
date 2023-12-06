@@ -21,7 +21,6 @@ func (g *Generator) serviceImplementation(api *spec.Api) *generator.CodeFile {
 	w.Imports.Star(g.Packages.Models(api.InHttp.InVersion))
 	w.Imports.Star(g.Packages.ServicesApi(api))
 	w.Imports.Add(g.Types.Imports()...)
-	w.EmptyLine()
 	w.Line(`@%s`, annotation)
 	w.Line(`public class [[.ClassName]] implements %s {`, serviceInterfaceName(api))
 	for _, operation := range api.Operations {

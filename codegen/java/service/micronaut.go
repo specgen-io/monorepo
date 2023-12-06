@@ -55,7 +55,6 @@ func (g *MicronautGenerator) ExceptionController(responses *spec.ErrorResponses)
 	w.Imports.Star(g.Packages.Json)
 	w.Imports.Star(g.Packages.ErrorsModels)
 	w.Imports.StaticStar(g.Packages.Errors.Subpackage(ErrorsHelpersClassName))
-	w.EmptyLine()
 	w.Line(`@Controller`)
 	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  private static final Logger logger = LoggerFactory.getLogger([[.ClassName]].class);`)
@@ -98,7 +97,6 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 	w.Imports.Star(g.Packages.ServicesApi(api))
 	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Add(g.Types.Imports()...)
-	w.EmptyLine()
 	w.Line(`@Controller`)
 	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  private static final Logger logger = LoggerFactory.getLogger([[.ClassName]].class);`)
@@ -117,17 +115,16 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 }
 
 func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.RequestBodyString) {
-		w.Line(`@Consumes(MediaType.TEXT_PLAIN)`)
-	}
-	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`@Consumes(MediaType.APPLICATION_JSON)`)
+	if !operation.BodyIs(spec.RequestBodyEmpty) {
+		w.Line(`@Consumes(%s)`, g.contentType(operation))
 	}
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%s("%s")`, casee.ToPascalCase(methodName), url)
 	w.Line(`public HttpResponse<?> %s(%s) {`, controllerMethodName(operation), strings.Join(micronautMethodParams(operation, g.Types), ", "))
 	w.Indent()
+	generateDefaultedFormParam(w, operation.Body.FormData)
+	generateDefaultedFormParam(w, operation.Body.FormUrlEncoded)
 	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	g.parseBody(w, operation, "bodyStr", "requestBody")
 	g.serviceCall(w, operation, "bodyStr", "requestBody", "result")
@@ -136,13 +133,41 @@ func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.
 	w.Line(`}`)
 }
 
+func generateDefaultedFormParam(w *writer.Writer, namedParams []spec.NamedParam) {
+	if namedParams != nil && len(namedParams) > 0 {
+		for _, param := range namedParams {
+			if param.DefinitionDefault.Default != nil {
+				w.Line(`if (%s == null) {`, param.Name.CamelCase())
+				w.Line(`	%s = "%s";`, param.Name.CamelCase(), *param.DefinitionDefault.Default)
+				w.Line(`}`)
+			}
+		}
+	}
+}
+
 func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
-	if operation.BodyIs(spec.RequestBodyString) {
-		w.Line(`ContentType.check(request, MediaType.TEXT_PLAIN);`)
+	if !operation.BodyIs(spec.RequestBodyEmpty) {
+		w.Line(`ContentType.check(request, %s);`, g.contentType(operation))
 	}
 	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`ContentType.check(request, MediaType.APPLICATION_JSON);`)
-		w.Line(`%s %s = json.%s;`, g.Types.Java(&operation.Body.Type.Definition), bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+		typ := g.Types.Java(&operation.Body.Type.Definition)
+		w.Line(`%s %s = json.%s;`, typ, bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+	}
+}
+
+func (g *MicronautGenerator) contentType(operation *spec.NamedOperation) string {
+	if operation.Body.IsEmpty() {
+		return ""
+	} else if operation.BodyIs(spec.RequestBodyString) {
+		return `MediaType.TEXT_PLAIN`
+	} else if operation.BodyIs(spec.RequestBodyJson) {
+		return `MediaType.APPLICATION_JSON`
+	} else if operation.BodyIs(spec.RequestBodyFormData) {
+		return `MediaType.MULTIPART_FORM_DATA`
+	} else if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		return `MediaType.APPLICATION_FORM_URLENCODED`
+	} else {
+		panic(fmt.Sprintf("Unknown Content Type"))
 	}
 }
 
@@ -235,7 +260,7 @@ func (g *MicronautGenerator) ErrorsHelpers() *generator.CodeFile {
 			`JsonPackage`:         g.Packages.Json.PackageName,
 		}, `
 import io.micronaut.core.annotation.AnnotationValue;
-import io.micronaut.core.convert.exceptions.ConversionErrorException;
+import io.micronaut.core.convert.exceptions.*;
 import io.micronaut.core.type.Argument;
 import io.micronaut.web.router.exceptions.*;
 
@@ -249,13 +274,10 @@ import [[.JsonPackage]].*;
 import static [[.ErrorsPackage]].ValidationErrorsHelpers.extractValidationErrors;
 
 public class [[.ClassName]] {
-    private static final NotFoundError NOT_FOUND_ERROR = new NotFoundError("Failed to parse url parameters");
+	private static final NotFoundError NOT_FOUND_ERROR = new NotFoundError("Failed to parse url parameters");
 
-    public static NotFoundError getNotFoundError(Throwable exception) {
+	public static NotFoundError getNotFoundError(Throwable exception) {
 		if (exception instanceof UnsatisfiedPathVariableRouteException) {
-			return NOT_FOUND_ERROR;
-		}
-		if (exception instanceof UnsatisfiedPartRouteException) {
 			return NOT_FOUND_ERROR;
 		}
 		if (exception instanceof ConversionErrorException) {
@@ -271,12 +293,15 @@ public class [[.ClassName]] {
 	private static ErrorLocation getLocation(Argument<?> argument) {
 		var query = argument.getAnnotationMetadata().findDeclaredAnnotation("io.micronaut.http.annotation.QueryValue");
 		if (query.isPresent()) {
-			var parameterName = query.get().getValues().get("value");
 			return ErrorLocation.QUERY;
 		}
 		var header = argument.getAnnotationMetadata().findDeclaredAnnotation("io.micronaut.http.annotation.Headers");
 		if (header.isPresent()) {
 			return ErrorLocation.HEADER;
+		}
+		var part = argument.getAnnotationMetadata().findDeclaredAnnotation("io.micronaut.http.annotation.Part");
+		if (part.isPresent()) {
+			return ErrorLocation.BODY;
 		}
 		return ErrorLocation.BODY;
 	}
@@ -291,18 +316,26 @@ public class [[.ClassName]] {
 			var annotationValues = (AnnotationValue[]) header.get().getValues().get("value");
 			return annotationValues[0].getValues().get("value").toString();
 		}
-		return "unknown";	
+		var part = argument.getAnnotationMetadata().findDeclaredAnnotation("io.micronaut.http.annotation.Part");
+		if (part.isPresent()) {
+			return part.get().getValues().get("value").toString();
+		}
+		return "unknown";
 	}
 
 	private static BadRequestError argumentBadRequestError(Argument<?> arg, String errorMessage, String code) {
 		var location = getLocation(arg);
-		var parameterName = getParameterName(arg);	
+		var parameterName = getParameterName(arg);
 		var validation = new ValidationError(parameterName, code, errorMessage);
 		var message = String.format("Failed to parse %s", location.name().toLowerCase());
 		return new BadRequestError(message, location, List.of(validation));
 	}
 
 	public static BadRequestError getBadRequestError(Throwable exception) {
+		if (exception instanceof UnsatisfiedPartRouteException) {
+			var errors = List.of(new ValidationError(((UnsatisfiedPartRouteException) exception).getPartName(), "missing", exception.getMessage()));
+			return new BadRequestError("Failed to parse body", ErrorLocation.BODY, errors);
+		}
 		if (exception instanceof JsonParseException) {
 			var errors = extractValidationErrors((JsonParseException) exception);
 			return new BadRequestError("Failed to parse body", ErrorLocation.BODY, errors);
@@ -337,33 +370,35 @@ func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) [
 		methodParams = append(methodParams, "@Body String bodyStr")
 	}
 
-	methodParams = append(methodParams, generateMicronautMethodParam(operation.QueryParams, "QueryValue", types)...)
-	methodParams = append(methodParams, generateMicronautMethodParam(operation.HeaderParams, "Header", types)...)
-	methodParams = append(methodParams, generateMicronautMethodParam(operation.Endpoint.UrlParams, "PathVariable", types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.Body.FormData, "Part", false, types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.Body.FormUrlEncoded, "Part", false, types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.QueryParams, "QueryValue", true, types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.HeaderParams, "Header", true, types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.Endpoint.UrlParams, "PathVariable", true, types)...)
 
 	return methodParams
 }
 
-func generateMicronautMethodParam(namedParams []spec.NamedParam, paramAnnotation string, types *types.Types) []string {
+func generateMicronautMethodParam(namedParams []spec.NamedParam, paramAnnotation string, isSupportDefaulted bool, types *types.Types) []string {
 	params := []string{}
 
 	if namedParams != nil && len(namedParams) > 0 {
 		for _, param := range namedParams {
 			paramType := fmt.Sprintf(`%s %s`, types.Java(&param.Type.Definition), param.Name.CamelCase())
-			if param.Type.Definition.IsNullable() {
+			if param.Type.Definition.IsNullable() || (!isSupportDefaulted && param.DefinitionDefault.Default != nil) {
 				paramType = fmt.Sprintf(`@Nullable %s`, paramType)
 			}
-			params = append(params, fmt.Sprintf(`%s %s`, getMicronautParameterAnnotation(paramAnnotation, &param), paramType))
+			params = append(params, fmt.Sprintf(`%s %s`, getMicronautParameterAnnotation(paramAnnotation, &param, isSupportDefaulted), paramType))
 		}
 	}
 
 	return params
 }
 
-func getMicronautParameterAnnotation(paramAnnotation string, param *spec.NamedParam) string {
+func getMicronautParameterAnnotation(paramAnnotation string, param *spec.NamedParam, isSupportDefaulted bool) string {
 	annotationParams := []string{fmt.Sprintf(`value = "%s"`, param.Name.Source)}
 
-	if param.DefinitionDefault.Default != nil {
+	if param.DefinitionDefault.Default != nil && isSupportDefaulted {
 		annotationParams = append(annotationParams, fmt.Sprintf(`defaultValue = "%s"`, *param.DefinitionDefault.Default))
 	}
 
@@ -389,17 +424,17 @@ import java.util.Optional;
 
 @Singleton
 public class LocalDateConverter implements TypeConverter<String, LocalDate> {
-    @Override
-    public Optional<LocalDate> convert(String value, Class<LocalDate> targetType, ConversionContext context) {
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", context.getLocale());
-            LocalDate result = LocalDate.parse(value, formatter);
-            return Optional.of(result);
-        } catch (DateTimeParseException e) {
-            context.reject(value, e);
-            return Optional.empty();
-        }
-    }
+	@Override
+	public Optional<LocalDate> convert(String value, Class<LocalDate> targetType, ConversionContext context) {
+		try {
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", context.getLocale());
+			LocalDate result = LocalDate.parse(value, formatter);
+			return Optional.of(result);
+		} catch (DateTimeParseException e) {
+			context.reject(value, e);
+			return Optional.empty();
+		}
+	}
 }
 `)
 	return w.ToCodeFile()
@@ -417,17 +452,17 @@ import java.util.Optional;
 
 @Singleton
 public class LocalDateTimeConverter implements TypeConverter<String, LocalDateTime> {
-    @Override
-    public Optional<LocalDateTime> convert(String value, Class<LocalDateTime> targetType, ConversionContext context) {
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", context.getLocale());
-            LocalDateTime result = LocalDateTime.parse(value, formatter);
-            return Optional.of(result);
-        } catch (DateTimeParseException e) {
-            context.reject(value, e);
-            return Optional.empty();
-        }
-    }
+	@Override
+	public Optional<LocalDateTime> convert(String value, Class<LocalDateTime> targetType, ConversionContext context) {
+		try {
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", context.getLocale());
+			LocalDateTime result = LocalDateTime.parse(value, formatter);
+			return Optional.of(result);
+		} catch (DateTimeParseException e) {
+			context.reject(value, e);
+			return Optional.empty();
+		}
+	}
 }
 `)
 	return w.ToCodeFile()

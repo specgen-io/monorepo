@@ -27,7 +27,6 @@ func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.ServicesApi(api), serviceInterfaceName(api))
 	w.Imports.Add(g.Types.Imports()...)
 	w.Imports.Star(g.Packages.Models(api.InHttp.InVersion))
-	w.EmptyLine()
 	w.Line(`public interface [[.ClassName]] {`)
 	for _, operation := range api.Operations {
 		w.Line(`  %s;`, operationSignature(g.Types, &operation))
