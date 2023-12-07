@@ -39,12 +39,20 @@ func Test_EchoFormData(t *testing.T) {
 	_ = writer.WriteField("string_param", "the value")
 	_ = writer.WriteField("string_opt_param", "the value")
 	_ = writer.WriteField("string_defaulted_param", "value")
-	_ = writer.WriteField("string_array_param", "the str1")
-	_ = writer.WriteField("string_array_param", "the str2")
+	if check(COMMA_SEPARATED_FORM_PARAMS_MODE) {
+		_ = writer.WriteField("string_array_param", "the str1,the str2")
+	} else {
+		_ = writer.WriteField("string_array_param", "the str1")
+		_ = writer.WriteField("string_array_param", "the str2")
+	}
 	_ = writer.WriteField("uuid_param", "123e4567-e89b-12d3-a456-426655440000")
 	_ = writer.WriteField("date_param", "2020-01-01")
-	_ = writer.WriteField("date_array_param", "2020-01-01")
-	_ = writer.WriteField("date_array_param", "2020-01-02")
+	if check(COMMA_SEPARATED_FORM_PARAMS_MODE) {
+		_ = writer.WriteField("date_array_param", "2020-01-01,2020-01-02")
+	} else {
+		_ = writer.WriteField("date_array_param", "2020-01-01")
+		_ = writer.WriteField("date_array_param", "2020-01-02")
+	}
 	_ = writer.WriteField("datetime_param", "2019-11-30T17:45:55")
 	_ = writer.WriteField("enum_param", "SECOND_CHOICE")
 	_ = writer.Close()
@@ -65,15 +73,23 @@ func Test_EchoFormData_Missing_Required_Param(t *testing.T) {
 	_ = writer.WriteField("double_param", "12.345")
 	_ = writer.WriteField("decimal_param", "12345")
 	_ = writer.WriteField("bool_param", "true")
-	//_ = writer.WriteField("string_param", "the value")	//<- this is required param and it's not provided
+	//_ = writer.WriteField("string_param", "the value") //<- this is required param and it's not provided
 	_ = writer.WriteField("string_opt_param", "the value")
 	_ = writer.WriteField("string_defaulted_param", "value")
-	_ = writer.WriteField("string_array_param", "the str1")
-	_ = writer.WriteField("string_array_param", "the str2")
+	if check(COMMA_SEPARATED_FORM_PARAMS_MODE) {
+		_ = writer.WriteField("string_array_param", "the str1,the str2")
+	} else {
+		_ = writer.WriteField("string_array_param", "the str1")
+		_ = writer.WriteField("string_array_param", "the str2")
+	}
 	_ = writer.WriteField("uuid_param", "123e4567-e89b-12d3-a456-426655440000")
 	_ = writer.WriteField("date_param", "2020-01-01")
-	_ = writer.WriteField("date_array_param", "2020-01-01")
-	_ = writer.WriteField("date_array_param", "2020-01-02")
+	if check(COMMA_SEPARATED_FORM_PARAMS_MODE) {
+		_ = writer.WriteField("date_array_param", "2020-01-01,2020-01-02")
+	} else {
+		_ = writer.WriteField("date_array_param", "2020-01-01")
+		_ = writer.WriteField("date_array_param", "2020-01-02")
+	}
 	_ = writer.WriteField("datetime_param", "2019-11-30T17:45:55")
 	_ = writer.WriteField("enum_param", "SECOND_CHOICE")
 	_ = writer.Close()
@@ -111,12 +127,20 @@ func Test_EchoFormData_Missing_Optional_Param(t *testing.T) {
 	_ = writer.WriteField("string_param", "the value")
 	//_ = writer.WriteField("string_opt_param", "the value")	//<- this is optional param and it's not provided
 	_ = writer.WriteField("string_defaulted_param", "value")
-	_ = writer.WriteField("string_array_param", "the str1")
-	_ = writer.WriteField("string_array_param", "the str2")
+	if check(COMMA_SEPARATED_FORM_PARAMS_MODE) {
+		_ = writer.WriteField("string_array_param", "the str1,the str2")
+	} else {
+		_ = writer.WriteField("string_array_param", "the str1")
+		_ = writer.WriteField("string_array_param", "the str2")
+	}
 	_ = writer.WriteField("uuid_param", "123e4567-e89b-12d3-a456-426655440000")
 	_ = writer.WriteField("date_param", "2020-01-01")
-	_ = writer.WriteField("date_array_param", "2020-01-01")
-	_ = writer.WriteField("date_array_param", "2020-01-02")
+	if check(COMMA_SEPARATED_FORM_PARAMS_MODE) {
+		_ = writer.WriteField("date_array_param", "2020-01-01,2020-01-02")
+	} else {
+		_ = writer.WriteField("date_array_param", "2020-01-01")
+		_ = writer.WriteField("date_array_param", "2020-01-02")
+	}
 	_ = writer.WriteField("datetime_param", "2019-11-30T17:45:55")
 	_ = writer.WriteField("enum_param", "SECOND_CHOICE")
 	_ = writer.Close()
@@ -140,12 +164,20 @@ func Test_EchoFormData_Missing_Defaulted_Param(t *testing.T) {
 	_ = writer.WriteField("string_param", "the value")
 	_ = writer.WriteField("string_opt_param", "the value")
 	//_ = writer.WriteField("string_defaulted_param", "value")	//<- this is defaulted param and it's not provided
-	_ = writer.WriteField("string_array_param", "the str1")
-	_ = writer.WriteField("string_array_param", "the str2")
+	if check(COMMA_SEPARATED_FORM_PARAMS_MODE) {
+		_ = writer.WriteField("string_array_param", "the str1,the str2")
+	} else {
+		_ = writer.WriteField("string_array_param", "the str1")
+		_ = writer.WriteField("string_array_param", "the str2")
+	}
 	_ = writer.WriteField("uuid_param", "123e4567-e89b-12d3-a456-426655440000")
 	_ = writer.WriteField("date_param", "2020-01-01")
-	_ = writer.WriteField("date_array_param", "2020-01-01")
-	_ = writer.WriteField("date_array_param", "2020-01-02")
+	if check(COMMA_SEPARATED_FORM_PARAMS_MODE) {
+		_ = writer.WriteField("date_array_param", "2020-01-01,2020-01-02")
+	} else {
+		_ = writer.WriteField("date_array_param", "2020-01-01")
+		_ = writer.WriteField("date_array_param", "2020-01-02")
+	}
 	_ = writer.WriteField("datetime_param", "2019-11-30T17:45:55")
 	_ = writer.WriteField("enum_param", "SECOND_CHOICE")
 	_ = writer.Close()
@@ -171,12 +203,20 @@ func Test_EchoFormData_WrongFormat(t *testing.T) {
 	_ = writer.WriteField("string_param", "the value")
 	_ = writer.WriteField("string_opt_param", "the value")
 	_ = writer.WriteField("string_defaulted_param", "value")
-	_ = writer.WriteField("string_array_param", "the str1")
-	_ = writer.WriteField("string_array_param", "the str2")
+	if check(COMMA_SEPARATED_FORM_PARAMS_MODE) {
+		_ = writer.WriteField("string_array_param", "the str1,the str2")
+	} else {
+		_ = writer.WriteField("string_array_param", "the str1")
+		_ = writer.WriteField("string_array_param", "the str2")
+	}
 	_ = writer.WriteField("uuid_param", "123e4567-e89b-12d3-a456-426655440000")
 	_ = writer.WriteField("date_param", "2020-01-01")
-	_ = writer.WriteField("date_array_param", "2020-01-01")
-	_ = writer.WriteField("date_array_param", "2020-01-02")
+	if check(COMMA_SEPARATED_FORM_PARAMS_MODE) {
+		_ = writer.WriteField("date_array_param", "2020-01-01,2020-01-02")
+	} else {
+		_ = writer.WriteField("date_array_param", "2020-01-01")
+		_ = writer.WriteField("date_array_param", "2020-01-02")
+	}
 	_ = writer.WriteField("datetime_param", "2019-11-30T17:45:55")
 	_ = writer.WriteField("enum_param", "SECOND_CHOICE")
 	_ = writer.Close()

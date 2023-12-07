@@ -148,7 +148,7 @@ func (g *SpringGenerator) contentType(operation *spec.NamedOperation) string {
 	} else if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
 		return `MediaType.APPLICATION_FORM_URLENCODED`
 	} else {
-		panic(fmt.Sprintf("Unknown Contet Type"))
+		panic(fmt.Sprintf("Unknown Content Type"))
 	}
 }
 
