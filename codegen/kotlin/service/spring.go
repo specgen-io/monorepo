@@ -119,7 +119,7 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 		bodyStringVar += ".reader()"
 	}
 	g.parseBody(w, operation, bodyStringVar, "requestBody")
-	serviceCall(w, operation, bodyStringVar, "requestBody", "result")
+	serviceCall(w, operation, bodyStringVar, "requestBody", "result", true)
 	g.processResponses(w, operation, "result")
 	w.Unindent()
 	w.Line(`}`)
