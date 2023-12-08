@@ -105,11 +105,8 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 }
 
 func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.RequestBodyString) {
-		w.Line(`@Consumes(MediaType.TEXT_PLAIN)`)
-	}
-	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`@Consumes(MediaType.APPLICATION_JSON)`)
+	if !operation.BodyIs(spec.RequestBodyEmpty) {
+		w.Line(`@Consumes(%s)`, g.contentType(operation))
 	}
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
@@ -122,20 +119,35 @@ func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.
 		bodyStringVar += ".reader()"
 	}
 	g.parseBody(w, operation, bodyStringVar, "requestBody")
-	serviceCall(w, operation, bodyStringVar, "requestBody", "result")
+	serviceCall(w, operation, bodyStringVar, "requestBody", "result", false)
 	g.processResponses(w, operation, "result")
 	w.Unindent()
 	w.Line(`}`)
 }
 
 func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
-	if operation.BodyIs(spec.RequestBodyString) {
-		w.Line(`checkContentType(request, MediaType.TEXT_PLAIN)`)
+	if !operation.BodyIs(spec.RequestBodyEmpty) {
+		w.Line(`checkContentType(request, %s)`, g.contentType(operation))
 	}
 	if operation.BodyIs(spec.RequestBodyJson) {
-		w.Line(`checkContentType(request, MediaType.APPLICATION_JSON)`)
 		typ := g.Types.Kotlin(&operation.Body.Type.Definition)
 		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.ReadJson(bodyStringVar, &operation.Body.Type.Definition))
+	}
+}
+
+func (g *MicronautGenerator) contentType(operation *spec.NamedOperation) string {
+	if operation.Body.IsEmpty() {
+		return ""
+	} else if operation.BodyIs(spec.RequestBodyString) {
+		return `MediaType.TEXT_PLAIN`
+	} else if operation.BodyIs(spec.RequestBodyJson) {
+		return `MediaType.APPLICATION_JSON`
+	} else if operation.BodyIs(spec.RequestBodyFormData) {
+		return `MediaType.MULTIPART_FORM_DATA`
+	} else if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+		return `MediaType.APPLICATION_FORM_URLENCODED`
+	} else {
+		panic(fmt.Sprintf("Unknown Contet Type"))
 	}
 }
 
@@ -232,9 +244,6 @@ fun getNotFoundError(exception: Throwable?): NotFoundError? {
 	if (exception is UnsatisfiedPathVariableRouteException) {
 		return NotFoundError(NOT_FOUND_ERROR)
 	}
-	if (exception is UnsatisfiedPartRouteException) {
-		return NotFoundError(NOT_FOUND_ERROR)
-	}
 	if (exception is ConversionErrorException) {
 		val annotation =
 			exception.argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.PathVariable")
@@ -246,16 +255,19 @@ fun getNotFoundError(exception: Throwable?): NotFoundError? {
 }
 
 private fun getLocation(argument: Argument<*>): ErrorLocation {
-	val query =
-		argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.QueryValue")
+	val query = argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.QueryValue")
 	if (query.isPresent) {
 		return ErrorLocation.QUERY
 	}
-	val header =
-		argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Headers")
-	return if (header.isPresent) {
-		ErrorLocation.HEADER
-	} else ErrorLocation.BODY
+	val header = argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Headers")
+	if (header.isPresent) {
+		return ErrorLocation.HEADER
+	}
+	val part = argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Part")
+	if (part.isPresent) {
+		return ErrorLocation.BODY
+	}
+	return ErrorLocation.BODY
 }
 
 private fun getParameterName(argument: Argument<*>): String {
@@ -270,6 +282,10 @@ private fun getParameterName(argument: Argument<*>): String {
 		val annotationValues = header.get().values["value"] as Array<AnnotationValue<*>>?
 		return annotationValues!![0].values["value"].toString()
 	}
+	val part = argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Part")
+	if (part.isPresent) {
+		return part.get().values["value"].toString()
+	}
 	return "unknown"
 }
 
@@ -282,6 +298,10 @@ private fun argumentBadRequestError(arg: Argument<*>, errorMessage: String?, cod
 }
 
 fun getBadRequestError(exception: Throwable): BadRequestError? {
+	if (exception is UnsatisfiedPartRouteException) {
+		val errors = listOf(ValidationError(exception.partName, "missing", exception.message))
+		return BadRequestError("Failed to parse body", ErrorLocation.BODY, errors)
+	}
 	if (exception is JsonParseException) {
 		val errors = extractValidationErrors(exception)
 		return BadRequestError("Failed to parse body", ErrorLocation.BODY, errors)
@@ -313,30 +333,35 @@ func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) [
 		methodParams = append(methodParams, "@Body bodyStr: String")
 	}
 
-	methodParams = append(methodParams, generateMicronautMethodParam(operation.QueryParams, "QueryValue", types)...)
-	methodParams = append(methodParams, generateMicronautMethodParam(operation.HeaderParams, "Header", types)...)
-	methodParams = append(methodParams, generateMicronautMethodParam(operation.Endpoint.UrlParams, "PathVariable", types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.Body.FormData, "Part", false, types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.Body.FormUrlEncoded, "Part", false, types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.QueryParams, "QueryValue", true, types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.HeaderParams, "Header", true, types)...)
+	methodParams = append(methodParams, generateMicronautMethodParam(operation.Endpoint.UrlParams, "PathVariable", true, types)...)
 
 	return methodParams
 }
 
-func generateMicronautMethodParam(namedParams []spec.NamedParam, paramAnnotation string, types *types.Types) []string {
+func generateMicronautMethodParam(namedParams []spec.NamedParam, paramAnnotation string, isSupportDefaulted bool, types *types.Types) []string {
 	params := []string{}
 
 	if namedParams != nil && len(namedParams) > 0 {
 		for _, param := range namedParams {
 			paramType := fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), types.Kotlin(&param.Type.Definition))
-			params = append(params, fmt.Sprintf(`%s %s`, getMicronautParameterAnnotation(paramAnnotation, &param), paramType))
+			if !isSupportDefaulted && param.DefinitionDefault.Default != nil {
+				paramType = fmt.Sprintf(`%s?`, paramType)
+			}
+			params = append(params, fmt.Sprintf(`%s %s`, getMicronautParameterAnnotation(paramAnnotation, &param, isSupportDefaulted), paramType))
 		}
 	}
 
 	return params
 }
 
-func getMicronautParameterAnnotation(paramAnnotation string, param *spec.NamedParam) string {
+func getMicronautParameterAnnotation(paramAnnotation string, param *spec.NamedParam, isSupportDefaulted bool) string {
 	annotationParams := []string{fmt.Sprintf(`value = "%s"`, param.Name.Source)}
 
-	if param.DefinitionDefault.Default != nil {
+	if param.DefinitionDefault.Default != nil && isSupportDefaulted {
 		annotationParams = append(annotationParams, fmt.Sprintf(`defaultValue = "%s"`, *param.DefinitionDefault.Default))
 	}
 

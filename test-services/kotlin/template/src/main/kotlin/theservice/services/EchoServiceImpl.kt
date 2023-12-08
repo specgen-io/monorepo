@@ -35,77 +35,77 @@ class EchoServiceImpl : EchoService {
         return body
     }
 
-//    override fun echoFormData(
-//        intParam: Int,
-//        longParam: Long,
-//        floatParam: Float,
-//        doubleParam: Double,
-//        decimalParam: BigDecimal,
-//        boolParam: Boolean,
-//        stringParam: String,
-//        stringOptParam: String?,
-//        stringDefaultedParam: String,
-//        stringArrayParam: List<String>,
-//        uuidParam: UUID,
-//        dateParam: LocalDate,
-//        dateArrayParam: List<LocalDate>,
-//        datetimeParam: LocalDateTime,
-//        enumParam: Choice
-//    ): FormParameters {
-//        return FormParameters(
-//            intParam,
-//            longParam,
-//            floatParam,
-//            doubleParam,
-//            decimalParam,
-//            boolParam,
-//            stringParam,
-//            stringOptParam,
-//            stringDefaultedParam,
-//            stringArrayParam,
-//            uuidParam,
-//            dateParam,
-//            dateArrayParam,
-//            datetimeParam,
-//            enumParam
-//        )
-//    }
-//
-//    override fun echoFormUrlencoded(
-//        intParam: Int,
-//        longParam: Long,
-//        floatParam: Float,
-//        doubleParam: Double,
-//        decimalParam: BigDecimal,
-//        boolParam: Boolean,
-//        stringParam: String,
-//        stringOptParam: String?,
-//        stringDefaultedParam: String,
-//        stringArrayParam: List<String>,
-//        uuidParam: UUID,
-//        dateParam: LocalDate,
-//        dateArrayParam: List<LocalDate>,
-//        datetimeParam: LocalDateTime,
-//        enumParam: Choice
-//    ): FormParameters {
-//        return FormParameters(
-//            intParam,
-//            longParam,
-//            floatParam,
-//            doubleParam,
-//            decimalParam,
-//            boolParam,
-//            stringParam,
-//            stringOptParam,
-//            stringDefaultedParam,
-//            stringArrayParam,
-//            uuidParam,
-//            dateParam,
-//            dateArrayParam,
-//            datetimeParam,
-//            enumParam
-//        )
-//    }
+    override fun echoFormData(
+        intParam: Int,
+        longParam: Long,
+        floatParam: Float,
+        doubleParam: Double,
+        decimalParam: BigDecimal,
+        boolParam: Boolean,
+        stringParam: String,
+        stringOptParam: String?,
+        stringDefaultedParam: String,
+        stringArrayParam: List<String>,
+        uuidParam: UUID,
+        dateParam: LocalDate,
+        dateArrayParam: List<LocalDate>,
+        datetimeParam: LocalDateTime,
+        enumParam: Choice
+    ): FormParameters {
+        return FormParameters(
+            intParam,
+            longParam,
+            floatParam,
+            doubleParam,
+            decimalParam,
+            boolParam,
+            stringParam,
+            stringOptParam,
+            stringDefaultedParam,
+            stringArrayParam,
+            uuidParam,
+            dateParam,
+            dateArrayParam,
+            datetimeParam,
+            enumParam
+        )
+    }
+
+    override fun echoFormUrlencoded(
+        intParam: Int,
+        longParam: Long,
+        floatParam: Float,
+        doubleParam: Double,
+        decimalParam: BigDecimal,
+        boolParam: Boolean,
+        stringParam: String,
+        stringOptParam: String?,
+        stringDefaultedParam: String,
+        stringArrayParam: List<String>,
+        uuidParam: UUID,
+        dateParam: LocalDate,
+        dateArrayParam: List<LocalDate>,
+        datetimeParam: LocalDateTime,
+        enumParam: Choice
+    ): FormParameters {
+        return FormParameters(
+            intParam,
+            longParam,
+            floatParam,
+            doubleParam,
+            decimalParam,
+            boolParam,
+            stringParam,
+            stringOptParam,
+            stringDefaultedParam,
+            stringArrayParam,
+            uuidParam,
+            dateParam,
+            dateArrayParam,
+            datetimeParam,
+            enumParam
+        )
+    }
 
     override fun echoQuery(
         intQuery: Int,

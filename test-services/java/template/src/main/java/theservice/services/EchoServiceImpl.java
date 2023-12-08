@@ -41,15 +41,15 @@ public class EchoServiceImpl implements EchoService {
 		return body;
 	}
 
-//	@Override
-//    public FormParameters echoFormData(int intParam, long longParam, float floatParam, double doubleParam, BigDecimal decimalParam, boolean boolParam, String stringParam, String stringOptParam, String stringDefaultedParam, List<String> stringArrayParam, UUID uuidParam, LocalDate dateParam, List<LocalDate> dateArrayParam, LocalDateTime datetimeParam, Choice enumParam) {
-//		return new FormParameters(intParam, longParam, floatParam, doubleParam, decimalParam, boolParam, stringParam, stringOptParam, stringDefaultedParam, stringArrayParam, uuidParam, dateParam, dateArrayParam, datetimeParam, enumParam);
-//	}
-//
-//	@Override
-//    public FormParameters echoFormUrlencoded(int intParam, long longParam, float floatParam, double doubleParam, BigDecimal decimalParam, boolean boolParam, String stringParam, String stringOptParam, String stringDefaultedParam, List<String> stringArrayParam, UUID uuidParam, LocalDate dateParam, List<LocalDate> dateArrayParam, LocalDateTime datetimeParam, Choice enumParam) {
-//		return new FormParameters(intParam, longParam, floatParam, doubleParam, decimalParam, boolParam, stringParam, stringOptParam, stringDefaultedParam, stringArrayParam, uuidParam, dateParam, dateArrayParam, datetimeParam, enumParam);
-//	}
+	@Override
+    public FormParameters echoFormData(int intParam, long longParam, float floatParam, double doubleParam, BigDecimal decimalParam, boolean boolParam, String stringParam, String stringOptParam, String stringDefaultedParam, List<String> stringArrayParam, UUID uuidParam, LocalDate dateParam, List<LocalDate> dateArrayParam, LocalDateTime datetimeParam, Choice enumParam) {
+		return new FormParameters(intParam, longParam, floatParam, doubleParam, decimalParam, boolParam, stringParam, stringOptParam, stringDefaultedParam, stringArrayParam, uuidParam, dateParam, dateArrayParam, datetimeParam, enumParam);
+	}
+
+	@Override
+    public FormParameters echoFormUrlencoded(int intParam, long longParam, float floatParam, double doubleParam, BigDecimal decimalParam, boolean boolParam, String stringParam, String stringOptParam, String stringDefaultedParam, List<String> stringArrayParam, UUID uuidParam, LocalDate dateParam, List<LocalDate> dateArrayParam, LocalDateTime datetimeParam, Choice enumParam) {
+		return new FormParameters(intParam, longParam, floatParam, doubleParam, decimalParam, boolParam, stringParam, stringOptParam, stringDefaultedParam, stringArrayParam, uuidParam, dateParam, dateArrayParam, datetimeParam, enumParam);
+	}
 
 	@Override
 	public Parameters echoQuery(int intQuery, long longQuery, float floatQuery, double doubleQuery, BigDecimal decimalQuery, boolean boolQuery, String stringQuery, String stringOptQuery, String stringDefaultedQuery, List<String> stringArrayQuery, UUID uuidQuery, LocalDate dateQuery, List<LocalDate> dateArrayQuery, LocalDateTime datetimeQuery, Choice enumQuery) {
