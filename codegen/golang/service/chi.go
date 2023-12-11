@@ -48,7 +48,7 @@ func (g *ChiGenerator) routing(api *spec.Api) *generator.CodeFile {
 	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) {
 		w.Imports.Add("encoding/json")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) || walkers.ApiHasBodyOfKind(api, spec.RequestBodyString) {
+	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson, spec.RequestBodyString) {
 		w.Imports.Module(g.Modules.ContentType)
 	}
 	w.Imports.Module(g.Modules.ServicesApi(api))
