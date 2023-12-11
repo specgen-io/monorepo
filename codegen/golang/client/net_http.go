@@ -107,18 +107,18 @@ func (g *NetHttpGenerator) operation(w *writer.Writer, operation *spec.NamedOper
 
 func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation, requestVar string) {
 	body := "nil"
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line(`  bodyData := []byte(body)`)
 		body = "bytes.NewBuffer(bodyData)"
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`  bodyData, err := json.Marshal(body)`)
 		w.Line(`  if err != nil {`)
 		w.Line(`    return %s`, operationError(operation, `err`))
 		w.Line(`  }`)
 		body = "bytes.NewBuffer(bodyData)"
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) {
+	if operation.Body.IsBodyFormData() {
 		w.Line(`  bodyData := &bytes.Buffer{}`)
 		w.Line(`  writer := multipart.NewWriter(bodyData)`)
 		w.Line(`  f := params.NewFormDataParamsWriter(writer)`)
@@ -132,7 +132,7 @@ func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.Named
 		w.Line(`  }`)
 		body = "bodyData"
 	}
-	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormUrlEncoded() {
 		w.Line(`  formUrlencodedValues := url.Values{}`)
 		w.Line(`  f := params.NewParamsWriter(formUrlencodedValues)`)
 		for _, param := range operation.Body.FormUrlEncoded {

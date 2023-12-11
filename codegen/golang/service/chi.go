@@ -195,7 +195,7 @@ func (g *ChiGenerator) response(w *writer.Writer, operation *spec.NamedOperation
 }
 
 func (g *ChiGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)
@@ -205,7 +205,7 @@ func (g *ChiGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperat
 		w.Line(`}`)
 		w.Line(`body := string(bodyData)`)
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)
@@ -220,7 +220,7 @@ func (g *ChiGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperat
 		respondBadRequest(w.Indented(), operation, g.Types, "body", `"Failed to parse body"`, "errors")
 		w.Line(`}`)
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) || operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormData() || operation.Body.IsBodyFormUrlEncoded() {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)

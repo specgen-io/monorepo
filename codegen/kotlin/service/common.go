@@ -13,13 +13,13 @@ func joinParams(params []string) string {
 
 func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string, isSupportDefaulted bool) []string {
 	methodParams := []string{}
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		methodParams = append(methodParams, bodyStringVar)
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		methodParams = append(methodParams, bodyJsonVar)
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) {
+	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {
 			if !isSupportDefaulted && param.DefinitionDefault.Default != nil {
 				methodParams = append(methodParams, fmt.Sprintf(`%s ?: "%s"`, param.Name.CamelCase(), *param.DefinitionDefault.Default))
@@ -28,7 +28,7 @@ func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJ
 			}
 		}
 	}
-	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormUrlEncoded() {
 		for _, param := range operation.Body.FormUrlEncoded {
 			if !isSupportDefaulted && param.DefinitionDefault.Default != nil {
 				methodParams = append(methodParams, fmt.Sprintf(`%s ?: "%s"`, param.Name.CamelCase(), *param.DefinitionDefault.Default))

@@ -22,7 +22,7 @@ func (g *Generator) serviceApi(api *spec.Api) *generator.CodeFile {
 	w.Imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
 	w.Imports.Star(g.Modules.ErrorsModels, types.ErrorsPackage)
 	for _, operation := range api.Operations {
-		if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) || operation.HasParams() {
+		if operation.Body.IsText() || operation.Body.IsJson() || operation.HasParams() {
 			w.EmptyLine()
 			generateOperationParams(w, &operation)
 		}
@@ -35,7 +35,7 @@ func (g *Generator) serviceApi(api *spec.Api) *generator.CodeFile {
 	w.Line("export interface %s {", serviceInterfaceName(api))
 	for _, operation := range api.Operations {
 		params := ""
-		if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) || operation.HasParams() {
+		if operation.Body.IsText() || operation.Body.IsJson() || operation.HasParams() {
 			params = fmt.Sprintf(`params: %s`, operationParamsTypeName(&operation))
 		}
 		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, ResponseType(&operation, ""))
@@ -79,7 +79,7 @@ func generateOperationParams(w *writer.Writer, operation *spec.NamedOperation) {
 	generateServiceParams(w, operation.HeaderParams)
 	generateServiceParams(w, operation.Endpoint.UrlParams)
 	generateServiceParams(w, operation.QueryParams)
-	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsText() || operation.Body.IsJson() {
 		addServiceParam(w, "body", &operation.Body.Type.Definition)
 	}
 	w.Line("}")

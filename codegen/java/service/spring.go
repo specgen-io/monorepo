@@ -127,10 +127,10 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 }
 
 func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
-	if !operation.BodyIs(spec.RequestBodyEmpty) {
+	if !operation.Body.IsEmpty() {
 		w.Line(`ContentType.check(request, %s);`, g.contentType(operation))
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		typ := g.Types.Java(&operation.Body.Type.Definition)
 		w.Line(`%s %s = json.%s;`, typ, bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
 	}
@@ -139,13 +139,13 @@ func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOpera
 func (g *SpringGenerator) contentType(operation *spec.NamedOperation) string {
 	if operation.Body.IsEmpty() {
 		return ""
-	} else if operation.BodyIs(spec.RequestBodyString) {
+	} else if operation.Body.IsText() {
 		return `MediaType.TEXT_PLAIN`
-	} else if operation.BodyIs(spec.RequestBodyJson) {
+	} else if operation.Body.IsJson() {
 		return `MediaType.APPLICATION_JSON`
-	} else if operation.BodyIs(spec.RequestBodyFormData) {
+	} else if operation.Body.IsBodyFormData() {
 		return `MediaType.MULTIPART_FORM_DATA`
-	} else if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	} else if operation.Body.IsBodyFormUrlEncoded() {
 		return `MediaType.APPLICATION_FORM_URLENCODED`
 	} else {
 		panic(fmt.Sprintf("Unknown Content Type"))
@@ -310,7 +310,7 @@ public class [[.ClassName]] {
 func springMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"HttpServletRequest request"}
 
-	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsText() || operation.Body.IsJson() {
 		methodParams = append(methodParams, "@RequestBody String bodyStr")
 	}
 	methodParams = append(methodParams, generateSpringMethodParam(operation.Body.FormData, "RequestParam", types)...)

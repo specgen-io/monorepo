@@ -62,18 +62,18 @@ func apiPackageAlias(api *spec.Api) string {
 
 func serviceCall(serviceVar string, operation *spec.NamedOperation) string {
 	params := []string{}
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		params = append(params, "body")
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		params = append(params, "&body")
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) {
+	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {
 			params = append(params, param.Name.CamelCase())
 		}
 	}
-	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormUrlEncoded() {
 		for _, param := range operation.Body.FormUrlEncoded {
 			params = append(params, param.Name.CamelCase())
 		}

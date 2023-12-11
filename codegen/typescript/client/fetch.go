@@ -62,25 +62,25 @@ func (g *FetchGenerator) operation(w *writer.Writer, operation *spec.NamedOperat
 		params = `?${new URLSearchParams(query)}`
 	}
 	fetchConfigParts := []string{fmt.Sprintf(`method: '%s'`, strings.ToUpper(operation.Endpoint.Method))}
-	if hasHeaderParams || operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
+	if hasHeaderParams || operation.Body.IsText() || operation.Body.IsJson() {
 		w.Line(`  const headers = strParamsItems({`)
 		for _, p := range operation.HeaderParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
-		if operation.BodyIs(spec.RequestBodyString) {
+		if operation.Body.IsText() {
 			w.Line(`    "Content-Type": "text/plain"`)
 		}
-		if operation.BodyIs(spec.RequestBodyJson) {
+		if operation.Body.IsJson() {
 			w.Line(`    "Content-Type": "application/json"`)
 		}
 		w.Line(`  })`)
 		fetchConfigParts = append(fetchConfigParts, `headers: headers`)
 	}
 	w.Line("  const url = config.baseURL+`%s%s`", getUrl(operation.Endpoint), params)
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		fetchConfigParts = append(fetchConfigParts, `body: parameters.body`)
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeType(&operation.Body.Type.Definition))
 		fetchConfigParts = append(fetchConfigParts, `body: JSON.stringify(bodyJson)`)
 	}

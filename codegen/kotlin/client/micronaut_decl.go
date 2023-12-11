@@ -57,9 +57,9 @@ func (g *MicronautDeclGenerator) clientMethod(w *writer.Writer, operation *spec.
 	methodName := casee.ToPascalCase(operation.Endpoint.Method)
 	url := operation.FullUrl()
 
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line(`@%s(value = "%s", processes = [MediaType.TEXT_PLAIN])`, methodName, url)
-	} else if operation.BodyIs(spec.RequestBodyJson) {
+	} else if operation.Body.IsJson() {
 		w.Line(`@%s(value = "%s", processes = [MediaType.APPLICATION_JSON])`, methodName, url)
 	} else {
 		w.Line(`@%s(value = "%s")`, methodName, url)
@@ -84,7 +84,7 @@ func (g *MicronautDeclGenerator) operationReturnType(operation *spec.NamedOperat
 
 func (g *MicronautDeclGenerator) operationParameters(operation *spec.NamedOperation) []string {
 	params := []string{}
-	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsText() || operation.Body.IsJson() {
 		params = append(params, fmt.Sprintf("@Body body: %s", g.Types.Kotlin(&operation.Body.Type.Definition)))
 	}
 	for _, param := range operation.QueryParams {

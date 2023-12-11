@@ -18,10 +18,6 @@ type operation struct {
 
 type Operation operation
 
-func (operation *Operation) BodyIs(kind RequestBodyKind) bool {
-	return operation.Body.Is(kind)
-}
-
 func (operation *Operation) HasParams() bool {
 	return len(operation.QueryParams) > 0 || len(operation.HeaderParams) > 0 || len(operation.Endpoint.UrlParams) > 0
 }
@@ -51,7 +47,7 @@ func (value Operation) MarshalYAML() (interface{}, error) {
 	if len(value.QueryParams) > 0 {
 		yamlMap.Add("query", value.QueryParams)
 	}
-	if !value.BodyIs(RequestBodyEmpty) {
+	if !value.Body.IsEmpty() {
 		yamlMap.Add("body", value.Body)
 	}
 	yamlMap.Add("response", value.Responses)

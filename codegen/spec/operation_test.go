@@ -20,7 +20,7 @@ response:
 
 	assert.Equal(t, operation.Endpoint.Method, "GET")
 	assert.Equal(t, operation.Endpoint.Url, "/some/url")
-	assert.Assert(t, operation.BodyIs(RequestBodyEmpty))
+	assert.Assert(t, operation.Body.IsEmpty())
 	assert.Equal(t, len(operation.Responses), 1)
 	response := operation.Responses[0]
 	assert.Equal(t, response.Name.Source, "ok")

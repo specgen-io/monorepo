@@ -96,22 +96,22 @@ func (g *OkHttpGenerator) createUrl(w *writer.Writer, operation *spec.NamedOpera
 
 func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
 	requestBody := "null"
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line(`val requestBody = body.toRequestBody("text/plain".toMediaTypeOrNull())`)
 		requestBody = "requestBody"
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`val requestBody = json.%s.toRequestBody("application/json".toMediaTypeOrNull())`, g.Models.WriteJson("body", &operation.Body.Type.Definition))
 		requestBody = "requestBody"
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) {
+	if operation.Body.IsBodyFormData() {
 		w.Line(`val body = MultipartBodyBuilder(MultipartBody.FORM)`)
 		for _, param := range operation.Body.FormData {
 			w.Line(`body.addFormDataPart("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))
 		}
 		requestBody = "body.build()"
 	}
-	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormUrlEncoded() {
 		w.Line(`val body = UrlencodedFormBodyBuilder()`)
 		for _, param := range operation.Body.FormUrlEncoded {
 			w.Line(`body.add("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))

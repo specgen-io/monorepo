@@ -99,23 +99,23 @@ func (g *OkHttpGenerator) createUrl(w *writer.Writer, operation *spec.NamedOpera
 func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
 	requestBody := "null"
 	w.EmptyLine()
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line(`var requestBody = RequestBody.create(body, MediaType.parse("text/plain"));`)
 		requestBody = "requestBody"
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite("body", &operation.Body.Type.Definition))
 		w.Line(`var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
 		requestBody = "requestBody"
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) {
+	if operation.Body.IsBodyFormData() {
 		w.Line(`var body = new MultipartBodyBuilder(MultipartBody.FORM);`)
 		for _, param := range operation.Body.FormData {
 			w.Line(`body.addFormDataPart("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
 		}
 		requestBody = "body.build()"
 	}
-	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormUrlEncoded() {
 		w.Line(`var body = new UrlencodedFormBodyBuilder();`)
 		for _, param := range operation.Body.FormUrlEncoded {
 			w.Line(`body.add("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())

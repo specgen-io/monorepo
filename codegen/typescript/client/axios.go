@@ -60,28 +60,28 @@ func (g *AxiosGenerator) operation(w *writer.Writer, operation *spec.NamedOperat
 		w.Line(`  })`)
 		axiosConfigParts = append(axiosConfigParts, `params: new URLSearchParams(query)`)
 	}
-	if hasHeaderParams || operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
+	if hasHeaderParams || operation.Body.IsText() || operation.Body.IsJson() {
 		w.Line(`  const headers = strParamsObject({`)
 		for _, p := range operation.HeaderParams {
 			w.Line(`    "%s": parameters.%s,`, p.Name.Source, p.Name.CamelCase())
 		}
-		if operation.BodyIs(spec.RequestBodyString) {
+		if operation.Body.IsText() {
 			w.Line(`    "Content-Type": "text/plain"`)
 		}
-		if operation.BodyIs(spec.RequestBodyJson) {
+		if operation.Body.IsJson() {
 			w.Line(`    "Content-Type": "application/json"`)
 		}
 		w.Line(`  })`)
 		axiosConfigParts = append(axiosConfigParts, `headers: headers`)
 	}
 	axiosConfig := strings.Join(axiosConfigParts, `, `)
-	if operation.BodyIs(spec.RequestBodyEmpty) {
+	if operation.Body.IsEmpty() {
 		w.Line("  const response = await axiosInstance.%s(`%s`, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 	}
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line("  const response = await axiosInstance.%s(`%s`, parameters.body, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeType(&operation.Body.Type.Definition))
 		w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 	}

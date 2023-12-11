@@ -102,14 +102,14 @@ func (g *MicronautGenerator) createUrl(w *writer.Writer, operation *spec.NamedOp
 
 func (g *MicronautGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
 	var requestBody string
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		requestBody = "body"
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite("body", &operation.Body.Type.Definition))
 		requestBody = "bodyJson"
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) {
+	if operation.Body.IsBodyFormData() {
 		w.EmptyLine()
 		w.Line(`var body = new MultipartBodyBuilder();`)
 		for _, param := range operation.Body.FormData {
@@ -117,7 +117,7 @@ func (g *MicronautGenerator) createRequest(w *writer.Writer, operation *spec.Nam
 		}
 		requestBody = "body.build()"
 	}
-	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormUrlEncoded() {
 		w.EmptyLine()
 		w.Line(`var body = new UrlencodedFormBodyBuilder();`)
 		for _, param := range operation.Body.FormUrlEncoded {
@@ -229,7 +229,7 @@ func requestBuilderParams(methodName, requestBody string, operation *spec.NamedO
 		urlParam = "url.expand()"
 	}
 	params := fmt.Sprintf(`%s, %s, HttpRequest::%s`, urlParam, requestBody, methodName)
-	if operation.BodyIs(spec.RequestBodyEmpty) {
+	if operation.Body.IsEmpty() {
 		params = fmt.Sprintf(`%s, HttpRequest::%s`, urlParam, methodName)
 	}
 
