@@ -76,7 +76,7 @@ func OperationHasHeaderParams(operation *spec.NamedOperation) bool {
 	return hasHeaderParams
 }
 
-func ApiHasBodyOfKind(api *spec.Api, kinds ...spec.RequestBodyKind) bool {
+func ApiHasBodyOfKind(api *spec.Api, kinds ...spec.BodyKind) bool {
 	result := false
 	walk := spec.NewWalker().
 		OnOperation(func(operation *spec.NamedOperation) {

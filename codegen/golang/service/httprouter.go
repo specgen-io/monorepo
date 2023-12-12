@@ -39,13 +39,13 @@ func (g *HttpRouterGenerator) routing(api *spec.Api) *generator.CodeFile {
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
 	w.Imports.Add("net/http")
 	w.Imports.Add("fmt")
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyString) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyText) {
 		w.Imports.Add("io/ioutil")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) {
 		w.Imports.Add("encoding/json")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson, spec.RequestBodyString) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyJson, spec.BodyText) {
 		w.Imports.Module(g.Modules.ContentType)
 	}
 	w.Imports.Module(g.Modules.ServicesApi(api))

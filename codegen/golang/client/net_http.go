@@ -36,13 +36,13 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	w.Imports.Add("net/http")
 	w.Imports.Add("encoding/json")
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson, spec.RequestBodyString) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyJson, spec.BodyText) {
 		w.Imports.Add("bytes")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyFormData) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyFormData) {
 		w.Imports.Add("mime/multipart")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyFormUrlEncoded) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyFormUrlEncoded) {
 		w.Imports.Add("strings")
 		w.Imports.Add("net/url")
 	}
