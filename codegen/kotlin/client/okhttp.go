@@ -96,22 +96,22 @@ func (g *OkHttpGenerator) createUrl(w *writer.Writer, operation *spec.NamedOpera
 
 func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
 	requestBody := "null"
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line(`val requestBody = body.toRequestBody("text/plain".toMediaTypeOrNull())`)
 		requestBody = "requestBody"
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`val requestBody = json.%s.toRequestBody("application/json".toMediaTypeOrNull())`, g.Models.WriteJson("body", &operation.Body.Type.Definition))
 		requestBody = "requestBody"
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) {
+	if operation.Body.IsBodyFormData() {
 		w.Line(`val body = MultipartBodyBuilder(MultipartBody.FORM)`)
 		for _, param := range operation.Body.FormData {
 			w.Line(`body.addFormDataPart("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))
 		}
 		requestBody = "body.build()"
 	}
-	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormUrlEncoded() {
 		w.Line(`val body = UrlencodedFormBodyBuilder()`)
 		for _, param := range operation.Body.FormUrlEncoded {
 			w.Line(`body.add("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))
@@ -164,10 +164,10 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
 }
 
 func (g *OkHttpGenerator) successResponse(response *spec.OperationResponse) string {
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		return responseCreate(response, "response.body!!.string()")
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body!!.charStream()`, &response.Body.Type.Definition)))
 	}
 	return responseCreate(response, "")
@@ -175,10 +175,10 @@ func (g *OkHttpGenerator) successResponse(response *spec.OperationResponse) stri
 
 func (g *OkHttpGenerator) errorResponse(response *spec.Response) string {
 	var responseBody = ""
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		responseBody = "response.body!!.string()"
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		responseBody = fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body!!.charStream()`, &response.Body.Type.Definition))
 	}
 	return fmt.Sprintf(`throw %s(%s)`, errorExceptionClassName(response), responseBody)

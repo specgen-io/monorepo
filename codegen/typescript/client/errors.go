@@ -27,7 +27,7 @@ export class ResponseException extends Error {
 	for _, response := range httpErrors.Responses {
 		w.EmptyLine()
 		w.Line(`export class %s extends ResponseException {`, errorExceptionName(&response.Response))
-		if response.Body.Is(spec.ResponseBodyEmpty) {
+		if response.Body.IsEmpty() {
 			w.Line(`  constructor() {`)
 			w.Line(`    super('Error response with status code %s')`, spec.HttpStatusCode(response.Name))
 			w.Line(`  }`)

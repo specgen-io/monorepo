@@ -33,18 +33,18 @@ func (g *Generator) operationReturn(operation *spec.NamedOperation, responsePack
 
 func operationParams(types *types.Types, operation *spec.NamedOperation) []string {
 	params := []string{}
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		params = append(params, fmt.Sprintf("body %s", types.GoType(&operation.Body.Type.Definition)))
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		params = append(params, fmt.Sprintf("body *%s", types.GoType(&operation.Body.Type.Definition)))
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) {
+	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {
 			params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
 		}
 	}
-	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormUrlEncoded() {
 		for _, param := range operation.Body.FormUrlEncoded {
 			params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
 		}

@@ -101,55 +101,45 @@ func (value RequestBody) MarshalYAML() (interface{}, error) {
 	return node, nil
 }
 
-type RequestBodyKind string
-
-const (
-	RequestBodyEmpty          RequestBodyKind = "empty"
-	RequestBodyString         RequestBodyKind = "string"
-	RequestBodyJson           RequestBodyKind = "json"
-	RequestBodyFormData       RequestBodyKind = "form-data"
-	RequestBodyFormUrlEncoded RequestBodyKind = "form-urlencoded"
-)
-
-func (body *RequestBody) Kind() RequestBodyKind {
+func (body *RequestBody) Kind() BodyKind {
 	if body.Type != nil {
 		if body.Type.Definition.IsEmpty() {
-			return RequestBodyEmpty
+			return BodyEmpty
 		} else if body.Type.Definition.Plain == TypeString {
-			return RequestBodyString
+			return BodyText
 		} else {
-			return RequestBodyJson
+			return BodyJson
 		}
 	}
 	if body.FormData != nil {
-		return RequestBodyFormData
+		return BodyFormData
 	}
 	if body.FormUrlEncoded != nil {
-		return RequestBodyFormUrlEncoded
+		return BodyFormUrlEncoded
 	}
-	return RequestBodyEmpty
+	return BodyEmpty
 }
 
-func (body *RequestBody) Is(kind RequestBodyKind) bool {
+func (body *RequestBody) Is(kind BodyKind) bool {
 	return body.Kind() == kind
 }
 
 func (body *RequestBody) IsEmpty() bool {
-	return body.Kind() == RequestBodyEmpty
+	return body.Kind() == BodyEmpty
 }
 
 func (body *RequestBody) IsText() bool {
-	return body.Kind() == RequestBodyString
+	return body.Kind() == BodyText
 }
 
 func (body *RequestBody) IsJson() bool {
-	return body.Kind() == RequestBodyJson
+	return body.Kind() == BodyJson
 }
 
 func (body *RequestBody) IsBodyFormData() bool {
-	return body.Kind() == RequestBodyFormData
+	return body.Kind() == BodyFormData
 }
 
 func (body *RequestBody) IsBodyFormUrlEncoded() bool {
-	return body.Kind() == RequestBodyFormUrlEncoded
+	return body.Kind() == BodyFormUrlEncoded
 }

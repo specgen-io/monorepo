@@ -89,7 +89,7 @@ func (validator *validator) Operation(operation *NamedOperation) {
 	validator.Params(operation.QueryParams, true)
 	validator.Params(operation.HeaderParams, true)
 
-	if !operation.BodyIs(RequestBodyEmpty) && operation.Body.Type != nil {
+	if !operation.Body.IsEmpty() && operation.Body.Type != nil {
 		bodyType := operation.Body.Type
 		if bodyType.Definition.Info.Structure != StructureObject &&
 			bodyType.Definition.Info.Structure != StructureArray &&
@@ -98,9 +98,7 @@ func (validator *validator) Operation(operation *NamedOperation) {
 			validator.addError(operation.Body.Location, message)
 		}
 	}
-	if operation.Body != nil {
-		validator.RequestBody(operation.Body)
-	}
+	validator.RequestBody(&operation.Body)
 
 	for index := range operation.Responses {
 		validator.OperationResponse(&operation.Responses[index])

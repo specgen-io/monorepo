@@ -115,7 +115,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 }
 
 func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.NamedOperation) {
-	if !operation.BodyIs(spec.RequestBodyEmpty) {
+	if !operation.Body.IsEmpty() {
 		w.Line(`@Consumes(%s)`, g.contentType(operation))
 	}
 	methodName := operation.Endpoint.Method
@@ -146,10 +146,10 @@ func generateDefaultedFormParam(w *writer.Writer, namedParams []spec.NamedParam)
 }
 
 func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
-	if !operation.BodyIs(spec.RequestBodyEmpty) {
+	if !operation.Body.IsEmpty() {
 		w.Line(`ContentType.check(request, %s);`, g.contentType(operation))
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		typ := g.Types.Java(&operation.Body.Type.Definition)
 		w.Line(`%s %s = json.%s;`, typ, bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
 	}
@@ -158,13 +158,13 @@ func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOp
 func (g *MicronautGenerator) contentType(operation *spec.NamedOperation) string {
 	if operation.Body.IsEmpty() {
 		return ""
-	} else if operation.BodyIs(spec.RequestBodyString) {
+	} else if operation.Body.IsText() {
 		return `MediaType.TEXT_PLAIN`
-	} else if operation.BodyIs(spec.RequestBodyJson) {
+	} else if operation.Body.IsJson() {
 		return `MediaType.APPLICATION_JSON`
-	} else if operation.BodyIs(spec.RequestBodyFormData) {
+	} else if operation.Body.IsBodyFormData() {
 		return `MediaType.MULTIPART_FORM_DATA`
-	} else if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	} else if operation.Body.IsBodyFormUrlEncoded() {
 		return `MediaType.APPLICATION_FORM_URLENCODED`
 	} else {
 		panic(fmt.Sprintf("Unknown Content Type"))
@@ -173,7 +173,7 @@ func (g *MicronautGenerator) contentType(operation *spec.NamedOperation) string 
 
 func (g *MicronautGenerator) serviceCall(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), strings.Join(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar), ", "))
-	if len(operation.Responses) == 1 && operation.Responses[0].Body.Is(spec.ResponseBodyEmpty) {
+	if len(operation.Responses) == 1 && operation.Responses[0].Body.IsEmpty() {
 		w.Line(`%s;`, serviceCall)
 	} else {
 		w.Line(`var %s = %s;`, resultVarName, serviceCall)
@@ -199,15 +199,15 @@ func (g *MicronautGenerator) processResponses(w *writer.Writer, operation *spec.
 }
 
 func (g *MicronautGenerator) processResponse(w *writer.Writer, response *spec.Response, bodyVar string) {
-	if response.Body.Is(spec.ResponseBodyEmpty) {
+	if response.Body.IsEmpty() {
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s);`, response.Name.UpperCase())
 	}
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s).contentType("text/plain");`, response.Name.UpperCase(), bodyVar)
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Body.Type.Definition))
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(bodyJson).contentType("application/json");`, response.Name.UpperCase())
@@ -366,7 +366,7 @@ public class [[.ClassName]] {
 func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"HttpRequest<?> request"}
 
-	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsText() || operation.Body.IsJson() {
 		methodParams = append(methodParams, "@Body String bodyStr")
 	}
 

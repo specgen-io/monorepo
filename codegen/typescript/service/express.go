@@ -108,15 +108,15 @@ func getExpressUrl(endpoint spec.Endpoint) string {
 }
 
 func (g *expressGenerator) response(w *writer.Writer, response *spec.Response, dataParam string) {
-	if response.Body.Is(spec.ResponseBodyEmpty) {
+	if response.Body.IsEmpty() {
 		w.Line("response.status(%s).send()", spec.HttpStatusCode(response.Name))
 		w.Line("return")
 	}
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		w.Line("response.status(%s).type('text').send(%s)", spec.HttpStatusCode(response.Name), dataParam)
 		w.Line("return")
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.Validation.RuntimeType(&response.Body.Type.Definition), dataParam)
 		w.Line("return")
 	}
@@ -136,12 +136,12 @@ func (g *expressGenerator) responses(w *writer.Writer, responses spec.OperationR
 }
 
 func (g *expressGenerator) checkContentType(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line(`if (!responses.assertContentType(request, response, "text/plain")) {`)
 		w.Line(`  return`)
 		w.Line(`}`)
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`if (!responses.assertContentType(request, response, "application/json")) {`)
 		w.Line(`  return`)
 		w.Line(`}`)
@@ -199,10 +199,10 @@ func (g *expressGenerator) queryParsing(w *writer.Writer, operation *spec.NamedO
 }
 
 func (g *expressGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line(`const body: string = request.body`)
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line("const bodyDecode = t.decodeR(%s, request.body)", g.Validation.RuntimeType(&operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
 		g.respondBadRequest(w.Indented(), "BODY", "bodyDecode.error", "Failed to parse body")

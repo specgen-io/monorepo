@@ -98,16 +98,16 @@ func (c *Converter) param(parameter *openapi3.ParameterRef) *spec.NamedParam {
 	}
 }
 
-func (c *Converter) requestBody(body *openapi3.RequestBodyRef) *spec.RequestBody {
+func (c *Converter) requestBody(body *openapi3.RequestBodyRef) spec.RequestBody {
 	if body == nil {
-		return nil // this is fair - no body means nil definition
+		return spec.RequestBody{} // this is fair - no body means nil definition
 	}
 	if body.Value == nil {
-		return nil //TODO: not sure in this - what if ref is specified here
+		return spec.RequestBody{} //TODO: not sure in this - what if ref is specified here
 	}
 	media := body.Value.Content.Get("application/json")
 	if media == nil {
-		return nil
+		return spec.RequestBody{}
 	}
 	//TODO: check if non-required body is allowed
 	definition := spec.RequestBody{
@@ -115,7 +115,7 @@ func (c *Converter) requestBody(body *openapi3.RequestBodyRef) *spec.RequestBody
 		Description: &body.Value.Description,
 		Location:    nil,
 	}
-	return &definition
+	return definition
 }
 
 func collectParams(parameters openapi3.Parameters, in string) openapi3.Parameters {

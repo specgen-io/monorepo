@@ -19,7 +19,7 @@ func operationSignature(types *types.Types, operation *spec.NamedOperation) stri
 func operationReturn(types *types.Types, operation *spec.NamedOperation) string {
 	successResponses := operation.Responses.Success()
 	if len(successResponses) == 1 {
-		if successResponses[0].Body.Is(spec.ResponseBodyEmpty) {
+		if successResponses[0].Body.IsEmpty() {
 			return `error`
 		} else {
 			return fmt.Sprintf(`(*%s, error)`, types.GoType(&successResponses[0].Body.Type.Definition))
@@ -31,7 +31,7 @@ func operationReturn(types *types.Types, operation *spec.NamedOperation) string 
 
 func operationError(operation *spec.NamedOperation, errorVar string) string {
 	successResponses := operation.Responses.Success()
-	if len(successResponses) == 1 && successResponses[0].Body.Is(spec.ResponseBodyEmpty) {
+	if len(successResponses) == 1 && successResponses[0].Body.IsEmpty() {
 		return errorVar
 	} else {
 		return fmt.Sprintf(`nil, %s`, errorVar)
@@ -41,7 +41,7 @@ func operationError(operation *spec.NamedOperation, errorVar string) string {
 func resultSuccess(response *spec.OperationResponse, resultVar string) string {
 	successResponses := response.Operation.Responses.Success()
 	if len(successResponses) == 1 {
-		if successResponses[0].Body.Is(spec.ResponseBodyEmpty) {
+		if successResponses[0].Body.IsEmpty() {
 			return `nil`
 		} else {
 			return fmt.Sprintf(`&%s, nil`, resultVar)
@@ -53,12 +53,12 @@ func resultSuccess(response *spec.OperationResponse, resultVar string) string {
 
 func resultError(response *spec.OperationResponse, errorsModules module.Module, resultVar string) string {
 	errorBody := ``
-	if !response.Body.Is(spec.ResponseBodyEmpty) {
+	if !response.Body.IsEmpty() {
 		errorBody = resultVar
 	}
 	result := fmt.Sprintf(`&%s{%s}`, errorsModules.Get(response.Name.PascalCase()), errorBody)
 	successResponses := response.Operation.Responses.Success()
-	if len(successResponses) == 1 && successResponses[0].Body.Is(spec.ResponseBodyEmpty) {
+	if len(successResponses) == 1 && successResponses[0].Body.IsEmpty() {
 		return result
 	} else {
 		return fmt.Sprintf(`nil, %s`, result)
@@ -67,18 +67,18 @@ func resultError(response *spec.OperationResponse, errorsModules module.Module, 
 
 func operationParams(types *types.Types, operation *spec.NamedOperation) []string {
 	params := []string{}
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		params = append(params, fmt.Sprintf("body %s", types.GoType(&operation.Body.Type.Definition)))
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		params = append(params, fmt.Sprintf("body *%s", types.GoType(&operation.Body.Type.Definition)))
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) {
+	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {
 			params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
 		}
 	}
-	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormUrlEncoded() {
 		for _, param := range operation.Body.FormUrlEncoded {
 			params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
 		}

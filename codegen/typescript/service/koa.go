@@ -110,14 +110,14 @@ func getKoaUrl(endpoint spec.Endpoint) string {
 
 func (g *koaGenerator) response(w *writer.Writer, response *spec.Response, dataParam string) {
 	w.Line("ctx.status = %s", spec.HttpStatusCode(response.Name))
-	if response.Body.Is(spec.ResponseBodyEmpty) {
+	if response.Body.IsEmpty() {
 		w.Line("return")
 	}
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		w.Line("ctx.body = %s", dataParam)
 		w.Line("return")
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		w.Line("ctx.body = t.encode(%s, %s)", g.Validation.RuntimeType(&response.Body.Type.Definition), dataParam)
 		w.Line("return")
 	}
@@ -137,12 +137,12 @@ func (g *koaGenerator) responses(w *writer.Writer, responses spec.OperationRespo
 }
 
 func (g *koaGenerator) checkContentType(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line(`if (!responses.assertContentType(ctx, "text/plain")) {`)
 		w.Line(`  return`)
 		w.Line(`}`)
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`if (!responses.assertContentType(ctx, "application/json")) {`)
 		w.Line(`  return`)
 		w.Line(`}`)
@@ -200,10 +200,10 @@ func (g *koaGenerator) queryParsing(w *writer.Writer, operation *spec.NamedOpera
 }
 
 func (g *koaGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line(`const body: string = ctx.request.rawBody`)
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line("const bodyDecode = t.decodeR(%s, ctx.request.body)", g.Validation.RuntimeType(&operation.Body.Type.Definition))
 		w.Line("if (bodyDecode.error) {")
 		g.respondBadRequest(w.Indented(), "BODY", "bodyDecode.error", "Failed to parse body")

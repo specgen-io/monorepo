@@ -9,41 +9,33 @@ type ResponseBody struct {
 	Location *yaml.Node
 }
 
-type ResponseBodyKind string
-
-const (
-	ResponseBodyEmpty  ResponseBodyKind = "empty"
-	ResponseBodyString ResponseBodyKind = "string"
-	ResponseBodyJson   ResponseBodyKind = "json"
-)
-
-func (body *ResponseBody) Kind() ResponseBodyKind {
+func (body *ResponseBody) Kind() BodyKind {
 	if body != nil {
 		if body.Type == nil || body.Type.Definition.IsEmpty() {
-			return ResponseBodyEmpty
+			return BodyEmpty
 		} else if body.Type.Definition.Plain == TypeString {
-			return ResponseBodyString
+			return BodyText
 		} else {
-			return ResponseBodyJson
+			return BodyJson
 		}
 	}
-	return ResponseBodyEmpty
+	return BodyEmpty
 }
 
-func (body *ResponseBody) Is(kind ResponseBodyKind) bool {
+func (body *ResponseBody) Is(kind BodyKind) bool {
 	return body.Kind() == kind
 }
 
 func (body *ResponseBody) IsEmpty() bool {
-	return body.Kind() == ResponseBodyEmpty
+	return body.Kind() == BodyEmpty
 }
 
 func (body *ResponseBody) IsText() bool {
-	return body.Kind() == ResponseBodyString
+	return body.Kind() == BodyText
 }
 
 func (body *ResponseBody) IsJson() bool {
-	return body.Kind() == ResponseBodyJson
+	return body.Kind() == BodyJson
 }
 
 func (value *ResponseBody) UnmarshalYAML(node *yaml.Node) error {

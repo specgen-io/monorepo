@@ -105,7 +105,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 }
 
 func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.NamedOperation) {
-	if !operation.BodyIs(spec.RequestBodyEmpty) {
+	if !operation.Body.IsEmpty() {
 		w.Line(`@Consumes(%s)`, g.contentType(operation))
 	}
 	methodName := operation.Endpoint.Method
@@ -115,7 +115,7 @@ func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.
 	w.Line(`    logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	w.Indent()
 	bodyStringVar := "bodyStr"
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		bodyStringVar += ".reader()"
 	}
 	g.parseBody(w, operation, bodyStringVar, "requestBody")
@@ -126,10 +126,10 @@ func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.
 }
 
 func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
-	if !operation.BodyIs(spec.RequestBodyEmpty) {
+	if !operation.Body.IsEmpty() {
 		w.Line(`checkContentType(request, %s)`, g.contentType(operation))
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		typ := g.Types.Kotlin(&operation.Body.Type.Definition)
 		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.ReadJson(bodyStringVar, &operation.Body.Type.Definition))
 	}
@@ -138,13 +138,13 @@ func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOp
 func (g *MicronautGenerator) contentType(operation *spec.NamedOperation) string {
 	if operation.Body.IsEmpty() {
 		return ""
-	} else if operation.BodyIs(spec.RequestBodyString) {
+	} else if operation.Body.IsText() {
 		return `MediaType.TEXT_PLAIN`
-	} else if operation.BodyIs(spec.RequestBodyJson) {
+	} else if operation.Body.IsJson() {
 		return `MediaType.APPLICATION_JSON`
-	} else if operation.BodyIs(spec.RequestBodyFormData) {
+	} else if operation.Body.IsBodyFormData() {
 		return `MediaType.MULTIPART_FORM_DATA`
-	} else if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	} else if operation.Body.IsBodyFormUrlEncoded() {
 		return `MediaType.APPLICATION_FORM_URLENCODED`
 	} else {
 		panic(fmt.Sprintf("Unknown Contet Type"))
@@ -166,15 +166,15 @@ func (g *MicronautGenerator) processResponses(w *writer.Writer, operation *spec.
 }
 
 func (g *MicronautGenerator) processResponse(w *writer.Writer, response *spec.Response, bodyVar string) {
-	if response.Body.Is(spec.ResponseBodyEmpty) {
+	if response.Body.IsEmpty() {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s)`, response.Name.UpperCase())
 	}
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s).body(%s).contentType("text/plain")`, response.Name.UpperCase(), bodyVar)
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		w.Line(`val bodyJson = json.%s`, g.Models.WriteJson(bodyVar, &response.Body.Type.Definition))
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s).body(bodyJson).contentType("application/json")`, response.Name.UpperCase())
@@ -329,7 +329,7 @@ fun getBadRequestError(exception: Throwable): BadRequestError? {
 func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"request: HttpRequest<*>"}
 
-	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsText() || operation.Body.IsJson() {
 		methodParams = append(methodParams, "@Body bodyStr: String")
 	}
 

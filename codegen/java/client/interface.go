@@ -24,15 +24,15 @@ func operationReturnType(types *types.Types, operation *spec.NamedOperation) str
 
 func operationParameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
-	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsText() || operation.Body.IsJson() {
 		params = append(params, fmt.Sprintf("%s body", types.Java(&operation.Body.Type.Definition)))
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) {
+	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {
 			params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
 		}
 	}
-	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormUrlEncoded() {
 		for _, param := range operation.Body.FormUrlEncoded {
 			params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
 		}

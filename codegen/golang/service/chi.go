@@ -42,13 +42,13 @@ func (g *ChiGenerator) routing(api *spec.Api) *generator.CodeFile {
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
 	w.Imports.Add("net/http")
 	w.Imports.Add("fmt")
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyString) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyText) {
 		w.Imports.Add("io/ioutil")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) {
 		w.Imports.Add("encoding/json")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) || walkers.ApiHasBodyOfKind(api, spec.RequestBodyString) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyJson, spec.BodyText) {
 		w.Imports.Module(g.Modules.ContentType)
 	}
 	w.Imports.Module(g.Modules.ServicesApi(api))
@@ -195,7 +195,7 @@ func (g *ChiGenerator) response(w *writer.Writer, operation *spec.NamedOperation
 }
 
 func (g *ChiGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)
@@ -205,7 +205,7 @@ func (g *ChiGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperat
 		w.Line(`}`)
 		w.Line(`body := string(bodyData)`)
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)
@@ -220,7 +220,7 @@ func (g *ChiGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperat
 		respondBadRequest(w.Indented(), operation, g.Types, "body", `"Failed to parse body"`, "errors")
 		w.Line(`}`)
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) || operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormData() || operation.Body.IsBodyFormUrlEncoded() {
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)

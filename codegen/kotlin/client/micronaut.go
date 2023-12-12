@@ -94,14 +94,14 @@ func (g *MicronautGenerator) createUrl(w *writer.Writer, operation *spec.NamedOp
 
 func (g *MicronautGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
 	var requestBody string
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		requestBody = "body"
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`val bodyJson = json.%s`, g.Models.WriteJson("body", &operation.Body.Type.Definition))
 		requestBody = "bodyJson"
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) {
+	if operation.Body.IsBodyFormData() {
 		w.EmptyLine()
 		w.Line(`val body = MultipartBodyBuilder()`)
 		for _, param := range operation.Body.FormData {
@@ -109,7 +109,7 @@ func (g *MicronautGenerator) createRequest(w *writer.Writer, operation *spec.Nam
 		}
 		requestBody = "body.build()"
 	}
-	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormUrlEncoded() {
 		w.EmptyLine()
 		w.Line(`val body = UrlencodedFormBodyBuilder()`)
 		for _, param := range operation.Body.FormUrlEncoded {
@@ -184,10 +184,10 @@ func (g *MicronautGenerator) generateClientMethod(w *writer.Writer, operation *s
 }
 
 func (g *MicronautGenerator) successResponse(response *spec.OperationResponse) string {
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		return responseCreate(response, "response.body()!!.toString()")
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body()!!.toString()`, &response.Body.Type.Definition)))
 	}
 	return responseCreate(response, "")
@@ -195,10 +195,10 @@ func (g *MicronautGenerator) successResponse(response *spec.OperationResponse) s
 
 func (g *MicronautGenerator) errorResponse(response *spec.Response) string {
 	var responseBody = ""
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		responseBody = "response.body()!!.string()"
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		responseBody = fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body()!!.toString()`, &response.Body.Type.Definition))
 	}
 	return fmt.Sprintf(`throw %s(%s)`, errorExceptionClassName(response), responseBody)
@@ -218,7 +218,7 @@ func requestBuilderParams(methodName, requestBody string, operation *spec.NamedO
 		urlParam = "url.expand()"
 	}
 	params := fmt.Sprintf(`%s, %s, ::%s`, urlParam, requestBody, methodName)
-	if operation.BodyIs(spec.RequestBodyEmpty) {
+	if operation.Body.IsEmpty() {
 		params = fmt.Sprintf(`%s, ::%s`, urlParam, methodName)
 	}
 

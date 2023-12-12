@@ -115,7 +115,7 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 	w.Indent()
 	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	bodyStringVar := "bodyStr"
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		bodyStringVar += ".reader()"
 	}
 	g.parseBody(w, operation, bodyStringVar, "requestBody")
@@ -126,10 +126,10 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 }
 
 func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
-	if !operation.BodyIs(spec.RequestBodyEmpty) {
+	if !operation.Body.IsEmpty() {
 		w.Line(`checkContentType(request, %s)`, g.contentType(operation))
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		typ := g.Types.Kotlin(&operation.Body.Type.Definition)
 		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.ReadJson(bodyStringVar, &operation.Body.Type.Definition))
 	}
@@ -138,13 +138,13 @@ func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOpera
 func (g *SpringGenerator) contentType(operation *spec.NamedOperation) string {
 	if operation.Body.IsEmpty() {
 		return ""
-	} else if operation.BodyIs(spec.RequestBodyString) {
+	} else if operation.Body.IsText() {
 		return `MediaType.TEXT_PLAIN`
-	} else if operation.BodyIs(spec.RequestBodyJson) {
+	} else if operation.Body.IsJson() {
 		return `MediaType.APPLICATION_JSON`
-	} else if operation.BodyIs(spec.RequestBodyFormData) {
+	} else if operation.Body.IsBodyFormData() {
 		return `MediaType.MULTIPART_FORM_DATA`
-	} else if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	} else if operation.Body.IsBodyFormUrlEncoded() {
 		return `MediaType.APPLICATION_FORM_URLENCODED`
 	} else {
 		panic(fmt.Sprintf("Unknown Contet Type"))
@@ -166,17 +166,17 @@ func (g *SpringGenerator) processResponses(w *writer.Writer, operation *spec.Nam
 }
 
 func (g *SpringGenerator) processResponse(w *writer.Writer, response *spec.Response, bodyVar string) {
-	if response.Body.Is(spec.ResponseBodyEmpty) {
+	if response.Body.IsEmpty() {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return ResponseEntity(HttpStatus.%s)`, response.Name.UpperCase())
 	}
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		w.Line(`val headers = HttpHeaders()`)
 		w.Line(`headers.add(CONTENT_TYPE, "text/plain")`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return ResponseEntity(%s, headers, HttpStatus.%s)`, bodyVar, response.Name.UpperCase())
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		w.Line(`val bodyJson = json.%s`, g.Models.WriteJson(bodyVar, &response.Body.Type.Definition))
 		w.Line(`val headers = HttpHeaders()`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json")`)
@@ -285,7 +285,7 @@ fun getBadRequestError(exception: Throwable): BadRequestError? {
 func springMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"request: HttpServletRequest"}
 
-	if operation.BodyIs(spec.RequestBodyString) || operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsText() || operation.Body.IsJson() {
 		methodParams = append(methodParams, "@RequestBody bodyStr: String")
 	}
 	methodParams = append(methodParams, generateSpringMethodParam(operation.Body.FormData, "RequestParam", types)...)

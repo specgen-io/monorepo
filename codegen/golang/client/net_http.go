@@ -36,13 +36,13 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	w.Imports.Add("net/http")
 	w.Imports.Add("encoding/json")
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyJson) || walkers.ApiHasBodyOfKind(api, spec.RequestBodyString) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyJson, spec.BodyText) {
 		w.Imports.Add("bytes")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyFormData) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyFormData) {
 		w.Imports.Add("mime/multipart")
 	}
-	if walkers.ApiHasBodyOfKind(api, spec.RequestBodyFormUrlEncoded) {
+	if walkers.ApiHasBodyOfKind(api, spec.BodyFormUrlEncoded) {
 		w.Imports.Add("strings")
 		w.Imports.Add("net/url")
 	}
@@ -107,18 +107,18 @@ func (g *NetHttpGenerator) operation(w *writer.Writer, operation *spec.NamedOper
 
 func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation, requestVar string) {
 	body := "nil"
-	if operation.BodyIs(spec.RequestBodyString) {
+	if operation.Body.IsText() {
 		w.Line(`  bodyData := []byte(body)`)
 		body = "bytes.NewBuffer(bodyData)"
 	}
-	if operation.BodyIs(spec.RequestBodyJson) {
+	if operation.Body.IsJson() {
 		w.Line(`  bodyData, err := json.Marshal(body)`)
 		w.Line(`  if err != nil {`)
 		w.Line(`    return %s`, operationError(operation, `err`))
 		w.Line(`  }`)
 		body = "bytes.NewBuffer(bodyData)"
 	}
-	if operation.BodyIs(spec.RequestBodyFormData) {
+	if operation.Body.IsBodyFormData() {
 		w.Line(`  bodyData := &bytes.Buffer{}`)
 		w.Line(`  writer := multipart.NewWriter(bodyData)`)
 		w.Line(`  f := params.NewFormDataParamsWriter(writer)`)
@@ -132,7 +132,7 @@ func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.Named
 		w.Line(`  }`)
 		body = "bodyData"
 	}
-	if operation.BodyIs(spec.RequestBodyFormUrlEncoded) {
+	if operation.Body.IsBodyFormUrlEncoded() {
 		w.Line(`  formUrlencodedValues := url.Values{}`)
 		w.Line(`  f := params.NewParamsWriter(formUrlencodedValues)`)
 		for _, param := range operation.Body.FormUrlEncoded {
@@ -223,13 +223,13 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 	w.Line(`switch resp.StatusCode {`)
 	for _, response := range operation.Responses {
 		w.Line(`case %s:`, spec.HttpStatusCode(response.Name))
-		if response.Body.Is(spec.ResponseBodyString) {
+		if response.Body.IsText() {
 			w.Line(`  result, err := response.Text(resp)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    return %s`, operationError(response.Operation, `err`))
 			w.Line(`  }`)
 		}
-		if response.Body.Is(spec.ResponseBodyJson) {
+		if response.Body.IsJson() {
 			w.Line(`  var result %s`, g.Types.GoType(&response.Body.Type.Definition))
 			w.Line(`  err := response.Json(resp, &result)`)
 			w.Line(`  if err != nil {`)
