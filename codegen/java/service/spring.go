@@ -154,7 +154,7 @@ func (g *SpringGenerator) contentType(operation *spec.NamedOperation) string {
 
 func (g *SpringGenerator) serviceCall(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), strings.Join(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar), ", "))
-	if len(operation.Responses) == 1 && operation.Responses[0].Body.Is(spec.ResponseBodyEmpty) {
+	if len(operation.Responses) == 1 && operation.Responses[0].Body.IsEmpty() {
 		w.Line(`%s;`, serviceCall)
 	} else {
 		w.Line(`var %s = %s;`, resultVarName, serviceCall)
@@ -180,17 +180,17 @@ func (g *SpringGenerator) processResponses(w *writer.Writer, operation *spec.Nam
 }
 
 func (g *SpringGenerator) processResponse(w *writer.Writer, response *spec.Response, bodyVar string) {
-	if response.Body.Is(spec.ResponseBodyEmpty) {
+	if response.Body.IsEmpty() {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return new ResponseEntity<>(HttpStatus.%s);`, response.Name.UpperCase())
 	}
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
 		w.Line(`headers.add(CONTENT_TYPE, "text/plain");`)
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, bodyVar, response.Name.UpperCase())
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Body.Type.Definition))
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
 		w.Line(`headers.add(CONTENT_TYPE, "application/json");`)

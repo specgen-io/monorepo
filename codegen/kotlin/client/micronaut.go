@@ -184,10 +184,10 @@ func (g *MicronautGenerator) generateClientMethod(w *writer.Writer, operation *s
 }
 
 func (g *MicronautGenerator) successResponse(response *spec.OperationResponse) string {
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		return responseCreate(response, "response.body()!!.toString()")
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body()!!.toString()`, &response.Body.Type.Definition)))
 	}
 	return responseCreate(response, "")
@@ -195,10 +195,10 @@ func (g *MicronautGenerator) successResponse(response *spec.OperationResponse) s
 
 func (g *MicronautGenerator) errorResponse(response *spec.Response) string {
 	var responseBody = ""
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		responseBody = "response.body()!!.string()"
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		responseBody = fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body()!!.toString()`, &response.Body.Type.Definition))
 	}
 	return fmt.Sprintf(`throw %s(%s)`, errorExceptionClassName(response), responseBody)

@@ -223,13 +223,13 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 	w.Line(`switch resp.StatusCode {`)
 	for _, response := range operation.Responses {
 		w.Line(`case %s:`, spec.HttpStatusCode(response.Name))
-		if response.Body.Is(spec.ResponseBodyString) {
+		if response.Body.IsText() {
 			w.Line(`  result, err := response.Text(resp)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    return %s`, operationError(response.Operation, `err`))
 			w.Line(`  }`)
 		}
-		if response.Body.Is(spec.ResponseBodyJson) {
+		if response.Body.IsJson() {
 			w.Line(`  var result %s`, g.Types.GoType(&response.Body.Type.Definition))
 			w.Line(`  err := response.Json(resp, &result)`)
 			w.Line(`  if err != nil {`)

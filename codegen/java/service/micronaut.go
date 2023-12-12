@@ -173,7 +173,7 @@ func (g *MicronautGenerator) contentType(operation *spec.NamedOperation) string 
 
 func (g *MicronautGenerator) serviceCall(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
 	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), strings.Join(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar), ", "))
-	if len(operation.Responses) == 1 && operation.Responses[0].Body.Is(spec.ResponseBodyEmpty) {
+	if len(operation.Responses) == 1 && operation.Responses[0].Body.IsEmpty() {
 		w.Line(`%s;`, serviceCall)
 	} else {
 		w.Line(`var %s = %s;`, resultVarName, serviceCall)
@@ -199,15 +199,15 @@ func (g *MicronautGenerator) processResponses(w *writer.Writer, operation *spec.
 }
 
 func (g *MicronautGenerator) processResponse(w *writer.Writer, response *spec.Response, bodyVar string) {
-	if response.Body.Is(spec.ResponseBodyEmpty) {
+	if response.Body.IsEmpty() {
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s);`, response.Name.UpperCase())
 	}
-	if response.Body.Is(spec.ResponseBodyString) {
+	if response.Body.IsText() {
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s).contentType("text/plain");`, response.Name.UpperCase(), bodyVar)
 	}
-	if response.Body.Is(spec.ResponseBodyJson) {
+	if response.Body.IsJson() {
 		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Body.Type.Definition))
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s).body(bodyJson).contentType("application/json");`, response.Name.UpperCase())

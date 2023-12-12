@@ -94,7 +94,7 @@ func ApiHasMultiResponsesWithEmptyBody(api *spec.Api) bool {
 	result := false
 	walk := spec.NewWalker().
 		OnOperationResponse(func(response *spec.OperationResponse) {
-			if len(response.Operation.Responses) > 1 && response.Body.Is(spec.ResponseBodyEmpty) {
+			if len(response.Operation.Responses) > 1 && response.Body.IsEmpty() {
 				result = true
 			}
 		})
@@ -106,7 +106,7 @@ func ApiHasMultiSuccessResponsesWithEmptyBody(api *spec.Api) bool {
 	result := false
 	walk := spec.NewWalker().
 		OnOperationResponse(func(response *spec.OperationResponse) {
-			if len(response.Operation.Responses.Success()) > 1 && response.Body.Is(spec.ResponseBodyEmpty) {
+			if len(response.Operation.Responses.Success()) > 1 && response.Body.IsEmpty() {
 				result = true
 			}
 		})
