@@ -3,51 +3,56 @@ package spec
 import (
 	"gopkg.in/specgen-io/yaml.v3"
 	"gotest.tools/assert"
-	"reflect"
+	"strings"
 	"testing"
 )
 
-func Test_ResponseBody_Unmarshal(t *testing.T) {
-	data := "MyType    # some description"
-	var definition Definition
-	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &definition)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, reflect.DeepEqual(definition.Type.Definition, ParseType("MyType")), true)
-	assert.Equal(t, *definition.Description, "some description")
+func Test_ResponseBody_Json_Unmarshal(t *testing.T) {
+	data := `MyType`
+	var body ResponseBody
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &body)
+	assert.NilError(t, err)
+	assert.Equal(t, body.IsJson(), true)
+	assert.Equal(t, body.Type == nil, false)
+	assert.Equal(t, body.Type.Definition, ParseType("MyType"))
 }
 
-func Test_ResponseBody_String_Unmarshal(t *testing.T) {
-	data := "string    # some description"
-	var definition Definition
-	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &definition)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, reflect.DeepEqual(definition.Type.Definition, ParseType("string")), true)
-	assert.Equal(t, *definition.Description, "some description")
+func Test_ResponseBody_Text_Unmarshal(t *testing.T) {
+	data := `string`
+	var body ResponseBody
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &body)
+	assert.NilError(t, err)
+	assert.Equal(t, body.IsText(), true)
 }
 
-func Test_ResponseBody_Empty_Unmarshal(t *testing.T) {
-	data := "empty    # some description"
-	var definition Definition
-	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &definition)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, reflect.DeepEqual(definition.Type.Definition, ParseType("empty")), true)
-	assert.Equal(t, *definition.Description, "some description")
+func Test_ResponseBody_Binary_Unmarshal(t *testing.T) {
+	data := `binary`
+	var body ResponseBody
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &body)
+	assert.NilError(t, err)
+	assert.Equal(t, body.IsBinary(), true)
 }
 
-func Test_ResponseBody_Marshal(t *testing.T) {
-	expectedYaml := "MyType # something here\n"
-	var definition Definition
-	checkUnmarshalMarshal(t, expectedYaml, &definition)
+func Test_ResponseBody_Text_Marshal(t *testing.T) {
+	data := strings.TrimLeft(`
+string
+`, "\n")
+	var body ResponseBody
+	checkUnmarshalMarshal(t, data, &body)
 }
 
-func Test_ResponseBody_String_Marshal(t *testing.T) {
-	expectedYaml := "string # something here\n"
-	var definition Definition
-	checkUnmarshalMarshal(t, expectedYaml, &definition)
+func Test_ResponseBody_Binary_Marshal(t *testing.T) {
+	data := strings.TrimLeft(`
+binary
+`, "\n")
+	var body ResponseBody
+	checkUnmarshalMarshal(t, data, &body)
 }
 
-func Test_ResponseBody_Empty_Marshal(t *testing.T) {
-	expectedYaml := "empty # something here\n"
-	var definition Definition
-	checkUnmarshalMarshal(t, expectedYaml, &definition)
+func Test_ResponseBody_Json_Marshal(t *testing.T) {
+	data := strings.TrimLeft(`
+MyType
+`, "\n")
+	var body ResponseBody
+	checkUnmarshalMarshal(t, data, &body)
 }

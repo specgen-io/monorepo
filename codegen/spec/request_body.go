@@ -40,18 +40,24 @@ type RequestBody struct {
 	Type           *Type
 	FormData       FormDataParams
 	FormUrlEncoded FormUrlEncodedParams
+	Binary         bool
 	Description    *string
 	Location       *yaml.Node
 }
 
 func (value *RequestBody) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind == yaml.ScalarNode {
-		typ, err := parseType(node.Value)
-		if err != nil {
-			return yamlError(node, err.Error())
+		if node.Value == "binary" {
+			parsed := RequestBody{Binary: true, Description: getDescriptionFromComment(node), Location: node}
+			*value = parsed
+		} else {
+			typ, err := parseType(node.Value)
+			if err != nil {
+				return yamlError(node, err.Error())
+			}
+			parsed := RequestBody{Type: &Type{*typ, node}, Description: getDescriptionFromComment(node), Location: node}
+			*value = parsed
 		}
-		parsed := RequestBody{Type: &Type{*typ, node}, Description: getDescriptionFromComment(node), Location: node}
-		*value = parsed
 		return nil
 	} else if node.Kind == yaml.MappingNode {
 		if len(node.Content) != 2 {
@@ -83,7 +89,9 @@ func (value *RequestBody) UnmarshalYAML(node *yaml.Node) error {
 
 func (value RequestBody) MarshalYAML() (interface{}, error) {
 	var node yaml.Node
-	if value.Type != nil {
+	if value.Binary {
+		node = yamlx.String("binary")
+	} else if value.Type != nil {
 		yamlValue := value.Type.Definition.String()
 		node = yaml.Node{Kind: yaml.ScalarNode, Value: yamlValue}
 	} else if value.FormData != nil {
@@ -111,6 +119,9 @@ func (body *RequestBody) Kind() BodyKind {
 			return BodyJson
 		}
 	}
+	if body.Binary {
+		return BodyBinary
+	}
 	if body.FormData != nil {
 		return BodyFormData
 	}
@@ -130,6 +141,10 @@ func (body *RequestBody) IsEmpty() bool {
 
 func (body *RequestBody) IsText() bool {
 	return body.Kind() == BodyText
+}
+
+func (body *RequestBody) IsBinary() bool {
+	return body.Kind() == BodyBinary
 }
 
 func (body *RequestBody) IsJson() bool {
