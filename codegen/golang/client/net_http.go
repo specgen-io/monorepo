@@ -187,7 +187,7 @@ func (g *NetHttpGenerator) addRequestUrlParams(operation *spec.NamedOperation) s
 func (g *NetHttpGenerator) addUrlParam(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
-		if param.Type.Definition.IsEnum() || g.Types.GoType(&param.Type.Definition) == "string" {
+		if param.Type.Definition.IsEnum() || g.Types.GoType(&param.Type.Definition) == "string" { //TODO: Maybe this if is not needed
 			urlParams = append(urlParams, param.Name.CamelCase())
 		} else {
 			urlParams = append(urlParams, callRawParamsConvert(&param.Type.Definition, param.Name.CamelCase()))

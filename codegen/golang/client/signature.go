@@ -19,10 +19,11 @@ func operationSignature(types *types.Types, operation *spec.NamedOperation) stri
 func operationReturn(types *types.Types, operation *spec.NamedOperation) string {
 	successResponses := operation.Responses.Success()
 	if len(successResponses) == 1 {
-		if successResponses[0].Body.IsEmpty() {
+		successResponse := successResponses[0]
+		if successResponse.Body.IsEmpty() {
 			return `error`
 		} else {
-			return fmt.Sprintf(`(*%s, error)`, types.GoType(&successResponses[0].Body.Type.Definition))
+			return fmt.Sprintf(`(*%s, error)`, types.GoType(&successResponse.Body.Type.Definition))
 		}
 	} else {
 		return fmt.Sprintf(`(*%s, error)`, responseTypeName(operation))
@@ -68,7 +69,7 @@ func resultError(response *spec.OperationResponse, errorsModules module.Module, 
 func operationParams(types *types.Types, operation *spec.NamedOperation) []string {
 	params := []string{}
 	if operation.Body.IsText() {
-		params = append(params, fmt.Sprintf("body %s", types.GoType(&operation.Body.Type.Definition)))
+		params = append(params, fmt.Sprintf("body string"))
 	}
 	if operation.Body.IsJson() {
 		params = append(params, fmt.Sprintf("body *%s", types.GoType(&operation.Body.Type.Definition)))

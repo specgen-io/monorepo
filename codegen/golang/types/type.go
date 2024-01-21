@@ -14,11 +14,29 @@ func NewTypes() *Types {
 	return &Types{}
 }
 
-func (types *Types) ResponseBodyGoType(body *spec.ResponseBody) string {
-	if body.IsEmpty() {
+func (types *Types) RequestBodyGoType(body *spec.RequestBody) string {
+	switch body.Kind() {
+	case spec.BodyEmpty:
 		return EmptyType
-	} else {
+	case spec.BodyText:
+		return "string"
+	case spec.BodyJson:
 		return types.GoType(&body.Type.Definition)
+	default:
+		panic(fmt.Sprintf("Unknown response body kind: %v", body.Kind()))
+	}
+}
+
+func (types *Types) ResponseBodyGoType(body *spec.ResponseBody) string {
+	switch body.Kind() {
+	case spec.BodyEmpty:
+		return EmptyType
+	case spec.BodyText:
+		return "string"
+	case spec.BodyJson:
+		return types.GoType(&body.Type.Definition)
+	default:
+		panic(fmt.Sprintf("Unknown response body kind: %v", body.Kind()))
 	}
 }
 
