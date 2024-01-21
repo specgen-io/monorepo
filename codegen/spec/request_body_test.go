@@ -13,7 +13,7 @@ func Test_RequestBody_Json_Unmarshal(t *testing.T) {
 	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &body)
 	assert.NilError(t, err)
 	assert.Equal(t, body.IsJson(), true)
-	assert.Equal(t, body.Type == nil, false)
+	assert.Equal(t, body.Type != nil, true)
 	assert.Equal(t, body.Type.Definition, ParseType("MyType"))
 }
 
@@ -42,7 +42,19 @@ form-data:
 	var body RequestBody
 	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &body)
 	assert.NilError(t, err)
-	assert.Equal(t, body.FormData == nil, false)
+	assert.Equal(t, body.FormData != nil, true)
+}
+
+func Test_RequestBody_FormData_File_Unmarshal(t *testing.T) {
+	data := `
+form-data:
+  file_param: file
+`
+	var body RequestBody
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &body)
+	assert.NilError(t, err)
+	assert.Equal(t, body.FormData != nil, true)
+	assert.Equal(t, body.FormData[0].Type.Definition, ParseType("file"))
 }
 
 func Test_RequestBody_FormUrlEncoded_Unmarshal(t *testing.T) {

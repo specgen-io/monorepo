@@ -26,6 +26,66 @@ http:
 		nil,
 	},
 	{
+		`binary request body no errors`,
+		`
+http:
+  test:
+    some_url:
+      endpoint: POST /some/url
+      body: binary
+      response:
+        ok: empty
+`,
+		nil,
+		[]Message{},
+		nil,
+	},
+	{
+		`binary response body no errors`,
+		`
+http:
+  test:
+    some_url:
+      endpoint: GET /some/url
+      response:
+        ok: binary
+`,
+		nil,
+		[]Message{},
+		nil,
+	},
+	{
+		`file response body no errors`,
+		`
+http:
+  test:
+    some_url:
+      endpoint: GET /some/url
+      response:
+        ok: file
+`,
+		nil,
+		[]Message{},
+		nil,
+	},
+	{
+		`form-data body request file parameter no errors`,
+		`
+http:
+  test:
+    some_url:
+      endpoint: POST /some/url
+      body:
+        form-data:
+          file-param: file
+      response:
+        ok: empty
+`,
+		nil,
+		[]Message{},
+		nil,
+	},
+	{
 		`string response body no errors`,
 		`
 http:

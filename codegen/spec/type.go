@@ -140,6 +140,7 @@ const (
 	TypeDate     string = "date"
 	TypeDateTime string = "datetime"
 	TypeJson     string = "json"
+	TypeFile     string = "file"
 	TypeEmpty    string = "empty"
 )
 
@@ -191,6 +192,7 @@ var Types = map[string]TypeInfo{
 	TypeDate:     {StructureScalar, true, nil},
 	TypeDateTime: {StructureScalar, true, nil},
 	TypeJson:     {StructureObject, false, nil},
+	TypeFile:     {StructureScalar, false, nil},
 	TypeEmpty:    {StructureNone, false, nil},
 }
 
