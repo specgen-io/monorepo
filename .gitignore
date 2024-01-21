@@ -1,6 +1,8 @@
 **/.DS_Store
 **/.idea
 
+codegen/specgen/specgen
+
 rendr
 the-models-*/
 the-service-*/
