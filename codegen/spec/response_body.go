@@ -7,6 +7,7 @@ import (
 
 type ResponseBody struct {
 	Binary   bool
+	File     bool
 	Type     *Type
 	Location *yaml.Node
 }
@@ -15,6 +16,8 @@ func (body *ResponseBody) Kind() BodyKind {
 	if body != nil {
 		if body.Binary {
 			return BodyBinary
+		} else if body.File {
+			return BodyFile
 		} else if body.Type == nil || body.Type.Definition.IsEmpty() {
 			return BodyEmpty
 		} else if body.Type.Definition.Plain == TypeString {
@@ -42,6 +45,10 @@ func (body *ResponseBody) IsBinary() bool {
 	return body.Kind() == BodyBinary
 }
 
+func (body *ResponseBody) IsFile() bool {
+	return body.Kind() == BodyFile
+}
+
 func (body *ResponseBody) IsJson() bool {
 	return body.Kind() == BodyJson
 }
@@ -52,6 +59,8 @@ func (value *ResponseBody) UnmarshalYAML(node *yaml.Node) error {
 	}
 	if node.Value == "binary" {
 		*value = ResponseBody{Binary: true, Location: node}
+	} else if node.Value == "file" {
+		*value = ResponseBody{File: true, Location: node}
 	} else if node.Value == "empty" {
 		*value = ResponseBody{Location: node}
 	} else {
@@ -67,12 +76,12 @@ func (value *ResponseBody) UnmarshalYAML(node *yaml.Node) error {
 func (value ResponseBody) MarshalYAML() (interface{}, error) {
 	if value.IsBinary() {
 		return yamlx.String("binary"), nil
+	} else if value.IsFile() {
+		return yamlx.String("file"), nil
 	} else if value.IsEmpty() {
 		return yamlx.String("empty"), nil
 	} else {
-		yamlValue := value.Type.Definition.String()
-		node := yaml.Node{Kind: yaml.ScalarNode, Value: yamlValue}
-		return node, nil
+		return yaml.Node{Kind: yaml.ScalarNode, Value: value.Type.Definition.String()}, nil
 	}
 }
 

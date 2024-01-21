@@ -33,6 +33,14 @@ func Test_ResponseBody_Binary_Unmarshal(t *testing.T) {
 	assert.Equal(t, body.IsBinary(), true)
 }
 
+func Test_ResponseBody_File_Unmarshal(t *testing.T) {
+	data := `file`
+	var body ResponseBody
+	err := yaml.UnmarshalWith(decodeStrict, []byte(data), &body)
+	assert.NilError(t, err)
+	assert.Equal(t, body.IsFile(), true)
+}
+
 func Test_ResponseBody_Text_Marshal(t *testing.T) {
 	data := strings.TrimLeft(`
 string
@@ -44,6 +52,14 @@ string
 func Test_ResponseBody_Binary_Marshal(t *testing.T) {
 	data := strings.TrimLeft(`
 binary
+`, "\n")
+	var body ResponseBody
+	checkUnmarshalMarshal(t, data, &body)
+}
+
+func Test_ResponseBody_File_Marshal(t *testing.T) {
+	data := strings.TrimLeft(`
+file
 `, "\n")
 	var body ResponseBody
 	checkUnmarshalMarshal(t, data, &body)
