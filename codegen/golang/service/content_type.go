@@ -14,6 +14,8 @@ func ContentType(operation *spec.NamedOperation) string {
 		return "text/plain"
 	} else if operation.Body.IsJson() {
 		return "application/json"
+	} else if operation.Body.IsBinary() {
+		return "application/octet-stream"
 	} else if operation.Body.IsBodyFormData() {
 		return "multipart/form-data"
 	} else if operation.Body.IsBodyFormUrlEncoded() {

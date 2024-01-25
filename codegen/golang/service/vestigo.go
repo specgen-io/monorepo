@@ -37,11 +37,11 @@ func (g *VestigoGenerator) routing(api *spec.Api) *generator.CodeFile {
 
 	w.Imports.Add("github.com/husobee/vestigo")
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
+	if walkers.ApiHasBodyOfKind(api, spec.BodyText, spec.BodyBinary) {
+		w.Imports.Add("io")
+	}
 	w.Imports.Add("net/http")
 	w.Imports.Add("fmt")
-	if walkers.ApiHasBodyOfKind(api, spec.BodyText) {
-		w.Imports.Add("io/ioutil")
-	}
 	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) {
 		w.Imports.Add("encoding/json")
 	}
@@ -200,7 +200,7 @@ func (g *VestigoGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOp
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)
-		w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
+		w.Line(`bodyData, err := io.ReadAll(req.Body)`)
 		w.Line(`if err != nil {`)
 		respondBadRequest(w.Indented(), operation, g.Types, "body", genFmtSprintf(`Reading request body failed: %s`, `err.Error()`), "nil")
 		w.Line(`}`)
@@ -238,6 +238,13 @@ func (g *VestigoGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOp
 		w.Line(`if len(formBody.Errors) > 0 {`)
 		respondBadRequest(w.Indented(), operation, g.Types, "body", fmt.Sprintf(`"Failed to parse body"`), fmt.Sprintf(`httperrors.Convert(formBody.Errors)`))
 		w.Line(`}`)
+	}
+	if operation.Body.IsBinary() {
+		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
+		w.Line(`  return`)
+		w.Line(`}`)
+		w.Line(`body := req.Body`)
+		w.Line(`defer body.Close()`)
 	}
 }
 

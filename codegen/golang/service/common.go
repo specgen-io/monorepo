@@ -68,6 +68,9 @@ func serviceCall(serviceVar string, operation *spec.NamedOperation) string {
 	if operation.Body.IsJson() {
 		params = append(params, "&body")
 	}
+	if operation.Body.IsBinary() {
+		params = append(params, "body")
+	}
 	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {
 			params = append(params, param.Name.CamelCase())

@@ -20,7 +20,6 @@ func GenerateService(specification *spec.Spec, jsonmode, server, moduleName, swa
 	sources.AddGenerated(generator.GenerateParamsParser())
 	sources.AddGenerated(generator.GenerateFormDataParamsParser())
 	sources.AddGenerated(generator.GenerateFormUrlencodedParamsParser())
-
 	sources.AddGeneratedAll(generator.ErrorModels(specification.HttpErrors))
 	sources.AddGeneratedAll(generator.HttpErrors(&specification.HttpErrors.Responses))
 

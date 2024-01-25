@@ -20,6 +20,8 @@ func (g *Generator) operationReturn(operation *spec.NamedOperation, responsePack
 		response := operation.Responses[0]
 		if response.Body.IsEmpty() {
 			return `error`
+		} else if response.Body.IsBinary() {
+			return fmt.Sprintf(`(%s, error)`, g.Types.ResponseBodyGoType(&response.Body))
 		} else {
 			return fmt.Sprintf(`(*%s, error)`, g.Types.GoType(&response.Body.Type.Definition))
 		}
@@ -38,6 +40,9 @@ func operationParams(types *types.Types, operation *spec.NamedOperation) []strin
 	}
 	if operation.Body.IsJson() {
 		params = append(params, fmt.Sprintf("body *%s", types.GoType(&operation.Body.Type.Definition)))
+	}
+	if operation.Body.IsBinary() {
+		params = append(params, fmt.Sprintf("body %s", types.RequestBodyGoType(&operation.Body)))
 	}
 	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {

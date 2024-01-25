@@ -191,6 +191,10 @@ models:
     object:
       int_field: int
       string_field: string
+  FileMessage:
+    object:
+      file_name: string
+      file_content: string
   FormParameters:
     object:
       int_field: int

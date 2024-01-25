@@ -22,7 +22,7 @@ type Generator struct {
 }
 
 func NewGenerator(jsonmode string, modules *Modules) *Generator {
-	types := types.NewTypes()
+	types := types.NewTypes("")
 	return &Generator{
 		models.NewGenerator(jsonmode, &(modules.Modules)),
 		NewNetHttpGenerator(modules, types),

@@ -8,10 +8,12 @@ import (
 var VersionModelsPackage = "models"
 var ErrorsModelsPackage = "errmodels"
 
-type Types struct{}
+type Types struct {
+	BinaryType string
+}
 
-func NewTypes() *Types {
-	return &Types{}
+func NewTypes(binaryType string) *Types {
+	return &Types{BinaryType: binaryType}
 }
 
 func (types *Types) RequestBodyGoType(body *spec.RequestBody) string {
@@ -20,6 +22,8 @@ func (types *Types) RequestBodyGoType(body *spec.RequestBody) string {
 		return EmptyType
 	case spec.BodyText:
 		return "string"
+	case spec.BodyBinary:
+		return types.BinaryType
 	case spec.BodyJson:
 		return types.GoType(&body.Type.Definition)
 	default:
@@ -33,6 +37,8 @@ func (types *Types) ResponseBodyGoType(body *spec.ResponseBody) string {
 		return EmptyType
 	case spec.BodyText:
 		return "string"
+	case spec.BodyBinary:
+		return types.BinaryType
 	case spec.BodyJson:
 		return types.GoType(&body.Type.Definition)
 	default:
