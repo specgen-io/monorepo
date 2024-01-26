@@ -22,6 +22,8 @@ func operationReturn(types *types.Types, operation *spec.NamedOperation) string 
 		successResponse := successResponses[0]
 		if successResponse.Body.IsEmpty() {
 			return `error`
+		} else if successResponse.Body.IsBinary() {
+			return fmt.Sprintf(`(%s, error)`, types.ResponseBodyGoType(&successResponse.Body))
 		} else {
 			return fmt.Sprintf(`(*%s, error)`, types.GoType(&successResponse.Body.Type.Definition))
 		}
@@ -44,6 +46,8 @@ func resultSuccess(response *spec.OperationResponse, resultVar string) string {
 	if len(successResponses) == 1 {
 		if successResponses[0].Body.IsEmpty() {
 			return `nil`
+		} else if successResponses[0].Body.IsBinary() {
+			return fmt.Sprintf(`%s, nil`, resultVar)
 		} else {
 			return fmt.Sprintf(`&%s, nil`, resultVar)
 		}
@@ -69,10 +73,13 @@ func resultError(response *spec.OperationResponse, errorsModules module.Module, 
 func operationParams(types *types.Types, operation *spec.NamedOperation) []string {
 	params := []string{}
 	if operation.Body.IsText() {
-		params = append(params, fmt.Sprintf("body string"))
+		params = append(params, fmt.Sprintf("body %s", types.GoType(&operation.Body.Type.Definition)))
 	}
 	if operation.Body.IsJson() {
 		params = append(params, fmt.Sprintf("body *%s", types.GoType(&operation.Body.Type.Definition)))
+	}
+	if operation.Body.IsBinary() {
+		params = append(params, fmt.Sprintf("body %s", types.RequestBodyGoType(&operation.Body)))
 	}
 	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {
