@@ -40,11 +40,11 @@ func (g *VestigoGenerator) routing(api *spec.Api) *generator.CodeFile {
 	if walkers.ApiHasBodyOfKind(api, spec.BodyText, spec.BodyBinary) {
 		w.Imports.Add("io")
 	}
-	w.Imports.Add("net/http")
-	w.Imports.Add("fmt")
 	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) {
 		w.Imports.Add("encoding/json")
 	}
+	w.Imports.Add("fmt")
+	w.Imports.Add("net/http")
 	if walkers.ApiHasBodyOfKind(api, spec.BodyJson, spec.BodyText) {
 		w.Imports.Module(g.Modules.ContentType)
 	}
