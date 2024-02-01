@@ -22,10 +22,8 @@ func operationReturn(types *types.Types, operation *spec.NamedOperation) string 
 		successResponse := successResponses[0]
 		if successResponse.Body.IsEmpty() {
 			return `error`
-		} else if successResponse.Body.IsBinary() {
-			return fmt.Sprintf(`(%s, error)`, types.ResponseBodyGoType(&successResponse.Body))
 		} else {
-			return fmt.Sprintf(`(*%s, error)`, types.GoType(&successResponse.Body.Type.Definition))
+			return fmt.Sprintf(`(%s, error)`, types.ResponseBodyGoType(&successResponse.Body))
 		}
 	} else {
 		return fmt.Sprintf(`(*%s, error)`, responseTypeName(operation))
@@ -46,13 +44,11 @@ func resultSuccess(response *spec.OperationResponse, resultVar string) string {
 	if len(successResponses) == 1 {
 		if successResponses[0].Body.IsEmpty() {
 			return `nil`
-		} else if successResponses[0].Body.IsBinary() {
-			return fmt.Sprintf(`%s, nil`, resultVar)
 		} else {
-			return fmt.Sprintf(`&%s, nil`, resultVar)
+			return fmt.Sprintf(`%s, nil`, resultVar)
 		}
 	} else {
-		return fmt.Sprintf(`&%s, nil`, newResponse(response, resultVar))
+		return fmt.Sprintf(`%s, nil`, newResponse(response, resultVar))
 	}
 }
 
@@ -72,33 +68,31 @@ func resultError(response *spec.OperationResponse, errorsModules module.Module, 
 
 func operationParams(types *types.Types, operation *spec.NamedOperation) []string {
 	params := []string{}
-	if operation.Body.IsText() {
-		params = append(params, fmt.Sprintf("body %s", types.GoType(&operation.Body.Type.Definition)))
-	}
-	if operation.Body.IsJson() {
-		params = append(params, fmt.Sprintf("body *%s", types.GoType(&operation.Body.Type.Definition)))
-	}
-	if operation.Body.IsBinary() {
+	if operation.Body.IsText() || operation.Body.IsBinary() || operation.Body.IsJson() {
 		params = append(params, fmt.Sprintf("body %s", types.RequestBodyGoType(&operation.Body)))
 	}
 	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {
-			params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
+			params = appendParam(types, params, param)
 		}
 	}
 	if operation.Body.IsBodyFormUrlEncoded() {
 		for _, param := range operation.Body.FormUrlEncoded {
-			params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
+			params = appendParam(types, params, param)
 		}
 	}
 	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
+		params = appendParam(types, params, param)
 	}
 	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
+		params = appendParam(types, params, param)
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
+		params = appendParam(types, params, param)
 	}
 	return params
+}
+
+func appendParam(types *types.Types, params []string, param spec.NamedParam) []string {
+	return append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
 }

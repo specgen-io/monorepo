@@ -7,6 +7,8 @@ import (
 	"spec"
 )
 
+const serviceInterfaceName = "Service"
+
 func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
@@ -57,5 +59,3 @@ func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
 
 	return w.ToCodeFile()
 }
-
-const serviceInterfaceName = "Service"

@@ -15,7 +15,7 @@ type Generator interface {
 }
 
 func NewGenerator(jsonmode string, modules *Modules) Generator {
-	types := types.NewTypes("")
+	types := types.NewTypes()
 
 	if jsonmode == Strict {
 		return NewEncodingJsonGenerator(types, modules, true)

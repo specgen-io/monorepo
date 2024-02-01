@@ -20,10 +20,8 @@ func (g *Generator) operationReturn(operation *spec.NamedOperation, responsePack
 		response := operation.Responses[0]
 		if response.Body.IsEmpty() {
 			return `error`
-		} else if response.Body.IsBinary() {
-			return fmt.Sprintf(`(%s, error)`, g.Types.ResponseBodyGoType(&response.Body))
 		} else {
-			return fmt.Sprintf(`(*%s, error)`, g.Types.GoType(&response.Body.Type.Definition))
+			return fmt.Sprintf(`(%s, error)`, g.Types.ResponseBodyGoType(&response.Body))
 		}
 	}
 	responseType := responseTypeName(operation)
@@ -35,33 +33,31 @@ func (g *Generator) operationReturn(operation *spec.NamedOperation, responsePack
 
 func operationParams(types *types.Types, operation *spec.NamedOperation) []string {
 	params := []string{}
-	if operation.Body.IsText() {
-		params = append(params, fmt.Sprintf("body %s", types.GoType(&operation.Body.Type.Definition)))
-	}
-	if operation.Body.IsJson() {
-		params = append(params, fmt.Sprintf("body *%s", types.GoType(&operation.Body.Type.Definition)))
-	}
-	if operation.Body.IsBinary() {
+	if operation.Body.IsText() || operation.Body.IsBinary() || operation.Body.IsJson() {
 		params = append(params, fmt.Sprintf("body %s", types.RequestBodyGoType(&operation.Body)))
 	}
 	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {
-			params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
+			params = appendParam(types, params, param)
 		}
 	}
 	if operation.Body.IsBodyFormUrlEncoded() {
 		for _, param := range operation.Body.FormUrlEncoded {
-			params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
+			params = appendParam(types, params, param)
 		}
 	}
 	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
+		params = appendParam(types, params, param)
 	}
 	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
+		params = appendParam(types, params, param)
 	}
 	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
+		params = appendParam(types, params, param)
 	}
 	return params
+}
+
+func appendParam(types *types.Types, params []string, param spec.NamedParam) []string {
+	return append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
 }

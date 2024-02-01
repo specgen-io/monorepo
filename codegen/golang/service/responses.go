@@ -50,7 +50,7 @@ func (g *Generator) Response(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line(`type %s struct {`, responseTypeName(operation))
 	w.Indent()
 	for _, response := range operation.Responses {
-		w.LineAligned(`%s *%s`, response.Name.PascalCase(), g.Types.ResponseBodyGoType(&response.Body))
+		w.LineAligned(`%s %s`, response.Name.PascalCase(), g.Types.ResponseBodyGoType(&response.Body))
 	}
 	w.Unindent()
 	w.Line(`}`)

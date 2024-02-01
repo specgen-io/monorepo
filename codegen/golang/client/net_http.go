@@ -229,6 +229,7 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 	w.Line(`switch resp.StatusCode {`)
 	for _, response := range operation.Responses {
 		w.Line(`case %s:`, spec.HttpStatusCode(response.Name))
+		resultVar := "&result"
 		if response.Body.IsText() {
 			w.Line(`  result, err := response.Text(resp)`)
 			w.Line(`  if err != nil {`)
@@ -247,11 +248,13 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 			w.Line(`  if err != nil {`)
 			w.Line(`    return %s`, operationError(response.Operation, `err`))
 			w.Line(`  }`)
+			resultVar = "result"
 		}
 		if response.IsSuccess() {
-			w.Line(`  return %s`, resultSuccess(&response, `result`))
+			w.Line(`  return %s`, resultSuccess(&response, resultVar))
 		} else {
-			w.Line(`  return %s`, resultError(&response, g.Modules.HttpErrors, `result`))
+			resultVar = "result"
+			w.Line(`  return %s`, resultError(&response, g.Modules.HttpErrors, resultVar))
 		}
 	}
 	w.Line(`default:`)
@@ -267,7 +270,7 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 }
 
 func newResponse(response *spec.OperationResponse, body string) string {
-	return fmt.Sprintf(`%s{%s: &%s}`, responseTypeName(response.Operation), response.Name.PascalCase(), body)
+	return fmt.Sprintf(`&%s{%s: %s}`, responseTypeName(response.Operation), response.Name.PascalCase(), body)
 }
 
 func clientTypeName() string {
@@ -283,7 +286,7 @@ func responseStruct(w *writer.Writer, types *types.Types, operation *spec.NamedO
 		w.Line(`type %s struct {`, responseTypeName(operation))
 		w.Indent()
 		for _, response := range operation.Responses.Success() {
-			w.LineAligned(`%s *%s`, response.Name.PascalCase(), types.ResponseBodyGoType(&response.Body))
+			w.LineAligned(`%s %s`, response.Name.PascalCase(), types.ResponseBodyGoType(&response.Body))
 		}
 		w.Unindent()
 		w.Line(`}`)
@@ -368,7 +371,12 @@ func (g *NetHttpGenerator) ErrorsHandler(errors spec.ErrorResponses) *generator.
 			w.Line(`    return err`)
 			w.Line(`  }`)
 		}
-
+		if response.Body.IsBinary() {
+			w.Line(`  result, err := response.Binary(resp)`)
+			w.Line(`  if err != nil {`)
+			w.Line(`    return err`)
+			w.Line(`  }`)
+		}
 		if response.Body.IsEmpty() {
 			w.Line(`  return &%s{}`, response.Name.PascalCase())
 		} else {
