@@ -37,14 +37,14 @@ func (g *HttpRouterGenerator) routing(api *spec.Api) *generator.CodeFile {
 
 	w.Imports.Add("github.com/julienschmidt/httprouter")
 	w.Imports.AddAliased("github.com/sirupsen/logrus", "log")
-	w.Imports.Add("net/http")
-	w.Imports.Add("fmt")
-	if walkers.ApiHasBodyOfKind(api, spec.BodyText) {
-		w.Imports.Add("io/ioutil")
+	if walkers.ApiHasBodyOfKind(api, spec.BodyText, spec.BodyBinary) {
+		w.Imports.Add("io")
 	}
 	if walkers.ApiHasBodyOfKind(api, spec.BodyJson) {
 		w.Imports.Add("encoding/json")
 	}
+	w.Imports.Add("fmt")
+	w.Imports.Add("net/http")
 	if walkers.ApiHasBodyOfKind(api, spec.BodyJson, spec.BodyText) {
 		w.Imports.Module(g.Modules.ContentType)
 	}
@@ -197,7 +197,7 @@ func (g *HttpRouterGenerator) bodyParsing(w *writer.Writer, operation *spec.Name
 		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
 		w.Line(`  return`)
 		w.Line(`}`)
-		w.Line(`bodyData, err := ioutil.ReadAll(req.Body)`)
+		w.Line(`bodyData, err := io.ReadAll(req.Body)`)
 		w.Line(`if err != nil {`)
 		respondBadRequest(w.Indented(), operation, g.Types, "body", genFmtSprintf(`Reading request body failed: %s`, `err.Error()`), "nil")
 		w.Line(`}`)
@@ -235,6 +235,13 @@ func (g *HttpRouterGenerator) bodyParsing(w *writer.Writer, operation *spec.Name
 		w.Line(`if len(formBody.Errors) > 0 {`)
 		respondBadRequest(w.Indented(), operation, g.Types, "body", fmt.Sprintf(`"Failed to parse body"`), fmt.Sprintf(`httperrors.Convert(formBody.Errors)`))
 		w.Line(`}`)
+	}
+	if operation.Body.IsBinary() {
+		w.Line(`if !%s {`, callCheckContentType(logFieldsName(operation), fmt.Sprintf(`"%s"`, ContentType(operation)), "req", "res"))
+		w.Line(`  return`)
+		w.Line(`}`)
+		w.Line(`body := req.Body`)
+		w.Line(`defer body.Close()`)
 	}
 }
 

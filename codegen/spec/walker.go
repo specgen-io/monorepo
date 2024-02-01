@@ -16,6 +16,8 @@ type SpecWalker struct {
 	onModel             func(model *NamedModel)
 	onType              func(typ *Type)
 	onTypeDef           func(typ *TypeDef)
+	onBinaryRequest     func(body *RequestBody)
+	onBinaryResponse    func(body *ResponseBody)
 	onEmpty             func()
 }
 
@@ -88,6 +90,16 @@ func (w *SpecWalker) OnTypeDef(callback func(typ *TypeDef)) *SpecWalker {
 	return w
 }
 
+func (w *SpecWalker) OnBinaryRequest(callback func(body *RequestBody)) *SpecWalker {
+	w.onBinaryRequest = callback
+	return w
+}
+
+func (w *SpecWalker) oOnBinaryResponse(callback func(body *ResponseBody)) *SpecWalker {
+	w.onBinaryResponse = callback
+	return w
+}
+
 func (w *SpecWalker) OnEmpty(callback func()) *SpecWalker {
 	w.onEmpty = callback
 	return w
@@ -129,6 +141,8 @@ func (w *SpecWalker) ResponseBody(body *ResponseBody) {
 	}
 	if body.IsEmpty() {
 		w.Empty()
+	} else if body.IsBinary() {
+		w.BinaryResponse(body)
 	} else {
 		w.Type(body.Type)
 	}
@@ -192,6 +206,9 @@ func (w *SpecWalker) RequestBody(body *RequestBody) {
 	if body.IsEmpty() {
 		w.Empty()
 	}
+	if body.IsBinary() {
+		w.BinaryRequest(body)
+	}
 	if body.Type != nil {
 		w.Type(body.Type)
 	}
@@ -237,6 +254,18 @@ func (w *SpecWalker) Model(model *NamedModel) {
 func (w *SpecWalker) Empty() {
 	if w.onEmpty != nil {
 		w.onEmpty()
+	}
+}
+
+func (w *SpecWalker) BinaryRequest(body *RequestBody) {
+	if w.onBinaryRequest != nil {
+		w.onBinaryRequest(body)
+	}
+}
+
+func (w *SpecWalker) BinaryResponse(body *ResponseBody) {
+	if w.onBinaryResponse != nil {
+		w.onBinaryResponse(body)
 	}
 }
 

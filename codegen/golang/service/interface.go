@@ -7,6 +7,8 @@ import (
 	"spec"
 )
 
+const serviceInterfaceName = "Service"
+
 func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFile {
 	files := []generator.CodeFile{}
 	for _, api := range version.Http.Apis {
@@ -18,6 +20,9 @@ func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFi
 func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Modules.ServicesApi(api), "server.go")
 
+	if walkers.ApiHasBodyOfKind(api, spec.BodyBinary) {
+		w.Imports.Add("io")
+	}
 	if walkers.ApiHasType(api, spec.TypeDate) {
 		w.Imports.Add("cloud.google.com/go/civil")
 	}
@@ -54,5 +59,3 @@ func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
 
 	return w.ToCodeFile()
 }
-
-const serviceInterfaceName = "Service"

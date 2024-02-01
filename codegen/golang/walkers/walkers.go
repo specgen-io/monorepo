@@ -79,9 +79,16 @@ func OperationHasHeaderParams(operation *spec.NamedOperation) bool {
 func ApiHasBodyOfKind(api *spec.Api, kinds ...spec.BodyKind) bool {
 	result := false
 	walk := spec.NewWalker().
-		OnOperation(func(operation *spec.NamedOperation) {
+		OnRequestBody(func(body *spec.RequestBody) {
 			for _, kind := range kinds {
-				if operation.Body.Is(kind) {
+				if body.Is(kind) {
+					result = true
+				}
+			}
+		}).
+		OnResponseBody(func(body *spec.ResponseBody) {
+			for _, kind := range kinds {
+				if body.Is(kind) {
 					result = true
 				}
 			}

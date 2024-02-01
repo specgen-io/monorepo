@@ -628,14 +628,19 @@ import (
 	"net/http"
 )
 
-func NewFormDataParser(req *http.Request, parseCommaSeparatedArray bool) (*ParamsParser, error) {
+type FormParamsParser struct {
+	request *http.Request
+	ParamsParser
+}
+
+func NewFormDataParser(req *http.Request, parseCommaSeparatedArray bool) (*FormParamsParser, error) {
 	const defaultMaxMemory = 32 << 20 // 32 MB
 	err := req.ParseMultipartForm(defaultMaxMemory)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ParamsParser{req.PostForm, parseCommaSeparatedArray, []ParsingError{}}, nil
+	return &FormParamsParser{req, ParamsParser{req.PostForm, parseCommaSeparatedArray, []ParsingError{}}}, nil
 }
 `)
 

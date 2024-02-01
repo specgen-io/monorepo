@@ -42,6 +42,9 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	if walkers.ApiHasBodyOfKind(api, spec.BodyFormData) {
 		w.Imports.Add("mime/multipart")
 	}
+	if walkers.ApiHasBodyOfKind(api, spec.BodyBinary) {
+		w.Imports.Add("io")
+	}
 	if walkers.ApiHasBodyOfKind(api, spec.BodyFormUrlEncoded) {
 		w.Imports.Add("strings")
 		w.Imports.Add("net/url")
@@ -118,6 +121,9 @@ func (g *NetHttpGenerator) createRequest(w *writer.Writer, operation *spec.Named
 		w.Line(`  }`)
 		body = "bytes.NewBuffer(bodyData)"
 	}
+	if operation.Body.IsBinary() {
+		body = "body"
+	}
 	if operation.Body.IsBodyFormData() {
 		w.Line(`  bodyData := &bytes.Buffer{}`)
 		w.Line(`  writer := multipart.NewWriter(bodyData)`)
@@ -187,7 +193,7 @@ func (g *NetHttpGenerator) addRequestUrlParams(operation *spec.NamedOperation) s
 func (g *NetHttpGenerator) addUrlParam(operation *spec.NamedOperation) []string {
 	urlParams := []string{}
 	for _, param := range operation.Endpoint.UrlParams {
-		if param.Type.Definition.IsEnum() || g.Types.GoType(&param.Type.Definition) == "string" { //TODO: Maybe this if is not needed
+		if param.Type.Definition.IsEnum() || g.Types.GoType(&param.Type.Definition) == "string" { // TODO: Maybe this if is not needed
 			urlParams = append(urlParams, param.Name.CamelCase())
 		} else {
 			urlParams = append(urlParams, callRawParamsConvert(&param.Type.Definition, param.Name.CamelCase()))
@@ -223,6 +229,7 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 	w.Line(`switch resp.StatusCode {`)
 	for _, response := range operation.Responses {
 		w.Line(`case %s:`, spec.HttpStatusCode(response.Name))
+		resultVar := "&result"
 		if response.Body.IsText() {
 			w.Line(`  result, err := response.Text(resp)`)
 			w.Line(`  if err != nil {`)
@@ -236,11 +243,18 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 			w.Line(`    return %s`, operationError(response.Operation, `err`))
 			w.Line(`  }`)
 		}
-
+		if response.Body.IsBinary() {
+			w.Line(`  result, err := response.Binary(resp)`)
+			w.Line(`  if err != nil {`)
+			w.Line(`    return %s`, operationError(response.Operation, `err`))
+			w.Line(`  }`)
+			resultVar = "result"
+		}
 		if response.IsSuccess() {
-			w.Line(`  return %s`, resultSuccess(&response, `result`))
+			w.Line(`  return %s`, resultSuccess(&response, resultVar))
 		} else {
-			w.Line(`  return %s`, resultError(&response, g.Modules.HttpErrors, `result`))
+			resultVar = "result"
+			w.Line(`  return %s`, resultError(&response, g.Modules.HttpErrors, resultVar))
 		}
 	}
 	w.Line(`default:`)
@@ -256,7 +270,7 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 }
 
 func newResponse(response *spec.OperationResponse, body string) string {
-	return fmt.Sprintf(`%s{%s: &%s}`, responseTypeName(response.Operation), response.Name.PascalCase(), body)
+	return fmt.Sprintf(`&%s{%s: %s}`, responseTypeName(response.Operation), response.Name.PascalCase(), body)
 }
 
 func clientTypeName() string {
@@ -272,7 +286,7 @@ func responseStruct(w *writer.Writer, types *types.Types, operation *spec.NamedO
 		w.Line(`type %s struct {`, responseTypeName(operation))
 		w.Indent()
 		for _, response := range operation.Responses.Success() {
-			w.LineAligned(`%s *%s`, response.Name.PascalCase(), types.ResponseBodyGoType(&response.Body))
+			w.LineAligned(`%s %s`, response.Name.PascalCase(), types.ResponseBodyGoType(&response.Body))
 		}
 		w.Unindent()
 		w.Line(`}`)
@@ -288,12 +302,12 @@ func (g *NetHttpGenerator) ResponseHelperFunctions() *generator.CodeFile {
 	w.Lines(`
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
 func Json(resp *http.Response, result any) error {
-	responseBody, err := ioutil.ReadAll(resp.Body)
+	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -309,7 +323,7 @@ func Json(resp *http.Response, result any) error {
 }
 
 func Text(resp *http.Response) (string, error) {
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -318,6 +332,15 @@ func Text(resp *http.Response) (string, error) {
 		return "", err
 	}
 	return string(body), nil
+}
+
+func Binary(resp *http.Response) (io.ReadCloser, error) {
+	body := resp.Body
+	err := resp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
 }
 `)
 	return w.ToCodeFile()
@@ -348,7 +371,12 @@ func (g *NetHttpGenerator) ErrorsHandler(errors spec.ErrorResponses) *generator.
 			w.Line(`    return err`)
 			w.Line(`  }`)
 		}
-
+		if response.Body.IsBinary() {
+			w.Line(`  result, err := response.Binary(resp)`)
+			w.Line(`  if err != nil {`)
+			w.Line(`    return err`)
+			w.Line(`  }`)
+		}
 		if response.Body.IsEmpty() {
 			w.Line(`  return &%s{}`, response.Name.PascalCase())
 		} else {

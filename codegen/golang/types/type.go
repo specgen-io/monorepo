@@ -5,8 +5,9 @@ import (
 	"spec"
 )
 
-var VersionModelsPackage = "models"
-var ErrorsModelsPackage = "errmodels"
+const EmptyType = `empty.Type`
+const TextType = `string`
+const BinaryType = `io.ReadCloser`
 
 type Types struct{}
 
@@ -16,12 +17,14 @@ func NewTypes() *Types {
 
 func (types *Types) RequestBodyGoType(body *spec.RequestBody) string {
 	switch body.Kind() {
-	case spec.BodyEmpty:
-		return EmptyType
+	case spec.BodyBinary:
+		return BinaryType
 	case spec.BodyText:
-		return "string"
+		return TextType
+	case spec.BodyEmpty:
+		return "*" + EmptyType
 	case spec.BodyJson:
-		return types.GoType(&body.Type.Definition)
+		return "*" + types.GoType(&body.Type.Definition)
 	default:
 		panic(fmt.Sprintf("Unknown response body kind: %v", body.Kind()))
 	}
@@ -29,12 +32,14 @@ func (types *Types) RequestBodyGoType(body *spec.RequestBody) string {
 
 func (types *Types) ResponseBodyGoType(body *spec.ResponseBody) string {
 	switch body.Kind() {
-	case spec.BodyEmpty:
-		return EmptyType
+	case spec.BodyBinary:
+		return BinaryType
 	case spec.BodyText:
-		return "string"
+		return "*" + TextType
+	case spec.BodyEmpty:
+		return "*" + EmptyType
 	case spec.BodyJson:
-		return types.GoType(&body.Type.Definition)
+		return "*" + types.GoType(&body.Type.Definition)
 	default:
 		panic(fmt.Sprintf("Unknown response body kind: %v", body.Kind()))
 	}
@@ -114,4 +119,5 @@ func (types *Types) plainType(typ *spec.TypeDef, samePackage bool) string {
 	}
 }
 
-const EmptyType = `empty.Type`
+var VersionModelsPackage = "models"
+var ErrorsModelsPackage = "errmodels"
