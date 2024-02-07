@@ -53,6 +53,8 @@ func converterMethodNamePlain(typ *spec.TypeDef) string {
 		return "Date"
 	case spec.TypeDateTime:
 		return "DateTime"
+	case spec.TypeFile:
+		return "CreateFile"
 	default:
 		panic(fmt.Sprintf("Unsupported string param type: %v", typ.Plain))
 	}
@@ -288,14 +290,22 @@ func (self *ParamsWriter) StringEnumArray(key string, values []interface{}) {
 
 func (g *Generator) FormDataParams() *generator.CodeFile {
 	w := writer.New(g.Modules.Params, `form_data_params.go`)
-	w.Lines(`
+
+	w.Template(
+		map[string]string{
+			`HttpFilePackage`: g.Modules.HttpFile.Package,
+		}, `
 import (
 	"errors"
 	"fmt"
+	"[[.HttpFilePackage]]"
+	"io"
+	"path/filepath"
 )
 
 type FormDataParamsSetter interface {
 	WriteField(key, value string) error
+	CreateFormFile(fieldname, filename string) (io.Writer, error)
 	Close() error
 }
 
@@ -318,6 +328,14 @@ func (self *bridgeSetter) Add(key, value string) {
 	err := self.WriteField(key, value)
 	if err != nil {
 		self.errors = append(self.errors, errors.New(fmt.Sprintf("failed to set parameter %s: %s ", key, err.Error())))
+	}
+}
+
+func (self *FormDataParamsWriter) CreateFile(fieldName string, file *httpfile.File) {
+	dst, err := self.CreateFormFile(fieldName, filepath.Base(file.Name))
+	_, err = io.Copy(dst, file.Content)
+	if err != nil {
+		self.errors = append(self.errors, errors.New(fmt.Sprintf("failed to write file: %s", err.Error())))
 	}
 }
 

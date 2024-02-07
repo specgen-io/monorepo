@@ -37,27 +37,20 @@ func operationParams(types *types.Types, operation *spec.NamedOperation) []strin
 		params = append(params, fmt.Sprintf("body %s", types.RequestBodyGoType(&operation.Body)))
 	}
 	if operation.Body.IsBodyFormData() {
-		for _, param := range operation.Body.FormData {
-			params = appendParam(types, params, param)
-		}
+		params = appendParams(types, params, operation.Body.FormData)
 	}
 	if operation.Body.IsBodyFormUrlEncoded() {
-		for _, param := range operation.Body.FormUrlEncoded {
-			params = appendParam(types, params, param)
-		}
+		params = appendParams(types, params, operation.Body.FormUrlEncoded)
 	}
-	for _, param := range operation.QueryParams {
-		params = appendParam(types, params, param)
-	}
-	for _, param := range operation.HeaderParams {
-		params = appendParam(types, params, param)
-	}
-	for _, param := range operation.Endpoint.UrlParams {
-		params = appendParam(types, params, param)
-	}
+	params = appendParams(types, params, operation.QueryParams)
+	params = appendParams(types, params, operation.HeaderParams)
+	params = appendParams(types, params, operation.Endpoint.UrlParams)
 	return params
 }
 
-func appendParam(types *types.Types, params []string, param spec.NamedParam) []string {
-	return append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.GoType(&param.Type.Definition)))
+func appendParams(types *types.Types, params []string, namedParams []spec.NamedParam) []string {
+	for _, param := range namedParams {
+		params = append(params, fmt.Sprintf("%s %s", param.Name.CamelCase(), types.ParamGoType(&param)))
+	}
+	return params
 }

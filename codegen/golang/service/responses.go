@@ -23,6 +23,10 @@ func respondBinary(logFields, resVar, statusCode, dataVar string) string {
 	return fmt.Sprintf(`respond.Binary(%s, %s, %s, %s)`, logFields, resVar, statusCode, dataVar)
 }
 
+func respondFile(logFields, resVar, statusCode, dataVar string) string {
+	return fmt.Sprintf(`respond.File(%s, %s, %s, %s)`, logFields, resVar, statusCode, dataVar)
+}
+
 func respondEmpty(logFields, resVar, statusCode string) string {
 	return fmt.Sprintf(`respond.Empty(%s, %s, %s)`, logFields, resVar, statusCode)
 }
@@ -44,6 +48,13 @@ func writeResponse(w *writer.Writer, logFieldsName string, response *spec.Respon
 		w.Line(`  return`)
 		w.Line(`}`)
 	}
+	if response.Body.IsFile() {
+		w.Line(fmt.Sprintf(`err = %s`, respondFile(logFieldsName, `res`, spec.HttpStatusCode(response.Name), responseVar)))
+		w.Line(`if err != nil {`)
+		w.Line(`  httperrors.RespondInternalServerError(%s, res, &errmodels.InternalServerError{Message: "Error sending file"})`, logFieldsName)
+		w.Line(`  return`)
+		w.Line(`}`)
+	}
 }
 
 func (g *Generator) Response(w *writer.Writer, operation *spec.NamedOperation) {
@@ -58,10 +69,15 @@ func (g *Generator) Response(w *writer.Writer, operation *spec.NamedOperation) {
 
 func (g *Generator) ResponseHelperFunctions() *generator.CodeFile {
 	w := writer.New(g.Modules.Respond, `respond.go`)
-	w.Lines(`
+
+	w.Template(
+		map[string]string{
+			`HttpFilePackage`: g.Modules.HttpFile.Package,
+		}, `
 import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
+	"[[.HttpFilePackage]]"
 	"io"
 	"net/http"
 )
@@ -83,6 +99,14 @@ func Text(logFields log.Fields, res http.ResponseWriter, statusCode int, data st
 func Binary(logFields log.Fields, res http.ResponseWriter, statusCode int, data io.ReadCloser) error {
 	res.Header().Set("Content-Type", "application/octet-stream")
 	_, err := io.Copy(res, data)
+	res.WriteHeader(statusCode)
+	log.WithFields(logFields).WithField("status", statusCode).Info("Completed request")
+	return err
+}
+
+func File(logFields log.Fields, res http.ResponseWriter, statusCode int, file *httpfile.File) error {
+	res.Header().Set("Content-Disposition", "attachment; filename="+file.Name)
+	_, err := io.Copy(res, file.Content)
 	res.WriteHeader(statusCode)
 	log.WithFields(logFields).WithField("status", statusCode).Info("Completed request")
 	return err

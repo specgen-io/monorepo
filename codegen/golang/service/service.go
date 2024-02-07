@@ -3,6 +3,7 @@ package service
 import (
 	"generator"
 	"golang/empty"
+	"golang/httpfile"
 	"openapi"
 	"spec"
 )
@@ -14,6 +15,7 @@ func GenerateService(specification *spec.Spec, jsonmode, server, moduleName, swa
 	generator := NewGenerator(jsonmode, server, modules)
 
 	sources.AddGenerated(empty.GenerateEmpty(generator.Modules.Empty))
+	sources.AddGenerated(httpfile.GenerateFile(generator.Modules.HttpFile))
 	sources.AddGenerated(generator.EnumsHelperFunctions())
 	sources.AddGenerated(generator.ResponseHelperFunctions())
 	sources.AddGenerated(generator.CheckContentType())

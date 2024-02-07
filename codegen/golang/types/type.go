@@ -5,9 +5,13 @@ import (
 	"spec"
 )
 
+var VersionModelsPackage = "models"
+var ErrorsModelsPackage = "errmodels"
+
 const EmptyType = `empty.Type`
 const TextType = `string`
 const BinaryType = `io.ReadCloser`
+const HttpFileType = `httpfile.File`
 
 type Types struct{}
 
@@ -38,10 +42,20 @@ func (types *Types) ResponseBodyGoType(body *spec.ResponseBody) string {
 		return "*" + TextType
 	case spec.BodyEmpty:
 		return "*" + EmptyType
+	case spec.BodyFile:
+		return "*" + HttpFileType
 	case spec.BodyJson:
 		return "*" + types.GoType(&body.Type.Definition)
 	default:
 		panic(fmt.Sprintf("Unknown response body kind: %v", body.Kind()))
+	}
+}
+
+func (types *Types) ParamGoType(param *spec.NamedParam) string {
+	if param.Type.Definition.String() == spec.TypeFile {
+		return "*" + HttpFileType
+	} else {
+		return types.GoType(&param.Type.Definition)
 	}
 }
 
@@ -118,6 +132,3 @@ func (types *Types) plainType(typ *spec.TypeDef, samePackage bool) string {
 		}
 	}
 }
-
-var VersionModelsPackage = "models"
-var ErrorsModelsPackage = "errmodels"

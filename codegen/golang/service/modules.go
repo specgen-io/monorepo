@@ -13,6 +13,7 @@ type Modules struct {
 	routing       map[string]module.Module
 	Root          module.Module
 	Empty         module.Module
+	HttpFile      module.Module
 	ParamsParser  module.Module
 	Respond       module.Module
 	ContentType   module.Module
@@ -21,6 +22,7 @@ type Modules struct {
 func NewModules(moduleName, generatePath, servicesPath string, specification *spec.Spec) *Modules {
 	root := module.New(moduleName, generatePath)
 	empty := root.Submodule("empty")
+	httpFile := root.Submodule("httpfile")
 	paramsParser := root.Submodule("paramsparser")
 	respond := root.Submodule("respond")
 	contentType := root.Submodule("contenttype")
@@ -46,6 +48,7 @@ func NewModules(moduleName, generatePath, servicesPath string, specification *sp
 		routing,
 		root,
 		empty,
+		httpFile,
 		paramsParser,
 		respond,
 		contentType,

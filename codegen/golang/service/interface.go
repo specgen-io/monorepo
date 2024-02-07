@@ -35,6 +35,9 @@ func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
 	if walkers.ApiHasType(api, spec.TypeDecimal) {
 		w.Imports.Add("github.com/shopspring/decimal")
 	}
+	if walkers.ApiHasBodyOfKind(api, spec.BodyFile) {
+		w.Imports.Module(g.Modules.HttpFile)
+	}
 	if walkers.ApiHasMultiResponsesWithEmptyBody(api) {
 		w.Imports.Module(g.Modules.Empty)
 	}

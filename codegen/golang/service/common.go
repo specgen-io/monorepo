@@ -7,9 +7,13 @@ import (
 )
 
 func formBodyTypeName(operation *spec.NamedOperation) string {
-	parts := strings.Split(operation.Name.Source, fmt.Sprintf(`%s_`, operation.InApi.Name.Source))
-	typeName := strings.Join(parts[1:], "")
-	return typeName
+	if operation.Body.IsBodyFormData() {
+		return "form_data"
+	}
+	if operation.Body.IsBodyFormUrlEncoded() {
+		return "form_urlencoded"
+	}
+	return ""
 }
 
 func logFieldsName(operation *spec.NamedOperation) string {
@@ -62,14 +66,11 @@ func apiPackageAlias(api *spec.Api) string {
 
 func serviceCall(serviceVar string, operation *spec.NamedOperation) string {
 	params := []string{}
-	if operation.Body.IsText() {
+	if operation.Body.IsText() || operation.Body.IsBinary() {
 		params = append(params, "body")
 	}
 	if operation.Body.IsJson() {
 		params = append(params, "&body")
-	}
-	if operation.Body.IsBinary() {
-		params = append(params, "body")
 	}
 	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {
