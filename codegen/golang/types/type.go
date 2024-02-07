@@ -5,9 +5,6 @@ import (
 	"spec"
 )
 
-var VersionModelsPackage = "models"
-var ErrorsModelsPackage = "errmodels"
-
 const EmptyType = `empty.Type`
 const TextType = `string`
 const BinaryType = `io.ReadCloser`
@@ -132,3 +129,6 @@ func (types *Types) plainType(typ *spec.TypeDef, samePackage bool) string {
 		}
 	}
 }
+
+var VersionModelsPackage = "models"
+var ErrorsModelsPackage = "errmodels"
