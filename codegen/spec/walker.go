@@ -18,6 +18,7 @@ type SpecWalker struct {
 	onTypeDef           func(typ *TypeDef)
 	onBinaryRequest     func(body *RequestBody)
 	onBinaryResponse    func(body *ResponseBody)
+	onFileResponse      func(body *ResponseBody)
 	onEmpty             func()
 }
 
@@ -95,8 +96,13 @@ func (w *SpecWalker) OnBinaryRequest(callback func(body *RequestBody)) *SpecWalk
 	return w
 }
 
-func (w *SpecWalker) oOnBinaryResponse(callback func(body *ResponseBody)) *SpecWalker {
+func (w *SpecWalker) OnBinaryResponse(callback func(body *ResponseBody)) *SpecWalker {
 	w.onBinaryResponse = callback
+	return w
+}
+
+func (w *SpecWalker) OnFileResponse(callback func(body *ResponseBody)) *SpecWalker {
+	w.onFileResponse = callback
 	return w
 }
 
@@ -143,6 +149,8 @@ func (w *SpecWalker) ResponseBody(body *ResponseBody) {
 		w.Empty()
 	} else if body.IsBinary() {
 		w.BinaryResponse(body)
+	} else if body.IsFile() {
+		w.FileResponse(body)
 	} else {
 		w.Type(body.Type)
 	}
@@ -266,6 +274,12 @@ func (w *SpecWalker) BinaryRequest(body *RequestBody) {
 func (w *SpecWalker) BinaryResponse(body *ResponseBody) {
 	if w.onBinaryResponse != nil {
 		w.onBinaryResponse(body)
+	}
+}
+
+func (w *SpecWalker) FileResponse(body *ResponseBody) {
+	if w.onFileResponse != nil {
+		w.onFileResponse(body)
 	}
 }
 

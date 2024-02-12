@@ -157,6 +157,9 @@ func (g *ChiGenerator) serviceCallAndResponseCheck(w *writer.Writer, operation *
 		w.Line(`err = %s`, serviceCall)
 	} else {
 		w.Line(`%s, err := %s`, responseVar, serviceCall)
+		if operation.Responses[0].Body.IsFile() {
+			w.Line(`defer %s.Content.Close()`, responseVar)
+		}
 	}
 	w.Line(`if err != nil {`)
 	respondInternalServerError(w.Indented(), operation, g.Types, genFmtSprintf("Error returned from service implementation: %s", `err.Error()`))
@@ -230,6 +233,9 @@ func (g *ChiGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperat
 		w.Line(`}`)
 		for _, param := range operation.Body.FormData {
 			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(&param, "formBody"))
+			if param.Type.Definition.String() == spec.TypeFile {
+				w.Line(`defer %s.Content.Close()`, param.Name.CamelCase())
+			}
 		}
 		for _, param := range operation.Body.FormUrlEncoded {
 			w.Line(`%s := %s`, param.Name.CamelCase(), g.parserParameterCall(&param, "formBody"))

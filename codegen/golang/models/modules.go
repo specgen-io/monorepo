@@ -10,6 +10,7 @@ type Modules struct {
 	models           map[string]module.Module
 	Root             module.Module
 	Enums            module.Module
+	HttpFile         module.Module
 	HttpErrors       module.Module
 	HttpErrorsModels module.Module
 }
@@ -17,6 +18,7 @@ type Modules struct {
 func NewModules(moduleName string, generatePath string, specification *spec.Spec) *Modules {
 	generated := module.New(moduleName, generatePath)
 	enums := generated.Submodule("enums")
+	httpfile := generated.Submodule("httpfile")
 	httperrors := generated.Submodule("httperrors")
 	httperrorsModels := httperrors.Submodule(types.ErrorsModelsPackage)
 
@@ -29,6 +31,7 @@ func NewModules(moduleName string, generatePath string, specification *spec.Spec
 		models,
 		generated,
 		enums,
+		httpfile,
 		httperrors,
 		httperrorsModels,
 	}

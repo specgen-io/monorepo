@@ -3,6 +3,7 @@ package client
 import (
 	"generator"
 	"golang/empty"
+	"golang/httpfile"
 	"golang/models"
 	"golang/types"
 	"spec"
@@ -35,10 +36,15 @@ func (g *Generator) EmptyType() *generator.CodeFile {
 	return empty.GenerateEmpty(g.Modules.Empty)
 }
 
+func (g *Generator) HttpFileType() *generator.CodeFile {
+	return httpfile.GenerateFile(g.Modules.HttpFile)
+}
+
 func (g *Generator) AllStaticFiles() []generator.CodeFile {
 	return []generator.CodeFile{
 		*g.EnumsHelperFunctions(),
 		*g.EmptyType(),
+		*g.HttpFileType(),
 		*g.TypeConverter(),
 		*g.Params(),
 		*g.FormDataParams(),

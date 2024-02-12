@@ -56,6 +56,8 @@ func parserMethodNamePlain(typ *spec.TypeDef) string {
 		return "Date"
 	case spec.TypeDateTime:
 		return "DateTime"
+	case spec.TypeFile:
+		return "File"
 	default:
 		panic(fmt.Sprintf("Unsupported string param type: %v", typ.Plain))
 	}
@@ -623,8 +625,12 @@ func (parser *ParamsParser) StringEnumArray(name string, values []string) []stri
 func (g *Generator) GenerateFormDataParamsParser() *generator.CodeFile {
 	w := writer.New(g.Modules.ParamsParser, `form_data_parser.go`)
 
-	w.Lines(`
+	w.Template(
+		map[string]string{
+			`HttpFilePackage`: g.Modules.HttpFile.Package,
+		}, `
 import (
+	"[[.HttpFilePackage]]"
 	"net/http"
 )
 
@@ -641,6 +647,13 @@ func NewFormDataParser(req *http.Request, parseCommaSeparatedArray bool) (*FormP
 	}
 
 	return &FormParamsParser{req, ParamsParser{req.PostForm, parseCommaSeparatedArray, []ParsingError{}}}, nil
+}
+
+func (parser *FormParamsParser) File(fieldName string) *httpfile.File {
+	fileContent, fileHeader, err := parser.request.FormFile(fieldName)
+	parser.addParsingError(fieldName, "file", err)
+
+	return &httpfile.File{Name: fileHeader.Filename, Content: fileContent}
 }
 `)
 

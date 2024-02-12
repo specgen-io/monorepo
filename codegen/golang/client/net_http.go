@@ -71,6 +71,9 @@ func (g *NetHttpGenerator) client(api *spec.Api) *generator.CodeFile {
 	if walkers.ApiIsUsingErrorModels(api) {
 		w.Imports.Module(g.Modules.HttpErrorsModels)
 	}
+	if walkers.ApiHasBodyOfKind(api, spec.BodyFile) {
+		w.Imports.Module(g.Modules.HttpFile)
+	}
 	w.Imports.Module(g.Modules.Models(api.InHttp.InVersion))
 	w.Imports.Module(g.Modules.Response)
 
@@ -229,7 +232,7 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 	w.Line(`switch resp.StatusCode {`)
 	for _, response := range operation.Responses {
 		w.Line(`case %s:`, spec.HttpStatusCode(response.Name))
-		resultVar := "&result"
+		result := "&result"
 		if response.Body.IsText() {
 			w.Line(`  result, err := response.Text(resp)`)
 			w.Line(`  if err != nil {`)
@@ -244,17 +247,20 @@ func (g *NetHttpGenerator) processResponses(w *writer.Writer, operation *spec.Na
 			w.Line(`  }`)
 		}
 		if response.Body.IsBinary() {
-			w.Line(`  result, err := response.Binary(resp)`)
+			result = "resp.Body"
+		}
+		if response.Body.IsFile() {
+			w.Line(`  result, err := response.File(resp)`)
 			w.Line(`  if err != nil {`)
 			w.Line(`    return %s`, operationError(response.Operation, `err`))
 			w.Line(`  }`)
-			resultVar = "result"
+			result = "result"
 		}
 		if response.IsSuccess() {
-			w.Line(`  return %s`, resultSuccess(&response, resultVar))
+			w.Line(`  return %s`, resultSuccess(&response, result))
 		} else {
-			resultVar = "result"
-			w.Line(`  return %s`, resultError(&response, g.Modules.HttpErrors, resultVar))
+			result = "result"
+			w.Line(`  return %s`, resultError(&response, g.Modules.HttpErrors, result))
 		}
 	}
 	w.Line(`default:`)
@@ -299,10 +305,16 @@ func responseTypeName(operation *spec.NamedOperation) string {
 
 func (g *NetHttpGenerator) ResponseHelperFunctions() *generator.CodeFile {
 	w := writer.New(g.Modules.Response, `response.go`)
-	w.Lines(`
+
+	w.Template(
+		map[string]string{
+			`HttpFilePackage`: g.Modules.HttpFile.Package,
+		}, `
 import (
 	"encoding/json"
+	"[[.HttpFilePackage]]"
 	"io"
+	"mime"
 	"net/http"
 )
 
@@ -334,13 +346,16 @@ func Text(resp *http.Response) (string, error) {
 	return string(body), nil
 }
 
-func Binary(resp *http.Response) (io.ReadCloser, error) {
-	body := resp.Body
-	err := resp.Body.Close()
-	if err != nil {
-		return nil, err
+func File(resp *http.Response) (*httpfile.File, error) {
+	var fileName string
+	if cd := resp.Header.Get("Content-Disposition"); cd != "" {
+		if _, params, err := mime.ParseMediaType(cd); err == nil {
+			fileName = params["filename"]
+		} else {
+			return nil, err
+		}
 	}
-	return body, nil
+	return &httpfile.File{Name: fileName, Content: resp.Body}, nil
 }
 `)
 	return w.ToCodeFile()
