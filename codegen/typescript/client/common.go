@@ -46,7 +46,7 @@ func createOperationParams(operation *spec.NamedOperation) string {
 	operationParams := []string{}
 	operationParams = append(operationParams, createParams(operation.HeaderParams, true)...)
 	if operation.Body.IsText() || operation.Body.IsJson() {
-		operationParams = append(operationParams, "body: "+types.TsType(&operation.Body.Type.Definition))
+		operationParams = append(operationParams, "body: "+types.RequestBodyTsType(&operation.Body))
 	}
 	operationParams = append(operationParams, createParams(operation.Endpoint.UrlParams, true)...)
 	operationParams = append(operationParams, createParams(operation.QueryParams, true)...)

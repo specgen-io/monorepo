@@ -118,7 +118,7 @@ func (g *koaGenerator) response(w *writer.Writer, response *spec.Response, dataP
 		w.Line("return")
 	}
 	if response.Body.IsJson() {
-		w.Line("ctx.body = t.encode(%s, %s)", g.Validation.RuntimeType(&response.Body.Type.Definition), dataParam)
+		w.Line("ctx.body = t.encode(%s, %s)", g.Validation.ResponseBodyJsonRuntimeType(&response.Body), dataParam)
 		w.Line("return")
 	}
 }
@@ -204,7 +204,7 @@ func (g *koaGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperat
 		w.Line(`const body: string = ctx.request.rawBody`)
 	}
 	if operation.Body.IsJson() {
-		w.Line("const bodyDecode = t.decodeR(%s, ctx.request.body)", g.Validation.RuntimeType(&operation.Body.Type.Definition))
+		w.Line("const bodyDecode = t.decodeR(%s, ctx.request.body)", g.Validation.RequestBodyJsonRuntimeType(&operation.Body))
 		w.Line("if (bodyDecode.error) {")
 		g.respondBadRequest(w.Indented(), "BODY", "bodyDecode.error", "Failed to parse body")
 		w.Line("}")

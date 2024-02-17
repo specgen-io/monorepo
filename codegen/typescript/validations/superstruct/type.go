@@ -14,6 +14,14 @@ func (g *Generator) RuntimeTypeSamePackage(typ *spec.TypeDef) string {
 	return g.runtimeType(typ, true)
 }
 
+func (g *Generator) RequestBodyJsonRuntimeType(body *spec.RequestBody) string {
+	return g.RuntimeType(&body.Type.Definition)
+}
+
+func (g *Generator) ResponseBodyJsonRuntimeType(body *spec.ResponseBody) string {
+	return g.RuntimeType(&body.Type.Definition)
+}
+
 func (g *Generator) RuntimeType(typ *spec.TypeDef) string {
 	return g.runtimeType(typ, false)
 }

@@ -12,7 +12,7 @@ func generateOperationResponse(w *writer.Writer, operation *spec.NamedOperation)
 	w.Line("export type %s =", responseTypeName(operation))
 	for _, response := range operation.Responses {
 		if !response.Body.IsEmpty() {
-			w.Line(`  | { status: "%s", data: %s }`, response.Name.Source, types.TsType(&response.Body.Type.Definition))
+			w.Line(`  | { status: "%s", data: %s }`, response.Name.Source, types.ResponseBodyTsType(&response.Body))
 		} else {
 			w.Line(`  | { status: "%s" }`, response.Name.Source)
 		}
@@ -25,7 +25,7 @@ func responseType(operation *spec.NamedOperation) string {
 		if successResponses[0].Body.IsEmpty() {
 			return "void"
 		} else {
-			return types.TsType(&successResponses[0].Body.Type.Definition)
+			return types.ResponseBodyTsType(&successResponses[0].Body)
 		}
 	} else {
 		return responseTypeName(operation)

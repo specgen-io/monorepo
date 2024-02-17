@@ -13,8 +13,8 @@ import (
 
 type Validation interface {
 	RuntimeTypeName(typeName string) string
-	RuntimeTypeSamePackage(typ *spec.TypeDef) string
-	RuntimeType(typ *spec.TypeDef) string
+	RequestBodyJsonRuntimeType(body *spec.RequestBody) string
+	ResponseBodyJsonRuntimeType(body *spec.ResponseBody) string
 	SetupLibrary() *generator.CodeFile
 	Models(version *spec.Version) *generator.CodeFile
 	ErrorModels(httpErrors *spec.HttpErrors) *generator.CodeFile

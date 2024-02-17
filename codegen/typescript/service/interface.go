@@ -61,26 +61,24 @@ func operationParamsTypeName(operation *spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Params"
 }
 
-func addServiceParam(w *writer.Writer, paramName string, typ *spec.TypeDef) {
-	if typ.IsNullable() {
-		paramName = paramName + "?"
-	}
-	w.Line("  %s: %s,", paramName, types.TsType(typ))
-}
-
-func generateServiceParams(w *writer.Writer, params []spec.NamedParam) {
+func generateParamsMembers(w *writer.Writer, params []spec.NamedParam) {
 	for _, param := range params {
-		addServiceParam(w, common.TSIdentifier(param.Name.Source), &param.Type.Definition)
+		paramName := common.TSIdentifier(param.Name.Source)
+		paramType := param.Type.Definition
+		if paramType.IsNullable() {
+			paramName = paramName + "?"
+		}
+		w.Line("  %s: %s,", paramName, types.TsType(&paramType))
 	}
 }
 
 func generateOperationParams(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line("export interface %s {", operationParamsTypeName(operation))
-	generateServiceParams(w, operation.HeaderParams)
-	generateServiceParams(w, operation.Endpoint.UrlParams)
-	generateServiceParams(w, operation.QueryParams)
-	if operation.Body.IsText() || operation.Body.IsJson() {
-		addServiceParam(w, "body", &operation.Body.Type.Definition)
+	generateParamsMembers(w, operation.HeaderParams)
+	generateParamsMembers(w, operation.Endpoint.UrlParams)
+	generateParamsMembers(w, operation.QueryParams)
+	if !operation.Body.IsEmpty() {
+		w.Line("  body: %s,", types.RequestBodyTsType(&operation.Body))
 	}
 	w.Line("}")
 }

@@ -117,7 +117,7 @@ func (g *expressGenerator) response(w *writer.Writer, response *spec.Response, d
 		w.Line("return")
 	}
 	if response.Body.IsJson() {
-		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.Validation.RuntimeType(&response.Body.Type.Definition), dataParam)
+		w.Line("response.status(%s).type('json').send(JSON.stringify(t.encode(%s, %s)))", spec.HttpStatusCode(response.Name), g.Validation.ResponseBodyJsonRuntimeType(&response.Body), dataParam)
 		w.Line("return")
 	}
 }
@@ -203,7 +203,7 @@ func (g *expressGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOp
 		w.Line(`const body: string = request.body`)
 	}
 	if operation.Body.IsJson() {
-		w.Line("const bodyDecode = t.decodeR(%s, request.body)", g.Validation.RuntimeType(&operation.Body.Type.Definition))
+		w.Line("const bodyDecode = t.decodeR(%s, request.body)", g.Validation.RequestBodyJsonRuntimeType(&operation.Body))
 		w.Line("if (bodyDecode.error) {")
 		g.respondBadRequest(w.Indented(), "BODY", "bodyDecode.error", "Failed to parse body")
 		w.Line("}")

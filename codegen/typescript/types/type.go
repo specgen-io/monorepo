@@ -5,6 +5,32 @@ import (
 	"spec"
 )
 
+func ResponseBodyTsType(body *spec.ResponseBody) string {
+	switch body.Kind() {
+	case spec.BodyText:
+		return "string"
+	case spec.BodyJson:
+		return TsType(&body.Type.Definition)
+	default:
+		panic(fmt.Sprintf("Unsupported response body kind: %v", body.Kind()))
+	}
+}
+
+func RequestBodyTsType(body *spec.RequestBody) string {
+	switch body.Kind() {
+	case spec.BodyText:
+		return "string"
+	case spec.BodyJson:
+		return TsType(&body.Type.Definition)
+	default:
+		panic(fmt.Sprintf("Unsupported request body kind: %v", body.Kind()))
+	}
+}
+
+func ParamTsType(param *spec.NamedParam) string {
+	return TsType(&param.Type.Definition)
+}
+
 func TsType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
