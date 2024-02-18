@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"generator"
 	"spec"
-	"typescript/common"
 	"typescript/types"
 	"typescript/writer"
 )
@@ -61,26 +60,19 @@ func operationParamsTypeName(operation *spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Params"
 }
 
-func addServiceParam(w *writer.Writer, paramName string, typ *spec.TypeDef) {
-	if typ.IsNullable() {
-		paramName = paramName + "?"
-	}
-	w.Line("  %s: %s,", paramName, types.TsType(typ))
-}
-
-func generateServiceParams(w *writer.Writer, params []spec.NamedParam) {
-	for _, param := range params {
-		addServiceParam(w, common.TSIdentifier(param.Name.Source), &param.Type.Definition)
-	}
-}
-
 func generateOperationParams(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line("export interface %s {", operationParamsTypeName(operation))
-	generateServiceParams(w, operation.HeaderParams)
-	generateServiceParams(w, operation.Endpoint.UrlParams)
-	generateServiceParams(w, operation.QueryParams)
-	if operation.Body.IsText() || operation.Body.IsJson() {
-		addServiceParam(w, "body", &operation.Body.Type.Definition)
+	for _, param := range operation.HeaderParams {
+		w.Line("  %s,", types.ParamTsDeclaration(&param))
+	}
+	for _, param := range operation.Endpoint.UrlParams {
+		w.Line("  %s,", types.ParamTsDeclaration(&param))
+	}
+	for _, param := range operation.QueryParams {
+		w.Line("  %s,", types.ParamTsDeclaration(&param))
+	}
+	if !operation.Body.IsEmpty() {
+		w.Line("  body: %s,", types.RequestBodyTsType(&operation.Body))
 	}
 	w.Line("}")
 }

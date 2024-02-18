@@ -38,6 +38,10 @@ func (g *AxiosGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 	w.Line(`  }`)
 	w.Line(`}`)
 	for _, operation := range api.Operations {
+		if operation.Body.IsText() || operation.Body.IsJson() || operation.HasParams() {
+			w.EmptyLine()
+			generateOperationParams(w, &operation)
+		}
 		if len(operation.Responses.Success()) > 1 {
 			w.EmptyLine()
 			generateOperationResponse(w, &operation)
@@ -82,7 +86,7 @@ func (g *AxiosGenerator) operation(w *writer.Writer, operation *spec.NamedOperat
 		w.Line("  const response = await axiosInstance.%s(`%s`, parameters.body, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 	}
 	if operation.Body.IsJson() {
-		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeType(&operation.Body.Type.Definition))
+		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RequestBodyJsonRuntimeType(&operation.Body))
 		w.Line("  const response = await axiosInstance.%s(`%s`, bodyJson, {%s})", strings.ToLower(operation.Endpoint.Method), getUrl(operation.Endpoint), axiosConfig)
 	}
 	w.Line(`  switch (response.status) {`)
@@ -119,7 +123,7 @@ func (g *AxiosGenerator) responseBody(response *spec.Response) string {
 		return `response.data`
 	}
 	if response.Body.IsJson() {
-		data := fmt.Sprintf(`t.decode(%s, %s)`, g.validation.RuntimeType(&response.Body.Type.Definition), `response.data`)
+		data := fmt.Sprintf(`t.decode(%s, %s)`, g.validation.ResponseBodyJsonRuntimeType(&response.Body), `response.data`)
 		return data
 	}
 	return ""

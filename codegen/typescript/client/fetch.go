@@ -40,6 +40,10 @@ func (g *FetchGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 	w.Line(`  }`)
 	w.Line(`}`)
 	for _, operation := range api.Operations {
+		if operation.Body.IsText() || operation.Body.IsJson() || operation.HasParams() {
+			w.EmptyLine()
+			generateOperationParams(w, &operation)
+		}
 		if len(operation.Responses.Success()) > 1 {
 			w.EmptyLine()
 			generateOperationResponse(w, &operation)
@@ -81,7 +85,7 @@ func (g *FetchGenerator) operation(w *writer.Writer, operation *spec.NamedOperat
 		fetchConfigParts = append(fetchConfigParts, `body: parameters.body`)
 	}
 	if operation.Body.IsJson() {
-		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RuntimeType(&operation.Body.Type.Definition))
+		w.Line(`  const bodyJson = t.encode(%s, parameters.body)`, g.validation.RequestBodyJsonRuntimeType(&operation.Body))
 		fetchConfigParts = append(fetchConfigParts, `body: JSON.stringify(bodyJson)`)
 	}
 	fetchConfig := strings.Join(fetchConfigParts, ", ")
@@ -122,7 +126,7 @@ func (g *FetchGenerator) responseBody(response *spec.Response) string {
 		return `await response.text()`
 	}
 	if response.Body.IsJson() {
-		data := fmt.Sprintf(`t.decode(%s, %s)`, g.validation.RuntimeType(&response.Body.Type.Definition), `await response.json()`)
+		data := fmt.Sprintf(`t.decode(%s, %s)`, g.validation.ResponseBodyJsonRuntimeType(&response.Body), `await response.json()`)
 		return data
 	}
 	return ""
