@@ -10,7 +10,7 @@ func ResponseBodyTsType(body *spec.ResponseBody) string {
 	case spec.BodyText:
 		return "string"
 	case spec.BodyJson:
-		return TsType(&body.Type.Definition)
+		return tsType(&body.Type.Definition)
 	default:
 		panic(fmt.Sprintf("Unsupported response body kind: %v", body.Kind()))
 	}
@@ -21,30 +21,35 @@ func RequestBodyTsType(body *spec.RequestBody) string {
 	case spec.BodyText:
 		return "string"
 	case spec.BodyJson:
-		return TsType(&body.Type.Definition)
+		return tsType(&body.Type.Definition)
 	default:
 		panic(fmt.Sprintf("Unsupported request body kind: %v", body.Kind()))
 	}
 }
 
-func ParamTsType(param *spec.NamedParam) string {
-	return TsType(&param.Type.Definition)
+func ParamTsDeclaration(param *spec.NamedParam) string {
+	paramName := param.Name.CamelCase()
+	paramType := param.Type.Definition
+	if paramType.IsNullable() {
+		paramName = paramName + "?"
+	}
+	return fmt.Sprintf("%s: %s", paramName, tsType(&paramType))
 }
 
-func TsType(typ *spec.TypeDef) string {
+func tsType(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
 		return PlainTsType(typ)
 	case spec.NullableType:
-		child := TsType(typ.Child)
+		child := tsType(typ.Child)
 		result := child + " | undefined"
 		return result
 	case spec.ArrayType:
-		child := TsType(typ.Child)
+		child := tsType(typ.Child)
 		result := child + "[]"
 		return result
 	case spec.MapType:
-		child := TsType(typ.Child)
+		child := tsType(typ.Child)
 		result := "Record<string, " + child + ">"
 		return result
 	default:

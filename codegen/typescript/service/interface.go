@@ -60,22 +60,17 @@ func operationParamsTypeName(operation *spec.NamedOperation) string {
 	return operation.Name.PascalCase() + "Params"
 }
 
-func generateParamsMembers(w *writer.Writer, params []spec.NamedParam) {
-	for _, param := range params {
-		paramName := param.Name.CamelCase()
-		paramType := param.Type.Definition
-		if paramType.IsNullable() {
-			paramName = paramName + "?"
-		}
-		w.Line("  %s: %s,", paramName, types.TsType(&paramType))
-	}
-}
-
 func generateOperationParams(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line("export interface %s {", operationParamsTypeName(operation))
-	generateParamsMembers(w, operation.HeaderParams)
-	generateParamsMembers(w, operation.Endpoint.UrlParams)
-	generateParamsMembers(w, operation.QueryParams)
+	for _, param := range operation.HeaderParams {
+		w.Line("  %s,", types.ParamTsDeclaration(&param))
+	}
+	for _, param := range operation.Endpoint.UrlParams {
+		w.Line("  %s,", types.ParamTsDeclaration(&param))
+	}
+	for _, param := range operation.QueryParams {
+		w.Line("  %s,", types.ParamTsDeclaration(&param))
+	}
 	if !operation.Body.IsEmpty() {
 		w.Line("  body: %s,", types.RequestBodyTsType(&operation.Body))
 	}
