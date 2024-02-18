@@ -1,13 +1,11 @@
 package client
 
 import (
-	"fmt"
 	"strings"
 	"typescript/writer"
 
 	"generator"
 	"spec"
-	"typescript/types"
 	"typescript/validations"
 )
 
@@ -17,45 +15,6 @@ func getUrl(endpoint spec.Endpoint) string {
 		url = strings.Replace(url, spec.UrlParamStr(&param), "${stringify(parameters."+param.Name.CamelCase()+")}", -1)
 	}
 	return url
-}
-
-func operationSignature(operation *spec.NamedOperation) string {
-	return fmt.Sprintf(`%s: async (%s): Promise<%s>`, operation.Name.CamelCase(), createOperationParams(operation), responseType(operation))
-}
-
-func createParams(params []spec.NamedParam, required bool) []string {
-	tsParams := []string{}
-	for _, param := range params {
-		isRequired := param.Default == nil && !param.Type.Definition.IsNullable()
-		if isRequired == required {
-			requiredSign := ""
-			if !isRequired {
-				requiredSign = "?"
-			}
-			paramType := &param.Type.Definition
-			if !isRequired && !paramType.IsNullable() {
-				paramType = spec.Nullable(paramType)
-			}
-			tsParams = append(tsParams, param.Name.CamelCase()+requiredSign+": "+types.TsType(paramType))
-		}
-	}
-	return tsParams
-}
-
-func createOperationParams(operation *spec.NamedOperation) string {
-	operationParams := []string{}
-	operationParams = append(operationParams, createParams(operation.HeaderParams, true)...)
-	if operation.Body.IsText() || operation.Body.IsJson() {
-		operationParams = append(operationParams, "body: "+types.RequestBodyTsType(&operation.Body))
-	}
-	operationParams = append(operationParams, createParams(operation.Endpoint.UrlParams, true)...)
-	operationParams = append(operationParams, createParams(operation.QueryParams, true)...)
-	operationParams = append(operationParams, createParams(operation.HeaderParams, false)...)
-	operationParams = append(operationParams, createParams(operation.QueryParams, false)...)
-	if len(operationParams) == 0 {
-		return ""
-	}
-	return fmt.Sprintf("parameters: {%s}", strings.Join(operationParams, ", "))
 }
 
 type CommonGenerator struct {

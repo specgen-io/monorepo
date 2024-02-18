@@ -38,6 +38,10 @@ func (g *AxiosGenerator) ApiClient(api *spec.Api) *generator.CodeFile {
 	w.Line(`  }`)
 	w.Line(`}`)
 	for _, operation := range api.Operations {
+		if operation.Body.IsText() || operation.Body.IsJson() || operation.HasParams() {
+			w.EmptyLine()
+			generateOperationParams(w, &operation)
+		}
 		if len(operation.Responses.Success()) > 1 {
 			w.EmptyLine()
 			generateOperationResponse(w, &operation)
