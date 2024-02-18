@@ -158,7 +158,7 @@ func (g *expressGenerator) operationRouting(w *writer.Writer, operation *spec.Na
 	g.headerParsing(w, operation)
 	g.queryParsing(w, operation)
 	g.bodyParsing(w, operation)
-	w.Line(serviceCall(operation, getApiCallParamsObject(operation)))
+	serviceCall(w, operation)
 	g.responses(w, operation.Responses)
 	w.Unindent()
 	w.Line("} catch (error) {")
@@ -170,31 +170,28 @@ func (g *expressGenerator) operationRouting(w *writer.Writer, operation *spec.Na
 
 func (g *expressGenerator) urlParamsParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.Endpoint.UrlParams) > 0 {
-		w.Line("const urlParamsDecode = t.decodeR(%s, request.params)", g.Validation.RuntimeTypeName(urlParamsType(operation)))
-		w.Line("if (urlParamsDecode.error) {")
+		w.Line("const urlParams = t.decodeR(%s, request.params)", g.Validation.RuntimeTypeName(urlParamsType(operation)))
+		w.Line("if (urlParams.error) {")
 		g.respondNotFound(w.Indented(), "Failed to parse url parameters")
 		w.Line("}")
-		w.Line("const urlParams = urlParamsDecode.value")
 	}
 }
 
 func (g *expressGenerator) headerParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.HeaderParams) > 0 {
-		w.Line("const headerParamsDecode = t.decodeR(%s, zipHeaders(request.rawHeaders))", g.Validation.RuntimeTypeName(headersType(operation)))
-		w.Line("if (headerParamsDecode.error) {")
-		g.respondBadRequest(w.Indented(), "HEADER", "headerParamsDecode.error", "Failed to parse header")
+		w.Line("const headerParams = t.decodeR(%s, zipHeaders(request.rawHeaders))", g.Validation.RuntimeTypeName(headersType(operation)))
+		w.Line("if (headerParams.error) {")
+		g.respondBadRequest(w.Indented(), "HEADER", "headerParams.error", "Failed to parse header")
 		w.Line("}")
-		w.Line("const headerParams = headerParamsDecode.value")
 	}
 }
 
 func (g *expressGenerator) queryParsing(w *writer.Writer, operation *spec.NamedOperation) {
 	if len(operation.QueryParams) > 0 {
-		w.Line("const queryParamsDecode = t.decodeR(%s, request.query)", g.Validation.RuntimeTypeName(queryType(operation)))
-		w.Line("if (queryParamsDecode.error) {")
-		g.respondBadRequest(w.Indented(), "QUERY", "queryParamsDecode.error", "Failed to parse query")
+		w.Line("const queryParams = t.decodeR(%s, request.query)", g.Validation.RuntimeTypeName(queryType(operation)))
+		w.Line("if (queryParams.error) {")
+		g.respondBadRequest(w.Indented(), "QUERY", "queryParams.error", "Failed to parse query")
 		w.Line("}")
-		w.Line("const queryParams = queryParamsDecode.value")
 	}
 }
 

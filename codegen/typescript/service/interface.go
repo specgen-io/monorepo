@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"generator"
 	"spec"
-	"typescript/common"
 	"typescript/types"
 	"typescript/writer"
 )
@@ -63,7 +62,7 @@ func operationParamsTypeName(operation *spec.NamedOperation) string {
 
 func generateParamsMembers(w *writer.Writer, params []spec.NamedParam) {
 	for _, param := range params {
-		paramName := common.TSIdentifier(param.Name.Source)
+		paramName := param.Name.CamelCase()
 		paramType := param.Type.Definition
 		if paramType.IsNullable() {
 			paramName = paramName + "?"
