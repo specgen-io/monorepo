@@ -1,3 +1,3 @@
 #!/bin/bash +x
 
-export TEST_NO_FORM_DATA=false
+export TEST_NO_FORM_DATA=true
