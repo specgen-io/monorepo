@@ -18,12 +18,44 @@ export let echoService = () => {
         return params.body
     }
 
-    let echoFormData = async (): Promise<models.FormParameters> => {
-        return ({} as models.FormParameters)
+    let echoFormData = async (params: service.EchoFormDataParams): Promise<models.FormParameters> => {
+        return {
+            int_field: params.intParam,
+            long_field: params.longParam,
+            float_field: params.floatParam,
+            double_field: params.doubleParam,
+            decimal_field: params.decimalParam,
+            bool_field: params.boolParam,
+            string_field: params.stringParam,
+            string_opt_field: params.stringOptParam,
+            string_defaulted_field: params.stringDefaultedParam,
+            string_array_field: params.stringArrayParam,
+            uuid_field: params.uuidParam,
+            date_field: params.dateParam,
+            date_array_field: params.dateArrayParam,
+            datetime_field: params.datetimeParam,
+            enum_field: params.enumParam,
+        }
     }
 
-    let echoFormUrlencoded = async (): Promise<models.FormParameters> => {
-        return ({} as models.FormParameters)
+    let echoFormUrlencoded = async (params: service.EchoFormUrlencodedParams): Promise<models.FormParameters> => {
+        return {
+            int_field: params.intParam,
+            long_field: params.longParam,
+            float_field: params.floatParam,
+            double_field: params.doubleParam,
+            decimal_field: params.decimalParam,
+            bool_field: params.boolParam,
+            string_field: params.stringParam,
+            string_opt_field: params.stringOptParam,
+            string_defaulted_field: params.stringDefaultedParam,
+            string_array_field: params.stringArrayParam,
+            uuid_field: params.uuidParam,
+            date_field: params.dateParam,
+            date_array_field: params.dateArrayParam,
+            datetime_field: params.datetimeParam,
+            enum_field: params.enumParam,
+        }
     }
 
     let echoQuery = async (params: service.EchoQueryParams): Promise<models.Parameters> => {
