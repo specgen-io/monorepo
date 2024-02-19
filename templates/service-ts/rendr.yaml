@@ -55,6 +55,9 @@ args:
       cors:
         type: string
         default: ^2.8.5
+      connect-multiparty:
+        type: string
+        default: ^2.2.0
       express:
         type: string
         default: ^4.17.1

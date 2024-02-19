@@ -12,10 +12,20 @@ func parameterAssignment(source string, param *spec.NamedParam) string {
 
 func serviceCall(w *writer.Writer, operation *spec.NamedOperation) {
 	parameters := ""
-	if operation.Body.IsText() || operation.Body.IsJson() || operation.HasParams() {
+	if operation.Body.IsText() || operation.Body.IsJson() || operation.Body.IsBodyFormData() || operation.Body.IsBodyFormUrlEncoded() || operation.HasParams() {
 		w.Line("const parameters = {")
 		if operation.Body.IsText() || operation.Body.IsJson() {
 			w.Line("  body,")
+		}
+		if operation.Body.IsBodyFormData() {
+			for _, param := range operation.Body.FormData {
+				w.Line("  %s,", parameterAssignment("formDataParams.value", &param))
+			}
+		}
+		if operation.Body.IsBodyFormUrlEncoded() {
+			for _, param := range operation.Body.FormUrlEncoded {
+				w.Line("  %s,", parameterAssignment("formUrlEncodedParams.value", &param))
+			}
 		}
 		for _, param := range operation.Endpoint.UrlParams {
 			w.Line("  %s,", parameterAssignment("urlParams.value", &param))

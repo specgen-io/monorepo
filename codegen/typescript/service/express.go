@@ -76,9 +76,11 @@ func (g *expressGenerator) VersionRouting(version *spec.Version) *generator.Code
 
 	for _, api := range version.Http.Apis {
 		for _, operation := range api.Operations {
-			g.Validation.WriteParamsType(w, paramsTypeName(&operation, "HeaderParams"), operation.HeaderParams)
-			g.Validation.WriteParamsType(w, paramsTypeName(&operation, "UrlParams"), operation.Endpoint.UrlParams)
-			g.Validation.WriteParamsType(w, paramsTypeName(&operation, "QueryParams"), operation.QueryParams)
+			g.Validation.WriteParamsType(w, headersType(&operation), operation.HeaderParams)
+			g.Validation.WriteParamsType(w, urlParamsType(&operation), operation.Endpoint.UrlParams)
+			g.Validation.WriteParamsType(w, queryType(&operation), operation.QueryParams)
+			g.Validation.WriteParamsType(w, formDataType(&operation), operation.Body.FormData)
+			g.Validation.WriteParamsType(w, formUrlEncodedType(&operation), operation.Body.FormUrlEncoded)
 		}
 
 		g.apiRouting(w, &api)
@@ -196,6 +198,18 @@ func (g *expressGenerator) queryParsing(w *writer.Writer, operation *spec.NamedO
 }
 
 func (g *expressGenerator) bodyParsing(w *writer.Writer, operation *spec.NamedOperation) {
+	if operation.Body.IsBodyFormData() {
+		w.Line("const formDataParams = t.decodeR(%s, request.body)", g.Validation.RuntimeTypeName(formDataType(operation)))
+		w.Line("if (formDataParams.error) {")
+		g.respondBadRequest(w.Indented(), "BODY", "formDataParams.error", "Failed to parse body")
+		w.Line("}")
+	}
+	if operation.Body.IsBodyFormUrlEncoded() {
+		w.Line("const formUrlEncodedParams = t.decodeR(%s, request.body)", g.Validation.RuntimeTypeName(formUrlEncodedType(operation)))
+		w.Line("if (formUrlEncodedParams.error) {")
+		g.respondBadRequest(w.Indented(), "BODY", "formUrlEncodedParams.error", "Failed to parse body")
+		w.Line("}")
+	}
 	if operation.Body.IsText() {
 		w.Line(`const body: string = request.body`)
 	}

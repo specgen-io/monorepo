@@ -24,6 +24,14 @@ func queryType(operation *spec.NamedOperation) string {
 	return paramsTypeName(operation, "QueryParams")
 }
 
+func formDataType(operation *spec.NamedOperation) string {
+	return paramsTypeName(operation, "FormDataParams")
+}
+
+func formUrlEncodedType(operation *spec.NamedOperation) string {
+	return paramsTypeName(operation, "FormUrlEncodedParams")
+}
+
 func (g *Generator) ParamsStaticCode() *generator.CodeFile {
 	w := writer.New(g.Modules.Params)
 	w.Lines(`

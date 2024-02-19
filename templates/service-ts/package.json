@@ -12,6 +12,7 @@
   "dependencies": {
     {{#server.express}}
     "cors": "{{versions.cors.value}}",
+    "connect-multiparty": "{{versions.connect-multiparty.value}}",
     "express": "{{versions.express.value}}",
     {{#swagger.value}}
     "swagger-ui-express": "{{versions.swagger-ui-express.value}}",

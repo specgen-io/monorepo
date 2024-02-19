@@ -21,7 +21,7 @@ func (g *Generator) serviceApi(api *spec.Api) *generator.CodeFile {
 	w.Imports.Star(g.Modules.Models(api.InHttp.InVersion), types.ModelsPackage)
 	w.Imports.Star(g.Modules.ErrorsModels, types.ErrorsPackage)
 	for _, operation := range api.Operations {
-		if operation.Body.IsText() || operation.Body.IsJson() || operation.HasParams() {
+		if operation.Body.IsText() || operation.Body.IsJson() || operation.Body.IsBodyFormData() || operation.Body.IsBodyFormUrlEncoded() || operation.HasParams() {
 			w.EmptyLine()
 			generateOperationParams(w, &operation)
 		}
@@ -34,7 +34,7 @@ func (g *Generator) serviceApi(api *spec.Api) *generator.CodeFile {
 	w.Line("export interface %s {", serviceInterfaceName(api))
 	for _, operation := range api.Operations {
 		params := ""
-		if operation.Body.IsText() || operation.Body.IsJson() || operation.HasParams() {
+		if operation.Body.IsText() || operation.Body.IsJson() || operation.Body.IsBodyFormData() || operation.Body.IsBodyFormUrlEncoded() || operation.HasParams() {
 			params = fmt.Sprintf(`params: %s`, operationParamsTypeName(&operation))
 		}
 		w.Line("  %s(%s): Promise<%s>", operation.Name.CamelCase(), params, ResponseType(&operation, ""))
@@ -71,7 +71,17 @@ func generateOperationParams(w *writer.Writer, operation *spec.NamedOperation) {
 	for _, param := range operation.QueryParams {
 		w.Line("  %s,", types.ParamTsDeclaration(&param))
 	}
-	if !operation.Body.IsEmpty() {
+	if operation.Body.IsBodyFormData() {
+		for _, param := range operation.Body.FormData {
+			w.Line("  %s,", types.ParamTsDeclaration(&param))
+		}
+	}
+	if operation.Body.IsBodyFormUrlEncoded() {
+		for _, param := range operation.Body.FormUrlEncoded {
+			w.Line("  %s,", types.ParamTsDeclaration(&param))
+		}
+	}
+	if operation.Body.IsText() || operation.Body.IsJson() {
 		w.Line("  body: %s,", types.RequestBodyTsType(&operation.Body))
 	}
 	w.Line("}")
