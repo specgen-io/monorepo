@@ -3,13 +3,13 @@ package service
 import (
 	"fmt"
 	"generator"
-
 	"java/models"
 	"java/types"
 	"spec"
 )
 
 type ServerGenerator interface {
+	FilesImports() []string
 	ServiceImports() []string
 	ServiceImplAnnotation(api *spec.Api) (annotationImport, annotation string)
 	ServicesControllers(version *spec.Version) []generator.CodeFile
@@ -27,16 +27,18 @@ type Generator struct {
 }
 
 func NewGenerator(jsonlib, server string, packages *Packages) *Generator {
-	types := models.NewTypes(jsonlib)
-	models := models.NewGenerator(jsonlib, &(packages.Packages))
+	var types *types.Types
+	modelsGenerator := models.NewGenerator(jsonlib, &(packages.Packages))
 
 	var serverGenerator ServerGenerator = nil
 	switch server {
 	case Spring:
-		serverGenerator = NewSpringGenerator(types, models, packages)
+		types = models.NewTypes(jsonlib, "Resource", "Resource")
+		serverGenerator = NewSpringGenerator(types, modelsGenerator, packages)
 		break
 	case Micronaut:
-		serverGenerator = NewMicronautGenerator(types, models, packages)
+		types = models.NewTypes(jsonlib, "byte[]", "byte[]")
+		serverGenerator = NewMicronautGenerator(types, modelsGenerator, packages)
 		break
 	default:
 		panic(fmt.Sprintf(`Unsupported server: %s`, server))
@@ -44,7 +46,7 @@ func NewGenerator(jsonlib, server string, packages *Packages) *Generator {
 
 	return &Generator{
 		serverGenerator,
-		models,
+		modelsGenerator,
 		jsonlib,
 		types,
 		packages,

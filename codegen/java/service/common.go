@@ -4,13 +4,16 @@ import (
 	"spec"
 )
 
-func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) []string {
+func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, bodyBinaryVar string) []string {
 	methodParams := []string{}
 	if operation.Body.IsText() {
 		methodParams = append(methodParams, bodyStringVar)
 	}
 	if operation.Body.IsJson() {
 		methodParams = append(methodParams, bodyJsonVar)
+	}
+	if operation.Body.IsBinary() {
+		methodParams = append(methodParams, bodyBinaryVar)
 	}
 	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {

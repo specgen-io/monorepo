@@ -18,6 +18,7 @@ func (g *Generator) serviceImplementation(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.ServicesImpl(api.InHttp.InVersion), serviceImplName(api))
 	annotationImport, annotation := g.ServiceImplAnnotation(api)
 	w.Imports.Add(annotationImport)
+	w.Imports.Add(g.FilesImports()...)
 	w.Imports.Star(g.Packages.Models(api.InHttp.InVersion))
 	w.Imports.Star(g.Packages.ServicesApi(api))
 	w.Imports.Add(g.Types.Imports()...)

@@ -23,16 +23,18 @@ type Generator struct {
 }
 
 func NewGenerator(jsonlib string, client string, packages *Packages) *Generator {
-	types := models.NewTypes(jsonlib)
-	models := models.NewGenerator(jsonlib, &(packages.Packages))
+	var types *types.Types
+	modelsGenerator := models.NewGenerator(jsonlib, &(packages.Packages))
 
 	var clientGenerator ClientGenerator = nil
 	switch client {
 	case OkHttp:
-		clientGenerator = NewOkHttpGenerator(types, models, packages)
+		types = models.NewTypes(jsonlib, "byte[]", "Reader")
+		clientGenerator = NewOkHttpGenerator(types, modelsGenerator, packages)
 		break
 	case Micronaut:
-		clientGenerator = NewMicronautGenerator(types, models, packages)
+		types = models.NewTypes(jsonlib, "byte[]", "Reader")
+		clientGenerator = NewMicronautGenerator(types, modelsGenerator, packages)
 		break
 	default:
 		panic(fmt.Sprintf(`Unsupported client: %s`, client))
@@ -40,7 +42,7 @@ func NewGenerator(jsonlib string, client string, packages *Packages) *Generator 
 
 	return &Generator{
 		clientGenerator,
-		models,
+		modelsGenerator,
 		jsonlib,
 		types,
 		packages,

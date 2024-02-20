@@ -15,13 +15,12 @@ type Generator interface {
 	JsonRead(varJson string, typ *spec.TypeDef) string
 	JsonWrite(varData string, typ *spec.TypeDef) string
 	JsonHelpers() []generator.CodeFile
-
 	JsonMapperInit() string
 	JsonMapperType() string
 }
 
 func NewGenerator(jsonlib string, packages *Packages) Generator {
-	types := NewTypes(jsonlib)
+	types := NewTypes(jsonlib, "", "")
 	if jsonlib == Jackson {
 		return NewJacksonGenerator(types, packages)
 	}
@@ -31,12 +30,12 @@ func NewGenerator(jsonlib string, packages *Packages) Generator {
 	panic(fmt.Sprintf(`Unsupported jsonlib: %s`, jsonlib))
 }
 
-func NewTypes(jsonlib string) *types.Types {
+func NewTypes(jsonlib, requestBinaryType, responseBinaryType string) *types.Types {
 	if jsonlib == Jackson {
-		return &types.Types{RawJsonType: "JsonNode"}
+		return types.NewTypes("JsonNode", requestBinaryType, responseBinaryType)
 	}
 	if jsonlib == Moshi {
-		return &types.Types{RawJsonType: "Map<String, Object>"}
+		return types.NewTypes("Map<String, Object>", requestBinaryType, responseBinaryType)
 	}
-	panic(fmt.Sprintf(`Unsupported jsonlib: %s`, jsonlib))
+	panic(fmt.Sprintf(`Unsupported binary types: %s, %s`, requestBinaryType, responseBinaryType))
 }

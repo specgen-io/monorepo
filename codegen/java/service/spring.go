@@ -35,6 +35,13 @@ func (g *SpringGenerator) ServicesControllers(version *spec.Version) []generator
 	return files
 }
 
+func (g *SpringGenerator) FilesImports() []string {
+	return []string{
+		`org.springframework.core.io.Resource`,
+		`org.springframework.core.io.InputStreamResource`,
+	}
+}
+
 func (g *SpringGenerator) ServiceImports() []string {
 	return []string{
 		`org.apache.logging.log4j.*`,
@@ -51,7 +58,7 @@ func (g *SpringGenerator) ExceptionController(responses *spec.ErrorResponses) *g
 	w.Imports.Star(g.Packages.Json)
 	w.Imports.Star(g.Packages.ErrorsModels)
 	w.Imports.StaticStar(g.Packages.Errors.Subpackage(ErrorsHelpersClassName))
-	w.Imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
+	w.Imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.*`)
 	w.Line(`@ControllerAdvice`)
 	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  private static final Logger logger = LogManager.getLogger([[.ClassName]].class);`)
@@ -70,15 +77,15 @@ func (g *SpringGenerator) errorHandler(w *writer.Writer, errors spec.ErrorRespon
 	internalServerError := errors.GetByStatusName(spec.HttpStatusInternalServerError)
 	w.Line(`@ExceptionHandler(Throwable.class)`)
 	w.Line(`public ResponseEntity<String> error(Throwable exception) {`)
-	w.Line(`  var notFoundError = getNotFoundError(exception);`)
-	w.Line(`  if (notFoundError != null) {`)
+	w.Line(`	var notFoundError = getNotFoundError(exception);`)
+	w.Line(`	if (notFoundError != null) {`)
 	g.processResponse(w.IndentedWith(2), &notFoundError.Response, "notFoundError")
-	w.Line(`  }`)
-	w.Line(`  var badRequestError = getBadRequestError(exception);`)
-	w.Line(`  if (badRequestError != null) {`)
+	w.Line(`	}`)
+	w.Line(`	var badRequestError = getBadRequestError(exception);`)
+	w.Line(`	if (badRequestError != null) {`)
 	g.processResponse(w.IndentedWith(2), &badRequestError.Response, "badRequestError")
-	w.Line(`  }`)
-	w.Line(`  var internalServerError = new InternalServerError(exception.getMessage());`)
+	w.Line(`	}`)
+	w.Line(`	var internalServerError = new InternalServerError(exception.getMessage());`)
 	g.processResponse(w.IndentedWith(1), &internalServerError.Response, "internalServerError")
 	w.Line(`}`)
 }
@@ -86,6 +93,8 @@ func (g *SpringGenerator) errorHandler(w *writer.Writer, errors spec.ErrorRespon
 func (g *SpringGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Controllers(api.InHttp.InVersion), controllerName(api))
 	w.Imports.Add(g.ServiceImports()...)
+	w.Imports.Add(`org.springframework.core.io.Resource`)
+	w.Imports.Add(`org.springframework.core.io.InputStreamResource`)
 	w.Imports.Add(`javax.servlet.http.HttpServletRequest`)
 	w.Imports.Star(g.Packages.ContentType)
 	w.Imports.Star(g.Packages.Json)
@@ -94,7 +103,7 @@ func (g *SpringGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	w.Imports.Star(g.Packages.ServicesApi(api))
 	w.Imports.Add(g.Models.ModelsUsageImports()...)
 	w.Imports.Add(g.Types.Imports()...)
-	w.Imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
+	w.Imports.AddStatic(`org.apache.tomcat.util.http.fileupload.FileUploadBase.*`)
 	w.Line(`@RestController("%s")`, versionControllerName(controllerName(api), api.InHttp.InVersion))
 	w.Line(`public class [[.ClassName]] {`)
 	w.Line(`  private static final Logger logger = LogManager.getLogger([[.ClassName]].class);`)
@@ -116,50 +125,84 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, casee.ToPascalCase(methodName), url)
-	w.Line(`public ResponseEntity<String> %s(%s) {`, controllerMethodName(operation), strings.Join(springMethodParams(operation, g.Types), ", "))
+	w.Line(`public ResponseEntity<%s> %s(%s) {`, responseEntityType(operation), controllerMethodName(operation), strings.Join(springMethodParams(operation, g.Types), ", "))
 	w.Indent()
 	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	g.parseBody(w, operation, "bodyStr", "requestBody")
-	g.serviceCall(w, operation, "bodyStr", "requestBody", "result")
+	g.serviceCall(w, operation, "bodyStr", "requestBody", "resource", "result")
 	g.processResponses(w, operation, "result")
 	w.Unindent()
 	w.Line(`}`)
 }
 
+func responseEntityType(operation *spec.NamedOperation) string {
+	for _, response := range operation.Responses {
+		if response.Body.IsBinary() {
+			return "Resource"
+		}
+	}
+	return "String"
+}
+
 func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
 	if !operation.Body.IsEmpty() {
-		w.Line(`ContentType.check(request, %s);`, g.contentType(operation))
+		w.Line(`ContentType.check(request, %s);`, g.requestContentType(operation))
 	}
 	if operation.Body.IsJson() {
-		typ := g.Types.Java(&operation.Body.Type.Definition)
-		w.Line(`%s %s = json.%s;`, typ, bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+		w.Line(`%s %s = json.%s;`, g.Types.Java(&operation.Body.Type.Definition), bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+	}
+	if operation.Body.IsBinary() {
+		w.Line(`InputStreamResource resource;`)
+		w.Line(`try {`)
+		w.Line(`  resource = new InputStreamResource(request.getInputStream());`)
+		w.Line(`} catch (IOException e) {`)
+		w.Line(`  throw new RuntimeException("Servlet request didn't contain any resource");`)
+		w.Line(`}`)
 	}
 }
 
-func (g *SpringGenerator) contentType(operation *spec.NamedOperation) string {
-	if operation.Body.IsEmpty() {
+func (g *SpringGenerator) requestContentType(operation *spec.NamedOperation) string {
+	switch operation.Body.Kind() {
+	case spec.BodyEmpty:
 		return ""
-	} else if operation.Body.IsText() {
+	case spec.BodyText:
 		return `MediaType.TEXT_PLAIN`
-	} else if operation.Body.IsJson() {
+	case spec.BodyJson:
 		return `MediaType.APPLICATION_JSON`
-	} else if operation.Body.IsBodyFormData() {
+	case spec.BodyBinary:
+		return `MediaType.APPLICATION_OCTET_STREAM`
+	case spec.BodyFormData:
 		return `MediaType.MULTIPART_FORM_DATA`
-	} else if operation.Body.IsBodyFormUrlEncoded() {
+	case spec.BodyFormUrlEncoded:
 		return `MediaType.APPLICATION_FORM_URLENCODED`
-	} else {
+	default:
 		panic(fmt.Sprintf("Unknown Content Type"))
 	}
 }
 
-func (g *SpringGenerator) serviceCall(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), strings.Join(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar), ", "))
+func (g *SpringGenerator) responseContentType(response *spec.Response) string {
+	switch response.Body.Kind() {
+	case spec.BodyEmpty:
+		return ""
+	case spec.BodyText:
+		return `MediaType.TEXT_PLAIN_VALUE`
+	case spec.BodyJson:
+		return `MediaType.APPLICATION_JSON_VALUE`
+	case spec.BodyBinary:
+		return `MediaType.APPLICATION_OCTET_STREAM_VALUE`
+	default:
+		panic(fmt.Sprintf("Unknown Content Type"))
+	}
+}
+
+func (g *SpringGenerator) serviceCall(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, bodyBinaryVar, resultVarName string) {
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), strings.Join(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar, bodyBinaryVar), ", "))
 	if len(operation.Responses) == 1 && operation.Responses[0].Body.IsEmpty() {
 		w.Line(`%s;`, serviceCall)
 	} else {
 		w.Line(`var %s = %s;`, resultVarName, serviceCall)
 		w.Line(`if (%s == null) {`, resultVarName)
-		w.Line(`  throw new RuntimeException("Service responseImpl didn't return any value'");`)
+		w.Line(`  throw new RuntimeException("Service responseImpl didn't return any value");`)
 		w.Line(`}`)
 	}
 }
@@ -170,12 +213,12 @@ func (g *SpringGenerator) processResponses(w *writer.Writer, operation *spec.Nam
 	}
 	if len(operation.Responses) > 1 {
 		for _, response := range operation.Responses {
-			w.Line(`if (result instanceof %s.%s) {`, responseInterfaceName(operation), response.Name.PascalCase())
+			w.Line(`if (%s instanceof %s.%s) {`, resultVarName, responseInterfaceName(operation), response.Name.PascalCase())
 			g.processResponse(w.Indented(), &response.Response, getResponseBody(&response, resultVarName))
 			w.Line(`}`)
 		}
 		w.EmptyLine()
-		w.Line(`throw new RuntimeException("Service responseImpl didn't return any value'");`)
+		w.Line(`throw new RuntimeException("Service responseImpl didn't return any value");`)
 	}
 }
 
@@ -183,19 +226,15 @@ func (g *SpringGenerator) processResponse(w *writer.Writer, response *spec.Respo
 	if response.Body.IsEmpty() {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return new ResponseEntity<>(HttpStatus.%s);`, response.Name.UpperCase())
-	}
-	if response.Body.IsText() {
+	} else {
+		if response.Body.IsJson() {
+			w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Body.Type.Definition))
+			bodyVar = "bodyJson"
+		}
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
-		w.Line(`headers.add(CONTENT_TYPE, "text/plain");`)
+		w.Line(`headers.add(CONTENT_TYPE, %s);`, g.responseContentType(response))
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, bodyVar, response.Name.UpperCase())
-	}
-	if response.Body.IsJson() {
-		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Body.Type.Definition))
-		w.Line(`HttpHeaders headers = new HttpHeaders();`)
-		w.Line(`headers.add(CONTENT_TYPE, "application/json");`)
-		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
-		w.Line(`return new ResponseEntity<>(bodyJson, headers, HttpStatus.%s);`, response.Name.UpperCase())
 	}
 }
 
@@ -226,9 +265,9 @@ import javax.servlet.http.HttpServletRequest;
 
 public class ContentType {
 	public static void check(HttpServletRequest request, MediaType expectedContentType) {
-		var contentType = request.getHeader("Content-Type");
-		if (contentType == null || !contentType.contains(expectedContentType.toString())) {
-			throw new ContentTypeMismatchException(expectedContentType.toString(), contentType);
+		var requestContentType = request.getHeader("Content-Type");
+		if (requestContentType == null || !requestContentType.contains(expectedContentType.toString())) {
+			throw new ContentTypeMismatchException(expectedContentType.toString(), requestContentType);
 		}
 	}
 }
@@ -258,50 +297,50 @@ import [[.JsonPackage]].*;
 import static [[.ErrorsPackage]].ValidationErrorsHelpers.extractValidationErrors;
 
 public class [[.ClassName]] {
-    private static final NotFoundError NOT_FOUND_ERROR = new NotFoundError("Failed to parse url parameters");
+	private static final NotFoundError NOT_FOUND_ERROR = new NotFoundError("Failed to parse url parameters");
 
-    public static NotFoundError getNotFoundError(Throwable exception) {
-        if (exception instanceof MethodArgumentTypeMismatchException) {
-            var e = (MethodArgumentTypeMismatchException) exception;
-            if (e.getParameter().hasParameterAnnotation(PathVariable.class)) {
-                return NOT_FOUND_ERROR;
-            }
-        }
-        return null;
-    }
+	public static NotFoundError getNotFoundError(Throwable exception) {
+		if (exception instanceof MethodArgumentTypeMismatchException) {
+			var e = (MethodArgumentTypeMismatchException) exception;
+			if (e.getParameter().hasParameterAnnotation(PathVariable.class)) {
+				return NOT_FOUND_ERROR;
+			}
+		}
+		return null;
+	}
 
-    public static BadRequestError getBadRequestError(Throwable exception) {
-        if (exception instanceof JsonParseException) {
-            var errors = extractValidationErrors((JsonParseException)exception);
-            return new BadRequestError("Failed to parse body", ErrorLocation.BODY, errors);
-        }
-        if (exception instanceof ContentTypeMismatchException) {
-            var error = new ValidationError("Content-Type", "missing", exception.getMessage());
-            return new BadRequestError("Failed to parse header", ErrorLocation.HEADER, List.of(error));
-        }
-        if (exception instanceof MissingServletRequestParameterException) {
-            var e = (MissingServletRequestParameterException) exception;
-            var message = "Failed to parse parameters";
-            var validation = new ValidationError(e.getParameterName(), "missing", e.getMessage());
-            return new BadRequestError(message, ErrorLocation.PARAMETERS, List.of(validation));
-        }
-        if (exception instanceof MethodArgumentTypeMismatchException) {
-            var e = (MethodArgumentTypeMismatchException) exception;
-            var validation = new ValidationError(e.getName(), "parsing_failed", e.getMessage());
-            if (e.getParameter().hasParameterAnnotation(RequestParam.class)) {
-                return new BadRequestError("Failed to parse parameters", ErrorLocation.PARAMETERS, List.of(validation));
-            } else if (e.getParameter().hasParameterAnnotation(RequestHeader.class)) {
-                return new BadRequestError("Failed to parse header", ErrorLocation.HEADER, List.of(validation));
-            }
-        }
-        if (exception instanceof MissingRequestHeaderException) {
-            var e = (MissingRequestHeaderException) exception;
-            var message = "Failed to parse header";
-            var validation = new ValidationError(e.getHeaderName(), "missing", e.getMessage());
-            return new BadRequestError(message, ErrorLocation.HEADER, List.of(validation));
-        }
-        return null;
-    }
+	public static BadRequestError getBadRequestError(Throwable exception) {
+		if (exception instanceof JsonParseException) {
+			var errors = extractValidationErrors((JsonParseException) exception);
+			return new BadRequestError("Failed to parse body", ErrorLocation.BODY, errors);
+		}
+		if (exception instanceof ContentTypeMismatchException) {
+			var error = new ValidationError("Content-Type", "missing", exception.getMessage());
+			return new BadRequestError("Failed to parse header", ErrorLocation.HEADER, List.of(error));
+		}
+		if (exception instanceof MissingServletRequestParameterException) {
+			var e = (MissingServletRequestParameterException) exception;
+			var message = "Failed to parse parameters";
+			var validation = new ValidationError(e.getParameterName(), "missing", e.getMessage());
+			return new BadRequestError(message, ErrorLocation.PARAMETERS, List.of(validation));
+		}
+		if (exception instanceof MethodArgumentTypeMismatchException) {
+			var e = (MethodArgumentTypeMismatchException) exception;
+			var validation = new ValidationError(e.getName(), "parsing_failed", e.getMessage());
+			if (e.getParameter().hasParameterAnnotation(RequestParam.class)) {
+				return new BadRequestError("Failed to parse parameters", ErrorLocation.PARAMETERS, List.of(validation));
+			} else if (e.getParameter().hasParameterAnnotation(RequestHeader.class)) {
+				return new BadRequestError("Failed to parse header", ErrorLocation.HEADER, List.of(validation));
+			}
+		}
+		if (exception instanceof MissingRequestHeaderException) {
+			var e = (MissingRequestHeaderException) exception;
+			var message = "Failed to parse header";
+			var validation = new ValidationError(e.getHeaderName(), "missing", e.getMessage());
+			return new BadRequestError(message, ErrorLocation.HEADER, List.of(validation));
+		}
+		return null;
+	}
 }
 `)
 	return w.ToCodeFile()

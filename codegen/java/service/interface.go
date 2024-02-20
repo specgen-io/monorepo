@@ -26,6 +26,7 @@ func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFi
 func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.ServicesApi(api), serviceInterfaceName(api))
 	w.Imports.Add(g.Types.Imports()...)
+	w.Imports.Add(g.FilesImports()...)
 	w.Imports.Star(g.Packages.Models(api.InHttp.InVersion))
 	w.Line(`public interface [[.ClassName]] {`)
 	for _, operation := range api.Operations {
@@ -49,26 +50,23 @@ func operationSignature(types *types.Types, operation *spec.NamedOperation) stri
 
 func operationParameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
-	if operation.Body.IsText() || operation.Body.IsJson() {
-		params = append(params, fmt.Sprintf("%s body", types.Java(&operation.Body.Type.Definition)))
+	if operation.Body.IsText() || operation.Body.IsBinary() || operation.Body.IsJson() {
+		params = append(params, fmt.Sprintf("%s body", types.RequestBodyJavaType(&operation.Body)))
 	}
 	if operation.Body.IsBodyFormData() {
-		for _, param := range operation.Body.FormData {
-			params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
-		}
+		params = appendParams(types, params, operation.Body.FormData)
 	}
 	if operation.Body.IsBodyFormUrlEncoded() {
-		for _, param := range operation.Body.FormUrlEncoded {
-			params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
-		}
+		params = appendParams(types, params, operation.Body.FormUrlEncoded)
 	}
-	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
-	}
-	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
-	}
-	for _, param := range operation.Endpoint.UrlParams {
+	params = appendParams(types, params, operation.QueryParams)
+	params = appendParams(types, params, operation.HeaderParams)
+	params = appendParams(types, params, operation.Endpoint.UrlParams)
+	return params
+}
+
+func appendParams(types *types.Types, params []string, namedParams []spec.NamedParam) []string {
+	for _, param := range namedParams {
 		params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
 	}
 	return params
