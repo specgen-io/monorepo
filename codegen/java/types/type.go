@@ -5,15 +5,50 @@ import (
 	"spec"
 )
 
+const TextType = `String`
+const EmptyType = `void`
+
 type Types struct {
 	RawJsonType string
+	BinaryType  BinaryType
 }
 
-func (t *Types) ResponseBodyJavaType(body *spec.ResponseBody) string {
-	if body.IsEmpty() {
-		return "void"
-	} else {
-		return t.Java(&body.Type.Definition)
+type BinaryType struct {
+	RequestType  string
+	ResponseType string
+}
+
+func NewTypes(rawJsonType, requestBinaryType, responseBinaryType string) *Types {
+	return &Types{RawJsonType: rawJsonType, BinaryType: BinaryType{RequestType: requestBinaryType, ResponseType: responseBinaryType}}
+}
+
+func (types *Types) RequestBodyJavaType(body *spec.RequestBody) string {
+	switch body.Kind() {
+	case spec.BodyBinary:
+		return types.BinaryType.RequestType
+	case spec.BodyText:
+		return TextType
+	case spec.BodyEmpty:
+		return EmptyType
+	case spec.BodyJson:
+		return types.Java(&body.Type.Definition)
+	default:
+		panic(fmt.Sprintf("Unknown response body kind: %v", body.Kind()))
+	}
+}
+
+func (types *Types) ResponseBodyJavaType(body *spec.ResponseBody) string {
+	switch body.Kind() {
+	case spec.BodyBinary:
+		return types.BinaryType.ResponseType
+	case spec.BodyText:
+		return TextType
+	case spec.BodyEmpty:
+		return EmptyType
+	case spec.BodyJson:
+		return types.Java(&body.Type.Definition)
+	default:
+		panic(fmt.Sprintf("Unknown response body kind: %v", body.Kind()))
 	}
 }
 

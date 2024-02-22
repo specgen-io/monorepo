@@ -96,17 +96,38 @@ func (g *OkHttpGenerator) createUrl(w *writer.Writer, operation *spec.NamedOpera
 	}
 }
 
+func (g *OkHttpGenerator) requestContentType(operation *spec.NamedOperation) string {
+	switch operation.Body.Kind() {
+	case spec.BodyEmpty:
+		return ""
+	case spec.BodyText:
+		return `text/plain`
+	case spec.BodyJson:
+		return `application/json`
+	case spec.BodyBinary:
+		return `application/octet-stream`
+	case spec.BodyFormData:
+		return `multipart/form-data`
+	case spec.BodyFormUrlEncoded:
+		return ""
+	default:
+		panic(fmt.Sprintf("Unknown Content Type"))
+	}
+}
+
 func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
 	requestBody := "null"
 	w.EmptyLine()
-	if operation.Body.IsText() {
-		w.Line(`var requestBody = RequestBody.create(body, MediaType.parse("text/plain"));`)
+	if operation.Body.IsText() || operation.Body.IsBinary() {
+		w.Line(`var requestBody = RequestBody.create(body, MediaType.parse("%s"));`, g.requestContentType(operation))
 		requestBody = "requestBody"
+		w.EmptyLine()
 	}
 	if operation.Body.IsJson() {
 		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite("body", &operation.Body.Type.Definition))
-		w.Line(`var requestBody = RequestBody.create(bodyJson, MediaType.parse("application/json"));`)
+		w.Line(`var requestBody = RequestBody.create(bodyJson, MediaType.parse("%s"));`, g.requestContentType(operation))
 		requestBody = "requestBody"
+		w.EmptyLine()
 	}
 	if operation.Body.IsBodyFormData() {
 		w.Line(`var body = new MultipartBodyBuilder(MultipartBody.FORM);`)
@@ -114,6 +135,7 @@ func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedO
 			w.Line(`body.addFormDataPart("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
 		}
 		requestBody = "body.build()"
+		w.EmptyLine()
 	}
 	if operation.Body.IsBodyFormUrlEncoded() {
 		w.Line(`var body = new UrlencodedFormBodyBuilder();`)
@@ -121,8 +143,9 @@ func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedO
 			w.Line(`body.add("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
 		}
 		requestBody = "body.build()"
+		w.EmptyLine()
 	}
-	w.EmptyLine()
+
 	w.Line(`var request = new RequestBuilder("%s", url.build(), %s);`, operation.Endpoint.Method, requestBody)
 	for _, param := range operation.HeaderParams {
 		w.Line(`request.addHeaderParameter("%s", %s);`, param.Name.Source, param.Name.CamelCase())
@@ -177,6 +200,9 @@ func (g *OkHttpGenerator) successResponse(response *spec.OperationResponse) stri
 	if response.Body.IsJson() {
 		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().charStream()`, &response.Body.Type.Definition)))
 	}
+	if response.Body.IsBinary() {
+		return responseCreate(response, "response.body().charStream()")
+	}
 	return responseCreate(response, "")
 }
 
@@ -187,6 +213,9 @@ func (g *OkHttpGenerator) errorResponse(response *spec.Response) string {
 	}
 	if response.Body.IsJson() {
 		responseBody = fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().charStream()`, &response.Body.Type.Definition))
+	}
+	if response.Body.IsBinary() {
+		responseBody = "response.body().charStream()"
 	}
 	return fmt.Sprintf(`throw new %s(%s);`, errorExceptionClassName(response), responseBody)
 }
@@ -215,18 +244,16 @@ public class [[.ClassName]] {
 		this.requestBuilder = new Request.Builder().url(url).method(method, body);
 	}
 
-	public [[.ClassName]] addHeaderParameter(String name, Object value) {
+	public void addHeaderParameter(String name, Object value) {
 		if (value != null) {
 			this.requestBuilder.addHeader(name, String.valueOf(value));
 		}
-		return this;
 	}
 
-	public <T> [[.ClassName]] addHeaderParameter(String name, List<T> values) {
+	public <T> void addHeaderParameter(String name, List<T> values) {
 		for (T val : values) {
 			this.addHeaderParameter(name, val);
 		}
-		return this;
 	}
 
 	public Request build() {
@@ -250,28 +277,24 @@ public class [[.ClassName]] {
 		this.urlBuilder = HttpUrl.get(baseUrl).newBuilder();
 	}
 
-	public [[.ClassName]] addQueryParameter(String name, Object value) {
+	public void addQueryParameter(String name, Object value) {
 		if (value != null) {
 			this.urlBuilder.addQueryParameter(name, String.valueOf(value));
 		}
-		return this;
 	}
 
-	public <T> [[.ClassName]] addQueryParameter(String name, List<T> values) {
+	public <T> void addQueryParameter(String name, List<T> values) {
 		for (T val : values) {
 			this.addQueryParameter(name, val);
 		}
-		return this;
 	}
 
-	public [[.ClassName]] addPathSegments(String value) {
+	public void addPathSegments(String value) {
 		this.urlBuilder.addPathSegments(value);
-		return this;
 	}
 
-	public [[.ClassName]] addPathParameter(Object value) {
+	public void addPathParameter(Object value) {
 		this.urlBuilder.addPathSegment(String.valueOf(value));
-		return this;
 	}
 
 	public HttpUrl build() {
@@ -285,29 +308,37 @@ public class [[.ClassName]] {
 func (g *OkHttpGenerator) multipartBodyBuilder() *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `MultipartBodyBuilder`)
 	w.Lines(`
+import java.io.File;
 import java.util.List;
 import okhttp3.*;
-import okhttp3.MultipartBody.Part;
 
 public class [[.ClassName]] {
+	private final MediaType contentType;
 	private final MultipartBody.Builder multipartBodyBuilder;
 
-	public [[.ClassName]](MediaType type) {
-		this.multipartBodyBuilder = new MultipartBody.Builder().setType(type);
+	public MultipartBodyBuilder(MediaType contentType) {
+		this.contentType = contentType;
+		this.multipartBodyBuilder = new MultipartBody.Builder().setType(contentType);
 	}
 
-	public [[.ClassName]] addFormDataPart(String name, Object value) {
+	public void addFormDataPart(String name, Object value) {
 		if (value != null) {
-			this.multipartBodyBuilder.addPart(Part.createFormData(name, String.valueOf(value)));
+			this.multipartBodyBuilder.addFormDataPart(name, String.valueOf(value));
 		}
-		return this;
 	}
 
-	public <T> [[.ClassName]] addFormDataPart(String name, List<T> values) {
+	public <T> void addFormDataPart(String name, List<T> values) {
 		for (T val : values) {
-			this.multipartBodyBuilder.addPart(Part.createFormData(name, String.valueOf(val)));
+			this.multipartBodyBuilder.addFormDataPart(name, String.valueOf(val));
 		}
-		return this;
+	}
+
+	public void addFormDataPart(String fieldName, File file) {
+		this.multipartBodyBuilder.addFormDataPart(fieldName, file.getName(), RequestBody.create(file, this.contentType));
+	}
+
+	public void addFormDataPart(String fieldName, String fileName, byte[] file) {
+		this.multipartBodyBuilder.addFormDataPart(fieldName, fileName, RequestBody.create(file, this.contentType));
 	}
 
 	public MultipartBody build() {
@@ -331,18 +362,16 @@ public class [[.ClassName]] {
 		this.formBodyBuilder = new FormBody.Builder();
 	}
 
-	public [[.ClassName]] add(String name, Object value) {
+	public void add(String name, Object value) {
 		if (value != null) {
 			this.formBodyBuilder.add(name, String.valueOf(value));
 		}
-		return this;
 	}
 
-	public <T> [[.ClassName]] add(String name, List<T> values) {
+	public <T> void add(String name, List<T> values) {
 		for (T val : values) {
 			this.formBodyBuilder.add(name, String.valueOf(val));
 		}
-		return this;
 	}
 
 	public FormBody build() {

@@ -39,6 +39,10 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version) []genera
 	return files
 }
 
+func (g *MicronautGenerator) FilesImports() []string {
+	return nil
+}
+
 func (g *MicronautGenerator) ServiceImports() []string {
 	return []string{
 		`org.slf4j.*`,
@@ -116,7 +120,7 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 
 func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.NamedOperation) {
 	if !operation.Body.IsEmpty() {
-		w.Line(`@Consumes(%s)`, g.contentType(operation))
+		w.Line(`@Consumes(%s)`, g.requestContentType(operation))
 	}
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
@@ -127,7 +131,7 @@ func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.
 	generateDefaultedFormParam(w, operation.Body.FormUrlEncoded)
 	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s");`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	g.parseBody(w, operation, "bodyStr", "requestBody")
-	g.serviceCall(w, operation, "bodyStr", "requestBody", "result")
+	g.serviceCall(w, operation, "bodyStr", "requestBody", "file", "result")
 	g.processResponses(w, operation, "result")
 	w.Unindent()
 	w.Line(`}`)
@@ -147,38 +151,55 @@ func generateDefaultedFormParam(w *writer.Writer, namedParams []spec.NamedParam)
 
 func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
 	if !operation.Body.IsEmpty() {
-		w.Line(`ContentType.check(request, %s);`, g.contentType(operation))
+		w.Line(`ContentType.check(request, %s);`, g.requestContentType(operation))
 	}
 	if operation.Body.IsJson() {
-		typ := g.Types.Java(&operation.Body.Type.Definition)
-		w.Line(`%s %s = json.%s;`, typ, bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
+		w.Line(`%s %s = json.%s;`, g.Types.Java(&operation.Body.Type.Definition), bodyJsonVar, g.Models.JsonRead(bodyStringVar, &operation.Body.Type.Definition))
 	}
 }
 
-func (g *MicronautGenerator) contentType(operation *spec.NamedOperation) string {
-	if operation.Body.IsEmpty() {
+func (g *MicronautGenerator) requestContentType(operation *spec.NamedOperation) string {
+	switch operation.Body.Kind() {
+	case spec.BodyEmpty:
 		return ""
-	} else if operation.Body.IsText() {
+	case spec.BodyText:
 		return `MediaType.TEXT_PLAIN`
-	} else if operation.Body.IsJson() {
+	case spec.BodyJson:
 		return `MediaType.APPLICATION_JSON`
-	} else if operation.Body.IsBodyFormData() {
+	case spec.BodyBinary:
+		return `MediaType.APPLICATION_OCTET_STREAM`
+	case spec.BodyFormData:
 		return `MediaType.MULTIPART_FORM_DATA`
-	} else if operation.Body.IsBodyFormUrlEncoded() {
+	case spec.BodyFormUrlEncoded:
 		return `MediaType.APPLICATION_FORM_URLENCODED`
-	} else {
+	default:
 		panic(fmt.Sprintf("Unknown Content Type"))
 	}
 }
 
-func (g *MicronautGenerator) serviceCall(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string) {
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), strings.Join(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar), ", "))
+func (g *MicronautGenerator) responseContentType(response *spec.Response) string {
+	switch response.Body.Kind() {
+	case spec.BodyEmpty:
+		return ""
+	case spec.BodyText:
+		return `MediaType.TEXT_PLAIN`
+	case spec.BodyJson:
+		return `MediaType.APPLICATION_JSON`
+	case spec.BodyBinary:
+		return `MediaType.APPLICATION_OCTET_STREAM`
+	default:
+		panic(fmt.Sprintf("Unknown Content Type"))
+	}
+}
+
+func (g *MicronautGenerator) serviceCall(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, bodyBinaryVar, resultVarName string) {
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), strings.Join(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar, bodyBinaryVar), ", "))
 	if len(operation.Responses) == 1 && operation.Responses[0].Body.IsEmpty() {
 		w.Line(`%s;`, serviceCall)
 	} else {
 		w.Line(`var %s = %s;`, resultVarName, serviceCall)
 		w.Line(`if (%s == null) {`, resultVarName)
-		w.Line(`  throw new RuntimeException("Service responseImpl didn't return any value'");`)
+		w.Line(`  throw new RuntimeException("Service responseImpl didn't return any value");`)
 		w.Line(`}`)
 	}
 }
@@ -194,7 +215,7 @@ func (g *MicronautGenerator) processResponses(w *writer.Writer, operation *spec.
 			w.Line(`}`)
 		}
 		w.EmptyLine()
-		w.Line(`throw new RuntimeException("Service responseImpl didn't return any value'");`)
+		w.Line(`throw new RuntimeException("Service responseImpl didn't return any value");`)
 	}
 }
 
@@ -202,15 +223,13 @@ func (g *MicronautGenerator) processResponse(w *writer.Writer, response *spec.Re
 	if response.Body.IsEmpty() {
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status(HttpStatus.%s);`, response.Name.UpperCase())
-	}
-	if response.Body.IsText() {
+	} else {
+		if response.Body.IsJson() {
+			w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Body.Type.Definition))
+			bodyVar = "bodyJson"
+		}
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
-		w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s).contentType("text/plain");`, response.Name.UpperCase(), bodyVar)
-	}
-	if response.Body.IsJson() {
-		w.Line(`var bodyJson = json.%s;`, g.Models.JsonWrite(bodyVar, &response.Body.Type.Definition))
-		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
-		w.Line(`return HttpResponse.status(HttpStatus.%s).body(bodyJson).contentType("application/json");`, response.Name.UpperCase())
+		w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s).contentType(%s);`, response.Name.UpperCase(), bodyVar, g.responseContentType(response))
 	}
 }
 
@@ -369,7 +388,9 @@ func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) [
 	if operation.Body.IsText() || operation.Body.IsJson() {
 		methodParams = append(methodParams, "@Body String bodyStr")
 	}
-
+	if operation.Body.IsBinary() {
+		methodParams = append(methodParams, fmt.Sprintf("@Body %s file", types.RequestBodyJavaType(&operation.Body)))
+	}
 	methodParams = append(methodParams, generateMicronautMethodParam(operation.Body.FormData, "Part", false, types)...)
 	methodParams = append(methodParams, generateMicronautMethodParam(operation.Body.FormUrlEncoded, "Part", false, types)...)
 	methodParams = append(methodParams, generateMicronautMethodParam(operation.QueryParams, "QueryValue", true, types)...)
