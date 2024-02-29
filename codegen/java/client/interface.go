@@ -41,7 +41,10 @@ func operationParameters(operation *spec.NamedOperation, types *types.Types) []s
 
 func appendParams(types *types.Types, params []string, namedParams []spec.NamedParam) []string {
 	for _, param := range namedParams {
-		params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
+		if param.Type.Definition.String() == spec.TypeFile {
+			params = append(params, "String fileName")
+		}
+		params = append(params, fmt.Sprintf("%s %s", types.ParamJavaType(&param), param.Name.CamelCase()))
 	}
 	return params
 }

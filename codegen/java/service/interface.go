@@ -2,12 +2,11 @@ package service
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
 	"java/types"
 	"java/writer"
 	"spec"
+	"strings"
 )
 
 func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFile {
@@ -67,7 +66,7 @@ func operationParameters(operation *spec.NamedOperation, types *types.Types) []s
 
 func appendParams(types *types.Types, params []string, namedParams []spec.NamedParam) []string {
 	for _, param := range namedParams {
-		params = append(params, fmt.Sprintf("%s %s", types.Java(&param.Type.Definition), param.Name.CamelCase()))
+		params = append(params, fmt.Sprintf("%s %s", types.ParamJavaType(&param), param.Name.CamelCase()))
 	}
 	return params
 }

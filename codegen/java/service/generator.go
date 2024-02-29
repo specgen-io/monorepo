@@ -33,11 +33,11 @@ func NewGenerator(jsonlib, server string, packages *Packages) *Generator {
 	var serverGenerator ServerGenerator = nil
 	switch server {
 	case Spring:
-		types = models.NewTypes(jsonlib, "Resource", "Resource")
+		types = models.NewTypes(jsonlib, "Resource", "Resource", "MultipartFile", "Resource")
 		serverGenerator = NewSpringGenerator(types, modelsGenerator, packages)
 		break
 	case Micronaut:
-		types = models.NewTypes(jsonlib, "byte[]", "byte[]")
+		types = models.NewTypes(jsonlib, "byte[]", "byte[]", "CompletedFileUpload", "StreamedFile")
 		serverGenerator = NewMicronautGenerator(types, modelsGenerator, packages)
 		break
 	default:

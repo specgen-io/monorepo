@@ -29,11 +29,11 @@ func NewGenerator(jsonlib string, client string, packages *Packages) *Generator 
 	var clientGenerator ClientGenerator = nil
 	switch client {
 	case OkHttp:
-		types = models.NewTypes(jsonlib, "byte[]", "Reader")
+		types = models.NewTypes(jsonlib, "byte[]", "Reader", "byte[]", "Reader")
 		clientGenerator = NewOkHttpGenerator(types, modelsGenerator, packages)
 		break
 	case Micronaut:
-		types = models.NewTypes(jsonlib, "byte[]", "Reader")
+		types = models.NewTypes(jsonlib, "byte[]", "Reader", "byte[]", "Reader")
 		clientGenerator = NewMicronautGenerator(types, modelsGenerator, packages)
 		break
 	default:

@@ -39,6 +39,8 @@ func (g *SpringGenerator) FilesImports() []string {
 	return []string{
 		`org.springframework.core.io.Resource`,
 		`org.springframework.core.io.InputStreamResource`,
+		`org.springframework.web.multipart.MultipartFile`,
+		`java.net.URLConnection`,
 	}
 }
 
@@ -93,8 +95,7 @@ func (g *SpringGenerator) errorHandler(w *writer.Writer, errors spec.ErrorRespon
 func (g *SpringGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Controllers(api.InHttp.InVersion), controllerName(api))
 	w.Imports.Add(g.ServiceImports()...)
-	w.Imports.Add(`org.springframework.core.io.Resource`)
-	w.Imports.Add(`org.springframework.core.io.InputStreamResource`)
+	w.Imports.Add(g.FilesImports()...)
 	w.Imports.Add(`javax.servlet.http.HttpServletRequest`)
 	w.Imports.Star(g.Packages.ContentType)
 	w.Imports.Star(g.Packages.Json)
@@ -137,7 +138,7 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 
 func responseEntityType(operation *spec.NamedOperation) string {
 	for _, response := range operation.Responses {
-		if response.Body.IsBinary() {
+		if response.Body.IsBinary() || response.Body.IsFile() {
 			return "Resource"
 		}
 	}
@@ -190,6 +191,8 @@ func (g *SpringGenerator) responseContentType(response *spec.Response) string {
 		return `MediaType.APPLICATION_JSON_VALUE`
 	case spec.BodyBinary:
 		return `MediaType.APPLICATION_OCTET_STREAM_VALUE`
+	case spec.BodyFile:
+		return `URLConnection.getFileNameMap().getContentTypeFor(fileName)`
 	default:
 		panic(fmt.Sprintf("Unknown Content Type"))
 	}
@@ -232,6 +235,10 @@ func (g *SpringGenerator) processResponse(w *writer.Writer, response *spec.Respo
 			bodyVar = "bodyJson"
 		}
 		w.Line(`HttpHeaders headers = new HttpHeaders();`)
+		if response.Body.IsFile() {
+			w.Line(`String fileName = %s.getFilename();`, bodyVar)
+			w.Line(`headers.add(CONTENT_DISPOSITION, "attachment; filename=" + fileName);`)
+		}
 		w.Line(`headers.add(CONTENT_TYPE, %s);`, g.responseContentType(response))
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s);`, response.Name.UpperCase())
 		w.Line(`return new ResponseEntity<>(%s, headers, HttpStatus.%s);`, bodyVar, response.Name.UpperCase())
@@ -265,9 +272,9 @@ import javax.servlet.http.HttpServletRequest;
 
 public class ContentType {
 	public static void check(HttpServletRequest request, MediaType expectedContentType) {
-		var requestContentType = request.getHeader("Content-Type");
-		if (requestContentType == null || !requestContentType.contains(expectedContentType.toString())) {
-			throw new ContentTypeMismatchException(expectedContentType.toString(), requestContentType);
+		var contentType = request.getHeader("Content-Type");
+		if (contentType == null || !contentType.contains(expectedContentType.toString())) {
+			throw new ContentTypeMismatchException(expectedContentType.toString(), contentType);
 		}
 	}
 }
@@ -367,7 +374,7 @@ func generateSpringMethodParam(namedParams []spec.NamedParam, paramAnnotationNam
 	if namedParams != nil && len(namedParams) > 0 {
 		for _, param := range namedParams {
 			paramAnnotation := getSpringParameterAnnotation(paramAnnotationName, &param)
-			paramType := fmt.Sprintf(`%s %s`, types.Java(&param.Type.Definition), param.Name.CamelCase())
+			paramType := fmt.Sprintf(`%s %s`, types.ParamJavaType(&param), param.Name.CamelCase())
 			dateFormatAnnotation := dateFormatSpringAnnotation(&param.Type.Definition)
 			if dateFormatAnnotation != "" {
 				params = append(params, fmt.Sprintf(`%s %s %s`, paramAnnotation, dateFormatAnnotation, paramType))
