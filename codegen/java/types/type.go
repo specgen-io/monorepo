@@ -11,6 +11,7 @@ const EmptyType = `void`
 type Types struct {
 	RawJsonType string
 	BinaryType  BinaryType
+	FileType    FileType
 }
 
 type BinaryType struct {
@@ -18,18 +19,27 @@ type BinaryType struct {
 	ResponseType string
 }
 
-func NewTypes(rawJsonType, requestBinaryType, responseBinaryType string) *Types {
-	return &Types{RawJsonType: rawJsonType, BinaryType: BinaryType{RequestType: requestBinaryType, ResponseType: responseBinaryType}}
+type FileType struct {
+	RequestType  string
+	ResponseType string
+}
+
+func NewTypes(rawJsonType, requestBinaryType, responseBinaryType, requestFileType, responseFileType string) *Types {
+	return &Types{
+		RawJsonType: rawJsonType,
+		BinaryType:  BinaryType{RequestType: requestBinaryType, ResponseType: responseBinaryType},
+		FileType:    FileType{RequestType: requestFileType, ResponseType: responseFileType},
+	}
 }
 
 func (types *Types) RequestBodyJavaType(body *spec.RequestBody) string {
 	switch body.Kind() {
-	case spec.BodyBinary:
-		return types.BinaryType.RequestType
 	case spec.BodyText:
 		return TextType
 	case spec.BodyEmpty:
 		return EmptyType
+	case spec.BodyBinary:
+		return types.BinaryType.RequestType
 	case spec.BodyJson:
 		return types.Java(&body.Type.Definition)
 	default:
@@ -39,16 +49,26 @@ func (types *Types) RequestBodyJavaType(body *spec.RequestBody) string {
 
 func (types *Types) ResponseBodyJavaType(body *spec.ResponseBody) string {
 	switch body.Kind() {
-	case spec.BodyBinary:
-		return types.BinaryType.ResponseType
 	case spec.BodyText:
 		return TextType
 	case spec.BodyEmpty:
 		return EmptyType
+	case spec.BodyBinary:
+		return types.BinaryType.ResponseType
+	case spec.BodyFile:
+		return types.FileType.ResponseType
 	case spec.BodyJson:
 		return types.Java(&body.Type.Definition)
 	default:
 		panic(fmt.Sprintf("Unknown response body kind: %v", body.Kind()))
+	}
+}
+
+func (types *Types) ParamJavaType(param *spec.NamedParam) string {
+	if param.Type.Definition.String() == spec.TypeFile {
+		return types.FileType.RequestType
+	} else {
+		return types.Java(&param.Type.Definition)
 	}
 }
 
@@ -127,7 +147,7 @@ func (t *Types) plainJavaType(typ string, referenceTypesOnly bool) (string, bool
 	case spec.TypeJson:
 		return t.RawJsonType, true
 	case spec.TypeEmpty:
-		return "void", false
+		return EmptyType, false
 	default:
 		return typ, true
 	}

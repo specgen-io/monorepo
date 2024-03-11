@@ -2,16 +2,14 @@ package service
 
 import (
 	"fmt"
-	"strings"
-
 	"generator"
-
 	"github.com/pinzolo/casee"
 	"java/models"
 	"java/packages"
 	"java/types"
 	"java/writer"
 	"spec"
+	"strings"
 )
 
 var Micronaut = "micronaut"
@@ -40,7 +38,10 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version) []genera
 }
 
 func (g *MicronautGenerator) FilesImports() []string {
-	return nil
+	return []string{
+		`io.micronaut.http.multipart.CompletedFileUpload`,
+		`io.micronaut.http.server.types.files.StreamedFile`,
+	}
 }
 
 func (g *MicronautGenerator) ServiceImports() []string {
@@ -93,6 +94,7 @@ func (g *MicronautGenerator) errorHandler(w *writer.Writer, errors spec.ErrorRes
 func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Controllers(api.InHttp.InVersion), controllerName(api))
 	w.Imports.Add(g.ServiceImports()...)
+	w.Imports.Add(g.FilesImports()...)
 	w.Imports.Add(`io.micronaut.core.annotation.Nullable`)
 	w.Imports.Star(g.Packages.ContentType)
 	w.Imports.Star(g.Packages.Json)
@@ -187,6 +189,8 @@ func (g *MicronautGenerator) responseContentType(response *spec.Response) string
 		return `MediaType.APPLICATION_JSON`
 	case spec.BodyBinary:
 		return `MediaType.APPLICATION_OCTET_STREAM`
+	case spec.BodyFile:
+		return ""
 	default:
 		panic(fmt.Sprintf("Unknown Content Type"))
 	}
@@ -229,7 +233,11 @@ func (g *MicronautGenerator) processResponse(w *writer.Writer, response *spec.Re
 			bodyVar = "bodyJson"
 		}
 		w.Line(`logger.info("Completed request with status code: HttpStatus.%s");`, response.Name.UpperCase())
-		w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s).contentType(%s);`, response.Name.UpperCase(), bodyVar, g.responseContentType(response))
+		if response.Body.IsFile() {
+			w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s);`, response.Name.UpperCase(), bodyVar)
+		} else {
+			w.Line(`return HttpResponse.status(HttpStatus.%s).body(%s).contentType(%s);`, response.Name.UpperCase(), bodyVar, g.responseContentType(response))
+		}
 	}
 }
 
@@ -405,7 +413,7 @@ func generateMicronautMethodParam(namedParams []spec.NamedParam, paramAnnotation
 
 	if namedParams != nil && len(namedParams) > 0 {
 		for _, param := range namedParams {
-			paramType := fmt.Sprintf(`%s %s`, types.Java(&param.Type.Definition), param.Name.CamelCase())
+			paramType := fmt.Sprintf(`%s %s`, types.ParamJavaType(&param), param.Name.CamelCase())
 			if param.Type.Definition.IsNullable() || (!isSupportDefaulted && param.DefinitionDefault.Default != nil) {
 				paramType = fmt.Sprintf(`@Nullable %s`, paramType)
 			}

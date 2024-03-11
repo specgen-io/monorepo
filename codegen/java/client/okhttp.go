@@ -132,7 +132,11 @@ func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedO
 	if operation.Body.IsBodyFormData() {
 		w.Line(`var body = new MultipartBodyBuilder(MultipartBody.FORM);`)
 		for _, param := range operation.Body.FormData {
-			w.Line(`body.addFormDataPart("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
+			if param.Type.Definition.String() == spec.TypeFile {
+				w.Line(`body.addFormDataPart("%s", fileName, %s);`, param.Name.Source, param.Name.CamelCase())
+			} else {
+				w.Line(`body.addFormDataPart("%s", %s);`, param.Name.SnakeCase(), param.Name.CamelCase())
+			}
 		}
 		requestBody = "body.build()"
 		w.EmptyLine()
@@ -203,6 +207,9 @@ func (g *OkHttpGenerator) successResponse(response *spec.OperationResponse) stri
 	if response.Body.IsBinary() {
 		return responseCreate(response, "response.body().charStream()")
 	}
+	if response.Body.IsFile() {
+		return responseCreate(response, "response.body().charStream()")
+	}
 	return responseCreate(response, "")
 }
 
@@ -215,6 +222,9 @@ func (g *OkHttpGenerator) errorResponse(response *spec.Response) string {
 		responseBody = fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().charStream()`, &response.Body.Type.Definition))
 	}
 	if response.Body.IsBinary() {
+		responseBody = "response.body().charStream()"
+	}
+	if response.Body.IsFile() {
 		responseBody = "response.body().charStream()"
 	}
 	return fmt.Sprintf(`throw new %s(%s);`, errorExceptionClassName(response), responseBody)
@@ -309,15 +319,14 @@ func (g *OkHttpGenerator) multipartBodyBuilder() *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `MultipartBodyBuilder`)
 	w.Lines(`
 import java.io.File;
+import java.net.URLConnection;
 import java.util.List;
 import okhttp3.*;
 
 public class [[.ClassName]] {
-	private final MediaType contentType;
 	private final MultipartBody.Builder multipartBodyBuilder;
 
-	public MultipartBodyBuilder(MediaType contentType) {
-		this.contentType = contentType;
+	public [[.ClassName]](MediaType contentType) {
 		this.multipartBodyBuilder = new MultipartBody.Builder().setType(contentType);
 	}
 
@@ -334,11 +343,15 @@ public class [[.ClassName]] {
 	}
 
 	public void addFormDataPart(String fieldName, File file) {
-		this.multipartBodyBuilder.addFormDataPart(fieldName, file.getName(), RequestBody.create(file, this.contentType));
+		this.multipartBodyBuilder.addFormDataPart(fieldName, file.getName(), RequestBody.create(file, getFileContentType(file.getName())));
 	}
 
 	public void addFormDataPart(String fieldName, String fileName, byte[] file) {
-		this.multipartBodyBuilder.addFormDataPart(fieldName, fileName, RequestBody.create(file, this.contentType));
+		this.multipartBodyBuilder.addFormDataPart(fieldName, fileName, RequestBody.create(file, getFileContentType(fileName)));
+	}
+
+	private MediaType getFileContentType(String fileName) {
+		return MediaType.parse(URLConnection.getFileNameMap().getContentTypeFor(fileName));
 	}
 
 	public MultipartBody build() {
