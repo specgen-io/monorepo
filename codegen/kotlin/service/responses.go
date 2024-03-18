@@ -10,9 +10,8 @@ import (
 
 func (g *Generator) responseInterface(operation *spec.NamedOperation) *generator.CodeFile {
 	w := writer.New(g.Packages.ServicesApi(operation.InApi), responseInterfaceName(operation))
-	w.Line(`import %s`, g.Packages.Models(operation.InApi.InHttp.InVersion).PackageStar)
-	w.Line(`import %s`, g.Packages.ErrorsModels.PackageStar)
-	w.EmptyLine()
+	w.Imports.PackageStar(g.Packages.Models(operation.InApi.InHttp.InVersion))
+	w.Imports.PackageStar(g.Packages.ErrorsModels)
 	w.Line(`interface [[.ClassName]] {`)
 	for index, response := range operation.Responses {
 		if index > 0 {

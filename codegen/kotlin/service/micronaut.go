@@ -9,6 +9,7 @@ import (
 	"kotlin/types"
 	"kotlin/writer"
 	"spec"
+	"strings"
 )
 
 var Micronaut = "micronaut"
@@ -34,6 +35,13 @@ func (g *MicronautGenerator) ServicesControllers(version *spec.Version) []genera
 	}
 	files = append(files, dateConverters(g.Packages.Converters)...)
 	return files
+}
+
+func (g *MicronautGenerator) FilesImports() []string {
+	return []string{
+		`io.micronaut.http.multipart.CompletedFileUpload`,
+		`io.micronaut.http.server.types.files.StreamedFile`,
+	}
 }
 
 func (g *MicronautGenerator) ServiceImports() []string {
@@ -83,10 +91,11 @@ func (g *MicronautGenerator) errorHandler(w *writer.Writer, errors spec.ErrorRes
 func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Controllers(api.InHttp.InVersion), controllerName(api))
 	w.Imports.Add(g.ServiceImports()...)
+	w.Imports.Add(g.FilesImports()...)
 	w.Imports.PackageStar(g.Packages.ContentType)
 	w.Imports.PackageStar(g.Packages.Json)
-	w.Imports.PackageStar(g.Packages.Models(api.InHttp.InVersion))
 	w.Imports.PackageStar(g.Packages.ErrorsModels)
+	w.Imports.PackageStar(g.Packages.Models(api.InHttp.InVersion))
 	w.Imports.PackageStar(g.Packages.ServicesApi(api))
 	w.Imports.Add(g.Types.Imports()...)
 	w.Line(`@Controller`)
@@ -95,7 +104,6 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 	w.Line(`    @Inject private val json: Json`)
 	w.Line(`) {`)
 	w.Line(`    private val logger = LoggerFactory.getLogger([[.ClassName]]::class.java)`)
-
 	for _, operation := range api.Operations {
 		w.EmptyLine()
 		g.controllerMethod(w.Indented(), &operation)
@@ -106,12 +114,12 @@ func (g *MicronautGenerator) serviceController(api *spec.Api) *generator.CodeFil
 
 func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.NamedOperation) {
 	if !operation.Body.IsEmpty() {
-		w.Line(`@Consumes(%s)`, g.contentType(operation))
+		w.Line(`@Consumes(%s)`, g.requestContentType(operation))
 	}
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%s("%s")`, casee.ToPascalCase(methodName), url)
-	w.Line(`fun %s(%s): HttpResponse<*> {`, controllerMethodName(operation), joinParams(micronautMethodParams(operation, g.Types)))
+	w.Line(`fun %s(%s): HttpResponse<*> {`, controllerMethodName(operation), strings.Join(micronautMethodParams(operation, g.Types), ", "))
 	w.Line(`    logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	w.Indent()
 	bodyStringVar := "bodyStr"
@@ -119,7 +127,7 @@ func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.
 		bodyStringVar += ".reader()"
 	}
 	g.parseBody(w, operation, bodyStringVar, "requestBody")
-	serviceCall(w, operation, bodyStringVar, "requestBody", "result", false)
+	serviceCall(w, operation, bodyStringVar, "requestBody", "file", "result", false)
 	g.processResponses(w, operation, "result")
 	w.Unindent()
 	w.Line(`}`)
@@ -127,7 +135,7 @@ func (g *MicronautGenerator) controllerMethod(w *writer.Writer, operation *spec.
 
 func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
 	if !operation.Body.IsEmpty() {
-		w.Line(`checkContentType(request, %s)`, g.contentType(operation))
+		w.Line(`checkContentType(request, %s)`, g.requestContentType(operation))
 	}
 	if operation.Body.IsJson() {
 		typ := g.Types.Kotlin(&operation.Body.Type.Definition)
@@ -135,19 +143,39 @@ func (g *MicronautGenerator) parseBody(w *writer.Writer, operation *spec.NamedOp
 	}
 }
 
-func (g *MicronautGenerator) contentType(operation *spec.NamedOperation) string {
-	if operation.Body.IsEmpty() {
+func (g *MicronautGenerator) requestContentType(operation *spec.NamedOperation) string {
+	switch operation.Body.Kind() {
+	case spec.BodyEmpty:
 		return ""
-	} else if operation.Body.IsText() {
+	case spec.BodyText:
 		return `MediaType.TEXT_PLAIN`
-	} else if operation.Body.IsJson() {
+	case spec.BodyJson:
 		return `MediaType.APPLICATION_JSON`
-	} else if operation.Body.IsBodyFormData() {
+	case spec.BodyBinary:
+		return `MediaType.APPLICATION_OCTET_STREAM`
+	case spec.BodyFormData:
 		return `MediaType.MULTIPART_FORM_DATA`
-	} else if operation.Body.IsBodyFormUrlEncoded() {
+	case spec.BodyFormUrlEncoded:
 		return `MediaType.APPLICATION_FORM_URLENCODED`
-	} else {
-		panic(fmt.Sprintf("Unknown Contet Type"))
+	default:
+		panic(fmt.Sprintf("Unknown Content Type"))
+	}
+}
+
+func (g *MicronautGenerator) responseContentType(response *spec.Response) string {
+	switch response.Body.Kind() {
+	case spec.BodyEmpty:
+		return ""
+	case spec.BodyText:
+		return `MediaType.TEXT_PLAIN`
+	case spec.BodyJson:
+		return `MediaType.APPLICATION_JSON`
+	case spec.BodyBinary:
+		return `MediaType.APPLICATION_OCTET_STREAM`
+	case spec.BodyFile:
+		return ""
+	default:
+		panic(fmt.Sprintf("Unknown Content Type"))
 	}
 }
 
@@ -169,15 +197,17 @@ func (g *MicronautGenerator) processResponse(w *writer.Writer, response *spec.Re
 	if response.Body.IsEmpty() {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s)`, response.Name.UpperCase())
-	}
-	if response.Body.IsText() {
+	} else {
+		if response.Body.IsJson() {
+			w.Line(`val bodyJson = json.%s`, g.Models.WriteJson(bodyVar, &response.Body.Type.Definition))
+			bodyVar = "bodyJson"
+		}
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
-		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s).body(%s).contentType("text/plain")`, response.Name.UpperCase(), bodyVar)
-	}
-	if response.Body.IsJson() {
-		w.Line(`val bodyJson = json.%s`, g.Models.WriteJson(bodyVar, &response.Body.Type.Definition))
-		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
-		w.Line(`return HttpResponse.status<Any>(HttpStatus.%s).body(bodyJson).contentType("application/json")`, response.Name.UpperCase())
+		if response.Body.IsFile() {
+			w.Line(`return HttpResponse.status<Any>(HttpStatus.%s).body(%s)`, response.Name.UpperCase(), bodyVar)
+		} else {
+			w.Line(`return HttpResponse.status<Any>(HttpStatus.%s).body(%s).contentType(%s)`, response.Name.UpperCase(), bodyVar, g.responseContentType(response))
+		}
 	}
 }
 
@@ -245,8 +275,7 @@ fun getNotFoundError(exception: Throwable?): NotFoundError? {
 		return NotFoundError(NOT_FOUND_ERROR)
 	}
 	if (exception is ConversionErrorException) {
-		val annotation =
-			exception.argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.PathVariable")
+		val annotation = exception.argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.PathVariable")
 		if (annotation.isPresent) {
 			return NotFoundError(NOT_FOUND_ERROR)
 		}
@@ -271,13 +300,11 @@ private fun getLocation(argument: Argument<*>): ErrorLocation {
 }
 
 private fun getParameterName(argument: Argument<*>): String {
-	val query =
-		argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.QueryValue")
+	val query = argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.QueryValue")
 	if (query.isPresent) {
 		return query.get().values["value"].toString()
 	}
-	val header =
-		argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Headers")
+	val header = argument.annotationMetadata.findDeclaredAnnotation<Annotation>("io.micronaut.http.annotation.Headers")
 	if (header.isPresent) {
 		val annotationValues = header.get().values["value"] as Array<AnnotationValue<*>>?
 		return annotationValues!![0].values["value"].toString()
@@ -328,44 +355,46 @@ fun getBadRequestError(exception: Throwable): BadRequestError? {
 
 func micronautMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"request: HttpRequest<*>"}
-
+	
 	if operation.Body.IsText() || operation.Body.IsJson() {
 		methodParams = append(methodParams, "@Body bodyStr: String")
 	}
-
+	if operation.Body.IsBinary() {
+		methodParams = append(methodParams, fmt.Sprintf("@Body file: %s", types.RequestBodyKotlinType(&operation.Body)))
+	}
 	methodParams = append(methodParams, generateMicronautMethodParam(operation.Body.FormData, "Part", false, types)...)
 	methodParams = append(methodParams, generateMicronautMethodParam(operation.Body.FormUrlEncoded, "Part", false, types)...)
 	methodParams = append(methodParams, generateMicronautMethodParam(operation.QueryParams, "QueryValue", true, types)...)
 	methodParams = append(methodParams, generateMicronautMethodParam(operation.HeaderParams, "Header", true, types)...)
 	methodParams = append(methodParams, generateMicronautMethodParam(operation.Endpoint.UrlParams, "PathVariable", true, types)...)
-
+	
 	return methodParams
 }
 
 func generateMicronautMethodParam(namedParams []spec.NamedParam, paramAnnotation string, isSupportDefaulted bool, types *types.Types) []string {
 	params := []string{}
-
+	
 	if namedParams != nil && len(namedParams) > 0 {
 		for _, param := range namedParams {
-			paramType := fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), types.Kotlin(&param.Type.Definition))
+			paramType := fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), types.ParamKotlinType(&param))
 			if !isSupportDefaulted && param.DefinitionDefault.Default != nil {
 				paramType = fmt.Sprintf(`%s?`, paramType)
 			}
 			params = append(params, fmt.Sprintf(`%s %s`, getMicronautParameterAnnotation(paramAnnotation, &param, isSupportDefaulted), paramType))
 		}
 	}
-
+	
 	return params
 }
 
 func getMicronautParameterAnnotation(paramAnnotation string, param *spec.NamedParam, isSupportDefaulted bool) string {
 	annotationParams := []string{fmt.Sprintf(`value = "%s"`, param.Name.Source)}
-
+	
 	if param.DefinitionDefault.Default != nil && isSupportDefaulted {
 		annotationParams = append(annotationParams, fmt.Sprintf(`defaultValue = "%s"`, *param.DefinitionDefault.Default))
 	}
-
-	return fmt.Sprintf(`@%s(%s)`, paramAnnotation, joinParams(annotationParams))
+	
+	return fmt.Sprintf(`@%s(%s)`, paramAnnotation, strings.Join(annotationParams, ", "))
 }
 
 func dateConverters(convertersPackage packages.Package) []generator.CodeFile {

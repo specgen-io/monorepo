@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 	"strings"
-
+	
 	"generator"
 	"kotlin/types"
 	"kotlin/writer"
@@ -26,8 +26,8 @@ func (g *Generator) ServicesInterfaces(version *spec.Version) []generator.CodeFi
 func (g *Generator) serviceInterface(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.ServicesApi(api), serviceInterfaceName(api))
 	w.Imports.Add(g.Types.Imports()...)
+	w.Imports.Add(g.FilesImports()...)
 	w.Imports.PackageStar(g.Packages.Models(api.InHttp.InVersion))
-	w.EmptyLine()
 	w.Line(`interface [[.ClassName]] {`)
 	for _, operation := range api.Operations {
 		w.Line(`  fun %s`, operationSignature(g.Types, &operation))
@@ -40,7 +40,7 @@ func operationSignature(types *types.Types, operation *spec.NamedOperation) stri
 	if len(operation.Responses) == 1 {
 		for _, response := range operation.Responses {
 			if !response.Body.IsEmpty() {
-				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "), types.Kotlin(&response.Body.Type.Definition))
+				return fmt.Sprintf(`%s(%s): %s`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "), types.ResponseBodyKotlinType(&response.Body))
 			} else {
 				return fmt.Sprintf(`%s(%s)`, operation.Name.CamelCase(), strings.Join(operationParameters(operation, types), ", "))
 			}
@@ -54,27 +54,24 @@ func operationSignature(types *types.Types, operation *spec.NamedOperation) stri
 
 func operationParameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
-	if operation.Body.IsText() || operation.Body.IsJson() {
-		params = append(params, fmt.Sprintf("body: %s", types.Kotlin(&operation.Body.Type.Definition)))
+	if operation.Body.IsText() || operation.Body.IsBinary() || operation.Body.IsJson() {
+		params = append(params, fmt.Sprintf("body: %s", types.RequestBodyKotlinType(&operation.Body)))
 	}
 	if operation.Body.IsBodyFormData() {
-		for _, param := range operation.Body.FormData {
-			params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
-		}
+		params = appendParams(types, params, operation.Body.FormData)
 	}
 	if operation.Body.IsBodyFormUrlEncoded() {
-		for _, param := range operation.Body.FormUrlEncoded {
-			params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
-		}
+		params = appendParams(types, params, operation.Body.FormUrlEncoded)
 	}
-	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
-	}
-	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
-	}
-	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
+	params = appendParams(types, params, operation.QueryParams)
+	params = appendParams(types, params, operation.HeaderParams)
+	params = appendParams(types, params, operation.Endpoint.UrlParams)
+	return params
+}
+
+func appendParams(types *types.Types, params []string, namedParams []spec.NamedParam) []string {
+	for _, param := range namedParams {
+		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.ParamKotlinType(&param)))
 	}
 	return params
 }

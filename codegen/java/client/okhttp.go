@@ -149,7 +149,6 @@ func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedO
 		requestBody = "body.build()"
 		w.EmptyLine()
 	}
-
 	w.Line(`var request = new RequestBuilder("%s", url.build(), %s);`, operation.Endpoint.Method, requestBody)
 	for _, param := range operation.HeaderParams {
 		w.Line(`request.addHeaderParameter("%s", %s);`, param.Name.Source, param.Name.CamelCase())
@@ -204,10 +203,7 @@ func (g *OkHttpGenerator) successResponse(response *spec.OperationResponse) stri
 	if response.Body.IsJson() {
 		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().charStream()`, &response.Body.Type.Definition)))
 	}
-	if response.Body.IsBinary() {
-		return responseCreate(response, "response.body().charStream()")
-	}
-	if response.Body.IsFile() {
+	if response.Body.IsBinary() || response.Body.IsFile() {
 		return responseCreate(response, "response.body().charStream()")
 	}
 	return responseCreate(response, "")
@@ -221,10 +217,7 @@ func (g *OkHttpGenerator) errorResponse(response *spec.Response) string {
 	if response.Body.IsJson() {
 		responseBody = fmt.Sprintf(`json.%s`, g.Models.JsonRead(`response.body().charStream()`, &response.Body.Type.Definition))
 	}
-	if response.Body.IsBinary() {
-		responseBody = "response.body().charStream()"
-	}
-	if response.Body.IsFile() {
+	if response.Body.IsBinary() || response.Body.IsFile() {
 		responseBody = "response.body().charStream()"
 	}
 	return fmt.Sprintf(`throw new %s(%s);`, errorExceptionClassName(response), responseBody)
@@ -232,12 +225,12 @@ func (g *OkHttpGenerator) errorResponse(response *spec.Response) string {
 
 func (g *OkHttpGenerator) Utils(responses *spec.ErrorResponses) []generator.CodeFile {
 	files := []generator.CodeFile{}
-
+	
 	files = append(files, *g.generateRequestBuilder())
 	files = append(files, *g.generateUrlBuilder())
 	files = append(files, *g.multipartBodyBuilder())
 	files = append(files, *g.urlencodedFormBodyBuilder())
-
+	
 	return files
 }
 

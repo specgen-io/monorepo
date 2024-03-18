@@ -35,6 +35,16 @@ func (g *SpringGenerator) ServicesControllers(version *spec.Version) []generator
 	return files
 }
 
+func (g *SpringGenerator) FilesImports() []string {
+	return []string{
+		`org.springframework.core.io.ByteArrayResource`,
+		`org.springframework.core.io.InputStreamResource`,
+		`org.springframework.core.io.Resource`,
+		`org.springframework.web.multipart.MultipartFile`,
+		`java.net.URLConnection`,
+	}
+}
+
 func (g *SpringGenerator) ServiceImports() []string {
 	return []string{
 		`org.apache.logging.log4j.*`,
@@ -84,8 +94,10 @@ func (g *SpringGenerator) errorHandler(w *writer.Writer, errors spec.ErrorRespon
 func (g *SpringGenerator) serviceController(api *spec.Api) *generator.CodeFile {
 	w := writer.New(g.Packages.Controllers(api.InHttp.InVersion), controllerName(api))
 	w.Imports.Add(g.ServiceImports()...)
+	w.Imports.Add(g.FilesImports()...)
 	w.Imports.Add(`javax.servlet.http.HttpServletRequest`)
 	w.Imports.Add(`org.apache.tomcat.util.http.fileupload.FileUploadBase.CONTENT_TYPE`)
+	w.Imports.Add(`org.springframework.http.HttpHeaders.CONTENT_DISPOSITION`)
 	w.Imports.PackageStar(g.Packages.ContentType)
 	w.Imports.PackageStar(g.Packages.Json)
 	w.Imports.PackageStar(g.Packages.Models(api.InHttp.InVersion))
@@ -111,7 +123,7 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 	methodName := operation.Endpoint.Method
 	url := operation.FullUrl()
 	w.Line(`@%sMapping("%s")`, casee.ToPascalCase(methodName), url)
-	w.Line(`fun %s(%s): ResponseEntity<String> {`, controllerMethodName(operation), strings.Join(springMethodParams(operation, g.Types), ", "))
+	w.Line(`fun %s(%s): ResponseEntity<%s> {`, controllerMethodName(operation), strings.Join(springMethodParams(operation, g.Types), ", "), responseEntityType(operation))
 	w.Indent()
 	w.Line(`logger.info("Received request, operationId: %s.%s, method: %s, url: %s")`, operation.InApi.Name.Source, operation.Name.Source, methodName, url)
 	bodyStringVar := "bodyStr"
@@ -119,10 +131,19 @@ func (g *SpringGenerator) controllerMethod(w *writer.Writer, operation *spec.Nam
 		bodyStringVar += ".reader()"
 	}
 	g.parseBody(w, operation, bodyStringVar, "requestBody")
-	serviceCall(w, operation, bodyStringVar, "requestBody", "result", true)
+	serviceCall(w, operation, bodyStringVar, "requestBody", "resource", "result", true)
 	g.processResponses(w, operation, "result")
 	w.Unindent()
 	w.Line(`}`)
+}
+
+func responseEntityType(operation *spec.NamedOperation) string {
+	for _, response := range operation.Responses {
+		if response.Body.IsBinary() || response.Body.IsFile() {
+			return "Resource"
+		}
+	}
+	return "String"
 }
 
 func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string) {
@@ -130,24 +151,46 @@ func (g *SpringGenerator) parseBody(w *writer.Writer, operation *spec.NamedOpera
 		w.Line(`checkContentType(request, %s)`, g.contentType(operation))
 	}
 	if operation.Body.IsJson() {
-		typ := g.Types.Kotlin(&operation.Body.Type.Definition)
-		w.Line(`val %s: %s = json.%s`, bodyJsonVar, typ, g.Models.ReadJson(bodyStringVar, &operation.Body.Type.Definition))
+		w.Line(`val %s: %s = json.%s`, bodyJsonVar, g.Types.Kotlin(&operation.Body.Type.Definition), g.Models.ReadJson(bodyStringVar, &operation.Body.Type.Definition))
+	}
+	if operation.Body.IsBinary() {
+		w.Line(`val resource = InputStreamResource(request.inputStream)`)
 	}
 }
 
 func (g *SpringGenerator) contentType(operation *spec.NamedOperation) string {
-	if operation.Body.IsEmpty() {
+	switch operation.Body.Kind() {
+	case spec.BodyEmpty:
 		return ""
-	} else if operation.Body.IsText() {
+	case spec.BodyText:
 		return `MediaType.TEXT_PLAIN`
-	} else if operation.Body.IsJson() {
+	case spec.BodyJson:
 		return `MediaType.APPLICATION_JSON`
-	} else if operation.Body.IsBodyFormData() {
+	case spec.BodyBinary:
+		return `MediaType.APPLICATION_OCTET_STREAM`
+	case spec.BodyFormData:
 		return `MediaType.MULTIPART_FORM_DATA`
-	} else if operation.Body.IsBodyFormUrlEncoded() {
+	case spec.BodyFormUrlEncoded:
 		return `MediaType.APPLICATION_FORM_URLENCODED`
-	} else {
-		panic(fmt.Sprintf("Unknown Contet Type"))
+	default:
+		panic(fmt.Sprintf("Unknown Content Type"))
+	}
+}
+
+func (g *SpringGenerator) responseContentType(response *spec.Response) string {
+	switch response.Body.Kind() {
+	case spec.BodyEmpty:
+		return ""
+	case spec.BodyText:
+		return `MediaType.TEXT_PLAIN_VALUE`
+	case spec.BodyJson:
+		return `MediaType.APPLICATION_JSON_VALUE`
+	case spec.BodyBinary:
+		return `MediaType.APPLICATION_OCTET_STREAM_VALUE`
+	case spec.BodyFile:
+		return `URLConnection.getFileNameMap().getContentTypeFor(fileName)`
+	default:
+		panic(fmt.Sprintf("Unknown Content Type"))
 	}
 }
 
@@ -161,7 +204,7 @@ func (g *SpringGenerator) processResponses(w *writer.Writer, operation *spec.Nam
 			g.processResponse(w.Indented(), &response.Response, getResponseBody(resultVarName))
 			w.Line(`}`)
 		}
-		w.Line(`throw RuntimeException("Service implementation didn't return any value'")`)
+		w.Line(`throw RuntimeException("Service implementation didn't return any value")`)
 	}
 }
 
@@ -169,19 +212,19 @@ func (g *SpringGenerator) processResponse(w *writer.Writer, response *spec.Respo
 	if response.Body.IsEmpty() {
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return ResponseEntity(HttpStatus.%s)`, response.Name.UpperCase())
-	}
-	if response.Body.IsText() {
+	} else {
+		if response.Body.IsJson() {
+			w.Line(`val bodyJson = json.%s`, g.Models.WriteJson(bodyVar, &response.Body.Type.Definition))
+			bodyVar = "bodyJson"
+		}
 		w.Line(`val headers = HttpHeaders()`)
-		w.Line(`headers.add(CONTENT_TYPE, "text/plain")`)
+		if response.Body.IsFile() {
+			w.Line(`val fileName = %s.filename`, bodyVar)
+			w.Line(`headers.add(CONTENT_DISPOSITION, "attachment; filename=$fileName")`)
+		}
+		w.Line(`headers.add(CONTENT_TYPE, %s)`, g.responseContentType(response))
 		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
 		w.Line(`return ResponseEntity(%s, headers, HttpStatus.%s)`, bodyVar, response.Name.UpperCase())
-	}
-	if response.Body.IsJson() {
-		w.Line(`val bodyJson = json.%s`, g.Models.WriteJson(bodyVar, &response.Body.Type.Definition))
-		w.Line(`val headers = HttpHeaders()`)
-		w.Line(`headers.add(CONTENT_TYPE, "application/json")`)
-		w.Line(`logger.info("Completed request with status code: {}", HttpStatus.%s)`, response.Name.UpperCase())
-		w.Line(`return ResponseEntity(bodyJson, headers, HttpStatus.%s)`, response.Name.UpperCase())
 	}
 }
 
@@ -284,7 +327,7 @@ fun getBadRequestError(exception: Throwable): BadRequestError? {
 
 func springMethodParams(operation *spec.NamedOperation, types *types.Types) []string {
 	methodParams := []string{"request: HttpServletRequest"}
-
+	
 	if operation.Body.IsText() || operation.Body.IsJson() {
 		methodParams = append(methodParams, "@RequestBody bodyStr: String")
 	}
@@ -293,17 +336,17 @@ func springMethodParams(operation *spec.NamedOperation, types *types.Types) []st
 	methodParams = append(methodParams, generateSpringMethodParam(operation.QueryParams, "RequestParam", types)...)
 	methodParams = append(methodParams, generateSpringMethodParam(operation.HeaderParams, "RequestHeader", types)...)
 	methodParams = append(methodParams, generateSpringMethodParam(operation.Endpoint.UrlParams, "PathVariable", types)...)
-
+	
 	return methodParams
 }
 
 func generateSpringMethodParam(namedParams []spec.NamedParam, paramAnnotationName string, types *types.Types) []string {
 	params := []string{}
-
+	
 	if namedParams != nil && len(namedParams) > 0 {
 		for _, param := range namedParams {
 			paramAnnotation := getSpringParameterAnnotation(paramAnnotationName, &param)
-			paramType := fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), types.Kotlin(&param.Type.Definition))
+			paramType := fmt.Sprintf(`%s: %s`, param.Name.CamelCase(), types.ParamKotlinType(&param))
 			dateFormatAnnotation := dateFormatSpringAnnotation(&param.Type.Definition)
 			if dateFormatAnnotation != "" {
 				params = append(params, fmt.Sprintf(`%s %s %s`, paramAnnotation, dateFormatAnnotation, paramType))
@@ -312,21 +355,21 @@ func generateSpringMethodParam(namedParams []spec.NamedParam, paramAnnotationNam
 			}
 		}
 	}
-
+	
 	return params
 }
 
 func getSpringParameterAnnotation(paramAnnotationName string, param *spec.NamedParam) string {
 	annotationParams := []string{fmt.Sprintf(`name = "%s"`, param.Name.Source)}
-
+	
 	if param.Type.Definition.IsNullable() {
 		annotationParams = append(annotationParams, `required = false`)
 	}
 	if param.DefinitionDefault.Default != nil {
 		annotationParams = append(annotationParams, fmt.Sprintf(`defaultValue = "%s"`, *param.DefinitionDefault.Default))
 	}
-
-	return fmt.Sprintf(`@%s(%s)`, paramAnnotationName, joinParams(annotationParams))
+	
+	return fmt.Sprintf(`@%s(%s)`, paramAnnotationName, strings.Join(annotationParams, ", "))
 }
 
 func dateFormatSpringAnnotation(typ *spec.TypeDef) string {
