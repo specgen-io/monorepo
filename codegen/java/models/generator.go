@@ -37,5 +37,5 @@ func NewTypes(jsonlib, requestBinaryType, responseBinaryType, requestFileType, r
 	if jsonlib == Moshi {
 		return types.NewTypes("Map<String, Object>", requestBinaryType, responseBinaryType, requestFileType, responseFileType)
 	}
-	panic(fmt.Sprintf(`Unsupported binary types: %s, %s, %s, %s`, requestBinaryType, responseBinaryType, requestFileType, responseFileType))
+	panic(fmt.Sprintf(`Unsupported file types: %s, %s, %s, %s`, requestBinaryType, responseBinaryType, requestFileType, responseFileType))
 }

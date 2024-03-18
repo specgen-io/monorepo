@@ -7,17 +7,16 @@ import (
 	"strings"
 )
 
-func joinParams(params []string) string {
-	return strings.Join(params, ", ")
-}
-
-func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJsonVar string, isSupportDefaulted bool) []string {
+func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, bodyBinaryVar string, isSupportDefaulted bool) []string {
 	methodParams := []string{}
 	if operation.Body.IsText() {
 		methodParams = append(methodParams, bodyStringVar)
 	}
 	if operation.Body.IsJson() {
 		methodParams = append(methodParams, bodyJsonVar)
+	}
+	if operation.Body.IsBinary() {
+		methodParams = append(methodParams, bodyBinaryVar)
 	}
 	if operation.Body.IsBodyFormData() {
 		for _, param := range operation.Body.FormData {
@@ -49,8 +48,8 @@ func addServiceMethodParams(operation *spec.NamedOperation, bodyStringVar, bodyJ
 	return methodParams
 }
 
-func serviceCall(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, resultVarName string, isSupportDefaulted bool) {
-	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), joinParams(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar, isSupportDefaulted)))
+func serviceCall(w *writer.Writer, operation *spec.NamedOperation, bodyStringVar, bodyJsonVar, bodyBinaryVar, resultVarName string, isSupportDefaulted bool) {
+	serviceCall := fmt.Sprintf(`%s.%s(%s)`, serviceVarName(operation.InApi), operation.Name.CamelCase(), strings.Join(addServiceMethodParams(operation, bodyStringVar, bodyJsonVar, bodyBinaryVar, isSupportDefaulted), ", "))
 	if len(operation.Responses) == 1 && operation.Responses[0].Body.IsEmpty() {
 		w.Line(serviceCall)
 	} else {
