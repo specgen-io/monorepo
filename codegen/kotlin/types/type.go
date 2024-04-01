@@ -5,22 +5,77 @@ import (
 	"spec"
 )
 
+const TextType = `String`
+const EmptyType = `Unit`
+
 type Types struct {
 	RawJsonType string
+	BinaryType  BinaryType
+	FileType    FileType
+}
+
+type BinaryType struct {
+	RequestType  string
+	ResponseType string
+}
+
+type FileType struct {
+	RequestType  string
+	ResponseType string
+}
+
+func NewTypes(rawJsonType, requestBinaryType, responseBinaryType, requestFileType, responseFileType string) *Types {
+	return &Types{
+		RawJsonType: rawJsonType,
+		BinaryType:  BinaryType{RequestType: requestBinaryType, ResponseType: responseBinaryType},
+		FileType:    FileType{RequestType: requestFileType, ResponseType: responseFileType},
+	}
+}
+
+func (t *Types) RequestBodyKotlinType(body *spec.RequestBody) string {
+	switch body.Kind() {
+	case spec.BodyText:
+		return TextType
+	case spec.BodyEmpty:
+		return EmptyType
+	case spec.BodyBinary:
+		return t.BinaryType.RequestType
+	case spec.BodyJson:
+		return t.Kotlin(&body.Type.Definition)
+	default:
+		panic(fmt.Sprintf("Unknown response body kind: %v", body.Kind()))
+	}
 }
 
 func (t *Types) ResponseBodyKotlinType(body *spec.ResponseBody) string {
-	if body.IsEmpty() {
-		return "Unit"
-	} else {
+	switch body.Kind() {
+	case spec.BodyText:
+		return TextType
+	case spec.BodyEmpty:
+		return EmptyType
+	case spec.BodyBinary:
+		return t.BinaryType.ResponseType
+	case spec.BodyFile:
+		return t.FileType.ResponseType
+	case spec.BodyJson:
 		return t.Kotlin(&body.Type.Definition)
+	default:
+		panic(fmt.Sprintf("Unknown response body kind: %v", body.Kind()))
+	}
+}
+
+func (t *Types) ParamKotlinType(param *spec.NamedParam) string {
+	if param.Type.Definition.String() == spec.TypeFile {
+		return t.FileType.RequestType
+	} else {
+		return t.Kotlin(&param.Type.Definition)
 	}
 }
 
 func (t *Types) Kotlin(typ *spec.TypeDef) string {
 	switch typ.Node {
 	case spec.PlainType:
-		return t.PlainKotlinType(typ.Plain)
+		return t.plainKotlinType(typ.Plain)
 	case spec.NullableType:
 		return t.Kotlin(typ.Child) + "?"
 	case spec.ArrayType:
@@ -35,7 +90,7 @@ func (t *Types) Kotlin(typ *spec.TypeDef) string {
 	}
 }
 
-func (t *Types) PlainKotlinType(typ string) string {
+func (t *Types) plainKotlinType(typ string) string {
 	switch typ {
 	case spec.TypeInt32:
 		return "Int"
@@ -60,7 +115,7 @@ func (t *Types) PlainKotlinType(typ string) string {
 	case spec.TypeJson:
 		return t.RawJsonType
 	case spec.TypeEmpty:
-		return "Unit"
+		return EmptyType
 	default:
 		return typ
 	}

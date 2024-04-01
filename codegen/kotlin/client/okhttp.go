@@ -94,20 +94,43 @@ func (g *OkHttpGenerator) createUrl(w *writer.Writer, operation *spec.NamedOpera
 	}
 }
 
+func (g *OkHttpGenerator) requestContentType(operation *spec.NamedOperation) string {
+	switch operation.Body.Kind() {
+	case spec.BodyEmpty:
+		return ""
+	case spec.BodyText:
+		return `text/plain`
+	case spec.BodyJson:
+		return `application/json`
+	case spec.BodyBinary:
+		return `application/octet-stream`
+	case spec.BodyFormData:
+		return `multipart/form-data`
+	case spec.BodyFormUrlEncoded:
+		return ""
+	default:
+		panic(fmt.Sprintf("Unknown Content Type"))
+	}
+}
+
 func (g *OkHttpGenerator) createRequest(w *writer.Writer, operation *spec.NamedOperation) {
 	requestBody := "null"
-	if operation.Body.IsText() {
-		w.Line(`val requestBody = body.toRequestBody("text/plain".toMediaTypeOrNull())`)
+	if operation.Body.IsText() || operation.Body.IsBinary() {
+		w.Line(`val requestBody = body.toRequestBody("%s".toMediaTypeOrNull())`, g.requestContentType(operation))
 		requestBody = "requestBody"
 	}
 	if operation.Body.IsJson() {
-		w.Line(`val requestBody = json.%s.toRequestBody("application/json".toMediaTypeOrNull())`, g.Models.WriteJson("body", &operation.Body.Type.Definition))
+		w.Line(`val requestBody = json.%s.toRequestBody("%s".toMediaTypeOrNull())`, g.Models.WriteJson("body", &operation.Body.Type.Definition), g.requestContentType(operation))
 		requestBody = "requestBody"
 	}
 	if operation.Body.IsBodyFormData() {
 		w.Line(`val body = MultipartBodyBuilder(MultipartBody.FORM)`)
 		for _, param := range operation.Body.FormData {
-			w.Line(`body.addFormDataPart("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))
+			if param.Type.Definition.String() == spec.TypeFile {
+				w.Line(`body.addFormDataPart("%s", fileName, %s)`, param.Name.Source, addBuilderParam(&param))
+			} else {
+				w.Line(`body.addFormDataPart("%s", %s)`, param.Name.SnakeCase(), addBuilderParam(&param))
+			}
 		}
 		requestBody = "body.build()"
 	}
@@ -144,7 +167,7 @@ func (g *OkHttpGenerator) processResponse(w *writer.Writer, operation *spec.Name
 
 func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec.NamedOperation) {
 	w.Line(`fun %s {`, operationSignature(g.Types, operation))
-	w.Line(`    try {`)
+	w.Line(`   try {`)
 	w.IndentWith(2)
 	g.createUrl(w, operation)
 	w.EmptyLine()
@@ -159,8 +182,8 @@ func (g *OkHttpGenerator) generateClientMethod(w *writer.Writer, operation *spec
         logger.error(ex.message)
         throw ClientException(ex)
     }
+}
 `)
-	w.Line(`}`)
 }
 
 func (g *OkHttpGenerator) successResponse(response *spec.OperationResponse) string {
@@ -169,6 +192,9 @@ func (g *OkHttpGenerator) successResponse(response *spec.OperationResponse) stri
 	}
 	if response.Body.IsJson() {
 		return responseCreate(response, fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body!!.charStream()`, &response.Body.Type.Definition)))
+	}
+	if response.Body.IsBinary() || response.Body.IsFile() {
+		return responseCreate(response, "response.body!!.charStream()")
 	}
 	return responseCreate(response, "")
 }
@@ -180,6 +206,9 @@ func (g *OkHttpGenerator) errorResponse(response *spec.Response) string {
 	}
 	if response.Body.IsJson() {
 		responseBody = fmt.Sprintf(`json.%s`, g.Models.ReadJson(`response.body!!.charStream()`, &response.Body.Type.Definition))
+	}
+	if response.Body.IsBinary() || response.Body.IsFile() {
+		responseBody = "response.body!!.charStream()"
 	}
 	return fmt.Sprintf(`throw %s(%s)`, errorExceptionClassName(response), responseBody)
 }
@@ -199,23 +228,17 @@ func (g *OkHttpGenerator) generateRequestBuilder() *generator.CodeFile {
 import okhttp3.*
 
 class [[.ClassName]](method: String, url: HttpUrl, body: RequestBody?) {
-	private val requestBuilder: Request.Builder
+	private val requestBuilder: Request.Builder = Request.Builder().url(url).method(method, body)
 
-	init {
-		requestBuilder = Request.Builder().url(url).method(method, body)
-	}
-
-	fun addHeaderParameter(name: String, value: Any): [[.ClassName]] {
+	fun addHeaderParameter(name: String, value: Any) {
 		val valueStr = value.toString()
 		this.requestBuilder.addHeader(name, valueStr)
-		return this
 	}
 
-	fun <T> addHeaderParameter(name: String, values: List<T>): [[.ClassName]] {
+	fun <T> addHeaderParameter(name: String, values: List<T>) {
 		for (value in values) {
 			this.addHeaderParameter(name, value!!)
 		}
-		return this
 	}
 
 	fun build(): Request {
@@ -233,34 +256,26 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 
 class [[.ClassName]](baseUrl: String) {
-	private val urlBuilder: HttpUrl.Builder
+	private val urlBuilder: HttpUrl.Builder = baseUrl.toHttpUrl().newBuilder()
 
-	init {
-		this.urlBuilder = baseUrl.toHttpUrl().newBuilder()
-	}
-
-	fun addQueryParameter(name: String, value: Any): [[.ClassName]] {
+	fun addQueryParameter(name: String, value: Any) {
 		val valueStr = value.toString()
 		urlBuilder.addQueryParameter(name, valueStr)
-		return this
 	}
 
-	fun <T> addQueryParameter(name: String, values: List<T>): [[.ClassName]] {
+	fun <T> addQueryParameter(name: String, values: List<T>) {
 		for (value in values) {
 			this.addQueryParameter(name, value!!)
 		}
-		return this
 	}
 
-	fun addPathSegments(value: String): [[.ClassName]] {
+	fun addPathSegments(value: String) {
 		this.urlBuilder.addPathSegments(value)
-		return this
 	}
 
-	fun addPathParameter(value: Any): [[.ClassName]] {
+	fun addPathParameter(value: Any) {
 		val valueStr = value.toString()
 		this.urlBuilder.addPathSegment(valueStr)
-		return this
 	}
 
 	fun build(): HttpUrl {
@@ -275,29 +290,39 @@ func (g *OkHttpGenerator) generateMultipartBodyBuilder() *generator.CodeFile {
 	w := writer.New(g.Packages.Utils, `MultipartBodyBuilder`)
 	w.Lines(`
 import okhttp3.*
-import okhttp3.MultipartBody.Part
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
+import java.net.URLConnection
 
 class [[.ClassName]](type: MediaType) {
-	private val multipartBodyBuilder: MultipartBody.Builder
+	private val multipartBodyBuilder: MultipartBody.Builder = MultipartBody.Builder().setType(type)
 
-	init {
-		this.multipartBodyBuilder = MultipartBody.Builder().setType(type)
+	fun addFormDataPart(name: String, value: Any) {
+		multipartBodyBuilder.addFormDataPart(name, value.toString())
 	}
 
-	fun addFormDataPart(name: String, value: Any): [[.ClassName]] {
-		this.multipartBodyBuilder.addPart(Part.createFormData(name, value.toString()))
-		return this
-	}
-
-	fun <T> addFormDataPart(name: String, values: List<T>): [[.ClassName]] {
+	fun <T> addFormDataPart(name: String, values: List<T>) {
 		for (value in values) {
-			this.multipartBodyBuilder.addPart(Part.createFormData(name, value.toString()))
+			multipartBodyBuilder.addFormDataPart(name, value.toString())
 		}
-		return this
+	}
+
+	fun addFormDataPart(fieldName: String, file: File) {
+		multipartBodyBuilder.addFormDataPart(fieldName, file.name, file.asRequestBody(getFileContentType(file.name)))
+	}
+
+	fun addFormDataPart(fieldName: String, fileName: String, file: ByteArray) {
+		multipartBodyBuilder.addFormDataPart(fieldName, fileName, file.toRequestBody(getFileContentType(fileName)))
+	}
+
+	private fun getFileContentType(fileName: String): MediaType {
+		return URLConnection.getFileNameMap().getContentTypeFor(fileName).toMediaTypeOrNull()!!
 	}
 
 	fun build(): MultipartBody {
-		return this.multipartBodyBuilder.build()
+		return multipartBodyBuilder.build()
 	}
 }
 `)
@@ -312,20 +337,18 @@ import okhttp3.FormBody
 class [[.ClassName]] {
 	private val formBodyBuilder: FormBody.Builder = FormBody.Builder()
 
-	fun add(name: String, value: Any): [[.ClassName]] {
-		this.formBodyBuilder.add(name, value.toString())
-		return this
+	fun add(name: String, value: Any) {
+		formBodyBuilder.add(name, value.toString())
 	}
 
-	fun <T> add(name: String, values: List<T>): [[.ClassName]] {
+	fun <T> add(name: String, values: List<T>) {
 		for (value in values) {
-			this.formBodyBuilder.add(name, value.toString())
+			formBodyBuilder.add(name, value.toString())
 		}
-		return this
 	}
 
 	fun build(): FormBody {
-		return this.formBodyBuilder.build()
+		return formBodyBuilder.build()
 	}
 }
 `)

@@ -24,27 +24,27 @@ func operationReturnType(types *types.Types, operation *spec.NamedOperation) str
 
 func operationParameters(operation *spec.NamedOperation, types *types.Types) []string {
 	params := []string{}
-	if operation.Body.IsText() || operation.Body.IsJson() {
-		params = append(params, fmt.Sprintf("body: %s", types.Kotlin(&operation.Body.Type.Definition)))
+	if operation.Body.IsText() || operation.Body.IsBinary() || operation.Body.IsJson() {
+		params = append(params, fmt.Sprintf("body: %s", types.RequestBodyKotlinType(&operation.Body)))
 	}
 	if operation.Body.IsBodyFormData() {
-		for _, param := range operation.Body.FormData {
-			params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
-		}
+		params = appendParams(types, params, operation.Body.FormData)
 	}
 	if operation.Body.IsBodyFormUrlEncoded() {
-		for _, param := range operation.Body.FormUrlEncoded {
-			params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
+		params = appendParams(types, params, operation.Body.FormUrlEncoded)
+	}
+	params = appendParams(types, params, operation.QueryParams)
+	params = appendParams(types, params, operation.HeaderParams)
+	params = appendParams(types, params, operation.Endpoint.UrlParams)
+	return params
+}
+
+func appendParams(types *types.Types, params []string, namedParams []spec.NamedParam) []string {
+	for _, param := range namedParams {
+		if param.Type.Definition.String() == spec.TypeFile {
+			params = append(params, "fileName: String")
 		}
-	}
-	for _, param := range operation.QueryParams {
-		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
-	}
-	for _, param := range operation.HeaderParams {
-		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
-	}
-	for _, param := range operation.Endpoint.UrlParams {
-		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.Kotlin(&param.Type.Definition)))
+		params = append(params, fmt.Sprintf("%s: %s", param.Name.CamelCase(), types.ParamKotlinType(&param)))
 	}
 	return params
 }

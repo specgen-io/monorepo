@@ -32,43 +32,43 @@ func NewTypes(rawJsonType, requestBinaryType, responseBinaryType, requestFileTyp
 	}
 }
 
-func (types *Types) RequestBodyJavaType(body *spec.RequestBody) string {
+func (t *Types) RequestBodyJavaType(body *spec.RequestBody) string {
 	switch body.Kind() {
 	case spec.BodyText:
 		return TextType
 	case spec.BodyEmpty:
 		return EmptyType
 	case spec.BodyBinary:
-		return types.BinaryType.RequestType
+		return t.BinaryType.RequestType
 	case spec.BodyJson:
-		return types.Java(&body.Type.Definition)
+		return t.Java(&body.Type.Definition)
 	default:
 		panic(fmt.Sprintf("Unknown response body kind: %v", body.Kind()))
 	}
 }
 
-func (types *Types) ResponseBodyJavaType(body *spec.ResponseBody) string {
+func (t *Types) ResponseBodyJavaType(body *spec.ResponseBody) string {
 	switch body.Kind() {
 	case spec.BodyText:
 		return TextType
 	case spec.BodyEmpty:
 		return EmptyType
 	case spec.BodyBinary:
-		return types.BinaryType.ResponseType
+		return t.BinaryType.ResponseType
 	case spec.BodyFile:
-		return types.FileType.ResponseType
+		return t.FileType.ResponseType
 	case spec.BodyJson:
-		return types.Java(&body.Type.Definition)
+		return t.Java(&body.Type.Definition)
 	default:
 		panic(fmt.Sprintf("Unknown response body kind: %v", body.Kind()))
 	}
 }
 
-func (types *Types) ParamJavaType(param *spec.NamedParam) string {
+func (t *Types) ParamJavaType(param *spec.NamedParam) string {
 	if param.Type.Definition.String() == spec.TypeFile {
-		return types.FileType.RequestType
+		return t.FileType.RequestType
 	} else {
-		return types.Java(&param.Type.Definition)
+		return t.Java(&param.Type.Definition)
 	}
 }
 
